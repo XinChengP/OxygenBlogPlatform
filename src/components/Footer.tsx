@@ -3,7 +3,7 @@
  * 显示版权信息和相关链接
  */
 
-import { policeBeian, ICP, year, name, aWord, ICPLink, policeBeianLink } from '@/setting/FooterSetting';
+import { year, name, aWord, ICPLink, policeBeianLink } from '@/setting/FooterSetting';
 import Link from 'next/link';
 import Image from 'next/image';
 
