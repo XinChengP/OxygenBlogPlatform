@@ -501,7 +501,7 @@ export default function AboutPage() {
         {/* 底部装饰 */}
         <div className="text-center mt-8">
           <p className="text-gray-500 dark:text-gray-400 text-sm">
-            &ldquo;代码如诗，技术如画，用心创造每一行代码&rdquo;
+            &ldquo;这世界的浪漫有很多，孤独的人永远没有错&rdquo;
           </p>
         </div>
       </div>
