@@ -52,6 +52,13 @@ export default function MusicPlayer() {
   const isDark = resolvedTheme === 'dark';
   const primaryColor = isDark ? 'var(--theme-primary)' : 'var(--theme-primary)';
 
+  // 播放控制函数
+  const playNextSong = () => {
+    const newIndex = (currentSongIndex + 1) % playList.length;
+    setCurrentSongIndex(newIndex);
+    setIsPlaying(true);
+  };
+
   // 音频初始化与事件监听
   useEffect(() => {
     const audio = audioRef.current;
@@ -77,9 +84,9 @@ export default function MusicPlayer() {
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       audio.removeEventListener('ended', handleEnded);
-      audio.pause();
+      if (audio) audio.pause();
     };
-  }, [currentSong, volume, isMuted, isPlaying]);
+  }, [currentSong, volume, isMuted, isPlaying, playNextSong]);
 
   // 播放控制函数
   const togglePlay = () => {
@@ -97,12 +104,6 @@ export default function MusicPlayer() {
 
   const playPrevSong = () => {
     const newIndex = (currentSongIndex - 1 + playList.length) % playList.length;
-    setCurrentSongIndex(newIndex);
-    setIsPlaying(true);
-  };
-
-  const playNextSong = () => {
-    const newIndex = (currentSongIndex + 1) % playList.length;
     setCurrentSongIndex(newIndex);
     setIsPlaying(true);
   };
