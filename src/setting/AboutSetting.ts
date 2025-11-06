@@ -61,7 +61,8 @@ export const aboutMeP3 = "";
 
 //联系我页面配置
 export const mainContactMeDescription =
-  "如果你对我的文章感兴趣，或者想要交流技术话题，欢迎与我联系！"; //联系我页面主描述
+  "如果你对我的文章感兴趣，欢迎与我联系！"; //联系我页面主描述
 export const subContactMeDescription = "我会尽快回复你的消息 ✨"; //联系我页面补充描述
-export const mail = "mailto:haoyang05.xu@gmail.com"; //邮箱配置
-export const github = "https://github.com/seasalt-haiyan"; //github网站配置
+export const mail = "2574386537@qq.com"; //邮箱配置
+export const github = "https://github.com/XinChengP"; //github网站配置
+export const bilibili = "https://space.bilibili.com/522845412?spm_id_from=333.1007.0.0";
