@@ -11,7 +11,7 @@ import Image from 'next/image';
 import MailIcon from '@/assets/mail.svg';
 import GitHubIcon from '@/assets/github.svg';
 import BilibiliIcon from '@/assets/bilibili.png';
-import {title, BeforeAnimationText, AnimationText, name, slogan, images, aboutMeP1, aboutMeP2, aboutMeP3, mainContactMeDescription, subContactMeDescription, mail, github, isBorder, isRainbowGradient}
+import {title, BeforeAnimationText, AnimationText, name, slogan, images, aboutMeP1, aboutMeP2, aboutMeP3, mainContactMeDescription, subContactMeDescription, mail, github, Bilibili, isBorder, isRainbowGradient}
 from '@/setting/AboutSetting';
 import { useTheme } from 'next-themes';
 import { useMemo, useEffect, useState } from 'react';
@@ -188,6 +188,19 @@ export default function AboutPage() {
 
   // GitHub 图标背景样式 - 增强渐变效果
   const githubIconStyle = useMemo(() => ({
+    background: `
+      linear-gradient(135deg, 
+        ${secondaryColor} 0%, 
+        ${accentColor} 50%, 
+        ${secondaryColor} 100%
+      )`,
+    backgroundSize: '200% 200%',
+    animation: 'gradientShift 5s ease-in-out infinite',
+    color: 'white'
+  }), [secondaryColor, accentColor]);
+
+    // B站 图标背景样式 - 增强渐变效果
+  const BilibiliIconStyle = useMemo(() => ({
     background: `
       linear-gradient(135deg, 
         ${secondaryColor} 0%, 
@@ -401,7 +414,7 @@ export default function AboutPage() {
                     </div>
                   </div>
                 </motion.a>
-
+                
                 {/* GitHub 卡片 */}
                 <motion.a
                   href={github}
@@ -437,6 +450,40 @@ export default function AboutPage() {
                 </motion.a>
               </div>
 
+                {/* 哔哩哔哩卡片（新增） */}
+  <motion.a
+    href={bilibili}
+    target="_blank"
+    rel="noopener noreferrer"
+    whileHover={{ scale: 1.05, y: -5 }}
+    whileTap={{ scale: 0.95 }}
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5, delay: 0.9 }}  // 延迟递增0.1s，保持加载序列
+    className="group relative bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md hover:shadow-xl border border-gray-200 dark:border-gray-700 transition-all duration-300 cursor-pointer overflow-hidden"
+  >
+    <div className="relative z-10">
+      <div 
+        className="flex items-center justify-center w-12 h-12 rounded-lg mb-4 mx-auto group-hover:scale-110 transition-transform duration-300"
+        style={{ backgroundColor: '#FB7299' }}  // B站标志性粉色
+      >
+        <Image src={BilibiliIcon as string} alt="Bilibili" width={24} height={24} className="text-white" />
+      </div>
+      <h4 className="text-lg font-semibold text-gray-800 dark:text-white text-center mb-2">
+        哔哩哔哩
+      </h4>
+      <p className="text-gray-600 dark:text-gray-300 text-sm text-center">
+        观看我的视频
+      </p>
+      <div className="mt-3 text-center">
+        <span className="text-xs text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-900/20 px-2 py-1 rounded-full">
+          进入空间
+        </span>
+      </div>
+    </div>
+  </motion.a>
+</div>
+            
               {/* 底部装饰性文字 */}
               <motion.div
                 initial={{ opacity: 0 }}
