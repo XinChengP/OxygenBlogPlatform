@@ -38,16 +38,16 @@ export default function Footer() {
             </>
           )}
           
-          {/* 第一吃货殿下 */}
+          {/* 洛天依B站主页链接 */}
           <span className="mx-1">·</span>
           <span>由</span>
           <Link
-            href="https://space.bilibili.com/36081646?spm_id_from=333.337.0.0"
+            href="https://space.bilibili.com/36081646"  // 已更新为正确的洛天依主页地址
             target="_blank"
             rel="noopener noreferrer"
             className="text-muted-foreground/70 hover:text-primary transition-colors duration-200 underline-offset-4 hover:underline"
           >
-            OxygenBlogPlatform
+            洛天依
           </Link>
           <span>驱动</span>
         </p>
