@@ -1,5 +1,5 @@
 //你想配置的分类类别
-export const categories = ["all", "技术", "前端", "开发", "生活"];
+export const categories = ["all", "技术", "灵光", "作品", "生活"];
 // CC协议类型(无需改动)
 export type CCLicenseType =
   | "CC BY" //允许他人分享和改编作品，甚至商业使用
