@@ -11,7 +11,7 @@ import Image from 'next/image';
 import MailIcon from '@/assets/mail.svg';
 import GitHubIcon from '@/assets/github.svg';
 import BilibiliIcon from '@/assets/bilibili.png';
-import {title, BeforeAnimationText, AnimationText, name, slogan, images, aboutMeP1, aboutMeP2, aboutMeP3, mainContactMeDescription, subContactMeDescription, mail, github, Bilibili, isBorder, isRainbowGradient}
+import {title, BeforeAnimationText, AnimationText, name, slogan, images, aboutMeP1, aboutMeP2, aboutMeP3, mainContactMeDescription, subContactMeDescription, mail, github, bilibili, isBorder, isRainbowGradient}
 from '@/setting/AboutSetting';
 import { useTheme } from 'next-themes';
 import { useMemo, useEffect, useState } from 'react';
@@ -451,7 +451,7 @@ export default function AboutPage() {
             
                 {/* 哔哩哔哩卡片（完整内容） */}
                 <motion.a
-                  href={Bilibili}
+                  href={bilibili}
                   target="_blank"
                   rel="noopener noreferrer"
                   whileHover={{ scale: 1.05, y: -5 }}
