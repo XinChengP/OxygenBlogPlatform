@@ -186,6 +186,16 @@
   }
   body {
     @apply text-foreground bg-background;
+    overflow-x: hidden;
+    position: relative;
+    width: 100%;
+  }
+  html {
+    overflow-x: hidden;
+  }
+  #__next {
+    overflow-x: hidden;
+    width: 100%;
   }
 }
 
