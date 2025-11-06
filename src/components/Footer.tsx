@@ -1,3 +1,5 @@
+'use client'; // 客户端组件标记
+
 /**
  * 页脚组件
  * 显示版权信息、相关链接和实时网站运行时间
@@ -35,8 +37,8 @@ function formatTime(milliseconds: number): string {
  * 页脚组件 - 毛玻璃透明效果，包含实时运行时间
  */
 export default function Footer() {
-  // 网站上线时间（请替换为实际上线日期）
-  const launchDate = new Date('2023-01-01T00:00:00');
+  // 网站上线时间（已设置为 2025.11.06 20:00）
+  const launchDate = new Date('2025-11-06T20:00:00');
   const [runTime, setRunTime] = useState('');
 
   // 实时更新运行时间
@@ -45,7 +47,12 @@ export default function Footer() {
     const updateRunTime = () => {
       const now = new Date();
       const diff = now.getTime() - launchDate.getTime();
-      setRunTime(formatTime(diff));
+      // 处理未到上线时间的情况（显示倒计时）
+      if (diff < 0) {
+        setRunTime(`距离上线还有 ${formatTime(-diff)}`);
+      } else {
+        setRunTime(`已稳定运行: ${formatTime(diff)}`);
+      }
     };
 
     // 立即执行一次
@@ -77,9 +84,9 @@ export default function Footer() {
             </>
           )}
           
-          {/* 网站运行时间 */}
+          {/* 网站运行时间/倒计时 */}
           <span className="mx-1">·</span>
-          <span>已稳定运行: {runTime}</span>
+          <span>{runTime}</span>
           
           {/* 洛天依B站主页链接 */}
           <span className="mx-1">·</span>
