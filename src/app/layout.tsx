@@ -135,3 +135,16 @@ export default function RootLayout({
     </html>
   );
 }
+
+import MusicPlayer from '@/components/MusicPlayer';
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="zh-CN">
+      <body>
+        {children}
+        <MusicPlayer /> {/* 添加音乐播放器 */}
+      </body>
+    </html>
+  );
+}
