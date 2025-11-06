@@ -12,7 +12,7 @@ import { useEffect, useState } from 'react';
 /**
  * 网站背景组件
  * 使用 CSS background-image 在最底层显示背景图片
- * 移除暗黑模式下的黑色滤镜效果
+ * 在暗黑模式下添加黑色滤镜效果
  */
 export default function BackgroundLayer() {
   const { theme, resolvedTheme } = useTheme();
@@ -31,6 +31,10 @@ export default function BackgroundLayer() {
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
   const fullImagePath = `${basePath}${backgroundImage}`;
 
+  // 判断是否为暗黑模式
+  const isDark = resolvedTheme === 'dark';
+
+
   return (
     <div
       style={{
@@ -40,7 +44,9 @@ export default function BackgroundLayer() {
         width: '100vw',
         height: '100vh',
         zIndex: -50,
-        backgroundImage: `url("${fullImagePath}")`, // 移除暗黑模式的线性渐变滤镜
+        backgroundImage: isDark 
+          ? `linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url("${fullImagePath}")`
+          : `url("${fullImagePath}")`,
         backgroundSize: backgroundMode === 'cover' ? 'cover' : backgroundMode === 'contain' ? 'contain' : 'cover',
         backgroundPosition: 'center center',
         backgroundRepeat: 'no-repeat',
