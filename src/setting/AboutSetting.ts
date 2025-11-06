@@ -18,7 +18,7 @@ export const slogan =
 
 //https://simpleicons.org 图云的图标配置
 const slugs = [
-  "export const"'
+  "export const",
 ];
 /*
   关于技术栈图云配置说明
