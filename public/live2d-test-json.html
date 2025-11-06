@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+	<title>洛天依live2D模型演示</title>
+	
+<!--将下面的内容复制到你的页面中-->
+    <link rel="stylesheet" href="/luotianyi-live2d/live2d/css/live2d.css" />
+</head>
+<body>
+
+<div id="landlord">
+    <div class="message" style="opacity:0"></div>
+    <canvas id="live2d" width="280" height="250" class="live2d"></canvas>
+	<div id="sing"></div>
+    <div class="hide-button">隐藏</div>
+	<div class="sing-button" id="sing-button" onclick="getsong()">Sing</div>
+</div>
+
+<!-- 使用本地jQuery -->
+<script src="https://cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
+
+<script type="text/javascript">
+    var message_Path = '/luotianyi-live2d/live2d/';
+    var home_Path = 'http://localhost:8080/';
+</script>
+
+<!-- 加载Live2D核心库 -->
+<script src="/luotianyi-live2d/live2d/js/live2d.js"></script>
+
+<!-- 加载消息脚本 -->
+<script src="/luotianyi-live2d/live2d/js/message.js"></script>
+
+<!-- 尝试手动定义loadlive2d函数 -->
+<script>
+    // 检查Live2D是否已加载
+    function checkLive2DLoaded() {
+        if (typeof Live2D !== 'undefined') {
+            console.log('Live2D库已加载');
+            return true;
+        } else {
+            console.log('Live2D库尚未加载');
+            return false;
+        }
+    }
+    
+    // 手动定义loadlive2d函数
+    window.loadlive2d = function(id, modelPath) {
+        console.log('loadlive2d函数被调用', id, modelPath);
+        
+        // 检查Live2D库是否已加载
+        if (!checkLive2DLoaded()) {
+            console.error('Live2D库尚未加载');
+            $('.message').html('Live2D库尚未加载').delay(3000).fadeTo(200, 0);
+            return;
+        }
+        
+        // 获取canvas元素
+        var canvas = document.getElementById(id);
+        if (!canvas) {
+            console.error('找不到canvas元素:', id);
+            return;
+        }
+        
+        // 尝试获取WebGL上下文
+        var gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+        if (!gl) {
+            console.error('WebGL不受支持');
+            $('.message').html('WebGL不受支持').delay(3000).fadeTo(200, 0);
+            return;
+        }
+        
+        // 设置Live2D的GL上下文
+        try {
+            Live2D.setGL(gl);
+            console.log('Live2D GL上下文设置成功');
+        } catch (error) {
+            console.error('设置Live2D GL上下文失败:', error);
+            $('.message').html('设置Live2D GL上下文失败: ' + error.message).delay(3000).fadeTo(200, 0);
+            return;
+        }
+        
+        // 显示消息
+        $('.message').html('正在加载模型...').fadeTo(200, 1);
+        
+        // 尝试加载模型
+        try {
+            console.log('开始加载模型:', modelPath);
+            
+            // 尝试获取模型文件
+            fetch(modelPath)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP错误! 状态: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(modelData => {
+                    console.log('模型JSON加载成功', modelData);
+                    
+                    // 尝试加载模型
+                    // 这里我们需要实现完整的模型加载逻辑
+                    // 由于我们没有完整的Live2D API，这里只是模拟
+                    $('.message').html('模型加载成功！但需要完整实现Live2D渲染').delay(5000).fadeTo(200, 0);
+                })
+                .catch(error => {
+                    console.error('加载模型失败:', error);
+                    $('.message').html('模型加载失败: ' + error.message).delay(3000).fadeTo(200, 0);
+                });
+        } catch (error) {
+            console.error('加载模型时出错:', error);
+            $('.message').html('加载模型时出错: ' + error.message).delay(3000).fadeTo(200, 0);
+        }
+    };
+</script>
+
+<!-- 初始化Live2D -->
+<script type="text/javascript">
+    // 等待DOM加载完成
+    $(document).ready(function() {
+        console.log('DOM加载完成，开始初始化Live2D');
+        
+        // 延迟加载以确保所有脚本都已加载
+        setTimeout(function() {
+            // 尝试加载模型，使用.json文件
+            try {
+                loadlive2d("live2d", "/luotianyi-live2d/live2d/model/tianyi/model.json");
+            } catch (error) {
+                console.error('初始化Live2D失败:', error);
+                $('.message').html('初始化Live2D失败: ' + error.message).delay(3000).fadeTo(200, 0);
+            }
+        }, 1000);
+    });
+</script>
+
+<!--将上面的内容复制到你的页面中-->
+
+</body>
+</html>

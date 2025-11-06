@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>洛天依Live2D模型测试</title>
+    <link rel="stylesheet" href="/luotianyi-live2d/live2d/css/live2d.css" />
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .test-info {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .debug-info {
+            background: #f0f8ff;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>洛天依Live2D模型测试</h1>
+        
+        <div class="test-info">
+            <h3>测试信息</h3>
+            <p>此页面用于测试Live2D模型的加载和显示。</p>
+            <p>模型路径: /luotianyi-live2d/live2d/model/tianyi/model.json</p>
+            <p>状态: <span id="status">初始化中...</span></p>
+        </div>
+        
+        <div id="landlord">
+            <div class="message" style="opacity:0"></div>
+            <canvas id="live2d" width="280" height="250" class="live2d"></canvas>
+            <div id="sing"></div>
+            <div class="hide-button">隐藏</div>
+            <div class="sing-button" id="sing-button" onclick="getsong()">Sing</div>
+        </div>
+        
+        <div class="debug-info" id="debug-info">调试信息将显示在这里...</div>
+    </div>
+
+    <!-- 加载必要的脚本 -->
+    <script src="https://cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
+    
+    <!-- 设置全局变量 -->
+    <script type="text/javascript">
+        var message_Path = '/luotianyi-live2d/live2d/';
+        var home_Path = 'http://localhost:8080/';
+    </script>
+    
+    <script src="/luotianyi-live2d/live2d/js/live2d.js"></script>
+    <script src="/luotianyi-live2d/live2d/js/message.js"></script>
+
+    <script>
+        // 调试信息函数
+        function addDebugInfo(message) {
+            const debugInfo = document.getElementById('debug-info');
+            const timestamp = new Date().toLocaleTimeString();
+            debugInfo.textContent += `[${timestamp}] ${message}\n`;
+            debugInfo.scrollTop = debugInfo.scrollHeight;
+            console.log(message);
+        }
+
+        // 更新状态
+        function updateStatus(status) {
+            document.getElementById('status').textContent = status;
+            addDebugInfo(`状态更新: ${status}`);
+        }
+
+        // 检查Live2D是否已加载
+        function checkLive2DLoaded() {
+            if (typeof Live2D !== 'undefined') {
+                addDebugInfo('Live2D库已加载');
+                return true;
+            } else {
+                addDebugInfo('Live2D库尚未加载');
+                return false;
+            }
+        }
+
+        // 尝试手动定义loadlive2d函数
+        window.loadlive2d = function(id, modelPath) {
+            addDebugInfo(`loadlive2d函数被调用: id=${id}, modelPath=${modelPath}`);
+            updateStatus('正在加载模型...');
+            
+            // 检查Live2D库是否已加载
+            if (!checkLive2DLoaded()) {
+                const errorMsg = 'Live2D库尚未加载';
+                addDebugInfo(errorMsg);
+                updateStatus(errorMsg);
+                $('.message').html(errorMsg).delay(3000).fadeTo(200, 0);
+                return;
+            }
+            
+            // 获取canvas元素
+            const canvas = document.getElementById(id);
+            if (!canvas) {
+                const errorMsg = `找不到canvas元素: ${id}`;
+                addDebugInfo(errorMsg);
+                updateStatus(errorMsg);
+                return;
+            }
+            
+            // 尝试获取WebGL上下文
+            const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+            if (!gl) {
+                const errorMsg = 'WebGL不受支持';
+                addDebugInfo(errorMsg);
+                updateStatus(errorMsg);
+                $('.message').html(errorMsg).delay(3000).fadeTo(200, 0);
+                return;
+            }
+            
+            // 设置Live2D的GL上下文
+            try {
+                Live2D.setGL(gl);
+                addDebugInfo('Live2D GL上下文设置成功');
+            } catch (error) {
+                const errorMsg = `设置Live2D GL上下文失败: ${error.message}`;
+                addDebugInfo(errorMsg);
+                updateStatus(errorMsg);
+                $('.message').html(errorMsg).delay(3000).fadeTo(200, 0);
+                return;
+            }
+            
+            // 显示消息
+            $('.message').html('正在加载模型...').fadeTo(200, 1);
+            
+            // 尝试加载模型
+            try {
+                addDebugInfo(`开始加载模型: ${modelPath}`);
+                
+                // 尝试获取模型文件
+                fetch(modelPath)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP错误! 状态: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(modelData => {
+                        addDebugInfo('模型JSON加载成功');
+                        addDebugInfo(`模型数据: ${JSON.stringify(modelData, null, 2)}`);
+                        
+                        // 尝试使用Live2D库加载模型
+                        try {
+                            // 创建Live2D模型实例
+                            const model = new Live2D();
+                            
+                            // 加载模型数据
+                            model.loadModelData(modelData.model, function() {
+                                addDebugInfo('模型数据加载成功');
+                                
+                                // 加载纹理
+                                let textureCount = 0;
+                                const totalTextures = modelData.textures.length;
+                                
+                                modelData.textures.forEach(function(texturePath, index) {
+                                    model.loadTexture(index, texturePath, function() {
+                                        textureCount++;
+                                        addDebugInfo(`纹理 ${index} 加载成功 (${textureCount}/${totalTextures})`);
+                                        
+                                        if (textureCount === totalTextures) {
+                                            // 所有纹理加载完成
+                                            addDebugInfo('所有纹理加载完成');
+                                            
+                                            // 设置模型参数
+                                            const modelMatrix = new L2DModelMatrix(model.getCanvasWidth(), model.getCanvasHeight());
+                                            modelMatrix.setWidth(2);
+                                            modelMatrix.setCenterPosition(0, 0);
+                                            
+                                            // 创建视图矩阵
+                                            const viewMatrix = new L2DViewMatrix();
+                                            viewMatrix.setMaxScreenRect(-2, 2, -2, 2);
+                                            viewMatrix.setScreenRect(-1, 1, -1, 1);
+                                            viewMatrix.setMaxScale(2);
+                                            viewMatrix.setMinScale(0.8);
+                                            
+                                            // 开始渲染
+                                            function render() {
+                                                gl.clearColor(0.0, 0.0, 0.0, 0.0);
+                                                gl.clear(gl.COLOR_BUFFER_BIT);
+                                                
+                                                model.update();
+                                                model.draw();
+                                                
+                                                requestAnimationFrame(render);
+                                            }
+                                            
+                                            render();
+                                            
+                                            updateStatus('模型加载成功');
+                                            $('.message').html('模型加载成功！').delay(3000).fadeTo(200, 0);
+                                        }
+                                    });
+                                });
+                            });
+                        } catch (error) {
+                            const errorMsg = `Live2D模型加载失败: ${error.message}`;
+                            addDebugInfo(errorMsg);
+                            addDebugInfo(`错误堆栈: ${error.stack}`);
+                            updateStatus(errorMsg);
+                            $('.message').html(errorMsg).delay(5000).fadeTo(200, 0);
+                        }
+                    })
+                    .catch(error => {
+                        const errorMsg = `模型JSON加载失败: ${error.message}`;
+                        addDebugInfo(errorMsg);
+                        updateStatus(errorMsg);
+                        $('.message').html(errorMsg).delay(3000).fadeTo(200, 0);
+                    });
+            } catch (error) {
+                const errorMsg = `加载模型时出错: ${error.message}`;
+                addDebugInfo(errorMsg);
+                addDebugInfo(`错误堆栈: ${error.stack}`);
+                updateStatus(errorMsg);
+                $('.message').html(errorMsg).delay(3000).fadeTo(200, 0);
+            }
+        };
+
+        // 初始化Live2D
+        $(document).ready(function() {
+            addDebugInfo('DOM加载完成，开始初始化Live2D');
+            
+            // 设置消息路径
+            window.message_Path = '/luotianyi-live2d/live2d/';
+            window.home_Path = 'http://localhost:8080/';
+            
+            // 延迟加载以确保所有脚本都已加载
+            setTimeout(function() {
+                addDebugInfo('延迟1秒后开始加载模型');
+                
+                // 尝试加载模型
+                try {
+                    loadlive2d("live2d", "/luotianyi-live2d/live2d/model/tianyi/model.json");
+                } catch (error) {
+                    const errorMsg = `初始化Live2D失败: ${error.message}`;
+                    addDebugInfo(errorMsg);
+                    addDebugInfo(`错误堆栈: ${error.stack}`);
+                    updateStatus(errorMsg);
+                    $('.message').html(errorMsg).delay(3000).fadeTo(200, 0);
+                }
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
