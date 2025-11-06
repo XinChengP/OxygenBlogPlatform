@@ -1,7 +1,7 @@
 //主标题
 export const mainTitle = "歆橙 的 Blog";
 //主题色装饰字
-export const mainTitleBlueDecoration = "awa";
+export const mainTitleBlueDecoration = ".";
 //副标题
 export const subTitle = "一个普普通通的 ";
 //副标题主题色装饰字
