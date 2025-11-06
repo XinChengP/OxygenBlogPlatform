@@ -27,8 +27,27 @@ export default function MusicPlayer() {
   // 主题色处理
   const isDark = resolvedTheme === 'dark';
   const primaryColor = isDark 
-    ? themeColors.primary 
-    : themeColors.primary;
+    ? adjustBrightness(themeColors.primary, 1.3) 
+    : adjustBrightness(themeColors.primary, 0.8);
+
+  // 辅助函数：调整颜色亮度
+  const adjustBrightness = (hex: string, factor: number) => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    if (!result) return hex;
+    
+    const r = parseInt(result[1], 16);
+    const g = parseInt(result[2], 16);
+    const b = parseInt(result[3], 16);
+    
+    const adjust = (value: number) =>
+      Math.max(0, Math.min(255, Math.round(value * factor)));
+
+    const newR = adjust(r).toString(16).padStart(2, "0");
+    const newG = adjust(g).toString(16).padStart(2, "0");
+    const newB = adjust(b).toString(16).padStart(2, "0");
+
+    return `#${newR}${newG}${newB}`;
+  };
 
   // 音频初始化逻辑（保持不变）
   useEffect(() => {
