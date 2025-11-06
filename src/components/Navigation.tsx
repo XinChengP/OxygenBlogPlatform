@@ -45,6 +45,7 @@ export default function Navigation() {
     { href: '/blogs', label: '博客' },
     { href: '/archive', label: '归档' },
     { href: '/about', label: '关于' },
+    { href: '/settings', label: '设置' },
   ];
   
   /**
