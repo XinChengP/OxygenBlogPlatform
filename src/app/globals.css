@@ -98,11 +98,11 @@
   --popover: oklch(0.98 0.005 220);
   --popover-foreground: oklch(0.145 0 0);
   
-  /* 主题色变量 - 默认使用purple主题 */
-  --color-primary: oklch(0.563 0.400 258.3);
+  /* 主题色变量 - 默认使用blue主题 */
+  --color-primary: oklch(0.600 0.400 200.0);
   --color-primary-foreground: oklch(0.98 0.02 250);
-  --color-secondary: oklch(0.478 0.400 262.1);
-  --color-accent: oklch(0.551 0.400 270.7);
+  --color-secondary: oklch(0.302 0.400 225.9);
+  --color-accent: oklch(0.327 0.400 188.7);
   --color-accent-foreground: oklch(0.3 0.1 250);
   
   /* 保持原有的变量用于兼容 */
@@ -143,11 +143,11 @@
   --popover: #2a3441;
   --popover-foreground: oklch(0.985 0 0);
   
-  /* 主题色变量 - 深色模式默认使用purple主题 */
-  --color-primary: oklch(0.800 0.400 258.3);
+  /* 主题色变量 - 深色模式默认使用blue主题 */
+  --color-primary: oklch(0.800 0.400 200.0);
   --color-primary-foreground: oklch(0.1 0.02 250);
-  --color-secondary: oklch(0.778 0.400 262.1);
-  --color-accent: oklch(0.800 0.400 270.7);
+  --color-secondary: oklch(0.602 0.400 225.9);
+  --color-accent: oklch(0.627 0.400 188.7);
   --color-accent-foreground: oklch(0.8 0.1 250);
   
   /* 保持原有的变量用于兼容 */
