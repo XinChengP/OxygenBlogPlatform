@@ -13,13 +13,13 @@ export function cn(...inputs: ClassValue[]) {
  * - 英文：每分钟200单词
  * 
  * @param content - 博客内容
- * @param cnCharsPerMinute - 中文每分钟阅读字数，默认为300
+ * @param cnCharsPerMinute - 中文每分钟阅读字数，默认为400
  * @param enWordsPerMinute - 英文每分钟阅读单词数，默认为200
  * @returns 阅读时长（分钟），最小为1分钟
  */
 export function calculateReadingTime(
   content: string, 
-  cnCharsPerMinute: number = 300, 
+  cnCharsPerMinute: number = 400, 
   enWordsPerMinute: number = 200
 ): number {
   if (!content) return 1;
