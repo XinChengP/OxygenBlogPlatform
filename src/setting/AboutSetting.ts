@@ -45,7 +45,10 @@ export const images = slugs.map(
 //自定义图片版本，如果你使用自定义图片的话，将上面的代码注释掉，下面的代码解除注释，写法如下
 
 export const images = [
-   "/avatar.jpg",
+  "/avatar.jpg",
+  "/icon-VOCALOID.jpg"
+  "/icon-minecraft.png"
+  "/icon-roco.png"
 ];
 
 //关于我页面一二三段
