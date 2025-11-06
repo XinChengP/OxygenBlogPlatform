@@ -10,6 +10,7 @@ import { motion } from 'motion/react';
 import Image from 'next/image';
 import MailIcon from '@/assets/mail.svg';
 import GitHubIcon from '@/assets/github.svg';
+import BilibiliIcon from '@/assets/bilibili.png';
 import {title, BeforeAnimationText, AnimationText, name, slogan, images, aboutMeP1, aboutMeP2, aboutMeP3, mainContactMeDescription, subContactMeDescription, mail, github, isBorder, isRainbowGradient}
 from '@/setting/AboutSetting';
 import { useTheme } from 'next-themes';
