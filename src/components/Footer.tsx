@@ -84,10 +84,6 @@ export default function Footer() {
             </>
           )}
           
-          {/* 网站运行时间/倒计时 */}
-          <span className="mx-1">·</span>
-          <span>{runTime}</span>
-          
           {/* 洛天依B站主页链接 */}
           <span className="mx-1">·</span>
           <span>由</span>
@@ -100,6 +96,10 @@ export default function Footer() {
             世界第一吃货殿下
           </Link>
           <span>提供动力（确信）</span>
+          
+          {/* 网站运行时间/倒计时 - 放在最后 */}
+          <span className="mx-1">·</span>
+          <span>{runTime}</span>
         </p>
       </div>
     </footer>
