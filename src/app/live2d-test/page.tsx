@@ -94,7 +94,9 @@ export default function Live2DTestPage() {
         singButton.innerText = "Sing";
         singButton.onclick = () => {
           // 尝试调用getsong函数
+          // @ts-ignore - getsong函数在message.js中定义，但TypeScript无法识别
           if (typeof window.getsong === "function") {
+            // @ts-ignore
             window.getsong();
           }
         };
