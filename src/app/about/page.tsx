@@ -101,7 +101,7 @@ export default function AboutPage() {
         animation: 'gradientShift 6s ease-in-out infinite',
       };
     }
-  }, [isRainbowGradient, primaryColor, secondaryColor, accentColor]);
+  }, [primaryColor, secondaryColor, accentColor]);
 
   // 技术栈卡片样式 - 简洁背景
   const techStackCardStyle = useMemo(() => ({
