@@ -18,23 +18,7 @@ export const slogan =
 
 //https://simpleicons.org 图云的图标配置
 const slugs = [
-  "typescript",
-  "javascript",
-  "react",
-  "vuedotjs",
-  "Vite",
-  "html5",
-  "css",
-  "Vitest",
-  "ESLint",
-  "Prettier",
-  "C",
-  "C++",
-  "nodedotjs",
-  "nextdotjs",
-  "git",
-  "github",
-  "gitlab",
+  "export const"'
 ];
 /*
   关于技术栈图云配置说明
