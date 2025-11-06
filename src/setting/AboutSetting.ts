@@ -18,7 +18,18 @@ export const slogan =
 
 //https://simpleicons.org 图云的图标配置
 const slugs = [
-  "export const",
+  "typescript",
+  "javascript",
+  "react",
+  "Dart",
+  "Flutter",
+  "html5",
+  "css",
+  "C",
+  "C++",
+  "git",
+  "github",
+  "gitlab",
 ];
 /*
   关于技术栈图云配置说明
