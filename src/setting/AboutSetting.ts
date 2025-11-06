@@ -46,9 +46,9 @@ export const images = slugs.map(
 
 export const images = [
   "/avatar.jpg",
-  "/icon-VOCALOID.jpg"
-  "/icon-minecraft.png"
-  "/icon-roco.png"
+  "/icon-VOCALOID.jpg",
+  "/icon-minecraft.jpg",
+  "/icon-roco.jpg",
 ];
 
 //关于我页面一二三段
