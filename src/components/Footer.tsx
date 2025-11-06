@@ -38,11 +38,11 @@ export default function Footer() {
             </>
           )}
           
-          {/* OxygenBlogPlatform 驱动链接 */}
+          {/* 第一吃货殿下 */}
           <span className="mx-1">·</span>
           <span>由</span>
           <Link
-            href="https://github.com/seasalt-haiyan/OxygenBlogPlatform"
+            href="https://space.bilibili.com/36081646?spm_id_from=333.337.0.0"
             target="_blank"
             rel="noopener noreferrer"
             className="text-muted-foreground/70 hover:text-primary transition-colors duration-200 underline-offset-4 hover:underline"
