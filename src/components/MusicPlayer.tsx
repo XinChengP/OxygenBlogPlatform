@@ -24,12 +24,6 @@ export default function MusicPlayer() {
   const [isMuted, setIsMuted] = useState(false);
   const [isHovered, setIsHovered] = useState(false); // 用于显示/隐藏详细控制
 
-  // 主题色处理
-  const isDark = resolvedTheme === 'dark';
-  const primaryColor = isDark 
-    ? adjustBrightness(themeColors.primary, 1.3) 
-    : adjustBrightness(themeColors.primary, 0.8);
-
   // 辅助函数：调整颜色亮度
   const adjustBrightness = (hex: string, factor: number) => {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -48,6 +42,12 @@ export default function MusicPlayer() {
 
     return `#${newR}${newG}${newB}`;
   };
+
+  // 主题色处理
+  const isDark = resolvedTheme === 'dark';
+  const primaryColor = isDark 
+    ? adjustBrightness(themeColors.primary, 1.3) 
+    : adjustBrightness(themeColors.primary, 0.8);
 
   // 音频初始化逻辑（保持不变）
   useEffect(() => {
