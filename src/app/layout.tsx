@@ -6,7 +6,7 @@ import Footer from "@/components/Footer";
 import BackgroundLayer from "@/components/BackgroundLayer";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { webTitle, webDescription } from "@/setting/WebSetting";
-import MusicPlayer from '@/components/MusicPlayer';
+import MusicPlayer from '@/components/MusicPlayer'; // 保留音乐播放器导入
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -23,6 +23,7 @@ export const metadata: Metadata = {
   description: webDescription,
 };
 
+// 只保留一个默认导出的 RootLayout（删除重复的第二个）
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -131,18 +132,8 @@ export default function RootLayout({
             {children}
           </main>
           <Footer />
+          <MusicPlayer /> {/* 把音乐播放器添加到 ThemeProvider 内部（与 Footer 同级） */}
         </ThemeProvider>
-      </body>
-    </html>
-  );
-}
-
-export default function RootLayout({ children }) {
-  return (
-    <html lang="zh-CN">
-      <body>
-        {children}
-        <MusicPlayer /> {/* 添加音乐播放器 */}
       </body>
     </html>
   );
