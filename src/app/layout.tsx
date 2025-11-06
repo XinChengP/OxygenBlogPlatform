@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTheme } from 'next-themes';
 
 // 歌单配置 - 替换为实际音乐链接
@@ -53,11 +53,11 @@ export default function MusicPlayer() {
   const primaryColor = isDark ? 'var(--theme-primary)' : 'var(--theme-primary)';
 
   // 播放控制函数
-  const playNextSong = () => {
+  const playNextSong = useCallback(() => {
     const newIndex = (currentSongIndex + 1) % playList.length;
     setCurrentSongIndex(newIndex);
     setIsPlaying(true);
-  };
+  }, [currentSongIndex]);
 
   // 音频初始化与事件监听
   useEffect(() => {
@@ -92,7 +92,13 @@ export default function MusicPlayer() {
   const togglePlay = () => {
     const audio = audioRef.current;
     if (!audio) return;
-    isPlaying ? audio.pause() : audio.play().catch(() => setIsPlaying(false));
+    
+    if (isPlaying) {
+      audio.pause();
+    } else {
+      audio.play().catch(() => setIsPlaying(false));
+    }
+    
     setIsPlaying(!isPlaying);
   };
 
