@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import BackgroundLayer from "@/components/BackgroundLayer";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { webTitle, webDescription } from "@/setting/WebSetting";
+import MusicPlayer from '@/components/MusicPlayer';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -135,8 +136,6 @@ export default function RootLayout({
     </html>
   );
 }
-
-import MusicPlayer from '@/components/MusicPlayer';
 
 export default function RootLayout({ children }) {
   return (
