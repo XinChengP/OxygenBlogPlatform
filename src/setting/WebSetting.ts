@@ -12,7 +12,7 @@ export const backgroundMode = "cover"; // 背景图片显示模式
 /* - 'cover': 覆盖整个容器，可能会裁剪图片
  * - 'contain': 完整显示图片，可能会有空白区域
  */
-export const backgroundFixed = false; // 是否固定背景（视差效果）
+export const backgroundFixed = true; // 是否固定背景（视差效果）
 
 //预设的主题色方案，如果你要添加自定义主题色，你可以参考这里的配置添加
 const themePresets = {
