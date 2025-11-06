@@ -62,9 +62,9 @@ export default function Live2DTestPage() {
         console.log("创建Live2D容器...");
         const live2dContainer = document.createElement("div");
         live2dContainer.id = "landlord";
-        // 覆盖CSS中的left: 30px，设置为右侧
-        live2dContainer.style.left = 'auto';
-        live2dContainer.style.right = '0px';
+        // 设置为左下角位置
+        live2dContainer.style.left = '30px';
+        live2dContainer.style.right = 'auto';
         
         // 创建消息元素
         const messageDiv = document.createElement("div");
@@ -116,6 +116,7 @@ export default function Live2DTestPage() {
         
         console.log("设置全局变量完成");
         console.log("检查loadlive2d函数是否存在...");
+        // @ts-ignore - loadlive2d函数在live2d.js中定义，但TypeScript无法识别
         console.log("window.loadlive2d:", typeof window.loadlive2d);
         
         // 初始化Live2D - 使用README中的方式
@@ -152,7 +153,7 @@ export default function Live2DTestPage() {
       <h1>Live2D 测试页面</h1>
       <p>这个页面用于测试Live2D组件的加载和显示。</p>
       <p>请打开浏览器控制台查看加载日志。</p>
-      <p>Live2D模型应该在页面右下角显示。</p>
+      <p>Live2D模型应该在页面左下角显示。</p>
     </div>
   );
 }
