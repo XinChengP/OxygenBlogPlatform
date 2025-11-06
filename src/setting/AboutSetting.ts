@@ -5,16 +5,16 @@ export const AnimationText = "进步"; //动画字
 export const isRainbowGradient = true; //控制 BeforeAnimationText 的颜色效果，观察是否开启彩虹渐变
 
 //个人信息部分配置
-const AVATAR_FILENAME = "avatar.jpg"; //头像配置，头像需要放进public文件夹内，这里只写文件名和后缀
+const AVATAR_FILENAME = "星球卑.jpg"; //头像配置，头像需要放进public文件夹内，这里只写文件名和后缀
 //处理头像路径的函数(无需修改)
 export const getAvatarPath = (): string => {
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
   return basePath ? `${basePath}/${AVATAR_FILENAME}` : `/${AVATAR_FILENAME}`;
 };
 export const isBorder = true; //控制头像边框是否显示
-export const name = "徐皓阳"; //名字
+export const name = "歆橙"; //名字
 export const slogan =
-  "在技术的海洋中探索，在代码的世界里创造，用文字记录成长的足迹"; //个人宣言
+  "开开心心每一天"; //个人宣言
 
 //https://simpleicons.org 图云的图标配置
 const slugs = [
@@ -55,7 +55,7 @@ export const images = slugs.map(
 // ];
 
 //关于我页面一二三段
-export const aboutMeP1 = "天津理工大学计算机科学与技术专业就读，2027年毕业 ";
+export const aboutMeP1 = "天津工业大学机械工程专业就读，2029年毕业 ";
 export const aboutMeP2 = "热爱技术，热爱生活，希望自己能创造更多价值 ";
 export const aboutMeP3 = "";
 
