@@ -466,7 +466,7 @@ export default function AboutPage() {
                       className="flex items-center justify-center w-12 h-12 rounded-lg mb-4 mx-auto group-hover:scale-110 transition-transform duration-300"
                       style={BilibiliIconStyle}
                     >
-                      <Image src={BilibiliIcon as string} alt="Bilibili" width={24} height={24} className="text-white" />
+                      <Image src={BilibiliIcon} alt="Bilibili" width={24} height={24} className="text-white" />
                     </div>
                     <h4 className="text-lg font-semibold text-gray-800 dark:text-white text-center mb-2">
                       哔哩哔哩
