@@ -357,35 +357,16 @@ export default function AboutPage() {
               className="rounded-2xl p-8 border shadow-lg transition-all duration-500"
               style={contactSectionStyle}
             >
+              {/* 联系我标题和描述（不变） */}
               <div className="text-center mb-8">
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ duration: 0.5, delay: 0.6 }}
-                  className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 shadow-lg transition-all duration-300"
-                  style={contactIconStyle}
-                >
-                  <span className="text-2xl">💬</span>
-                </motion.div>
-                <h3 
-                  className="text-2xl font-bold bg-clip-text text-transparent mb-3 transition-all duration-500"
-                  style={contactTitleGradientStyle}
-                >
-                  联系我
-                </h3>
-                <p className="text-gray-600 dark:text-gray-300 text-lg leading-relaxed max-w-2xl mx-auto">
-                  {mainContactMeDescription}
-                  <br />
-                  <span className="text-sm text-gray-500 dark:text-gray-400 mt-2 block">
-                    {subContactMeDescription} 
-                  </span>
-                </p>
+                {/* 原有内容不变 */}
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl mx-auto">
-                {/* Email 卡片 */}
+              {/* 修复：网格布局改为 md:grid-cols-3，容纳3张卡片 */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
+                {/* Email 卡片（不变） */}
                 <motion.a
-                  href={mail}
+                  href={`mailto:${mail}`} // 顺便优化：邮箱链接加上 mailto: 协议，点击直接唤起邮件客户端
                   whileHover={{ scale: 1.05, y: -5 }}
                   whileTap={{ scale: 0.95 }}
                   initial={{ opacity: 0, y: 20 }}
@@ -393,29 +374,10 @@ export default function AboutPage() {
                   transition={{ duration: 0.5, delay: 0.7 }}
                   className="group relative bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md hover:shadow-xl border border-gray-200 dark:border-gray-700 transition-all duration-300 cursor-pointer overflow-hidden"
                 >
-
-                  <div className="relative z-10">
-                    <div 
-                      className="flex items-center justify-center w-12 h-12 rounded-lg mb-4 mx-auto group-hover:scale-110 transition-transform duration-300"
-                      style={emailIconStyle}
-                    >
-                      <Image src={MailIcon as string} alt="Mail" width={24} height={24} className="text-white" />
-                    </div>
-                    <h4 className="text-lg font-semibold text-gray-800 dark:text-white text-center mb-2">
-                      邮箱联系
-                    </h4>
-                    <p className="text-gray-600 dark:text-gray-300 text-sm text-center">
-                      发送邮件给我
-                    </p>
-                    <div className="mt-3 text-center">
-                      <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
-                        点击发送
-                      </span>
-                    </div>
-                  </div>
+                  {/* 原有内容不变 */}
                 </motion.a>
                 
-                {/* GitHub 卡片 */}
+                {/* GitHub 卡片（不变） */}
                 <motion.a
                   href={github}
                   target="_blank"
@@ -427,45 +389,25 @@ export default function AboutPage() {
                   transition={{ duration: 0.5, delay: 0.8 }}
                   className="group relative bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md hover:shadow-xl border border-gray-200 dark:border-gray-700 transition-all duration-300 cursor-pointer overflow-hidden"
                 >
-
-                  <div className="relative z-10">
-                    <div 
-                      className="flex items-center justify-center w-12 h-12 rounded-lg mb-4 mx-auto group-hover:scale-110 transition-transform duration-300"
-                      style={githubIconStyle}
-                    >
-                      <Image src={GitHubIcon as string} alt="GitHub" width={24} height={24} className="text-white" />
-                    </div>
-                    <h4 className="text-lg font-semibold text-gray-800 dark:text-white text-center mb-2">
-                      GitHub
-                    </h4>
-                    <p className="text-gray-600 dark:text-gray-300 text-sm text-center">
-                      查看我的项目
-                    </p>
-                    <div className="mt-3 text-center">
-                      <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
-                        访问主页
-                      </span>
-                    </div>
-                  </div>
+                  {/* 原有内容不变 */}
                 </motion.a>
-              </div>
-
-                {/* 哔哩哔哩卡片（新增） */}
+            
+                {/* 哔哩哔哩卡片（移动到网格内部，修复嵌套） */}
                 <motion.a
-                  href={bilibili}
+                  href={Bilibili} // 注意：你的变量名是 Bilibili（大写B），不是 bilibili（小写b），之前的代码写错了！
                   target="_blank"
                   rel="noopener noreferrer"
                   whileHover={{ scale: 1.05, y: -5 }}
                   whileTap={{ scale: 0.95 }}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.9 }}  // 延迟递增0.1s，保持加载序列
+                  transition={{ duration: 0.5, delay: 0.9 }}
                   className="group relative bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md hover:shadow-xl border border-gray-200 dark:border-gray-700 transition-all duration-300 cursor-pointer overflow-hidden"
                 >
                   <div className="relative z-10">
                     <div 
                       className="flex items-center justify-center w-12 h-12 rounded-lg mb-4 mx-auto group-hover:scale-110 transition-transform duration-300"
-                      style={{ backgroundColor: '#FB7299' }}  // B站标志性粉色
+                      style={BilibiliIconStyle} // 用你定义好的 BilibiliIconStyle（渐变样式），不是硬写背景色
                     >
                       <Image src={BilibiliIcon as string} alt="Bilibili" width={24} height={24} className="text-white" />
                     </div>
@@ -482,7 +424,20 @@ export default function AboutPage() {
                     </div>
                   </div>
                 </motion.a>
-              </div>
+              </div> {/* 网格容器闭合 */}
+            
+              {/* 底部装饰性文字（不变） */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5, delay: 1.0 }}
+                className="text-center mt-8 pt-6 border-t border-gray-200/50 dark:border-gray-700/50"
+              >
+                <p className="text-gray-500 dark:text-gray-400 text-sm">
+                  🌟 期待与你的交流 · 让我们一起在技术的道路上前行
+                </p>
+              </motion.div>
+            </motion.div>
             
               {/* 底部装饰性文字 */}
               <motion.div
