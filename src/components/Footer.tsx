@@ -47,9 +47,9 @@ export default function Footer() {
             rel="noopener noreferrer"
             className="text-muted-foreground/70 hover:text-primary transition-colors duration-200 underline-offset-4 hover:underline"
           >
-            洛天依
+            世界第一吃货殿下
           </Link>
-          <span>驱动</span>
+          <span>提供动力（确信）</span>
         </p>
       </div>
     </footer>
