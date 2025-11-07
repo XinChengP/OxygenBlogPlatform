@@ -10,7 +10,6 @@ import { ClipboardIcon } from '@heroicons/react/24/outline';
 import CopyrightNotice from '@/components/CopyrightNotice';
 import OptimizedImage from '@/components/OptimizedImage';
 import TableOfContents from '@/components/TableOfContents';
-import TwikooComments from '@/components/TwikooComments';
 import 'katex/dist/katex.min.css';
 import { EndWord } from '@/setting/blogSetting';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
@@ -214,7 +213,6 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
   const { theme } = useTheme();
   const { containerStyle } = useBackgroundStyle('blog-detail');
   const [copiedCode, setCopiedCode] = React.useState<string>('');
-  const [commentCount, setCommentCount] = React.useState<number>(0);
 
   // 复制代码功能
   const copyToClipboard = (code: string) => {
@@ -264,14 +262,6 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                 </svg>
                 <span>{blog.readTime} 分钟阅读</span>
               </div>
-              {commentCount > 0 && (
-                <div className="flex items-center gap-1">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
-                  </svg>
-                  <span>{commentCount} 条评论</span>
-                </div>
-              )}
             </div>
             {blog.tags.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-3">
@@ -531,22 +521,6 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
             slug={blog.slug}
             reference={blog.reference}
           />
-          
-          {/* 评论区域 */}
-          <motion.div 
-            className="mt-12"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.7 }}
-          >
-            <div className="bg-card rounded-lg shadow-sm p-6 md:p-8">
-              <h3 className="text-xl font-semibold mb-6 text-foreground">评论区</h3>
-              <TwikooComments 
-                path={`/blogs/${blog.slug}`}
-                onCommentCountChange={setCommentCount}
-              />
-            </div>
-          </motion.div>
           
           {/* 文章底部导航 */}
           <motion.div 
