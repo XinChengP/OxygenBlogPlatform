@@ -15,19 +15,58 @@ import ThemeToggle from './ThemeToggle';
 export default function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+  const [isHovering, setIsHovering] = useState(false);
   const pathname = usePathname();
   const { navigationStyle } = useBackgroundStyle('home');
 
   /**
-   * 监听滚动事件，添加滚动效果
+   * 监听滚动事件，添加滚动效果和隐藏/显示逻辑
    */
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
+      const currentScrollY = window.scrollY;
+      
+      // 设置滚动状态
+      setIsScrolled(currentScrollY > 10);
+      
+      // 如果鼠标悬停在顶部区域，始终显示导航栏
+      if (isHovering) {
+        setIsVisible(true);
+      } else {
+        // 向下滚动超过100px时隐藏导航栏
+        if (currentScrollY > lastScrollY && currentScrollY > 100) {
+          setIsVisible(false);
+        } 
+        // 向上滚动时显示导航栏
+        else if (currentScrollY < lastScrollY) {
+          setIsVisible(true);
+        }
+      }
+      
+      setLastScrollY(currentScrollY);
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
+  }, [lastScrollY, isHovering]);
+
+  /**
+   * 监听鼠标移动，检测是否在页面顶部区域
+   */
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      // 当鼠标在页面顶部50px区域内时，显示导航栏
+      if (e.clientY <= 50) {
+        setIsHovering(true);
+      } else {
+        setIsHovering(false);
+      }
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
   /**
@@ -63,7 +102,13 @@ export default function Navigation() {
   };
   
   return (
-    <nav className={navigationStyle.className} style={navigationStyle.style}>
+    <motion.nav 
+      className={navigationStyle.className} 
+      style={navigationStyle.style}
+      initial={{ y: 0 }}
+      animate={{ y: isVisible ? 0 : -100 }}
+      transition={{ duration: 0.3, ease: "easeInOut" }}
+    >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
@@ -121,27 +166,35 @@ export default function Navigation() {
         </div>
         
         {/* Mobile menu */}
-        <div className={`md:hidden transition-all duration-300 ease-in-out overflow-hidden ${
-          isMenuOpen ? 'max-h-64 opacity-100' : 'max-h-0 opacity-0'
-        }`}>
-          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={closeMobileMenu}
-                className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
-                  pathname === item.href
-                    ? 'text-primary dark:text-primary'
-                    : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary hover:bg-gray-50/80 dark:hover:bg-gray-800/50'
-                }`}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </div>
-        </div>
+        <AnimatePresence>
+          {isMenuOpen && (
+            <motion.div 
+              className="md:hidden overflow-hidden"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+            >
+              <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                {navItems.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={closeMobileMenu}
+                    className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                      pathname === item.href
+                        ? 'text-primary dark:text-primary'
+                        : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary hover:bg-gray-50/80 dark:hover:bg-gray-800/50'
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
-    </nav>
+    </motion.nav>
   );
 }

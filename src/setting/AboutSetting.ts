@@ -1,7 +1,7 @@
 //主标题部分配置
-export const title = "关于我"; //主标题
-export const BeforeAnimationText = "持续 "; //在动画字前面的字
-export const AnimationText = "进步"; //动画字
+export const title = "关于"; //主标题
+export const BeforeAnimationText = "Keep "; //在动画字前面的字
+export const AnimationText = "Going"; //动画字
 export const isRainbowGradient = true; //控制 BeforeAnimationText 的颜色效果，观察是否开启彩虹渐变
 
 //个人信息部分配置
