@@ -10,6 +10,7 @@ import { ClipboardIcon } from '@heroicons/react/24/outline';
 import CopyrightNotice from '@/components/CopyrightNotice';
 import OptimizedImage from '@/components/OptimizedImage';
 import TableOfContents from '@/components/TableOfContents';
+import TwikooComments from '@/components/TwikooComments';
 import 'katex/dist/katex.min.css';
 import { EndWord } from '@/setting/blogSetting';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
@@ -198,217 +199,157 @@ interface LinkProps {
  * - 使用 framer-motion 提供动画效果
  * - 使用 ReactMarkdown 渲染 Markdown 格式的文章内容
  * - 支持语法高亮显示代码块
- * - 包含返回博客列表的导航链接
- * - 响应式设计，适配不同屏幕尺寸
- * - 支持深色模式
+ * - 支持数学公式渲染
+ * - 支持图片优化显示
+ * - 支持目录导航
+ * - 支持评论系统
+ * - 支持主题切换
+ * - 支持复制代码功能
+ * - 支持响应式布局
  * 
  * @param blog - 博客文章数据
- * @returns 渲染的博客详情页面
+ * @returns JSX 元素
  */
-export function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
-  const { containerStyle, isBackgroundEnabled } = useBackgroundStyle('blog-detail');
-  const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme === 'dark';
-  
-  // 毛玻璃样式函数
-  const getGlassStyle = (baseClasses: string) => {
-    if (isBackgroundEnabled) {
-      return `${baseClasses} backdrop-blur-md bg-card/80 supports-[backdrop-filter]:bg-card/60 border-border/50`;
-    }
-    return `bg-card ${baseClasses} border-border`;
+export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
+  const { theme } = useTheme();
+  const { backgroundStyle } = useBackgroundStyle();
+  const [copiedCode, setCopiedCode] = React.useState<string>('');
+  const [commentCount, setCommentCount] = React.useState<number>(0);
+
+  // 复制代码功能
+  const copyToClipboard = (code: string) => {
+    navigator.clipboard.writeText(code).then(() => {
+      setCopiedCode(code);
+      setTimeout(() => setCopiedCode(''), 2000);
+    });
   };
-  
+
+  // 语法高亮主题
+  const syntaxTheme = theme === 'dark' ? oneDark : oneLight;
+
   return (
-    <div className={containerStyle.className} style={containerStyle.style}>
-      {/* 目录组件 */}
-      <TableOfContents content={blog.content} />
-      
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 md:pr-72">
+    <div className="min-h-screen transition-colors duration-300" style={backgroundStyle}>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
+          transition={{ duration: 0.5 }}
         >
-          <Link 
-            href="/blogs" 
-            className="inline-flex items-center text-primary hover:text-primary/80 mb-8 transition-colors"
-          >
-            ← 返回博客列表
-          </Link>
-          
           {/* 文章头部信息 */}
-          <motion.div 
-            className="mb-8"
-            initial={{ opacity: 0, y: 10 }}
+          <motion.header 
+            className="mb-10"
+            initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
+            transition={{ duration: 0.5 }}
           >
-            <h1 className="text-4xl font-bold text-foreground mb-4">
+            <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4 leading-tight">
               {blog.title}
             </h1>
-            <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-500">
-              <span>{blog.date}</span>
-              <span>•</span>
-              <span className="bg-primary/10 text-primary px-2 py-1 rounded border border-primary/20">
-                {blog.category}
-              </span>
-              <span>•</span>
-              <span>预计阅读时间{blog.readTime}分钟</span>
+            <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+              <div className="flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                </svg>
+                <span>{blog.date}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a3 3 0 013-3h5c.256 0 .512.098.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                </svg>
+                <span>{blog.category}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                </svg>
+                <span>{blog.readTime} 分钟阅读</span>
+              </div>
+              {commentCount > 0 && (
+                <div className="flex items-center gap-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
+                  </svg>
+                  <span>{commentCount} 条评论</span>
+                </div>
+              )}
             </div>
             {blog.tags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-4">
-                {blog.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm rounded border border-gray-200 dark:border-gray-700"
+              <div className="flex flex-wrap gap-2 mt-3">
+                {blog.tags.map((tag, index) => (
+                  <span 
+                    key={index} 
+                    className="px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium"
                   >
-                    #{tag}
+                    {tag}
                   </span>
                 ))}
               </div>
             )}
+          </motion.header>
+
+          {/* 目录导航 */}
+          <motion.div 
+            className="mb-8"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <TableOfContents content={blog.content} />
           </motion.div>
-          
+
           {/* 文章内容 */}
           <motion.article 
-            className={getGlassStyle("rounded-lg shadow-md overflow-hidden border")}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
+            className="prose prose-lg dark:prose-invert max-w-none"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
           >
-            <div className="p-8">
-              <div className="prose prose-lg max-w-none dark:prose-invert">
+            <div className="bg-card rounded-lg shadow-sm p-6 md:p-8">
+              <div className="prose prose-lg dark:prose-invert max-w-none">
                 <LazyMarkdown
                   content={blog.content}
                   components={{
-                     p({ children, ...props }: ComponentProps) {
-                       const childrenArray = React.Children.toArray(children);
-                       
-                       // 检查是否包含块级元素（div、组件等）
-                       const hasBlockElements = childrenArray.some(child => {
-                         if (React.isValidElement(child)) {
-                           // 检查是否是 div 元素或其他块级HTML元素
-                           if (typeof child.type === 'string') {
-                             const blockElements = ['div', 'section', 'article', 'header', 'footer', 'nav', 'aside', 'main', 'figure', 'figcaption', 'blockquote', 'pre', 'table', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
-                             return blockElements.includes(child.type);
-                           }
-                           // 检查是否是React组件（函数组件或类组件）
-                           if (typeof child.type === 'function' || typeof child.type === 'object') {
-                             return true;
-                           }
-                         }
-                         return false;
-                       });
-                       
-                       // 如果包含块级元素或React组件，直接返回子元素而不包裹在p标签中
-                       if (hasBlockElements) {
-                         return <>{children}</>;
-                       }
-                       
-                       return (
-                         <p className="my-4 leading-relaxed text-gray-700 dark:text-gray-300" {...props}>
-                           {children}
-                         </p>
-                       );
-                     },
-                     pre: ({ children, ...props }: ComponentProps) => (
-                       <pre {...props} className={`relative group my-6 rounded-lg text-sm p-0 overflow-hidden ${
-                         isDark ? 'bg-gray-800 dark:bg-gray-900' : 'bg-gray-100 border border-gray-300'
-                       }`}>
-                         {children}
-                       </pre>
-                     ),
-                     code({ inline, className, children, ...props }: {
-                       inline?: boolean;
-                       className?: string;
-                       children?: React.ReactNode;
-                       [key: string]: any;
-                     }) {
-                       // 提取纯文本内容，避免复杂的React元素结构
-                        const getTextContent = (node: React.ReactNode): string => {
-                          if (typeof node === 'string') return node;
-                          if (typeof node === 'number') return String(node);
-                          if (Array.isArray(node)) return node.map(getTextContent).join('');
-                          if (node && typeof node === 'object' && 'props' in node) {
-                            const reactElement = node as React.ReactElement<{ children?: React.ReactNode }>;
-                            return getTextContent(reactElement.props.children);
-                          }
-                          return '';
-                        };
-
-                       const textContent = getTextContent(children);
-                       const match = /language-(\w+)/.exec(className || '');
-                       const rawLanguage = match ? match[1] : 'text';
-                       const language = normalizeLanguage(rawLanguage);
-                       const codeContent = textContent.replace(/\n$/, '');
-
-                       // 智能判断行内代码：
-                       // 1. 明确标记为inline的
-                       // 2. 没有语言类名、内容简短且不包含换行符的（真正的行内代码）
-                       // 3. 排除无语言代码块：即使没有className，如果内容包含换行符或来自pre标签，则为块级代码
-                       const hasLanguageClass = className && className.startsWith('language-');
-                       const isShortContent = codeContent.length < 100 && !codeContent.includes('\n');
-                       const isInlineCode = inline || (!hasLanguageClass && !className && isShortContent);
-
-                       // 行内代码：只渲染纯文本，不包含任何块级元素
-                       if (isInlineCode) {
-                         return (
-                           <code 
-                             className="font-mono text-sm bg-accent/10 text-accent px-1.5 py-0.5 rounded-sm inline border border-accent/20 break-words" 
-                             {...props}
-                           >
-                             {textContent}
-                           </code>
-                         );
-                       }
-
-                       // 块级代码：包含语法高亮和UI元素
-                       return (
-                         <div className="relative">
-                           {/* 代码块头部 - 包含语言标签和复制按钮 */}
-                           <div className={`flex justify-between items-center px-4 py-2 rounded-t-lg border-b ${
-                             isDark 
-                               ? 'bg-gray-650 border-gray-700 text-gray-300' 
-                               : 'bg-gray-100 border-gray-300 text-gray-700'
-                           }`}>
-                             <span className="text-xs font-medium select-none">
-                               {getLanguageDisplayName(language)}
-                             </span>
-                             <button
-                               onClick={() => navigator.clipboard.writeText(codeContent)}
-                               className={`p-1.5 rounded-md transition-colors duration-200 ${
-                                 isDark
-                                   ? 'text-gray-300 hover:text-white bg-gray-700 hover:bg-gray-600'
-                                   : 'text-gray-600 hover:text-gray-800 bg-gray-200 hover:bg-gray-300'
-                               }`}
-                               title="复制代码"
-                             >
-                               <ClipboardIcon className="w-4 h-4" />
-                             </button>
-                           </div>
-                           <SyntaxHighlighter
-                             style={isDark ? oneDark : oneLight}
-                             language={language}
-                             PreTag="code"
-                             customStyle={{
-                               margin: 0,
-                               padding: '1.25rem',
-                               backgroundColor: 'transparent',
-                               borderRadius: '0 0 0.5rem 0.5rem',
-                               fontSize: '0.875rem',
-                               display: 'block',
-                             }}
-                             codeTagProps={{
-                               style: {
-                                 fontFamily: 'var(--font-mono)',
-                               },
-                             }}
-                           >
-                             {codeContent}
-                           </SyntaxHighlighter>
-                         </div>
-                       );
-                     },
+                    // 代码块渲染
+                    code({ node, inline, className, children, ...props }: any) {
+                      const match = /language-(\w+)/.exec(className || '');
+                      const language = match ? normalizeLanguage(match[1]) : '';
+                      
+                      if (!inline && language) {
+                        return (
+                          <div className="relative">
+                            <div className="flex justify-between items-center bg-gray-100 dark:bg-gray-800 px-4 py-2 text-sm text-gray-600 dark:text-gray-400 rounded-t-lg">
+                              <span>{getLanguageDisplayName(language)}</span>
+                              <button
+                                onClick={() => copyToClipboard(String(children).replace(/\n$/, ''))}
+                                className="flex items-center gap-1 hover:text-primary transition-colors"
+                                title="复制代码"
+                              >
+                                <ClipboardIcon className="h-4 w-4" />
+                                <span>{copiedCode === String(children).replace(/\n$/, '') ? '已复制!' : '复制'}</span>
+                              </button>
+                            </div>
+                            <div className="rounded-b-lg overflow-hidden">
+                              <SyntaxHighlighter
+                                style={syntaxTheme}
+                                language={language}
+                                PreTag="div"
+                                {...props}
+                              >
+                                {String(children).replace(/\n$/, '')}
+                              </SyntaxHighlighter>
+                            </div>
+                          </div>
+                        );
+                      }
+                      
+                      // 行内代码
+                      return (
+                        <code className="px-1 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded text-sm font-mono" {...props}>
+                          {children}
+                        </code>
+                      );
+                    },
+                    // 引用块
                     blockquote({ children }: ComponentProps) {
                        return (
                          <blockquote className="border-l-4 border-primary bg-primary/5 p-4 my-4 rounded-r-lg">
@@ -419,6 +360,7 @@ export function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                          </blockquote>
                        );
                      },
+                     // 表格
                      table({ children }: ComponentProps) {
                        return (
                          <div className="overflow-x-auto my-6">
@@ -463,6 +405,7 @@ export function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                           </td>
                         );
                       },
+                      // 标题
                       h1({ children }: ComponentProps) {
                        const id = typeof children === 'string' ? 
                          children.toLowerCase().replace(/[^\w\u4e00-\u9fff\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') :
@@ -523,6 +466,7 @@ export function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                          </h6>
                        );
                      },
+                     // 列表
                      ol({ children }: any) {
                        return (
                          <ol className="list-decimal list-outside ml-6 my-4 space-y-2 text-gray-700 dark:text-gray-300 break-words">
@@ -544,6 +488,7 @@ export function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                          </li>
                        );
                      },
+                     // 链接
                      a({ href, children }: LinkProps) {
                        return (
                          <a 
@@ -556,6 +501,7 @@ export function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                          </a>
                        );
                      },
+                     // 图片
                      img({ src, alt, title }: { src?: string; alt?: string; title?: string }) {
                        if (!src) return null;
                        
@@ -583,12 +529,28 @@ export function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
             reference={blog.reference}
           />
           
+          {/* 评论区域 */}
+          <motion.div 
+            className="mt-12"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.7 }}
+          >
+            <div className="bg-card rounded-lg shadow-sm p-6 md:p-8">
+              <h3 className="text-xl font-semibold mb-6 text-foreground">评论区</h3>
+              <TwikooComments 
+                path={`/blogs/${blog.slug}`}
+                onCommentCountChange={setCommentCount}
+              />
+            </div>
+          </motion.div>
+          
           {/* 文章底部导航 */}
           <motion.div 
             className="mt-12 flex justify-between items-center"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
+            transition={{ duration: 0.6, delay: 0.8 }}
           >
             <Link 
               href="/blogs" 
