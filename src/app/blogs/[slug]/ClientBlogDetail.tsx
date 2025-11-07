@@ -13,6 +13,7 @@ import TableOfContents from '@/components/TableOfContents';
 import TwikooComments from '@/components/TwikooComments';
 import GiscusComments from '@/components/GiscusComments';
 import LocalComments from '@/components/LocalComments';
+import ScrollToTop from '@/components/ScrollToTop';
 import 'katex/dist/katex.min.css';
 import { EndWord } from '@/setting/blogSetting';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
@@ -215,7 +216,7 @@ interface LinkProps {
 export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
   const { theme } = useTheme();
   const { containerStyle } = useBackgroundStyle('blog-detail');
-  const [copiedCode, setCopiedCode] = React.useState<string>('');
+  const [copiedCode, setCopiedCode] = useState<string>('');
   const [commentSystem, setCommentSystem] = useState<'twikoo' | 'giscus' | 'local'>('local');
 
   // 复制代码功能
@@ -625,6 +626,9 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
           </motion.div>
         </motion.div>
       </div>
+      
+      {/* 添加页面滚动导航组件 */}
+      <ScrollToTop />
     </div>
   );
 }

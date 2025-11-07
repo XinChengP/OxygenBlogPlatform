@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
-import ThemeToggle from './ThemeToggle';
 import { emojy, name } from '@/setting/NavigationSetting';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
+import ThemeToggle from './ThemeToggle';
 
 /**
  * 导航栏组件
@@ -89,6 +89,7 @@ export default function Navigation() {
                 </Link>
               ))}
             </div>
+            
             {/* 主题切换按钮 */}
             <div className="flex items-center">
               <ThemeToggle />

@@ -16,6 +16,7 @@ from '@/setting/AboutSetting';
 import { useTheme } from 'next-themes';
 import { useMemo, useEffect, useState } from 'react';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
+import ScrollToTop from '@/components/ScrollToTop';
 
 /**
  * 关于页面组件
@@ -505,6 +506,9 @@ export default function AboutPage() {
           </p>
         </div>
       </div>
+      
+      {/* 添加页面滚动导航组件 */}
+      <ScrollToTop />
     </div>
   );
 }
