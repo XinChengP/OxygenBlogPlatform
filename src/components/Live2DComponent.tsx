@@ -1,12 +1,28 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+
+// 声明全局变量类型
+declare global {
+  interface Window {
+    loadlive2d: (id: string, path: string) => void;
+    message_Path: string;
+    home_Path: string;
+    getsong?: () => void;
+  }
+}
 
 export default function Live2DComponent() {
+  const isInitialized = useRef(false);
+
   useEffect(() => {
+    // 防止重复初始化
+    if (isInitialized.current) return;
+    isInitialized.current = true;
+
     // 动态加载Live2D相关脚本
-    const loadScript = (src: string) => {
-      return new Promise<void>((resolve, reject) => {
+    const loadScript = (src: string): Promise<void> => {
+      return new Promise((resolve, reject) => {
         const script = document.createElement("script");
         script.src = src;
         script.onload = () => resolve();
@@ -15,8 +31,8 @@ export default function Live2DComponent() {
       });
     };
 
-    const loadCSS = (href: string) => {
-      return new Promise<void>((resolve, reject) => {
+    const loadCSS = (href: string): Promise<void> => {
+      return new Promise((resolve, reject) => {
         const link = document.createElement("link");
         link.rel = "stylesheet";
         link.href = href;
@@ -90,9 +106,7 @@ export default function Live2DComponent() {
         singButton.innerText = "Sing";
         singButton.onclick = () => {
           // 尝试调用getsong函数
-          // @ts-expect-error - getsong函数在message.js中定义，但TypeScript无法识别
           if (typeof window.getsong === "function") {
-            // @ts-expect-error - getsong函数在message.js中定义，但TypeScript无法识别
             window.getsong();
           }
         };
@@ -106,28 +120,22 @@ export default function Live2DComponent() {
 
         // 设置全局变量 - 按照live2d.html中的示例
         console.log("设置全局变量");
-        // @ts-expect-error - message_Path是Live2D脚本所需的全局变量
         window.message_Path = '/luotianyi-live2d/live2d/';
-        // @ts-expect-error - home_Path是Live2D脚本所需的全局变量
         window.home_Path = window.location.origin + '/';
         
         // 初始化Live2D - 使用README中的方式
         console.log("初始化Live2D模型");
-        // @ts-expect-error - loadlive2d函数在live2d.js中定义，但TypeScript无法识别
         if (typeof window.loadlive2d === "function") {
           console.log("调用loadlive2d函数");
-          // @ts-expect-error - loadlive2d函数在live2d.js中定义，但TypeScript无法识别
           window.loadlive2d("live2d", "/luotianyi-live2d/live2d/model/tianyi/model.json");
         } else {
           console.error("loadlive2d function not found");
         }
 
       } catch (error) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
         console.error("Failed to initialize Live2D:", error);
         // 安全地访问error对象的stack属性
         if (error instanceof Error) {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
           console.error("错误详情:", error.stack);
         } else {
           console.error("错误详情:", String(error));
@@ -137,16 +145,16 @@ export default function Live2DComponent() {
 
     // 延迟初始化，确保页面完全加载
     const timer = setTimeout(initLive2D, 1000);
-
+    
     return () => {
       clearTimeout(timer);
-      // 清理Live2D相关元素
-      const container = document.getElementById("landlord");
-      if (container) {
-        container.remove();
+      // 清理Live2D元素
+      const live2dContainer = document.getElementById("landlord");
+      if (live2dContainer) {
+        document.body.removeChild(live2dContainer);
       }
     };
   }, []);
 
-  return null; // 这个组件不需要渲染任何内容，它只是初始化Live2D
+  return null; // 这个组件只负责初始化Live2D，不渲染任何内容
 }

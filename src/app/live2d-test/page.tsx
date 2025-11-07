@@ -93,13 +93,11 @@ export default function Live2DTestPage() {
         singButton.id = "sing-button";
         singButton.innerText = "Sing";
         singButton.onclick = () => {
-          // 尝试调用getsong函数
-          // @ts-expect-error - getsong函数在message.js中定义，但TypeScript无法识别
-          if (typeof window.getsong === "function") {
-            // @ts-expect-error - getsong函数在message.js中定义，但TypeScript无法识别
-            window.getsong();
-          }
-        };
+        // 尝试调用getsong函数
+        if (typeof window.getsong === "function") {
+          window.getsong();
+        }
+      };
         
         live2dContainer.appendChild(messageDiv);
         live2dContainer.appendChild(canvas);
@@ -109,21 +107,16 @@ export default function Live2DTestPage() {
         document.body.appendChild(live2dContainer);
 
         // 设置全局变量 - 按照live2d.html中的示例
-        // @ts-expect-error - message_Path是Live2D脚本所需的全局变量
         window.message_Path = '/luotianyi-live2d/live2d/';
-        // @ts-expect-error - home_Path是Live2D脚本所需的全局变量
         window.home_Path = window.location.origin + '/';
         
         console.log("设置全局变量完成");
         console.log("检查loadlive2d函数是否存在...");
-        // @ts-expect-error - loadlive2d函数在live2d.js中定义，但TypeScript无法识别
         console.log("window.loadlive2d:", typeof window.loadlive2d);
         
         // 初始化Live2D - 使用README中的方式
-        // @ts-expect-error - loadlive2d函数在live2d.js中定义，但TypeScript无法识别
         if (typeof window.loadlive2d === "function") {
           console.log("调用loadlive2d函数...");
-          // @ts-expect-error - loadlive2d函数在live2d.js中定义，但TypeScript无法识别
           window.loadlive2d("live2d", "/luotianyi-live2d/live2d/model/tianyi/model.json");
           console.log("loadlive2d函数调用完成");
         } else {
@@ -131,11 +124,9 @@ export default function Live2DTestPage() {
         }
 
       } catch (error) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
         console.error("Failed to initialize Live2D:", error);
         // 安全地访问error对象的stack属性
         if (error instanceof Error) {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
           console.error("错误详情:", error.stack);
         } else {
           console.error("错误详情:", String(error));
