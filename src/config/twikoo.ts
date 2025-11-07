@@ -203,66 +203,6 @@ export const TWIKOO_CONFIG = {
     enableMaliciousAudioFilter: true,
     
     // 是否启用评论恶意文件过滤
-    enableMaliciousFileFilter: true,
-    
-    // 是否启用评论恶意链接过滤
-    enableMaliciousLinkFilter: true,
-    
-    // 是否启用评论恶意脚本过滤
-    enableMaliciousScriptFilter: true,
-    
-    // 是否启用评论恶意代码过滤
-    enableMaliciousCodeFilter: true,
-    
-    // 是否启用评论恶意内容过滤
-    enableMaliciousContentFilter: true,
-    
-    // 是否启用评论恶意行为过滤
-    enableMaliciousBehaviorFilter: true,
-    
-    // 是否启用评论恶意用户过滤
-    enableMaliciousUserFilter: true,
-    
-    // 是否启用评论恶意IP过滤
-    enableMaliciousIPFilter: true,
-    
-    // 是否启用评论恶意设备过滤
-    enableMaliciousDeviceFilter: true,
-    
-    // 是否启用评论恶意浏览器过滤
-    enableMaliciousBrowserFilter: true,
-    
-    // 是否启用评论恶意操作系统过滤
-    enableMaliciousOSFilter: true,
-    
-    // 是否启用评论恶意地理位置过滤
-    enableMaliciousLocationFilter: true,
-    
-    // 是否启用评论恶意时间过滤
-    enableMaliciousTimeFilter: true,
-    
-    // 是否启用评论恶意频率过滤
-    enableMaliciousFrequencyFilter: true,
-    
-    // 是否启用评论恶意长度过滤
-    enableMaliciousLengthFilter: true,
-    
-    // 是否启用评论恶意字符过滤
-    enableMaliciousCharacterFilter: true,
-    
-    // 是否启用评论恶意表情过滤
-    enableMaliciousEmojiFilter: true,
-    
-    // 是否启用评论恶意图片过滤
-    enableMaliciousImageFilter: true,
-    
-    // 是否启用评论恶意视频过滤
-    enableMaliciousVideoFilter: true,
-    
-    // 是否启用评论恶意音频过滤
-    enableMaliciousAudioFilter: true,
-    
-    // 是否启用评论恶意文件过滤
     enableMaliciousFileFilter: true
   }
 };

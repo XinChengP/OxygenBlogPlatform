@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
-import { ClientBlogDetail } from '@/app/blogs//[slug]/ClientBlogDetail';
+import ClientBlogDetail from '@/app/blogs/[slug]/ClientBlogDetail';
 import 'highlight.js/styles/github-dark.css';
 import { formatBlogDate, calculateReadingTime } from '@/lib/utils';
 import { notFound } from 'next/navigation';

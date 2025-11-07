@@ -212,7 +212,7 @@ interface LinkProps {
  */
 export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
   const { theme } = useTheme();
-  const { backgroundStyle } = useBackgroundStyle();
+  const { containerStyle } = useBackgroundStyle('blog-detail');
   const [copiedCode, setCopiedCode] = React.useState<string>('');
   const [commentCount, setCommentCount] = React.useState<number>(0);
 
@@ -228,7 +228,7 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
   const syntaxTheme = theme === 'dark' ? oneDark : oneLight;
 
   return (
-    <div className="min-h-screen transition-colors duration-300" style={backgroundStyle}>
+    <div className={containerStyle.className} style={containerStyle.style}>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -310,9 +310,11 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                   content={blog.content}
                   components={{
                     // 代码块渲染
-                    code({ node, inline, className, children, ...props }: any) {
+                    /* eslint-disable @typescript-eslint/no-unsafe-argument */
+                    code({ inline, className, children, ...props }: any) {
                       const match = /language-(\w+)/.exec(className || '');
                       const language = match ? normalizeLanguage(match[1]) : '';
+                      const childrenString = String(children || '').replace(/\n$/, '');
                       
                       if (!inline && language) {
                         return (
@@ -320,12 +322,12 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                             <div className="flex justify-between items-center bg-gray-100 dark:bg-gray-800 px-4 py-2 text-sm text-gray-600 dark:text-gray-400 rounded-t-lg">
                               <span>{getLanguageDisplayName(language)}</span>
                               <button
-                                onClick={() => copyToClipboard(String(children).replace(/\n$/, ''))}
+                                onClick={() => copyToClipboard(childrenString)}
                                 className="flex items-center gap-1 hover:text-primary transition-colors"
                                 title="复制代码"
                               >
                                 <ClipboardIcon className="h-4 w-4" />
-                                <span>{copiedCode === String(children).replace(/\n$/, '') ? '已复制!' : '复制'}</span>
+                                <span>{copiedCode === childrenString ? '已复制!' : '复制'}</span>
                               </button>
                             </div>
                             <div className="rounded-b-lg overflow-hidden">
@@ -335,7 +337,7 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                                 PreTag="div"
                                 {...props}
                               >
-                                {String(children).replace(/\n$/, '')}
+                                {childrenString}
                               </SyntaxHighlighter>
                             </div>
                           </div>
@@ -349,6 +351,7 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                         </code>
                       );
                     },
+                    /* eslint-enable @typescript-eslint/no-unsafe-argument */
                     // 引用块
                     blockquote({ children }: ComponentProps) {
                        return (
