@@ -4,7 +4,6 @@ import "./globals.css";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import BackgroundLayer from "@/components/BackgroundLayer";
-import Live2DComponent from "@/components/Live2DComponent";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { webTitle, webDescription } from "@/setting/WebSetting";
 
@@ -131,7 +130,6 @@ export default function RootLayout({
             {children}
           </main>
           <Footer />
-          <Live2DComponent />
         </ThemeProvider>
       </body>
     </html>

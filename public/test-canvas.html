@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live2D简单测试</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+        #live2d-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 280px;
+            height: 320px;
+        }
+        #live2d {
+            width: 100%;
+            height: 100%;
+            border: 1px solid #ccc;
+        }
+        .info {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <h1>Live2D简单测试页面</h1>
+    <p>这个页面用于测试canvas绘制是否正常工作。</p>
+    
+    <div id="live2d-container">
+        <canvas id="live2d" width="280" height="320"></canvas>
+        <div class="info">洛天依 Live2D</div>
+    </div>
+
+    <script>
+        // 等待页面加载完成
+        window.addEventListener('load', function() {
+            console.log('Window loaded');
+            
+            const canvas = document.getElementById('live2d');
+            console.log('Canvas element:', canvas);
+            
+            if (!canvas) {
+                console.error('Canvas element not found');
+                return;
+            }
+            
+            const ctx = canvas.getContext('2d');
+            console.log('2D context:', ctx);
+            
+            if (!ctx) {
+                console.error('Failed to get 2D context');
+                return;
+            }
+            
+            console.log('Starting animation');
+            
+            // 绘制简单的洛天依形象
+            function drawCharacter() {
+                const time = Date.now() * 0.001;
+                
+                // 清除画布
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // 绘制简单的洛天依形象
+                ctx.save();
+                
+                // 身体
+                ctx.fillStyle = '#66CCFF'; // 天依蓝
+                ctx.beginPath();
+                ctx.ellipse(140, 200, 60, 80, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 头部
+                ctx.beginPath();
+                ctx.arc(140, 100, 50, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 头发
+                ctx.fillStyle = '#3BA0D0';
+                ctx.beginPath();
+                ctx.ellipse(140, 80, 55, 40, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 眼睛
+                ctx.fillStyle = '#000';
+                ctx.beginPath();
+                ctx.arc(120, 100, 5, 0, Math.PI * 2);
+                ctx.arc(160, 100, 5, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 嘴巴
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(140, 120, 10, 0, Math.PI);
+                ctx.stroke();
+                
+                // 手臂
+                ctx.fillStyle = '#66CCFF';
+                ctx.save();
+                ctx.translate(140, 160);
+                ctx.rotate(Math.sin(time) * 0.2);
+                ctx.fillRect(-70, -10, 20, 60);
+                ctx.fillRect(50, -10, 20, 60);
+                ctx.restore();
+                
+                ctx.restore();
+            }
+            
+            // 动画循环
+            function animate() {
+                drawCharacter();
+                requestAnimationFrame(animate);
+            }
+            
+            // 开始动画
+            animate();
+        });
+    </script>
+</body>
+</html>
