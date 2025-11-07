@@ -33,34 +33,83 @@ export default function TwikooComments({ id }: TwikooCommentsProps) {
         // 如果已经初始化过，不再重复初始化
         if (isInitialized.current) return;
         
-        // 动态加载 Twikoo 脚本
-        const script = document.createElement('script');
-        script.src = 'https://cdn.staticfile.org/twikoo/1.6.39/twikoo.all.min.js';
-        script.async = true;
-        
-        script.onload = () => {
-          // 脚本加载完成后初始化 Twikoo
-          if ((window as any).twikoo && twikooRef.current) {
-            (window as any).twikoo.init({
-              envId: 'https://twikoo.vercel.app', // 替换为您的 Twikoo 环境ID
-              el: '#tcomment', // 评论容器的元素ID
-              lang: 'zh-CN', // 语言设置
-              // 主题设置，根据当前主题自动切换
-              onCommentLoaded: () => {
-                console.log('Twikoo 评论加载完成');
-                
-                // 应用主题样式
-                applyThemeStyles();
-              }
-            });
-            
-            isInitialized.current = true;
-          }
-        };
-        
-        document.head.appendChild(script);
+        // 检查 Twikoo 是否已经加载
+        if (!(window as any).twikoo) {
+          // 动态加载 Twikoo 脚本
+          const script = document.createElement('script');
+          // 使用 unpkg CDN 作为备选
+          script.src = 'https://unpkg.com/twikoo@1.6.39/dist/twikoo.all.min.js';
+          script.async = true;
+          
+          script.onerror = () => {
+            console.error('Twikoo 脚本加载失败，尝试备用 CDN');
+            // 尝试备用 CDN
+            const backupScript = document.createElement('script');
+            backupScript.src = 'https://cdn.staticfile.org/twikoo/1.6.39/twikoo.all.min.js';
+            backupScript.async = true;
+            backupScript.onload = () => {
+              initTwikoo();
+            };
+            backupScript.onerror = () => {
+              console.error('所有 CDN 加载失败');
+              twikooRef.current!.innerHTML = '<div class="text-red-500">评论加载失败，请刷新页面重试</div>';
+            };
+            document.head.appendChild(backupScript);
+          };
+          
+          script.onload = () => {
+            // 脚本加载完成后初始化 Twikoo
+            initTwikoo();
+          };
+          
+          document.head.appendChild(script);
+        } else {
+          // Twikoo 已经加载，直接初始化
+          initTwikoo();
+        }
       } catch (error) {
         console.error('Twikoo 初始化失败:', error);
+      }
+    };
+
+    // 初始化 Twikoo
+    const initTwikoo = () => {
+      console.log('初始化 Twikoo, 容器ID:', id);
+      
+      if (!(window as any).twikoo) {
+        console.error('Twikoo 未加载');
+        return;
+      }
+      
+      if (!twikooRef.current) {
+        console.error('Twikoo 容器不存在');
+        return;
+      }
+      
+      try {
+        (window as any).twikoo.init({
+          envId: 'https://vercel.twikoo.js.org', // 使用更稳定的环境ID
+          el: '#tcomment', // 评论容器的元素ID
+          lang: 'zh-CN', // 语言设置
+          // 主题设置，根据当前主题自动切换
+          onCommentLoaded: () => {
+            console.log('Twikoo 评论加载完成');
+            
+            // 应用主题样式
+            applyThemeStyles();
+          },
+          onError: (error: any) => {
+            console.error('Twikoo 初始化错误:', error);
+            // 如果初始化失败，显示错误信息
+            if (twikooRef.current) {
+              twikooRef.current.innerHTML = '<div class="text-red-500">评论系统初始化失败，请稍后再试</div>';
+            }
+          }
+        });
+        
+        isInitialized.current = true;
+      } catch (error) {
+        console.error('Twikoo 初始化异常:', error);
       }
     };
 
