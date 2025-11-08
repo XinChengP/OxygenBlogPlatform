@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTheme } from 'next-themes';
 
 interface GiscusCommentsProps {
@@ -20,6 +20,33 @@ export default function GiscusComments({}: GiscusCommentsProps) {
   const giscusRef = useRef<HTMLDivElement>(null);
   const isInitialized = useRef(false);
   const scriptRef = useRef<HTMLScriptElement | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    // 只在客户端执行
+    if (typeof window === 'undefined') return;
+
+    // 添加消息监听器以监控Giscus状态
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== 'https://giscus.app') return;
+      
+      if (event.data && typeof event.data === 'object' && 'giscus' in event.data) {
+        console.log('收到 Giscus 消息:', event.data);
+        
+        // 检查是否有错误消息
+        if (event.data.giscus && event.data.giscus.error) {
+          console.error('Giscus 错误:', event.data.giscus.error);
+        }
+      }
+    };
+    
+    window.addEventListener('message', handleMessage);
+    
+    // 清理函数
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
+  }, []);
 
   useEffect(() => {
     // 只在客户端执行
@@ -63,14 +90,38 @@ export default function GiscusComments({}: GiscusCommentsProps) {
           script.setAttribute('data-mapping', 'pathname');
           script.setAttribute('data-strict', '0');
           script.setAttribute('data-reactions-enabled', '1');
-          script.setAttribute('data-emit-metadata', '0');
-          script.setAttribute('data-input-position', 'bottom');
+          script.setAttribute('data-emit-metadata', '1');
+          script.setAttribute('data-input-position', 'top');
           script.setAttribute('data-theme', getCurrentTheme());
           script.setAttribute('data-lang', 'zh-CN');
+          
+          // 确保脚本添加到body而不是head，这样可以更好地加载
+          document.body.appendChild(script);
           
           script.onload = () => {
             console.log('Giscus 评论加载完成');
             isInitialized.current = true;
+            
+            // 添加额外的调试信息
+            setTimeout(() => {
+              const iframe = document.querySelector('iframe.giscus-frame') as HTMLIFrameElement;
+              if (iframe) {
+                console.log('Giscus iframe 已加载:', iframe);
+                console.log('iframe src:', iframe.src);
+                
+                // 尝试检查iframe内部是否正确加载
+                try {
+                  iframe.contentWindow?.postMessage(
+                    { giscus: { ping: true } },
+                    'https://giscus.app'
+                  );
+                } catch (error) {
+                  console.error('无法与 Giscus iframe 通信:', error);
+                }
+              } else {
+                console.warn('未找到 Giscus iframe');
+              }
+            }, 2000);
           };
           
           script.onerror = (error) => {
@@ -93,7 +144,6 @@ export default function GiscusComments({}: GiscusCommentsProps) {
           };
           
           scriptRef.current = script;
-          document.head.appendChild(script);
         } else if ((window as any).Giscus) {
           isInitialized.current = true;
         }
@@ -132,7 +182,7 @@ export default function GiscusComments({}: GiscusCommentsProps) {
     return () => {
       clearTimeout(timer);
     };
-  }, [theme, systemTheme]);
+  }, [theme, systemTheme, refreshKey]);
 
   // 主题变化时重新渲染 Giscus
   useEffect(() => {
@@ -151,11 +201,74 @@ export default function GiscusComments({}: GiscusCommentsProps) {
     }
   }, [theme, systemTheme]);
 
+  // 添加一个定期检查输入框是否可用的效果
+  useEffect(() => {
+    if (!isInitialized.current) return;
+    
+    const checkInterval = setInterval(() => {
+      const iframe = document.querySelector('iframe.giscus-frame') as HTMLIFrameElement;
+      if (iframe) {
+        try {
+          // 尝试检查iframe内部是否有输入框
+          iframe.contentWindow?.postMessage(
+            { giscus: { checkInput: true } },
+            'https://giscus.app'
+          );
+        } catch (error) {
+          console.error('无法检查 Giscus 输入框:', error);
+        }
+      }
+    }, 5000);
+    
+    // 30秒后停止检查
+    const timeout = setTimeout(() => {
+      clearInterval(checkInterval);
+      console.log('停止检查 Giscus 输入框');
+    }, 30000);
+    
+    return () => {
+      clearInterval(checkInterval);
+      clearTimeout(timeout);
+    };
+  }, [isInitialized.current]);
+
+  // 强制刷新Giscus的函数
+  const forceRefreshGiscus = () => {
+    // 清理现有脚本和iframe
+    if (scriptRef.current) {
+      scriptRef.current.remove();
+      scriptRef.current = null;
+    }
+    
+    const iframe = document.querySelector('iframe.giscus-frame');
+    if (iframe) {
+      iframe.remove();
+    }
+    
+    // 重置初始化状态
+    isInitialized.current = false;
+    
+    // 更新刷新键以触发重新渲染
+    setRefreshKey(prev => prev + 1);
+    
+    console.log('已强制刷新 Giscus');
+  };
+
   return (
     <div className="mt-12">
       <div className="bg-card rounded-lg shadow-sm p-6 md:p-8">
-        <h3 className="text-xl font-semibold mb-6 text-foreground">评论</h3>
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-xl font-semibold text-foreground">评论</h3>
+          <button
+            onClick={forceRefreshGiscus}
+            className="text-sm px-3 py-1 bg-muted hover:bg-muted/80 rounded transition-colors"
+            title="刷新评论区"
+          >
+            刷新评论
+          </button>
+        </div>
         <div 
+          key={refreshKey}
           ref={giscusRef}
           className="giscus-container"
           style={{
