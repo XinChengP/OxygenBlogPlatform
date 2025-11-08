@@ -1,0 +1,80 @@
+name: Deploy Gitalk Proxy to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'gitalk-github-proxy.js'
+      - 'package.json'
+      - '.github/workflows/deploy-proxy.yml'
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        
+    - name: Install dependencies
+      run: npm install express http-proxy-middleware cors
+      
+    - name: Build static files
+      run: |
+        mkdir -p dist
+        cp gitalk-github-proxy.js dist/
+        cp package.json dist/
+        
+        # 创建 404.html 处理 SPA 路由
+        cat > dist/404.html << 'EOF'
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Gitalk Proxy</title>
+          <script>
+            // 简单的路由处理
+            const path = window.location.pathname;
+            if (path.startsWith('/github/')) {
+              // 重定向到实际代理服务器
+              window.location.href = 'https://your-proxy-server.com' + path;
+            } else {
+              document.body.innerHTML = '<h1>Gitalk Proxy Server</h1><p>请访问 <a href="/health">/health</a> 检查服务状态</p>';
+            }
+          </script>
+        </head>
+        <body>
+          <h1>Gitalk Proxy Server</h1>
+          <p>请访问 <a href="/health">/health</a> 检查服务状态</p>
+        </body>
+        </html>
+        EOF
+        
+        # 创建 index.html
+        cat > dist/index.html << 'EOF'
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Gitalk Proxy</title>
+        </head>
+        <body>
+          <h1>Gitalk Proxy Server</h1>
+          <p>GitHub OAuth 代理: <a href="/github/oauth">/github/oauth</a></p>
+          <p>GitHub API 代理: <a href="/github/api">/github/api</a></p>
+          <p>健康检查: <a href="/health">/health</a></p>
+        </body>
+        </html>
+        EOF
+        
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./dist

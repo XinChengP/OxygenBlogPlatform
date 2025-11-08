@@ -6,6 +6,7 @@ import { useTheme } from 'next-themes';
 interface GitalkCommentsProps {
   id: string; // 页面的唯一标识符，通常使用文章的 slug 或路径
   title?: string; // 页面标题，用于 GitHub Issue 的标题
+  proxy?: string; // 自定义代理服务器，用于解决跨域问题
 }
 
 /**
@@ -20,7 +21,7 @@ interface GitalkCommentsProps {
  * @param title - 页面标题（可选）
  * @returns JSX 元素
  */
-export default function GitalkComments({ id, title }: GitalkCommentsProps) {
+export default function GitalkComments({ id, title, proxy }: GitalkCommentsProps) {
   const { theme, systemTheme } = useTheme();
   const gitalkRef = useRef<HTMLDivElement>(null);
   const isInitialized = useRef(false);
@@ -90,7 +91,7 @@ export default function GitalkComments({ id, title }: GitalkCommentsProps) {
         const gitalkTheme = currentTheme === 'dark' ? 'dark' : 'light';
         
         // 创建 Gitalk 实例
-        const gitalk = new (window as any).Gitalk({
+        const gitalkConfig = {
           clientID: 'Ov23limpQmaxtJEpMq7F',
           clientSecret: '1c2b5d7313a2cb63a1671812c42e0d4c18bb6960',
           repo: 'OxygenBlogPlatform', // GitHub 仓库名
@@ -105,16 +106,27 @@ export default function GitalkComments({ id, title }: GitalkCommentsProps) {
           pagerDirection: 'last', // 评论排序方式
           createIssueManually: false, // 是否手动创建 Issue
           distractionFreeMode: false, // 无干扰模式
-          proxy: 'https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token', // 代理服务器，解决跨域问题
+          proxy: proxy || 'https://your-vercel-app.vercel.app/proxy/login/oauth/access_token', // 代理服务器，解决跨域问题
           enableHotKey: true, // 启用快捷键
           theme: gitalkTheme // 主题
-        });
+        };
+        
+        console.log('Gitalk 配置:', gitalkConfig);
+        
+        // 创建 Gitalk 实例
+        const gitalk = new (window as any).Gitalk(gitalkConfig);
         
         // 渲染 Gitalk
-        gitalk.render('gitalk-container');
-        
-        isInitialized.current = true;
-        console.log('Gitalk 初始化成功');
+        try {
+          gitalk.render('gitalk-container');
+          isInitialized.current = true;
+          console.log('Gitalk 初始化成功');
+        } catch (error) {
+          console.error('Gitalk 渲染失败:', error);
+          if (gitalkRef.current) {
+            gitalkRef.current.innerHTML = '<div class="text-red-500">评论系统渲染失败，请稍后再试</div>';
+          }
+        }
       } catch (error) {
         console.error('Gitalk 初始化异常:', error);
         if (gitalkRef.current) {

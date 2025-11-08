@@ -18,8 +18,11 @@
     "@tsparticles/react": "^3.0.0",
     "@tsparticles/slim": "^3.8.1",
     "clsx": "^2.1.1",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
     "gray-matter": "^4.0.3",
     "highlight.js": "^11.11.1",
+    "http-proxy-middleware": "^3.0.5",
     "katex": "^0.16.22",
     "lucide-react": "^0.523.0",
     "marked": "^17.0.0",
@@ -39,6 +42,7 @@
     "remark-emoji": "^5.0.1",
     "remark-gfm": "^4.0.1",
     "remark-math": "^6.0.0",
+    "request": "^2.88.2",
     "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
