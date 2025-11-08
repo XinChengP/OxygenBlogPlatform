@@ -8,7 +8,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { ClipboardIcon } from '@heroicons/react/24/outline';
 import CopyrightNotice from '@/components/CopyrightNotice';
-import GiscusComments from '@/components/GiscusComments';
+
 import OptimizedImage from '@/components/OptimizedImage';
 import TableOfContents from '@/components/TableOfContents';
 import ScrollToTop from '@/components/ScrollToTop';
@@ -523,9 +523,6 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
             slug={blog.slug}
             reference={blog.reference}
           />
-          
-          {/* 添加评论组件 */}
-          <GiscusComments />
           
           {/* 文章底部导航 */}
           <motion.div 

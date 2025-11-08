@@ -90,10 +90,15 @@ export default function GiscusComments({}: GiscusCommentsProps) {
           script.setAttribute('data-mapping', 'pathname');
           script.setAttribute('data-strict', '0');
           script.setAttribute('data-reactions-enabled', '1');
-          script.setAttribute('data-emit-metadata', '1');
+          script.setAttribute('data-emit-metadata', '0');
           script.setAttribute('data-input-position', 'top');
           script.setAttribute('data-theme', getCurrentTheme());
           script.setAttribute('data-lang', 'zh-CN');
+          
+          console.log('Giscus 配置:', {
+            'data-input-position': 'top',
+            'data-emit-metadata': '0'
+          });
           
           // 确保脚本添加到body而不是head，这样可以更好地加载
           document.body.appendChild(script);
@@ -267,6 +272,14 @@ export default function GiscusComments({}: GiscusCommentsProps) {
             刷新评论
           </button>
         </div>
+        
+        {/* 添加布局说明 */}
+        <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-800">
+          <p className="text-sm text-blue-700 dark:text-blue-300">
+            💡 发表评论的输入框位于评论列表上方，您可以在此处直接输入评论
+          </p>
+        </div>
+        
         <div 
           key={refreshKey}
           ref={giscusRef}
@@ -275,6 +288,29 @@ export default function GiscusComments({}: GiscusCommentsProps) {
             minHeight: '200px'
           }}
         />
+        <style jsx>{`
+          :global(.giscus-container) {
+            position: relative;
+          }
+          :global(.giscus-frame) {
+            border: none;
+            width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+          }
+          /* 确保评论输入框在评论列表上方 */
+          :global(.giscus-container iframe) {
+            min-height: 450px;
+          }
+          /* 添加评论输入框区域样式 */
+          :global(.giscus-container .giscus-input) {
+            background: var(--background);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            border: 1px solid var(--border);
+          }
+        `}</style>
       </div>
     </div>
   );
