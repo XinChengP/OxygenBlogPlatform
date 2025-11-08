@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useRef, useEffect } from 'react';
+import { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react';
 
 // 定义全局音频实例的类型
 declare global {
@@ -122,7 +122,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   };
 
   // 播放下一首
-  const playNext = () => {
+  const playNext = useCallback(() => {
     if (!currentPlaylist || currentPlaylist.songs.length === 0) return;
     
     let nextIndex = currentSongIndex;
@@ -156,7 +156,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     setCurrentSongIndex(nextIndex);
     setIsPlaying(true);
     setShouldResumePlay(true);
-  };
+  }, [currentPlaylist, currentSongIndex, playMode]);
 
   // 播放上一首
   const playPrevious = () => {
@@ -309,7 +309,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       audio.removeEventListener('error', handleError);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [currentSong, playMode, playNext, shouldResumePlay]);
+  }, [currentSong, playMode, playNext, shouldResumePlay, isPlaying]);
 
   // 当歌曲改变时，更新音频源
   useEffect(() => {

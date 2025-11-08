@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readFile } from 'fs/promises';
 import path from 'path';
-// @ts-ignore
+// @ts-expect-error - music-metadata library doesn't provide TypeScript definitions
 import * as musicMetadata from 'music-metadata';
 
 export async function GET(request: NextRequest) {

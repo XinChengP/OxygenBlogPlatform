@@ -36,7 +36,7 @@ export default function SettingsPage() {
     if (playlists.length === 0) {
       fetchPlaylists();
     }
-  }, []); // 移除playlists依赖，避免循环加载
+  }, [playlists.length]); // 添加playlists.length依赖
 
   const isDark = resolvedTheme === 'dark';
 
