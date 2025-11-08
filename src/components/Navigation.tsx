@@ -34,17 +34,22 @@ export default function Navigation() {
       // 检查是否在页面顶部
       setIsAtTop(currentScrollY <= 10);
       
-      // 如果鼠标在页面顶部附近，始终显示导航栏
-      if (isNearTop) {
+      // 如果在首页，导航栏始终可见
+      if (pathname === '/') {
         setIsVisible(true);
       } else {
-        // 向下滚动超过100px时隐藏导航栏
-        if (currentScrollY > lastScrollY && currentScrollY > 100) {
-          setIsVisible(false);
-        } 
-        // 向上滚动时显示导航栏
-        else if (currentScrollY < lastScrollY) {
+        // 如果鼠标在页面顶部附近，始终显示导航栏
+        if (isNearTop) {
           setIsVisible(true);
+        } else {
+          // 向下滚动超过100px时隐藏导航栏
+          if (currentScrollY > lastScrollY && currentScrollY > 100) {
+            setIsVisible(false);
+          } 
+          // 向上滚动时显示导航栏
+          else if (currentScrollY < lastScrollY) {
+            setIsVisible(true);
+          }
         }
       }
       
@@ -53,7 +58,7 @@ export default function Navigation() {
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastScrollY, isNearTop]);
+  }, [lastScrollY, isNearTop, pathname]);
 
   /**
    * 监听鼠标移动，检测是否在页面顶部区域
