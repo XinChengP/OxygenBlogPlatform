@@ -4,14 +4,13 @@
  */
 "use client"
 import { Cover } from '@/components/ui/cover'
-import { IconCloud } from '@/components/magicui/icon-cloud';
 import { EvervaultCard, Icon } from '@/components/ui/evervault-card';
 import { motion } from 'motion/react';
 import Image from 'next/image';
 import MailIcon from '@/assets/mail.svg';
 import GitHubIcon from '@/assets/github.svg';
 import BilibiliIcon from '@/assets/bilibili.png';
-import {title, BeforeAnimationText, AnimationText, name, slogan, images, aboutMeP1, aboutMeP2, aboutMeP3, mainContactMeDescription, subContactMeDescription, mail, github, bilibili, isBorder, isRainbowGradient}
+import {title, BeforeAnimationText, AnimationText, name, slogan, aboutMeP1, aboutMeP2, aboutMeP3, mainContactMeDescription, subContactMeDescription, mail, github, bilibili, isBorder, isRainbowGradient}
 from '@/setting/AboutSetting';
 import { useTheme } from 'next-themes';
 import { useMemo, useEffect, useState } from 'react';
@@ -105,30 +104,11 @@ export default function AboutPage() {
     }
   }, [primaryColor, secondaryColor, accentColor]);
 
-  // 技术栈卡片样式 - 简洁背景
-  const techStackCardStyle = useMemo(() => ({
-    background: `linear-gradient(135deg, ${primaryColor}1a, ${primaryColor}0d)`,
-    borderColor: `${primaryColor}4d`
-  }), [primaryColor]);
-
   // 关于我卡片样式 - 简洁背景
   const aboutMeCardStyle = useMemo(() => ({
     background: `linear-gradient(135deg, ${secondaryColor}1a, ${secondaryColor}0d)`,
     borderColor: `${secondaryColor}4d`
   }), [secondaryColor]);
-
-  // 技术栈图标背景样式 - 增强渐变效果
-  const techIconStyle = useMemo(() => ({
-    background: `
-      linear-gradient(135deg, 
-        ${primaryColor} 0%, 
-        ${accentColor} 50%, 
-        ${primaryColor} 100%
-      )`,
-    backgroundSize: '200% 200%',
-    animation: 'gradientShift 4s ease-in-out infinite',
-    color: 'white'
-  }), [primaryColor, accentColor]);
 
   // 关于我图标背景样式 - 增强渐变效果
   const aboutIconStyle = useMemo(() => ({
