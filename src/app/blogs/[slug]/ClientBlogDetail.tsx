@@ -12,6 +12,7 @@ import CopyrightNotice from '@/components/CopyrightNotice';
 import OptimizedImage from '@/components/OptimizedImage';
 import TableOfContents from '@/components/TableOfContents';
 import ScrollToTop from '@/components/ScrollToTop';
+import GiscusComments from '@/components/GiscusComments';
 import 'katex/dist/katex.min.css';
 import { EndWord } from '@/setting/blogSetting';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
@@ -203,6 +204,7 @@ interface LinkProps {
  * - 支持数学公式渲染
  * - 支持图片优化显示
  * - 支持目录导航
+ * - 支持评论系统
  * - 支持主题切换
  * - 支持复制代码功能
  * - 支持响应式布局
@@ -522,6 +524,19 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
             slug={blog.slug}
             reference={blog.reference}
           />
+          
+          {/* 评论区 */}
+          <motion.div 
+            className="mt-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.9 }}
+          >
+            <div className="bg-card rounded-lg shadow-sm p-6 md:p-8">
+              <h3 className="text-xl font-semibold mb-4 text-foreground">评论区</h3>
+              <GiscusComments id={blog.slug} title={blog.title} />
+            </div>
+          </motion.div>
           
           {/* 文章底部导航 */}
           <motion.div 
