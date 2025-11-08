@@ -5,16 +5,38 @@ import { useTheme } from 'next-themes';
 import ScrollToTop from '@/components/ScrollToTop';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 import { useMemo, useEffect, useState } from 'react';
+import MusicPlayer from '@/components/MusicPlayer';
+import { getMusicPlaylists } from '@/utils/musicUtils';
+import { Playlist } from '@/components/MusicPlayer';
 
 export default function SettingsPage() {
   const { theme, setTheme, resolvedTheme } = useTheme();
   const { containerStyle, isBackgroundEnabled } = useBackgroundStyle('about');
   const [mounted, setMounted] = useState(false);
+  const [playlists, setPlaylists] = useState<Playlist[]>([]);
+  const [isLoadingPlaylists, setIsLoadingPlaylists] = useState(true);
 
   // 确保组件已挂载
   useEffect(() => {
     setMounted(true);
-  }, []);
+    
+    // 获取音乐播放列表
+    const fetchPlaylists = async () => {
+      try {
+        const musicPlaylists = await getMusicPlaylists();
+        setPlaylists(musicPlaylists);
+      } catch (error) {
+        console.error('Error fetching playlists:', error);
+      } finally {
+        setIsLoadingPlaylists(false);
+      }
+    };
+    
+    // 只在第一次加载时获取播放列表，避免页面切换时重复加载
+    if (playlists.length === 0) {
+      fetchPlaylists();
+    }
+  }, []); // 移除playlists依赖，避免循环加载
 
   const isDark = resolvedTheme === 'dark';
 
@@ -229,6 +251,41 @@ export default function SettingsPage() {
                   </div>
                 </div>
               </div>
+            </div>
+            
+            {/* 音乐播放器区块 */}
+            <div className="mb-12">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+                <div className="flex items-center gap-3">
+                  <h2 className="text-2xl font-bold" style={{ color: isDark ? '#f1f5f9' : '#1e293b' }}>
+                    音乐播放器
+                  </h2>
+                  <span 
+                    className="px-3 py-1 rounded-full text-sm font-medium"
+                    style={{
+                      backgroundColor: isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)',
+                      color: isDark ? '#93c5fd' : '#3b82f6'
+                    }}
+                  >
+                    {playlists.length > 0 ? `${playlists.length} 个播放列表` : '无播放列表'}
+                  </span>
+                </div>
+              </div>
+              
+              {isLoadingPlaylists ? (
+                <div className="flex justify-center items-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                </div>
+              ) : playlists.length > 0 ? (
+                <MusicPlayer playlists={playlists} />
+              ) : (
+                <div className={`p-4 rounded-lg text-center ${
+                  isDark ? 'bg-gray-700/50 text-gray-300' : 'bg-gray-100/50 text-gray-600'
+                }`}>
+                  <p>未找到音乐文件</p>
+                  <p className="text-sm mt-1">请将音乐文件放置在 public/MusicList 目录下的文件夹中</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
