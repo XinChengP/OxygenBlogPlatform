@@ -17,6 +17,7 @@ export default function Navigation() {
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isNearTop, setIsNearTop] = useState(false);
+  const [isAtTop, setIsAtTop] = useState(true);
   const pathname = usePathname();
   const { navigationStyle } = useBackgroundStyle('home');
 
@@ -29,6 +30,9 @@ export default function Navigation() {
       
       // 设置滚动状态
       setIsScrolled(currentScrollY > 10);
+      
+      // 检查是否在页面顶部
+      setIsAtTop(currentScrollY <= 10);
       
       // 如果鼠标在页面顶部附近，始终显示导航栏
       if (isNearTop) {
@@ -103,7 +107,11 @@ export default function Navigation() {
   
   return (
     <motion.nav 
-      className={navigationStyle.className} 
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        isAtTop 
+          ? 'bg-transparent dark:bg-transparent border-transparent' 
+          : 'bg-white/70 dark:bg-gray-900/70 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-700/50'
+      }`}
       style={navigationStyle.style}
       initial={{ y: 0 }}
       animate={{ y: isVisible ? 0 : -100 }}
@@ -113,8 +121,8 @@ export default function Navigation() {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2" onClick={closeMobileMenu}>
-            <span className="text-2xl font-bold text-gray-900 dark:text-white">{emojy}</span>
-            <span className="text-xl font-bold text-gray-900 dark:text-white">{name}</span>
+            <span className={`text-2xl font-bold transition-colors duration-300 ${isAtTop ? 'text-white' : 'text-gray-900 dark:text-white'}`}>{emojy}</span>
+            <span className={`text-xl font-bold transition-colors duration-300 ${isAtTop ? 'text-white' : 'text-gray-900 dark:text-white'}`}>{name}</span>
           </Link>
           
           {/* Navigation Links */}
@@ -124,10 +132,10 @@ export default function Navigation() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300 ${
                     pathname === item.href
-                      ? 'text-primary dark:text-primary'
-                      : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary'
+                      ? isAtTop ? 'text-white' : 'text-primary dark:text-primary'
+                      : isAtTop ? 'text-white hover:text-gray-200' : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary'
                   }`}
                 >
                   {item.label}
@@ -140,7 +148,11 @@ export default function Navigation() {
           <div className="md:hidden flex items-center space-x-2">
             <button 
               onClick={toggleMobileMenu}
-              className="text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary p-2 transition-colors"
+              className={`transition-colors duration-300 ${
+                isAtTop 
+                  ? 'text-white hover:text-gray-200' 
+                  : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary'
+              } p-2`}
               aria-label="切换菜单"
             >
               <svg 
@@ -175,10 +187,10 @@ export default function Navigation() {
                     key={item.href}
                     href={item.href}
                     onClick={closeMobileMenu}
-                    className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                    className={`block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300 ${
                       pathname === item.href
-                        ? 'text-primary dark:text-primary'
-                        : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary hover:bg-gray-50/80 dark:hover:bg-gray-800/50'
+                        ? isAtTop ? 'text-white' : 'text-primary dark:text-primary'
+                        : isAtTop ? 'text-white hover:text-gray-200' : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary hover:bg-gray-50/80 dark:hover:bg-gray-800/50'
                     }`}
                   >
                     {item.label}
