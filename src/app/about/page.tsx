@@ -17,6 +17,7 @@ import { useTheme } from 'next-themes';
 import { useMemo, useEffect, useState } from 'react';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 import ScrollToTop from '@/components/ScrollToTop';
+import FriendsLink from '@/components/FriendsLink';
 
 /**
  * 关于页面组件
@@ -300,28 +301,7 @@ export default function AboutPage() {
             </div>
 
             {/* 个人介绍卡片网格 */}
-            <div className="grid md:grid-cols-2 gap-8 mb-12">
-              {/* 技术栈卡片 - 使用简洁的主题色背景 */}
-              <div 
-                className="rounded-xl p-6 border transition-all duration-500 shadow-lg hover:shadow-xl"
-                style={techStackCardStyle}
-              >
-                <div className="flex items-center mb-4">
-                  <div 
-                    className="w-10 h-10 rounded-lg flex items-center justify-center mr-3 transition-all duration-300"
-                    style={techIconStyle}
-                  >
-                    <span className="font-bold text-lg">⚙️</span>
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-800 dark:text-white">技术栈</h3>
-                </div>
-                <div className="flex justify-center">
-                  <div className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg">
-                    <IconCloud images={images} />
-                  </div>
-                </div>
-              </div>
-
+            <div className="grid md:grid-cols-1 gap-8 mb-12">
               {/* 关于我卡片 - 使用简洁的主题色背景 */}
               <div 
                 className="rounded-xl p-6 border transition-all duration-500 shadow-lg hover:shadow-xl"
@@ -498,6 +478,9 @@ export default function AboutPage() {
             </motion.div> {/* 联系方式区域 motion.div 闭合（删除之前多余的闭合标签） */}
           </div> {/* 主要内容区域闭合 */}
         </div> {/* 主要内容卡片闭合 */}
+
+        {/* 友情链接模块 */}
+        <FriendsLink />
 
         {/* 底部装饰 */}
         <div className="text-center mt-8">

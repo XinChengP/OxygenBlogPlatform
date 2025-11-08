@@ -52,9 +52,9 @@ export const images = [
 ];
 */
 //关于我页面一二三段
-export const aboutMeP1 = "天津工业大学机械工程专业就读，2029年毕业 ";
+export const aboutMeP1 = "天津工业大学机械工程专业就读，预计2029年毕业 ";
 export const aboutMeP2 = "热爱技术，热爱生活，希望自己能创造更多价值 ";
-export const aboutMeP3 = "";
+export const aboutMeP3 = "（成分复杂）";
 
 //联系我页面配置
 export const mainContactMeDescription =
@@ -63,3 +63,13 @@ export const subContactMeDescription = "我会尽快回复你的消息 ✨"; //�
 export const mail = "2574386537@qq.com"; //邮箱配置
 export const github = "https://github.com/XinChengP"; //github网站配置
 export const bilibili = "https://space.bilibili.com/522845412?spm_id_from=333.1007.0.0";
+
+//友情链接配置
+export const friendsLinks = [
+  {
+    name: "Allenwdk's Blog",
+    url: "https://allenwdk.github.io/OxygenBlog/",
+    description: "A Novice Developer",
+    avatar: "/friendlink/Allenwdk.jpg"
+  }
+];

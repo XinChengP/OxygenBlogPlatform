@@ -43,13 +43,53 @@ const nextConfig = {
     // 移除assetPrefix，basePath已经足够处理资源路径
   }),
   images: {
-    // 允许的外部图片域名
-    domains: [
-      "localhost",
-      "example.com",
-      "images.unsplash.com",
-      "cdn.jsdelivr.net",
-      "raw.githubusercontent.com",
+    // 使用新的remotePatterns配置替代已弃用的domains配置
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "nextjs.org",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "tailwindcss.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "vercel.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "github.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "developer.mozilla.org",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "stackoverflow.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "cdn.jsdelivr.net",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "raw.githubusercontent.com",
+        pathname: "/**",
+      },
     ],
     // 图片格式优化
     formats: ["image/webp", "image/avif"],
