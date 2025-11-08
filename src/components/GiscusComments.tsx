@@ -15,7 +15,10 @@ export default function GiscusComments({ id, title }: GiscusCommentsProps) {
   const [theme, setTheme] = useState(isDark ? 'dark_dimmed' : 'light');
 
   useEffect(() => {
-    setTheme(isDark ? 'dark_dimmed' : 'light');
+    // 根据当前主题选择最合适的Giscus主题
+    // 使用更匹配博客风格的深色主题
+    const giscusTheme = isDark ? 'dark_high_contrast' : 'light';
+    setTheme(giscusTheme);
 
     // 如果已经存在giscus脚本，先移除
     const existingScript = document.querySelector('script[src*="giscus"]');
@@ -40,7 +43,7 @@ export default function GiscusComments({ id, title }: GiscusCommentsProps) {
     script.setAttribute('data-reactions-enabled', '1');
     script.setAttribute('data-emit-metadata', '0');
     script.setAttribute('data-input-position', 'bottom');
-    script.setAttribute('data-theme', theme);
+    script.setAttribute('data-theme', giscusTheme);
     script.setAttribute('data-lang', 'zh-CN');
     script.setAttribute('crossorigin', 'anonymous');
     script.setAttribute('async', 'true');
@@ -49,17 +52,34 @@ export default function GiscusComments({ id, title }: GiscusCommentsProps) {
       ref.current.appendChild(script);
     }
 
+    // 添加样式以确保评论区与博客主题一致
+    const style = document.createElement('style');
+    style.innerHTML = `
+      .giscus-frame {
+        border-radius: 0.5rem;
+        background-color: ${isDark ? 'var(--background)' : 'var(--background)'};
+        border: none;
+      }
+    `;
+    document.head.appendChild(style);
+
     return () => {
       // 清理函数
       if (existingScript) {
         existingScript.remove();
       }
+      if (style && style.parentNode) {
+        style.parentNode.removeChild(style);
+      }
     };
-  }, [theme]);
+  }, [isDark]);
 
   return (
-    <div className="giscus-container mt-8">
-      <div ref={ref} className="w-full" />
+    <div className={`giscus-container mt-8 transition-colors duration-300 ${isDark ? 'dark' : ''}`}>
+      <div 
+        ref={ref} 
+        className="w-full"
+      />
     </div>
   );
 }
