@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import Link from 'next/link';
 import LazyMarkdown from '@/components/LazyMarkdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
