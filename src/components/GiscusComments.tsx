@@ -4,7 +4,7 @@ import React, { useEffect, useRef } from 'react';
 import { useTheme } from 'next-themes';
 
 interface GiscusCommentsProps {
-  id: string; // 文章的唯一标识符，通常使用文章的 slug
+  // 不再需要 id 参数，因为我们使用 pathname 映射
 }
 
 /**
@@ -12,20 +12,24 @@ interface GiscusCommentsProps {
  * 
  * 基于 Giscus 的评论系统，使用 GitHub Discussions 作为后端
  * - 自动适配深色/浅色主题
- * - 根据文章 ID 区分不同文章的评论
+ * - 使用 pathname 映射，每个页面有独立的评论
  * - 响应式布局
- * 
- * @param id - 文章的唯一标识符
- * @returns JSX 元素
  */
-export default function GiscusComments({ id }: GiscusCommentsProps) {
+export default function GiscusComments({}: GiscusCommentsProps) {
   const { theme, systemTheme } = useTheme();
   const giscusRef = useRef<HTMLDivElement>(null);
   const isInitialized = useRef(false);
+  const scriptRef = useRef<HTMLScriptElement | null>(null);
 
   useEffect(() => {
     // 只在客户端执行
     if (typeof window === 'undefined') return;
+
+    // 获取当前主题
+    const getCurrentTheme = () => {
+      const currentTheme = theme === 'system' ? systemTheme : theme;
+      return currentTheme === 'dark' ? 'dark' : 'light';
+    };
 
     // 确保 Giscus 脚本已加载
     const loadGiscus = async () => {
@@ -34,7 +38,7 @@ export default function GiscusComments({ id }: GiscusCommentsProps) {
         if (isInitialized.current) return;
         
         // 检查 Giscus 是否已经加载
-        if (!(window as any).Giscus) {
+        if (!(window as any).Giscus && !scriptRef.current) {
           // 动态加载 Giscus 脚本
           const script = document.createElement('script');
           script.src = 'https://giscus.app/client.js';
@@ -42,19 +46,17 @@ export default function GiscusComments({ id }: GiscusCommentsProps) {
           script.crossOrigin = 'anonymous';
           
           // 设置 Giscus 配置
-          script.setAttribute('data-repo', 'your-username/your-repo'); // 替换为您的 GitHub 仓库
-          script.setAttribute('data-repo-id', 'your-repo-id'); // 替换为您的仓库 ID
-          script.setAttribute('data-category', 'General'); // 讨论分类
-          script.setAttribute('data-category-id', 'your-category-id'); // 替换为您的分类 ID
-          script.setAttribute('data-mapping', 'specific'); // 使用特定术语映射
-          script.setAttribute('data-term', id); // 使用文章 ID 作为术语
+          script.setAttribute('data-repo', 'XinChengP/OxygenBlogPlatform');
+          script.setAttribute('data-repo-id', 'R_kgDOQQbz2g');
+          script.setAttribute('data-category', 'General');
+          script.setAttribute('data-category-id', 'DIC_kwDOQQbz2s4CxkZ6');
+          script.setAttribute('data-mapping', 'pathname');
           script.setAttribute('data-strict', '0');
           script.setAttribute('data-reactions-enabled', '1');
           script.setAttribute('data-emit-metadata', '0');
           script.setAttribute('data-input-position', 'bottom');
           script.setAttribute('data-theme', getCurrentTheme());
           script.setAttribute('data-lang', 'zh-CN');
-          script.setAttribute('data-loading', 'lazy');
           
           script.onload = () => {
             console.log('Giscus 评论加载完成');
@@ -68,19 +70,14 @@ export default function GiscusComments({ id }: GiscusCommentsProps) {
             }
           };
           
+          scriptRef.current = script;
           document.head.appendChild(script);
-        } else {
+        } else if ((window as any).Giscus) {
           isInitialized.current = true;
         }
       } catch (error) {
         console.error('Giscus 初始化失败:', error);
       }
-    };
-
-    // 获取当前主题
-    const getCurrentTheme = () => {
-      const currentTheme = theme === 'system' ? systemTheme : theme;
-      return currentTheme === 'dark' ? 'dark' : 'light';
     };
 
     // 延迟加载，确保 DOM 已准备好
@@ -91,7 +88,7 @@ export default function GiscusComments({ id }: GiscusCommentsProps) {
     return () => {
       clearTimeout(timer);
     };
-  }, [theme, systemTheme, id]);
+  }, [theme, systemTheme]);
 
   // 主题变化时重新渲染 Giscus
   useEffect(() => {
