@@ -20,10 +20,10 @@ interface GiscusConfig {
 export default function GiscusTest() {
   const { resolvedTheme } = useTheme();
   const [config, setConfig] = useState<GiscusConfig>({
-    repo: '[在此输入仓库]',
-    repoId: '[在此输入仓库 ID]',
-    category: '[在此输入分类名]',
-    categoryId: '[在此输入分类 ID]',
+    repo: 'XinChengP/OxygenBlogPlatform',
+    repoId: 'R_kgDOQQbz2g',
+    category: 'General',
+    categoryId: 'DIC_kwDOQQbz2s4CxkZ6',
     mapping: 'pathname',
     strict: '0',
     reactionsEnabled: '1',
@@ -62,10 +62,10 @@ export default function GiscusTest() {
 
   const resetToDefaults = () => {
     setConfig({
-      repo: '[在此输入仓库]',
-      repoId: '[在此输入仓库 ID]',
-      category: '[在此输入分类名]',
-      categoryId: '[在此输入分类 ID]',
+      repo: 'XinChengP/OxygenBlogPlatform',
+      repoId: 'R_kgDOQQbz2g',
+      category: 'General',
+      categoryId: 'DIC_kwDOQQbz2s4CxkZ6',
       mapping: 'pathname',
       strict: '0',
       reactionsEnabled: '1',

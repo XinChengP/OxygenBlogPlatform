@@ -31,10 +31,10 @@ export default function GiscusComments({ id, title }: GiscusCommentsProps) {
     // 创建新的giscus脚本
     const script = document.createElement('script');
     script.src = 'https://giscus.app/client.js';
-    script.setAttribute('data-repo', '[在此输入仓库]');
-    script.setAttribute('data-repo-id', '[在此输入仓库 ID]');
-    script.setAttribute('data-category', '[在此输入分类名]');
-    script.setAttribute('data-category-id', '[在此输入分类 ID]');
+    script.setAttribute('data-repo', 'XinChengP/OxygenBlogPlatform');
+    script.setAttribute('data-repo-id', 'R_kgDOQQbz2g');
+    script.setAttribute('data-category', 'General');
+    script.setAttribute('data-category-id', 'DIC_kwDOQQbz2s4CxkZ6');
     script.setAttribute('data-mapping', 'pathname');
     script.setAttribute('data-strict', '0');
     script.setAttribute('data-reactions-enabled', '1');
