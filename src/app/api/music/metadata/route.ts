@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readFile } from 'fs/promises';
 import path from 'path';
-// @ts-expect-error - music-metadata library doesn't provide TypeScript definitions
 import * as musicMetadata from 'music-metadata';
+
+// 配置API路由为动态模式
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {

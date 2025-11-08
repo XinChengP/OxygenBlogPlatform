@@ -3,6 +3,9 @@ import { readdir } from 'fs/promises';
 import path from 'path';
 import { createPlaylist } from '@/utils/musicUtils';
 
+// 配置API路由为动态模式
+export const dynamic = 'force-dynamic';
+
 // 导入Playlist类型
 interface Playlist {
   id: string;
