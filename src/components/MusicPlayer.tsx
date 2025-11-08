@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 import { useMusic } from '@/contexts/MusicContext';
 
-interface Song {
+export interface Song {
   id: string;
   title: string;
   artist?: string;
@@ -13,7 +13,7 @@ interface Song {
   cover?: string; // 添加封面字段
 }
 
-interface Playlist {
+export interface Playlist {
   id: string;
   name: string;
   songs: Song[];
