@@ -10,9 +10,6 @@ import { ClipboardIcon } from '@heroicons/react/24/outline';
 import CopyrightNotice from '@/components/CopyrightNotice';
 import OptimizedImage from '@/components/OptimizedImage';
 import TableOfContents from '@/components/TableOfContents';
-import TwikooComments from '@/components/TwikooComments';
-import GiscusComments from '@/components/GiscusComments';
-import LocalComments from '@/components/LocalComments';
 import ScrollToTop from '@/components/ScrollToTop';
 import 'katex/dist/katex.min.css';
 import { EndWord } from '@/setting/blogSetting';
@@ -217,7 +214,6 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
   const { theme } = useTheme();
   const { containerStyle } = useBackgroundStyle('blog-detail');
   const [copiedCode, setCopiedCode] = useState<string>('');
-  const [commentSystem, setCommentSystem] = useState<'twikoo' | 'giscus' | 'local'>('local');
 
   // 复制代码功能
   const copyToClipboard = (code: string) => {
@@ -526,86 +522,6 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
             slug={blog.slug}
             reference={blog.reference}
           />
-          
-          {/* 评论系统 */}
-          <motion.div 
-            className="mt-8"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.9 }}
-          >
-            <div className="bg-card rounded-lg shadow-sm p-6 md:p-8">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-semibold text-foreground">评论</h3>
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => setCommentSystem('local')}
-                    className={`px-3 py-1 text-sm rounded-md transition-colors ${
-                      commentSystem === 'local' 
-                        ? 'bg-primary text-primary-foreground' 
-                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                    }`}
-                  >
-                    本地评论
-                  </button>
-                  <button
-                    onClick={() => setCommentSystem('twikoo')}
-                    className={`px-3 py-1 text-sm rounded-md transition-colors ${
-                      commentSystem === 'twikoo' 
-                        ? 'bg-primary text-primary-foreground' 
-                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                    }`}
-                  >
-                    Twikoo
-                  </button>
-                  <button
-                    onClick={() => setCommentSystem('giscus')}
-                    className={`px-3 py-1 text-sm rounded-md transition-colors ${
-                      commentSystem === 'giscus' 
-                        ? 'bg-primary text-primary-foreground' 
-                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                    }`}
-                  >
-                    Giscus
-                  </button>
-                </div>
-              </div>
-              
-              <AnimatePresence mode="wait">
-                {commentSystem === 'local' ? (
-                  <motion.div
-                    key="local"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <LocalComments id={blog.slug} />
-                  </motion.div>
-                ) : commentSystem === 'twikoo' ? (
-                  <motion.div
-                    key="twikoo"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <TwikooComments id={blog.slug} />
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="giscus"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <GiscusComments id={blog.slug} />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </motion.div>
           
           {/* 文章底部导航 */}
           <motion.div 
