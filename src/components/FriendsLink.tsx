@@ -6,6 +6,14 @@ import Link from 'next/link'
 import { friendsLinks } from '@/setting/AboutSetting'
 
 /**
+ * 处理友链头像路径，处理basePath
+ */
+function getFriendAvatarPath(avatar: string): string {
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+  return basePath ? `${basePath}${avatar}` : avatar;
+}
+
+/**
  * 友情链接组件
  * 展示友情链接，带有毛玻璃效果
  */
@@ -77,11 +85,26 @@ export default function FriendsLink() {
                 <div className="flex items-center mb-4">
                   {link.avatar ? (
                     <Image
-                      src={link.avatar}
+                      src={getFriendAvatarPath(link.avatar)}
                       alt={link.name}
                       width={48}
                       height={48}
                       className="w-12 h-12 rounded-full mr-3 object-cover"
+                      onError={(e) => {
+                        // 图片加载失败时隐藏图片元素，显示默认图标
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        const parent = target.parentElement;
+                        if (parent) {
+                          const fallback = document.createElement('div');
+                          fallback.className = 'w-12 h-12 rounded-full mr-3 flex items-center justify-center';
+                          fallback.style.background = 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #3b82f6 100%)';
+                          fallback.style.backgroundSize = '200% 200%';
+                          fallback.style.color = 'white';
+                          fallback.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>';
+                          parent.insertBefore(fallback, target);
+                        }
+                      }}
                     />
                   ) : (
                     <div 

@@ -6,7 +6,6 @@ import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import { emojy, name } from '@/setting/NavigationSetting';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
-import ThemeToggle from './ThemeToggle';
 
 /**
  * 导航栏组件
@@ -134,16 +133,10 @@ export default function Navigation() {
                 </Link>
               ))}
             </div>
-            
-            {/* 主题切换按钮 */}
-            <div className="flex items-center space-x-2">
-              <ThemeToggle />
-            </div>
           </div>
           
-          {/* Mobile menu button and theme controls */}
+          {/* Mobile menu button */}
           <div className="md:hidden flex items-center space-x-2">
-            <ThemeToggle />
             <button 
               onClick={toggleMobileMenu}
               className="text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary p-2 transition-colors"
