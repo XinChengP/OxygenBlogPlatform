@@ -106,22 +106,41 @@ export default function AboutPage() {
 
   // 关于我卡片样式 - 简洁背景
   const aboutMeCardStyle = useMemo(() => ({
-    background: `linear-gradient(135deg, ${secondaryColor}1a, ${secondaryColor}0d)`,
-    borderColor: `${secondaryColor}4d`
-  }), [secondaryColor]);
+    background: `linear-gradient(135deg, ${accentColor}1a, ${accentColor}0d)`,
+    borderColor: `${accentColor}4d`
+  }), [accentColor]);
 
   // 关于我图标背景样式 - 增强渐变效果
   const aboutIconStyle = useMemo(() => ({
     background: `
       linear-gradient(135deg, 
-        ${secondaryColor} 0%, 
-        ${accentColor} 50%, 
-        ${secondaryColor} 100%
+        ${accentColor} 0%, 
+        ${primaryColor} 50%, 
+        ${accentColor} 100%
       )`,
     backgroundSize: '200% 200%',
-    animation: 'gradientShift 5s ease-in-out infinite',
+    animation: 'gradientShift 4s ease-in-out infinite',
     color: 'white'
-  }), [secondaryColor, accentColor]);
+  }), [accentColor, primaryColor]);
+
+  // 标签卡片样式 - 简洁背景
+  const tagsCardStyle = useMemo(() => ({
+    background: `linear-gradient(135deg, ${accentColor}1a, ${accentColor}0d)`,
+    borderColor: `${accentColor}4d`
+  }), [accentColor]);
+
+  // 标签图标背景样式 - 增强渐变效果
+  const tagsIconStyle = useMemo(() => ({
+    background: `
+      linear-gradient(135deg, 
+        ${accentColor} 0%, 
+        ${primaryColor} 50%, 
+        ${accentColor} 100%
+      )`,
+    backgroundSize: '200% 200%',
+    animation: 'gradientShift 4s ease-in-out infinite',
+    color: 'white'
+  }), [accentColor, primaryColor]);
 
   // 联系方式区域样式 - 简洁背景
   const contactSectionStyle = useMemo(() => ({
@@ -281,19 +300,25 @@ export default function AboutPage() {
             </div>
 
             {/* 个人介绍卡片网格 */}
-            <div className="grid md:grid-cols-1 gap-8 mb-12">
-              {/* 关于我卡片 - 使用简洁的主题色背景 */}
-              <div 
-                className="rounded-xl p-6 border transition-all duration-500 shadow-lg hover:shadow-xl"
+            <div className="grid md:grid-cols-2 gap-8 mb-12">
+              {/* 关于我卡片 - 使用与联系我一致的样式 */}
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="rounded-2xl p-8 border shadow-lg transition-all duration-500"
                 style={aboutMeCardStyle}
               >
-                <div className="flex items-center mb-4">
-                  <div 
+                <div className="flex items-center justify-center mb-4">
+                  <motion.div 
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ duration: 0.5, delay: 0.3 }}
                     className="w-10 h-10 rounded-lg flex items-center justify-center mr-3 transition-all duration-300"
                     style={aboutIconStyle}
                   >
                     <span className="font-bold text-lg">🎯</span>
-                  </div>
+                  </motion.div>
                   <h3 className="text-xl font-semibold text-gray-800 dark:text-white">关于我</h3>
                 </div>
                 <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
@@ -307,7 +332,47 @@ export default function AboutPage() {
                 <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
                   {aboutMeP3}
                 </p>
-              </div>
+              </motion.div>
+
+              {/* 标签卡片 */}
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="rounded-2xl p-8 border shadow-lg transition-all duration-500"
+                style={tagsCardStyle}
+              >
+                <div className="flex items-center justify-center mb-4">
+                  <motion.div 
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ duration: 0.5, delay: 0.3 }}
+                    className="w-10 h-10 rounded-lg flex items-center justify-center mr-3 transition-all duration-300"
+                    style={tagsIconStyle}
+                  >
+                    <span className="font-bold text-lg">🏷️</span>
+                  </motion.div>
+                  <h3 className="text-xl font-semibold text-gray-800 dark:text-white">兴趣爱好</h3>
+                </div>
+                <div className="flex flex-wrap gap-2 mt-4">
+                  {['洛天依', '乒乓球', '围棋', 'Video', 'Minecraft', 'Genshin Impact', 'Roco kingdom'].map((tag, index) => (
+                    <motion.span 
+                      key={tag}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.3, delay: 0.5 + index * 0.05 }}
+                      className="px-3 py-1 text-sm rounded-full border transition-all duration-300 hover:scale-105 cursor-default"
+                      style={{
+                        borderColor: `${accentColor}66`,
+                        backgroundColor: `${accentColor}11`,
+                        color: accentColor
+                      }}
+                    >
+                      {tag}
+                    </motion.span>
+                  ))}
+                </div>
+              </motion.div>
             </div>
 
             {/* 联系方式 - 使用丰富的主题色渐变 */}

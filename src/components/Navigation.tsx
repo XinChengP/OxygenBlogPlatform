@@ -17,7 +17,7 @@ export default function Navigation() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
-  const [isHovering, setIsHovering] = useState(false);
+  const [isNearTop, setIsNearTop] = useState(false);
   const pathname = usePathname();
   const { navigationStyle } = useBackgroundStyle('home');
 
@@ -31,8 +31,8 @@ export default function Navigation() {
       // 设置滚动状态
       setIsScrolled(currentScrollY > 10);
       
-      // 如果鼠标悬停在顶部区域，始终显示导航栏
-      if (isHovering) {
+      // 如果鼠标在页面顶部附近，始终显示导航栏
+      if (isNearTop) {
         setIsVisible(true);
       } else {
         // 向下滚动超过100px时隐藏导航栏
@@ -50,18 +50,18 @@ export default function Navigation() {
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastScrollY, isHovering]);
+  }, [lastScrollY, isNearTop]);
 
   /**
    * 监听鼠标移动，检测是否在页面顶部区域
    */
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      // 当鼠标在页面顶部50px区域内时，显示导航栏
-      if (e.clientY <= 50) {
-        setIsHovering(true);
+      // 当鼠标在页面顶部100px区域内时，显示导航栏
+      if (e.clientY <= 100) {
+        setIsNearTop(true);
       } else {
-        setIsHovering(false);
+        setIsNearTop(false);
       }
     };
 
@@ -136,7 +136,7 @@ export default function Navigation() {
             </div>
             
             {/* 主题切换按钮 */}
-            <div className="flex items-center">
+            <div className="flex items-center space-x-2">
               <ThemeToggle />
             </div>
           </div>
