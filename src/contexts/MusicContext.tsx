@@ -45,8 +45,8 @@ interface MusicContextType {
   currentTime: number;
   duration: number;
   setProgress: (e: React.MouseEvent<HTMLDivElement>) => void;
-  audioRef: React.RefObject<HTMLAudioElement>;
-  progressBarRef: React.RefObject<HTMLDivElement>;
+  audioRef: React.RefObject<HTMLAudioElement | null>;
+  progressBarRef: React.RefObject<HTMLDivElement | null>;
 }
 
 const MusicContext = createContext<MusicContextType | undefined>(undefined);
