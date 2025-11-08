@@ -37,6 +37,16 @@ export default function GiscusComments({}: GiscusCommentsProps) {
         // 如果已经初始化过，不再重复初始化
         if (isInitialized.current) return;
         
+        // 添加调试信息
+        console.log('开始加载 Giscus 评论系统');
+        console.log('仓库配置:', {
+          repo: 'XinChengP/OxygenBlogPlatform',
+          repoId: 'R_kgDOQQbz2g',
+          categoryId: 'DIC_kwDOQQbz2s4CxkZ6',
+          mapping: 'pathname',
+          theme: getCurrentTheme()
+        });
+        
         // 检查 Giscus 是否已经加载
         if (!(window as any).Giscus && !scriptRef.current) {
           // 动态加载 Giscus 脚本
@@ -63,10 +73,22 @@ export default function GiscusComments({}: GiscusCommentsProps) {
             isInitialized.current = true;
           };
           
-          script.onerror = () => {
-            console.error('Giscus 脚本加载失败');
+          script.onerror = (error) => {
+            console.error('Giscus 脚本加载失败:', error);
             if (giscusRef.current) {
-              giscusRef.current.innerHTML = '<div class="text-red-500">评论加载失败，请刷新页面重试</div>';
+              giscusRef.current.innerHTML = `
+                <div class="text-red-500 p-4 border border-red-200 rounded-lg bg-red-50 dark:bg-red-900/20 dark:border-red-800">
+                  <p class="font-semibold mb-2">评论加载失败</p>
+                  <p class="text-sm mb-3">请按以下步骤检查和修复：</p>
+                  <ol class="text-sm list-decimal list-inside space-y-2 mb-3">
+                    <li><strong>确保仓库为公开仓库</strong>：访问 <a href="https://github.com/XinChengP/OxygenBlogPlatform/settings" target="_blank" rel="noopener noreferrer" class="text-primary underline">仓库设置</a>，确认仓库为公开状态</li>
+                    <li><strong>安装Giscus应用</strong>：访问 <a href="https://github.com/apps/giscus" target="_blank" rel="noopener noreferrer" class="text-primary underline">Giscus应用页面</a>，点击"Install"并选择您的仓库</li>
+                    <li><strong>启用Discussions功能</strong>：在仓库设置页面的"Features"部分，勾选"Discussions"选项</li>
+                    <li><strong>创建讨论分类</strong>：在仓库的Discussions页面，创建一个名为"General"的分类（如果不存在）</li>
+                  </ol>
+                  <p class="text-sm">完成以上步骤后，刷新页面重试。如仍有问题，请查看浏览器控制台的详细错误信息。</p>
+                </div>
+              `;
             }
           };
           
@@ -83,6 +105,28 @@ export default function GiscusComments({}: GiscusCommentsProps) {
     // 延迟加载，确保 DOM 已准备好
     const timer = setTimeout(() => {
       loadGiscus();
+      
+      // 添加额外的检查，如果5秒后仍未加载成功，显示错误信息
+      const checkTimer = setTimeout(() => {
+        if (!isInitialized.current && giscusRef.current) {
+          console.warn('Giscus 初始化超时');
+          giscusRef.current.innerHTML = `
+            <div class="text-yellow-600 p-4 border border-yellow-200 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 dark:border-yellow-800">
+              <p class="font-semibold mb-2">评论加载超时</p>
+              <p class="text-sm mb-3">可能的原因和解决方案：</p>
+              <ol class="text-sm list-decimal list-inside space-y-2 mb-3">
+                <li><strong>网络连接问题</strong>：检查网络连接，尝试刷新页面</li>
+                <li><strong>GitHub仓库配置不正确</strong>：确认仓库为公开状态，已安装Giscus应用，并启用Discussions功能</li>
+                <li><strong>浏览器阻止了脚本加载</strong>：检查浏览器设置，允许加载第三方脚本</li>
+                <li><strong>广告拦截器</strong>：暂时禁用广告拦截器，然后刷新页面</li>
+              </ol>
+              <p class="text-sm">请打开浏览器控制台(F12)查看详细错误信息，或访问 <a href="/test/giscus" class="text-primary underline">测试页面</a> 进行进一步诊断。</p>
+            </div>
+          `;
+        }
+      }, 5000);
+      
+      return () => clearTimeout(checkTimer);
     }, 500);
 
     return () => {
