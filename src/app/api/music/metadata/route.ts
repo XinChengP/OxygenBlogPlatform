@@ -3,8 +3,8 @@ import { readFile } from 'fs/promises';
 import path from 'path';
 import * as musicMetadata from 'music-metadata';
 
-// 配置API路由为动态模式
-export const dynamic = 'force-dynamic';
+// 配置API路由为静态模式
+export const dynamic = 'force-static';
 
 export async function GET(request: NextRequest) {
   try {

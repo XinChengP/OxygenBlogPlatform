@@ -3,22 +3,24 @@ import { readdir } from 'fs/promises';
 import path from 'path';
 import { createPlaylist } from '@/utils/musicUtils';
 
-// 配置API路由为动态模式
-export const dynamic = 'force-dynamic';
+// 从MusicPlayer导入Song和Playlist类型
+interface Song {
+  id: string;
+  title: string;
+  artist?: string;
+  url: string;
+  duration?: number;
+  cover?: string;
+}
 
-// 导入Playlist类型
-interface Playlist {
+export interface Playlist {
   id: string;
   name: string;
-  songs: Array<{
-    id: string;
-    title: string;
-    artist?: string;
-    url: string;
-    duration?: number;
-    cover?: string;
-  }>;
+  songs: Song[];
 }
+
+// 配置API路由为静态模式
+export const dynamic = 'force-static';
 
 export async function GET() {
   try {
