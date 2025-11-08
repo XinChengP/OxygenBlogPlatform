@@ -380,7 +380,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     const timer = setTimeout(checkAndResumeAudio, 100);
     
     return () => clearTimeout(timer);
-  }, [shouldResumePlay]); // 只依赖shouldResumePlay，避免currentSong变化时重复执行
+  }, [shouldResumePlay, isPlaying]); // 添加isPlaying依赖，避免ESLint警告
 
   return (
     <MusicContext.Provider

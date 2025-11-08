@@ -12,7 +12,7 @@ export async function getMusicPlaylists(): Promise<Playlist[]> {
       throw new Error('Failed to fetch music playlists');
     }
     
-    const playlists: Playlist[] = await response.json();
+    const playlists = await response.json() as Playlist[];
     return playlists;
   } catch (error) {
     console.error('Error fetching music playlists:', error);
