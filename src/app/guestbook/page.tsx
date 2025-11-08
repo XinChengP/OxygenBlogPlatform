@@ -1,13 +1,10 @@
 'use client';
 
-import { useTheme } from 'next-themes';
 import BackgroundLayer from '@/components/BackgroundLayer';
 import Navigation from '@/components/Navigation';
 import { ThemeProvider } from '@/components/ThemeProvider';
 
 function GuestbookContent() {
-  const { theme } = useTheme();
-
   return (
     <div className="min-h-screen relative overflow-hidden">
       <BackgroundLayer />
