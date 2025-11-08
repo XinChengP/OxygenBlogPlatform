@@ -3,6 +3,20 @@ import { readdir } from 'fs/promises';
 import path from 'path';
 import { createPlaylist } from '@/utils/musicUtils';
 
+// 导入Playlist类型
+interface Playlist {
+  id: string;
+  name: string;
+  songs: Array<{
+    id: string;
+    title: string;
+    artist?: string;
+    url: string;
+    duration?: number;
+    cover?: string;
+  }>;
+}
+
 export async function GET() {
   try {
     // 获取音乐目录路径
@@ -40,7 +54,7 @@ export async function GET() {
     );
     
     // 过滤掉没有歌曲的播放列表
-    const validPlaylists = playlists.filter(playlist => playlist.songs.length > 0);
+    const validPlaylists = playlists.filter((playlist: Playlist) => playlist.songs.length > 0);
     
     return NextResponse.json(validPlaylists);
   } catch (error) {
