@@ -12,6 +12,7 @@ import CopyrightNotice from '@/components/CopyrightNotice';
 import OptimizedImage from '@/components/OptimizedImage';
 import TableOfContents from '@/components/TableOfContents';
 import ScrollToTop from '@/components/ScrollToTop';
+import GitalkComments from '@/components/GitalkComments';
 import 'katex/dist/katex.min.css';
 import { EndWord } from '@/setting/blogSetting';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
@@ -523,6 +524,16 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
             slug={blog.slug}
             reference={blog.reference}
           />
+          
+          {/* Gitalk 评论组件 */}
+          <motion.div 
+            className="mt-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.9 }}
+          >
+            <GitalkComments id={blog.slug} title={blog.title} />
+          </motion.div>
           
           {/* 文章底部导航 */}
           <motion.div 
