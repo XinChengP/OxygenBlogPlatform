@@ -1,7 +1,4 @@
 import { NextResponse } from 'next/server';
-import { readdir } from 'fs/promises';
-import path from 'path';
-import { createPlaylist } from '@/utils/musicUtils';
 
 // 从MusicPlayer导入Song和Playlist类型
 interface Song {
@@ -19,12 +16,25 @@ export interface Playlist {
   songs: Song[];
 }
 
-// 配置API路由为动态模式，避免静态生成问题
-export const dynamic = 'force-dynamic';
-
+// 在静态导出模式下，API路由不会被包含在构建中
+// 这里提供一个简单的静态数据返回，避免构建错误
 export async function GET() {
+  // 在静态导出模式下，返回空的播放列表
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json([{
+      id: 'static-export',
+      name: '音乐播放列表',
+      songs: []
+    }]);
+  }
+  
+  // 开发模式下，返回真实的音乐数据
   try {
-    console.log('Music API called');
+    const { readdir } = await import('fs/promises');
+    const path = await import('path');
+    const { createPlaylist } = await import('@/utils/musicUtils');
+    
+    console.log('Music API called (development mode)');
     
     // 构建音乐目录路径
     const musicDir = path.join(process.cwd(), 'public', 'MusicList');

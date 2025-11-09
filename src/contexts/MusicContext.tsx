@@ -380,7 +380,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     const timer = setTimeout(checkAndResumeAudio, 100);
     
     return () => clearTimeout(timer);
-  }, [shouldResumePlay, isPlaying]); // 添加isPlaying依赖，避免ESLint警告
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shouldResumePlay, isPlaying]); // 只保留实际使用的状态，禁用ESLint警告
 
   return (
     <MusicContext.Provider
