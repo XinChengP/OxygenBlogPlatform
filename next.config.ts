@@ -1,7 +1,11 @@
 const nextConfig = {
   // 只在构建时启用静态导出，开发时禁用以避免 generateStaticParams 错误
   // 恢复静态导出配置，因为GitHub Pages部署需要静态文件
-  ...(process.env.NODE_ENV === "production" && { output: "export" }),
+  ...(process.env.NODE_ENV === "production" && { 
+    output: "export",
+    // 跳过API路由的静态生成
+    skipTrailingSlashRedirect: true,
+  }),
   trailingSlash: true,
   // 环境变量配置，供客户端组件使用
   env: {

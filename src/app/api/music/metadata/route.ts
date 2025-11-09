@@ -6,6 +6,12 @@ import * as musicMetadata from 'music-metadata';
 // 配置API路由为静态模式
 export const dynamic = 'force-static';
 
+// 为静态导出提供空的generateStaticParams函数
+export async function generateStaticParams() {
+  // 这个API路由不需要预生成静态页面
+  return [];
+}
+
 export async function GET(request: NextRequest) {
   try {
     // 尝试不同的方式获取查询参数
