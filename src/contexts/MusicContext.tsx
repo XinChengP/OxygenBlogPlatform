@@ -1,6 +1,8 @@
 'use client';
 
 import { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react';
+import { saveMusicState, loadMusicState } from '@/utils/musicStateUtils';
+import { PlayMode } from '@/components/MusicPlayer';
 
 // 定义全局音频实例的类型
 declare global {
@@ -8,7 +10,6 @@ declare global {
     globalAudio?: HTMLAudioElement;
   }
 }
-import { PlayMode } from '@/components/MusicPlayer';
 
 interface Song {
   id: string;
@@ -52,18 +53,50 @@ interface MusicContextType {
 const MusicContext = createContext<MusicContextType | undefined>(undefined);
 
 export function MusicProvider({ children }: { children: React.ReactNode }) {
-  const [currentSong, setCurrentSong] = useState<Song | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentPlaylist, setCurrentPlaylist] = useState<Playlist | null>(null);
-  const [currentSongIndex, setCurrentSongIndex] = useState(0);
-  const [volume, setVolume] = useState(0.7);
-  const [isMuted, setIsMuted] = useState(false);
-  const [playMode, setPlayMode] = useState<PlayMode>(PlayMode.RANDOM);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
+  // 从本地存储加载初始状态
+  const savedState = typeof window !== 'undefined' ? loadMusicState() : {
+    currentSong: null,
+    isPlaying: false,
+    currentPlaylist: null,
+    currentSongIndex: 0,
+    volume: 0.7,
+    isMuted: false,
+    playMode: PlayMode.RANDOM,
+    currentTime: 0,
+    shouldResumePlay: false,
+  };
+  
+  const [currentSong, setCurrentSong] = useState<Song | null>(savedState.currentSong);
+  const [isPlaying, setIsPlaying] = useState<boolean>(savedState.isPlaying);
+  const [currentPlaylist, setCurrentPlaylist] = useState<Playlist | null>(savedState.currentPlaylist);
+  const [currentSongIndex, setCurrentSongIndex] = useState<number>(savedState.currentSongIndex);
+  const [volume, setVolume] = useState<number>(savedState.volume);
+  const [isMuted, setIsMuted] = useState<boolean>(savedState.isMuted);
+  const [playMode, setPlayMode] = useState<PlayMode>(savedState.playMode);
+  const [currentTime, setCurrentTime] = useState<number>(0);
+  const [duration, setDuration] = useState<number>(0);
   const audioRef = useRef<HTMLAudioElement>(null);
   const progressBarRef = useRef<HTMLDivElement>(null);
-  const [shouldResumePlay, setShouldResumePlay] = useState(false); // 添加一个状态来跟踪是否应该恢复播放
+  const [shouldResumePlay, setShouldResumePlay] = useState<boolean>(savedState.shouldResumePlay);
+  
+  // 保存音乐状态到本地存储
+  const saveStateToStorage = useCallback(() => {
+    saveMusicState({
+      currentSong,
+      isPlaying,
+      currentPlaylist,
+      currentSongIndex,
+      volume,
+      isMuted,
+      playMode,
+      shouldResumePlay,
+    });
+  }, [currentSong, isPlaying, currentPlaylist, currentSongIndex, volume, isMuted, playMode, shouldResumePlay]);
+  
+  // 当关键状态变化时，保存到本地存储
+  useEffect(() => {
+    saveStateToStorage();
+  }, [saveStateToStorage]);
   
   // 创建全局音频实例，确保在页面切换时不会丢失
   useEffect(() => {
@@ -75,12 +108,30 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
         window.globalAudio.crossOrigin = 'anonymous';
       }
       audioRef.current = window.globalAudio;
+      
+      // 如果有保存的歌曲，尝试恢复音频源
+      if (currentSong && audioRef.current.src !== currentSong.url) {
+        audioRef.current.src = currentSong.url;
+        audioRef.current.load();
+        
+        // 如果之前是播放状态，尝试恢复播放
+        if (shouldResumePlay) {
+          audioRef.current.play().then(() => {
+            setIsPlaying(true);
+            setShouldResumePlay(true);
+          }).catch(error => {
+            console.error('恢复播放失败:', error);
+            setIsPlaying(false);
+            setShouldResumePlay(false);
+          });
+        }
+      }
     }
     
     return () => {
       // 不再清理音频元素，让它继续播放
     };
-  }, []); // 移除shouldResumePlay依赖，避免重复初始化
+  }, []); // 只在组件挂载时执行一次
   
   // 专门用于恢复播放状态的useEffect
   useEffect(() => {
@@ -324,6 +375,9 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
           setIsPlaying(false);
           setShouldResumePlay(false);
         });
+      } else if (document.hidden && isPlaying && !audio.paused) {
+        // 当页面变为不可见时，标记应该恢复播放
+        setShouldResumePlay(true);
       }
     };
 
@@ -412,11 +466,10 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     };
     
     // 延迟检查，确保页面已经完全加载
-    const timer = setTimeout(checkAndResumeAudio, 100);
+    const timer = setTimeout(checkAndResumeAudio, 500);
     
     return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shouldResumePlay, isPlaying]); // 只保留实际使用的状态，禁用ESLint警告
+  }, [shouldResumePlay, isPlaying, currentSong]); // 添加currentSong依赖，确保歌曲变化时也能恢复播放
 
   return (
     <MusicContext.Provider
