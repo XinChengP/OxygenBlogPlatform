@@ -4,6 +4,23 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>页面未找到 - OxygenBlogPlatform</title>
+  <script>
+    // 检查当前URL是否包含about.txt，如果是则重定向到about页面
+    (function() {
+      // 获取当前路径
+      var currentPath = window.location.pathname;
+      
+      // 检查是否是about.txt的请求
+      if (currentPath.includes('/about.txt') || currentPath.endsWith('about.txt')) {
+        // 构建重定向目标URL
+        var basePath = currentPath.split('/')[1] || '';
+        var redirectUrl = basePath ? '/' + basePath + '/about' : '/about';
+        
+        // 执行重定向
+        window.location.replace(redirectUrl);
+      }
+    })();
+  </script>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
