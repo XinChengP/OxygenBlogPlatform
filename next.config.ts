@@ -122,14 +122,11 @@ const nextConfig = {
   compress: true,
   // 确保正确处理Unicode字符
   pageExtensions: ["tsx", "ts", "jsx", "js"],
-  // 只在非静态导出模式下启用rewrites
+  // 只在非静态导出模式下启用重写规则
   ...(process.env.NODE_ENV !== "production" && {
     async rewrites() {
       return [
-        {
-          source: '/about.txt',
-          destination: '/api/about.txt'
-        },
+        // 已移除about.txt重定向规则
       ];
     },
   }),
