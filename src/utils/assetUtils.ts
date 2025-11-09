@@ -15,6 +15,7 @@ export function getAssetPath(path: string): string {
     }
     
     // 否则添加仓库名称前缀
+    // 注意：这里不进行额外的编码，因为调用者可能已经对路径进行了编码
     return `/${repoName}${path}`;
   }
   

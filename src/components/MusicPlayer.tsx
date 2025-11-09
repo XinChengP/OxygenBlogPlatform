@@ -163,8 +163,10 @@ export default function MusicPlayer({ playlists }: MusicPlayerProps) {
         
         // 尝试每种可能的扩展名
         for (const ext of possibleExtensions) {
-          // 构建封面URL，确保正确处理特殊字符
-          const coverUrl = getAssetPath(`${audioPath.substring(0, lastSlashIndex + 1)}${encodeURIComponent(fileNameWithoutExt)}.${ext}`);
+          // 在GitHub Pages环境中，我们需要确保路径正确
+          // 构建封面URL，避免双重编码
+          // 直接使用文件名，不进行额外编码，因为浏览器会自动处理
+          const coverUrl = getAssetPath(`${audioPath.substring(0, lastSlashIndex + 1)}${fileNameWithoutExt}.${ext}`);
           
           // 尝试加载图片
           const success = await tryLoadImage(coverUrl);
@@ -175,8 +177,22 @@ export default function MusicPlayer({ playlists }: MusicPlayerProps) {
           attempts++;
         }
         
-        // 如果所有尝试都失败，使用默认封面
+        // 如果所有尝试都失败，尝试使用编码的文件名
         if (!coverFound && attempts === possibleExtensions.length) {
+          for (const ext of possibleExtensions) {
+            // 使用编码的文件名作为最后的尝试
+            const encodedCoverUrl = getAssetPath(`${audioPath.substring(0, lastSlashIndex + 1)}${encodeURIComponent(fileNameWithoutExt)}.${ext}`);
+            
+            const success = await tryLoadImage(encodedCoverUrl);
+            if (success) {
+              coverFound = true;
+              break;
+            }
+          }
+        }
+        
+        // 如果所有尝试都失败，使用默认封面
+        if (!coverFound) {
           setCurrentSongCover(getAssetPath('/placeholder-album.svg'));
           setIsExtractingCover(false);
         }

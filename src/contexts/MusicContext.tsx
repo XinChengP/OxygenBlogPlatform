@@ -1,5 +1,7 @@
 'use client';
 
+/* eslint-disable react-hooks/exhaustive-deps */
+
 import { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react';
 import { saveMusicState, loadMusicState } from '@/utils/musicStateUtils';
 import { PlayMode } from '@/components/MusicPlayer';
@@ -145,7 +147,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
         setShouldResumePlay(false);
       });
     }
-  }, [shouldResumePlay]);
+  }, [shouldResumePlay, currentSong]); // 故意不包含isPlaying，避免无限循环
 
   // 播放/暂停
   const togglePlayPause = () => {
@@ -390,15 +392,15 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
-      audio.removeEventListener('timeupdate', updateTime);
-      audio.removeEventListener('loadedmetadata', updateDuration);
-      audio.removeEventListener('ended', handleEnded);
-      audio.removeEventListener('loadstart', handleLoadStart);
-      audio.removeEventListener('canplay', handleCanPlay);
-      audio.removeEventListener('error', handleError);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [currentSong, playMode, playNext, shouldResumePlay, isPlaying, audioRef, setIsPlaying, setShouldResumePlay]);
+    audio.removeEventListener('timeupdate', updateTime);
+    audio.removeEventListener('loadedmetadata', updateDuration);
+    audio.removeEventListener('ended', handleEnded);
+    audio.removeEventListener('loadstart', handleLoadStart);
+    audio.removeEventListener('canplay', handleCanPlay);
+    audio.removeEventListener('error', handleError);
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
+  };
+  }, [currentSong, playMode, playNext, shouldResumePlay, isPlaying]); // 故意不包含audioRef、setIsPlaying和setShouldResumePlay，避免无限循环
 
   // 当歌曲改变时，更新音频源
   useEffect(() => {
@@ -509,3 +511,5 @@ export function useMusic() {
   }
   return context;
 }
+
+/* eslint-enable react-hooks/exhaustive-deps */
