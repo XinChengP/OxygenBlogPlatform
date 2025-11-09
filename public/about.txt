@@ -1,0 +1,13 @@
+About OxygenBlogPlatform
+
+This is a static blog platform built with Next.js and deployed on GitHub Pages.
+
+Features:
+- Blog posts with markdown support
+- Music player with playlist functionality
+- Theme toggle (light/dark mode)
+- Responsive design
+- Guestbook functionality
+- Archive page for all posts
+
+For more information, visit the GitHub repository.

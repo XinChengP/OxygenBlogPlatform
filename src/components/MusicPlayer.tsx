@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 import { useMusic } from '@/contexts/MusicContext';
+import { getAssetPath } from '@/utils/assetUtils';
 
 export interface Song {
   id: string;
@@ -66,7 +67,7 @@ export default function MusicPlayer({ playlists }: MusicPlayerProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [previousVolume, setPreviousVolume] = useState(0.7); // 用于保存静音前的音量
   const [showPlayModeMenu, setShowPlayModeMenu] = useState(false); // 播放模式菜单显示状态
-  const [currentSongCover, setCurrentSongCover] = useState<string>('/placeholder-album.svg'); // 当前歌曲封面
+  const [currentSongCover, setCurrentSongCover] = useState<string>(getAssetPath('/placeholder-album.svg')); // 当前歌曲封面
   const [isExtractingCover, setIsExtractingCover] = useState(false); // 是否正在提取封面
   const [searchQuery, setSearchQuery] = useState(''); // 搜索查询
 
@@ -133,13 +134,13 @@ export default function MusicPlayer({ playlists }: MusicPlayerProps) {
         (window.location.protocol === 'file:' || 
          window.location.hostname.includes('github.io') ||
          window.location.hostname.includes('pages.dev'))) {
-      setCurrentSongCover('/placeholder-album.svg');
+      setCurrentSongCover(getAssetPath('/placeholder-album.svg'));
       return;
     }
     
     // 在开发环境中，也暂时使用默认封面，避免API调用
     if (process.env.NODE_ENV === 'development') {
-      setCurrentSongCover('/placeholder-album.svg');
+      setCurrentSongCover(getAssetPath('/placeholder-album.svg'));
       return;
     }
     
@@ -167,7 +168,7 @@ export default function MusicPlayer({ playlists }: MusicPlayerProps) {
     }
     
     // 如果提取失败，使用默认封面
-    setCurrentSongCover('/placeholder-album.svg');
+    setCurrentSongCover(getAssetPath('/placeholder-album.svg'));
   };
 
   // 当歌曲改变时，提取封面

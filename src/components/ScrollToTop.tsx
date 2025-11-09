@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useTheme } from 'next-themes';
 import { ChevronUpIcon, ChevronDownIcon, SunIcon, MoonIcon, AdjustmentsHorizontalIcon, PlayIcon, PauseIcon, ForwardIcon } from '@heroicons/react/24/outline';
 import { useMusic } from '@/contexts/MusicContext';
+import { getAssetPath } from '@/utils/assetUtils';
 
 /**
  * 页面导航组件
@@ -35,13 +36,13 @@ export default function ScrollToTop() {
     
     // 在静态环境下，直接使用默认封面，不调用API
     if (typeof window !== 'undefined' && window.location.protocol === 'file:') {
-      setExtractedCover('/placeholder-album.svg');
+      setExtractedCover(getAssetPath('/placeholder-album.svg'));
       return;
     }
     
     // 在开发环境下，也直接使用默认封面，不调用API
     if (process.env.NODE_ENV === 'development') {
-      setExtractedCover('/placeholder-album.svg');
+      setExtractedCover(getAssetPath('/placeholder-album.svg'));
       return;
     }
     
@@ -66,7 +67,7 @@ export default function ScrollToTop() {
     }
     
     // 如果提取失败，使用默认封面
-    setExtractedCover('/placeholder-album.svg');
+    setExtractedCover(getAssetPath('/placeholder-album.svg'));
   };
   
   // 当歌曲改变时，提取封面
