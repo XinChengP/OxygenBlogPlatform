@@ -12,8 +12,8 @@ const nextConfig = {
     },
     // 禁用RSC
     reactStrictMode: false,
-    // 使用不同的输出目录
-    distDir: 'build',
+    // 使用out目录作为输出目录，与GitHub Actions工作流保持一致
+    distDir: 'out',
   }),
   trailingSlash: true,
   // 环境变量配置，供客户端组件使用
