@@ -2,13 +2,21 @@ import { Song, Playlist } from '@/components/MusicPlayer';
 
 // 获取音乐文件列表
 export async function getMusicPlaylists(): Promise<Playlist[]> {
-  // 在静态环境下，使用预生成的静态数据
-  if (typeof window !== 'undefined' && window.location.protocol === 'file:') {
-    // 静态环境（文件协议），使用静态数据
+  // 在静态环境下（GitHub Pages），使用预生成的静态数据
+  if (typeof window !== 'undefined' && 
+      (window.location.protocol === 'file:' || 
+       window.location.hostname.includes('github.io') ||
+       window.location.hostname.includes('pages.dev'))) {
+    // 静态环境（文件协议或GitHub Pages），使用静态数据
     return getStaticMusicPlaylists();
   }
   
-  // 开发环境或生产环境，尝试调用API
+  // 开发环境下，也直接使用静态数据
+  if (process.env.NODE_ENV === 'development') {
+    return getStaticMusicPlaylists();
+  }
+  
+  // 生产环境，尝试调用API
   try {
     // 在实际应用中，这里应该调用API获取音乐文件列表
     // 现在我们模拟从public/MusicList目录获取音乐文件
@@ -33,6 +41,7 @@ export async function getMusicPlaylists(): Promise<Playlist[]> {
 function getStaticMusicPlaylists(): Playlist[] {
   // 返回public/MusicList目录中实际存在的音乐文件
   // 根据目录结构，目前有2025Producer文件夹
+  // 确保在GitHub Pages环境下音乐文件路径能正确解析
   return [{
     id: '2025Producer',
     name: '闪耀的Producer',
@@ -97,7 +106,7 @@ function getStaticMusicPlaylists(): Playlist[] {
         id: '2025Producer-8',
         title: '捉迷藏',
         artist: '洛天依',
-        url: '/MusicList/2025Producer/红·发起人｜捉迷藏(鬼ごっこ) - 春野 feat.洛天依 官方MV.mp3',
+        url: '/MusicList/2025Producer/红·发起人｜捉迷藏(鬼ごっko) - 春野 feat.洛天依 官方MV.mp3',
         cover: '/placeholder-album.svg'
       },
       {
@@ -210,17 +219,27 @@ export function createPlaylist(folderName: string, files: string[]): Playlist {
     displayName = '闪耀的Producer';
   }
   
+  // 检查是否是GitHub Pages环境
+  const isGitHubPages = typeof window !== 'undefined' && 
+      (window.location.hostname.includes('github.io') ||
+       window.location.hostname.includes('pages.dev'));
+  
   const songs: Song[] = files.map((file, index) => {
     const { title, artist } = parseSongInfo(file);
     // 尝试构建封面URL，假设封面与音频文件同名但扩展名为.jpg或.png
     const baseName = file.replace(/\.[^/.]+$/, "");
-    const coverUrl = `/MusicList/${folderName}/${encodeURIComponent(baseName)}.jpg`;
+    const coverUrl = `/MusicList/${folderName}/${baseName}.jpg`;
+    
+    // 在GitHub Pages环境下，不进行URL编码，使用原始文件名
+    const fileUrl = isGitHubPages 
+      ? `/MusicList/${folderName}/${file}`
+      : `/MusicList/${folderName}/${encodeURIComponent(file)}`;
     
     return {
       id: `${folderName}-${index}`,
       title,
       artist,
-      url: `/MusicList/${folderName}/${encodeURIComponent(file)}`,
+      url: fileUrl,
       cover: coverUrl
     };
   });

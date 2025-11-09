@@ -129,7 +129,16 @@ export default function MusicPlayer({ playlists }: MusicPlayerProps) {
     if (!songUrl) return;
     
     // 在静态环境下，直接使用默认封面，不调用API
-    if (typeof window !== 'undefined' && window.location.protocol === 'file:') {
+    if (typeof window !== 'undefined' && 
+        (window.location.protocol === 'file:' || 
+         window.location.hostname.includes('github.io') ||
+         window.location.hostname.includes('pages.dev'))) {
+      setCurrentSongCover('/placeholder-album.svg');
+      return;
+    }
+    
+    // 在开发环境中，也暂时使用默认封面，避免API调用
+    if (process.env.NODE_ENV === 'development') {
       setCurrentSongCover('/placeholder-album.svg');
       return;
     }

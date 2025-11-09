@@ -39,6 +39,12 @@ export default function ScrollToTop() {
       return;
     }
     
+    // 在开发环境下，也直接使用默认封面，不调用API
+    if (process.env.NODE_ENV === 'development') {
+      setExtractedCover('/placeholder-album.svg');
+      return;
+    }
+    
     try {
       // 构建API请求URL，使用查询参数版本
       // 移除开头的斜杠并编码路径，使用查询参数格式
