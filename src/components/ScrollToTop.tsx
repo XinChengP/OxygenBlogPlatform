@@ -33,6 +33,12 @@ export default function ScrollToTop() {
   const extractCoverFromAudio = async (songUrl: string) => {
     if (!songUrl) return;
     
+    // 在静态环境下，直接使用默认封面，不调用API
+    if (typeof window !== 'undefined' && window.location.protocol === 'file:') {
+      setExtractedCover('/placeholder-album.svg');
+      return;
+    }
+    
     try {
       // 构建API请求URL，使用查询参数版本
       // 移除开头的斜杠并编码路径，使用查询参数格式

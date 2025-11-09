@@ -2,6 +2,13 @@ import { Song, Playlist } from '@/components/MusicPlayer';
 
 // 获取音乐文件列表
 export async function getMusicPlaylists(): Promise<Playlist[]> {
+  // 在静态环境下，使用预生成的静态数据
+  if (typeof window !== 'undefined' && window.location.protocol === 'file:') {
+    // 静态环境（文件协议），使用静态数据
+    return getStaticMusicPlaylists();
+  }
+  
+  // 开发环境或生产环境，尝试调用API
   try {
     // 在实际应用中，这里应该调用API获取音乐文件列表
     // 现在我们模拟从public/MusicList目录获取音乐文件
@@ -17,13 +24,35 @@ export async function getMusicPlaylists(): Promise<Playlist[]> {
   } catch (error) {
     console.error('Error fetching music playlists:', error);
     
-    // 如果API调用失败，返回一个默认播放列表
-    return [{
-      id: 'default',
-      name: '默认播放列表',
-      songs: []
-    }];
+    // 如果API调用失败，返回静态数据作为后备
+    return getStaticMusicPlaylists();
   }
+}
+
+// 获取静态音乐播放列表数据（用于静态环境）
+function getStaticMusicPlaylists(): Playlist[] {
+  // 这里返回预生成的静态数据
+  // 在实际应用中，这些数据应该在构建时生成
+  return [{
+    id: '2025Producer',
+    name: '闪耀的Producer',
+    songs: [
+      {
+        id: '2025Producer-0',
+        title: '珍珠',
+        artist: '洛天依',
+        url: '/MusicList/2025Producer/珍珠.mp3',
+        cover: '/placeholder-album.svg'
+      },
+      {
+        id: '2025Producer-1',
+        title: '权御天下',
+        artist: '洛天依',
+        url: '/MusicList/2025Producer/权御天下.mp3',
+        cover: '/placeholder-album.svg'
+      }
+    ]
+  }];
 }
 
 // 解析音乐文件名获取歌曲信息

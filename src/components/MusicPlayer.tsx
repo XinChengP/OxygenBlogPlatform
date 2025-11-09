@@ -128,6 +128,12 @@ export default function MusicPlayer({ playlists }: MusicPlayerProps) {
   const extractCoverFromAudio = async (songUrl: string) => {
     if (!songUrl) return;
     
+    // 在静态环境下，直接使用默认封面，不调用API
+    if (typeof window !== 'undefined' && window.location.protocol === 'file:') {
+      setCurrentSongCover('/placeholder-album.svg');
+      return;
+    }
+    
     setIsExtractingCover(true);
     try {
       // 构建API请求URL，使用查询参数版本
