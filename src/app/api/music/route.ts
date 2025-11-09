@@ -19,60 +19,74 @@ export interface Playlist {
   songs: Song[];
 }
 
-// 配置API路由为静态模式
-export const dynamic = 'force-static';
-
-// 为静态导出提供空的generateStaticParams函数
-export async function generateStaticParams() {
-  // 这个API路由不需要预生成静态页面
-  return [];
-}
+// 配置API路由为动态模式，避免静态生成问题
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    // 获取音乐目录路径
+    console.log('Music API called');
+    
+    // 构建音乐目录路径
     const musicDir = path.join(process.cwd(), 'public', 'MusicList');
+    console.log('Music directory:', musicDir);
     
-    // 读取音乐目录下的所有文件夹
-    const folders = await readdir(musicDir, { withFileTypes: true })
-      .then(dirents => dirents.filter(dirent => dirent.isDirectory()).map(dirent => dirent.name))
-      .catch(error => {
-        console.error('Error reading music directory:', error);
-        return [];
+    // 读取MusicList目录
+    const playlistFolders = await readdir(musicDir, { withFileTypes: true });
+    console.log('Found playlist folders:', playlistFolders.map(f => f.name));
+    
+    const playlists: Playlist[] = [];
+    
+    // 遍历每个播放列表文件夹
+    for (const folder of playlistFolders) {
+      if (folder.isDirectory()) {
+        try {
+          const folderPath = path.join(musicDir, folder.name);
+          const files = await readdir(folderPath);
+          
+          // 过滤出音频文件
+          const audioFiles = files.filter(file => 
+            file.toLowerCase().endsWith('.mp3') ||
+            file.toLowerCase().endsWith('.wav') ||
+            file.toLowerCase().endsWith('.ogg') ||
+            file.toLowerCase().endsWith('.m4a')
+          );
+          
+          console.log(`Found ${audioFiles.length} audio files in ${folder.name}`);
+          
+          if (audioFiles.length > 0) {
+            // 创建播放列表
+            const playlist = createPlaylist(folder.name, audioFiles);
+            playlists.push(playlist);
+          }
+        } catch (folderError) {
+          console.error(`Error reading folder ${folder.name}:`, folderError);
+        }
+      }
+    }
+    
+    // 如果没有找到任何播放列表，返回默认播放列表
+    if (playlists.length === 0) {
+      console.log('No playlists found, returning default playlist');
+      playlists.push({
+        id: 'default',
+        name: '默认播放列表',
+        songs: []
       });
+    }
     
-    // 为每个文件夹创建播放列表
-    const playlists = await Promise.all(
-      folders.map(async (folder) => {
-        const folderPath = path.join(musicDir, folder);
-        
-        // 读取文件夹中的所有音乐文件
-        const files = await readdir(folderPath)
-          .then(fileNames => 
-            fileNames.filter(fileName => {
-              // 只保留音频文件
-              const ext = path.extname(fileName).toLowerCase();
-              return ['.mp3', '.wav', '.ogg', '.flac', '.aac', '.m4a'].includes(ext);
-            })
-          )
-          .catch(error => {
-            console.error(`Error reading folder ${folder}:`, error);
-            return [];
-          });
-        
-        return createPlaylist(folder, files);
-      })
-    );
+    console.log('Returning playlists:', playlists);
     
-    // 过滤掉没有歌曲的播放列表
-    const validPlaylists = playlists.filter((playlist: Playlist) => playlist.songs.length > 0);
-    
-    return NextResponse.json(validPlaylists);
+    return NextResponse.json(playlists);
   } catch (error) {
     console.error('Error in music API:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch music playlists' },
-      { status: 500 }
-    );
+    
+    // 如果出现错误，返回一个默认的播放列表
+    const defaultPlaylist = {
+      id: 'error-fallback',
+      name: '音乐播放列表',
+      songs: []
+    };
+    
+    return NextResponse.json([defaultPlaylist]);
   }
 }

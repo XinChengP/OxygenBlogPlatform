@@ -309,7 +309,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       audio.removeEventListener('error', handleError);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [currentSong, playMode, playNext, shouldResumePlay, isPlaying]);
+  }, [currentSong, playMode, playNext, shouldResumePlay, isPlaying, audioRef, setIsPlaying, setShouldResumePlay]);
 
   // 当歌曲改变时，更新音频源
   useEffect(() => {
