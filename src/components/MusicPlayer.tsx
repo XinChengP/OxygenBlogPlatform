@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 import { useMusic } from '@/contexts/MusicContext';
-import { getAssetPath } from '@/utils/assetUtils';
+import { getAssetPath, isGitHubPages } from '@/utils/assetUtils';
 
 export interface Song {
   id: string;
@@ -127,9 +127,84 @@ export default function MusicPlayer({ playlists }: MusicPlayerProps) {
 
   // 从音频文件中提取封面
   const extractCoverFromAudio = async (songUrl: string) => {
-    // 在所有环境下都直接使用默认封面，不调用API
-    // 因为GitHub Pages不支持API路由
-    setCurrentSongCover(getAssetPath('/placeholder-album.svg'));
+    setIsExtractingCover(true);
+    
+    try {
+      // 在GitHub Pages环境中，我们无法使用API路由提取封面
+      // 所以我们尝试使用与音频文件同名的封面图片
+      if (isGitHubPages()) {
+        // 获取音频文件的路径和文件名（不带扩展名）
+        const audioPath = new URL(songUrl, window.location.origin).pathname;
+        const lastSlashIndex = audioPath.lastIndexOf('/');
+        const fileNameWithExt = lastSlashIndex !== -1 ? audioPath.substring(lastSlashIndex + 1) : audioPath;
+        const lastDotIndex = fileNameWithExt.lastIndexOf('.');
+        const fileNameWithoutExt = lastDotIndex !== -1 ? fileNameWithExt.substring(0, lastDotIndex) : fileNameWithExt;
+        
+        // 尝试加载同名的封面图片（支持jpg、png、webp格式）
+        const possibleExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+        let coverFound = false;
+        let attempts = 0;
+        
+        // 使用Promise来处理异步图片加载
+        const tryLoadImage = (coverUrl: string): Promise<boolean> => {
+          return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => {
+              setCurrentSongCover(coverUrl);
+              setIsExtractingCover(false);
+              resolve(true);
+            };
+            img.onerror = () => {
+              resolve(false);
+            };
+            img.src = coverUrl;
+          });
+        };
+        
+        // 尝试每种可能的扩展名
+        for (const ext of possibleExtensions) {
+          // 构建封面URL，确保正确处理特殊字符
+          const coverUrl = getAssetPath(`${audioPath.substring(0, lastSlashIndex + 1)}${encodeURIComponent(fileNameWithoutExt)}.${ext}`);
+          
+          // 尝试加载图片
+          const success = await tryLoadImage(coverUrl);
+          if (success) {
+            coverFound = true;
+            break;
+          }
+          attempts++;
+        }
+        
+        // 如果所有尝试都失败，使用默认封面
+        if (!coverFound && attempts === possibleExtensions.length) {
+          setCurrentSongCover(getAssetPath('/placeholder-album.svg'));
+          setIsExtractingCover(false);
+        }
+      } else {
+        // 非GitHub Pages环境，尝试调用API提取封面
+        try {
+          const response = await fetch(`/api/music/metadata?path=${encodeURIComponent(songUrl)}`);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.cover) {
+              setCurrentSongCover(data.cover);
+              setIsExtractingCover(false);
+              return;
+            }
+          }
+        } catch (error) {
+          console.error('Failed to extract cover from API:', error);
+        }
+        
+        // API调用失败，使用默认封面
+        setCurrentSongCover(getAssetPath('/placeholder-album.svg'));
+        setIsExtractingCover(false);
+      }
+    } catch (error) {
+      console.error('Error extracting cover:', error);
+      setCurrentSongCover(getAssetPath('/placeholder-album.svg'));
+      setIsExtractingCover(false);
+    }
   };
 
   // 当歌曲改变时，提取封面
