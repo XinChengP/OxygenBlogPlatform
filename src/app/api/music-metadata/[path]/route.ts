@@ -6,30 +6,16 @@ import * as musicMetadata from 'music-metadata';
 // 配置API路由为静态模式
 export const dynamic = 'force-static';
 
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ path: string }> }) {
   try {
-    // 尝试不同的方式获取查询参数
-    let musicPath: string | null = null;
+    // 从动态路由参数中获取音乐文件路径（需要await）
+    const { path: musicPath } = await params;
     
-    // 方法1: 使用request.nextUrl.searchParams
-    musicPath = request.nextUrl.searchParams.get('path');
-    
-    // 方法2: 如果方法1失败，尝试使用URL构造函数
-    if (!musicPath) {
-      try {
-        const url = new URL(request.url);
-        musicPath = url.searchParams.get('path');
-      } catch (e) {
-        console.log('URL constructor failed:', e);
-      }
-    }
-    
-    console.log('Received request URL:', request.url);
-    console.log('Next URL search params:', Array.from(request.nextUrl.searchParams.entries()));
-    console.log('Music path parameter:', musicPath);
+    console.log('Dynamic route API - Received request URL:', request.url);
+    console.log('Dynamic route API - Music path parameter:', musicPath);
     
     if (!musicPath) {
-      console.log('No music path provided');
+      console.log('Dynamic route API - No music path provided');
       return NextResponse.json(
         { error: 'Music path is required' },
         { status: 400 }
@@ -40,10 +26,10 @@ export async function GET(request: NextRequest) {
     const decodedPath = decodeURIComponent(musicPath);
     
     // 构建完整的文件路径
-    // 注意：musicPath已经是相对于public目录的路径（如/MusicList/2025Producer/文件名.mp3）
-    // 所以我们需要去掉开头的斜杠，然后与public目录拼接
     const normalizedPath = decodedPath.startsWith('/') ? decodedPath.substring(1) : decodedPath;
     const fullPath = path.join(process.cwd(), 'public', normalizedPath);
+    
+    console.log('Dynamic route API - Full path:', fullPath);
     
     try {
       // 读取音乐文件
@@ -79,14 +65,14 @@ export async function GET(request: NextRequest) {
         track: metadata.common.track
       });
     } catch (fileError) {
-      console.error('Error processing music file:', fileError);
+      console.error('Dynamic route API - Error processing music file:', fileError);
       return NextResponse.json(
         { error: 'Failed to process music file', details: fileError instanceof Error ? fileError.message : String(fileError) },
         { status: 500 }
       );
     }
   } catch (error) {
-    console.error('Error in metadata API:', error);
+    console.error('Dynamic route API - Error:', error);
     return NextResponse.json(
       { error: 'Internal server error', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }

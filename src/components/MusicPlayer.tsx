@@ -130,8 +130,10 @@ export default function MusicPlayer({ playlists }: MusicPlayerProps) {
     
     setIsExtractingCover(true);
     try {
-      // 构建API请求URL，移除开头的斜杠以匹配相对路径
-      const apiUrl = `/api/music/metadata?path=${encodeURIComponent(songUrl.substring(1))}`;
+      // 构建API请求URL，使用新的动态路由API
+      // 移除开头的斜杠并编码路径，使用动态路由格式（不带尾部斜杠）
+      const musicPath = songUrl.substring(1);
+      const apiUrl = `/api/music-metadata/${encodeURIComponent(musicPath)}`;
       const response = await fetch(apiUrl);
       
       if (response.ok) {
