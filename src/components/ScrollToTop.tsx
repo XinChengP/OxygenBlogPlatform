@@ -32,41 +32,8 @@ export default function ScrollToTop() {
   
   // 从音频文件中提取封面
   const extractCoverFromAudio = async (songUrl: string) => {
-    if (!songUrl) return;
-    
-    // 在静态环境下，直接使用默认封面，不调用API
-    if (typeof window !== 'undefined' && window.location.protocol === 'file:') {
-      setExtractedCover(getAssetPath('/placeholder-album.svg'));
-      return;
-    }
-    
-    // 在开发环境下，也直接使用默认封面，不调用API
-    if (process.env.NODE_ENV === 'development') {
-      setExtractedCover(getAssetPath('/placeholder-album.svg'));
-      return;
-    }
-    
-    try {
-      // 构建API请求URL，使用查询参数版本
-      // 移除开头的斜杠并编码路径，使用查询参数格式
-      const musicPath = songUrl.substring(1);
-      const apiUrl = `/api/music-metadata?path=${encodeURIComponent(musicPath)}`;
-      const response = await fetch(apiUrl);
-      
-      if (response.ok) {
-        const metadata = await response.json();
-        if (metadata.cover) {
-          setExtractedCover(metadata.cover);
-          return;
-        }
-      } else {
-        console.error('API response not OK:', response.status, response.statusText);
-      }
-    } catch (error) {
-      console.error('Error extracting cover:', error);
-    }
-    
-    // 如果提取失败，使用默认封面
+    // 在所有环境下都直接使用默认封面，不调用API
+    // 因为GitHub Pages不支持API路由
     setExtractedCover(getAssetPath('/placeholder-album.svg'));
   };
   

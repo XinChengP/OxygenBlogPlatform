@@ -32,22 +32,7 @@ export async function GET() {
   try {
     const { readdir } = await import('fs/promises');
     const path = await import('path');
-    // 由于 @/utils/musicUtils 模块不存在，直接在本地实现 createPlaylist 函数
-    const createPlaylist = (folderName: string, audioFiles: string[]): Playlist => {
-      const songs: Song[] = audioFiles.map((file, index) => ({
-        id: `${folderName}-${index}`,
-        title: file.replace(/\.(mp3|wav|ogg|m4a)$/i, ''),
-        url: `/MusicList/${folderName}/${file}`,
-        cover: undefined,
-        duration: undefined,
-      }));
-
-      return {
-        id: folderName,
-        name: folderName,
-        songs,
-      };
-    };
+    const { createPlaylist } = await import('@/utils/musicUtils');
     
     console.log('Music API called (development mode)');
     

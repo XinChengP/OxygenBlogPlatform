@@ -13,6 +13,12 @@ export async function generateStaticParams() {
 }
 
 export async function GET(request: NextRequest) {
+  // 在静态导出环境中，直接返回空响应
+  // 因为GitHub Pages不支持API路由
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({});
+  }
+  
   try {
     // 尝试不同的方式获取查询参数
     let musicPath: string | null = null;

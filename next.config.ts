@@ -5,6 +5,15 @@ const nextConfig = {
     output: "export",
     // 跳过API路由的静态生成
     skipTrailingSlashRedirect: true,
+    // 完全禁用RSC以避免在GitHub Pages上的404错误
+    experimental: {
+      missingSuspenseWithCSRBailout: false,
+      serverComponentsExternalPackages: ['all'],
+    },
+    // 禁用RSC
+    reactStrictMode: false,
+    // 使用不同的输出目录
+    distDir: 'build',
   }),
   trailingSlash: true,
   // 环境变量配置，供客户端组件使用
@@ -116,11 +125,12 @@ const nextConfig = {
   // 只在非静态导出模式下启用rewrites
   ...(process.env.NODE_ENV !== "production" && {
     async rewrites() {
-      return {
-        beforeFiles: [],
-        afterFiles: [],
-        fallback: [],
-      };
+      return [
+        {
+          source: '/about.txt',
+          destination: '/api/about.txt'
+        },
+      ];
     },
   }),
 };

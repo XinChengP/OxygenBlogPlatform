@@ -17,25 +17,8 @@ export async function getMusicPlaylists(): Promise<Playlist[]> {
     return getStaticMusicPlaylists();
   }
   
-  // 生产环境，尝试调用API
-  try {
-    // 在实际应用中，这里应该调用API获取音乐文件列表
-    // 现在我们模拟从public/MusicList目录获取音乐文件
-    
-    // 模拟API响应，注意使用尾随斜杠
-    const response = await fetch('/api/music/');
-    if (!response.ok) {
-      throw new Error('Failed to fetch music playlists');
-    }
-    
-    const playlists = await response.json() as Playlist[];
-    return playlists;
-  } catch (error) {
-    console.error('Error fetching music playlists:', error);
-    
-    // 如果API调用失败，返回静态数据作为后备
-    return getStaticMusicPlaylists();
-  }
+  // GitHub Pages不支持API路由，直接返回静态数据
+  return getStaticMusicPlaylists();
 }
 
 // 获取静态音乐播放列表数据（用于静态环境）
@@ -43,81 +26,47 @@ function getStaticMusicPlaylists(): Playlist[] {
   // 返回public/MusicList目录中实际存在的音乐文件
   // 根据目录结构，目前有2025Producer文件夹
   // 确保在GitHub Pages环境下音乐文件路径能正确解析
+  
+  // 检查是否是GitHub Pages环境
+  const isGitHubPages = typeof window !== 'undefined' && 
+      (window.location.hostname.includes('github.io') ||
+       window.location.hostname.includes('pages.dev'));
+  
+  const musicFiles = [
+    '官方投稿 【洛天依原创曲】珍珠【2025官方生贺曲】.mp3',
+    '官方投稿｜权御天下「2025官方重置版」【洛天依ST乌龟SuiCreuzer】.mp3',
+    '特别收录 【洛天依乐正绫原创】白石溪【2025官方重置版】.mp3',
+    '特别收录 【洛天依原创】超超超计算机世纪【Chord分解和弦P】.mp3',
+    '特别收录｜跟随《流光（Light Me Up）》，点亮我们的蔚蓝色海洋吧！.mp3',
+    '官方投稿 《时光代理人》全新单曲「偷猎时间的天才」（洛天依 ver）MV公开.mp3',
+    '红·发起人 【官方MV】MAO！- 洛天依&神山羊-有機酸&纳兰寻风.mp3',
+    '红·发起人 【洛天依原创】code：TY712【COP】.mp3',
+    '红·发起人｜捉迷藏(鬼ごっko) - 春野 feat.洛天依 官方MV.mp3',
+    '红、一等奖 【洛天依】下等马【ChiliChill】.mp3'
+  ];
+  
+  const songs: Song[] = musicFiles.map((file, index) => {
+    const { title, artist } = parseSongInfo(file);
+    
+    // 在GitHub Pages环境下，不进行URL编码，使用原始文件名
+    // 在其他环境下，对中文文件名进行URL编码
+    const fileUrl = isGitHubPages 
+      ? getAssetPath(`/MusicList/2025Producer/${file}`)
+      : `/MusicList/2025Producer/${encodeURIComponent(file)}`;
+    
+    return {
+      id: `2025Producer-${index}`,
+      title,
+      artist,
+      url: fileUrl,
+      cover: getAssetPath('/placeholder-album.svg')
+    };
+  });
+  
   return [{
     id: '2025Producer',
     name: '闪耀的Producer',
-    songs: [
-      {
-        id: '2025Producer-0',
-        title: '珍珠',
-        artist: '洛天依',
-        url: getAssetPath('/MusicList/2025Producer/官方投稿 【洛天依原创曲】珍珠【2025官方生贺曲】.mp3'),
-        cover: getAssetPath('/placeholder-album.svg')
-      },
-      {
-        id: '2025Producer-1',
-        title: '权御天下',
-        artist: '洛天依',
-        url: getAssetPath('/MusicList/2025Producer/官方投稿｜权御天下「2025官方重置版」【洛天依ST乌龟SuiCreuzer】.mp3'),
-        cover: getAssetPath('/placeholder-album.svg')
-      },
-      {
-        id: '2025Producer-2',
-        title: '白石溪',
-        artist: '洛天依 乐正绫',
-        url: getAssetPath('/MusicList/2025Producer/特别收录 【洛天依乐正绫原创】白石溪【2025官方重置版】.mp3'),
-        cover: getAssetPath('/placeholder-album.svg')
-      },
-      {
-        id: '2025Producer-3',
-        title: '超超超计算机世纪',
-        artist: '洛天依',
-        url: getAssetPath('/MusicList/2025Producer/特别收录 【洛天依原创】超超超计算机世纪【Chord分解和弦P】.mp3'),
-        cover: getAssetPath('/placeholder-album.svg')
-      },
-      {
-        id: '2025Producer-4',
-        title: '流光（Light Me Up）',
-        artist: '洛天依',
-        url: getAssetPath('/MusicList/2025Producer/特别收录｜跟随《流光（Light Me Up）》，点亮我们的蔚蓝色海洋吧！.mp3'),
-        cover: getAssetPath('/placeholder-album.svg')
-      },
-      {
-        id: '2025Producer-5',
-        title: '偷猎时间的天才',
-        artist: '洛天依',
-        url: getAssetPath('/MusicList/2025Producer/官方投稿 《时光代理人》全新单曲「偷猎时间的天才」（洛天依 ver）MV公开.mp3'),
-        cover: getAssetPath('/placeholder-album.svg')
-      },
-      {
-        id: '2025Producer-6',
-        title: 'MAO！',
-        artist: '洛天依 神山羊 纳兰寻风',
-        url: getAssetPath('/MusicList/2025Producer/红·发起人 【官方MV】MAO！- 洛天依&神山羊-有機酸&纳兰寻风.mp3'),
-        cover: getAssetPath('/placeholder-album.svg')
-      },
-      {
-        id: '2025Producer-7',
-        title: 'code：TY712',
-        artist: '洛天依',
-        url: getAssetPath('/MusicList/2025Producer/红·发起人 【洛天依原创】code：TY712【COP】.mp3'),
-        cover: getAssetPath('/placeholder-album.svg')
-      },
-      {
-        id: '2025Producer-8',
-        title: '捉迷藏',
-        artist: '洛天依',
-        url: getAssetPath('/MusicList/2025Producer/红·发起人｜捉迷藏(鬼ごっko) - 春野 feat.洛天依 官方MV.mp3'),
-        cover: getAssetPath('/placeholder-album.svg')
-      },
-      {
-        id: '2025Producer-9',
-        title: '下等马',
-        artist: '洛天依',
-        url: getAssetPath('/MusicList/2025Producer/红、一等奖 【洛天依】下等马【ChiliChill】.mp3'),
-        cover: getAssetPath('/placeholder-album.svg')
-      }
-    ]
+    songs
   }];
 }
 

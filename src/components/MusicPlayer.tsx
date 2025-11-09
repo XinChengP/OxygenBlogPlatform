@@ -127,47 +127,8 @@ export default function MusicPlayer({ playlists }: MusicPlayerProps) {
 
   // 从音频文件中提取封面
   const extractCoverFromAudio = async (songUrl: string) => {
-    if (!songUrl) return;
-    
-    // 在静态环境下，直接使用默认封面，不调用API
-    if (typeof window !== 'undefined' && 
-        (window.location.protocol === 'file:' || 
-         window.location.hostname.includes('github.io') ||
-         window.location.hostname.includes('pages.dev'))) {
-      setCurrentSongCover(getAssetPath('/placeholder-album.svg'));
-      return;
-    }
-    
-    // 在开发环境中，也暂时使用默认封面，避免API调用
-    if (process.env.NODE_ENV === 'development') {
-      setCurrentSongCover(getAssetPath('/placeholder-album.svg'));
-      return;
-    }
-    
-    setIsExtractingCover(true);
-    try {
-      // 构建API请求URL，使用查询参数版本
-      // 移除开头的斜杠并编码路径，使用查询参数格式
-      const musicPath = songUrl.substring(1);
-      const apiUrl = `/api/music-metadata?path=${encodeURIComponent(musicPath)}`;
-      const response = await fetch(apiUrl);
-      
-      if (response.ok) {
-        const metadata = await response.json();
-        if (metadata.cover) {
-          setCurrentSongCover(metadata.cover);
-          return;
-        }
-      } else {
-        console.error('API response not OK:', response.status, response.statusText);
-      }
-    } catch (error) {
-      console.error('Error extracting cover:', error);
-    } finally {
-      setIsExtractingCover(false);
-    }
-    
-    // 如果提取失败，使用默认封面
+    // 在所有环境下都直接使用默认封面，不调用API
+    // 因为GitHub Pages不支持API路由
     setCurrentSongCover(getAssetPath('/placeholder-album.svg'));
   };
 

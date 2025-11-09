@@ -2,21 +2,23 @@
  * 关于页面
  * 展示个人信息和博客介绍
  */
-"use client"
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import Image from 'next/image';
+import { useTheme } from 'next-themes';
+import FriendsLink from '@/components/FriendsLink';
+import ScrollToTop from '@/components/ScrollToTop';
 import { Cover } from '@/components/ui/cover'
 import { EvervaultCard, Icon } from '@/components/ui/evervault-card';
-import { motion } from 'motion/react';
-import Image from 'next/image';
 import MailIcon from '@/assets/mail.svg';
 import GitHubIcon from '@/assets/github.svg';
 import BilibiliIcon from '@/assets/bilibili.png';
 import {title, BeforeAnimationText, AnimationText, name, slogan, aboutMeP1, aboutMeP2, aboutMeP3, mainContactMeDescription, subContactMeDescription, mail, github, bilibili, isBorder, isRainbowGradient}
 from '@/setting/AboutSetting';
-import { useTheme } from 'next-themes';
-import { useMemo, useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
-import ScrollToTop from '@/components/ScrollToTop';
-import FriendsLink from '@/components/FriendsLink';
 
 /**
  * 关于页面组件

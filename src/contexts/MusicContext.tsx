@@ -276,6 +276,41 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     const handleError = (e: Event) => {
       console.error('Audio error:', e);
       setIsPlaying(false);
+      setShouldResumePlay(false);
+      
+      // 如果是网络错误，尝试重新加载
+      const target = e.target as HTMLAudioElement;
+      if (target.error) {
+        console.error('Audio error code:', target.error.code);
+        console.error('Audio error message:', target.error.message);
+        
+        // 对于中文文件名加载失败的情况，尝试使用编码后的URL
+        if (currentSong && currentSong.url) {
+          const url = new URL(currentSong.url, window.location.origin);
+          const pathname = url.pathname;
+          
+          // 如果路径包含中文字符且未编码，尝试编码
+          if (/[^\x00-\x7F]/.test(pathname) && !pathname.includes('%')) {
+            const encodedPathname = pathname.split('/').map(segment => 
+              /[^\x00-\x7F]/.test(segment) ? encodeURIComponent(segment) : segment
+            ).join('/');
+            
+            console.log('Trying encoded URL:', url.origin + encodedPathname);
+            audio.src = url.origin + encodedPathname;
+            audio.load();
+            
+            // 尝试播放
+            audio.play().then(() => {
+              setIsPlaying(true);
+              setShouldResumePlay(true);
+            }).catch(error => {
+              console.error('Error playing encoded audio:', error);
+              setIsPlaying(false);
+              setShouldResumePlay(false);
+            });
+          }
+        }
+      }
     };
     // 添加页面可见性变化处理
     const handleVisibilityChange = () => {
