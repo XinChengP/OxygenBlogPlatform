@@ -55,7 +55,7 @@ export default function NotFound() {
         loop
         playsInline
       >
-        <source src="/LTY_Picture/Autumn.mp4" type="video/mp4" />
+        <source src={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/LTY_Picture/Autumn.mp4`} type="video/mp4" />
       </video>
       
       {/* 优雅的渐变遮罩层 */}
