@@ -1,6 +1,4 @@
 import { NextResponse } from 'next/server';
-import { readFile } from 'fs/promises';
-import path from 'path';
 
 // 静态导出配置
 export const dynamic = 'force-static';

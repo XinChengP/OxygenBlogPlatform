@@ -2,17 +2,19 @@
 
 import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
-import MusicPlayer from '@/components/MusicPlayer';
-import MusicConfig from '@/components/MusicConfig';
+// 音乐播放器相关组件已隐藏 - 清理导入
+// import MusicPlayer from '@/components/MusicPlayer';
+// import MusicConfig from '@/components/MusicConfig';
 import ScrollToTop from '@/components/ScrollToTop';
-import { Playlist } from '@/components/MusicPlayer';
+// import { Playlist } from '@/components/MusicPlayer';
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [isDark, setIsDark] = useState(false);
-  const [playlists, setPlaylists] = useState<Playlist[]>([]);
-  const [showMusicConfig, setShowMusicConfig] = useState(false);
+  // 音乐播放器相关状态已完全移除
+  // const [playlists, setPlaylists] = useState<Playlist[]>([]);
+  // const [showMusicConfig, setShowMusicConfig] = useState(false);
 
   // 主题颜色
   const [primaryColor] = useState('#3b82f6');
@@ -24,11 +26,11 @@ export default function SettingsPage() {
     setIsDark(theme === 'dark');
   }, [theme]);
 
-  // 处理歌单加载
-  const handlePlaylistLoaded = (playlist: Playlist) => {
-    setPlaylists([playlist]);
-    setShowMusicConfig(false);
-  };
+  // 音乐播放器相关函数已移除
+  // const handlePlaylistLoaded = (playlist: Playlist) => {
+  //   setPlaylists([playlist]);
+  //   setShowMusicConfig(false);
+  // };
 
   if (!mounted) {
     return null;
@@ -187,8 +189,8 @@ export default function SettingsPage() {
               </div>
             </div>
             
-            {/* 音乐播放器区块 */}
-            <div className="mb-12">
+            {/* 音乐播放器区块 - 已完全隐藏 */}
+            {/* <div className="mb-12">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
                 <div className="flex items-center gap-3">
                   <h2 className="text-2xl font-bold" style={{ color: isDark ? '#f1f5f9' : '#1e293b' }}>
@@ -219,7 +221,7 @@ export default function SettingsPage() {
                 </button>
               </div>
               
-              {/* 音乐配置面板 */}
+              音乐配置面板
               {showMusicConfig && (
                 <div className={`mb-6 p-6 rounded-lg ${
                   isDark ? 'bg-gray-700/50' : 'bg-gray-100/50'
@@ -247,7 +249,7 @@ export default function SettingsPage() {
                   </button>
                 </div>
               )}
-            </div>
+            </div> */}
           </div>
         </div>
       </div>

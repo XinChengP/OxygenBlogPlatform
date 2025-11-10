@@ -24,30 +24,7 @@ export default function ScrollToTop() {
   const [isAtBottom, setIsAtBottom] = useState(false);
   const [isAtTop, setIsAtTop] = useState(true);
   const [showThemeButton, setShowThemeButton] = useState(false);
-  const [showNextButton, setShowNextButton] = useState(false);
-  const [isHoveringPlayButton, setIsHoveringPlayButton] = useState(false);
-  const [isHoveringNextButton, setIsHoveringNextButton] = useState(false);
-
-  
-
-  
-  // 处理下一首按钮的显示/隐藏逻辑
-  useEffect(() => {
-    // 如果鼠标悬停在任一按钮上，显示下一首按钮
-    if (isHoveringPlayButton || isHoveringNextButton) {
-      setShowNextButton(true);
-    } else {
-      // 如果鼠标不在任一按钮上，设置一个延迟后隐藏按钮
-      const timeoutId = setTimeout(() => {
-        setShowNextButton(false);
-      }, 300); // 300ms延迟
-      
-      // 清理函数
-      return () => {
-        clearTimeout(timeoutId);
-      };
-    }
-  }, [isHoveringPlayButton, isHoveringNextButton]);
+  // 相关状态和效果已完全移除 - 音乐播放器已隐藏
 
   // 监听滚动事件
   useEffect(() => {
@@ -105,8 +82,8 @@ export default function ScrollToTop() {
 
   return (
     <div className={`fixed bottom-6 z-50 transition-all duration-300 ${isAtTop ? 'right-[-80px]' : 'right-6'}`}>
-      {/* 下一首按钮 - 悬停时显示，独立于其他按钮 */}
-      {showNextButton && (
+      {/* 下一首按钮 - 已完全隐藏 */}
+      {/* {showNextButton && (
         <div 
           className={`absolute bottom-0 flex items-center transition-opacity duration-300 ${
             showNextButton ? 'opacity-100' : 'opacity-0'
@@ -124,7 +101,7 @@ export default function ScrollToTop() {
             <ForwardIcon className="h-5 w-5" />
           </button>
         </div>
-      )}
+      )} */}
       
       <div className="flex flex-col space-y-2">
         {/* 主题切换按钮 - 条件显示 */}
@@ -176,8 +153,8 @@ export default function ScrollToTop() {
           <ChevronDownIcon className="h-5 w-5" />
         </button>
         
-        {/* 播放/暂停音乐按钮 - 方形风格 */}
-        <button
+        {/* 播放/暂停音乐按钮 - 已完全隐藏 */}
+        {/* <button
           onClick={togglePlayPause}
           onMouseEnter={() => setIsHoveringPlayButton(true)}
           onMouseLeave={() => setIsHoveringPlayButton(false)}
@@ -186,7 +163,6 @@ export default function ScrollToTop() {
           title={isPlaying ? "暂停音乐" : "播放音乐"}
           disabled={!currentSong}
         >
-          {/* 歌曲封面 - 仅使用歌曲的cover属性 */}
           {currentSong && currentSong.cover && (
             <img 
               src={currentSong.cover} 
@@ -194,11 +170,10 @@ export default function ScrollToTop() {
               className="absolute inset-0 w-full h-full object-cover rounded-lg"
             />
           )}
-          {/* 播放/暂停图标 - 添加半透明背景以确保图标可见 */}
           <div className={`relative z-10 ${currentSong && currentSong.cover ? 'bg-black/30 rounded-lg' : ''}`}>
             {isPlaying ? <PauseIcon className="h-5 w-5" /> : <PlayIcon className="h-5 w-5" />}
           </div>
-        </button>
+        </button> */}
       </div>
     </div>
   );
