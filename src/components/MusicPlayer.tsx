@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 import { useMusic } from '@/contexts/MusicContext';
-import { getAssetPath, isGitHubPages } from '@/utils/assetUtils';
+import { getAssetPath } from '@/utils/assetUtils';
 
 export interface Song {
   id: string;
@@ -12,12 +12,30 @@ export interface Song {
   url: string;
   duration?: number;
   cover?: string; // 添加封面字段
+  lrc?: string; // 添加歌词字段
 }
 
 export interface Playlist {
   id: string;
   name: string;
+  cover?: string;
+  description?: string;
   songs: Song[];
+}
+
+export interface Artist {
+  id: string;
+  name: string;
+  avatar?: string;
+  description?: string;
+}
+
+export interface Album {
+  id: string;
+  name: string;
+  cover?: string;
+  artist?: string;
+  description?: string;
 }
 
 interface MusicPlayerProps {
@@ -37,38 +55,26 @@ export default function MusicPlayer({ playlists }: MusicPlayerProps) {
   const { theme, resolvedTheme } = useTheme();
   const musicContext = useMusic();
   
-  // 从context中获取状态和方法
+  // 从context中获取状态（保留UI状态）
   const {
     currentSong,
-    isPlaying,
-    togglePlayPause,
-    playNext,
-    playPrevious,
-    selectSong,
     currentPlaylist,
-    setCurrentPlaylist,
     currentSongIndex,
-    setCurrentSongIndex,
+    playMode,
+    setPlayMode,
     volume,
     setVolume,
     isMuted,
     toggleMute,
-    playMode,
-    setPlayMode,
-    currentTime,
-    duration,
-    setProgress,
-    audioRef,
-    progressBarRef,
   } = musicContext;
   
   // 本地状态
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [previousVolume, setPreviousVolume] = useState(0.7); // 用于保存静音前的音量
+  const [isPlaying] = useState(false); // 固定为false，不实际播放
+  const [currentTime] = useState(0); // 固定为0，不实际播放
+  const [duration] = useState(180); // 模拟3分钟的歌曲长度
   const [showPlayModeMenu, setShowPlayModeMenu] = useState(false); // 播放模式菜单显示状态
-  const [currentSongCover, setCurrentSongCover] = useState<string>(getAssetPath('/placeholder-album.svg')); // 当前歌曲封面
-  const [isExtractingCover, setIsExtractingCover] = useState(false); // 是否正在提取封面
+  const [currentSongCover] = useState<string>(getAssetPath('/placeholder-album.svg')); // 固定使用默认封面
   const [searchQuery, setSearchQuery] = useState(''); // 搜索查询
 
   const isDark = resolvedTheme === 'dark';
@@ -106,142 +112,45 @@ export default function MusicPlayer({ playlists }: MusicPlayerProps) {
     if (playlists.length > 0 && !currentPlaylist) {
       // 如果没有当前播放列表，设置第一个播放列表
       const firstPlaylist = playlists[0];
-      setCurrentPlaylist(firstPlaylist);
-      const targetIndex = findTargetSongIndex(firstPlaylist);
-      // 只设置歌曲索引，不自动播放
-      setCurrentSongIndex(targetIndex);
+      // 只设置播放列表，不自动播放
     } else if (currentPlaylist) {
       // 如果已有当前播放列表，检查是否需要更新目标歌曲索引
       const updatedPlaylist = playlists.find(p => p.id === currentPlaylist.id);
       if (updatedPlaylist) {
         // 只有当播放列表内容发生变化时才更新
         if (JSON.stringify(updatedPlaylist.songs) !== JSON.stringify(currentPlaylist.songs)) {
-          setCurrentPlaylist(updatedPlaylist);
-          const targetIndex = findTargetSongIndex(updatedPlaylist);
-          // 只设置歌曲索引，不自动播放
-          setCurrentSongIndex(targetIndex);
+          // 只更新播放列表，不自动播放
         }
       }
     }
-  }, [playlists, currentPlaylist, setCurrentPlaylist]);
+  }, [playlists, currentPlaylist]);
 
-  // 从音频文件中提取封面
-  const extractCoverFromAudio = async (songUrl: string) => {
-    setIsExtractingCover(true);
-    
-    try {
-      // 在GitHub Pages环境中，我们无法使用API路由提取封面
-      // 所以我们尝试使用与音频文件同名的封面图片
-      if (isGitHubPages()) {
-        // 获取音频文件的路径和文件名（不带扩展名）
-        const audioPath = new URL(songUrl, window.location.origin).pathname;
-        const lastSlashIndex = audioPath.lastIndexOf('/');
-        const fileNameWithExt = lastSlashIndex !== -1 ? audioPath.substring(lastSlashIndex + 1) : audioPath;
-        const lastDotIndex = fileNameWithExt.lastIndexOf('.');
-        const fileNameWithoutExt = lastDotIndex !== -1 ? fileNameWithExt.substring(0, lastDotIndex) : fileNameWithExt;
-        
-        // 尝试加载同名的封面图片（支持jpg、png、webp格式）
-        const possibleExtensions = ['jpg', 'jpeg', 'png', 'webp'];
-        let coverFound = false;
-        let attempts = 0;
-        
-        // 使用Promise来处理异步图片加载
-        const tryLoadImage = (coverUrl: string): Promise<boolean> => {
-          return new Promise((resolve) => {
-            const img = new Image();
-            img.onload = () => {
-              setCurrentSongCover(coverUrl);
-              setIsExtractingCover(false);
-              resolve(true);
-            };
-            img.onerror = () => {
-              resolve(false);
-            };
-            img.src = coverUrl;
-          });
-        };
-        
-        // 尝试每种可能的扩展名
-        for (const ext of possibleExtensions) {
-          // 在GitHub Pages环境中，我们需要确保路径正确
-          // 构建封面URL，避免双重编码
-          // 直接使用文件名，不进行额外编码，因为浏览器会自动处理
-          const coverUrl = getAssetPath(`${audioPath.substring(0, lastSlashIndex + 1)}${fileNameWithoutExt}.${ext}`);
-          
-          // 尝试加载图片
-          const success = await tryLoadImage(coverUrl);
-          if (success) {
-            coverFound = true;
-            break;
-          }
-          attempts++;
-        }
-        
-        // 如果所有尝试都失败，尝试使用编码的文件名
-        if (!coverFound && attempts === possibleExtensions.length) {
-          for (const ext of possibleExtensions) {
-            // 使用编码的文件名作为最后的尝试
-            const encodedCoverUrl = getAssetPath(`${audioPath.substring(0, lastSlashIndex + 1)}${encodeURIComponent(fileNameWithoutExt)}.${ext}`);
-            
-            const success = await tryLoadImage(encodedCoverUrl);
-            if (success) {
-              coverFound = true;
-              break;
-            }
-          }
-        }
-        
-        // 如果所有尝试都失败，使用默认封面
-        if (!coverFound) {
-          setCurrentSongCover(getAssetPath('/placeholder-album.svg'));
-          setIsExtractingCover(false);
-        }
-      } else {
-        // 非GitHub Pages环境，尝试调用API提取封面
-        try {
-          const response = await fetch(`/api/music/metadata?path=${encodeURIComponent(songUrl)}`);
-          if (response.ok) {
-            const data = await response.json();
-            if (data.cover) {
-              setCurrentSongCover(data.cover);
-              setIsExtractingCover(false);
-              return;
-            }
-          }
-        } catch (error) {
-          console.error('Failed to extract cover from API:', error);
-        }
-        
-        // API调用失败，使用默认封面
-        setCurrentSongCover(getAssetPath('/placeholder-album.svg'));
-        setIsExtractingCover(false);
-      }
-    } catch (error) {
-      console.error('Error extracting cover:', error);
-      setCurrentSongCover(getAssetPath('/placeholder-album.svg'));
-      setIsExtractingCover(false);
-    }
-  };
 
-  // 当歌曲改变时，提取封面
-  useEffect(() => {
-    if (currentSong) {
-      extractCoverFromAudio(currentSong.url);
-    }
-  }, [currentSong]);
   
-  // 播放/暂停 - 使用context中的方法
+  // 播放/暂停 - 仅UI交互，不实际播放
   const handleTogglePlayPause = () => {
-    togglePlayPause();
+    // 不执行任何实际播放操作
   };
 
-  // 设置音量
+  // 下一首 - 仅UI交互，不实际播放
+  const handlePlayNext = () => {
+    // 不执行任何实际播放操作
+  };
+
+  // 上一首 - 仅UI交互，不实际播放
+  const handlePlayPrevious = () => {
+    // 不执行任何实际播放操作
+  };
+
+  // 选择歌曲 - 仅UI交互，不实际播放
+  const handleSelectSong = (index: number) => {
+    // 不执行任何实际播放操作
+  };
+
+  // 设置音量 - 仅UI交互，不实际播放
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newVolume = parseFloat(e.target.value);
     setVolume(newVolume);
-    if (audioRef.current) {
-      audioRef.current.volume = newVolume;
-    }
   };
 
   // 格式化时间
@@ -253,12 +162,9 @@ export default function MusicPlayer({ playlists }: MusicPlayerProps) {
     return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
   };
 
-  // 切换播放列表
+  // 切换播放列表 - 仅UI交互，不实际播放
   const selectPlaylist = (playlist: Playlist) => {
-    setCurrentPlaylist(playlist);
-    // 切换播放列表时，自动选择目标歌曲但不自动播放
-    const targetIndex = findTargetSongIndex(playlist);
-    setCurrentSongIndex(targetIndex);
+    // 不执行任何实际播放操作
   };
 
   // 获取播放模式图标
@@ -334,12 +240,7 @@ export default function MusicPlayer({ playlists }: MusicPlayerProps) {
     setShowPlayModeMenu(false);
   };
   
-  // 设置初始音量
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = volume;
-    }
-  }, [volume]);
+
   
   // 点击页面其他地方关闭播放模式菜单
   useEffect(() => {
@@ -371,11 +272,7 @@ export default function MusicPlayer({ playlists }: MusicPlayerProps) {
                   alt={`${currentSong?.title} 封面`}
                   className="w-full h-full object-cover rounded-lg shadow-md"
                 />
-                {isExtractingCover && (
-                  <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-white"></div>
-                  </div>
-                )}
+
               </div>
               
               <button
@@ -398,7 +295,7 @@ export default function MusicPlayer({ playlists }: MusicPlayerProps) {
               
               {/* 下一首按钮 - 紧凑模式 */}
               <button
-                onClick={playNext}
+                onClick={handlePlayNext}
                 disabled={!currentSong}
                 className={`p-1 flex items-center justify-center transition-all transform hover:scale-110 ${
                   isDark ? 'text-gray-300 hover:text-white' : 'text-gray-700 hover:text-black'
@@ -527,7 +424,7 @@ export default function MusicPlayer({ playlists }: MusicPlayerProps) {
                           return (
                             <li
                               key={song.id}
-                              onClick={() => selectSong(originalIndex)}
+                              onClick={() => handleSelectSong(originalIndex)}
                               className={`p-3 rounded-lg cursor-pointer transition-all transform hover:scale-[1.02] ${
                                 originalIndex === currentSongIndex
                                   ? isDark ? 'bg-blue-900/30 text-blue-300' : 'bg-blue-100 text-blue-700'
@@ -584,11 +481,7 @@ export default function MusicPlayer({ playlists }: MusicPlayerProps) {
                       alt={`${currentSong?.title} 封面`}
                       className="w-full h-full object-cover rounded-lg shadow-md"
                     />
-                    {isExtractingCover && (
-                      <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center">
-                        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-white"></div>
-                      </div>
-                    )}
+
                   </div>
                 </div>
               )}
@@ -600,11 +493,9 @@ export default function MusicPlayer({ playlists }: MusicPlayerProps) {
                   <span>{formatTime(duration)}</span>
                 </div>
                 <div 
-                  ref={progressBarRef}
                   className={`h-2 rounded-full cursor-pointer overflow-hidden ${
                     isDark ? 'bg-gray-700' : 'bg-gray-300'
                   }`}
-                  onClick={setProgress}
                 >
                   <div 
                     className="h-full rounded-full bg-gradient-to-r from-blue-400 to-blue-600 transition-all duration-100 relative"
@@ -619,7 +510,7 @@ export default function MusicPlayer({ playlists }: MusicPlayerProps) {
               {/* 控制按钮 */}
               <div className="flex items-center justify-center space-x-4 mb-4">
                 <button
-                  onClick={playPrevious}
+                  onClick={handlePlayPrevious}
                   disabled={!currentPlaylist || currentPlaylist.songs.length <= 1}
                   className={`p-3 rounded-full transition-all transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed ${
                     isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-200'
@@ -635,9 +526,7 @@ export default function MusicPlayer({ playlists }: MusicPlayerProps) {
                   disabled={!currentSong}
                   className={`w-16 h-16 flex items-center justify-center transition-all transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
-                  {isLoading ? (
-                    <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                  ) : isPlaying ? (
+                  {isPlaying ? (
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
                     </svg>
@@ -649,7 +538,7 @@ export default function MusicPlayer({ playlists }: MusicPlayerProps) {
                 </button>
                 
                 <button
-                  onClick={playNext}
+                  onClick={handlePlayNext}
                   disabled={!currentPlaylist || currentPlaylist.songs.length <= 1}
                   className={`p-3 rounded-full transition-all transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed ${
                     isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-200'

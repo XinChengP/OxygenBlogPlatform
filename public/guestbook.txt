@@ -1,1 +1,0 @@
-Guestbook functionality - This file is used to prevent 404 errors on GitHub Pages.

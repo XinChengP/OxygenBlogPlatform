@@ -1,17 +1,9 @@
 'use client';
 
-/* eslint-disable react-hooks/exhaustive-deps */
-
-import { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react';
-import { saveMusicState, loadMusicState } from '@/utils/musicStateUtils';
+import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { PlayMode } from '@/components/MusicPlayer';
-
-// 定义全局音频实例的类型
-declare global {
-  interface Window {
-    globalAudio?: HTMLAudioElement;
-  }
-}
+import { fetchSongUrl, fetchLyrics } from '@/services/musicService';
+import { getAssetPath } from '@/utils/assetUtils';
 
 interface Song {
   id: string;
@@ -20,6 +12,7 @@ interface Song {
   url: string;
   duration?: number;
   cover?: string;
+  lrc?: string;
 }
 
 interface Playlist {
@@ -30,11 +23,6 @@ interface Playlist {
 
 interface MusicContextType {
   currentSong: Song | null;
-  isPlaying: boolean;
-  togglePlayPause: () => void;
-  playNext: () => void;
-  playPrevious: () => void;
-  selectSong: (index: number) => void;
   currentPlaylist: Playlist | null;
   setCurrentPlaylist: (playlist: Playlist | null) => void;
   currentSongIndex: number;
@@ -45,443 +33,113 @@ interface MusicContextType {
   toggleMute: () => void;
   playMode: PlayMode;
   setPlayMode: (mode: PlayMode) => void;
-  currentTime: number;
-  duration: number;
-  setProgress: (e: React.MouseEvent<HTMLDivElement>) => void;
-  audioRef: React.RefObject<HTMLAudioElement | null>;
-  progressBarRef: React.RefObject<HTMLDivElement | null>;
+  loadSongUrl: (song: Song) => Promise<string | null>;
+  loadLyrics: (song: Song) => Promise<string | null>;
+  isPlaying: boolean;
+  togglePlayPause: () => void;
+  playNext: () => void;
 }
 
 const MusicContext = createContext<MusicContextType | undefined>(undefined);
 
 export function MusicProvider({ children }: { children: React.ReactNode }) {
-  // 从本地存储加载初始状态
-  const savedState = typeof window !== 'undefined' ? loadMusicState() : {
-    currentSong: null,
-    isPlaying: false,
-    currentPlaylist: null,
-    currentSongIndex: 0,
-    volume: 0.7,
-    isMuted: false,
-    playMode: PlayMode.RANDOM,
-    currentTime: 0,
-    shouldResumePlay: false,
-  };
+  const [currentSong, setCurrentSong] = useState<Song | null>(null);
+  const [currentPlaylist, setCurrentPlaylist] = useState<Playlist | null>(null);
+  const [currentSongIndex, setCurrentSongIndex] = useState<number>(0);
+  const [volume, setVolume] = useState<number>(0.7);
+  const [isMuted, setIsMuted] = useState<boolean>(false);
+  const [playMode, setPlayMode] = useState<PlayMode>(PlayMode.RANDOM);
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
   
-  const [currentSong, setCurrentSong] = useState<Song | null>(savedState.currentSong);
-  const [isPlaying, setIsPlaying] = useState<boolean>(savedState.isPlaying);
-  const [currentPlaylist, setCurrentPlaylist] = useState<Playlist | null>(savedState.currentPlaylist);
-  const [currentSongIndex, setCurrentSongIndex] = useState<number>(savedState.currentSongIndex);
-  const [volume, setVolume] = useState<number>(savedState.volume);
-  const [isMuted, setIsMuted] = useState<boolean>(savedState.isMuted);
-  const [playMode, setPlayMode] = useState<PlayMode>(savedState.playMode);
-  const [currentTime, setCurrentTime] = useState<number>(0);
-  const [duration, setDuration] = useState<number>(0);
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const progressBarRef = useRef<HTMLDivElement>(null);
-  const [shouldResumePlay, setShouldResumePlay] = useState<boolean>(savedState.shouldResumePlay);
-  
-  // 保存音乐状态到本地存储
-  const saveStateToStorage = useCallback(() => {
-    saveMusicState({
-      currentSong,
-      isPlaying,
-      currentPlaylist,
-      currentSongIndex,
-      volume,
-      isMuted,
-      playMode,
-      shouldResumePlay,
-    });
-  }, [currentSong, isPlaying, currentPlaylist, currentSongIndex, volume, isMuted, playMode, shouldResumePlay]);
-  
-  // 当关键状态变化时，保存到本地存储
-  useEffect(() => {
-    saveStateToStorage();
-  }, [saveStateToStorage]);
-  
-  // 创建全局音频实例，确保在页面切换时不会丢失
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      // 如果还没有全局音频实例，创建一个
-      if (!window.globalAudio) {
-        window.globalAudio = new Audio();
-        window.globalAudio.preload = 'auto';
-        window.globalAudio.crossOrigin = 'anonymous';
-      }
-      audioRef.current = window.globalAudio;
-      
-      // 如果有保存的歌曲，尝试恢复音频源
-      if (currentSong && audioRef.current.src !== currentSong.url) {
-        audioRef.current.src = currentSong.url;
-        audioRef.current.load();
-        
-        // 如果之前是播放状态，尝试恢复播放
-        if (shouldResumePlay) {
-          audioRef.current.play().then(() => {
-            setIsPlaying(true);
-            setShouldResumePlay(true);
-          }).catch(error => {
-            console.error('恢复播放失败:', error);
-            setIsPlaying(false);
-            setShouldResumePlay(false);
-          });
-        }
-      }
-    }
-    
-    return () => {
-      // 不再清理音频元素，让它继续播放
-    };
-  }, []); // 只在组件挂载时执行一次
-  
-  // 专门用于恢复播放状态的useEffect
-  useEffect(() => {
-    if (audioRef.current && shouldResumePlay && audioRef.current.src && audioRef.current.paused) {
-      audioRef.current.play().then(() => {
-        setIsPlaying(true);
-        setShouldResumePlay(true);
-      }).catch(error => {
-        console.error("恢复播放失败:", error);
-        setIsPlaying(false);
-        setShouldResumePlay(false);
-      });
-    }
-  }, [shouldResumePlay, currentSong]); // 故意不包含isPlaying，避免无限循环
-
-  // 播放/暂停
-  const togglePlayPause = () => {
-    if (!audioRef.current || !currentSong) return;
-    
-    if (isPlaying) {
-      audioRef.current.pause();
-      setShouldResumePlay(false);
-      setIsPlaying(false);
-    } else {
-      // 尝试播放音频
-      const playPromise = audioRef.current.play();
-      
-      if (playPromise !== undefined) {
-        playPromise.then(() => {
-          setIsPlaying(true);
-          setShouldResumePlay(true);
-        }).catch(error => {
-          console.error('Error playing audio:', error);
-          setIsPlaying(false);
-          setShouldResumePlay(false);
-        });
-      }
-    }
-  };
-
-  // 播放下一首
-  const playNext = useCallback(() => {
-    if (!currentPlaylist || currentPlaylist.songs.length === 0) return;
-    
-    let nextIndex = currentSongIndex;
-    
-    switch (playMode) {
-      case PlayMode.SINGLE:
-        // 单曲播放，不自动播放下一首
-        setIsPlaying(false);
-        setShouldResumePlay(false);
-        return;
-      case PlayMode.SINGLE_LOOP:
-        // 单曲循环，保持当前歌曲
-        nextIndex = currentSongIndex;
-        break;
-      case PlayMode.SEQUENTIAL:
-        // 顺序播放
-        nextIndex = (currentSongIndex + 1) % currentPlaylist.songs.length;
-        break;
-      case PlayMode.LIST_LOOP:
-        // 列表循环
-        nextIndex = (currentSongIndex + 1) % currentPlaylist.songs.length;
-        break;
-      case PlayMode.RANDOM:
-        // 随机播放
-        do {
-          nextIndex = Math.floor(Math.random() * currentPlaylist.songs.length);
-        } while (nextIndex === currentSongIndex && currentPlaylist.songs.length > 1);
-        break;
-    }
-    
-    setCurrentSongIndex(nextIndex);
-    setIsPlaying(true);
-    setShouldResumePlay(true);
-  }, [currentPlaylist, currentSongIndex, playMode]);
-
-  // 播放上一首
-  const playPrevious = () => {
-    if (!currentPlaylist || currentPlaylist.songs.length === 0) return;
-    
-    let prevIndex = currentSongIndex;
-    
-    switch (playMode) {
-      case PlayMode.SINGLE:
-        return;
-      case PlayMode.SINGLE_LOOP:
-        break;
-      case PlayMode.SEQUENTIAL:
-        prevIndex = currentSongIndex === 0 ? currentPlaylist.songs.length - 1 : currentSongIndex - 1;
-        break;
-      case PlayMode.LIST_LOOP:
-        prevIndex = currentSongIndex === 0 ? currentPlaylist.songs.length - 1 : currentSongIndex - 1;
-        break;
-      case PlayMode.RANDOM:
-        do {
-          prevIndex = Math.floor(Math.random() * currentPlaylist.songs.length);
-        } while (prevIndex === currentSongIndex && currentPlaylist.songs.length > 1);
-        break;
-    }
-    
-    setCurrentSongIndex(prevIndex);
-    setIsPlaying(true);
-    setShouldResumePlay(true);
-  };
-
-  // 选择并播放指定歌曲
-  const selectSong = (index: number) => {
-    if (!currentPlaylist || index < 0 || index >= currentPlaylist.songs.length) return;
-    
-    const song = currentPlaylist.songs[index];
-    
-    // 如果是同一首歌，不需要重新加载
-    if (currentSong && currentSong.id === song.id) {
-      // 如果当前歌曲已暂停，则继续播放
-      if (!isPlaying) {
-        togglePlayPause();
-      }
-      return;
-    }
-    
-    setCurrentSong(song);
-    setCurrentSongIndex(index);
-    
-    // 使用全局音频实例
-    if (audioRef.current && song.url) {
-      // 保存当前播放状态
-      const wasPlaying = isPlaying;
-      
-      audioRef.current.src = song.url;
-      audioRef.current.load();
-      
-      // 如果之前在播放，自动播放新歌曲
-      if (wasPlaying) {
-        audioRef.current.play().then(() => {
-          setIsPlaying(true);
-          setShouldResumePlay(true);
-        }).catch(error => {
-          console.error('Error playing audio:', error);
-          setIsPlaying(false);
-          setShouldResumePlay(false);
-        });
-      } else {
-        setIsPlaying(false);
-        setShouldResumePlay(false);
-      }
-    }
-  };
-
-  // 设置播放进度
-  const setProgress = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!progressBarRef.current || !audioRef.current) return;
-    
-    const rect = progressBarRef.current.getBoundingClientRect();
-    const pos = (e.clientX - rect.left) / rect.width;
-    audioRef.current.currentTime = pos * duration;
-  };
-
-  // 切换静音状态
-  const toggleMute = () => {
+  // 切换静音状态 - 仅UI交互，不实际播放
+  const toggleMute = useCallback(() => {
     if (isMuted) {
       setVolume(volume || 0.7);
-      if (audioRef.current) {
-        audioRef.current.volume = volume || 0.7;
-      }
       setIsMuted(false);
     } else {
       setVolume(0);
-      if (audioRef.current) {
-        audioRef.current.volume = 0;
-      }
       setIsMuted(true);
     }
-  };
-
-  // 当歌曲索引变化时，更新当前歌曲
+  }, [isMuted, volume]);
+  
+  // 切换播放状态 - 仅UI交互，不实际播放
+  const togglePlayPause = useCallback(() => {
+    setIsPlaying(!isPlaying);
+  }, [isPlaying]);
+  
+  // 播放下一首 - 仅UI交互，不实际播放
+  const playNext = useCallback(() => {
+    if (currentPlaylist && currentSongIndex < currentPlaylist.songs.length - 1) {
+      setCurrentSongIndex(currentSongIndex + 1);
+    } else if (currentPlaylist && currentPlaylist.songs.length > 0) {
+      // 如果是最后一首，根据播放模式决定
+      if (playMode === PlayMode.LIST_LOOP) {
+        setCurrentSongIndex(0);
+      } else if (playMode === PlayMode.RANDOM) {
+        const randomIndex = Math.floor(Math.random() * currentPlaylist.songs.length);
+        setCurrentSongIndex(randomIndex);
+      } else {
+        // SINGLE 和 SINGLE_LOOP 模式下不自动播放下一首
+        setIsPlaying(false);
+      }
+    }
+  }, [currentPlaylist, currentSongIndex, playMode]);
+  
+  // 加载歌曲URL
+  const loadSongUrl = useCallback(async (song: Song): Promise<string | null> => {
+    if (song.url) {
+      // 处理静态资源路径
+      if (song.url.startsWith('/')) {
+        return getAssetPath(song.url);
+      }
+      return song.url;
+    }
+    
+    try {
+      // 如果歌曲没有URL，尝试从API获取
+      const url = await fetchSongUrl(song.id);
+      if (url && url.startsWith('/')) {
+        return getAssetPath(url);
+      }
+      return url;
+    } catch (error) {
+      console.error('Error loading song URL:', error);
+      return null;
+    }
+  }, []);
+  
+  // 加载歌词
+  const loadLyrics = useCallback(async (song: Song): Promise<string | null> => {
+    if (song.lrc) {
+      return song.lrc;
+    }
+    
+    try {
+      // 如果歌曲没有歌词，尝试从API获取
+      const lyrics = await fetchLyrics(song.id);
+      return lyrics;
+    } catch (error) {
+      console.error('Error loading lyrics:', error);
+      return null;
+    }
+  }, []);
+  
+  // 当当前歌曲索引改变时，更新当前歌曲
   useEffect(() => {
     if (currentPlaylist && currentSongIndex >= 0 && currentSongIndex < currentPlaylist.songs.length) {
-      setCurrentSong(currentPlaylist.songs[currentSongIndex]);
+      const song = currentPlaylist.songs[currentSongIndex];
+      // 处理封面路径
+      if (song.cover && song.cover.startsWith('/')) {
+        song.cover = getAssetPath(song.cover);
+      }
+      setCurrentSong(song);
     }
-  }, [currentSongIndex, currentPlaylist]);
-
-  // 音频事件处理
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    const updateTime = () => setCurrentTime(audio.currentTime);
-    const updateDuration = () => setDuration(audio.duration);
-    const handleEnded = playNext;
-    const handleLoadStart = () => console.log('Loading audio...');
-    const handleCanPlay = () => console.log('Audio can play');
-    const handleError = (e: Event) => {
-      console.error('Audio error:', e);
-      setIsPlaying(false);
-      setShouldResumePlay(false);
-      
-      // 如果是网络错误，尝试重新加载
-      const target = e.target as HTMLAudioElement;
-      if (target.error) {
-        console.error('Audio error code:', target.error.code);
-        console.error('Audio error message:', target.error.message);
-        
-        // 对于中文文件名加载失败的情况，尝试使用编码后的URL
-        if (currentSong && currentSong.url) {
-          const url = new URL(currentSong.url, window.location.origin);
-          const pathname = url.pathname;
-          
-          // 如果路径包含中文字符且未编码，尝试编码
-          if (/[^\x00-\x7F]/.test(pathname) && !pathname.includes('%')) {
-            const encodedPathname = pathname.split('/').map(segment => 
-              /[^\x00-\x7F]/.test(segment) ? encodeURIComponent(segment) : segment
-            ).join('/');
-            
-            console.log('Trying encoded URL:', url.origin + encodedPathname);
-            audio.src = url.origin + encodedPathname;
-            audio.load();
-            
-            // 尝试播放
-            audio.play().then(() => {
-              setIsPlaying(true);
-              setShouldResumePlay(true);
-            }).catch(error => {
-              console.error('Error playing encoded audio:', error);
-              setIsPlaying(false);
-              setShouldResumePlay(false);
-            });
-          }
-        }
-      }
-    };
-    // 添加页面可见性变化处理
-    const handleVisibilityChange = () => {
-      // 当页面变为可见时，如果之前是播放状态，则继续播放
-      if (!document.hidden && shouldResumePlay && audio.paused) {
-        audio.play().then(() => {
-          setIsPlaying(true);
-          setShouldResumePlay(true);
-        }).catch(error => {
-          console.error('Error resuming audio:', error);
-          setIsPlaying(false);
-          setShouldResumePlay(false);
-        });
-      } else if (document.hidden && isPlaying && !audio.paused) {
-        // 当页面变为不可见时，标记应该恢复播放
-        setShouldResumePlay(true);
-      }
-    };
-
-    audio.addEventListener('timeupdate', updateTime);
-    audio.addEventListener('loadedmetadata', updateDuration);
-    audio.addEventListener('ended', handleEnded);
-    audio.addEventListener('loadstart', handleLoadStart);
-    audio.addEventListener('canplay', handleCanPlay);
-    audio.addEventListener('error', handleError);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-    audio.removeEventListener('timeupdate', updateTime);
-    audio.removeEventListener('loadedmetadata', updateDuration);
-    audio.removeEventListener('ended', handleEnded);
-    audio.removeEventListener('loadstart', handleLoadStart);
-    audio.removeEventListener('canplay', handleCanPlay);
-    audio.removeEventListener('error', handleError);
-    document.removeEventListener('visibilitychange', handleVisibilityChange);
-  };
-  }, [currentSong, playMode, playNext, shouldResumePlay, isPlaying]); // 故意不包含audioRef、setIsPlaying和setShouldResumePlay，避免无限循环
-
-  // 当歌曲改变时，更新音频源
-  useEffect(() => {
-    if (audioRef.current && currentSong) {
-      // 只有当歌曲URL改变时才更新音频源
-      if (audioRef.current.src !== currentSong.url) {
-        // 保存当前播放状态
-        const wasPlaying = isPlaying;
-        
-        audioRef.current.src = currentSong.url;
-        audioRef.current.load();
-        
-        // 如果之前在播放，加载完成后自动播放
-        const handleCanPlay = () => {
-          if (wasPlaying) {
-            audioRef.current?.play().then(() => {
-              setIsPlaying(true);
-              setShouldResumePlay(true);
-            }).catch(error => {
-              console.error('Error playing audio:', error);
-              setIsPlaying(false);
-              setShouldResumePlay(false);
-            });
-          }
-          audioRef.current?.removeEventListener('canplay', handleCanPlay);
-        };
-        audioRef.current.addEventListener('canplay', handleCanPlay);
-        
-        return () => {
-          audioRef.current?.removeEventListener('canplay', handleCanPlay);
-        };
-      }
-    }
-  }, [currentSong]);
-
-  // 设置初始音量
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = volume;
-    }
-  }, [volume]);
-
-  // 页面切换时的音频恢复
-  useEffect(() => {
-    // 检查并恢复音频播放状态
-    const checkAndResumeAudio = () => {
-      // 如果音频已经在播放，不需要做任何事
-      if (audioRef.current && !audioRef.current.paused) {
-        setIsPlaying(true);
-        setShouldResumePlay(true);
-        return;
-      }
-      
-      // 如果应该播放但音频暂停了，尝试恢复播放
-      if (audioRef.current && shouldResumePlay && audioRef.current.src) {
-        audioRef.current.play().then(() => {
-          setIsPlaying(true);
-          setShouldResumePlay(true);
-        }).catch(error => {
-          console.error("恢复播放失败:", error);
-          setIsPlaying(false);
-          setShouldResumePlay(false);
-        });
-      }
-    };
-    
-    // 延迟检查，确保页面已经完全加载
-    const timer = setTimeout(checkAndResumeAudio, 500);
-    
-    return () => clearTimeout(timer);
-  }, [shouldResumePlay, isPlaying, currentSong]); // 添加currentSong依赖，确保歌曲变化时也能恢复播放
+  }, [currentPlaylist, currentSongIndex]);
 
   return (
     <MusicContext.Provider
       value={{
         currentSong,
-        isPlaying,
-        togglePlayPause,
-        playNext,
-        playPrevious,
-        selectSong,
         currentPlaylist,
         setCurrentPlaylist,
         currentSongIndex,
@@ -492,11 +150,11 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
         toggleMute,
         playMode,
         setPlayMode,
-        currentTime,
-        duration,
-        setProgress,
-        audioRef,
-        progressBarRef,
+        loadSongUrl,
+        loadLyrics,
+        isPlaying,
+        togglePlayPause,
+        playNext,
       }}
     >
       {children}
@@ -511,5 +169,3 @@ export function useMusic() {
   }
   return context;
 }
-
-/* eslint-enable react-hooks/exhaustive-deps */

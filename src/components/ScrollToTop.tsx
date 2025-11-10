@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 import { ChevronUpIcon, ChevronDownIcon, SunIcon, MoonIcon, AdjustmentsHorizontalIcon, PlayIcon, PauseIcon, ForwardIcon } from '@heroicons/react/24/outline';
 import { useMusic } from '@/contexts/MusicContext';
@@ -27,51 +27,26 @@ export default function ScrollToTop() {
   const [showNextButton, setShowNextButton] = useState(false);
   const [isHoveringPlayButton, setIsHoveringPlayButton] = useState(false);
   const [isHoveringNextButton, setIsHoveringNextButton] = useState(false);
-  const [extractedCover, setExtractedCover] = useState<string | null>(null);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   
-  // 从音频文件中提取封面
-  const extractCoverFromAudio = async (songUrl: string) => {
-    // 在所有环境下都直接使用默认封面，不调用API
-    // 因为GitHub Pages不支持API路由
-    setExtractedCover(getAssetPath('/placeholder-album.svg'));
-  };
-  
-  // 当歌曲改变时，提取封面
-  useEffect(() => {
-    if (currentSong) {
-      extractCoverFromAudio(currentSong.url);
-    } else {
-      setExtractedCover(null);
-    }
-  }, [currentSong]);
+
   
   // 处理下一首按钮的显示/隐藏逻辑
   useEffect(() => {
     // 如果鼠标悬停在任一按钮上，显示下一首按钮
     if (isHoveringPlayButton || isHoveringNextButton) {
       setShowNextButton(true);
-      // 清除任何现有的定时器
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = null;
-      }
     } else {
       // 如果鼠标不在任一按钮上，设置一个延迟后隐藏按钮
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-      timeoutRef.current = setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         setShowNextButton(false);
       }, 300); // 300ms延迟
+      
+      // 清理函数
+      return () => {
+        clearTimeout(timeoutId);
+      };
     }
-    
-    // 清理函数
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
   }, [isHoveringPlayButton, isHoveringNextButton]);
 
   // 监听滚动事件
@@ -211,16 +186,16 @@ export default function ScrollToTop() {
           title={isPlaying ? "暂停音乐" : "播放音乐"}
           disabled={!currentSong}
         >
-          {/* 歌曲封面 - 优先使用提取的封面，如果没有则使用歌曲的cover属性 */}
-          {currentSong && (extractedCover || currentSong.cover) && (
+          {/* 歌曲封面 - 仅使用歌曲的cover属性 */}
+          {currentSong && currentSong.cover && (
             <img 
-              src={extractedCover || currentSong.cover} 
+              src={currentSong.cover} 
               alt={currentSong.title} 
               className="absolute inset-0 w-full h-full object-cover rounded-lg"
             />
           )}
           {/* 播放/暂停图标 - 添加半透明背景以确保图标可见 */}
-          <div className={`relative z-10 ${currentSong && (extractedCover || currentSong.cover) ? 'bg-black/30 rounded-lg' : ''}`}>
+          <div className={`relative z-10 ${currentSong && currentSong.cover ? 'bg-black/30 rounded-lg' : ''}`}>
             {isPlaying ? <PauseIcon className="h-5 w-5" /> : <PlayIcon className="h-5 w-5" />}
           </div>
         </button>

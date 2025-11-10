@@ -1,27 +1,13 @@
 import { Song, Playlist } from '@/components/MusicPlayer';
 import { getAssetPath } from '@/utils/assetUtils';
 
-// 获取音乐文件列表
+// 获取音乐文件列表 - 仅保留UI相关数据结构，不实际处理音频
 export async function getMusicPlaylists(): Promise<Playlist[]> {
-  // 在静态环境下（GitHub Pages），使用预生成的静态数据
-  if (typeof window !== 'undefined' && 
-      (window.location.protocol === 'file:' || 
-       window.location.hostname.includes('github.io') ||
-       window.location.hostname.includes('pages.dev'))) {
-    // 静态环境（文件协议或GitHub Pages），使用静态数据
-    return getStaticMusicPlaylists();
-  }
-  
-  // 开发环境下，也直接使用静态数据
-  if (process.env.NODE_ENV === 'development') {
-    return getStaticMusicPlaylists();
-  }
-  
-  // GitHub Pages不支持API路由，直接返回静态数据
+  // 直接返回静态数据，不进行任何音频处理
   return getStaticMusicPlaylists();
 }
 
-// 获取静态音乐播放列表数据（用于静态环境）
+// 获取静态音乐播放列表数据（用于UI显示）
 function getStaticMusicPlaylists(): Playlist[] {
   // 返回public/MusicList目录中实际存在的音乐文件
   // 根据目录结构，目前有2025Producer文件夹
@@ -70,7 +56,7 @@ function getStaticMusicPlaylists(): Playlist[] {
   }];
 }
 
-// 解析音乐文件名获取歌曲信息
+// 解析音乐文件名获取歌曲信息 - 仅保留UI相关数据结构
 export function parseSongInfo(filename: string): { title: string; artist?: string } {
   // 移除文件扩展名
   const nameWithoutExt = filename.replace(/\.[^/.]+$/, "");
@@ -161,7 +147,7 @@ export function parseSongInfo(filename: string): { title: string; artist?: strin
   return { title, artist };
 }
 
-// 创建播放列表对象
+// 创建播放列表对象 - 仅保留UI相关数据结构
 export function createPlaylist(folderName: string, files: string[]): Playlist {
   // 特殊处理播放列表名称
   let displayName = folderName;

@@ -1,124 +1,58 @@
-"use client";
+'use client';
 
-import React from 'react';
+import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
-import ScrollToTop from '@/components/ScrollToTop';
-import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
-import { useMemo, useEffect, useState } from 'react';
 import MusicPlayer from '@/components/MusicPlayer';
-import { getMusicPlaylists } from '@/utils/musicUtils';
+import MusicConfig from '@/components/MusicConfig';
+import ScrollToTop from '@/components/ScrollToTop';
 import { Playlist } from '@/components/MusicPlayer';
 
 export default function SettingsPage() {
-  const { theme, setTheme, resolvedTheme } = useTheme();
-  const { containerStyle, isBackgroundEnabled } = useBackgroundStyle('about');
+  const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [isDark, setIsDark] = useState(false);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
-  const [isLoadingPlaylists, setIsLoadingPlaylists] = useState(true);
+  const [showMusicConfig, setShowMusicConfig] = useState(false);
 
-  // 确保组件已挂载
+  // 主题颜色
+  const [primaryColor] = useState('#3b82f6');
+  const [secondaryColor] = useState('#8b5cf6');
+  const [accentColor] = useState('#06b6d4');
+
   useEffect(() => {
     setMounted(true);
-    
-    // 获取音乐播放列表
-    const fetchPlaylists = async () => {
-      try {
-        const musicPlaylists = await getMusicPlaylists();
-        setPlaylists(musicPlaylists);
-      } catch (error) {
-        console.error('Error fetching playlists:', error);
-      } finally {
-        setIsLoadingPlaylists(false);
-      }
-    };
-    
-    // 只在第一次加载时获取播放列表，避免页面切换时重复加载
-    if (playlists.length === 0) {
-      fetchPlaylists();
-    }
-  }, [playlists.length]); // 添加playlists.length依赖
+    setIsDark(theme === 'dark');
+  }, [theme]);
 
-  const isDark = resolvedTheme === 'dark';
-
-  // 获取 CSS 变量中的主题色
-  const getThemeColor = (colorName: string): string => {
-    if (typeof window === 'undefined') return '#3b82f6'; // 默认蓝色
-    return getComputedStyle(document.documentElement).getPropertyValue(`--theme-${colorName}`).trim() || '#3b82f6';
+  // 处理歌单加载
+  const handlePlaylistLoaded = (playlist: Playlist) => {
+    setPlaylists([playlist]);
+    setShowMusicConfig(false);
   };
 
-  // 获取当前主题色
-  const primaryColor = getThemeColor('primary');
-  const secondaryColor = getThemeColor('secondary');
-  const accentColor = getThemeColor('accent');
-
-  /**
-   * 生成简化的背景样式
-   */
-  const backgroundStyle = useMemo(() => {
-    // 如果启用了背景图片，返回透明背景
-    if (isBackgroundEnabled) {
-      return {};
-    }
-    
-    // 否则使用原有的渐变背景
-    const baseGradient = isDark 
-      ? 'linear-gradient(135deg, rgb(17, 24, 39), rgb(31, 41, 55))'
-      : 'linear-gradient(135deg, rgb(249, 250, 251), rgb(229, 231, 235))';
-
-    const themeOverlay = `radial-gradient(ellipse at top left, ${primaryColor}1a, transparent 60%), radial-gradient(ellipse at bottom right, ${secondaryColor}1a, transparent 60%)`;
-
-    return {
-      background: `${themeOverlay}, ${baseGradient}`
-    };
-  }, [primaryColor, secondaryColor, isDark, isBackgroundEnabled]);
-
-  // 如果还没有挂载，显示默认样式避免闪烁
   if (!mounted) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-8 pt-[65px]">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="relative z-10 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50">
-            <div className="p-8">
-              <div className="animate-pulse">
-                <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (
-    <div 
-      key={`settings-${primaryColor}-${isDark}`}
-      className={containerStyle.className}
-      style={{...containerStyle.style, ...backgroundStyle}}
-    >
-      <style jsx>{`
-        @keyframes lightMove {
-          0%, 100% { transform: translateX(-100%); }
-          50% { transform: translateX(100%); }
-        }
-        @keyframes float {
-          0%, 100% { transform: translateY(0px) rotate(15deg); }
-          50% { transform: translateY(-10px) rotate(15deg); }
-        }
-      `}</style>
+    <div className="min-h-screen relative overflow-hidden">
+      {/* 背景装饰元素 - 完全移除 */}
+      <div className="absolute inset-0 overflow-hidden">
+        {/* 移除所有背景装饰元素 */}
+      </div>
+
       
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* 主要内容卡片 - 毛玻璃效果 */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-20">
+        {/* 主要内容卡片 - 使用更简洁的样式 */}
         <div className="relative z-10 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
-          {/* 头部区域 - 使用主题色背景 */}
+          {/* 头部区域 - 使用半透明主题色背景 */}
           <div 
             className="relative p-8 text-white transition-all duration-500 overflow-hidden"
             style={{
               background: `
-                linear-gradient(135deg, ${primaryColor} 0%, ${accentColor} 50%, ${secondaryColor} 100%),
-                radial-gradient(circle at top left, ${primaryColor}80 0%, transparent 50%),
-                radial-gradient(circle at bottom right, ${secondaryColor}80 0%, transparent 50%)
+                linear-gradient(135deg, ${primaryColor}dd 0%, ${accentColor}dd 50%, ${secondaryColor}dd 100%),
+                radial-gradient(circle at top left, ${primaryColor}aa 0%, transparent 50%),
+                radial-gradient(circle at bottom right, ${secondaryColor}aa 0%, transparent 50%)
               `,
             }}
           >
@@ -128,13 +62,13 @@ export default function SettingsPage() {
             
             {/* 装饰性几何图形 */}
             <div className="absolute top-4 right-4 w-20 h-20 rounded-full opacity-20" 
-                 style={{ background: `radial-gradient(circle, ${accentColor}, transparent)` }}></div>
+                 style={{ background: `radial-gradient(circle, ${accentColor}aa, transparent)` }}></div>
             <div className="absolute bottom-4 left-4 w-16 h-16 rounded-full opacity-15" 
-                 style={{ background: `radial-gradient(circle, ${primaryColor}, transparent)` }}></div>
+                 style={{ background: `radial-gradient(circle, ${primaryColor}aa, transparent)` }}></div>
             
             <div className="relative z-10">
               <h1 className="text-2xl md:text-3xl font-bold mb-2 drop-shadow-2xl tracking-wide">博客设置</h1>
-              <p className="text-lg opacity-90">自定义您的博客体验</p>
+              <p className="text-lg opacity-90 drop-shadow-lg">自定义您的博客体验</p>
             </div>
           </div>
 
@@ -158,16 +92,16 @@ export default function SettingsPage() {
                     </span>
                   </div>
                 
-                {/* 主题选项 - 紧密相连 */}
-                <div className="inline-flex rounded-lg overflow-hidden shadow-sm border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-sm">
+                {/* 主题选项 - 使用更简洁的样式 */}
+                <div className="inline-flex rounded-lg overflow-hidden shadow-sm border border-gray-200 dark:border-gray-700">
                   {/* 浅色模式选项 */}
                   <div
                     onClick={() => setTheme('light')}
                     className={`group relative overflow-hidden p-4 transition-all duration-300 cursor-pointer ${
                       theme === 'light' 
-                        ? 'bg-white/90 dark:bg-gray-800/90 shadow-lg' 
-                        : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/80 dark:hover:bg-gray-800/80'
-                    } backdrop-blur-sm`}
+                        ? 'bg-white dark:bg-gray-800 shadow-lg' 
+                        : 'bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600'
+                    }`}
                   >
                     {/* 选中指示器 */}
                     {theme === 'light' && (
@@ -193,11 +127,11 @@ export default function SettingsPage() {
                   {/* 深色模式选项 */}
                   <div
                     onClick={() => setTheme('dark')}
-                    className={`group relative overflow-hidden p-4 transition-all duration-300 cursor-pointer border-l border-gray-200/30 dark:border-gray-700/30 ${
+                    className={`group relative overflow-hidden p-4 transition-all duration-300 cursor-pointer border-l border-gray-200 dark:border-gray-700 ${
                       theme === 'dark' 
-                        ? 'bg-white/90 dark:bg-gray-800/90 shadow-lg' 
-                        : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/80 dark:hover:bg-gray-800/80'
-                    } backdrop-blur-sm`}
+                        ? 'bg-white dark:bg-gray-800 shadow-lg' 
+                        : 'bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600'
+                    }`}
                   >
                     {/* 选中指示器 */}
                     {theme === 'dark' && (
@@ -223,11 +157,11 @@ export default function SettingsPage() {
                   {/* 跟随系统选项 */}
                   <div
                     onClick={() => setTheme('system')}
-                    className={`group relative overflow-hidden p-4 transition-all duration-300 cursor-pointer border-l border-gray-200/30 dark:border-gray-700/30 ${
+                    className={`group relative overflow-hidden p-4 transition-all duration-300 cursor-pointer border-l border-gray-200 dark:border-gray-700 ${
                       theme === 'system' 
-                        ? 'bg-white/90 dark:bg-gray-800/90 shadow-lg' 
-                        : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/80 dark:hover:bg-gray-800/80'
-                    } backdrop-blur-sm`}
+                        ? 'bg-white dark:bg-gray-800 shadow-lg' 
+                        : 'bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600'
+                    }`}
                   >
                     {/* 选中指示器 */}
                     {theme === 'system' && (
@@ -270,20 +204,47 @@ export default function SettingsPage() {
                     {playlists.length > 0 ? `${playlists.length} 个播放列表` : '无播放列表'}
                   </span>
                 </div>
+                
+                <button
+                  onClick={() => setShowMusicConfig(!showMusicConfig)}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    showMusicConfig
+                      ? 'bg-blue-500 text-white hover:bg-blue-600'
+                      : isDark
+                        ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+                        : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                  }`}
+                >
+                  {showMusicConfig ? '隐藏配置' : '添加歌单'}
+                </button>
               </div>
               
-              {isLoadingPlaylists ? (
-                <div className="flex justify-center items-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+              {/* 音乐配置面板 */}
+              {showMusicConfig && (
+                <div className={`mb-6 p-6 rounded-lg ${
+                  isDark ? 'bg-gray-700/50' : 'bg-gray-100/50'
+                }`}>
+                  <MusicConfig onPlaylistLoaded={handlePlaylistLoaded} />
                 </div>
-              ) : playlists.length > 0 ? (
+              )}
+              
+              {playlists.length > 0 ? (
                 <MusicPlayer playlists={playlists} />
               ) : (
-                <div className={`p-4 rounded-lg text-center ${
+                <div className={`p-8 rounded-lg text-center ${
                   isDark ? 'bg-gray-700/50 text-gray-300' : 'bg-gray-100/50 text-gray-600'
                 }`}>
-                  <p>未找到音乐文件</p>
-                  <p className="text-sm mt-1">请将音乐文件放置在 public/MusicList 目录下的文件夹中</p>
+                  <p className="mb-4">未添加音乐播放列表</p>
+                  <button
+                    onClick={() => setShowMusicConfig(true)}
+                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                      isDark
+                        ? 'bg-blue-600 text-white hover:bg-blue-700'
+                        : 'bg-blue-500 text-white hover:bg-blue-600'
+                    }`}
+                  >
+                    添加歌单
+                  </button>
                 </div>
               )}
             </div>
