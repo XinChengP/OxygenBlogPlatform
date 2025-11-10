@@ -12,8 +12,6 @@ import { useEffect, useState } from 'react';
  */
 export default function NotFound() {
   const [mounted, setMounted] = useState(false);
-  const [showUI, setShowUI] = useState(false);
-  const [triggerVisible, setTriggerVisible] = useState(false);
   const [cardVisible, setCardVisible] = useState(true);
 
   // 确保组件已挂载
@@ -178,11 +176,6 @@ export default function NotFound() {
             {/* 卡片右上角隐藏UI功能 */}
             <div 
               className="absolute top-2 right-1 flex items-center gap-2 z-20"
-              onMouseEnter={() => setTriggerVisible(true)}
-              onMouseLeave={() => {
-                setTriggerVisible(false);
-                setShowUI(false);
-              }}
             >
               {/* 深色/浅色模式切换按钮 */}
               <button
