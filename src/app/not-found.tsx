@@ -12,6 +12,9 @@ import { useEffect, useState } from 'react';
  */
 export default function NotFound() {
   const [mounted, setMounted] = useState(false);
+  const [showUI, setShowUI] = useState(false);
+  const [triggerVisible, setTriggerVisible] = useState(false);
+  const [cardVisible, setCardVisible] = useState(true);
 
   // 确保组件已挂载
   useEffect(() => {
@@ -45,72 +48,486 @@ export default function NotFound() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
-      <div className="text-center max-w-md mx-auto">
-        {/* 404 数字 */}
-        <div className="mb-8">
-          <h1 
-            className="text-8xl md:text-9xl font-bold bg-gradient-to-r bg-clip-text text-transparent"
+    <div className="min-h-screen relative overflow-hidden">
+      {/* 视频背景 */}
+      <video
+        className="absolute inset-0 w-full h-full object-cover z-0"
+        autoPlay
+        muted
+        loop
+        playsInline
+      >
+        <source src="/LTY_Picture/Autumn.mp4" type="video/mp4" />
+      </video>
+      
+      {/* 优雅的渐变遮罩层 */}
+      <div className="absolute inset-0 bg-gradient-to-br from-black/5 via-transparent to-black/20 dark:from-black/50 dark:via-black/30 dark:to-black/60 z-10"></div>
+
+
+      
+      {/* 飘落的枫叶动画 */}
+      <div className="absolute inset-0 z-10 pointer-events-none">
+        {Array.from({ length: 12 }, (_, i) => (
+          <div
+            key={`leaf-${i}`}
+            className="absolute animate-float"
             style={{
-              backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${accentColor})`
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 20}%`,
+              animationDelay: `${Math.random() * 8}s`,
+              animationDuration: `${8 + Math.random() * 6}s`,
+              transform: `rotate(${Math.random() * 360}deg)`,
             }}
           >
-            404
-          </h1>
-        </div>
+            {/* 枫叶SVG */}
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              className="opacity-60"
+              style={{
+                filter: `drop-shadow(0 2px 4px rgba(0,0,0,0.1)) hue-rotate(${Math.random() * 60 - 30}deg)`,
+                color: ['#dc2626', '#ea580c', '#d97706', '#ca8a04', '#eab308'][Math.floor(Math.random() * 5)]
+              }}
+            >
+              <defs>
+                <linearGradient id={`leafGradient-${i}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style={{ stopColor: primaryColor, stopOpacity: 0.8 }} />
+                  <stop offset="100%" style={{ stopColor: accentColor, stopOpacity: 0.6 }} />
+                </linearGradient>
+              </defs>
+              <path
+                  d="M12 2C12 2 13.5 4.5 16 7C18.5 9.5 20 12 20 12C20 12 18.5 14.5 16 17C13.5 19.5 12 22 12 22C12 22 10.5 19.5 8 17C5.5 14.5 4 12 4 12C4 12 5.5 9.5 8 7C10.5 4.5 12 2 12 2Z"
+                  fill={`url(#leafGradient-${i})`}
+                  opacity="0.8"
+                />
+                <path
+                  d="M12 2C12 2 13 4 14.5 6C16 8 17 10 17 10C17 10 16 12 14.5 14C13 16 12 18 12 18C12 18 11 16 9.5 14C8 12 7 10 7 10C7 10 8 8 9.5 6C11 4 12 2 12 2Z"
+                  fill={`url(#leafGradient-${i})`}
+                  opacity="0.6"
+                />
+            </svg>
+          </div>
+        ))}
+      </div>
 
-        {/* 错误信息 */}
-        <div className="mb-8">
-          <h2 className="text-2xl md:text-3xl font-semibold text-foreground mb-4">
-            页面未找到
-          </h2>
-          <p className="text-muted-foreground text-lg leading-relaxed">
-            抱歉，您访问的页面不存在或已被移动。
-            <br />
-            让我们帮您找到正确的方向。
-          </p>
-        </div>
-
-        {/* 操作按钮 */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link
-            href="/"
-            className="px-6 py-3 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
+      {/* 精细的粒子背景系统 */}
+      <div className="absolute inset-0 z-10">
+        {/* 小型光点 */}
+        {Array.from({ length: 15 }, (_, i) => (
+          <div
+            key={`small-${i}`}
+            className="absolute rounded-full animate-pulse"
             style={{
-              backgroundColor: primaryColor,
-              color: 'white'
+              left: `${Math.random() * 90 + 5}%`,
+              top: `${Math.random() * 90 + 5}%`,
+              width: `${1 + Math.random() * 2}px`,
+              height: `${1 + Math.random() * 2}px`,
+              backgroundColor: `${i % 3 === 0 ? primaryColor : i % 3 === 1 ? accentColor : 'white'}`,
+              opacity: 0.6 + Math.random() * 0.3,
+              animationDelay: `${Math.random() * 2}s`,
+              animationDuration: `${2 + Math.random() * 2}s`
             }}
-          >
-            🏠 返回首页
-          </Link>
-          <Link
-            href="/blogs"
-            className="px-6 py-3 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
+          />
+        ))}
+        {/* 超小型星光 */}
+        {Array.from({ length: 25 }, (_, i) => (
+          <div
+            key={`tiny-${i}`}
+            className="absolute w-0.5 h-0.5 rounded-full animate-ping"
             style={{
-              backgroundColor: accentColor,
-              color: 'white'
+              left: `${Math.random() * 95 + 2.5}%`,
+              top: `${Math.random() * 95 + 2.5}%`,
+              backgroundColor: 'rgba(255,255,255,0.9)',
+              animationDelay: `${Math.random() * 3}s`,
+              animationDuration: `${1 + Math.random() * 2}s`
             }}
-          >
-            📚 浏览博客
-          </Link>
-        </div>
+          />
+        ))}
+      </div>
 
-        {/* 装饰性元素 */}
-        <div className="mt-12 opacity-50">
-          <div className="flex justify-center space-x-2">
-            {Array.from({ length: 3 }, (_, i) => (
-              <div
-                key={i}
-                className="w-2 h-2 rounded-full animate-pulse"
+      {/* 主内容区域 - 更优雅的布局 */}
+      <div className="relative z-20 min-h-screen flex items-end justify-start px-8 py-8">
+        {cardVisible && (
+          <div className="max-w-lg relative">
+            {/* 多层渐变光晕效果 */}
+            <div 
+              className="absolute -inset-6 rounded-3xl opacity-15 blur-2xl"
+              style={{
+                background: `conic-gradient(from 180deg at 50% 50%, ${primaryColor}, ${accentColor}, ${primaryColor}, ${accentColor}, ${primaryColor})`
+              }}
+            />
+            <div 
+              className="absolute -inset-3 rounded-3xl opacity-25 blur-xl"
+              style={{
+                background: `linear-gradient(45deg, ${accentColor}60, ${primaryColor}60, ${accentColor}60)`
+              }}
+            />
+            
+            {/* 精美的内容卡片 */}
+            <div className="relative bg-gradient-to-br from-white/20 to-white/10 border border-white/40 dark:from-gray-900/40 dark:to-gray-900/20 dark:border-gray-600/40 rounded-3xl p-8 shadow-2xl overflow-hidden">
+            {/* 卡片内部光效 */}
+            <div 
+              className="absolute top-0 left-0 w-full h-full opacity-30"
+              style={{
+                background: `linear-gradient(135deg, ${primaryColor}40, transparent 40%, ${accentColor}30, transparent 80%, ${primaryColor}20)`
+              }}
+            />
+            
+            {/* 卡片右上角隐藏UI功能 */}
+            <div 
+              className="absolute top-2 right-1 flex items-center gap-2 z-20"
+              onMouseEnter={() => setTriggerVisible(true)}
+              onMouseLeave={() => {
+                setTriggerVisible(false);
+                setShowUI(false);
+              }}
+            >
+              {/* 深色/浅色模式切换按钮 */}
+              <button
+                onClick={() => {
+                  const isDark = document.documentElement.classList.toggle('dark')
+                  localStorage.setItem('theme', isDark ? 'dark' : 'light')
+                }}
+                className="group relative w-7 h-7 rounded-full transition-all duration-300 hover:scale-110 border border-white/30 dark:border-gray-600/30"
                 style={{
-                  backgroundColor: primaryColor,
-                  animationDelay: `${i * 0.2}s`
+                  background: `radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.3))`,
+                  boxShadow: `
+                    0 0 6px rgba(255, 255, 255, 0.35),
+                    0 0 12px rgba(255, 255, 255, 0.2),
+                    inset 0 0 0 1px rgba(255, 255, 255, 0.3),
+                    inset 0 1px 2px rgba(255, 255, 255, 0.2)
+                  `
+                }}
+              >
+                {/* 月亮图标 */}
+                <div className="absolute inset-0 flex items-center justify-center text-blue-200 transition-all duration-300 opacity-0 scale-75 dark:opacity-100 dark:scale-100">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="drop-shadow-lg">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                  </svg>
+                </div>
+                
+                {/* 太阳图标 */}
+                <div className="absolute inset-0 flex items-center justify-center text-yellow-400 transition-all duration-300 dark:opacity-0 dark:scale-75">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="drop-shadow-lg">
+                    <circle cx="12" cy="12" r="5"/>
+                    <path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                  </svg>
+                </div>
+                
+                {/* 悬停时的微弱光效 */}
+                <div 
+                  className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-30 transition-opacity duration-300"
+                  style={{ 
+                    background: `radial-gradient(circle, rgba(255, 255, 255, 0.2), transparent 70%)` 
+                  }}
+                />
+              </button>
+              
+              {/* 触发按钮 - 隐蔽的圆点 */}
+              <button
+                onClick={() => setCardVisible(!cardVisible)}
+                className="group relative w-7 h-7 rounded-full transition-all duration-300 hover:scale-110 dark:bg-gray-800/60"
+                style={{
+                  background: `radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.3))`,
+                  boxShadow: `
+                    0 0 6px rgba(255, 255, 255, 0.35),
+                    0 0 12px rgba(255, 255, 255, 0.2),
+                    inset 0 0 0 1px rgba(255, 255, 255, 0.3),
+                    inset 0 1px 2px rgba(255, 255, 255, 0.2)
+                  `,
+                  opacity: 0.6
+                }}
+              >
+                
+                {/* 悬停时显示的提示 */}
+                <div className="absolute left-8 top-1/2 transform -translate-y-1/2 px-3 py-2 bg-black/90 dark:bg-gray-900/95 backdrop-blur-sm rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap shadow-lg">
+                  {cardVisible ? '隐藏卡片' : '显示卡片'}
+                </div>
+                
+                {/* 隐蔽的脉冲效果 - 去除了彩色 */}
+                <div 
+                  className="absolute inset-0 rounded-full animate-ping opacity-20"
+                  style={{ 
+                    background: `radial-gradient(circle, rgba(255, 255, 255, 0.3), transparent)`,
+                    animationDuration: '3s'
+                  }}
+                />
+                
+                {/* 悬停时的微弱光效 */}
+                <div 
+                  className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-30 transition-opacity duration-300"
+                  style={{ 
+                    background: `radial-gradient(circle, rgba(255, 255, 255, 0.2), transparent 70%)` 
+                  }}
+                />
+              </button>
+            </div>
+            
+            {/* 404 标题区域 - 更突出的设计 */}
+            <div className="mb-8 relative">
+              {/* 背景装饰圆环 */}
+              <div 
+                className="absolute -top-4 -right-4 w-24 h-24 rounded-full opacity-20 blur-sm"
+                style={{
+                  background: `radial-gradient(circle, ${accentColor}40, transparent)`
                 }}
               />
-            ))}
+              <div 
+                className="absolute -bottom-2 -left-2 w-16 h-16 rounded-full opacity-15 blur-md"
+                style={{
+                  background: `radial-gradient(circle, ${primaryColor}50, transparent)`
+                }}
+              />
+              
+              <h1 
+                className="text-7xl md:text-8xl font-black relative z-10 tracking-wider"
+                style={{
+                  background: `linear-gradient(135deg, ${primaryColor}, ${accentColor}, ${primaryColor})`,
+                  backgroundSize: '200% 200%',
+                  WebkitBackgroundClip: 'text',
+                  backgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  filter: 'drop-shadow(0 0 30px rgba(255,255,255,0.4))',
+                  animation: 'gradientShift 3s ease-in-out infinite'
+                }}
+              >
+                404
+              </h1>
+              {/* 多层发光效果 */}
+              <div 
+                className="absolute inset-0 text-7xl md:text-8xl font-black text-transparent bg-clip-text opacity-40 blur-lg"
+                style={{
+                  backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${accentColor})`,
+                  animation: 'pulse 2s ease-in-out infinite'
+                }}
+              >
+                404
+              </div>
+              <div 
+                className="absolute inset-0 text-7xl md:text-8xl font-black text-transparent bg-clip-text opacity-20 blur-xl"
+                style={{
+                  backgroundImage: `linear-gradient(135deg, ${accentColor}, ${primaryColor})`,
+                  transform: 'scale(1.05)'
+                }}
+              >
+                404
+              </div>
+            </div>
+
+            {/* 精致的错误信息区域 */}
+            <div className="mb-8">
+              {/* 动态装饰线 */}
+              <div className="relative flex items-center mb-4">
+                <div 
+                  className="h-px flex-1 relative overflow-hidden"
+                  style={{
+                    background: `linear-gradient(to right, transparent, ${primaryColor}, ${accentColor}, ${primaryColor}, transparent)`
+                  }}
+                >
+                  <div 
+                    className="absolute inset-0 h-full"
+                    style={{
+                      background: `linear-gradient(to right, transparent, ${accentColor}60, transparent)`,
+                      animation: 'shimmer 2s ease-in-out infinite'
+                    }}
+                  />
+                </div>
+                <div className="mx-4 relative">
+                  <div 
+                    className="w-3 h-3 rounded-full animate-pulse"
+                    style={{ backgroundColor: accentColor }}
+                  />
+                  <div 
+                    className="absolute inset-0 w-3 h-3 rounded-full animate-ping opacity-30"
+                    style={{ backgroundColor: accentColor }}
+                  />
+                </div>
+                <div 
+                  className="h-px flex-1 relative overflow-hidden"
+                  style={{
+                    background: `linear-gradient(to left, transparent, ${primaryColor}, ${accentColor}, ${primaryColor}, transparent)`
+                  }}
+                >
+                  <div 
+                    className="absolute inset-0 h-full"
+                    style={{
+                      background: `linear-gradient(to left, transparent, ${accentColor}60, transparent)`,
+                      animation: 'shimmer 2s ease-in-out infinite 1s'
+                    }}
+                  />
+                </div>
+              </div>
+              
+              <h2 className="text-xl md:text-2xl font-bold text-white mb-3 drop-shadow-xl">
+                <span 
+                  style={{
+                    background: `linear-gradient(135deg, ${primaryColor}, ${accentColor})`,
+                    WebkitBackgroundClip: 'text',
+                    backgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent'
+                  }}
+                >
+                  页面未找到
+                </span>
+              </h2>
+              <p className="text-white/85 text-base leading-relaxed drop-shadow-lg">
+                抱歉，您访问的页面不存在或已被移动
+              </p>
+            </div>
+
+            {/* 精美的操作按钮组 */}
+            <div className="flex gap-4 mb-8">
+              <Link
+                href="/"
+                className="group relative flex-1 max-w-[140px] px-6 py-3 rounded-2xl text-sm font-semibold transition-all duration-500 hover:scale-105 hover:-translate-y-1 border border-white/50 dark:border-gray-600/50 overflow-hidden"
+                style={{
+                  background: `linear-gradient(135deg, ${primaryColor}30, ${accentColor}20, ${primaryColor}30)`,
+                  boxShadow: `0 8px 32px ${primaryColor}20`
+                }}
+              >
+                {/* 动态光效扫过 */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                {/* 边框光效 */}
+                <div 
+                  className="absolute inset-0 rounded-2xl opacity-50 group-hover:opacity-80 transition-opacity duration-300"
+                  style={{
+                    boxShadow: `inset 0 0 0 1px ${accentColor}50, 0 0 20px ${primaryColor}30`
+                  }}
+                />
+                <span className="relative z-10 flex items-center justify-center gap-2 text-white">
+                  <span className="text-lg">🏠</span>
+                  <span>返回首页</span>
+                </span>
+              </Link>
+              <Link
+                href="/blogs"
+                className="group relative flex-1 max-w-[140px] px-6 py-3 rounded-2xl text-sm font-semibold transition-all duration-500 hover:scale-105 hover:-translate-y-1 border border-white/50 dark:border-gray-600/50 overflow-hidden"
+                style={{
+                  background: `linear-gradient(135deg, ${accentColor}30, ${primaryColor}20, ${accentColor}30)`,
+                  boxShadow: `0 8px 32px ${accentColor}20`
+                }}
+              >
+                {/* 动态光效扫过 */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                {/* 边框光效 */}
+                <div 
+                  className="absolute inset-0 rounded-2xl opacity-50 group-hover:opacity-80 transition-opacity duration-300"
+                  style={{
+                    boxShadow: `inset 0 0 0 1px ${primaryColor}50, 0 0 20px ${accentColor}30`
+                  }}
+                />
+                <span className="relative z-10 flex items-center justify-center gap-2 text-white">
+                  <span className="text-lg">📚</span>
+                  <span>浏览博客</span>
+                </span>
+              </Link>
+            </div>
+
+
+
+            {/* 精致的装饰性底部区域 */}
+            <div className="flex items-center justify-between">
+              {/* 左侧装饰序列 */}
+              <div className="flex space-x-2">
+                {Array.from({ length: 6 }, (_, i) => (
+                  <div
+                    key={i}
+                    className="w-2 h-2 rounded-full transition-all duration-300"
+                    style={{
+                      backgroundColor: i % 3 === 0 ? primaryColor : i % 3 === 1 ? accentColor : 'white',
+                      opacity: 0.7 - i * 0.1,
+                      animationDelay: `${i * 0.1}s`,
+                      transform: `scale(${1 - i * 0.1})`
+                    }}
+                  />
+                ))}
+        </div>
+              
+        {/* 中央动态核心装饰 */}
+        <div className="flex items-center space-x-2">
+                <div 
+                  className="h-px w-4"
+                  style={{ backgroundColor: primaryColor }}
+                />
+                <div className="relative">
+                  <div 
+                  className="w-4 h-4 rounded-full animate-spin"
+                  style={{ 
+                    background: `conic-gradient(from 0deg, ${primaryColor}, ${accentColor}, ${primaryColor})`,
+                    animationDuration: '2s'
+                  }}
+                />
+                <div 
+                  className="absolute inset-0.5 w-3 h-3 rounded-full bg-black/50 dark:bg-black/80"
+                />
+                </div>
+                <div 
+                  className="h-px w-4"
+                  style={{ backgroundColor: accentColor }}
+                />
+              </div>
+              
+              {/* 右侧装饰点群 */}
+              <div className="flex space-x-2">
+                {Array.from({ length: 4 }, (_, i) => (
+                  <div
+                    key={i}
+                    className="w-1.5 h-1.5 rounded-full"
+                    style={{
+                      backgroundColor: accentColor,
+                      opacity: 0.8 - i * 0.2,
+                      animationDelay: `${i * 0.15}s`,
+                      animation: 'bounce 1.5s ease-in-out infinite'
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
         </div>
+        )}
       </div>
+
+      {/* 全局动画样式 */}
+      <style jsx>{`
+        @keyframes gradientShift {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+      `}</style>
+
+      {/* 枫叶飘落动画样式 */}
+      <style>
+        {`
+          @keyframes float {
+            0% {
+              transform: translateY(-20px) rotate(0deg);
+              opacity: 0;
+            }
+            10% {
+              opacity: 0.6;
+            }
+            90% {
+              opacity: 0.6;
+            }
+            100% {
+              transform: translateY(calc(100vh + 20px)) rotate(360deg);
+              opacity: 0;
+            }
+          }
+          .animate-float {
+            animation-name: float;
+            animation-timing-function: linear;
+            animation-iteration-count: infinite;
+          }
+        `}
+      </style>
     </div>
   );
 }
