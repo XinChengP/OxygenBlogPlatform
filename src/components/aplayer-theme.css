@@ -335,22 +335,35 @@
   background: rgba(255, 255, 255, 0.95) !important;
 }
 
-/* 修复音乐列表展开时的按钮位置 */
-.aplayer .aplayer-list {
+/* 修复音乐列表展开时的按钮位置问题 - 仅调整样式，不干扰功能 */
+.aplayer.aplayer-narrow .aplayer-list {
+  /* 只调整padding，不强制覆盖 */
   padding-bottom: 60px;
+  /* 让歌单展开时向右移动 */
+  margin-right: 20px;
+  transform: translateX(-10px);
 }
 
-.aplayer .aplayer-list .aplayer-list-item {
-  padding: 12px 16px;
-  border-radius: 6px;
-  margin: 2px 12px;
-  transition: all 0.3s ease;
+.aplayer.aplayer-narrow .aplayer-list .aplayer-list-item {
+  /* 只调整间距，不影响点击事件 */
+  padding: 8px 12px;
+  margin: 2px 10px;
 }
 
-/* 确保歌单内容不被底部按钮遮挡 */
-.aplayer .aplayer-list .aplayer-list-item:last-child {
+/* 只调整最后一个列表项的底部边距 */
+.aplayer.aplayer-narrow .aplayer-list .aplayer-list-item:last-child {
   margin-bottom: 80px;
 }
+
+/* 不调整控制器的z-index和位置，避免干扰按钮功能 */
+/* .aplayer.aplayer-narrow .aplayer-controller { */
+/*   z-index: 10; */
+/* } */
+
+/* 不调整列表ul的padding，保留原始APlayer功能 */
+/* .aplayer.aplayer-narrow .aplayer-list ul { */
+/*   padding-bottom: 40px; */
+/* } */
 
 /* 隐藏默认的APlayer图标，保留功能 */
 .aplayer .aplayer-pause,

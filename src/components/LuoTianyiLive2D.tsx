@@ -200,8 +200,8 @@ export default function LuoTianyiLive2D() {
                 style={{ 
                     opacity: messageOpacity,
                     position: 'absolute',
-                    top: '-100px',
-                    left: '30px',
+                    top: '-20px',
+                    left: '50px',
                     display: 'block',
                     transition: 'opacity 0.5s ease-in-out',
                     background: 'rgba(102, 204, 255, 0.2)',
@@ -213,7 +213,7 @@ export default function LuoTianyiLive2D() {
                     fontSize: '13px',
                     maxWidth: '300px',
                     wordWrap: 'break-word',
-                    zIndex: 9998
+                    zIndex: 9997
                 }}
             >
                 {message || '你好～我是洛天依！'}
