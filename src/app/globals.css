@@ -58,12 +58,15 @@
     }
   }
   @keyframes gradientShift {
-  0%, 100% {
+  0% {
     background-position: 0% 50%;
-    }
+  }
   50% {
     background-position: 100% 50%;
-    }
+  }
+  100% {
+    background-position: 0% 50%;
+  }
   }
   @keyframes rainbowFlow {
   0% {
@@ -207,6 +210,103 @@
     overflow-x: hidden;
     width: 100%;
   }
+}
+
+/* gradientShift动画：实现从左往右的渐变流动效果 */
+
+/* 洛天依Live2D看板娘样式 */
+#landlord {
+    user-select: none;
+    position: fixed;
+    right: 80px;
+    bottom: 0;
+    width: 280px;
+    height: 250px;
+    z-index: 10000;
+    font-size: 0;
+    transition: all .3s ease-in-out;
+}
+
+#live2d {
+    position: relative;
+}
+
+.message {
+    opacity: 1;
+    width: 300px;
+    height: auto;
+    margin: auto;
+    padding: 7px;
+    top: 10px;
+    right: 0;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,.6);
+    border-radius: 12px;
+    background-color: rgba(255,255,255,.8);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 3px 15px 2px rgba(0,0,0,.15);
+    font-size: 13px;
+    font-weight: 400;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    overflow: hidden;
+    position: absolute;
+    z-index: 10001;
+    /* 移除可能影响显示的动画 */
+}
+
+.hide-button, .sing-button {
+    position: absolute;
+    top: 10px;
+    left: 0;
+    display: none;
+    overflow: hidden;
+    width: 60px;
+    height: 20px;
+    border: 1px solid rgba(102,204,255,.4);
+    border-radius: 12px;
+    background: rgba(102,204,255,.2);
+    box-shadow: 0 3px 15px 2px rgba(102,204,255,.4);
+    text-align: center;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.sing-button {
+    top: 40px;
+}
+
+.hide-button:hover, .sing-button:hover {
+    border: 1px solid rgba(102,204,255,.6);
+    background: rgba(102,204,255,.6);
+}
+
+@media (max-width: 860px) {
+    #landlord {
+        display: none;
+    }
+}
+
+/* 适配网站主题的消息气泡 */
+.message.luotianyi-theme {
+    border-color: rgba(255,255,255,.6);
+    background-color: rgba(255,255,255,.85);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    box-shadow: 0 3px 15px 2px rgba(0,0,0,.15);
+}
+
+.hide-button.luotianyi-theme, .sing-button.luotianyi-theme {
+    border-color: rgba(var(--primary), 0.4);
+    background: rgba(var(--primary), 0.2);
+    box-shadow: 0 3px 15px 2px rgba(var(--primary), 0.4);
+}
+
+.hide-button.luotianyi-theme:hover, .sing-button.luotianyi-theme:hover {
+    border-color: rgba(var(--primary), 0.6);
+    background: rgba(var(--primary), 0.6);
 }
 
 /* 隐藏滚动条样式 */

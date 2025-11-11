@@ -3,7 +3,7 @@
   import { Meteors } from "@/components/magicui/meteors";
   import { Typewriter } from "../components/ui/typewriter"
   import { useRouter } from 'next/navigation';
-  import { mainTitle, mainTitleBlueDecoration, subTitle, subTitleBlueDecoration, TypewriterTexts} from '@/setting/HomeSetting'
+  import { mainTitle, mainTitleBlueDecoration, subTitle, subTitleBlueDecoration, subTitleBlueDecorationClass, TypewriterTexts} from '@/setting/HomeSetting'
   import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 
 export default function Home() {
@@ -26,7 +26,7 @@ export default function Home() {
           <BoxReveal boxColor={"var(--primary)"} duration={0.5}>
             <h2 className="mt-1 sm:mt-[.5rem] text-xl sm:text-2xl lg:text-[2rem]">
               {subTitle}
-            <span className="text-primary">{subTitleBlueDecoration}</span>
+            <span className={subTitleBlueDecorationClass}>{subTitleBlueDecoration}</span>
             </h2>
          </BoxReveal>
 

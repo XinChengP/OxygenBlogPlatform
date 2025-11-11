@@ -4,6 +4,7 @@ import "./globals.css";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import BackgroundLayer from "@/components/BackgroundLayer";
+import LuoTianyiLive2D from "@/components/LuoTianyiLive2D";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { MusicProvider } from "@/contexts/MusicContext";
 import { webTitle, webDescription } from "@/setting/WebSetting";
@@ -132,6 +133,7 @@ export default function RootLayout({
               {children}
             </main>
             <Footer />
+            <LuoTianyiLive2D />
           </MusicProvider>
         </ThemeProvider>
       </body>
