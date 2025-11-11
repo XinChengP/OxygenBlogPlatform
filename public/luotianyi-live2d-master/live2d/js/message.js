@@ -1,3 +1,7 @@
+// 动态设置路径变量
+var message_Path = window.message_Path || '/luotianyi-live2d-master/live2d/';
+var home_Path = window.home_Path || '/';
+
 function renderTip(template, context) {
     var tokenReg = /(\\)?\{([^\{\}\\]+)(\\)?\}/g;
     return template.replace(tokenReg, function (word, slash1, token, slash2) {
@@ -151,7 +155,7 @@ var num=2;
 function getsong(){
 		if(num%2==0){
 					
-	$.getJSON("live2d/songs.json",function(songs_json){
+	$.getJSON(`${message_Path}songs.json`,function(songs_json){
 			var rnum = parseInt(Math.random()*songs_json.length);
 			var songs_url = songs_json[rnum]["url"];
 			var songs_name = songs_json[rnum]["name"];

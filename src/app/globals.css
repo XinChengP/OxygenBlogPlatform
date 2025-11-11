@@ -258,7 +258,7 @@
 
 .hide-button, .sing-button {
     position: absolute;
-    top: 10px;
+    top: 75px;
     left: 0;
     display: none;
     overflow: hidden;
@@ -275,7 +275,11 @@
 }
 
 .sing-button {
-    top: 40px;
+    top: 45px;
+}
+
+.hide-button {
+    top: 75px;
 }
 
 .hide-button:hover, .sing-button:hover {

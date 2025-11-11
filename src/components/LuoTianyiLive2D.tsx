@@ -22,23 +22,51 @@ export default function LuoTianyiLive2D() {
 
         const loadLive2D = async () => {
             try {
+                // 获取BasePath支持GitHub Pages部署
+                const basePath = process.env.NODE_ENV === 'production' 
+                    ? (process.env.NEXT_PUBLIC_BASE_PATH || '') 
+                    : '';
+                
+                // 设置全局变量供message.js使用 - 必须在脚本加载之前设置
+                if (typeof window !== 'undefined') {
+                    (window as any).message_Path = `${basePath}/luotianyi-live2d-master/live2d/`;
+                    (window as any).home_Path = `${basePath}/`;
+                }
+                
                 // 动态加载jQuery
                 if (typeof window !== 'undefined' && !window.jQuery) {
-                    await loadScript('https://cdn.bootcss.com/jquery/2.2.4/jquery.min.js');
+                    // 使用多个CDN源作为备份
+                    const jquerySources = [
+                        'https://cdn.bootcss.com/jquery/2.2.4/jquery.min.js',
+                        'https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.min.js',
+                        'https://code.jquery.com/jquery-2.2.4.min.js'
+                    ];
+                    
+                    for (const source of jquerySources) {
+                        try {
+                            await loadScript(source);
+                            break;
+                        } catch (error) {
+                            console.warn(`jQuery CDN ${source} 加载失败，尝试下一个源`);
+                        }
+                    }
                 }
 
                 // 动态加载Live2D核心文件
-                await loadScript('/luotianyi-live2d-master/live2d/js/live2d.js');
-                await loadScript('/luotianyi-live2d-master/live2d/js/message.js');
+                const live2dPath = `${basePath}/luotianyi-live2d-master/live2d`;
+                const messagePath = `${basePath}/luotianyi-live2d-master/live2d`;
+                
+                await loadScript(`${live2dPath}/js/live2d.js`);
+                await loadScript(`${messagePath}/js/message.js`);
 
                 // 等待DOM准备
                 setTimeout(() => {
                     if (canvasRef.current && window.loadlive2d) {
                         // 初始化Live2D
-                        (window as any).loadlive2d("live2d", "/luotianyi-live2d-master/live2d/model/tianyi/model.json");
+                        (window as any).loadlive2d("live2d", `${basePath}/luotianyi-live2d-master/live2d/model/tianyi/model.json`);
                         
                         // 设置消息显示
-                        setupMessageSystem();
+                        setupMessageSystem(basePath);
                         
                         setIsLoading(false);
                     }
@@ -70,7 +98,7 @@ export default function LuoTianyiLive2D() {
         });
     };
 
-    const setupMessageSystem = () => {
+    const setupMessageSystem = (basePath: string) => {
         // 设置洛天依的消息系统，适配网站主题
         const messageConfig = {
             mouseover: [
@@ -110,8 +138,8 @@ export default function LuoTianyiLive2D() {
             ]
         };
 
-        // 将配置应用到窗口对象
-        (window as any).message_Path = '/luotianyi-live2d-master/live2d/';
+        // 将配置应用到窗口对象，支持GitHub Pages部署
+        (window as any).message_Path = `${basePath}/luotianyi-live2d-master/live2d/`;
         (window as any).home_Path = window.location.origin;
         (window as any).messageConfig = messageConfig;
     };
