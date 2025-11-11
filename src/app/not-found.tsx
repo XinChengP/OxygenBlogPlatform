@@ -3,6 +3,13 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
+// 全局Live2D隐藏功能
+declare global {
+  interface Window {
+    hideLive2D?: () => void;
+  }
+}
+
 /**
  * 404 页面组件
  * 当用户访问不存在的页面时显示
@@ -17,6 +24,56 @@ export default function NotFound() {
   // 确保组件已挂载
   useEffect(() => {
     setMounted(true);
+    
+    // 在404页面隐藏Live2D
+    console.log('🚫 NotFound页面: 隐藏Live2D');
+    
+    // 方法1: 隐藏Live2D容器
+    const hideLive2DContainer = () => {
+      const live2dContainer = document.getElementById('landlord') as HTMLElement;
+      if (live2dContainer) {
+        live2dContainer.style.display = 'none';
+        console.log('🫥 已隐藏Live2D容器');
+      } else {
+        // 备用选择器
+        const altContainer = document.querySelector('.landlord') as HTMLElement;
+        if (altContainer) {
+          altContainer.style.display = 'none';
+          console.log('🫥 已隐藏Live2D容器(备用选择器)');
+        }
+      }
+    };
+    
+    // 方法2: 设置全局隐藏标记
+    window.hideLive2D = () => {
+      hideLive2DContainer();
+      // 移除Live2D相关类名
+      const body = document.body;
+      body.classList.add('live2d-hidden');
+      console.log('🔇 全局隐藏Live2D');
+    };
+    
+    // 方法3: 立即隐藏
+    hideLive2DContainer();
+    
+    // 设置body类
+    document.body.classList.add('not-found', 'live2d-hidden');
+    
+    // 监听Live2D组件挂载并隐藏
+    const observer = new MutationObserver(() => {
+      hideLive2DContainer();
+    });
+    
+    observer.observe(document.body, { 
+      childList: true, 
+      subtree: true 
+    });
+    
+    // 清理函数
+    return () => {
+      observer.disconnect();
+      delete window.hideLive2D;
+    };
   }, []);
 
   // 获取 CSS 变量中的主题色

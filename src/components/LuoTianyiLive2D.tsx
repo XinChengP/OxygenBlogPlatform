@@ -30,7 +30,7 @@ export default function LuoTianyiLive2D() {
                 // 设置全局变量供message.js使用 - 必须在脚本加载之前设置
                 if (typeof window !== 'undefined') {
                     (window as any).message_Path = `${basePath}/luotianyi-live2d-master/live2d/`;
-                    (window as any).home_Path = `${basePath}/`;
+                    (window as any).home_Path = basePath ? `${window.location.origin}${basePath}/` : `${basePath}/`;
                 }
                 
                 // 动态加载jQuery

@@ -1,25 +1,9 @@
 'use client';
 
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { PlayMode } from '@/components/MusicPlayer';
+import { PlayMode, Song, Playlist } from '@/types/music';
 import { fetchSongUrl, fetchLyrics } from '@/services/musicService';
 import { getAssetPath } from '@/utils/assetUtils';
-
-interface Song {
-  id: string;
-  title: string;
-  artist?: string;
-  url: string;
-  duration?: number;
-  cover?: string;
-  lrc?: string;
-}
-
-interface Playlist {
-  id: string;
-  name: string;
-  songs: Song[];
-}
 
 interface MusicContextType {
   currentSong: Song | null;

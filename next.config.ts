@@ -1,20 +1,19 @@
 const nextConfig = {
-  // 只在构建时启用静态导出，开发时禁用以避免 generateStaticParams 错误
-  // 恢复静态导出配置，因为GitHub Pages部署需要静态文件
-  ...(process.env.NODE_ENV === "production" && { 
-    output: "export",
-    // 跳过API路由的静态生成
-    skipTrailingSlashRedirect: true,
-    // 完全禁用RSC以避免在GitHub Pages上的404错误
-    experimental: {
-      missingSuspenseWithCSRBailout: false,
-      serverComponentsExternalPackages: ['all'],
-    },
-    // 禁用RSC
-    reactStrictMode: false,
-    // 使用out目录作为输出目录，与GitHub Actions工作流保持一致
-    distDir: 'out',
-  }),
+  // GitHub Pages静态导出配置
+  output: "export",
+  // 跳过API路由的静态生成
+  skipTrailingSlashRedirect: true,
+  // 顶层配置
+  serverExternalPackages: ['all'],
+  // 实验性功能
+  experimental: {
+    // 优化包导入
+    optimizePackageImports: ["react-markdown", "remark-gfm", "rehype-katex"]
+  },
+  // 禁用RSC
+  reactStrictMode: false,
+  // 使用out目录作为输出目录，与GitHub Actions工作流保持一致
+  distDir: 'out',
   trailingSlash: true,
   // 环境变量配置，供客户端组件使用
   env: {
@@ -112,11 +111,6 @@ const nextConfig = {
     // 图片尺寸配置
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-  },
-  // 启用实验性功能
-  experimental: {
-    // 优化包导入
-    optimizePackageImports: ["react-markdown", "remark-gfm", "rehype-katex"],
   },
   // 压缩配置
   compress: true,

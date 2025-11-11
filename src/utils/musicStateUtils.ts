@@ -1,4 +1,4 @@
-import { Song, Playlist, PlayMode } from '@/components/MusicPlayer';
+import { Song, Playlist, PlayMode } from '@/types/music';
 
 // 音乐状态接口
 export interface MusicState {

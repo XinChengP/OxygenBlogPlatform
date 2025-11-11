@@ -3,16 +3,14 @@
 import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 import { useMusic } from '@/contexts/MusicContext';
-import { 
-  fetchMusicData, 
-  getHotPlaylists, 
+import {
+  fetchMusicData,
+  getHotPlaylists,
   searchMusic,
   getMusicServerInfo,
-  getMusicTypeInfo,
-  MusicServer,
-  MusicType
+  getMusicTypeInfo
 } from '@/services/musicService';
-import { Playlist } from '@/components/MusicPlayer';
+import { MusicServer, MusicType, Playlist } from '@/types/music';
 
 interface MusicConfigProps {
   onPlaylistLoaded: (playlist: Playlist) => void;

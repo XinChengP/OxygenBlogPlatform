@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useTheme } from 'next-themes';
 import { useMusic } from '@/contexts/MusicContext';
 import { getAssetPath } from '@/utils/assetUtils';
-import { Song, Playlist, PlayMode } from './MusicPlayer';
+import { Song, Playlist, PlayMode, MusicServer, MusicType } from '@/types/music';
 
 interface APlayerProps {
   playlists: Playlist[];
@@ -13,24 +13,22 @@ interface APlayerProps {
   server?: string; // 音乐平台：netease, tencent, kugou, xiami, baidu
   type?: string; // 类型：song, playlist, album, search, artist
   id?: string | number; // 音乐ID
-}
-
-// 音乐平台枚举
-export enum MusicServer {
-  NETEASE = 'netease',
-  TENCENT = 'tencent',
-  KUGOU = 'kugou',
-  XIAMI = 'xiami',
-  BAIDU = 'baidu'
-}
-
-// 音乐类型枚举
-export enum MusicType {
-  SONG = 'song',
-  PLAYLIST = 'playlist',
-  ALBUM = 'album',
-  SEARCH = 'search',
-  ARTIST = 'artist'
+  // 新增自定义配置选项
+  autoPlay?: boolean; // 自动播放
+  muted?: boolean; // 初始静音
+  volume?: number; // 初始音量
+  playMode?: PlayMode; // 初始播放模式
+  preload?: 'none' | 'metadata' | 'auto'; // 预加载模式
+  themeColor?: string; // 主题色
+  showLrc?: boolean; // 是否显示歌词
+  showPlaylist?: boolean; // 是否显示播放列表
+  showControls?: boolean; // 是否显示控制面板
+  showNext?: boolean; // 是否显示下一首按钮
+  showPrevious?: boolean; // 是否显示上一首按钮
+  showVolume?: boolean; // 是否显示音量控制
+  showProgress?: boolean; // 是否显示进度条
+  showCurrentTime?: boolean; // 是否显示当前时间
+  showDuration?: boolean; // 是否显示总时长
 }
 
 export default function APlayer({ 
@@ -39,7 +37,23 @@ export default function APlayer({
   lrcType = 0,
   server = MusicServer.NETEASE,
   type = MusicType.PLAYLIST,
-  id = '167985096'
+  id = '167985096',
+  // 新增配置选项的默认值
+  autoPlay = false,
+  muted = false,
+  volume: initialVolume = 0.7,
+  playMode: initialPlayMode = PlayMode.RANDOM,
+  preload = 'metadata',
+  themeColor,
+  showLrc = true,
+  showPlaylist = true,
+  showControls = true,
+  showNext = true,
+  showPrevious = true,
+  showVolume = true,
+  showProgress = true,
+  showCurrentTime = true,
+  showDuration = true
 }: APlayerProps) {
   const { theme, resolvedTheme } = useTheme();
   const musicContext = useMusic();
@@ -59,13 +73,25 @@ export default function APlayer({
     loadLyrics,
   } = musicContext;
   
+  // 初始化音乐上下文状态
+  useEffect(() => {
+    if (musicContext) {
+      musicContext.setVolume(initialVolume);
+      musicContext.setPlayMode(initialPlayMode);
+    }
+  }, [initialVolume, initialPlayMode, musicContext]);
+  
+  // 主题色处理
+  const isDark = resolvedTheme === 'dark';
+  const accentColor = themeColor || (isDark ? '#3B82F6' : '#2563EB');
+  
   // 本地状态
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isExpanded, setIsExpanded] = useState(!fixed);
   const [showPlayModeMenu, setShowPlayModeMenu] = useState(false);
-  const [showPlaylist, setShowPlaylist] = useState(false);
+  const [showPlaylistState, setShowPlaylistState] = useState(showPlaylist);
   const [showLyrics, setShowLyrics] = useState(lrcType === 1);
   const [currentLyrics, setCurrentLyrics] = useState<string[]>([]);
   const [currentLyricIndex, setCurrentLyricIndex] = useState(0);
@@ -73,8 +99,6 @@ export default function APlayer({
   
   // 音频引用
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  
-  const isDark = resolvedTheme === 'dark';
 
   // 初始化音频播放器
   useEffect(() => {
@@ -472,17 +496,19 @@ export default function APlayer({
             
             {/* 控制按钮 */}
             <div className="flex items-center space-x-2">
-              <button
-                onClick={handlePrevious}
-                disabled={!currentPlaylist || currentPlaylist.songs.length <= 1}
-                className={`p-1 rounded-full transition-all transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed ${
-                  isDark ? 'text-gray-300 hover:text-white' : 'text-gray-700 hover:text-black'
-                }`}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M8.445 14.832A1 1 0 0010 14v-8a1 1 0 00-1.555-.832L3 9.168V6a1 1 0 00-2 0v8a1 1 0 002 0v-3.168l5.445 4z" />
-                </svg>
-              </button>
+              {showPrevious && (
+                <button
+                  onClick={handlePrevious}
+                  disabled={!currentPlaylist || currentPlaylist.songs.length <= 1}
+                  className={`p-1 rounded-full transition-all transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    isDark ? 'text-gray-300 hover:text-white' : 'text-gray-700 hover:text-black'
+                  }`}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M8.445 14.832A1 1 0 0010 14v-8a1 1 0 00-1.555-.832L3 9.168V6a1 1 0 00-2 0v8a1 1 0 002 0v-3.168l5.445 4z" />
+                  </svg>
+                </button>
+              )}
               
               <button
                 onClick={handleTogglePlayPause}
@@ -502,17 +528,19 @@ export default function APlayer({
                 )}
               </button>
               
-              <button
-                onClick={handleNext}
-                disabled={!currentPlaylist || currentPlaylist.songs.length <= 1}
-                className={`p-1 rounded-full transition-all transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed ${
-                  isDark ? 'text-gray-300 hover:text-white' : 'text-gray-700 hover:text-black'
-                }`}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M4.555 5.168A1 1 0 003 6v8a1 1 0 001.555.832L10 10.832V14a1 1 0 002 0V6a1 1 0 00-2 0v3.168L4.555 5.168z" />
-                </svg>
-              </button>
+              {showNext && (
+                <button
+                  onClick={handleNext}
+                  disabled={!currentPlaylist || currentPlaylist.songs.length <= 1}
+                  className={`p-1 rounded-full transition-all transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    isDark ? 'text-gray-300 hover:text-white' : 'text-gray-700 hover:text-black'
+                  }`}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M4.555 5.168A1 1 0 003 6v8a1 1 0 001.555.832L10 10.832V14a1 1 0 002 0V6a1 1 0 00-2 0v3.168L4.555 5.168z" />
+                  </svg>
+                </button>
+              )}
               
               <button
                 onClick={() => setIsExpanded(true)}
@@ -521,16 +549,40 @@ export default function APlayer({
                 }`}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                  <path fillRule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
                 </svg>
               </button>
             </div>
           </div>
+          
+          {/* 进度条 */}
+          {showProgress && (
+            <div className="mt-2">
+              <div 
+                className={`h-1 rounded-full cursor-pointer overflow-hidden ${
+                  isDark ? 'bg-gray-700' : 'bg-gray-300'
+                }`}
+                onClick={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const percent = (e.clientX - rect.left) / rect.width;
+                  const newTime = percent * duration;
+                  if (audioRef.current) {
+                    audioRef.current.currentTime = newTime;
+                  }
+                }}
+              >
+                <div 
+                  className="h-full rounded-full bg-gradient-to-r from-red-500 to-red-600 transition-all duration-100"
+                  style={{ width: `${duration ? (currentTime / duration) * 100 : 0}%` }}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
   }
-
+  
   // 完整播放器
   return (
     <div className={`w-full rounded-xl overflow-hidden transition-all duration-300 ${
@@ -568,9 +620,9 @@ export default function APlayer({
           {/* 标签页切换 */}
           <div className="flex space-x-1 mb-4">
             <button
-              onClick={() => setShowPlaylist(true)}
+              onClick={() => setShowPlaylistState(true)}
               className={`flex-1 py-2 px-4 rounded-t-lg text-sm font-medium transition-colors ${
-                showPlaylist
+                showPlaylistState
                   ? isDark ? 'bg-gray-700 text-white' : 'bg-gray-200 text-gray-800'
                   : isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-800'
               }`}
@@ -590,7 +642,7 @@ export default function APlayer({
           </div>
           
           {/* 播放列表 */}
-          {showPlaylist && (
+          {showPlaylistState && (
             <div className="h-80 overflow-y-auto">
               {currentPlaylist && (
                 <div className="space-y-1">
@@ -683,71 +735,79 @@ export default function APlayer({
                 )}
                 
                 {/* 进度条 */}
-                <div className="mb-2">
-                  <div className="flex items-center justify-between text-xs mb-1">
-                    <span>{formatTime(currentTime)}</span>
-                    <span>{formatTime(duration)}</span>
-                  </div>
-                  <div 
-                    className={`h-2 rounded-full cursor-pointer overflow-hidden ${
-                      isDark ? 'bg-gray-700' : 'bg-gray-300'
-                    }`}
-                  >
+                {showProgress && (
+                  <div className="mb-2">
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      {showCurrentTime && <span>{formatTime(currentTime)}</span>}
+                      {showDuration && <span>{formatTime(duration)}</span>}
+                    </div>
                     <div 
-                      className="h-full rounded-full bg-gradient-to-r from-red-500 to-red-600 transition-all duration-100 relative"
-                      style={{ width: `${duration ? (currentTime / duration) * 100 : 0}%` }}
+                      className={`h-2 rounded-full cursor-pointer overflow-hidden ${
+                        isDark ? 'bg-gray-700' : 'bg-gray-300'
+                      }`}
                     >
-                      {/* 进度指示器 */}
-                      <div className="absolute right-0 top-1/2 transform translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-md"></div>
+                      <div 
+                        className="h-full rounded-full bg-gradient-to-r from-red-500 to-red-600 transition-all duration-100 relative"
+                        style={{ width: `${duration ? (currentTime / duration) * 100 : 0}%` }}
+                      >
+                        {/* 进度指示器 */}
+                        <div className="absolute right-0 top-1/2 transform translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-md"></div>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           )}
           
           {/* 控制按钮 */}
-          <div className="flex items-center justify-center space-x-4 mb-4">
-            <button
-              onClick={handlePrevious}
-              disabled={!currentPlaylist || currentPlaylist.songs.length <= 1}
-              className={`p-3 rounded-full transition-all transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed ${
-                isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-200'
-              }`}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M8.445 14.832A1 1 0 0010 14v-8a1 1 0 00-1.555-.832L3 9.168V6a1 1 0 00-2 0v8a1 1 0 002 0v-3.168l5.445 4z" />
-              </svg>
-            </button>
-            
-            <button
-              onClick={handleTogglePlayPause}
-              disabled={!currentSong}
-              className={`w-14 h-14 rounded-full bg-gradient-to-r from-red-500 to-red-600 flex items-center justify-center text-white transition-all transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg`}
-            >
-              {isPlaying ? (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-              ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-                </svg>
+          {showControls && (
+            <div className="flex items-center justify-center space-x-4 mb-4">
+              {showPrevious && (
+                <button
+                  onClick={handlePrevious}
+                  disabled={!currentPlaylist || currentPlaylist.songs.length <= 1}
+                  className={`p-3 rounded-full transition-all transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-200'
+                  }`}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M8.445 14.832A1 1 0 0010 14v-8a1 1 0 00-1.555-.832L3 9.168V6a1 1 0 00-2 0v8a1 1 0 002 0v-3.168l5.445 4z" />
+                  </svg>
+                </button>
               )}
-            </button>
-            
-            <button
-              onClick={handleNext}
-              disabled={!currentPlaylist || currentPlaylist.songs.length <= 1}
-              className={`p-3 rounded-full transition-all transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed ${
-                isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-200'
-              }`}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M4.555 5.168A1 1 0 003 6v8a1 1 0 001.555.832L10 10.832V14a1 1 0 002 0V6a1 1 0 00-2 0v3.168L4.555 5.168z" />
-              </svg>
-            </button>
-          </div>
+              
+              <button
+                onClick={handleTogglePlayPause}
+                disabled={!currentSong}
+                className={`w-14 h-14 rounded-full bg-gradient-to-r from-red-500 to-red-600 flex items-center justify-center text-white transition-all transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg`}
+              >
+                {isPlaying ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                  </svg>
+                )}
+              </button>
+              
+              {showNext && (
+                <button
+                  onClick={handleNext}
+                  disabled={!currentPlaylist || currentPlaylist.songs.length <= 1}
+                  className={`p-3 rounded-full transition-all transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-200'
+                  }`}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M4.555 5.168A1 1 0 003 6v8a1 1 0 001.555.832L10 10.832V14a1 1 0 002 0V6a1 1 0 00-2 0v3.168L4.555 5.168z" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          )}
           
           {/* 播放模式和音量控制 */}
           <div className="flex items-center justify-between">
@@ -804,40 +864,42 @@ export default function APlayer({
             </div>
             
             {/* 音量控制 */}
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={toggleMute}
-                className={`p-1 rounded-full transition-colors ${
-                  isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-200'
-                }`}
-                title={isMuted ? '取消静音' : '静音'}
-              >
-                {isMuted || volume === 0 ? (
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 opacity-70" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                  </svg>
-                ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 opacity-70" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.415z" clipRule="evenodd" />
-                  </svg>
-                )}
-              </button>
-              <div className="flex-1 relative">
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.01"
-                  value={volume}
-                  onChange={handleVolumeChange}
-                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 slider"
-                  style={{
-                    background: `linear-gradient(to right, #EF4444 0%, #EF4444 ${volume * 100}%, ${isDark ? '#374151' : '#E5E7EB'} ${volume * 100}%, ${isDark ? '#374151' : '#E5E7EB'} 100%)`
-                  }}
-                />
+            {showVolume && (
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={toggleMute}
+                  className={`p-1 rounded-full transition-colors ${
+                    isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-200'
+                  }`}
+                  title={isMuted ? '取消静音' : '静音'}
+                >
+                  {isMuted || volume === 0 ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 opacity-70" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 opacity-70" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.415z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                </button>
+                <div className="flex-1 relative">
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={volume}
+                    onChange={handleVolumeChange}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 slider"
+                    style={{
+                      background: `linear-gradient(to right, #EF4444 0%, #EF4444 ${volume * 100}%, ${isDark ? '#374151' : '#E5E7EB'} ${volume * 100}%, ${isDark ? '#374151' : '#E5E7EB'} 100%)`
+                    }}
+                  />
+                </div>
+                <span className="text-sm w-10 text-right">{Math.round(volume * 100)}%</span>
               </div>
-              <span className="text-sm w-10 text-right">{Math.round(volume * 100)}%</span>
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -867,3 +929,6 @@ export default function APlayer({
     </div>
   );
 }
+
+// 导出相关类型和枚举
+export { PlayMode };

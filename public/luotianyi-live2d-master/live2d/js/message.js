@@ -67,14 +67,14 @@ initTips();
     if(document.referrer !== ''){
         var referrer = document.createElement('a');
         referrer.href = document.referrer;
-        text = '嗨！来自 <span style="color:#0099cc;">' + referrer.hostname + '</span> 的朋友！';
+        text = '嗨！来自 <span style="color:#66ccff;">' + referrer.hostname + '</span> 的朋友！';
         var domain = referrer.hostname.split('.')[1];
         if (domain == 'baidu') {
-            text = '嗨！ 来自 百度搜索 的朋友！<br>欢迎访问<span style="color:#0099cc;">「 ' + document.title.split(' - ')[0] + ' 」</span>';
+            text = '嗨！ 来自 百度搜索 的朋友！<br>欢迎访问<span style="color:#66ccff;">「 ' + document.title.split(' - ')[0] + ' 」</span>';
         }else if (domain == 'so') {
-            text = '嗨！ 来自 360搜索 的朋友！<br>欢迎访问<span style="color:#0099cc;">「 ' + document.title.split(' - ')[0] + ' 」</span>';
+            text = '嗨！ 来自 360搜索 的朋友！<br>欢迎访问<span style="color:#66ccff;">「 ' + document.title.split(' - ')[0] + ' 」</span>';
         }else if (domain == 'google') {
-            text = '嗨！ 来自 谷歌搜索 的朋友！<br>欢迎访问<span style="color:#0099cc;">「 ' + document.title.split(' - ')[0] + ' 」</span>';
+            text = '嗨！ 来自 谷歌搜索 的朋友！<br>欢迎访问<span style="color:#66ccff;">「 ' + document.title.split(' - ')[0] + ' 」</span>';
         }
     }else {
         if (window.location.href == `${home_Path}`) { //主页URL判断，需要斜杠结尾
@@ -99,7 +99,7 @@ initTips();
                 text = '嗨~ 快来逗我玩吧！';
             }
         }else {
-            text = '欢迎阅读<span style="color:#0099cc;">「 ' + document.title.split(' - ')[0] + ' 」</span>';
+            text = '欢迎阅读<span style="color:#66ccff;">「 ' + document.title.split(' - ')[0] + ' 」</span>';
         }
     }
     showMessage(text, 12000);

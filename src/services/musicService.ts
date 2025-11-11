@@ -1,10 +1,6 @@
 // 音乐平台API服务，用于从网易云、QQ音乐等平台获取音乐数据
 
-import { Song, Playlist, Artist, Album } from '@/components/MusicPlayer';
-import { MusicServer, MusicType } from '@/components/APlayer';
-
-// 重新导出类型，以便其他组件可以直接从musicService导入
-export { MusicServer, MusicType } from '@/components/APlayer';
+import { Song, Playlist, Artist, Album, MusicServer, MusicType } from '@/types/music';
 
 import { getAssetPath } from '@/utils/assetUtils';
 

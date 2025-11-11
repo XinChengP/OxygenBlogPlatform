@@ -3,10 +3,10 @@
 import { useState } from 'react';
 import { useTheme } from 'next-themes';
 import { useMusic } from '@/contexts/MusicContext';
-import { Playlist } from '@/components/MusicPlayer';
+import { Playlist } from '@/types/music';
 import APlayer from '@/components/APlayer';
 import MusicConfig from '@/components/MusicConfig';
-import { MusicServer, MusicType } from '@/components/APlayer';
+import { MusicServer, MusicType } from '@/types/music';
 
 export default function MusicPage() {
   const { resolvedTheme } = useTheme();

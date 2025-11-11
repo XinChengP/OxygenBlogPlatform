@@ -1,4 +1,4 @@
-import { Song, Playlist } from '@/components/MusicPlayer';
+import { Song, Playlist } from '@/types/music';
 import { getAssetPath } from '@/utils/assetUtils';
 
 // 获取音乐文件列表 - 仅保留UI相关数据结构，不实际处理音频
