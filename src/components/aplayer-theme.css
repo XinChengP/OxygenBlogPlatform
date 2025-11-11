@@ -1,0 +1,346 @@
+/* APlayer 主题样式 - 支持亮色/暗色模式 */
+
+/* 浅色模式（默认） */
+.aplayer:not(.dark) {
+  --aplayer-bg: #ffffff;
+  --aplayer-fg: #333333;
+  --aplayer-border: #e0e0e0;
+  --aplayer-highlight: #66ccff;
+  --aplayer-shadow: rgba(0, 0, 0, 0.1);
+  --aplayer-info-fg: #666666;
+  --aplayer-button-fg: #666666;
+  --aplayer-button-bg-hover: #f0f0f0;
+}
+
+/* 深色模式 */
+.dark .aplayer {
+  --aplayer-bg: #1a1a1a;
+  --aplayer-fg: #ffffff;
+  --aplayer-border: #333333;
+  --aplayer-highlight: #00d4ff;
+  --aplayer-shadow: rgba(0, 0, 0, 0.5);
+  --aplayer-info-fg: #b0b0b0;
+  --aplayer-button-fg: #e0e0e0;
+  --aplayer-button-bg-hover: #2a2a2a;
+  --aplayer-disabled: #666666;
+  --aplayer-muted-bg: #252525;
+}
+
+/* APlayer 基础样式 */
+.aplayer {
+  background: var(--aplayer-bg);
+  color: var(--aplayer-fg);
+  border-radius: 10px 10px 0 0;
+  box-shadow: 0 -2px 20px var(--aplayer-shadow);
+  font-family: inherit;
+  font-size: 14px;
+}
+
+/* 吸底模式样式 */
+.aplayer.aplayer-fixed {
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: 0;
+  border-radius: 0;
+  z-index: 10000;
+}
+
+/* 歌单列表样式增强 */
+.aplayer .aplayer-list {
+  background: var(--aplayer-bg);
+  border: 1px solid var(--aplayer-border);
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 -4px 20px var(--aplayer-shadow);
+}
+
+.aplayer .aplayer-list .aplayer-list-light {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(0, 212, 255, 0.1));
+  transition: all 0.3s ease;
+}
+
+.aplayer .aplayer-list .aplayer-list-item {
+  transition: all 0.2s ease;
+  border-radius: 4px;
+  margin: 2px 8px;
+}
+
+.aplayer .aplayer-list .aplayer-list-item:hover {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 212, 255, 0.05));
+  transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.aplayer .aplayer-list .aplayer-list-item:active {
+  transform: translateX(2px);
+}
+
+/* 当前播放歌曲样式 */
+.aplayer .aplayer-list .aplayer-list-light .aplayer-list-item-content {
+  color: var(--aplayer-fg);
+  font-weight: 600;
+}
+
+/* 列表项序号样式 */
+.aplayer .aplayer-list .aplayer-list-index {
+  color: var(--aplayer-info-fg);
+  font-weight: 500;
+  min-width: 24px;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.aplayer .aplayer-list .aplayer-list-light .aplayer-list-index {
+  color: var(--aplayer-highlight);
+  font-weight: 700;
+}
+
+/* 歌曲信息样式 */
+.aplayer .aplayer-list .aplayer-list-item-content {
+  color: var(--aplayer-fg);
+  transition: all 0.3s ease;
+}
+
+.aplayer .aplayer-list .aplayer-list-item-content .aplayer-list-title {
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.aplayer .aplayer-list .aplayer-list-item-content .aplayer-list-author {
+  color: var(--aplayer-info-fg);
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+/* 深色模式下的列表增强效果 */
+.dark .aplayer .aplayer-list {
+  background: linear-gradient(135deg, #1a1a1a, #1f1f1f);
+}
+
+.dark .aplayer .aplayer-list .aplayer-list-item:hover {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.15), rgba(0, 212, 255, 0.08));
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.dark .aplayer .aplayer-list .aplayer-list-light {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.25), rgba(0, 212, 255, 0.15));
+}
+
+/* 进度条样式增强 */
+.aplayer .aplayer-bar {
+  background: rgba(0, 212, 255, 0.2);
+  height: 4px;
+  border-radius: 2px;
+  position: relative;
+  overflow: hidden;
+}
+
+.aplayer .aplayer-bar .aplayer-bar-loaded {
+  background: linear-gradient(90deg, rgba(0, 212, 255, 0.3), rgba(0, 212, 255, 0.1));
+  height: 100%;
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+
+.aplayer .aplayer-bar .aplayer-bar-played {
+  background: linear-gradient(90deg, var(--aplayer-highlight), #00a8cc);
+  height: 100%;
+  border-radius: 2px;
+  position: relative;
+  transition: all 0.1s ease;
+}
+
+.aplayer .aplayer-bar .aplayer-bar-handle {
+  background: var(--aplayer-highlight);
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 212, 255, 0.4);
+  transition: all 0.2s ease;
+}
+
+.aplayer .aplayer-bar .aplayer-bar-handle:hover {
+  transform: translate(-50%, -50%) scale(1.2);
+  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.6);
+}
+
+.aplayer .aplayer-bar .aplayer-bar-handle:active {
+  transform: translate(-50%, -50%) scale(0.9);
+}
+
+/* 音量控制样式 */
+.aplayer .aplayer-volume-wrap .aplayer-volume-bar-wrap {
+  background: rgba(102, 204, 255, 0.1);
+}
+
+.aplayer .aplayer-volume-wrap .aplayer-volume-bar {
+  background: rgba(102, 204, 255, 0.3);
+}
+
+.aplayer .aplayer-volume-wrap .aplayer-volume-bar .aplayer-volume-bar-inner {
+  background: var(--aplayer-highlight);
+}
+
+/* 按钮样式增强 */
+.aplayer .aplayer-icon {
+  fill: var(--aplayer-button-fg);
+  transition: all 0.3s ease;
+}
+
+.aplayer .aplayer-icon:hover {
+  background: var(--aplayer-button-bg-hover);
+  border-radius: 50%;
+  transform: scale(1.1);
+}
+
+.aplayer .aplayer-icon:active {
+  transform: scale(0.95);
+}
+
+/* 播放/暂停按钮特殊效果 */
+.aplayer .aplayer-icon.aplayer-icon-play,
+.aplayer .aplayer-icon.aplayer-icon-pause {
+  background: var(--aplayer-highlight);
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0, 212, 255, 0.3);
+}
+
+.aplayer .aplayer-icon.aplayer-icon-play:hover,
+.aplayer .aplayer-icon.aplayer-icon-pause:hover {
+  background: var(--aplayer-highlight);
+  opacity: 0.9;
+  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.4);
+}
+
+/* 列表按钮样式 */
+.aplayer .aplayer-icon.aplayer-icon-list {
+  border-radius: 6px;
+}
+
+.aplayer .aplayer-icon.aplayer-icon-list:hover {
+  background: var(--aplayer-button-bg-hover);
+  border-radius: 6px;
+}
+
+/* 音量按钮样式 */
+.aplayer .aplayer-icon.aplayer-icon-volume-down,
+.aplayer .aplayer-icon.aplayer-icon-volume-up,
+.aplayer .aplayer-icon.aplayer-icon-volume-off {
+  border-radius: 4px;
+}
+
+/* 深色模式下的特殊按钮效果 */
+.dark .aplayer .aplayer-icon.aplayer-icon-play,
+.dark .aplayer .aplayer-icon.aplayer-icon-pause {
+  box-shadow: 0 2px 8px rgba(0, 212, 255, 0.4);
+}
+
+.dark .aplayer .aplayer-icon.aplayer-icon-play:hover,
+.dark .aplayer .aplayer-icon.aplayer-icon-pause:hover {
+  box-shadow: 0 4px 16px rgba(0, 212, 255, 0.6);
+}
+
+/* 封面样式 */
+.aplayer .aplayer-pic {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px var(--aplayer-shadow);
+}
+
+/* 信息区域样式 */
+.aplayer .aplayer-info .aplayer-title {
+  color: var(--aplayer-fg);
+  font-weight: 600;
+}
+
+.aplayer .aplayer-info .aplayer-author {
+  color: var(--aplayer-info-fg);
+}
+
+/* 时间显示样式 */
+.aplayer .aplayer-time {
+  color: var(--aplayer-info-fg);
+}
+
+/* 自定义样式增强 */
+.aplayer .aplayer-controller .aplayer-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.aplayer .aplayer-controller .aplayer-btn:hover {
+  background: var(--aplayer-button-bg-hover);
+  border-radius: 4px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .aplayer {
+    font-size: 12px;
+  }
+  
+  .aplayer.aplayer-fixed {
+    border-radius: 0;
+  }
+  
+  .aplayer .aplayer-info {
+    padding: 8px 10px;
+  }
+  
+  .aplayer .aplayer-controller {
+    padding: 8px 10px;
+  }
+}
+
+/* 音乐控制面板样式 */
+.music-control-panel {
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.music-control-panel:hover {
+  background: rgba(0, 0, 0, 0.9) !important;
+  transform: translateY(-2px);
+}
+
+/* 浅色模式下的控制面板 */
+.aplayer:not(.dark) .music-control-panel {
+  background: rgba(255, 255, 255, 0.9) !important;
+  color: #333333 !important;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.aplayer:not(.dark) .music-control-panel:hover {
+  background: rgba(255, 255, 255, 0.95) !important;
+}
+
+/* 隐藏默认的APlayer图标，保留功能 */
+.aplayer .aplayer-pause,
+.aplayer .aplayer-play {
+  opacity: 1;
+}
+
+/* 添加动画效果 */
+.aplayer .aplayer-info {
+  animation: slideInUp 0.3s ease;
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}

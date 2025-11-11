@@ -1,6 +1,4 @@
 const nextConfig = {
-  // GitHub Pages静态导出配置
-  output: "export",
   // 跳过API路由的静态生成
   skipTrailingSlashRedirect: true,
   // 顶层配置
@@ -12,9 +10,86 @@ const nextConfig = {
   },
   // 禁用RSC
   reactStrictMode: false,
-  // 使用out目录作为输出目录，与GitHub Actions工作流保持一致
-  distDir: 'out',
-  trailingSlash: true,
+  
+  // 只在生产模式下启用静态导出和GitHub Pages配置
+  ...(process.env.NODE_ENV === "production" && {
+    // GitHub Pages静态导出配置
+    output: "export",
+    // 使用out目录作为输出目录
+    distDir: 'out',
+    trailingSlash: true,
+    
+    // 静态导出时的资源前缀配置
+    basePath: (() => {
+      if (!process.env.GITHUB_ACTIONS) return "";
+      
+      const repoName = process.env.REPO_NAME || 
+                      process.env.GITHUB_REPOSITORY?.split("/")[1] || 
+                      "blog-platform";
+      
+      // 如果仓库名以 .github.io 结尾，说明是用户主页仓库，不需要 basePath
+      if (repoName.endsWith(".github.io")) {
+        return "";
+      }
+      
+      return `/${repoName}`;
+    })(),
+    
+    // 图片配置（仅在静态导出模式下需要）
+    images: {
+      // 使用新的remotePatterns配置
+      remotePatterns: [
+        {
+          protocol: "https",
+          hostname: "nextjs.org",
+          pathname: "/**",
+        },
+        {
+          protocol: "https",
+          hostname: "tailwindcss.com",
+          pathname: "/**",
+        },
+        {
+          protocol: "https",
+          hostname: "vercel.com",
+          pathname: "/**",
+        },
+        {
+          protocol: "https",
+          hostname: "github.com",
+          pathname: "/**",
+        },
+        {
+          protocol: "https",
+          hostname: "developer.mozilla.org",
+          pathname: "/**",
+        },
+        {
+          protocol: "https",
+          hostname: "stackoverflow.com",
+          pathname: "/**",
+        },
+        {
+          protocol: "https",
+          hostname: "images.unsplash.com",
+          pathname: "/**",
+        },
+        {
+          protocol: "https",
+          hostname: "cdn.jsdelivr.net",
+          pathname: "/**",
+        },
+        {
+          protocol: "https",
+          hostname: "raw.githubusercontent.com",
+          pathname: "/**",
+        },
+      ],
+      // 静态导出时必须禁用图片优化
+      unoptimized: true,
+    },
+  }),
+  
   // 环境变量配置，供客户端组件使用
   env: {
     NEXT_PUBLIC_BASE_PATH: (() => {
@@ -32,95 +107,18 @@ const nextConfig = {
       return `/${repoName}`;
     })()
   },
-  // 静态导出时的资源前缀配置
-  ...(process.env.NODE_ENV === "production" && {
-    // 动态获取仓库名，支持多种方式：
-    // 1. 环境变量 GITHUB_REPOSITORY (格式: owner/repo)
-    // 2. 环境变量 REPO_NAME (直接设置仓库名)
-    // 3. 默认从 package.json 的 name 字段获取
-    // 特殊处理：如果是 username.github.io 仓库，不设置 basePath
-    basePath: (() => {
-      if (!process.env.GITHUB_ACTIONS) return "";
-      
-      const repoName = process.env.REPO_NAME || 
-                      process.env.GITHUB_REPOSITORY?.split("/")[1] || 
-                      "blog-platform";
-      
-      // 如果仓库名以 .github.io 结尾，说明是用户主页仓库，不需要 basePath
-      if (repoName.endsWith(".github.io")) {
-        return "";
-      }
-      
-      return `/${repoName}`;
-    })(),
-    // 移除assetPrefix，basePath已经足够处理资源路径
-  }),
-  images: {
-    // 使用新的remotePatterns配置替代已弃用的domains配置
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "nextjs.org",
-        pathname: "/**",
-      },
-      {
-        protocol: "https",
-        hostname: "tailwindcss.com",
-        pathname: "/**",
-      },
-      {
-        protocol: "https",
-        hostname: "vercel.com",
-        pathname: "/**",
-      },
-      {
-        protocol: "https",
-        hostname: "github.com",
-        pathname: "/**",
-      },
-      {
-        protocol: "https",
-        hostname: "developer.mozilla.org",
-        pathname: "/**",
-      },
-      {
-        protocol: "https",
-        hostname: "stackoverflow.com",
-        pathname: "/**",
-      },
-      {
-        protocol: "https",
-        hostname: "images.unsplash.com",
-        pathname: "/**",
-      },
-      {
-        protocol: "https",
-        hostname: "cdn.jsdelivr.net",
-        pathname: "/**",
-      },
-      {
-        protocol: "https",
-        hostname: "raw.githubusercontent.com",
-        pathname: "/**",
-      },
-    ],
-    // 图片格式优化
-    formats: ["image/webp", "image/avif"],
-    // 静态导出时必须禁用图片优化
-    unoptimized: process.env.NODE_ENV === "production",
-    // 图片尺寸配置
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
-    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-  },
+  
   // 压缩配置
   compress: true,
+  
   // 确保正确处理Unicode字符
   pageExtensions: ["tsx", "ts", "jsx", "js"],
+  
   // 只在非静态导出模式下启用重写规则
   ...(process.env.NODE_ENV !== "production" && {
     async rewrites() {
       return [
-        // 已移除about.txt重定向规则
+        // 开发模式下的重写规则
       ];
     },
   }),

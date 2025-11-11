@@ -193,6 +193,57 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+/* 音乐播放器样式优化 */
+.aplayer-container {
+  z-index: 9999 !important;
+  /* 确保播放器在最上层 */
+}
+
+/* 优化APlayer列表显示 */
+.aplayer .aplayer-list {
+  max-height: 300px !important;
+  overflow-y: auto !important;
+}
+
+/* 确保列表项在所有设备上都能正常显示 */
+.aplayer .aplayer-list ol li {
+  min-height: 40px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* 优化滚动条样式 */
+.aplayer .aplayer-list::-webkit-scrollbar {
+  width: 6px !important;
+}
+
+.aplayer .aplayer-list::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1) !important;
+  border-radius: 3px !important;
+}
+
+.aplayer .aplayer-list::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.3) !important;
+  border-radius: 3px !important;
+}
+
+.aplayer .aplayer-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.5) !important;
+}
+
+/* 暗色主题下的滚动条 */
+.dark .aplayer .aplayer-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.dark .aplayer .aplayer-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3) !important;
+}
+
+.dark .aplayer .aplayer-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5) !important;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -322,3 +373,6 @@
 .scrollbar-hide::-webkit-scrollbar {
   display: none; /* Chrome, Safari and Opera */
 }
+
+/* 导入APlayer主题样式 */
+@import '../components/aplayer-theme.css';
