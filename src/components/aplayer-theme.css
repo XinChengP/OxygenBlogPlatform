@@ -97,7 +97,7 @@
   font-weight: 700;
 }
 
-/* 歌曲信息样式 */
+/* 歌曲信息样式增强 */
 .aplayer .aplayer-list .aplayer-list-item-content {
   color: var(--aplayer-fg);
   transition: all 0.3s ease;
@@ -112,6 +112,16 @@
   color: var(--aplayer-info-fg);
   font-size: 12px;
   margin-top: 2px;
+}
+
+/* 隐藏歌手信息，只显示歌曲名称 */
+.aplayer .aplayer-list .aplayer-list-item-content .aplayer-list-author {
+  display: none;
+}
+
+.aplayer .aplayer-list .aplayer-list-item-content .aplayer-list-title {
+  font-weight: 600;
+  font-size: 14px;
 }
 
 /* 深色模式下的列表增强效果 */
@@ -300,11 +310,13 @@
   }
 }
 
-/* 音乐控制面板样式 */
+/* 音乐控制面板样式增强 */
 .music-control-panel {
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   transition: all 0.3s ease;
+  padding: 8px 12px;
+  margin-top: 4px;
 }
 
 .music-control-panel:hover {
@@ -321,6 +333,23 @@
 
 .aplayer:not(.dark) .music-control-panel:hover {
   background: rgba(255, 255, 255, 0.95) !important;
+}
+
+/* 修复音乐列表展开时的按钮位置 */
+.aplayer .aplayer-list {
+  padding-bottom: 60px;
+}
+
+.aplayer .aplayer-list .aplayer-list-item {
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin: 2px 12px;
+  transition: all 0.3s ease;
+}
+
+/* 确保歌单内容不被底部按钮遮挡 */
+.aplayer .aplayer-list .aplayer-list-item:last-child {
+  margin-bottom: 80px;
 }
 
 /* 隐藏默认的APlayer图标，保留功能 */

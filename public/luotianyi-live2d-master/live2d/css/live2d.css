@@ -20,8 +20,8 @@
     height: auto;
     margin: auto;
     padding: 7px;
-    top: -80px;
-    left: -10px;
+    top: -100px;
+    left: 30px;
     text-align: center;
     border: 1px solid rgba(102,204,255,.4);
     border-radius: 12px;
@@ -33,6 +33,7 @@
     text-transform: uppercase;
     overflow: hidden;
     position: absolute;
+    z-index: 9998;
     animation-delay: 5s;
     animation-duration: 50s;
     animation-iteration-count: infinite;

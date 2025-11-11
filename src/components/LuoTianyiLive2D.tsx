@@ -200,18 +200,20 @@ export default function LuoTianyiLive2D() {
                 style={{ 
                     opacity: messageOpacity,
                     position: 'absolute',
-                    top: '-20px',
-                    right: '90px',
+                    top: '-100px',
+                    left: '30px',
                     display: 'block',
                     transition: 'opacity 0.5s ease-in-out',
-                    background: 'rgba(255, 255, 255, 0.9)',
-                    padding: '8px 12px',
-                    borderRadius: '6px',
-                    boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
-                    color: '#333',
-                    fontSize: '14px',
-                    maxWidth: '200px',
-                    wordWrap: 'break-word'
+                    background: 'rgba(102, 204, 255, 0.2)',
+                    padding: '7px',
+                    borderRadius: '12px',
+                    border: '1px solid rgba(102,204,255,.4)',
+                    boxShadow: '0 3px 15px 2px rgba(102,204,255,.4)',
+                    color: 'var(--aplayer-fg)',
+                    fontSize: '13px',
+                    maxWidth: '300px',
+                    wordWrap: 'break-word',
+                    zIndex: 9998
                 }}
             >
                 {message || '你好～我是洛天依！'}
