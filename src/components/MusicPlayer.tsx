@@ -28,11 +28,20 @@ export default function MusicPlayer({
   // 获取正确的basePath，处理GitHub Pages部署
   const getBasePath = () => {
     if (typeof window !== 'undefined') {
-      // 在客户端，从window.location获取路径
+      // 在开发模式下（localhost），不需要basePath
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        return '';
+      }
+      
+      // GitHub Pages部署时，使用固定的basePath
+      // GitHub Pages的basePath通常是仓库名
       const pathArray = window.location.pathname.split('/');
-      // 移除最后一个空元素（因为路径以/结尾）
-      const basePath = pathArray.slice(0, -1).join('/');
-      return basePath || '';
+      // GitHub Pages通常将仓库名作为第一个路径段
+      // 例如：https://xinchengp.github.io/OxygenBlogPlatform/blogs/
+      // 其中"OxygenBlogPlatform"是仓库名
+      if (pathArray.length > 1 && pathArray[1]) {
+        return `/${pathArray[1]}`;
+      }
     }
     // 在服务器端，使用构建时的basePath
     return process.env.NEXT_PUBLIC_BASE_PATH || '';
@@ -78,7 +87,7 @@ export default function MusicPlayer({
     "/music/异样的风暴中心 - 洛天依.mp3",
     "/music/歌行四方 - 洛天依.mp3",
     "/music/蝴蝶 - 洛天依.mp3",
-    "/music/霜雪千年 - 洛天依、乐正绫.mp3"
+    "/music/珍珠.mp3"
   ].map(filePath => ({
     name: extractDisplayName(filePath),
     artist: "洛天依",
