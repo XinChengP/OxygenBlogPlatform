@@ -244,14 +244,14 @@ export default function OptimizedImage({
 
       {/* 图片标题 */}
       {(alt || title) && isLoaded && (
-        <motion.div
-          className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent text-white text-sm p-3 text-center"
+        <motion.span
+          className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent text-white text-sm p-3 text-center block"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.2 }}
         >
           {alt || title}
-        </motion.div>
+        </motion.span>
       )}
     </div>
   );

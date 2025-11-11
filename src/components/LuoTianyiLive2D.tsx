@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 
 /**
  * 洛天依Live2D看板娘组件
@@ -8,9 +8,41 @@ import { useEffect, useRef, useState } from 'react';
  */
 export default function LuoTianyiLive2D() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const fadeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const lastMessageTimeRef = useRef<number>(0);
+    
     const [isVisible, setIsVisible] = useState(true);
     const [message, setMessage] = useState('');
+    const [messageOpacity, setMessageOpacity] = useState(1);
     const [isLoading, setIsLoading] = useState(true);
+
+    // 自动淡出功能
+    const triggerFadeOut = useCallback(() => {
+        if (fadeTimeoutRef.current) {
+            clearTimeout(fadeTimeoutRef.current);
+        }
+        
+        fadeTimeoutRef.current = setTimeout(() => {
+            setMessageOpacity(0);
+        }, 5000);
+    }, []);
+
+    // 消息管理功能
+    const updateMessage = useCallback((newMessage: string) => {
+        setMessage(newMessage);
+        setMessageOpacity(1);
+        lastMessageTimeRef.current = Date.now();
+        triggerFadeOut();
+    }, [triggerFadeOut]);
+
+    // 清理定时器
+    useEffect(() => {
+        return () => {
+            if (fadeTimeoutRef.current) {
+                clearTimeout(fadeTimeoutRef.current);
+            }
+        };
+    }, []);
 
     useEffect(() => {
         // 检查是否为移动设备
@@ -100,6 +132,16 @@ export default function LuoTianyiLive2D() {
 
     const setupMessageSystem = (basePath: string) => {
         // 设置洛天依的消息系统，适配网站主题
+        // 重写消息显示函数以支持自动淡出
+        const originalShowMessage = (window as any).showMessage;
+        (window as any).showMessage = (msg: string) => {
+            if (originalShowMessage) {
+                originalShowMessage(msg);
+            }
+            // 使用我们的新消息管理函数
+            updateMessage(msg);
+        };
+
         const messageConfig = {
             mouseover: [
                 {
@@ -126,7 +168,6 @@ export default function LuoTianyiLive2D() {
                         "想听我唱歌吗？", 
                         "不要动手动脚的！快把手拿开~~", 
                         "真…真的是不知羞耻！", 
-                        "Hentai！", 
                         "再摸的话我可要报警了！⌇●﹏●⌇", 
                         "110吗，这里有个变态一直在摸我(ó﹏ò｡)",
                         "呀！你摸到我了！",
@@ -161,11 +202,20 @@ export default function LuoTianyiLive2D() {
             <div 
                 className={`message ${getCurrentThemeClass()}`} 
                 style={{ 
-                    opacity: 1,
+                    opacity: messageOpacity,
                     position: 'absolute',
-                    top: '10px',
-                    right: '0',
-                    display: 'block'
+                    top: '-20px',
+                    right: '90px',
+                    display: 'block',
+                    transition: 'opacity 0.5s ease-in-out',
+                    background: 'rgba(255, 255, 255, 0.9)',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
+                    color: '#333',
+                    fontSize: '14px',
+                    maxWidth: '200px',
+                    wordWrap: 'break-word'
                 }}
             >
                 {message || '你好～我是洛天依！'}
@@ -191,8 +241,7 @@ export default function LuoTianyiLive2D() {
             <div 
                 className={`sing-button ${getCurrentThemeClass()}`}
                 onClick={() => {
-                    setMessage('天依想唱歌给你听～');
-                    setTimeout(() => setMessage(''), 3000);
+                    updateMessage('天依想唱歌给你听～');
                 }}
             >
                 Sing
