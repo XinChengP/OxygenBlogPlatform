@@ -4,7 +4,7 @@ import "./globals.css";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import BackgroundLayer from "@/components/BackgroundLayer";
-import Live2DController from "@/components/Live2DController";
+import ConditionalComponents from "@/components/ConditionalComponents";
 import { ThemeProvider } from "@/components/ThemeProvider";
 
 import { webTitle, webDescription } from "@/setting/WebSetting";
@@ -132,7 +132,7 @@ export default function RootLayout({
             {children}
           </main>
           <Footer />
-          <Live2DController />
+          <ConditionalComponents />
         </ThemeProvider>
       </body>
     </html>
