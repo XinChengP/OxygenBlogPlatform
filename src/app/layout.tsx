@@ -6,7 +6,7 @@ import Footer from "@/components/Footer";
 import BackgroundLayer from "@/components/BackgroundLayer";
 import Live2DController from "@/components/Live2DController";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import { MusicProvider } from "@/contexts/MusicContext";
+
 import { webTitle, webDescription } from "@/setting/WebSetting";
 
 const geistSans = Geist({
@@ -126,15 +126,13 @@ export default function RootLayout({
           disableTransitionOnChange={false}
           storageKey="theme"
         >
-          <MusicProvider>
-            <BackgroundLayer />
-            <Navigation />
-            <main className="min-h-screen transition-colors duration-300 relative">
-              {children}
-            </main>
-            <Footer />
-            <Live2DController />
-          </MusicProvider>
+          <BackgroundLayer />
+          <Navigation />
+          <main className="min-h-screen transition-colors duration-300 relative">
+            {children}
+          </main>
+          <Footer />
+          <Live2DController />
         </ThemeProvider>
       </body>
     </html>

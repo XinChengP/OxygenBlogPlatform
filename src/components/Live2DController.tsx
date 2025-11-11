@@ -44,7 +44,6 @@ export default function Live2DController() {
       '/about',
       '/blogs',
       '/archive', 
-      '/music',
       '/test',
       '/settings',
       '/guestbook',
@@ -83,7 +82,6 @@ export default function Live2DController() {
                      !pathname.startsWith('/blogs') && 
                      !pathname.startsWith('/archive') && 
                      !pathname.startsWith('/about') && 
-                     !pathname.startsWith('/music') && 
                      !pathname.startsWith('/test') && 
                      !pathname.startsWith('/settings') &&
                      !pathname.startsWith('/guestbook');
@@ -107,7 +105,6 @@ export default function Live2DController() {
         notBlogs: !pathname.startsWith('/blogs'),
         notArchive: !pathname.startsWith('/archive'),
         notAbout: !pathname.startsWith('/about'),
-        notMusic: !pathname.startsWith('/music'),
         notTest: !pathname.startsWith('/test'),
         notSettings: !pathname.startsWith('/settings'),
         notGuestbook: !pathname.startsWith('/guestbook')

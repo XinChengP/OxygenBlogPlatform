@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
-import { ChevronUpIcon, ChevronDownIcon, SunIcon, MoonIcon, AdjustmentsHorizontalIcon, PlayIcon, PauseIcon, ForwardIcon } from '@heroicons/react/24/outline';
-import { useMusic } from '@/contexts/MusicContext';
+import { ChevronUpIcon, ChevronDownIcon, SunIcon, MoonIcon, AdjustmentsHorizontalIcon } from '@heroicons/react/24/outline';
+
 import { getAssetPath } from '@/utils/assetUtils';
 
 /**
@@ -19,7 +19,7 @@ import { getAssetPath } from '@/utils/assetUtils';
  */
 export default function ScrollToTop() {
   const { theme, setTheme } = useTheme();
-  const { isPlaying, togglePlayPause, currentSong, playNext } = useMusic();
+
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [isAtBottom, setIsAtBottom] = useState(false);
   const [isAtTop, setIsAtTop] = useState(true);

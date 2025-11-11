@@ -153,10 +153,6 @@ export default function LuoTianyiLive2D() {
                     text: ["在找什么东西呢，需要帮忙吗？", "搜索很重要哦，我来帮你～", "找不到想要的内容吗？"]
                 },
                 {
-                    selector: "a[href*='music'], .music-player",
-                    text: ["音乐！我最喜欢唱歌了～", "这首歌听起来不错呢！", "要一起听音乐吗？"]
-                },
-                {
                     selector: ".nav-link, .navigation a",
                     text: ["这里好像有很好玩的内容！", "要去看其他地方吗？", "导航很重要呢～"]
                 }

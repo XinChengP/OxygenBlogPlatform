@@ -50,7 +50,7 @@ export function getBasePath(): string {
     const pathname = window.location.pathname;
     // 如果路径包含仓库名，则提取它作为基础路径
     const pathSegments = pathname.split('/').filter(segment => segment);
-    if (pathSegments.length > 0 && pathSegments[0] !== '' && pathSegments[0] !== 'settings' && pathSegments[0] !== 'music') {
+    if (pathSegments.length > 0 && pathSegments[0] !== '' && pathSegments[0] !== 'settings') {
       return `/${pathSegments[0]}`;
     }
   }

@@ -10,13 +10,11 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "npm run sync-theme && next build",
-    "build:pages": "npm run sync-theme && next build && cp -r out public 2>/dev/null || echo 'GitHub Pages构建完成，out目录已准备好'",
+    "build:pages": "npm run sync-theme && next build && node -e \"require('fs').cpSync('./out', './public', { recursive: true, force: true })\"",
     "start": "next start",
     "lint": "next lint",
     "sync-theme": "node scripts/sync-theme-colors.js",
-    "export": "next build",
-    "deploy": "npm run build && npm run deploy:gh-pages",
-    "deploy:gh-pages": "node scripts/deploy.js"
+    "export": "next build"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
@@ -35,7 +33,6 @@
     "lucide-react": "^0.523.0",
     "marked": "^17.0.0",
     "motion": "^12.19.1",
-    "music-metadata": "^11.9.0",
     "next": "15.3.4",
     "next-themes": "^0.4.6",
     "react": "^19.0.0",
