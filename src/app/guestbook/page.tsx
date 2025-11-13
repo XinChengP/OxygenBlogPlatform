@@ -3,14 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 import { motion } from 'motion/react';
-import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 import GiscusGuestbookBoard from '@/components/GiscusGuestbookBoard';
 
 export default function Guestbook() {
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const [isDark, setIsDark] = useState(false);
-  const { containerStyle } = useBackgroundStyle('guestbook');
 
   // 主题颜色
   const [primaryColor] = useState('#66ccff');
@@ -19,7 +16,6 @@ export default function Guestbook() {
 
   useEffect(() => {
     setMounted(true);
-    setIsDark(theme === 'dark');
   }, [theme]);
 
   if (!mounted) {
