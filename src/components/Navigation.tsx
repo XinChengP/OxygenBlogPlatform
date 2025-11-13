@@ -93,7 +93,7 @@ export default function Navigation() {
     { href: '/archive', label: '归档' },
     { href: '/guestbook', label: '留言板' },
     { href: '/about', label: '关于' },
-    { href: '/settings', label: '设置' },
+    // 设置选项已从导航栏隐藏，但功能仍然保留
   ];
   
   /**
