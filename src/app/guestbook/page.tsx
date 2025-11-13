@@ -1,30 +1,25 @@
 'use client';
 
-import BackgroundLayer from '@/components/BackgroundLayer';
-import Navigation from '@/components/Navigation';
-import { ThemeProvider } from '@/components/ThemeProvider';
-import ScrollToTop from '@/components/ScrollToTop';
+import { motion } from 'motion/react';
+import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 import GiscusGuestbookBoard from '@/components/GiscusGuestbookBoard';
 
-function GuestbookContent() {
-  return (
-    <div className="min-h-screen relative overflow-hidden">
-      <BackgroundLayer />
-      <Navigation />
-        
-      <main className="relative z-10 transition-colors duration-300 pt-20">
-        {/* 留言板功能 */}
-        <GiscusGuestbookBoard />
-      </main>
-      <ScrollToTop />
-    </div>
-  );
-}
-
 export default function Guestbook() {
+  const { containerStyle, sectionStyle } = useBackgroundStyle('guestbook');
+
   return (
-    <ThemeProvider>
-      <GuestbookContent />
-    </ThemeProvider>
+    <div className={containerStyle.className} style={containerStyle.style}>
+      <section className={`${sectionStyle.className} min-h-screen py-20`} style={sectionStyle.style}>
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <GiscusGuestbookBoard />
+          </motion.div>
+        </div>
+      </section>
+    </div>
   );
 }
