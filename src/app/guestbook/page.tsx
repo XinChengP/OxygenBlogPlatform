@@ -12,7 +12,7 @@ function GuestbookContent() {
       <BackgroundLayer />
       <Navigation />
         
-      <main className="relative z-10 transition-colors duration-300">
+      <main className="relative z-10 transition-colors duration-300 pt-20">
         {/* 留言板功能 */}
         <GiscusGuestbookBoard />
       </main>
