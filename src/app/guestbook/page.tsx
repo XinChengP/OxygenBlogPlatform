@@ -13,15 +13,6 @@ function GuestbookContent() {
       <Navigation />
         
       <main className="relative z-10 transition-colors duration-300">
-        <div className="text-center mb-8 pt-12">
-          <h1 className="text-4xl font-bold mb-4 text-gray-900 dark:text-white">
-            留言板
-          </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-            欢迎在这里留下您的想法和建议！
-          </p>
-        </div>
-        
         {/* 留言板功能 */}
         <GiscusGuestbookBoard />
       </main>
