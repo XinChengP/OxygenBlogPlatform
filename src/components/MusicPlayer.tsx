@@ -50,9 +50,11 @@ export default function MusicPlayer({
 
   // 格式化音频URL，确保在GitHub Pages上正确访问
   const formatAudioUrl = (url: string) => {
-    // 在开发模式下（localhost），直接返回原始URL
-    if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
-      return url;
+    // 在开发模式下（localhost），直接返回原始URL，不进行编码
+    if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+      // 确保URL以/开头
+      const cleanUrl = url.startsWith('/') ? url : `/${url}`;
+      return cleanUrl;
     }
     
     // 在生产模式下，处理basePath
@@ -63,7 +65,10 @@ export default function MusicPlayer({
     
     // 确保路径以/开头
     const cleanUrl = url.startsWith('/') ? url : `/${url}`;
-    return basePath ? `${basePath}${cleanUrl}` : cleanUrl;
+    const fullPath = basePath ? `${basePath}${cleanUrl}` : cleanUrl;
+    
+    // 不进行编码，让APlayer内部处理URL编码，避免双重编码
+    return fullPath;
   };
 
   // 从文件路径中提取显示名称，隐藏"-"后面的所有文字

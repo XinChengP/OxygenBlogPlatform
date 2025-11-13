@@ -29,7 +29,10 @@ export default function BackgroundLayer() {
 
   // 处理 basePath，确保在不同环境下都能正确加载图片
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
-  const fullImagePath = `${basePath}${backgroundImage}`;
+  // 确保backgroundImage以/开头
+  const imagePath = backgroundImage.startsWith('/') ? backgroundImage : `/${backgroundImage}`;
+  // 在开发环境中，不需要basePath
+  const fullImagePath = process.env.NODE_ENV === 'development' ? imagePath : `${basePath}${imagePath}`;
 
   // 判断是否为暗黑模式
   const isDark = resolvedTheme === 'dark';

@@ -3,7 +3,7 @@ export const webTitle = "心想事成 的 Blog"; // 网站标题：浏览器显�
 export const webDescription = "个人博客"; // 网站描述：浏览器显示
 
 //网站背景图配置
-export const backgroundImage = "/光与影.png"; // 网站整体背景图片路径：public目录下，以/开头确保路径正确
+export const backgroundImage = "/LTY_Picture/光与影.png"; // 网站整体背景图片路径：public目录下，以/开头确保路径正确
 export const enableBackground = true; // 是否启用背景图片
 
 //背景图片显示模式配置
