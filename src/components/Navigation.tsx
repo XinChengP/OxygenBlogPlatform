@@ -93,6 +93,7 @@ export default function Navigation() {
     { href: '/blogs', label: '博客' },
     { href: '/archive', label: '归档' },
     { href: '/guestbook', label: '留言板' },
+    { href: '/tools', label: '小工具' },
     { href: '/about', label: '关于' },
     // 设置选项已从导航栏隐藏，但功能仍然保留
   ];
