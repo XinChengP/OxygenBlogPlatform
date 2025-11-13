@@ -4,6 +4,7 @@ import BackgroundLayer from '@/components/BackgroundLayer';
 import Navigation from '@/components/Navigation';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import ScrollToTop from '@/components/ScrollToTop';
+import GitHubGuestbookBoard from '@/components/GitHubGuestbookBoard';
 
 function GuestbookContent() {
   return (
@@ -17,9 +18,12 @@ function GuestbookContent() {
             留言板
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-            留言板建设ing，敬请期待qwq
+            欢迎在这里留下您的想法和建议！
           </p>
         </div>
+        
+        {/* 留言板功能 */}
+        <GitHubGuestbookBoard />
       </main>
       <ScrollToTop />
     </div>
