@@ -16,9 +16,9 @@ export default function SettingsPage() {
   // const [playlists, setPlaylists] = useState<Playlist[]>([]);
   // const [showMusicConfig, setShowMusicConfig] = useState(false);
 
-  // 主题颜色
-  const [primaryColor] = useState('#3b82f6');
-  const [secondaryColor] = useState('#8b5cf6');
+  // 主题颜色 - 与留言板页面保持一致
+  const [primaryColor] = useState('#66ccff');
+  const [secondaryColor] = useState('#1e40af');
   const [accentColor] = useState('#06b6d4');
 
   useEffect(() => {
@@ -47,14 +47,14 @@ export default function SettingsPage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-20">
         {/* 主要内容卡片 - 使用更简洁的样式 */}
         <div className="relative z-10 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
-          {/* 头部区域 - 使用半透明主题色背景 */}
+          {/* 头部区域 - 使用与留言板相同的半透明主题色背景 */}
           <div 
             className="relative p-8 text-white transition-all duration-500 overflow-hidden"
             style={{
               background: `
-                linear-gradient(135deg, ${primaryColor}dd 0%, ${accentColor}dd 50%, ${secondaryColor}dd 100%),
-                radial-gradient(circle at top left, ${primaryColor}aa 0%, transparent 50%),
-                radial-gradient(circle at bottom right, ${secondaryColor}aa 0%, transparent 50%)
+                linear-gradient(135deg, ${primaryColor}cc 0%, ${accentColor}cc 50%, ${secondaryColor}cc 100%),
+                radial-gradient(circle at top left, ${primaryColor}80 0%, transparent 50%),
+                radial-gradient(circle at bottom right, ${secondaryColor}80 0%, transparent 50%)
               `,
             }}
           >

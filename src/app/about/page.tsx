@@ -36,16 +36,10 @@ export default function AboutPage() {
 
   const isDark = resolvedTheme === 'dark';
 
-  // 获取 CSS 变量中的主题色
-  const getThemeColor = (colorName: string): string => {
-    if (typeof window === 'undefined') return '#3b82f6'; // 默认蓝色
-    return getComputedStyle(document.documentElement).getPropertyValue(`--theme-${colorName}`).trim() || '#3b82f6';
-  };
-
-  // 获取当前主题色
-  const primaryColor = getThemeColor('primary');
-  const secondaryColor = getThemeColor('secondary');
-  const accentColor = getThemeColor('accent');
+  // 主题颜色 - 与留言板页面保持一致
+  const [primaryColor] = useState('#66ccff');
+  const [secondaryColor] = useState('#1e40af');
+  const [accentColor] = useState('#06b6d4');
 
   /**
    * 生成简化的背景样式
@@ -245,12 +239,12 @@ export default function AboutPage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* 主要内容卡片 */}
         <div className="relative z-10 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
-          {/* 头部区域 - 使用主题色背景 */}
+          {/* 头部区域 - 使用与留言板相同的半透明主题色背景 */}
           <div 
             className="relative p-8 text-white transition-all duration-500 overflow-hidden"
             style={{
               background: `
-                linear-gradient(135deg, ${primaryColor} 0%, ${accentColor} 50%, ${secondaryColor} 100%),
+                linear-gradient(135deg, ${primaryColor}cc 0%, ${accentColor}cc 50%, ${secondaryColor}cc 100%),
                 radial-gradient(circle at top left, ${primaryColor}80 0%, transparent 50%),
                 radial-gradient(circle at bottom right, ${secondaryColor}80 0%, transparent 50%)
               `,
@@ -262,9 +256,9 @@ export default function AboutPage() {
             
             {/* 装饰性几何图形 */}
             <div className="absolute top-4 right-4 w-20 h-20 rounded-full opacity-20" 
-                 style={{ background: `radial-gradient(circle, ${accentColor}, transparent)` }}></div>
+                 style={{ background: `radial-gradient(circle, ${accentColor}aa, transparent)` }}></div>
             <div className="absolute bottom-4 left-4 w-16 h-16 rounded-full opacity-15" 
-                 style={{ background: `radial-gradient(circle, ${primaryColor}, transparent)` }}></div>
+                 style={{ background: `radial-gradient(circle, ${primaryColor}aa, transparent)` }}></div>
             
             <div className="relative z-10">
               <h1 className="text-2xl md:text-3xl font-bold mb-2 drop-shadow-2xl tracking-wide">{title}</h1>
