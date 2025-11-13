@@ -199,6 +199,14 @@
   /* 确保播放器在最上层 */
 }
 
+/* 确保音乐播放器在隐藏状态下也能继续播放 */
+.aplayer-container.hidden {
+  position: absolute;
+  visibility: hidden;
+  pointer-events: none;
+  /* 不影响音乐播放 */
+}
+
 /* 优化APlayer列表显示 */
 .aplayer .aplayer-list {
   max-height: 300px !important;

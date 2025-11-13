@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import GlobalMusicPlayerManager from '@/utils/globalMusicPlayerManager';
 
 interface AudioItem {
   name: string;
@@ -96,6 +97,8 @@ export default function MusicPlayer({
   }));
 
   useEffect(() => {
+    const globalManager = GlobalMusicPlayerManager.getInstance();
+    
     const initAPlayer = async () => {
       // 动态加载APlayer
       if (typeof window !== 'undefined' && aplayerRef.current) {
@@ -119,8 +122,14 @@ export default function MusicPlayer({
             };
             document.head.appendChild(script);
           } else {
-            // APlayer已经加载，直接初始化
-            initializePlayer();
+            // APlayer已经加载，检查是否有全局实例
+            if (globalManager.isPlayerInitialized()) {
+              // 已有全局实例，直接使用
+              useExistingPlayer();
+            } else {
+              // 没有全局实例，创建新的
+              initializePlayer();
+            }
           }
         } catch (error) {
           console.error('加载APlayer失败:', error);
@@ -128,97 +137,119 @@ export default function MusicPlayer({
       }
     };
 
-    const initializePlayer = () => {
-      if (typeof window !== 'undefined' && (window as any).APlayer && aplayerRef.current) {
-        const APlayer = (window as any).APlayer;
+    const useExistingPlayer = () => {
+      if (typeof window !== 'undefined' && globalManager.isPlayerInitialized()) {
+        const ap = globalManager.getPlayer();
         
-        // 获取保存的播放状态
-        const savedPlayInfo = localStorage.getItem('musicPlayerState');
-        let initialIndex = 0;
-        let initialTime = 0;
-        let initialPaused = true;
-
-        if (savedPlayInfo) {
-          try {
-            const playInfo = JSON.parse(savedPlayInfo);
-            initialIndex = playInfo.index || 0;
-            initialTime = playInfo.currentTime || 0;
-            initialPaused = playInfo.paused !== false;
-          } catch (e) {
-            console.error('解析保存的播放状态失败:', e);
+        // 将现有播放器容器移动到当前组件的DOM位置
+        if (aplayerRef.current && ap.container !== aplayerRef.current) {
+          // 清空当前容器
+          while (aplayerRef.current.firstChild) {
+            aplayerRef.current.removeChild(aplayerRef.current.firstChild);
           }
+          // 将播放器DOM移动到新容器
+          while (ap.container.firstChild) {
+            aplayerRef.current.appendChild(ap.container.firstChild);
+          }
+          // 更新播放器的容器引用
+          ap.container = aplayerRef.current;
         }
-
-        // 处理音频列表，确保路径正确
-        const processedAudioList = (currentAudioList.length > 0 ? currentAudioList : defaultMusicList).map(audio => ({
-          ...audio,
-          url: formatAudioUrl(audio.url)
-        }));
-
-        // 创建APlayer实例
-        const ap = new APlayer({
-          container: aplayerRef.current,
-          audio: processedAudioList,
-          fixed: true, // 吸底模式
-          autoplay: autoPlay,
-          loop: loop,
-          preload: 'metadata',
-          volume: 0.7,
-          mutex: true, // 阻止其他播放器同时播放
-          lrcType: 0, // 禁用歌词显示
-          listFolded: true, // 折叠列表
-          listMaxHeight: 300, // 增加列表最大高度以显示更多歌曲
-          storageName: 'musicPlayer', // 本地存储名称
-        });
-
-        // 设置初始播放状态
-        if (initialIndex > 0) {
-          ap.list.switch(initialIndex);
-        }
-        if (initialTime > 0) {
-          ap.seek(initialTime);
-        }
-        if (!initialPaused) {
-          ap.play();
-        }
-
-        // 监听播放状态变化并保存
-        const savePlayState = () => {
-          const playState = {
-            index: ap.list.index,
-            currentTime: ap.audio.currentTime,
-            paused: ap.paused,
-            volume: ap.volume,
-            muted: ap.muted
-          };
-          localStorage.setItem('musicPlayerState', JSON.stringify(playState));
-        };
-
-        ap.on('play', savePlayState);
-        ap.on('pause', savePlayState);
-        ap.on('timeupdate', savePlayState);
-        ap.on('volumechange', savePlayState);
-
-        // 页面卸载前保存状态
-        window.addEventListener('beforeunload', savePlayState);
-
-        // 监听歌曲切换（使用正确的事件名）
-        ap.on('listswitch', () => {
-          savePlayState();
-        });
-
+        
         setIsInitialized(true);
       }
     };
 
-    initAPlayer();
+    const initializePlayer = () => {
+    if (typeof window !== 'undefined' && (window as any).APlayer && aplayerRef.current) {
+      const APlayer = (window as any).APlayer;
+      
+      // 获取保存的播放状态
+      const savedPlayInfo = globalManager.restorePlayState();
+      const { index: initialIndex = 0, currentTime: initialTime = 0, paused: initialPaused = true } = savedPlayInfo || {};
 
-    // 清理函数
-    return () => {
-      if (typeof window !== 'undefined') {
-        window.removeEventListener('beforeunload', () => {});
+      // 处理音频列表，确保路径正确
+      const processedAudioList = (currentAudioList.length > 0 ? currentAudioList : defaultMusicList).map(audio => ({
+        ...audio,
+        url: formatAudioUrl(audio.url)
+      }));
+
+      // 创建APlayer实例
+      const ap = new APlayer({
+        container: aplayerRef.current,
+        audio: processedAudioList,
+        fixed: true, // 吸底模式
+        autoplay: autoPlay,
+        loop: loop,
+        preload: 'metadata',
+        volume: 0.7,
+        mutex: true, // 阻止其他播放器同时播放
+        lrcType: 0, // 禁用歌词显示
+        listFolded: true, // 折叠列表
+        listMaxHeight: 300, // 增加列表最大高度以显示更多歌曲
+        storageName: 'musicPlayer', // 本地存储名称
+      });
+
+      // 设置初始播放状态
+      if (initialIndex > 0) {
+        ap.list.switch(initialIndex);
       }
-    };
+      if (initialTime > 0) {
+        ap.seek(initialTime);
+      }
+      if (!initialPaused) {
+        ap.play();
+      }
+
+      // 监听播放事件，保存状态
+      const handlePlayerEvent = () => {
+        globalManager.savePlayState();
+      };
+
+      // 监听各种播放器事件
+      ap.on('play', handlePlayerEvent);
+      ap.on('pause', handlePlayerEvent);
+      ap.on('timeupdate', handlePlayerEvent);
+      ap.on('volumechange', handlePlayerEvent);
+      ap.on('listswitch', handlePlayerEvent);
+
+      // 页面卸载前保存状态
+      const saveStateBeforeUnload = () => {
+        globalManager.savePlayState();
+      };
+      window.addEventListener('beforeunload', saveStateBeforeUnload);
+
+      // 设置播放器实例到全局管理器
+      globalManager.setPlayer(ap);
+      (window as any).globalAPlayer = ap;
+
+      setIsInitialized(true);
+
+      // 设置页面切换监听器，确保播放器在页面切换时保持状态
+      const handlePageVisibilityChange = () => {
+        if (document.visibilityState === 'hidden') {
+          // 页面隐藏时保存状态
+          globalManager.savePlayState();
+        }
+      };
+      document.addEventListener('visibilitychange', handlePageVisibilityChange);
+
+      // 清理函数 - 注意：我们不销毁播放器实例，只移除事件监听
+      return () => {
+        window.removeEventListener('beforeunload', saveStateBeforeUnload);
+        document.removeEventListener('visibilitychange', handlePageVisibilityChange);
+        // 移除APlayer事件监听器
+        ap.off('play', handlePlayerEvent);
+        ap.off('pause', handlePlayerEvent);
+        ap.off('timeupdate', handlePlayerEvent);
+        ap.off('volumechange', handlePlayerEvent);
+        ap.off('listswitch', handlePlayerEvent);
+        // 不调用ap.destroy()，这样播放器实例会保留在全局管理器中
+        // 页面切换时音乐不会中断
+      };
+    }
+  };
+
+    initAPlayer();
   }, [autoPlay, loop, currentAudioList, defaultMusicList]);
 
   // 切换音乐列表

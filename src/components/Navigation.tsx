@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { emojy, name } from '@/setting/NavigationSetting';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 
+
 /**
  * 导航栏组件
  * 支持响应式设计和主题切换
@@ -134,18 +135,18 @@ export default function Navigation() {
           <div className="hidden md:flex items-center space-x-8">
             <div className="flex space-x-8">
               {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300 ${
-                    pathname === item.href
-                      ? isAtTop ? 'text-white' : 'text-primary dark:text-primary'
-                      : isAtTop ? 'text-white hover:text-gray-200' : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary'
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              ))}
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300 ${
+                      pathname === item.href
+                        ? isAtTop ? 'text-white' : 'text-primary dark:text-primary'
+                        : isAtTop ? 'text-white hover:text-gray-200' : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary'
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
             </div>
           </div>
           
