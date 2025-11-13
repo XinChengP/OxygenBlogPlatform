@@ -4,7 +4,7 @@ import BackgroundLayer from '@/components/BackgroundLayer';
 import Navigation from '@/components/Navigation';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import ScrollToTop from '@/components/ScrollToTop';
-import GitHubGuestbookBoard from '@/components/GitHubGuestbookBoard';
+import GiscusGuestbookBoard from '@/components/GiscusGuestbookBoard';
 
 function GuestbookContent() {
   return (
@@ -23,7 +23,7 @@ function GuestbookContent() {
         </div>
         
         {/* 留言板功能 */}
-        <GitHubGuestbookBoard />
+        <GiscusGuestbookBoard />
       </main>
       <ScrollToTop />
     </div>
