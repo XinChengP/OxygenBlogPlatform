@@ -12,7 +12,7 @@ import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 
 export default function ToolsPage() {
   const { resolvedTheme } = useTheme();
-  const { containerStyle, isBackgroundEnabled } = useBackgroundStyle('tools');
+  const { containerStyle } = useBackgroundStyle('tools');
   const [mounted, setMounted] = useState(false);
 
   // 确保组件已挂载
@@ -20,12 +20,17 @@ export default function ToolsPage() {
     setMounted(true);
   }, []);
 
+  // 如果组件未挂载，显示占位符
+  if (!mounted) {
+    return null;
+  }
+
   const isDark = resolvedTheme === 'dark';
 
   return (
     <main 
-      className={`min-h-screen transition-colors duration-300 ${isDark ? 'dark' : ''}`}
-      style={isBackgroundEnabled ? {} : containerStyle}
+      className={`min-h-screen transition-colors duration-300 ${isDark ? 'dark' : ''} ${containerStyle.className}`}
+      style={containerStyle.style}
     >
       <div className="container mx-auto px-4 py-16">
         <motion.div

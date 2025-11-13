@@ -1,11 +1,13 @@
 'use client';
 
+import type { APlayerNS } from '@/types/aplayer';
+
 // 全局音乐播放器管理器
 class GlobalMusicPlayerManager {
   private static instance: GlobalMusicPlayerManager;
-  private player: any = null;
+  private player: APlayerNS.APlayer | null = null;
   private isInitialized = false;
-  private initCallbacks: ((player: any) => void)[] = [];
+  private initCallbacks: ((player: APlayerNS.APlayer) => void)[] = [];
   private isPageTransitioning = false;
   private listenersSetup = false; // 添加标记，确保监听器只设置一次
 
@@ -66,7 +68,7 @@ class GlobalMusicPlayerManager {
   }
 
   // 初始化播放器
-  initPlayer(player: any) {
+  initPlayer(player: APlayerNS.APlayer) {
     this.player = player;
     this.isInitialized = true;
     this.setupPageTransitionListeners();
@@ -77,7 +79,7 @@ class GlobalMusicPlayerManager {
   }
 
   // 设置播放器实例
-  setPlayer(player: any) {
+  setPlayer(player: APlayerNS.APlayer) {
     this.player = player;
     this.setupPageTransitionListeners();
   }
@@ -98,7 +100,7 @@ class GlobalMusicPlayerManager {
   }
 
   // 当播放器初始化后执行回调
-  onInit(callback: (player: any) => void) {
+  onInit(callback: (player: APlayerNS.APlayer) => void) {
     if (this.isInitialized && this.player) {
       callback(this.player);
     } else {
@@ -108,7 +110,7 @@ class GlobalMusicPlayerManager {
 
   // 保存播放状态到localStorage
   savePlayState() {
-    if (this.player) {
+    if (this.player && this.player.list && this.player.audio) {
       const playState = {
         index: this.player.list.index,
         currentTime: this.player.audio.currentTime,
@@ -121,7 +123,7 @@ class GlobalMusicPlayerManager {
   }
 
   // 从localStorage恢复播放状态
-  restorePlayState() {
+  restorePlayState(): any | null {
     if (!this.player) return null;
     
     const savedPlayInfo = localStorage.getItem('musicPlayerState');
@@ -129,10 +131,18 @@ class GlobalMusicPlayerManager {
     
     try {
       const playInfo = JSON.parse(savedPlayInfo);
+      
+      // 验证数据结构
+      if (!playInfo || typeof playInfo !== 'object') {
+        return null;
+      }
+      
       return {
-        index: playInfo.index || 0,
-        currentTime: playInfo.currentTime || 0,
-        paused: playInfo.paused !== false
+        index: typeof playInfo.index === 'number' ? playInfo.index : 0,
+        currentTime: typeof playInfo.currentTime === 'number' ? playInfo.currentTime : 0,
+        paused: typeof playInfo.paused === 'boolean' ? playInfo.paused : true,
+        volume: typeof playInfo.volume === 'number' ? Math.max(0, Math.min(1, playInfo.volume)) : 0.5,
+        muted: typeof playInfo.muted === 'boolean' ? playInfo.muted : false
       };
     } catch (e) {
       console.error('解析保存的播放状态失败:', e);

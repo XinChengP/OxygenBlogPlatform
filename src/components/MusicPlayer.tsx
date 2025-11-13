@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import GlobalMusicPlayerManager from '@/utils/globalMusicPlayerManager';
+import type { APlayerNS } from '@/types/aplayer';
 
 interface AudioItem {
   name: string;

@@ -303,7 +303,6 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                   content={blog.content}
                   components={{
                     // 代码块渲染
-                    /* eslint-disable @typescript-eslint/no-unsafe-argument */
                     code({ inline, className, children, ...props }: any) {
                       const match = /language-(\w+)/.exec(className || '');
                       const language = match ? normalizeLanguage(match[1]) : '';
@@ -344,7 +343,6 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                         </code>
                       );
                     },
-                    /* eslint-enable @typescript-eslint/no-unsafe-argument */
                     // 引用块
                     blockquote({ children }: ComponentProps) {
                        return (
