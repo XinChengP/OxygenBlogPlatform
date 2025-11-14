@@ -86,35 +86,31 @@ export default function NotFound() {
   const primaryColor = getThemeColor('primary');
   const accentColor = getThemeColor('accent');
 
-  // 如果还没有挂载，显示默认样式避免闪烁
-  if (!mounted) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4">
-        <div className="text-center max-w-md mx-auto">
-          <div className="animate-pulse">
-            <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded mb-8"></div>
-            <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
-            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
-            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // 获取正确的基础路径（适配GitHub Pages）
+  const getBasePath = () => {
+    if (typeof window === 'undefined') {
+      // 服务器端渲染时，使用默认路径
+      return '';
+    }
+    return process.env.NEXT_PUBLIC_BASE_PATH || '';
+  };
+
+  const basePath = getBasePath();
+  const videoPath = basePath ? `${basePath}/LTY_Picture/Autumn.mp4` : "/LTY_Picture/Autumn.mp4";
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* 视频背景 */}
+      {/* 视频背景 - 确保在静态构建中包含 */}
       <video
         className="absolute inset-0 w-full h-full object-cover z-0"
-        autoPlay
+        autoPlay={mounted === true} // 只有在客户端挂载后才自动播放
         muted
         loop
         playsInline
         preload="auto"
         poster="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='1' height='1'><rect width='1' height='1' fill='%23000000'/></svg>"
       >
-        <source src="/LTY_Picture/Autumn.mp4" type="video/mp4" />
+        <source src={videoPath} type="video/mp4" />
       </video>
       
       {/* 优雅的渐变遮罩层 */}
@@ -124,16 +120,25 @@ export default function NotFound() {
       
       {/* 飘落的枫叶动画 */}
       <div className="absolute inset-0 z-10 pointer-events-none">
-        {Array.from({ length: 12 }, (_, i) => (
+        {Array.from({ length: 12 }, (_, i) => {
+          // 使用固定的随机种子确保服务器端和客户端一致
+          const seed = i * 16807 % 2147483647; // 简单的伪随机生成
+          const left = (seed % 100);
+          const top = (seed % 20);
+          const delay = (seed % 8);
+          const duration = 8 + (seed % 6);
+          const rotation = (seed % 360);
+          
+          return (
           <div
             key={`leaf-${i}`}
             className="absolute animate-float"
             style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 20}%`,
-              animationDelay: `${Math.random() * 8}s`,
-              animationDuration: `${8 + Math.random() * 6}s`,
-              transform: `rotate(${Math.random() * 360}deg)`,
+              left: `${left}%`,
+              top: `${top}%`,
+              animationDelay: `${delay}s`,
+              animationDuration: `${duration}s`,
+              transform: `rotate(${rotation}deg)`,
             }}
           >
             {/* 枫叶SVG */}
@@ -166,42 +171,63 @@ export default function NotFound() {
                 />
             </svg>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* 精细的粒子背景系统 */}
       <div className="absolute inset-0 z-10">
         {/* 小型光点 */}
-        {Array.from({ length: 15 }, (_, i) => (
+        {Array.from({ length: 15 }, (_, i) => {
+          // 使用确定的随机种子
+          const seed = (i + 100) * 1103515245 % 2147483647;
+          const left = 5 + (seed % 90);
+          const top = 5 + (seed % 90);
+          const width = 1 + (seed % 3);
+          const height = 1 + (seed % 3);
+          const opacity = 0.6 + ((seed % 40) / 100);
+          const delay = (seed % 200) / 100;
+          const duration = 2 + ((seed % 200) / 100);
+          
+          return (
           <div
             key={`small-${i}`}
             className="absolute rounded-full animate-pulse"
             style={{
-              left: `${Math.random() * 90 + 5}%`,
-              top: `${Math.random() * 90 + 5}%`,
-              width: `${1 + Math.random() * 2}px`,
-              height: `${1 + Math.random() * 2}px`,
+              left: `${left}%`,
+              top: `${top}%`,
+              width: `${width}px`,
+              height: `${height}px`,
               backgroundColor: `${i % 3 === 0 ? primaryColor : i % 3 === 1 ? accentColor : 'white'}`,
-              opacity: 0.6 + Math.random() * 0.3,
-              animationDelay: `${Math.random() * 2}s`,
-              animationDuration: `${2 + Math.random() * 2}s`
+              opacity: opacity,
+              animationDelay: `${delay}s`,
+              animationDuration: `${duration}s`
             }}
           />
-        ))}
+          );
+        })}
         {/* 超小型星光 */}
-        {Array.from({ length: 25 }, (_, i) => (
+        {Array.from({ length: 25 }, (_, i) => {
+          const seed = (i + 200) * 123456789 % 2147483647;
+          const left = 2.5 + (seed % 95);
+          const top = 2.5 + (seed % 95);
+          const delay = (seed % 300) / 100;
+          const duration = 1 + ((seed % 200) / 100);
+          
+          return (
           <div
             key={`tiny-${i}`}
             className="absolute w-0.5 h-0.5 rounded-full animate-ping"
             style={{
-              left: `${Math.random() * 95 + 2.5}%`,
-              top: `${Math.random() * 95 + 2.5}%`,
+              left: `${left}%`,
+              top: `${top}%`,
               backgroundColor: 'rgba(255,255,255,0.9)',
-              animationDelay: `${Math.random() * 3}s`,
-              animationDuration: `${1 + Math.random() * 2}s`
+              animationDelay: `${delay}s`,
+              animationDuration: `${duration}s`
             }}
           />
-        ))}
+          );
+        })}
       </div>
 
       {/* 主内容区域 - 更优雅的布局 */}
