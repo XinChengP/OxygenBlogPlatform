@@ -76,42 +76,67 @@ export default function NotFound() {
     };
   }, []);
 
-  // 获取 CSS 变量中的主题色
+  // 获取 CSS 变量中的主题色并确保格式一致
   const getThemeColor = (colorName: string): string => {
     if (typeof window === 'undefined') return '#3b82f6'; // 默认蓝色
-    return getComputedStyle(document.documentElement).getPropertyValue(`--theme-${colorName}`).trim() || '#3b82f6';
+    const hex = getComputedStyle(document.documentElement).getPropertyValue(`--theme-${colorName}`).trim() || '#3b82f6';
+    
+    // 如果已经是十六进制格式，直接返回
+    if (hex.startsWith('#')) {
+      return hex;
+    }
+    
+    // 如果是rgb格式，转换为十六进制
+    const rgbMatch = hex.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+    if (rgbMatch) {
+      const r = parseInt(rgbMatch[1]).toString(16).padStart(2, '0');
+      const g = parseInt(rgbMatch[2]).toString(16).padStart(2, '0');
+      const b = parseInt(rgbMatch[3]).toString(16).padStart(2, '0');
+      return `#${r}${g}${b}`;
+    }
+    
+    // 默认返回十六进制格式
+    return hex.startsWith('#') ? hex : `#${hex}`;
   };
 
-  // 获取当前主题色
+  // 获取当前主题色（始终使用十六进制格式）
   const primaryColor = getThemeColor('primary');
   const accentColor = getThemeColor('accent');
 
   // 获取正确的基础路径（适配GitHub Pages）
   const getBasePath = () => {
-    if (typeof window === 'undefined') {
-      // 服务器端渲染时，使用默认路径
-      return '';
-    }
-    return process.env.NEXT_PUBLIC_BASE_PATH || '';
+    const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+    return basePath.startsWith('/') ? basePath : `/${basePath}`.replace(/\/$/, '');
   };
 
-  const basePath = getBasePath();
-  const videoPath = basePath ? `${basePath}/LTY_Picture/Autumn.mp4` : "/LTY_Picture/Autumn.mp4";
+  // 修复视频路径 - 在GitHub Pages上，public目录的文件会被映射到根路径
+  const getVideoPath = () => {
+    // 开发环境使用完整路径
+    if (process.env.NODE_ENV === 'development') {
+      return `${getBasePath()}/LTY_Picture/Autumn.mp4`;
+    }
+    // 生产环境直接使用LTY_Picture目录
+    return `${getBasePath()}/LTY_Picture/Autumn.mp4`;
+  };
+
+
 
   return (
     <div className="min-h-screen relative overflow-hidden">
       {/* 视频背景 - 确保在静态构建中包含 */}
       <video
-        className="absolute inset-0 w-full h-full object-cover z-0"
-        autoPlay={mounted === true} // 只有在客户端挂载后才自动播放
-        muted
-        loop
-        playsInline
-        preload="auto"
-        poster="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='1' height='1'><rect width='1' height='1' fill='%23000000'/></svg>"
-      >
-        <source src={videoPath} type="video/mp4" />
-      </video>
+          className="absolute inset-0 w-full h-full object-cover"
+          autoPlay={mounted === true}
+          muted
+          loop
+          playsInline
+          onLoadStart={() => console.log('Video: onLoadStart')}
+          onCanPlay={() => console.log('Video: onCanPlay')}
+          onError={(e) => console.log('Video: onError', e)}
+          onLoadedData={() => console.log('Video: onLoadedData')}
+        >
+          <source src={getVideoPath()} type="video/mp4" />
+        </video>
       
       {/* 优雅的渐变遮罩层 */}
       <div className="absolute inset-0 bg-gradient-to-br from-black/5 via-transparent to-black/20 dark:from-black/50 dark:via-black/30 dark:to-black/60 z-10"></div>
@@ -128,6 +153,13 @@ export default function NotFound() {
           const delay = (seed % 8);
           const duration = 8 + (seed % 6);
           const rotation = (seed % 360);
+          const hueRotate = (seed % 60) - 30; // 使用确定性随机值
+          const colorIndex = seed % 5;
+          const leafColors = ['#dc2626', '#ea580c', '#d97706', '#ca8a04', '#eab308'];
+          
+          // 使用四舍五入确保动画数值精度一致
+          const roundedDelay = Math.round(delay * 100) / 100;
+          const roundedDuration = Math.round(duration * 100) / 100;
           
           return (
           <div
@@ -136,8 +168,8 @@ export default function NotFound() {
             style={{
               left: `${left}%`,
               top: `${top}%`,
-              animationDelay: `${delay}s`,
-              animationDuration: `${duration}s`,
+              animationDelay: `${roundedDelay}s`,
+              animationDuration: `${roundedDuration}s`,
               transform: `rotate(${rotation}deg)`,
             }}
           >
@@ -149,14 +181,14 @@ export default function NotFound() {
               fill="none"
               className="opacity-60"
               style={{
-                filter: `drop-shadow(0 2px 4px rgba(0,0,0,0.1)) hue-rotate(${Math.random() * 60 - 30}deg)`,
-                color: ['#dc2626', '#ea580c', '#d97706', '#ca8a04', '#eab308'][Math.floor(Math.random() * 5)]
+                filter: `drop-shadow(0 2px 4px rgba(0,0,0,0.1)) hue-rotate(${hueRotate}deg)`,
+                color: leafColors[colorIndex]
               }}
             >
               <defs>
                 <linearGradient id={`leafGradient-${i}`} x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" style={{ stopColor: primaryColor, stopOpacity: 0.8 }} />
-                  <stop offset="100%" style={{ stopColor: accentColor, stopOpacity: 0.6 }} />
+                  <stop offset="0%" stopColor={leafColors[colorIndex]} stopOpacity="0.8" />
+                  <stop offset="100%" stopColor={accentColor} stopOpacity="0.6" />
                 </linearGradient>
               </defs>
               <path
@@ -189,6 +221,11 @@ export default function NotFound() {
           const delay = (seed % 200) / 100;
           const duration = 2 + ((seed % 200) / 100);
           
+          // 使用四舍五入确保动画数值精度一致
+          const roundedDelay = Math.round(delay * 100) / 100;
+          const roundedDuration = Math.round(duration * 100) / 100;
+          const roundedOpacity = Math.round(opacity * 100) / 100;
+          
           return (
           <div
             key={`small-${i}`}
@@ -198,10 +235,10 @@ export default function NotFound() {
               top: `${top}%`,
               width: `${width}px`,
               height: `${height}px`,
-              backgroundColor: `${i % 3 === 0 ? primaryColor : i % 3 === 1 ? accentColor : 'white'}`,
-              opacity: opacity,
-              animationDelay: `${delay}s`,
-              animationDuration: `${duration}s`
+              backgroundColor: (i % 3 === 0 ? primaryColor : i % 3 === 1 ? accentColor : '#ffffff'),
+              opacity: roundedOpacity,
+              animationDelay: `${roundedDelay}s`,
+              animationDuration: `${roundedDuration}s`
             }}
           />
           );
@@ -214,6 +251,10 @@ export default function NotFound() {
           const delay = (seed % 300) / 100;
           const duration = 1 + ((seed % 200) / 100);
           
+          // 使用四舍五入确保动画数值精度一致
+          const roundedDelay = Math.round(delay * 100) / 100;
+          const roundedDuration = Math.round(duration * 100) / 100;
+          
           return (
           <div
             key={`tiny-${i}`}
@@ -222,8 +263,8 @@ export default function NotFound() {
               left: `${left}%`,
               top: `${top}%`,
               backgroundColor: 'rgba(255,255,255,0.9)',
-              animationDelay: `${delay}s`,
-              animationDuration: `${duration}s`
+              animationDelay: `${roundedDelay}s`,
+              animationDuration: `${roundedDuration}s`
             }}
           />
           );
@@ -270,14 +311,14 @@ export default function NotFound() {
                 }}
                 className="group relative w-7 h-7 rounded-full transition-all duration-300 hover:scale-110 border border-white/30 dark:border-gray-600/30"
                 style={{
-                  background: `radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.3))`,
-                  boxShadow: `
-                    0 0 6px rgba(255, 255, 255, 0.35),
-                    0 0 12px rgba(255, 255, 255, 0.2),
-                    inset 0 0 0 1px rgba(255, 255, 255, 0.3),
-                    inset 0 1px 2px rgba(255, 255, 255, 0.2)
-                  `
-                }}
+                background: `radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.3))`,
+                boxShadow: [
+                  '0 0 6px rgba(255, 255, 255, 0.35)',
+                  '0 0 12px rgba(255, 255, 255, 0.2)',
+                  'inset 0 0 0 1px rgba(255, 255, 255, 0.3)',
+                  'inset 0 1px 2px rgba(255, 255, 255, 0.2)'
+                ].join(', ')
+              }}
               >
                 {/* 月亮图标 */}
                 <div className="absolute inset-0 flex items-center justify-center text-blue-200 transition-all duration-300 opacity-0 scale-75 dark:opacity-100 dark:scale-100">
@@ -298,8 +339,8 @@ export default function NotFound() {
                 <div 
                   className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-30 transition-opacity duration-300"
                   style={{ 
-                    background: `radial-gradient(circle, rgba(255, 255, 255, 0.2), transparent 70%)` 
-                  }}
+                      backgroundImage: `radial-gradient(circle, rgba(255, 255, 255, 0.2), transparent 70%)` 
+                    }}
                 />
               </button>
               
@@ -309,12 +350,12 @@ export default function NotFound() {
                 className="group relative w-7 h-7 rounded-full transition-all duration-300 hover:scale-110 dark:bg-gray-800/60"
                 style={{
                   background: `radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.3))`,
-                  boxShadow: `
-                    0 0 6px rgba(255, 255, 255, 0.35),
-                    0 0 12px rgba(255, 255, 255, 0.2),
-                    inset 0 0 0 1px rgba(255, 255, 255, 0.3),
-                    inset 0 1px 2px rgba(255, 255, 255, 0.2)
-                  `,
+                  boxShadow: [
+                    '0 0 6px rgba(255, 255, 255, 0.35)',
+                    '0 0 12px rgba(255, 255, 255, 0.2)',
+                    'inset 0 0 0 1px rgba(255, 255, 255, 0.3)',
+                    'inset 0 1px 2px rgba(255, 255, 255, 0.2)'
+                  ].join(', '),
                   opacity: 0.6
                 }}
               >
@@ -509,18 +550,24 @@ export default function NotFound() {
             <div className="flex items-center justify-between">
               {/* 左侧装饰序列 */}
               <div className="flex space-x-2">
-                {Array.from({ length: 6 }, (_, i) => (
+                {Array.from({ length: 6 }, (_, i) => {
+                  const opacity = Math.round((0.7 - i * 0.1) * 100) / 100;
+                  const delay = Math.round((i * 0.1) * 100) / 100;
+                  const scale = Math.round((1 - i * 0.1) * 100) / 100;
+                  
+                  return (
                   <div
                     key={i}
                     className="w-2 h-2 rounded-full transition-all duration-300"
                     style={{
-                      backgroundColor: i % 3 === 0 ? primaryColor : i % 3 === 1 ? accentColor : 'white',
-                      opacity: 0.7 - i * 0.1,
-                      animationDelay: `${i * 0.1}s`,
-                      transform: `scale(${1 - i * 0.1})`
+                      backgroundColor: i % 3 === 0 ? primaryColor : i % 3 === 1 ? accentColor : '#ffffff',
+                      opacity: opacity,
+                      animationDelay: `${delay}s`,
+                      transform: `scale(${scale})`
                     }}
                   />
-                ))}
+                  );
+                })}
         </div>
               
         {/* 中央动态核心装饰 */}
@@ -549,18 +596,23 @@ export default function NotFound() {
               
               {/* 右侧装饰点群 */}
               <div className="flex space-x-2">
-                {Array.from({ length: 4 }, (_, i) => (
+                {Array.from({ length: 4 }, (_, i) => {
+                  const opacity = Math.round((0.8 - i * 0.2) * 100) / 100;
+                  const delay = Math.round((i * 0.15) * 100) / 100;
+                  
+                  return (
                   <div
                     key={i}
                     className="w-1.5 h-1.5 rounded-full"
                     style={{
                       backgroundColor: accentColor,
-                      opacity: 0.8 - i * 0.2,
-                      animationDelay: `${i * 0.15}s`,
+                      opacity: opacity,
+                      animationDelay: `${delay}s`,
                       animation: 'bounce 1.5s ease-in-out infinite'
                     }}
                   />
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
