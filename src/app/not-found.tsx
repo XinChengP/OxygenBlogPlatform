@@ -111,8 +111,10 @@ export default function NotFound() {
         muted
         loop
         playsInline
+        preload="auto"
+        poster="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='1' height='1'><rect width='1' height='1' fill='%23000000'/></svg>"
       >
-        <source src={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/LTY_Picture/Autumn.mp4`} type="video/mp4" />
+        <source src="/LTY_Picture/Autumn.mp4" type="video/mp4" />
       </video>
       
       {/* 优雅的渐变遮罩层 */}
