@@ -42,12 +42,6 @@ export default function ToolsPage() {
   const handleCategoryChange = (category: string) => {
     setSelectedCategory(category);
   };
-  
-  // 过滤工具
-  const getFilteredTools = () => {
-    // TODO: 实现工具过滤逻辑
-    return [];
-  };
 
   return (
     <main 

@@ -29,19 +29,23 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "20"
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci --silent
 
       - name: Build project
-        run: npm run build
-        env:
-          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          # 设置GitHub Actions环境变量
+          export NODE_ENV=production
+          # 执行构建
+          npm run build
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
+        with:
+          static_site_generator: next
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
