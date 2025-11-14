@@ -21,8 +21,14 @@ function processImagePath(src: string): string {
     return src;
   }
   
-  // 获取basePath
-  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+  // 在开发环境中，直接使用原始路径
+  if (process.env.NODE_ENV === 'development') {
+    return src;
+  }
+  
+  // 在生产环境中，优先使用NEXT_PUBLIC_BASE_PATH，如果没有则使用NEXT_PUBLIC_GITHUB_REPO_NAME构建basePath
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || 
+                   (process.env.NEXT_PUBLIC_GITHUB_REPO_NAME ? `/${process.env.NEXT_PUBLIC_GITHUB_REPO_NAME}` : '');
   
   // 如果是相对路径（如 ./assets/example.svg 或 ../assets/example.svg），转换为绝对路径
   if (src.startsWith('./') || src.startsWith('../')) {

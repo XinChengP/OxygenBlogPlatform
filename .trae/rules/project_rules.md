@@ -1,0 +1,1 @@
+确保在部署到GitHub Pages时，NEXT_PUBLIC_BASE_PATH和NEXT_PUBLIC_GITHUB_REPO_NAME环境变量都被正确设置。

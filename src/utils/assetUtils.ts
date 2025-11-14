@@ -2,7 +2,9 @@
 // 确保在GitHub Pages部署环境下正确加载资源
 
 export const getAssetPath = (path: string): string => {
-  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+  // 优先使用NEXT_PUBLIC_BASE_PATH，如果没有则使用NEXT_PUBLIC_GITHUB_REPO_NAME构建basePath
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || 
+                   (process.env.NEXT_PUBLIC_GITHUB_REPO_NAME ? `/${process.env.NEXT_PUBLIC_GITHUB_REPO_NAME}` : '');
   
   // 如果路径已经是完整URL，直接返回
   if (path.startsWith('http')) {
@@ -40,9 +42,13 @@ export function getBasePath(): string {
     }
   }
   
-  // 在构建环境中，使用环境变量
+  // 在构建环境中，优先使用NEXT_PUBLIC_BASE_PATH，如果没有则使用NEXT_PUBLIC_GITHUB_REPO_NAME
   if (process.env.NEXT_PUBLIC_BASE_PATH) {
     return process.env.NEXT_PUBLIC_BASE_PATH;
+  }
+  
+  if (process.env.NEXT_PUBLIC_GITHUB_REPO_NAME) {
+    return `/${process.env.NEXT_PUBLIC_GITHUB_REPO_NAME}`;
   }
   
   return '';
