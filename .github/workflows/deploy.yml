@@ -39,6 +39,7 @@ jobs:
         run: |
           # 设置GitHub Actions环境变量
           export NODE_ENV=production
+          export NEXT_PUBLIC_GITHUB_REPO_NAME=${{ github.event.repository.name }}
           # 执行构建
           npm run build
 

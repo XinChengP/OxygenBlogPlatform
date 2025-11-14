@@ -1,4 +1,5 @@
 const isStaticExport = process.env.NODE_ENV === 'production';
+const repoName = process.env.NEXT_PUBLIC_GITHUB_REPO_NAME || 'OxygenBlogPlatform';
 
 const nextConfig = {
   // 跳过API路由的静态生成
@@ -18,6 +19,10 @@ const nextConfig = {
     distDir: 'out',
     trailingSlash: true,
     
+    // GitHub Pages basePath配置
+    basePath: `/${repoName}`,
+    assetPrefix: `/${repoName}`,
+    
     // 图片配置（仅在静态导出模式下需要）
     images: {
       // 静态导出时必须禁用图片优化
@@ -35,6 +40,8 @@ const nextConfig = {
   env: {
     // 静态导出标识
     IS_STATIC_EXPORT: isStaticExport.toString(),
+    // GitHub仓库名
+    NEXT_PUBLIC_GITHUB_REPO_NAME: repoName,
   },
   
   // 压缩配置
