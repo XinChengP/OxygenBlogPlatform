@@ -8,6 +8,7 @@ import {
 } from '@/setting/WebSetting';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
+import { getAssetPath } from '@/utils/assetUtils';
 
 /**
  * 网站背景组件
@@ -27,12 +28,8 @@ export default function BackgroundLayer() {
     return null;
   }
 
-  // 处理 basePath，确保在不同环境下都能正确加载图片
-  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
-  // 确保backgroundImage以/开头
-  const imagePath = backgroundImage.startsWith('/') ? backgroundImage : `/${backgroundImage}`;
-  // 在开发环境中，不需要basePath
-  const fullImagePath = process.env.NODE_ENV === 'development' ? imagePath : `${basePath}${imagePath}`;
+  // 使用工具函数处理背景图片路径，确保GitHub Pages兼容性
+  const fullImagePath = getAssetPath(backgroundImage);
 
   // 判断是否为暗黑模式
   const isDark = resolvedTheme === 'dark';

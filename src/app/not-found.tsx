@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { getAssetPath } from '@/utils/assetUtils';
 
 // 全局Live2D隐藏功能
 declare global {
@@ -103,20 +104,11 @@ export default function NotFound() {
   const primaryColor = getThemeColor('primary');
   const accentColor = getThemeColor('accent');
 
-  // 获取正确的基础路径（适配GitHub Pages）
-  const getBasePath = () => {
-    const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
-    return basePath.startsWith('/') ? basePath : `/${basePath}`.replace(/\/$/, '');
-  };
 
-  // 修复视频路径 - 在GitHub Pages上，public目录的文件会被映射到根路径
+
+  // 使用工具函数处理视频路径，确保GitHub Pages兼容性
   const getVideoPath = () => {
-    // 开发环境使用完整路径
-    if (process.env.NODE_ENV === 'development') {
-      return `${getBasePath()}/LTY_Picture/Autumn.mp4`;
-    }
-    // 生产环境直接使用LTY_Picture目录
-    return `${getBasePath()}/LTY_Picture/Autumn.mp4`;
+    return getAssetPath('/LTY_Picture/Autumn.mp4');
   };
 
 

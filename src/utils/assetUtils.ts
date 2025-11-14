@@ -1,40 +1,25 @@
-// 获取资源路径的工具函数
-export function getAssetPath(path: string): string {
-  // 检查是否是GitHub Pages环境
-  if (typeof window !== 'undefined' && 
-      (window.location.hostname.includes('github.io') ||
-       window.location.hostname.includes('pages.dev'))) {
-    
-    // 获取仓库名称
-    const pathname = window.location.pathname;
-    const pathSegments = pathname.split('/').filter(segment => segment);
-    
-    // 如果路径已经包含仓库名称，则直接返回
-    if (pathSegments.length > 0 && path.startsWith(`/${pathSegments[0]}/`)) {
-      return path;
-    }
-    
-    // 否则添加仓库名称前缀
-    // 注意：这里不进行额外的编码，因为调用者可能已经对路径进行了编码
-    if (pathSegments.length > 0) {
-      return `/${pathSegments[0]}${path}`;
-    }
+// 工具函数：处理静态资源路径
+// 确保在GitHub Pages部署环境下正确加载资源
+
+export const getAssetPath = (path: string): string => {
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+  
+  // 如果路径已经是完整URL，直接返回
+  if (path.startsWith('http')) {
+    return path;
   }
   
-  // 检查是否在静态导出环境中
-  if (process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_BASE_PATH) {
-    // 如果路径已经包含基础路径，则直接返回
-    if (path.startsWith(process.env.NEXT_PUBLIC_BASE_PATH)) {
-      return path;
-    }
-    
-    // 否则添加基础路径前缀
-    return `${process.env.NEXT_PUBLIC_BASE_PATH}${path}`;
+  // 确保路径以/开头
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  
+  // 开发环境直接返回路径
+  if (process.env.NODE_ENV === 'development') {
+    return cleanPath;
   }
   
-  // 非GitHub Pages环境，直接返回原路径
-  return path;
-}
+  // 生产环境：如果basePath为空（根域名部署），直接使用路径；否则添加basePath
+  return basePath ? `${basePath}${cleanPath}` : cleanPath;
+};
 
 // 检查是否是GitHub Pages环境
 export function isGitHubPages(): boolean {
