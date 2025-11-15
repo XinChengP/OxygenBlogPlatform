@@ -4,13 +4,14 @@ import { GithubIcon, MailIcon, GlobeIcon } from "lucide-react"
 import Image from 'next/image'
 import Link from 'next/link'
 import { friendsLinks } from '@/setting/AboutSetting'
+import { getAssetPath } from '@/utils/assetUtils'
 
 /**
  * 处理友链头像路径，处理basePath
  */
 function getFriendAvatarPath(avatar: string): string {
-  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
-  return basePath ? `${basePath}${avatar}` : avatar;
+  // 使用项目的asset工具函数处理路径
+  return getAssetPath(avatar);
 }
 
 /**
@@ -89,20 +90,36 @@ export default function FriendsLink() {
                       alt={link.name}
                       width={48}
                       height={48}
-                      className="w-12 h-12 rounded-full mr-3 object-cover"
+                      className="w-12 h-12 rounded-full mr-3 object-cover flex-shrink-0"
                       onError={(e) => {
-                        // 图片加载失败时隐藏图片元素，显示默认图标
+                        // 图片加载失败时显示默认图标
                         const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
                         const parent = target.parentElement;
                         if (parent) {
+                          // 创建默认头像容器
                           const fallback = document.createElement('div');
-                          fallback.className = 'w-12 h-12 rounded-full mr-3 flex items-center justify-center';
+                          fallback.className = 'w-12 h-12 rounded-full mr-3 flex items-center justify-center flex-shrink-0';
                           fallback.style.background = 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #3b82f6 100%)';
                           fallback.style.backgroundSize = '200% 200%';
                           fallback.style.color = 'white';
                           fallback.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>';
+                          
+                          // 隐藏原图片，显示备用头像
+                          target.style.display = 'none';
                           parent.insertBefore(fallback, target);
+                        }
+                      }}
+                      onLoad={(e) => {
+                        // 图片加载成功时确保图片可见
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'block';
+                        // 移除可能存在的备用头像
+                        const parent = target.parentElement;
+                        if (parent) {
+                          const fallback = parent.querySelector('div[style*="background: linear-gradient"]');
+                          if (fallback && fallback !== target) {
+                            fallback.remove();
+                          }
                         }
                       }}
                     />
