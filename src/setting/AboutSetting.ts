@@ -9,7 +9,8 @@ const AVATAR_FILENAME = "星球卑.jpg"; //头像配置，头像需要放进publ
 //处理头像路径的函数(无需修改)
 export const getAvatarPath = (): string => {
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
-  return basePath ? `${basePath}/${AVATAR_FILENAME}` : `/${AVATAR_FILENAME}`;
+  // 确保路径格式正确，总是以/开头
+  return `${basePath}/${AVATAR_FILENAME}`;
 };
 export const isBorder = true; //控制头像边框是否显示
 export const name = "歆橙"; //名字
