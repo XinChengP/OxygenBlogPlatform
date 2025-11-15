@@ -34,6 +34,8 @@
   box-shadow: 0 -2px 20px var(--aplayer-shadow);
   font-family: inherit;
   font-size: 14px;
+  /* 确保播放器在所有情况下都能显示 */
+  z-index: 1000 !important;
 }
 
 /* 吸底模式样式 */
@@ -44,6 +46,17 @@
   margin: 0;
   border-radius: 0;
   z-index: 10000;
+  /* 确保在页面底部，不被其他元素覆盖 */
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+}
+
+/* 修复可能的遮挡问题 */
+.aplayer-fixed .aplayer-body {
+  /* 确保播放器主体有足够的空间 */
+  width: 100% !important;
+  max-width: none !important;
 }
 
 /* 歌单列表样式增强 */
@@ -54,6 +67,43 @@
   border-radius: 0 0 10px 10px;
   backdrop-filter: blur(10px);
   box-shadow: 0 -4px 20px var(--aplayer-shadow);
+  /* 确保列表有足够的空间显示 */
+  max-height: 400px !important;
+  /* 改进滚动条样式 */
+  scrollbar-width: thin;
+  scrollbar-color: #9ca3af #f3f4f6;
+}
+
+/* Webkit浏览器的滚动条样式 */
+.aplayer-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.aplayer-list::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 3px;
+}
+
+.aplayer-list::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+  border-radius: 3px;
+}
+
+.aplayer-list::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+/* 深色模式下的滚动条 */
+.dark .aplayer-list::-webkit-scrollbar-track {
+  background: #333;
+}
+
+.dark .aplayer-list::-webkit-scrollbar-thumb {
+  background: #666;
+}
+
+.dark .aplayer-list::-webkit-scrollbar-thumb:hover {
+  background: #888;
 }
 
 .aplayer .aplayer-list .aplayer-list-light {
@@ -65,6 +115,11 @@
   transition: all 0.2s ease;
   border-radius: 4px;
   margin: 2px 8px;
+  /* 确保每个列表项显示完整的内容 */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 8px 12px;
 }
 
 .aplayer .aplayer-list .aplayer-list-item:hover {
@@ -229,23 +284,6 @@
   box-shadow: 0 4px 12px rgba(0, 212, 255, 0.4);
 }
 
-/* 列表按钮样式 */
-.aplayer .aplayer-icon.aplayer-icon-list {
-  border-radius: 6px;
-}
-
-.aplayer .aplayer-icon.aplayer-icon-list:hover {
-  background: var(--aplayer-button-bg-hover);
-  border-radius: 6px;
-}
-
-/* 音量按钮样式 */
-.aplayer .aplayer-icon.aplayer-icon-volume-down,
-.aplayer .aplayer-icon.aplayer-icon-volume-up,
-.aplayer .aplayer-icon.aplayer-icon-volume-off {
-  border-radius: 4px;
-}
-
 /* 深色模式下的特殊按钮效果 */
 .dark .aplayer .aplayer-icon.aplayer-icon-play,
 .dark .aplayer .aplayer-icon.aplayer-icon-pause {
@@ -257,41 +295,7 @@
   box-shadow: 0 4px 16px rgba(0, 212, 255, 0.6);
 }
 
-/* 封面样式 */
-.aplayer .aplayer-pic {
-  border-radius: 8px;
-  box-shadow: 0 2px 8px var(--aplayer-shadow);
-}
-
-/* 信息区域样式 */
-.aplayer .aplayer-info .aplayer-title {
-  color: var(--aplayer-fg);
-  font-weight: 600;
-}
-
-.aplayer .aplayer-info .aplayer-author {
-  color: var(--aplayer-info-fg);
-}
-
-/* 时间显示样式 */
-.aplayer .aplayer-time {
-  color: var(--aplayer-info-fg);
-}
-
-/* 自定义样式增强 */
-.aplayer .aplayer-controller .aplayer-btn {
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.aplayer .aplayer-controller .aplayer-btn:hover {
-  background: var(--aplayer-button-bg-hover);
-  border-radius: 4px;
-}
-
-/* 响应式设计 */
+/* 响应式设计 - 确保播放器在移动设备上也能正常展开 */
 @media (max-width: 768px) {
   .aplayer {
     font-size: 12px;
@@ -308,81 +312,25 @@
   .aplayer .aplayer-controller {
     padding: 8px 10px;
   }
-}
-
-/* 音乐控制面板样式增强 */
-.music-control-panel {
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  transition: all 0.3s ease;
-  padding: 8px 12px;
-  margin-top: 4px;
-}
-
-.music-control-panel:hover {
-  background: rgba(0, 0, 0, 0.9) !important;
-  transform: translateY(-2px);
-}
-
-/* 浅色模式下的控制面板 */
-.aplayer:not(.dark) .music-control-panel {
-  background: rgba(255, 255, 255, 0.9) !important;
-  color: #333333 !important;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-.aplayer:not(.dark) .music-control-panel:hover {
-  background: rgba(255, 255, 255, 0.95) !important;
-}
-
-/* 修复音乐列表展开时的按钮位置问题 - 仅调整样式，不干扰功能 */
-.aplayer.aplayer-narrow .aplayer-list {
-  /* 只调整padding，不强制覆盖 */
-  padding-bottom: 60px;
-  /* 让歌单展开时向右移动 */
-  margin-right: 20px;
-  transform: translateX(-10px);
-}
-
-.aplayer.aplayer-narrow .aplayer-list .aplayer-list-item {
-  /* 只调整间距，不影响点击事件 */
-  padding: 8px 12px;
-  margin: 2px 10px;
-}
-
-/* 只调整最后一个列表项的底部边距 */
-.aplayer.aplayer-narrow .aplayer-list .aplayer-list-item:last-child {
-  margin-bottom: 80px;
-}
-
-/* 不调整控制器的z-index和位置，避免干扰按钮功能 */
-/* .aplayer.aplayer-narrow .aplayer-controller { */
-/*   z-index: 10; */
-/* } */
-
-/* 不调整列表ul的padding，保留原始APlayer功能 */
-/* .aplayer.aplayer-narrow .aplayer-list ul { */
-/*   padding-bottom: 40px; */
-/* } */
-
-/* 隐藏默认的APlayer图标，保留功能 */
-.aplayer .aplayer-pause,
-.aplayer .aplayer-play {
-  opacity: 1;
-}
-
-/* 添加动画效果 */
-.aplayer .aplayer-info {
-  animation: slideInUp 0.3s ease;
-}
-
-@keyframes slideInUp {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
+  
+  .aplayer-list {
+    max-height: 300px !important; /* 在移动设备上稍微减小高度 */
   }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+}
+
+/* 修复列表展开可能被截断的问题 */
+.aplayer.aplayer-fixed .aplayer-list {
+  margin-bottom: 0 !important;
+  padding-bottom: 10px !important;
+}
+
+/* 确保列表完全显示，不被截断 */
+.aplayer.aplayer-fixed .aplayer-list ul {
+  padding-bottom: 20px;
+}
+
+/* 优化列表项间距，确保完全可见 */
+.aplayer .aplayer-list .aplayer-list-item {
+  padding: 10px 12px;
+  margin: 2px 8px;
 }

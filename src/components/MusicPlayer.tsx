@@ -191,8 +191,11 @@ export default function MusicPlayer({
         mutex: true, // 阻止其他播放器同时播放
         lrcType: 0, // 禁用歌词显示
         listFolded: true, // 折叠列表
-        listMaxHeight: 300, // 增加列表最大高度以显示更多歌曲
+        listMaxHeight: 400, // 增加列表最大高度以确保完整显示
         storageName: 'musicPlayer', // 本地存储名称
+        // 添加额外配置以确保播放器行为一致
+        theme: '#1DA1F2', // 设置主题色以匹配网站主题
+        order: 'list', // 列表循环播放模式
       });
 
       // 设置初始播放状态
