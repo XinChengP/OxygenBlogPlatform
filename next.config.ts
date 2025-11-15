@@ -2,8 +2,6 @@ const isStaticExport = process.env.NODE_ENV === 'production';
 const repoName = process.env.NEXT_PUBLIC_GITHUB_REPO_NAME || 'OxygenBlogPlatform';
 
 const nextConfig = {
-  // 跳过API路由的静态生成
-  skipTrailingSlashRedirect: true,
   // 实验性功能
   experimental: {
     // 优化包导入

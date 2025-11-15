@@ -30,6 +30,10 @@ export default function LuoTianyiLive2D() {
 
     // 消息管理功能
     const updateMessage = useCallback((newMessage: string) => {
+        // 如果消息是默认的"你好～我是洛天依！"，则不显示（避免覆盖点击交互）
+        if (newMessage === '你好～我是洛天依！') {
+            return;
+        }
         setMessage(newMessage);
         setMessageOpacity(1);
         lastMessageTimeRef.current = Date.now();
@@ -154,7 +158,7 @@ export default function LuoTianyiLive2D() {
                     text: ["在找什么东西呢，需要帮忙吗？", "搜索很重要哦，我来帮你～", "找不到想要的内容吗？"]
                 },
                 {
-                    selector: ".nav-link, .navigation a",
+                    selector: ".nav-link, .navigation a, a[href]",
                     text: ["这里好像有很好玩的内容！", "要去看其他地方吗？", "导航很重要呢～"]
                 }
             ],
@@ -181,6 +185,13 @@ export default function LuoTianyiLive2D() {
         (window as any).message_Path = getAssetPath('/luotianyi-live2d-master/live2d/');
         (window as any).home_Path = window.location.origin;
         (window as any).messageConfig = messageConfig;
+        
+        // 延迟初始化消息系统，确保DOM完全加载
+        setTimeout(() => {
+            if (typeof (window as any).initTips === 'function') {
+                (window as any).initTips();
+            }
+        }, 1000);
     };
 
     const toggleVisibility = () => {
@@ -204,7 +215,7 @@ export default function LuoTianyiLive2D() {
                     position: 'absolute',
                     top: '-20px',
                     left: '50px',
-                    display: 'block',
+                    display: message ? 'block' : 'none',
                     transition: 'opacity 0.5s ease-in-out',
                     background: 'rgba(102, 204, 255, 0.2)',
                     padding: '7px',
@@ -218,7 +229,7 @@ export default function LuoTianyiLive2D() {
                     zIndex: 9997
                 }}
             >
-                {message || '你好～我是洛天依！'}
+                {message}
             </div>
             
             <canvas 

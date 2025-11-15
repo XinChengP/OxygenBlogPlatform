@@ -137,7 +137,7 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
               </p>
               <Link 
                 href="/"
-                className="inline-flex items-center px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-lg transition-colors"
+                className="inline-flex items-center px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-lg transition-colors nav-link"
               >
                 返回首页
               </Link>
@@ -158,7 +158,7 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <h1 className="text-4xl font-bold text-foreground mb-4">
+          <h1 className="text-4xl font-bold text-foreground mb-4 title">
             📝 博客文章
           </h1>
         </motion.div>
@@ -295,7 +295,7 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                   }}
                   className={getGlassStyle("rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow cursor-pointer border")}
                 >
-                  <Link href={`/blogs/${encodeURIComponent(post.slug)}`}>
+                  <Link href={`/blogs/${encodeURIComponent(post.slug)}`} className="nav-link">
                     <div className="p-6">
                       <div className="flex items-center justify-between mb-3">
                         <span className="bg-primary/10 text-primary px-2 py-1 rounded text-sm font-medium border border-primary/20">
@@ -306,7 +306,7 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                         </span>
                       </div>
                       
-                      <h2 className="text-xl font-semibold text-foreground mb-3 hover:text-primary transition-colors">
+                      <h2 className="text-xl font-semibold text-foreground mb-3 hover:text-primary transition-colors title">
                         {post.title}
                       </h2>
                       

@@ -91,7 +91,7 @@ export default function Footer() {
             href="https://space.bilibili.com/36081646"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-muted-foreground/70 hover:text-primary transition-colors duration-200 underline-offset-4 hover:underline"
+            className="text-muted-foreground/70 hover:text-primary transition-colors duration-200 underline-offset-4 hover:underline nav-link"
           >
             世界第一吃货殿下
           </Link>

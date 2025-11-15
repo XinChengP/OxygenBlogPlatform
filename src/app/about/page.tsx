@@ -261,7 +261,7 @@ export default function AboutPage() {
                  style={{ background: `radial-gradient(circle, ${primaryColor}aa, transparent)` }}></div>
             
             <div className="relative z-10">
-              <h1 className="text-2xl md:text-3xl font-bold mb-2 drop-shadow-2xl tracking-wide">{title}</h1>
+              <h1 className="text-2xl md:text-3xl font-bold mb-2 drop-shadow-2xl tracking-wide title">{title}</h1>
             </div>
           </div>
 
@@ -286,7 +286,7 @@ export default function AboutPage() {
  
                 <EvervaultCard />
  
-                <h2 className="dark:text-white text-black mt-4 font-medium text-center w-full text-lg sm:text-xl md:text-2xl">
+                <h2 className="dark:text-white text-black mt-4 font-medium text-center w-full text-lg sm:text-xl md:text-2xl title">
                   {name}
                 </h2>
               </div>

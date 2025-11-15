@@ -36,28 +36,60 @@ $(document).on('copy', function (){
 });
 
 function initTips(){
-    $.ajax({
-        cache: true,
-        url: `${message_Path}message.json`,
-        dataType: "json",
-        success: function (result){
-            $.each(result.mouseover, function (index, tips){
-                $(tips.selector).mouseover(function (){
-                    var text = tips.text;
-                    if(Array.isArray(tips.text)) text = tips.text[Math.floor(Math.random() * tips.text.length + 1)-1];
-                    text = text.renderTip({text: $(this).text()});
-                    showMessage(text, 3000);
-                });
-            });
-            $.each(result.click, function (index, tips){
-                $(tips.selector).click(function (){
-                    var text = tips.text;
-                    if(Array.isArray(tips.text)) text = tips.text[Math.floor(Math.random() * tips.text.length + 1)-1];
-                    text = text.renderTip({text: $(this).text()});
-                    showMessage(text, 3000);
-                });
-            });
-        }
+    // 使用window.messageConfig配置，如果没有则使用默认配置
+    var config = window.messageConfig || {
+        mouseover: [
+            {
+                selector: ".title a, h1, h2, h3",
+                text: ["要看看 {text} 么？", "这是什么呢？好有趣的样子～", "想要了解更多吗？"]
+            },
+            {
+                selector: ".searchbox, input[type='search']",
+                text: ["在找什么东西呢，需要帮忙吗？", "搜索很重要哦，我来帮你～", "找不到想要的内容吗？"]
+            },
+            {
+                selector: ".nav-link, .navigation a, a[href]",
+                text: ["这里好像有很好玩的内容！", "要去看其他地方吗？", "导航很重要呢～"]
+            }
+        ],
+        click: [
+            {
+                selector: "#landlord #live2d",
+                text: [
+                    "想听我唱歌吗？", 
+                    "不要动手动脚的！快把手拿开~~", 
+                    "真…真的是不知羞耻！", 
+                    "再摸的话我可要报警了！⌇●﹏●⌇", 
+                    "110吗，这里有个变态一直在摸我(ó﹏ò｡)",
+                    "呀！你摸到我了！",
+                    "害羞ing...",
+                    "天依很萌的！",
+                    "我是世界第一吃货殿下哦！"
+                ]
+            }
+        ]
+    };
+    
+    // 应用鼠标悬停事件 - 使用事件委托确保动态元素也能响应
+    $.each(config.mouseover, function (index, tips){
+        $(document).on('mouseover', tips.selector, function (e){
+            e.stopPropagation();
+            var text = tips.text;
+            if(Array.isArray(tips.text)) text = tips.text[Math.floor(Math.random() * tips.text.length)];
+            text = text.renderTip({text: $(this).text()});
+            showMessage(text, 3000);
+        });
+    });
+    
+    // 应用点击事件 - 使用事件委托确保动态元素也能响应
+    $.each(config.click, function (index, tips){
+        $(document).on('click', tips.selector, function (e){
+            e.stopPropagation();
+            var text = tips.text;
+            if(Array.isArray(tips.text)) text = tips.text[Math.floor(Math.random() * tips.text.length)];
+            text = text.renderTip({text: $(this).text()});
+            showMessage(text, 3000);
+        });
     });
 }
 initTips();
@@ -129,7 +161,10 @@ function hideMessage(timeout){
     // 不隐藏消息框，只重置内容
     if (timeout === null) timeout = 5000;
     setTimeout(() => {
-        $('.message').html('你好～我是洛天依！').css('opacity', 1);
+        // 只在消息框当前没有显示内容时才重置为默认消息
+        if ($('.message').html() === '') {
+            $('.message').html('你好～我是洛天依！').css('opacity', 1);
+        }
     }, timeout);
 }
 

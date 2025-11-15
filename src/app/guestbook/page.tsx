@@ -54,7 +54,7 @@ export default function Guestbook() {
                  style={{ background: `radial-gradient(circle, ${primaryColor}aa, transparent)` }}></div>
             
             <div className="relative z-10">
-              <h1 className="text-2xl md:text-3xl font-bold mb-2 drop-shadow-2xl tracking-wide">博客留言板</h1>
+              <h1 className="text-2xl md:text-3xl font-bold mb-2 drop-shadow-2xl tracking-wide title">博客留言板</h1>
               <p className="text-lg opacity-90 drop-shadow-lg">欢迎留下您的想法、建议或任何想要分享的内容。每一句话都是对我们最大的鼓励！</p>
             </div>
           </div>

@@ -139,7 +139,7 @@ export default function Navigation() {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300 ${
+                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300 nav-link ${
                       pathname === item.href
                         ? isAtTop ? 'text-white' : 'text-primary dark:text-primary'
                         : isAtTop ? 'text-white hover:text-gray-200' : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary'
@@ -194,7 +194,7 @@ export default function Navigation() {
                     key={item.href}
                     href={item.href}
                     onClick={closeMobileMenu}
-                    className={`block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300 ${
+                    className={`block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300 nav-link ${
                       pathname === item.href
                         ? isAtTop ? 'text-white' : 'text-primary dark:text-primary'
                         : isAtTop ? 'text-white hover:text-gray-200' : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary hover:bg-gray-50/80 dark:hover:bg-gray-800/50'

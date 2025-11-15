@@ -7,7 +7,7 @@ import LuoTianyiLive2D from './LuoTianyiLive2D';
 export default function ConditionalComponents() {
   const pathname = usePathname();
   
-  // 在首页(/)、404页面(/404)隐藏Live2D和音乐播放器
+  // 在首页(/)、404页面(/404)和错误页面隐藏Live2D
   // 但是为了确保音乐播放不中断，我们在所有页面都渲染音乐播放器
   // 通过CSS来控制其可见性
   const hideLive2DAndMusic = pathname === '/' || pathname === '/404' || pathname.startsWith('/_not-found');

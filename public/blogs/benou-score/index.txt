@@ -1,0 +1,102 @@
+1:"$Sreact.fragment"
+3:I[67280,["599","static/chunks/599-1bf27d8113620ab2.js","874","static/chunks/874-a8d275098e1fd4fa.js","725","static/chunks/725-91077cb40b620f89.js","177","static/chunks/app/layout-f417016051e529bf.js"],"ThemeProvider"]
+4:I[73083,["599","static/chunks/599-1bf27d8113620ab2.js","874","static/chunks/874-a8d275098e1fd4fa.js","725","static/chunks/725-91077cb40b620f89.js","177","static/chunks/app/layout-f417016051e529bf.js"],"default"]
+5:I[77131,["599","static/chunks/599-1bf27d8113620ab2.js","874","static/chunks/874-a8d275098e1fd4fa.js","725","static/chunks/725-91077cb40b620f89.js","177","static/chunks/app/layout-f417016051e529bf.js"],"default"]
+6:I[87555,[],""]
+7:I[31295,[],""]
+8:I[99543,["874","static/chunks/874-a8d275098e1fd4fa.js","345","static/chunks/app/not-found-43d2b9d84854dc13.js"],"default"]
+9:I[45701,["599","static/chunks/599-1bf27d8113620ab2.js","874","static/chunks/874-a8d275098e1fd4fa.js","725","static/chunks/725-91077cb40b620f89.js","177","static/chunks/app/layout-f417016051e529bf.js"],"default"]
+a:I[4181,["599","static/chunks/599-1bf27d8113620ab2.js","874","static/chunks/874-a8d275098e1fd4fa.js","725","static/chunks/725-91077cb40b620f89.js","177","static/chunks/app/layout-f417016051e529bf.js"],"default"]
+c:I[59665,[],"OutletBoundary"]
+f:I[74911,[],"AsyncMetadataOutlet"]
+11:I[59665,[],"ViewportBoundary"]
+13:I[59665,[],"MetadataBoundary"]
+15:I[26614,[],""]
+:HL["/OxygenBlogPlatform/_next/static/css/a0e95f9eb23fa00b.css","style"]
+:HL["/OxygenBlogPlatform/_next/static/css/379f0a624602733c.css","style"]
+:HL["/OxygenBlogPlatform/_next/static/css/48bf736cda8a9094.css","style"]
+2:Te4c,
+              (function() {
+                try {
+                  var theme = localStorage.getItem('theme') || 'system';
+                  var systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                  var resolvedTheme = theme === 'system' ? systemTheme : theme;
+                  
+                  if (resolvedTheme === 'dark') {
+                    document.documentElement.classList.add('dark');
+                  } else {
+                    document.documentElement.classList.remove('dark');
+                  }
+                  
+                  // 立即应用blue主题色，避免闪烁
+                  var isDark = resolvedTheme === 'dark';
+                  var root = document.documentElement;
+                  
+                  // blue主题配置
+                  var themeColors = {
+                    primary: "#66ccff",
+                    secondary: "#1e40af", 
+                    accent: "#06b6d4"
+                  };
+                  
+                  // 十六进制转RGB
+                  function hexToRgb(hex) {
+                    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+                    return result ? {
+                      r: parseInt(result[1], 16),
+                      g: parseInt(result[2], 16),
+                      b: parseInt(result[3], 16)
+                    } : { r: 0, g: 0, b: 0 };
+                  }
+                  
+                  // 调整亮度
+                  function adjustBrightness(hex, factor) {
+                    var rgb = hexToRgb(hex);
+                    var adjust = function(value) {
+                      return Math.max(0, Math.min(255, Math.round(value * factor)));
+                    };
+                    
+                    var newR = adjust(rgb.r).toString(16).padStart(2, '0');
+                    var newG = adjust(rgb.g).toString(16).padStart(2, '0');
+                    var newB = adjust(rgb.b).toString(16).padStart(2, '0');
+                    
+                    return '#' + newR + newG + newB;
+                  }
+                  
+                  // 根据模式调整颜色
+                  var primaryColor = isDark 
+                    ? adjustBrightness(themeColors.primary, 1.3)
+                    : adjustBrightness(themeColors.primary, 0.8);
+                  var accentColor = isDark
+                    ? adjustBrightness(themeColors.accent, 1.2)
+                    : adjustBrightness(themeColors.accent, 0.9);
+                  var secondaryColor = isDark
+                    ? adjustBrightness(themeColors.secondary, 1.4)
+                    : themeColors.secondary;
+                  
+                  // 设置 CSS 变量
+                  root.style.setProperty('--theme-primary', primaryColor);
+                  root.style.setProperty('--theme-accent', accentColor);
+                  root.style.setProperty('--theme-secondary', secondaryColor);
+                  root.style.setProperty('--primary', primaryColor);
+                  root.style.setProperty('--primary-foreground', isDark ? '#0f0f0f' : '#ffffff');
+                  root.style.setProperty('--accent', accentColor);
+                  root.style.setProperty('--accent-foreground', isDark ? '#0f0f0f' : '#ffffff');
+                  root.style.setProperty('--secondary', secondaryColor);
+                  root.style.setProperty('--secondary-foreground', isDark ? '#f0f0f0' : '#1f1f1f');
+                  
+                  // 设置初始化标记
+                  root.style.setProperty('--theme-initialized', '1');
+                } catch (e) {}
+              })();
+            0:{"P":null,"b":"UxYuu4Bv_3T32tHD6FVnF","p":"/OxygenBlogPlatform","c":["","blogs","benou-score",""],"i":false,"f":[[["",{"children":["blogs",{"children":[["slug","benou-score","d"],{"children":["__PAGE__",{}]}]}]},"$undefined","$undefined",true],["",["$","$1","c",{"children":[[["$","link","0",{"rel":"stylesheet","href":"/OxygenBlogPlatform/_next/static/css/a0e95f9eb23fa00b.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}],["$","link","1",{"rel":"stylesheet","href":"/OxygenBlogPlatform/_next/static/css/379f0a624602733c.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}]],["$","html",null,{"lang":"zh-CN","suppressHydrationWarning":true,"children":[["$","head",null,{"children":["$","script",null,{"dangerouslySetInnerHTML":{"__html":"$2"}}]}],["$","body",null,{"className":"__variable_984e8c __variable_2e6d50 antialiased text-foreground transition-colors duration-300","style":{"colorScheme":"light dark","backgroundColor":"hsl(var(--background))"},"children":["$","$L3",null,{"attribute":"class","defaultTheme":"system","enableSystem":true,"disableTransitionOnChange":false,"storageKey":"theme","children":[["$","$L4",null,{}],["$","$L5",null,{}],["$","main",null,{"className":"min-h-screen transition-colors duration-300 relative","children":["$","$L6",null,{"parallelRouterKey":"children","error":"$undefined","errorStyles":"$undefined","errorScripts":"$undefined","template":["$","$L7",null,{}],"templateStyles":"$undefined","templateScripts":"$undefined","notFound":[["$","$L8",null,{}],[]],"forbidden":"$undefined","unauthorized":"$undefined"}]}],["$","$L9",null,{}],["$","$La",null,{}]]}]}]]}]]}],{"children":["blogs",["$","$1","c",{"children":[null,["$","$L6",null,{"parallelRouterKey":"children","error":"$undefined","errorStyles":"$undefined","errorScripts":"$undefined","template":["$","$L7",null,{}],"templateStyles":"$undefined","templateScripts":"$undefined","notFound":"$undefined","forbidden":"$undefined","unauthorized":"$undefined"}]]}],{"children":[["slug","benou-score","d"],["$","$1","c",{"children":[null,["$","$L6",null,{"parallelRouterKey":"children","error":"$undefined","errorStyles":"$undefined","errorScripts":"$undefined","template":["$","$L7",null,{}],"templateStyles":"$undefined","templateScripts":"$undefined","notFound":"$undefined","forbidden":"$undefined","unauthorized":"$undefined"}]]}],{"children":["__PAGE__",["$","$1","c",{"children":["$Lb",[["$","link","0",{"rel":"stylesheet","href":"/OxygenBlogPlatform/_next/static/css/48bf736cda8a9094.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}]],["$","$Lc",null,{"children":["$Ld","$Le",["$","$Lf",null,{"promise":"$@10"}]]}]]}],{},null,false]},null,false]},null,false]},null,false],["$","$1","h",{"children":[null,["$","$1","2BJnbtd0U-SbXfg-WZioXv",{"children":[["$","$L11",null,{"children":"$L12"}],null]}],["$","$L13",null,{"children":"$L14"}]]}],false]],"m":"$undefined","G":["$15","$undefined"],"s":false,"S":true}
+16:"$Sreact.suspense"
+17:I[74911,[],"AsyncMetadata"]
+14:["$","div",null,{"hidden":true,"children":["$","$16",null,{"fallback":null,"children":["$","$L17",null,{"promise":"$@18"}]}]}]
+e:null
+19:I[95583,["599","static/chunks/599-1bf27d8113620ab2.js","874","static/chunks/874-a8d275098e1fd4fa.js","451","static/chunks/451-5124a42b4972f14e.js","466","static/chunks/466-d6cd6417e15c90af.js","744","static/chunks/app/blogs/%5Bslug%5D/page-02dcf54f124e7399.js"],"default"]
+b:["$","$L19",null,{"blog":{"title":"笨鸥 简谱","date":"2025-08-31","category":"洛佬","tags":["洛天依","简谱","笨鸥","VOCALOID"],"readTime":1,"excerpt":"洛天依歌曲《笨鸥》简谱分享","content":"\r\n# 笨鸥 简谱\r\n\r\n## B站本家\r\n\r\n<iframe \r\n  src=\"https://player.bilibili.com/player.html?bvid=BV1stjJz9Ehw&page=1&as_wide=1&high_quality=1&danmaku=0&autoplay=0\" \r\n  scrolling=\"no\" \r\n  frameborder=\"no\" \r\n  framespacing=\"0\" \r\n  allowfullscreen=\"true\" \r\n  style=\"width: 100%; height: 480px; border: 1px solid #ddd; border-radius: 8px;\">\r\n</iframe>\r\n\r\n\r\n## 简介\r\n\r\n《笨鸥》\r\n谨以此歌，送给我自己的生日，也送给所有的“笨鸥”们。\r\n如果双腿跑不动，那就试着抓住风。\r\n<br>\r\n祝“笨鸥”们，生日快乐。\r\n<br>\r\n——————————————\r\n<br>\r\n作曲/Composer:Soda纯白\r\n编曲/Arranger:Soda纯白/YK_Lin\r\n歌词/Lyrics:举烛\r\n演唱/Vocal:洛天依\r\n调校/Tuning:无形歌无形\r\n吉他/Guitarist:YK_Lin\r\n混音/Mixing:鱼谷\r\n美术/Illustration:贝贝Web\r\n映像/Promotion Video:纸鸢\r\n\r\n## 简谱\r\n> 扒谱：歆橙\r\n<div style=\"text-align: center; margin: 20px 0;\">\r\n  <img src=\"/Blogabout/benou/1.svg\" alt=\"第一页\" style=\"max-width: 100%; height: auto;\">\r\n</div>\r\n\r\n<div style=\"text-align: center; margin: 20px 0;\">\r\n  <img src=\"/Blogabout/benou/2.svg\" alt=\"第二页\" style=\"max-width: 100%; height: auto;\">\r\n</div>\r\n\r\nPS：小白第一次扒谱，还有很多地方需要完善，欢迎各位大佬指正（博主太菜了，前奏扒不出来QAQ）","slug":"benou-score","reference":"$undefined"}}]
+12:[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]
+d:null
+10:{"metadata":[["$","title","0",{"children":"心想事成 的 Blog"}],["$","meta","1",{"name":"description","content":"个人博客"}],["$","link","2",{"rel":"icon","href":"/OxygenBlogPlatform/favicon.ico","type":"image/x-icon","sizes":"32x32"}]],"error":null,"digest":"$undefined"}
+18:{"metadata":"$10:metadata","error":null,"digest":"$undefined"}
