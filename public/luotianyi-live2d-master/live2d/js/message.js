@@ -212,3 +212,213 @@ function getsong(){
 
 }
 
+
+// 全局消息管理器 - 增强复制事件监听
+window.GlobalMessageManager = (function() {
+  let messages = [];
+  let currentIndex = 0;
+  let messageContainer = null;
+  let isInitialized = false;
+
+  // 初始化消息系统
+  function init() {
+    if (isInitialized) return;
+    
+    console.log('🎯 初始化 GlobalMessageManager...');
+    createMessageContainer();
+    setupEventListeners();
+    isInitialized = true;
+    
+    // 显示欢迎消息
+    setTimeout(() => {
+      showMessage('洛天依 Live2D 看板娘已就绪！点击我可以互动哦~', 3000);
+    }, 1000);
+  }
+
+  // 创建消息容器
+  function createMessageContainer() {
+    if (messageContainer) return;
+    
+    messageContainer = document.createElement('div');
+    messageContainer.id = 'live2d-message-container';
+    messageContainer.className = 'live2d-message-container';
+    messageContainer.innerHTML = `
+      <div id="live2d-message" class="live2d-message">
+        <div class="message-content"></div>
+        <div class="message-tail"></div>
+      </div>
+    `;
+    document.body.appendChild(messageContainer);
+    
+    console.log('✅ 消息容器已创建');
+  }
+
+  // 设置事件监听器
+  function setupEventListeners() {
+    console.log('🔧 设置事件监听器...');
+    
+    // 复制事件监听 - 使用多种方式确保捕获
+    if (document.addEventListener) {
+      document.addEventListener('copy', handleCopyEvent, true); // 使用捕获阶段
+      console.log('✅ 已添加 document copy 事件监听器（捕获阶段）');
+    }
+    
+    // 如果使用 jQuery，也添加 jQuery 事件监听
+    if (typeof window.jQuery !== 'undefined') {
+      window.jQuery(document).on('copy', handleCopyEvent);
+      console.log('✅ 已添加 jQuery copy 事件监听器');
+      
+      // 也监听 body 上的 copy 事件
+      window.jQuery('body').on('copy', handleCopyEvent);
+      console.log('✅ 已添加 jQuery body copy 事件监听器');
+    }
+    
+    // 监听 window 的 copy 事件
+    if (window.addEventListener) {
+      window.addEventListener('copy', handleCopyEvent, true);
+      console.log('✅ 已添加 window copy 事件监听器（捕获阶段）');
+    }
+    
+    // 监听自定义 copy 事件
+    document.addEventListener('custom-copy', handleCopyEvent, true);
+    console.log('✅ 已添加自定义 copy 事件监听器');
+    
+    // 监听点击事件
+    document.addEventListener('click', handleClickEvent);
+    
+    // 监听页面加载完成
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      // 页面已加载，直接初始化
+      setTimeout(init, 100);
+    }
+  }
+
+  // 处理复制事件
+  function handleCopyEvent(event) {
+    console.log('📋 捕获到复制事件:', event);
+    console.log('事件类型:', event.type);
+    console.log('事件目标:', event.target);
+    console.log('事件当前目标:', event.currentTarget);
+    
+    // 延迟执行，确保复制操作已完成
+    setTimeout(() => {
+      showMessage(getCopyMessage(), 2000);
+      console.log('🎉 复制事件处理完成，显示消息');
+    }, 100);
+    
+    // 不阻止默认行为
+    return true;
+  }
+
+  // 处理点击事件
+  function handleClickEvent(event) {
+    const target = event.target;
+    
+    // 检查是否是复制按钮
+    if (target.closest && target.closest('.copy-button')) {
+      console.log('🖱️ 检测到复制按钮点击');
+      // 延迟执行，确保复制操作已完成
+      setTimeout(() => {
+        showMessage(getCopyMessage(), 2000);
+      }, 200);
+    }
+  }
+
+  // 获取复制消息
+  function getCopyMessage() {
+    const messages = [
+      '复制成功！代码已复制到剪贴板~',
+      '已复制！现在可以粘贴使用啦~',
+      '复制完成！天依帮你复制好了~',
+      '复制成功！代码片段已保存~',
+      '已复制！记得检查代码哦~',
+      '复制完成！天依很乐意帮忙~'
+    ];
+    return messages[Math.floor(Math.random() * messages.length)];
+  }
+
+  // 显示消息
+  function showMessage(text, duration = 3000) {
+    if (!messageContainer) {
+      console.warn('消息容器未初始化');
+      return;
+    }
+
+    const messageElement = document.getElementById('live2d-message');
+    const contentElement = messageElement.querySelector('.message-content');
+    
+    contentElement.textContent = text;
+    messageElement.classList.add('show');
+    
+    // 添加动画效果
+    messageElement.style.animation = 'fadeIn 0.3s ease-in-out';
+    
+    // 自动隐藏
+    setTimeout(() => {
+      messageElement.style.animation = 'fadeOut 0.3s ease-in-out';
+      setTimeout(() => {
+        messageElement.classList.remove('show');
+      }, 300);
+    }, duration);
+  }
+
+  // 添加消息到队列
+  function addMessage(text, duration = 3000) {
+    messages.push({ text, duration });
+    if (messages.length === 1) {
+      showNextMessage();
+    }
+  }
+
+  // 显示下一条消息
+  function showNextMessage() {
+    if (messages.length === 0) return;
+    
+    const message = messages[currentIndex];
+    showMessage(message.text, message.duration);
+    
+    setTimeout(() => {
+      messages.shift();
+      if (messages.length > 0) {
+        showNextMessage();
+      }
+    }, message.duration);
+  }
+
+  // 公共API
+  return {
+    init: init,
+    show: showMessage,
+    add: addMessage,
+    showNext: showNextMessage
+  };
+})();
+
+// 禁用 GlobalMessageManager 自动初始化，避免重复的消息气泡
+// 保留功能但不禁用，只在需要时手动调用
+console.log('📦 GlobalMessageManager 已加载，自动初始化已禁用');
+
+// 立即初始化（确保在页面加载完成后）
+// if (document.readyState === 'loading') {
+//   document.addEventListener('DOMContentLoaded', function() {
+//     window.GlobalMessageManager.init();
+//   });
+// } else {
+//   // 如果页面已经加载完成，立即初始化
+//   setTimeout(function() {
+//     window.GlobalMessageManager.init();
+//   }, 500);
+// }
+
+// 确保在 Live2D 模型加载完成后也初始化
+// document.addEventListener('live2d-model-loaded', function() {
+//   console.log('🎯 Live2D 模型加载完成，初始化消息管理器');
+//   window.GlobalMessageManager.init();
+// });
+
+// 添加一些调试信息
+console.log('📦 message.js 已加载');
+console.log('当前页面状态:', document.readyState);
+console.log('jQuery 是否可用:', typeof window.jQuery !== 'undefined');

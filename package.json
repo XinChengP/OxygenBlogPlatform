@@ -12,6 +12,7 @@
     "build": "npm run sync-theme && next build",
     "build:pages": "npm run sync-theme && next build && node -e \"require('fs').cpSync('./out', './public', { recursive: true, force: true })\"",
     "start": "next start",
+    "serve": "node scripts/serve-static.js",
     "lint": "next lint",
     "sync-theme": "node scripts/sync-theme-colors.js",
     "export": "next build"

@@ -5,7 +5,7 @@ const path = require('path');
 const compression = require('compression');
 
 const app = express();
-const PORT = process.env.PORT || 3003;
+const PORT = process.env.PORT || 3000;
 const STATIC_DIR = path.resolve(__dirname, '../out');
 
 // 启用压缩
@@ -44,7 +44,7 @@ app.listen(PORT, () => {
   console.log(`   📁 静态目录: ${STATIC_DIR}`);
   console.log('');
   console.log('📖 使用说明:');
-  console.log('   - 直接访问 http://localhost:3003 查看首页');
-  console.log('   - 访问 http://localhost:3003/OxygenBlogPlatform/ 查看GitHub Pages版本');
+  console.log(`   - 直接访问 http://localhost:${PORT} 查看首页`);
+  console.log(`   - 访问 http://localhost:${PORT}/OxygenBlogPlatform/ 查看GitHub Pages版本`);
   console.log('   - 所有路由都已配置SPA支持');
 });

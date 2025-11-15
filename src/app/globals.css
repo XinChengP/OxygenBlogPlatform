@@ -146,6 +146,13 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.92 0.005 220);
   --sidebar-ring: oklch(0.708 0 0);
+  
+  /* 代码块主题变量 */
+  --code-bg: #f8fafc; /* slate-50 */
+  --code-border: #e2e8f0; /* slate-200 */
+  --code-inline-bg: #f1f5f9; /* slate-100 */
+  --code-inline-text: #2563eb; /* blue-600 */
+  --code-inline-border: #cbd5e1; /* slate-300 */
 }
 
 .dark {
@@ -191,6 +198,32 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+  
+  /* 代码块主题变量 - 深色模式 */
+  --code-bg: #1e293b; /* slate-800 */
+  --code-border: #334155; /* slate-700 */
+  --code-inline-bg: #1e293b; /* slate-800 */
+  --code-inline-text: #93c5fd; /* blue-300 */
+  --code-inline-border: #475569; /* slate-600 */
+}
+
+/* 代码块主题样式优化 */
+.code-block {
+  background-color: var(--code-bg);
+  border-color: var(--code-border);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.inline-code {
+  background-color: var(--code-inline-bg);
+  color: var(--code-inline-text);
+  border-color: var(--code-inline-border);
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+/* 代码高亮主题适配 */
+pre code {
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 /* 音乐播放器样式优化 */
@@ -384,3 +417,69 @@
 
 /* 导入APlayer主题样式 */
 @import '../components/aplayer-theme.css';
+
+/* Live2D 消息容器样式 */
+.live2d-message-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.live2d-message {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 12px 16px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  font-size: 14px;
+  line-height: 1.4;
+  max-width: 300px;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.live2d-message.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.live2d-message .message-tail {
+  position: absolute;
+  bottom: -8px;
+  left: 20px;
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid #764ba2;
+}
+
+.live2d-message .message-content {
+  word-wrap: break-word;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}

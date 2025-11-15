@@ -90,9 +90,14 @@ export default function NotFound() {
     // 如果是rgb格式，转换为十六进制
     const rgbMatch = hex.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
     if (rgbMatch) {
-      const r = parseInt(rgbMatch[1]).toString(16).padStart(2, '0');
-      const g = parseInt(rgbMatch[2]).toString(16).padStart(2, '0');
-      const b = parseInt(rgbMatch[3]).toString(16).padStart(2, '0');
+      let r = parseInt(rgbMatch[1]).toString(16);
+      let g = parseInt(rgbMatch[2]).toString(16);
+      let b = parseInt(rgbMatch[3]).toString(16);
+      
+      // 确保十六进制字符串长度为2
+      r = r.length === 1 ? '0' + r : r;
+      g = g.length === 1 ? '0' + g : g;
+      b = b.length === 1 ? '0' + b : b;
       return `#${r}${g}${b}`;
     }
     

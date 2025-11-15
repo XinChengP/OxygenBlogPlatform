@@ -75,9 +75,14 @@ export default function RootLayout({
                       return Math.max(0, Math.min(255, Math.round(value * factor)));
                     };
                     
-                    var newR = adjust(rgb.r).toString(16).padStart(2, '0');
-                    var newG = adjust(rgb.g).toString(16).padStart(2, '0');
-                    var newB = adjust(rgb.b).toString(16).padStart(2, '0');
+                    var newR = adjust(rgb.r).toString(16);
+                    var newG = adjust(rgb.g).toString(16);
+                    var newB = adjust(rgb.b).toString(16);
+                    
+                    // 确保十六进制字符串长度为2
+                    newR = newR.length === 1 ? '0' + newR : newR;
+                    newG = newG.length === 1 ? '0' + newG : newG;
+                    newB = newB.length === 1 ? '0' + newB : newB;
                     
                     return '#' + newR + newG + newB;
                   }

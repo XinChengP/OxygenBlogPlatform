@@ -95,9 +95,14 @@ export const applyThemeColors = (isDark: boolean = false) => {
     const adjust = (value: number) =>
       Math.max(0, Math.min(255, Math.round(value * factor)));
 
-    const newR = adjust(r).toString(16).padStart(2, "0");
-    const newG = adjust(g).toString(16).padStart(2, "0");
-    const newB = adjust(b).toString(16).padStart(2, "0");
+    let newR = adjust(r).toString(16);
+    let newG = adjust(g).toString(16);
+    let newB = adjust(b).toString(16);
+    
+    // 确保十六进制字符串长度为2
+    newR = newR.length === 1 ? '0' + newR : newR;
+    newG = newG.length === 1 ? '0' + newG : newG;
+    newB = newB.length === 1 ? '0' + newB : newB;
 
     return `#${newR}${newG}${newB}`;
   };
