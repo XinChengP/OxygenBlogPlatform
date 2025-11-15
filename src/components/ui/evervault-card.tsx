@@ -59,6 +59,7 @@ export const EvervaultCard = ({
               height={176} 
               className="w-full h-full rounded-full object-cover" 
               priority={true}
+              unoptimized={true}
             />
           </div>
         </div>
