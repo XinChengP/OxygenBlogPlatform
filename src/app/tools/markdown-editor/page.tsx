@@ -17,34 +17,7 @@ const MarkdownEditor = dynamic(() => import('@/components/tools/MarkdownEditor')
   )
 });
 
-const testContent = `# 欢迎使用 Markdown 编辑器
-
-这是一个简洁的示例文档，展示编辑器的代码高亮功能。
-
-## 代码示例
-
-\`\`\`javascript
-// 简单的异步函数
-async function fetchData() {
-  const response = await fetch('/api/data');
-  return response.json();
-}
-\`\`\`
-
-\`\`\`python
-# 基础函数示例
-def greet(name):
-    return f"Hello, {name}!"
-\`\`\`
-
-\`\`\`css
-/* 简单的样式 */
-.text-center {
-  text-align: center;
-}
-\`\`\`
-
-开始编写你的内容吧！`;
+const testContent = ``;
 
 export default function MarkdownEditorPage() {
   const { resolvedTheme } = useTheme();
@@ -97,8 +70,8 @@ export default function MarkdownEditorPage() {
         >
           <MarkdownEditor 
             initialContent={testContent}
-            height="800px"
-            blogMode={false}
+            height="600px"
+            blogMode={true}
           />
         </motion.div>
         

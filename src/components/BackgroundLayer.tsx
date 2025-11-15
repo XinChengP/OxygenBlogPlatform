@@ -45,7 +45,7 @@ export default function BackgroundLayer() {
         height: '100vh',
         zIndex: -50,
         backgroundImage: isDark 
-          ? `linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url("${fullImagePath}")`
+          ? `linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)), url("${fullImagePath}")`
           : `url("${fullImagePath}")`,
         backgroundSize: backgroundMode === 'cover' ? 'cover' : backgroundMode === 'contain' ? 'contain' : 'cover',
         backgroundPosition: 'center center',

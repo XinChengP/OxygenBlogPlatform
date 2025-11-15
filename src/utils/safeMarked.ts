@@ -93,8 +93,8 @@ export async function safeMarkdownToHtml(markdown: string): Promise<string> {
       </div>`;
     });
     
-    // 处理行内代码样式 - 增强的视觉样式
-    html = html.replace(/<code>(.*?)<\/code>/g, '<code class="px-2 py-1 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-300 rounded-md text-sm font-mono border border-yellow-200 dark:border-yellow-700 shadow-sm hover:shadow-md transition-all duration-200">$1</code>');
+    // 处理行内代码样式 - 简洁的视觉样式
+    html = html.replace(/<code>(.*?)<\/code>/g, '<code class="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-md text-sm font-mono border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200">$1</code>');
     
     return html;
   } catch (error) {
@@ -163,9 +163,9 @@ function fallbackMarkdownToHtml(markdown: string): string {
     html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
     html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
     
-    // 行内代码（不在代码块内的）- 增强的视觉样式
+    // 行内代码（不在代码块内的）- 简洁的视觉样式
     html = html.replace(/`(.*?)`/g, (match, code) => {
-      return `<code class="px-2 py-1 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-300 rounded-md text-sm font-mono border border-yellow-200 dark:border-yellow-700 shadow-sm hover:shadow-md transition-all duration-200">${code}</code>`;
+      return `<code class="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-md text-sm font-mono border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200">${code}</code>`;
     });
     
     // 链接

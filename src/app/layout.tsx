@@ -121,7 +121,6 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased text-foreground transition-colors duration-300`}
         style={{
           colorScheme: 'light dark',
-          backgroundColor: 'hsl(var(--background))',
         }}
       >
         <ThemeProvider

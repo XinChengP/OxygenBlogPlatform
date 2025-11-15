@@ -27,6 +27,17 @@ interface BlogMetadata {
   tags: string[];
   excerpt: string;
   readTime: number;
+  author: string;
+  slug: string;
+  coverImage: string;
+  draft: boolean;
+  featured: boolean;
+  series: string;
+  seriesOrder: number;
+  language: string;
+  canonicalUrl: string;
+  seoTitle: string;
+  seoDescription: string;
 }
 
 interface ToolbarButtonProps {
@@ -126,9 +137,13 @@ export default function MarkdownEditor({
   const [selectedText, setSelectedText] = useState('');
   const [selectionStart, setSelectionStart] = useState(0);
   const [selectionEnd, setSelectionEnd] = useState(0);
-  const [copied, setCopied] = useState(false);
+
   const [saved, setSaved] = useState(false);
   const [renderTrigger, setRenderTrigger] = useState(0); // 用于强制重新渲染
+  
+  // 撤销历史记录
+  const [history, setHistory] = useState<string[]>([initialContent]);
+  const [historyIndex, setHistoryIndex] = useState<number>(0);
   
   // 博客模式状态
   const [blogMetadata, setBlogMetadata] = useState<BlogMetadata>({
@@ -137,10 +152,24 @@ export default function MarkdownEditor({
     category: '技术',
     tags: [],
     excerpt: '',
-    readTime: 0
+    readTime: 0,
+    author: '歆橙',
+    slug: '',
+    coverImage: '',
+    draft: false,
+    featured: false,
+    series: '',
+    seriesOrder: 1,
+    language: 'zh-CN',
+    canonicalUrl: '',
+    seoTitle: '',
+    seoDescription: ''
   });
   const [newTag, setNewTag] = useState('');
   const [showMetadataPanel, setShowMetadataPanel] = useState(false);
+  const [showCustomMetadataDialog, setShowCustomMetadataDialog] = useState(false);
+  const [tempMetadata, setTempMetadata] = useState<BlogMetadata>(blogMetadata);
+  const [showAdvancedMetadata, setShowAdvancedMetadata] = useState(false);
   
   const isDark = resolvedTheme === 'dark';
 
@@ -150,10 +179,43 @@ export default function MarkdownEditor({
     setWordCount(words.length);
     setCharCount(content.length);
     
-    // 计算阅读时间（按每分钟200字计算）
-    const readTime = Math.ceil(words.length / 200) || 1;
+    // 计算阅读时间（按每分钟500字计算）
+    const readTime = Math.ceil(words.length / 500) || 1;
     setBlogMetadata(prev => ({ ...prev, readTime }));
   }, [content]);
+
+  // 撤销功能
+  const undo = useCallback(() => {
+    if (historyIndex > 0) {
+      const newIndex = historyIndex - 1;
+      setHistoryIndex(newIndex);
+      setContent(history[newIndex]);
+    }
+  }, [history, historyIndex]);
+
+  // 重做功能
+  const redo = useCallback(() => {
+    if (historyIndex < history.length - 1) {
+      const newIndex = historyIndex + 1;
+      setHistoryIndex(newIndex);
+      setContent(history[newIndex]);
+    }
+  }, [history, historyIndex]);
+
+  // 添加到历史记录
+  const addToHistory = useCallback((newContent: string) => {
+    // 移除当前索引之后的历史记录
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push(newContent);
+    
+    // 限制历史记录数量（最多50步）
+    if (newHistory.length > 50) {
+      newHistory.shift();
+    }
+    
+    setHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
+  }, [history, historyIndex]);
 
   // 复制代码功能
   const copyToClipboard = (code: string) => {
@@ -420,13 +482,21 @@ export default function MarkdownEditor({
             e.preventDefault();
             insertText('[', '](url)');
             break;
+          case 'z':
+            e.preventDefault();
+            undo();
+            break;
+          case 'y':
+            e.preventDefault();
+            redo();
+            break;
         }
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [content]);
+  }, [content, undo, redo]);
 
   // 监听文本选择
   const handleTextSelection = () => {
@@ -454,13 +524,14 @@ export default function MarkdownEditor({
     
     const newContent = content.substring(0, start) + newText + content.substring(end);
     setContent(newContent);
+    addToHistory(newContent); // 添加到历史记录
     
     // 设置光标位置
     setTimeout(() => {
       textarea.focus();
       textarea.setSelectionRange(start + before.length, start + before.length + selectedText.length);
     }, 0);
-  }, [content]);
+  }, [content, addToHistory]);
 
   // 智能格式化选中文本
   const formatSelectedText = (before: string, after: string = '') => {
@@ -470,6 +541,7 @@ export default function MarkdownEditor({
                         before + selectedText + after + 
                         content.substring(selectionEnd);
       setContent(newContent);
+      addToHistory(newContent); // 添加到历史记录
     } else {
       // 如果没有选中文本，使用原来的插入逻辑
       insertText(before, after);
@@ -479,35 +551,58 @@ export default function MarkdownEditor({
   // 工具栏操作 - 按功能分组
   const toolbarActions = {
     format: [
-      { icon: 'H1', title: '一级标题', action: () => formatSelectedText('# ', '') },
-      { icon: 'H2', title: '二级标题', action: () => formatSelectedText('## ', '') },
-      { icon: 'H3', title: '三级标题', action: () => formatSelectedText('### ', '') },
+      { icon: 'H1', title: '一级标题', action: () => handleToolbarAction('# ', '') },
+      { icon: 'H2', title: '二级标题', action: () => handleToolbarAction('## ', '') },
+      { icon: 'H3', title: '三级标题', action: () => handleToolbarAction('### ', '') },
     ],
     text: [
-      { icon: 'B', title: '粗体', action: () => formatSelectedText('**', '**') },
-      { icon: 'I', title: '斜体', action: () => formatSelectedText('*', '*') },
-      { icon: 'U', title: '下划线', action: () => formatSelectedText('<u>', '</u>') },
-      { icon: 'S', title: '删除线', action: () => formatSelectedText('~~', '~~') },
+      { icon: 'B', title: '粗体', action: () => handleToolbarAction('**', '**') },
+      { icon: 'I', title: '斜体', action: () => handleToolbarAction('*', '*') },
+      { icon: 'U', title: '下划线', action: () => handleToolbarAction('<u>', '</u>') },
+      { icon: 'S', title: '删除线', action: () => handleToolbarAction('~~', '~~') },
     ],
     code: [
-      { icon: '</>', title: '行内代码', action: () => formatSelectedText('`', '`') },
-      { icon: '{ }', title: '代码块', action: () => formatSelectedText('```\n', '\n```') },
+      { icon: '</>', title: '行内代码', action: () => handleToolbarAction('`', '`') },
+      { icon: '{ }', title: '代码块', action: () => handleToolbarAction('```\n', '\n```') },
     ],
     list: [
-      { icon: '•', title: '无序列表', action: () => formatSelectedText('- ', '') },
-      { icon: '1.', title: '有序列表', action: () => formatSelectedText('1. ', '') },
-      { icon: '☐', title: '任务列表', action: () => formatSelectedText('- [ ] ', '') },
-      { icon: '> ', title: '引用', action: () => formatSelectedText('> ', '') },
+      { icon: '•', title: '无序列表', action: () => handleToolbarAction('- ', '') },
+      { icon: '1.', title: '有序列表', action: () => handleToolbarAction('1. ', '') },
+      { icon: '☐', title: '任务列表', action: () => handleToolbarAction('- [ ] ', '') },
+      { icon: '> ', title: '引用', action: () => handleToolbarAction('> ', '') },
     ],
     media: [
-      { icon: '🔗', title: '链接', action: () => formatSelectedText('[', '](url)') },
-      { icon: '🖼️', title: '图片', action: () => formatSelectedText('![', '](image-url)') },
+      { icon: '🔗', title: '链接', action: () => handleToolbarAction('[', '](url)') },
+      { icon: '🖼️', title: '图片', action: () => handleToolbarAction('![', '](image-url)') },
     ],
     table: [
-      { icon: '⊞', title: '表格', action: () => formatSelectedText('\n| 标题1 | 标题2 | 标题3 |\n|-------|-------|-------|\n| 内容1 | 内容2 | 内容3 |\n', '') },
-      { icon: '∥', title: '分割线', action: () => formatSelectedText('\n---\n', '') },
+      { icon: '⊞', title: '表格', action: () => handleToolbarAction('\n| 标题1 | 标题2 | 标题3 |\n|-------|-------|-------|\n| 内容1 | 内容2 | 内容3 |\n', '') },
+      { icon: '∥', title: '分割线', action: () => handleToolbarAction('\n---\n', '') },
     ]
   };
+
+  // 直接处理工具栏按钮点击，确保历史记录正确保存
+  const handleToolbarAction = (before: string, after: string = '') => {
+    const textarea = document.querySelector('textarea[name="markdown-content"]') as HTMLTextAreaElement;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = content.substring(start, end);
+    const newText = before + selectedText + after;
+    
+    const newContent = content.substring(0, start) + newText + content.substring(end);
+    setContent(newContent);
+    addToHistory(newContent); // 添加到历史记录
+    
+    // 设置光标位置
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + before.length, start + before.length + selectedText.length);
+    }, 0);
+  };
+
+
 
   // 渲染代码块组件
   const renderCodeBlocks = (html: string, codeBlocks: Array<{language: string, code: string, displayLanguage: string, id: string}>) => {
@@ -693,13 +788,6 @@ export default function MarkdownEditor({
             </div>
             <span class="text-sm font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide">${displayLanguage || '代码'}</span>
           </div>
-          <button class="copy-button inline-flex items-center justify-center rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105 bg-blue-500 hover:bg-blue-600 text-white shadow-sm hover:shadow-md px-4 py-2" title="复制代码">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 h-4 w-4">
-              <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
-              <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
-            </svg>
-            复制代码
-          </button>
         </div>
         <div class="p-6 bg-gray-50 dark:bg-gray-950">
           <pre class="text-sm leading-relaxed"><code>${cleanCode}</code></pre>
@@ -716,9 +804,9 @@ export default function MarkdownEditor({
     html = html.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-gray-900 dark:text-gray-100">$1</strong>');
     html = html.replace(/\*(.*?)\*/g, '<em class="italic text-gray-700 dark:text-gray-300">$1</em>');
     
-    // 行内代码（不在代码块内的）- 增强的视觉样式
+    // 行内代码（不在代码块内的）- 简洁的视觉样式
     html = html.replace(/`(.*?)`/g, (match, code) => {
-      return `<code class="px-2 py-1 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-300 rounded-md text-sm font-mono border border-yellow-200 dark:border-yellow-700 shadow-sm hover:shadow-md transition-all duration-200">${code}</code>`;
+      return `<code class="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-md text-sm font-mono border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200">${code}</code>`;
     });
     
     // 链接
@@ -765,6 +853,17 @@ category: "${blogMetadata.category}"
 tags: [${blogMetadata.tags.map(tag => `"${tag}"`).join(', ')}]
 excerpt: "${blogMetadata.excerpt || ''}"
 readTime: ${blogMetadata.readTime}
+author: "${blogMetadata.author}"
+slug: "${blogMetadata.slug}"
+coverImage: "${blogMetadata.coverImage}"
+draft: ${blogMetadata.draft}
+featured: ${blogMetadata.featured}
+series: "${blogMetadata.series}"
+seriesOrder: ${blogMetadata.seriesOrder}
+language: "${blogMetadata.language}"
+canonicalUrl: "${blogMetadata.canonicalUrl}"
+seoTitle: "${blogMetadata.seoTitle}"
+seoDescription: "${blogMetadata.seoDescription}"
 ---
 
 `;
@@ -791,287 +890,782 @@ readTime: ${blogMetadata.readTime}
     setTimeout(() => setSaved(false), 2000);
   };
 
-  // 处理复制
-  const handleCopy = () => {
-    navigator.clipboard.writeText(content);
+  // 一键生成博客元数据
+  const generateBlogMetadata = () => {
+    if (!content.trim()) {
+      alert('请先输入文章内容，以便生成相关元数据！');
+      return;
+    }
+
+    // 从内容中提取标签（查找 ## 标签 或 ### Tags 等标记）
+    const tagsMatch = content.match(/^(?:##|###)\s*(?:标签|Tags?|标签[:：])\s*\n?([\s\S]*?)(?=^#|\n#|$)/im);
+    let extractedTags: string[] = [];
     
-    // 显示复制成功反馈
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (tagsMatch) {
+      // 提取标签内容并分割
+      const tagsContent = tagsMatch[1].trim();
+      extractedTags = tagsContent
+        .split(/[,，\s]+/) // 按逗号、空格分割
+        .map(tag => tag.trim().replace(/^-|^\*|^\d+\.\s*/, '')) // 移除列表标记
+        .filter(tag => tag.length > 0 && tag.length <= 20) // 过滤空标签和过长的标签
+        .slice(0, 5); // 最多5个标签
+    }
+
+    // 生成URL标识
+    const generateSlug = (title: string) => {
+      return title
+        .toLowerCase()
+        .replace(/[^\u4e00-\u9fa5a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .substring(0, 50);
+    };
+
+    // 准备临时元数据用于编辑 - 标题和摘要默认为空，分类默认为"洛佬"
+    const generatedMetadata = {
+      ...blogMetadata,
+      title: '', // 标题默认为空
+      excerpt: '', // 摘要默认为空
+      tags: extractedTags.length > 0 ? extractedTags : blogMetadata.tags,
+      category: '洛佬', // 分类默认为"洛佬"
+      date: blogMetadata.date || new Date().toISOString().split('T')[0],
+      readTime: Math.max(1, Math.ceil(wordCount / 500)),
+      author: blogMetadata.author || '歆橙',
+      slug: blogMetadata.slug || generateSlug(blogMetadata.title || '未命名文章'),
+      coverImage: blogMetadata.coverImage || '',
+      draft: blogMetadata.draft || false,
+      featured: blogMetadata.featured || false,
+      series: blogMetadata.series || '',
+      seriesOrder: blogMetadata.seriesOrder || 1,
+      language: blogMetadata.language || 'zh-CN',
+      canonicalUrl: blogMetadata.canonicalUrl || '',
+      seoTitle: blogMetadata.seoTitle || '',
+      seoDescription: blogMetadata.seoDescription || ''
+    };
+
+    // 设置临时元数据并显示自定义对话框
+    setTempMetadata(generatedMetadata);
+    setShowCustomMetadataDialog(true);
   };
+
+  // 处理发布到项目
+  const handlePublish = () => {
+    if (!blogMode) {
+      alert('发布功能仅在博客模式下可用');
+      return;
+    }
+
+    if (!blogMetadata.title.trim()) {
+      alert('请输入文章标题');
+      return;
+    }
+
+    if (!blogMetadata.excerpt.trim()) {
+      alert('请输入文章摘要');
+      return;
+    }
+
+    if (!content.trim()) {
+      alert('请输入文章内容');
+      return;
+    }
+
+    try {
+      // 生成符合项目规范的Markdown内容
+      const frontMatter = `---
+title: "${blogMetadata.title}"
+date: "${blogMetadata.date}"
+category: "${blogMetadata.category}"
+tags: [${blogMetadata.tags.map(tag => `"${tag}"`).join(', ')}]
+excerpt: "${blogMetadata.excerpt}"
+readTime: ${blogMetadata.readTime}
+author: "${blogMetadata.author}"
+slug: "${blogMetadata.slug}"
+coverImage: "${blogMetadata.coverImage}"
+draft: ${blogMetadata.draft}
+featured: ${blogMetadata.featured}
+series: "${blogMetadata.series}"
+seriesOrder: ${blogMetadata.seriesOrder}
+language: "${blogMetadata.language}"
+canonicalUrl: "${blogMetadata.canonicalUrl}"
+seoTitle: "${blogMetadata.seoTitle}"
+seoDescription: "${blogMetadata.seoDescription}"
+---
+
+`;
+      
+      const fullContent = frontMatter + content;
+      
+      // 生成文件名（基于标题，转换为安全的文件名）
+      const safeFileName = blogMetadata.title
+        .replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '')
+        .toLowerCase() || 'blog-post';
+      
+      const fileName = `${safeFileName}.md`;
+      
+      // 创建下载链接
+      const blob = new Blob([fullContent], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      // 显示发布成功信息
+      alert(`文章已成功生成！\n文件名：${fileName}\n请将文件保存到 src/content/blogs 目录中`);
+      
+    } catch (error) {
+      console.error('发布失败:', error);
+      alert('发布失败，请检查控制台错误信息');
+    }
+  };
+
+
 
   // 清空内容
   const handleClear = () => {
     if (confirm('确定要清空所有内容吗？')) {
+      addToHistory(content); // 清空前记录当前状态
       setContent('');
+      addToHistory(''); // 记录清空后的状态
     }
   };
 
   // 加载示例内容
   const loadSample = () => {
+    addToHistory(content); // 加载示例前记录当前状态
     const sampleContent = blogMode ? getBlogTemplate() : getBasicTemplate();
     setContent(sampleContent);
+    addToHistory(sampleContent); // 记录加载后的状态
     // 立即强制重新渲染以确保样式正确应用
     setRenderTrigger(prev => prev + 1);
   };
   
   // 基础模板
   const getBasicTemplate = () => {
-    return `# 🚀 Markdown 编辑器示例
+    return `# Markdown 编辑器
 
-欢迎使用现代化的 **Markdown 编辑器**！这个编辑器专为开发者和技术写作者设计。
+欢迎使用 **Markdown 编辑器**！
 
-## ✨ 核心功能
+## 功能特性
 
-- **🎯 实时预览** - 所见即所得的编辑体验
-- **🤖 智能格式化** - 选中文本自动应用Markdown格式
-- **⌨️ 快捷键支持** - 高效的键盘操作（Ctrl+B 粗体，Ctrl+I 斜体）
-- **💾 自动保存** - 内容实时保存到浏览器本地存储
-- **🌓 主题适配** - 代码块背景色智能适配明暗主题
-- **📊 文档统计** - 实时显示字数、字符数和预计阅读时间
+- ✅ 实时预览
+- ✅ 智能格式化
+- ✅ 快捷键支持
+- ✅ 主题适配
 
-## 📝 代码示例展示
+## 代码示例
 
-### JavaScript - 异步编程示例
-
-\`\`\`javascript
-// 现代异步编程示例
-async function fetchData(url) {
-  try {
-    const response = await fetch(url);
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('获取数据失败:', error);
-  }
-}
-
-// 使用示例
-fetchData('https://api.example.com/users')
-  .then(data => console.log('用户数据:', data));
+### JavaScript
+\`\`\`js
+const message = "Hello World";
+console.log(message);
 \`\`\`
 
-### Python - 数据处理示例
-
+### Python
 \`\`\`python
-import json
-from datetime import datetime
-
-# 博客文章类
-class BlogPost:
-    def __init__(self, title, content, author):
-        self.title = title
-        self.content = content
-        self.author = author
-        self.created_at = datetime.now()
-        self.published = False
-    
-    def publish(self):
-        self.published = True
-        return f"文章 '{self.title}' 已发布"
-
-# 使用示例
-post = BlogPost("Python 编程指南", "本文介绍Python基础...", "张三")
-print(post.publish())
+message = "Hello World"
+print(message)
 \`\`\`
 
-### CSS - 现代布局示例
-
-\`\`\`css
-/* 响应式卡片布局 */
-.card-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1.5rem;
-  padding: 2rem;
-}
-
-.card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 12px;
-  padding: 2rem;
-  color: white;
-  transition: transform 0.3s ease;
-}
-
-.card:hover {
-  transform: translateY(-5px);
-}
+### HTML
+\`\`\`html
+<button>点击我</button>
 \`\`\`
 
-## 📋 快速开始清单
-
-1. **基础操作**
-   - [x] 编写Markdown文本
-   - [x] 使用工具栏格式化
-   - [ ] 学习快捷键操作
-
-2. **高级功能**
-   - [x] 插入代码块
-   - [x] 创建任务列表
-   - [ ] 使用引用和表格
-
-3. **导出和分享**
-   - [ ] 复制HTML代码
-   - [ ] 下载Markdown文件
-   - [ ] 分享文档链接
-
-### 技术栈概览
-
-- **前端框架**: React 19 + Next.js 15
-- **样式方案**: Tailwind CSS 4 + CSS Variables
-- **代码高亮**: Highlight.js
-- **图标库**: Heroicons + Lucide React
-- **动画库**: Framer Motion
-
-## 🔗 相关链接
-
-- [React 官方文档](https://react.dev/)
-- [Next.js 文档](https://nextjs.org/docs)
-- [Tailwind CSS](https://tailwindcss.com/)
-- [Markdown 语法指南](https://www.markdownguide.org/)
+| 功能 | 状态 |
+|------|------|
+| 编辑 | ✅ |
+| 预览 | ✅ |
 
 ---
 
-> **🎯 开始使用**: 现在你已经了解了Markdown编辑器的基本功能，开始创作你的技术文档吧！记得利用左侧的工具栏和快捷键来提高写作效率。`;
+> 开始创作你的技术文档吧！`;
   };
   
   // 博客模板
   const getBlogTemplate = () => {
-    return `# 📝 文章标题
+    return `# 文章标题
 
-> **摘要**：在这里写文章的摘要，简要介绍文章的核心内容和价值，吸引读者继续阅读。
+> **摘要**：
 
-## 🎯 引言
+> **关键词**：
 
-在这里写文章的背景信息，说明：
-- **为什么这个话题重要？**
-- **目标读者是谁？**
-- **阅读本文能收获什么？**
+---
 
-## 📚 背景知识
+## 引言
 
-### 相关概念解释
 
-在深入主题之前，先介绍一些必要的背景知识：
+## 核心内容
 
-**关键概念1**：解释这个概念是什么，为什么重要。
+### 第一部分
 
-**关键概念2**：解释这个概念是什么，如何与主题相关。
 
-### 现状分析
+### 第二部分
 
-当前在这个领域存在什么问题或挑战？现有的解决方案有什么局限性？
 
-## 🚀 核心内容
+## 总结
 
-### 💡 解决方案概述
 
-详细介绍你的解决方案或观点：
+### 🏷️ 推荐标签
+示例标签1, 示例标签2, 示例标签3
 
-#### 第一步：问题分析
-- 详细描述问题的本质
-- 分析问题产生的原因
-- 明确解决的目标和范围
-
-#### 第二步：方案设计
-- 阐述解决方案的设计思路
-- 说明选择这种方案的理由
-- 对比不同方案的优缺点
-
-#### 第三步：具体实现
-
-\`\`\`javascript
-// 这里可以放具体的代码实现
-// 确保代码有良好的注释和错误处理
-function implementSolution(params) {
-  try {
-    // 参数验证
-    if (!params || !params.isValid()) {
-      throw new Error('参数验证失败');
-    }
-    
-    // 核心逻辑
-    const result = processData(params);
-    
-    // 结果验证
-    return validateResult(result);
-  } catch (error) {
-    console.error('实现过程出错:', error);
-    throw error;
+### 📅 发布建议
+- **最佳时间**：周二至周四的上午 10-12 点
+  pages: {
+    signIn: '/login',
+    signUp: '/register'
   }
 }
 \`\`\`
 
-### 📊 效果验证
+### 📊 性能优化策略
 
-展示解决方案的效果：
+#### 数据获取优化
 
-#### 性能对比
-| 指标 | 优化前 | 优化后 | 提升 |
-|------|--------|--------|------|
-| 响应时间 | 500ms | 200ms | 60% |
-| 内存占用 | 100MB | 60MB | 40% |
-| 并发处理 | 100 | 500 | 400% |
+使用 Server Components 和缓存策略：
 
-#### 用户反馈
-> "这个解决方案真的解决了我们的痛点，使用起来非常流畅！"
+\`\`\`typescript
+// app/posts/[id]/page.tsx
+import { prisma } from '@/lib/db'
+import { notFound } from 'next/navigation'
+import { cache } from 'react'
+
+// 缓存数据获取函数
+const getPost = cache(async (id: string) => {
+  const post = await prisma.post.findUnique({
+    where: { id },
+    include: {
+      author: {
+        select: { name: true, email: true }
+      },
+      comments: {
+        include: {
+          author: {
+            select: { name: true }
+          }
+        },
+        orderBy: { createdAt: 'desc' }
+      }
+    }
+  })
+  
+  return post
+})
+
+export default async function PostPage({ 
+  params 
+}: { 
+  params: { id: string } 
+}) {
+  const post = await getPost(params.id)
+  
+  if (!post) {
+    notFound()
+  }
+  
+  return (
+    <article className="max-w-4xl mx-auto p-6">
+      <h1 className="text-4xl font-bold mb-4">{post.title}</h1>
+      <div className="text-gray-600 mb-8">
+        作者: {post.author.name} | 发布时间: {new Date(post.createdAt).toLocaleDateString()}
+      </div>
+      <div className="prose prose-lg">{post.content}</div>
+      
+      <section className="mt-12">
+        <h2 className="text-2xl font-bold mb-4">评论</h2>
+        <CommentList comments={post.comments} />
+      </section>
+    </article>
+  )
+}
+\`\`\`
+
+#### 图片优化
+
+使用 Next.js Image 组件优化图片加载：
+
+\`\`\`typescript
+// components/OptimizedImage.tsx
+import Image from 'next/image'
+import { getImageUrl } from '@/lib/utils'
+
+interface OptimizedImageProps {
+  src: string
+  alt: string
+  width?: number
+  height?: number
+  className?: string
+  priority?: boolean
+}
+
+### 🛡️ 错误处理与监控
+
+#### 错误边界实现
+
+创建错误边界组件处理运行时错误：
+
+\`\`\`typescript
+// components/error-boundary.tsx
+'use client'
+
+import { Component, ErrorInfo, ReactNode } from 'react'
+
+interface Props {
+  children: ReactNode
+  fallback?: ReactNode
+}
+
+interface State {
+  hasError: boolean
+  error: Error | null
+}
+
+export class ErrorBoundary extends Component<Props, State> {
+  constructor(props: Props) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+
+  static getDerivedStateFromError(error: Error): State {
+    return { hasError: true, error }
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('Error caught by boundary:', error, errorInfo)
+    // 这里可以发送错误到监控服务
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback || (
+        <div className="flex flex-col items-center justify-center min-h-[400px] p-8">
+          <div className="text-red-500 text-6xl mb-4">⚠️</div>
+          <h2 className="text-2xl font-bold mb-2">出错了</h2>
+          <p className="text-gray-600 mb-4">
+            {this.state.error?.message || '发生了未知错误'}
+          </p>
+          <button
+            onClick={() => this.setState({ hasError: false, error: null })}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            重试
+          </button>
+        </div>
+      )
+    }
+
+    return this.props.children
+  }
+}
+\`\`\`
+
+## 📊 效果验证
+
+### 性能对比测试
+
+通过实际项目测试，Next.js 15 相比前一版本在多个维度都有显著提升：
+
+#### 核心性能指标
+| 指标 | Next.js 14 | Next.js 15 | 提升幅度 |
+|------|------------|------------|----------|
+| 首屏加载时间 | 1.2s | 0.8s | **33% ↓** |
+| 交互就绪时间 | 2.1s | 1.4s | **33% ↓** |
+| JS 包大小 | 85KB | 65KB | **24% ↓** |
+| 构建时间 | 45s | 32s | **29% ↓** |
+| Lighthouse 评分 | 92 | 98 | **6% ↑** |
+
+#### 用户体验指标
+- **Largest Contentful Paint (LCP)**: 从 1.8s 优化到 1.2s
+- **First Input Delay (FID)**: 保持在 16ms 的优秀水平
+- **Cumulative Layout Shift (CLS)**: 从 0.08 优化到 0.03
+
+### 开发者体验提升
+
+> "Next.js 15 的开发体验真的太棒了！热更新速度明显提升，错误提示更加友好，特别是新的调试工具让我们能够快速定位和解决问题。"
 > 
-> —— 某用户反馈
+> —— 某大型互联网公司前端架构师
 
-## 🛠️ 最佳实践
+> "Server Components 的性能表现超出预期，我们的页面加载速度提升了 40%，同时 SEO 效果也有显著改善。"
+> 
+> —— 某电商平台技术负责人
 
-### ✅ 推荐做法
-1. **遵循设计原则**：保持代码简洁、可读、可维护
-2. **注重性能优化**：合理使用缓存、避免不必要的计算
-3. **做好错误处理**：完善的异常捕获和友好的错误提示
-4. **编写单元测试**：确保代码质量和功能稳定性
+## 🛠️ 最佳实践总结
 
-### ❌ 常见误区
-- **过度优化**：不要为了微小的性能提升而牺牲代码可读性
-- **忽视边界情况**：要考虑各种异常输入和使用场景
-- **缺乏文档**：好的代码需要配合好的文档才能发挥最大价值
+### ✅ 强烈推荐
+1. **采用 App Router**：新特性只有在 App Router 中才能完全发挥优势
+2. **合理使用 Server Components**：默认使用服务端组件，只在需要客户端交互时使用 Client Components
+3. **优化数据获取**：使用缓存和增量静态再生成策略
+4. **重视类型安全**：充分利用 TypeScript 和 Zod 等工具
+5. **建立监控体系**：集成 Sentry、LogRocket 等监控工具
 
-## 🔮 进阶思考
+### ❌ 常见陷阱
+- **过度使用 Client Components**：这会失去服务端渲染的优势
+- **忽视错误处理**：生产环境中一定要有完善的错误边界
+- **忽略性能监控**：性能问题往往在生产环境才暴露
+- **数据库查询优化不足**：N+1 查询问题在服务端渲染中影响更大
 
-### 未来展望
-- 这个领域未来可能的发展方向
-- 还可以进一步优化和改进的地方
-- 与其他技术的结合可能性
+## 🔮 未来发展趋势
 
-### 相关资源推荐
-- [相关技术文档链接]
-- [优秀的开源项目推荐]
-- [进一步学习的资料]
+### 技术演进方向
+- **边缘计算集成**：Next.js 与边缘计算平台的深度整合
+- **AI 辅助开发**：智能化的代码生成和优化建议
+- **微前端支持**：更好的大型应用架构支持
+- **WebAssembly 集成**：利用 WASM 提升计算密集型任务性能
+
+### 生态系统展望
+- **更多数据库适配器**：Prisma、Drizzle ORM 的深度集成
+- **云服务集成**：Vercel、Netlify、AWS 等平台的原生支持
+- **开发工具完善**：更强大的调试、测试、部署工具链
 
 ## 📖 总结
 
 ### 核心要点回顾
-1. **问题本质**：明确了要解决的核心问题是什么
-2. **解决思路**：提出了系统性的解决方案
-3. **具体实现**：通过代码展示了完整的实现过程
-4. **效果验证**：通过数据和用户反馈证明了方案的有效性
+1. **技术选型**：Next.js 15 + React 19 提供了强大的全栈开发能力
+2. **架构设计**：合理规划项目结构，分离关注点
+3. **性能优化**：从多个维度提升应用性能和用户体验
+4. **最佳实践**：遵循推荐的模式，避免常见陷阱
 
 ### 行动建议
-- 立即尝试实现文中提到的解决方案
-- 根据你的具体需求进行定制化调整
-- 持续关注这个领域的最新发展动态
+- **立即开始**：使用本文提供的模板和最佳实践开始你的 Next.js 15 项目
+- **持续学习**：关注官方文档和社区动态，及时了解新特性
+- **实践验证**：在实际项目中验证这些最佳实践的效果
+- **分享经验**：将你的经验分享给社区，共同推进技术进步
 
 ---
 
-> **💡 温馨提示**：
-> - 记得在左侧元数据面板填写完整的文章信息
-> - 为文章添加合适的标签，方便读者搜索
-> - 检查文章的语法和格式是否正确
-> - 考虑添加相关的图片或图表来增强可读性
+> **💡 开发小贴士**：
+> - 使用 \`next dev --turbo\` 启用 Turbopack 加速开发
+> - 配置 \`experimental.optimizeCss\` 优化生产环境 CSS
+> - 利用 \`@next/bundle-analyzer\` 分析包大小
+> - 设置 \`images.domains\` 优化图片加载
 
 ### 🏷️ 推荐标签
-技术教程, 最佳实践, 代码优化, 用户体验
+Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, App Router
 
 ### 📅 发布建议
-选择合适的时间发布，通常在工作日的上午9-11点或下午2-4点阅读量较高。`;
+- **最佳时间**：周二至周四的上午 10-12 点
+- **预热策略**：提前在社交媒体分享关键观点
+- **互动跟进**：发布后及时回复评论，与读者互动
+- **后续更新**：根据读者反馈持续完善内容`;
   };
   
+  // 渲染自定义元数据对话框
+  const renderCustomMetadataDialog = () => {
+    if (!showCustomMetadataDialog) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black/20 dark:bg-gray-900/20 backdrop-blur-md flex items-center justify-center z-50">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            ✨ 自定义博客元数据
+          </h3>
+          
+          <div className="space-y-4">
+            {/* 基础元数据 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* 标题 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  文章标题
+                </label>
+                <input
+                  type="text"
+                  value={tempMetadata.title}
+                  onChange={(e) => setTempMetadata(prev => ({ ...prev, title: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  placeholder="输入文章标题"
+                />
+              </div>
+              
+              {/* 作者 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  作者
+                </label>
+                <input
+                  type="text"
+                  value={tempMetadata.author}
+                  onChange={(e) => setTempMetadata(prev => ({ ...prev, author: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  placeholder="作者名称"
+                />
+              </div>
+              
+              {/* 分类 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  分类
+                </label>
+                <select
+                  value={tempMetadata.category}
+                  onChange={(e) => setTempMetadata(prev => ({ ...prev, category: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                >
+                  {categories.map(category => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+              </div>
+              
+              {/* 日期 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  发布日期
+                </label>
+                <input
+                  type="date"
+                  value={tempMetadata.date}
+                  onChange={(e) => setTempMetadata(prev => ({ ...prev, date: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                />
+              </div>
+              
+              {/* 语言 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  语言
+                </label>
+                <select
+                  value={tempMetadata.language}
+                  onChange={(e) => setTempMetadata(prev => ({ ...prev, language: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                >
+                  <option value="zh-CN">简体中文</option>
+                  <option value="zh-TW">繁體中文</option>
+                  <option value="en-US">English</option>
+                  <option value="ja-JP">日本語</option>
+                </select>
+              </div>
+              
+              {/* 系列 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  系列名称
+                </label>
+                <input
+                  type="text"
+                  value={tempMetadata.series}
+                  onChange={(e) => setTempMetadata(prev => ({ ...prev, series: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  placeholder="系列文章名称（可选）"
+                />
+              </div>
+            </div>
+            
+            {/* 标签 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                标签 (用逗号分隔)
+              </label>
+              <input
+                type="text"
+                value={tempMetadata.tags.join(', ')}
+                onChange={(e) => {
+                  const tags = e.target.value.split(/[,，\s]+/).map(tag => tag.trim()).filter(tag => tag.length > 0);
+                  setTempMetadata(prev => ({ ...prev, tags: tags.slice(0, 5) }));
+                }}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                placeholder="例如: Next.js, React, 前端开发"
+              />
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                最多5个标签，当前: {tempMetadata.tags.length}
+              </p>
+            </div>
+            
+            {/* 摘要 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                文章摘要
+              </label>
+              <textarea
+                value={tempMetadata.excerpt}
+                onChange={(e) => setTempMetadata(prev => ({ ...prev, excerpt: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                rows={3}
+                placeholder="输入文章摘要"
+                maxLength={200}
+              />
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                {tempMetadata.excerpt.length}/200 字符
+              </p>
+            </div>
+            
+            {/* 高级元数据切换 */}
+            <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => setShowAdvancedMetadata(!showAdvancedMetadata)}
+                className="flex items-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+              >
+                {showAdvancedMetadata ? '收起高级设置' : '展开高级设置'}
+                <svg 
+                  className={`ml-1 w-4 h-4 transform transition-transform ${showAdvancedMetadata ? 'rotate-180' : ''}`}
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            </div>
+            
+            {/* 高级元数据 */}
+            {showAdvancedMetadata && (
+              <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* 草稿状态 */}
+                  <div>
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={tempMetadata.draft}
+                        onChange={(e) => setTempMetadata(prev => ({ ...prev, draft: e.target.checked }))}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        草稿状态
+                      </span>
+                    </label>
+                  </div>
+                  
+                  {/* 特色文章 */}
+                  <div>
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={tempMetadata.featured}
+                        onChange={(e) => setTempMetadata(prev => ({ ...prev, featured: e.target.checked }))}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        特色文章
+                      </span>
+                    </label>
+                  </div>
+                  
+                  {/* 系列顺序 */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      系列顺序
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={tempMetadata.seriesOrder}
+                      onChange={(e) => setTempMetadata(prev => ({ ...prev, seriesOrder: parseInt(e.target.value) || 1 }))}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      placeholder="1"
+                    />
+                  </div>
+                  
+                  {/* 封面图片 */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      封面图片
+                    </label>
+                    <input
+                      type="url"
+                      value={tempMetadata.coverImage}
+                      onChange={(e) => setTempMetadata(prev => ({ ...prev, coverImage: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      placeholder="https://example.com/image.jpg"
+                    />
+                  </div>
+                  
+                  {/* 规范URL */}
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      规范URL
+                    </label>
+                    <input
+                      type="url"
+                      value={tempMetadata.canonicalUrl}
+                      onChange={(e) => setTempMetadata(prev => ({ ...prev, canonicalUrl: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      placeholder="https://example.com/original-post"
+                    />
+                  </div>
+                  
+                  {/* SEO标题 */}
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      SEO标题
+                    </label>
+                    <input
+                      type="text"
+                      value={tempMetadata.seoTitle}
+                      onChange={(e) => setTempMetadata(prev => ({ ...prev, seoTitle: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      placeholder="优化搜索引擎显示的标题（可选）"
+                    />
+                  </div>
+                  
+                  {/* SEO描述 */}
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      SEO描述
+                    </label>
+                    <textarea
+                      value={tempMetadata.seoDescription}
+                      onChange={(e) => setTempMetadata(prev => ({ ...prev, seoDescription: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      rows={2}
+                      placeholder="优化搜索引擎显示的描述（可选）"
+                      maxLength={160}
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      {tempMetadata.seoDescription.length}/160 字符
+                    </p>
+                  </div>
+                  
+                  {/* URL标识 */}
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      URL标识
+                    </label>
+                    <input
+                      type="text"
+                      value={tempMetadata.slug}
+                      onChange={(e) => setTempMetadata(prev => ({ ...prev, slug: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      placeholder="文章URL的自定义标识（可选）"
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      留空将自动生成基于标题的标识
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* 按钮组 */}
+          <div className="flex space-x-3 mt-6">
+            <button
+              onClick={() => {
+                setBlogMetadata(tempMetadata);
+                setShowCustomMetadataDialog(false);
+              }}
+              className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors text-sm font-medium"
+            >
+              应用更改
+            </button>
+            <button
+              onClick={() => setShowCustomMetadataDialog(false)}
+              className="flex-1 px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors text-sm font-medium"
+            >
+              取消
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // 渲染博客元数据面板
   const renderBlogMetadataPanel = () => {
     if (!blogMode) return null;
@@ -1179,10 +1773,199 @@ function implementSolution(params) {
             预计阅读时间: {blogMetadata.readTime} 分钟
           </div>
           
+          {/* 基础元数据 */}
+          <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">基础元数据</h4>
+            <div className="space-y-3">
+              {/* 作者 */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  作者
+                </label>
+                <input
+                  type="text"
+                  value={blogMetadata.author}
+                  onChange={(e) => handleBlogMetadataChange('author', e.target.value)}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="文章作者"
+                />
+              </div>
+              
+              {/* 语言 */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  语言
+                </label>
+                <select
+                  value={blogMetadata.language}
+                  onChange={(e) => handleBlogMetadataChange('language', e.target.value)}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="zh-CN">简体中文</option>
+                  <option value="zh-TW">繁體中文</option>
+                  <option value="en-US">English</option>
+                  <option value="ja-JP">日本語</option>
+                  <option value="ko-KR">한국어</option>
+                </select>
+              </div>
+              
+              {/* 系列文章 */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  系列名称
+                </label>
+                <input
+                  type="text"
+                  value={blogMetadata.series}
+                  onChange={(e) => handleBlogMetadataChange('series', e.target.value)}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="系列文章名称（可选）"
+                />
+              </div>
+              
+              {/* 系列顺序 */}
+              {blogMetadata.series && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    系列顺序
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={blogMetadata.seriesOrder}
+                    onChange={(e) => handleBlogMetadataChange('seriesOrder', parseInt(e.target.value) || 1)}
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {/* 高级设置 */}
+          <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">高级设置</h4>
+              <button
+                onClick={() => setShowAdvancedMetadata(!showAdvancedMetadata)}
+                className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+              >
+                {showAdvancedMetadata ? '收起' : '展开'}
+              </button>
+            </div>
+            
+            {showAdvancedMetadata && (
+              <div className="space-y-3">
+                {/* 草稿状态 */}
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="draft"
+                    checked={blogMetadata.draft}
+                    onChange={(e) => handleBlogMetadataChange('draft', e.target.checked)}
+                    className="h-3 w-3 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                  />
+                  <label htmlFor="draft" className="ml-2 text-xs font-medium text-gray-700 dark:text-gray-300">
+                    草稿文章
+                  </label>
+                </div>
+                
+                {/* 特色文章 */}
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="featured"
+                    checked={blogMetadata.featured}
+                    onChange={(e) => handleBlogMetadataChange('featured', e.target.checked)}
+                    className="h-3 w-3 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                  />
+                  <label htmlFor="featured" className="ml-2 text-xs font-medium text-gray-700 dark:text-gray-300">
+                    特色文章
+                  </label>
+                </div>
+                
+                {/* 封面图片 */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    封面图片
+                  </label>
+                  <input
+                    type="url"
+                    value={blogMetadata.coverImage}
+                    onChange={(e) => handleBlogMetadataChange('coverImage', e.target.value)}
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="https://example.com/image.jpg"
+                  />
+                </div>
+                
+                {/* URL标识 */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    URL标识
+                  </label>
+                  <input
+                    type="text"
+                    value={blogMetadata.slug}
+                    onChange={(e) => handleBlogMetadataChange('slug', e.target.value)}
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="留空将自动生成"
+                  />
+                </div>
+                
+                {/* 规范URL */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    规范URL
+                  </label>
+                  <input
+                    type="url"
+                    value={blogMetadata.canonicalUrl}
+                    onChange={(e) => handleBlogMetadataChange('canonicalUrl', e.target.value)}
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="https://example.com/original-post"
+                  />
+                </div>
+                
+                {/* SEO标题 */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    SEO标题
+                  </label>
+                  <input
+                    type="text"
+                    value={blogMetadata.seoTitle}
+                    onChange={(e) => handleBlogMetadataChange('seoTitle', e.target.value)}
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="针对搜索引擎优化的标题"
+                  />
+                </div>
+                
+                {/* SEO描述 */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    SEO描述
+                  </label>
+                  <textarea
+                    value={blogMetadata.seoDescription}
+                    onChange={(e) => handleBlogMetadataChange('seoDescription', e.target.value)}
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    rows={2}
+                    placeholder="针对搜索引擎优化的描述（150-160字符）"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+          
           {/* 快速操作 */}
           <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
             <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">快速操作</h4>
             <div className="space-y-2">
+              <button
+                onClick={generateBlogMetadata}
+                className="w-full px-3 py-2 text-sm bg-yellow-500 text-white rounded-md hover:bg-yellow-600 transition-colors"
+              >
+                ✨ 生成元数据
+              </button>
               <button
                 onClick={loadSample}
                 className="w-full px-3 py-2 text-sm bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
@@ -1215,6 +1998,12 @@ function implementSolution(params) {
               <span>{blogMetadata.date}</span>
               <span>•</span>
               <span>{blogMetadata.readTime} 分钟阅读</span>
+              {blogMetadata.author && (
+                <>
+                  <span>•</span>
+                  <span>{blogMetadata.author}</span>
+                </>
+              )}
             </div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
               {blogMetadata.title || '无标题文章'}
@@ -1223,6 +2012,32 @@ function implementSolution(params) {
               <p className="text-lg text-gray-600 dark:text-gray-300 italic">
                 {blogMetadata.excerpt}
               </p>
+            )}
+            {blogMetadata.series && (
+              <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 rounded">
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  📚 系列文章: {blogMetadata.series}
+                  {blogMetadata.seriesOrder > 1 && (
+                    <span className="ml-2 text-blue-600 dark:text-blue-400">
+                      (第{blogMetadata.seriesOrder}篇)
+                    </span>
+                  )}
+                </p>
+              </div>
+            )}
+            {blogMetadata.draft && (
+              <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-500 rounded">
+                <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                  📝 这是一篇草稿文章
+                </p>
+              </div>
+            )}
+            {blogMetadata.featured && (
+              <div className="mt-4 p-3 bg-purple-50 dark:bg-purple-900/20 border-l-4 border-purple-500 rounded">
+                <p className="text-sm text-purple-700 dark:text-purple-300">
+                  ⭐ 这是一篇特色文章
+                </p>
+              </div>
             )}
           </header>
           
@@ -1259,6 +2074,28 @@ function implementSolution(params) {
               <span>字数统计: {wordCount} 字</span>
               <span>字符数: {charCount} 字符</span>
             </div>
+            {blogMetadata.language && (
+              <div className="mt-2 text-xs text-gray-400 dark:text-gray-500">
+                语言: {blogMetadata.language}
+              </div>
+            )}
+            {(blogMetadata.canonicalUrl || blogMetadata.slug) && (
+              <div className="mt-2 text-xs text-gray-400 dark:text-gray-500">
+                {blogMetadata.canonicalUrl && (
+                  <div>规范URL: <a href={blogMetadata.canonicalUrl} className="text-blue-500 hover:underline" target="_blank" rel="noopener noreferrer">{blogMetadata.canonicalUrl}</a></div>
+                )}
+                {blogMetadata.slug && (
+                  <div>URL标识: {blogMetadata.slug}</div>
+                )}
+              </div>
+            )}
+            {(blogMetadata.seoTitle || blogMetadata.seoDescription) && (
+              <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-800 rounded text-xs">
+                <div className="font-medium text-gray-700 dark:text-gray-300 mb-1">SEO信息:</div>
+                {blogMetadata.seoTitle && <div className="text-gray-600 dark:text-gray-400">标题: {blogMetadata.seoTitle}</div>}
+                {blogMetadata.seoDescription && <div className="text-gray-600 dark:text-gray-400">描述: {blogMetadata.seoDescription}</div>}
+              </div>
+            )}
           </footer>
         </article>
       </div>
@@ -1266,9 +2103,9 @@ function implementSolution(params) {
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full backdrop-blur-sm bg-white/30 dark:bg-gray-900/30">
       {/* 工具栏 - 超紧凑设计 */}
-      <div className={`mb-3 p-2 rounded-lg border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} shadow-sm`}>
+        <div className={`mb-3 p-2 rounded-lg border ${isDark ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'} shadow-sm backdrop-blur-sm`}>
         {/* 主要工具栏 - 超紧凑布局 */}
         <div className="flex flex-wrap items-center gap-1 mb-2">
           {Object.entries(toolbarActions).map(([group, actions]) => (
@@ -1343,16 +2180,30 @@ function implementSolution(params) {
           
           <div className="flex items-center gap-0.5">
             <button
-              onClick={handleCopy}
+              onClick={undo}
               className={`px-2 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
-                copied
-                  ? (isDark ? 'bg-green-600 hover:bg-green-700 text-white border-green-500' : 'bg-green-500 hover:bg-green-600 text-white border-green-400')
+                historyIndex <= 0
+                  ? (isDark ? 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed' : 'bg-gray-200 text-gray-400 border-gray-300 cursor-not-allowed')
                   : (isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-200 border-gray-600' : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300')
               }`}
-              title={copied ? "已复制" : "复制"}
+              title="撤销 (Ctrl+Z)"
+              disabled={historyIndex <= 0}
             >
-              {copied ? "已复制" : "复制"}
+              ↶ 撤销
             </button>
+            <button
+              onClick={redo}
+              className={`px-2 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
+                historyIndex >= history.length - 1
+                  ? (isDark ? 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed' : 'bg-gray-200 text-gray-400 border-gray-300 cursor-not-allowed')
+                  : (isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-200 border-gray-600' : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300')
+              }`}
+              title="重做 (Ctrl+Y)"
+              disabled={historyIndex >= history.length - 1}
+            >
+              ↷ 重做
+            </button>
+
             <button
               onClick={handleSave}
               className={`px-2 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
@@ -1382,6 +2233,28 @@ function implementSolution(params) {
             >
               示例
             </button>
+            {blogMode && (
+              <>
+                <button
+                  onClick={generateBlogMetadata}
+                  className={`px-2 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
+                    isDark ? 'bg-yellow-600 hover:bg-yellow-700 text-white border-yellow-500' : 'bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-400'
+                  }`}
+                  title="一键生成博客元数据"
+                >
+                  生成元数据
+                </button>
+                <button
+                  onClick={handlePublish}
+                  className={`px-2 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
+                    isDark ? 'bg-green-600 hover:bg-green-700 text-white border-green-500' : 'bg-green-500 hover:bg-green-600 text-white border-green-400'
+                  }`}
+                  title="发布到项目"
+                >
+                  发布
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -1393,8 +2266,8 @@ function implementSolution(params) {
         
         {/* 编辑区域 - 更紧凑 */}
         {(previewMode === 'edit' || previewMode === 'split') && (
-          <div className={`${previewMode === 'split' ? 'w-1/2' : 'w-full'} rounded-lg border ${isDark ? 'border-gray-700' : 'border-gray-200'} overflow-hidden`}>
-            <div className={`px-3 py-2 border-b ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+          <div className={`${previewMode === 'split' ? 'w-1/2' : 'w-full'} rounded-lg border ${isDark ? 'border-gray-700/50' : 'border-gray-200/50'} overflow-hidden backdrop-blur-sm`}>
+            <div className={`px-3 py-2 border-b ${isDark ? 'bg-gray-800/50 border-gray-700/50' : 'bg-gray-50/50 border-gray-200/50'} backdrop-blur-sm`}>
               <h3 className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                 ✏️ 编辑器
               </h3>
@@ -1403,14 +2276,18 @@ function implementSolution(params) {
               <textarea
                 name="markdown-content"
                 value={content}
-                onChange={(e) => setContent(e.target.value)}
+                onChange={(e) => {
+                  const newContent = e.target.value;
+                  setContent(newContent);
+                  addToHistory(newContent);
+                }}
                 onSelect={handleTextSelection}
                 className={`w-full h-full p-3 resize-none focus:outline-none transition-colors duration-200 ${
                   isDark 
-                    ? 'bg-gray-800 text-gray-100 placeholder-gray-400' 
-                    : 'bg-white text-gray-900 placeholder-gray-500'
+                    ? 'bg-gray-800/50 text-gray-100 placeholder-gray-400' 
+                    : 'bg-white/50 text-gray-900 placeholder-gray-500'
                 }`}
-                placeholder="编写 Markdown... 快捷键：Ctrl+B 粗体，Ctrl+I 斜体，Ctrl+K 链接，Ctrl+S 保存"
+                placeholder="编写 Markdown... 快捷键：Ctrl+B 粗体，Ctrl+I 斜体，Ctrl+K 链接，Ctrl+S 保存，Ctrl+Z 撤销，Ctrl+Y 重做   祝您使用愉快！"
               />
             </div>
           </div>
@@ -1418,8 +2295,8 @@ function implementSolution(params) {
 
         {/* 预览区域 - 修复背景透明问题 */}
         {(previewMode === 'preview' || previewMode === 'split') && (
-          <div className={`${previewMode === 'split' ? 'w-1/2' : 'w-full'} rounded-lg border ${isDark ? 'border-gray-700' : 'border-gray-200'} overflow-hidden bg-white dark:bg-gray-800`}>
-            <div className={`px-3 py-2 border-b ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+          <div className={`${previewMode === 'split' ? 'w-1/2' : 'w-full'} rounded-lg border ${isDark ? 'border-gray-700/50' : 'border-gray-200/50'} overflow-hidden bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm`}>
+            <div className={`px-3 py-2 border-b ${isDark ? 'bg-gray-800/50 border-gray-700/50' : 'bg-gray-50/50 border-gray-200/50'} backdrop-blur-sm`}>
               <h3 className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                 👁️ 预览
               </h3>
@@ -1448,10 +2325,10 @@ function implementSolution(params) {
       </div>
 
       {/* 状态栏 - 更紧凑 */}
-      <div className={`mt-3 px-3 py-1.5 rounded-lg border text-xs ${
+      <div className={`mt-3 px-3 py-1.5 rounded-lg border text-xs backdrop-blur-sm ${
         isDark 
-          ? 'bg-gray-800 border-gray-700 text-gray-300' 
-          : 'bg-gray-50 border-gray-200 text-gray-600'
+          ? 'bg-gray-800/50 border-gray-700/50 text-gray-300' 
+          : 'bg-gray-50/50 border-gray-200/50 text-gray-600'
       }`}>
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-3">
@@ -1465,10 +2342,13 @@ function implementSolution(params) {
             <span className="hidden sm:inline">{previewMode === 'edit' ? '编辑' : previewMode === 'preview' ? '预览' : '分屏'}</span>
           </div>
           <div className="text-xs opacity-75 hidden md:inline">
-            快捷键: Ctrl+B 粗体, Ctrl+I 斜体, Ctrl+K 链接, Ctrl+S 保存
+            快捷键: Ctrl+B 粗体, Ctrl+I 斜体, Ctrl+K 链接, Ctrl+S 保存, Ctrl+Z 撤销, Ctrl+Y 重做
           </div>
         </div>
       </div>
+
+      {/* 自定义元数据对话框 */}
+      {renderCustomMetadataDialog()}
     </div>
   );
 }
