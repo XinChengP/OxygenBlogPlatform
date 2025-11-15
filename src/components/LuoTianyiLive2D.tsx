@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { getAssetPath, getBasePath } from '../utils/assetUtils';
 
 /**
  * 洛天依Live2D看板娘组件
@@ -54,14 +55,13 @@ export default function LuoTianyiLive2D() {
 
         const loadLive2D = async () => {
             try {
-                // 获取BasePath支持GitHub Pages部署
-                const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+                // 使用工具函数获取基础路径，确保在GitHub Pages环境下正确加载
+                const basePath = getBasePath();
                 
                 // 设置全局变量供message.js使用 - 必须在脚本加载之前设置
                 if (typeof window !== 'undefined') {
-                    // 确保路径以/开头，即使basePath为空
-                    const fullPath = basePath ? `${basePath}/luotianyi-live2d-master/live2d/` : '/luotianyi-live2d-master/live2d/';
-                    (window as any).message_Path = fullPath;
+                    // 使用assetUtils中的getAssetPath函数处理路径
+                    (window as any).message_Path = getAssetPath('/luotianyi-live2d-master/live2d/');
                     (window as any).home_Path = window.location.origin;
                 }
                 
@@ -84,8 +84,8 @@ export default function LuoTianyiLive2D() {
                     }
                 }
 
-                // 动态加载Live2D核心文件 - 确保路径以/开头
-                const live2dPath = basePath ? `${basePath}/luotianyi-live2d-master/live2d` : '/luotianyi-live2d-master/live2d';
+                // 使用assetUtils中的getAssetPath函数处理路径
+                const live2dPath = getAssetPath('/luotianyi-live2d-master/live2d');
                 const messagePath = live2dPath; // 消息文件与live2d核心文件在同一目录
                 
                 await loadScript(`${live2dPath}/js/live2d.js`);
@@ -94,8 +94,8 @@ export default function LuoTianyiLive2D() {
                 // 等待DOM准备
                 setTimeout(() => {
                     if (canvasRef.current && window.loadlive2d) {
-                        // 初始化Live2D - 确保路径以/开头
-                        const modelPath = basePath ? `${basePath}/luotianyi-live2d-master/live2d/model/tianyi/model.json` : '/luotianyi-live2d-master/live2d/model/tianyi/model.json';
+                        // 使用assetUtils中的getAssetPath函数处理模型文件路径
+                        const modelPath = getAssetPath('/luotianyi-live2d-master/live2d/model/tianyi/model.json');
                         (window as any).loadlive2d("live2d", modelPath);
                         
                         // 设置消息显示
@@ -177,8 +177,8 @@ export default function LuoTianyiLive2D() {
         };
 
         // 将配置应用到窗口对象，支持GitHub Pages部署
-        // 确保路径以/开头
-        (window as any).message_Path = basePath ? `${basePath}/luotianyi-live2d-master/live2d/` : '/luotianyi-live2d-master/live2d/';
+        // 使用assetUtils中的getAssetPath函数处理路径
+        (window as any).message_Path = getAssetPath('/luotianyi-live2d-master/live2d/');
         (window as any).home_Path = window.location.origin;
         (window as any).messageConfig = messageConfig;
     };

@@ -6,11 +6,13 @@ export const isRainbowGradient = true; //控制 BeforeAnimationText 的颜色效
 
 //个人信息部分配置
 const AVATAR_FILENAME = "星球卑.jpg"; //头像配置，头像需要放进public文件夹内，这里只写文件名和后缀
-//处理头像路径的函数(无需修改)
+// 导入路径工具函数
+import { getAssetPath } from '../utils/assetUtils';
+
+// 处理头像路径的函数
 export const getAvatarPath = (): string => {
-  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
-  // 确保路径格式正确，总是以/开头
-  return `${basePath}/${AVATAR_FILENAME}`;
+  // 使用工具函数处理路径，确保在GitHub Pages环境下正确加载
+  return getAssetPath(AVATAR_FILENAME);
 };
 export const isBorder = true; //控制头像边框是否显示
 export const name = "歆橙"; //名字
