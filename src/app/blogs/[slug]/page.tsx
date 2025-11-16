@@ -5,6 +5,7 @@ import ClientBlogDetail from '@/app/blogs/[slug]/ClientBlogDetail';
 import 'highlight.js/styles/github-dark.css';
 import { formatBlogDate, calculateReadingTime } from '@/lib/utils';
 import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
 
 /**
  * 博客详情页面的 Props 接口
@@ -31,6 +32,14 @@ interface BlogDetailPageProps {
  * @property excerpt - 文章摘要
  * @property content - 文章正文内容（Markdown 格式）
  * @property slug - 文章的唯一标识符
+ * @property author - 文章作者
+ * @property series - 文章系列
+ * @property seriesOrder - 系列顺序
+ * @property coverImage - 封面图片路径
+ * @property language - 文章语言
+ * @property canonicalUrl - 规范URL
+ * @property seoTitle - SEO标题
+ * @property seoDescription - SEO描述
  */
 interface BlogPost {
   title: string;
@@ -41,6 +50,14 @@ interface BlogPost {
   excerpt: string;
   content: string;
   slug: string;
+  author?: string;
+  series?: string;
+  seriesOrder?: number;
+  coverImage?: string;
+  language?: string;
+  canonicalUrl?: string;
+  seoTitle?: string;
+  seoDescription?: string;
   reference?: Array<{description: string; link: string}>;
 }
 
@@ -190,12 +207,74 @@ async function getBlogContent(slug: string): Promise<BlogPost | null> {
       excerpt: frontMatter.excerpt || '',
       content: content,
       slug: slug,
+      author: frontMatter.author,
+      series: frontMatter.series,
+      seriesOrder: frontMatter.seriesOrder,
+      coverImage: frontMatter.coverImage,
+      language: frontMatter.language,
+      canonicalUrl: frontMatter.canonicalUrl,
+      seoTitle: frontMatter.seoTitle,
+      seoDescription: frontMatter.seoDescription,
       reference: frontMatter.reference
     };
   } catch (error) {
     console.error('Error reading blog content:', error);
     return null;
   }
+}
+
+/**
+ * 生成博客详情页面的 SEO 元数据
+ * 
+ * @param props - 包含 params 参数的对象
+ * @returns 包含 title 和 description 的 Metadata 对象
+ */
+export async function generateMetadata({ params }: BlogDetailPageProps): Promise<Metadata> {
+  const resolvedParams = await params;
+  
+  // Next.js 已经自动解码了URL参数，但为了安全起见，我们尝试解码
+  let decodedSlug: string;
+  try {
+    // 检查是否需要解码（如果包含%字符，说明可能是编码的）
+    if (resolvedParams.slug.includes('%')) {
+      decodedSlug = decodeURIComponent(resolvedParams.slug);
+    } else {
+      decodedSlug = resolvedParams.slug;
+    }
+  } catch {
+    decodedSlug = resolvedParams.slug;
+  }
+
+  const blogData = await getBlogContent(decodedSlug);
+  
+  if (!blogData) {
+    return {
+      title: '文章未找到 - OxygenBlogPlatform',
+      description: '抱歉，您要查找的文章不存在。'
+    };
+  }
+
+  // 优先使用元数据中的 SEO 标题和描述，否则使用默认值
+  const seoTitle = blogData.title || '博客文章';
+  const seoDescription = blogData.excerpt || `阅读这篇关于${blogData.category}的文章，了解更多技术知识。`;
+  
+  return {
+    title: `${seoTitle} - OxygenBlogPlatform`,
+    description: seoDescription,
+    openGraph: {
+      title: seoTitle,
+      description: seoDescription,
+      type: 'article',
+      publishedTime: blogData.date,
+      authors: blogData.author ? [blogData.author] : undefined,
+      tags: blogData.tags,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: seoTitle,
+      description: seoDescription,
+    }
+  };
 }
 
 /**

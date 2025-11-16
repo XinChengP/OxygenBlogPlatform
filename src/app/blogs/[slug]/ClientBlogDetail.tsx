@@ -243,6 +243,23 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
+            {/* 封面图片 */}
+            {blog.coverImage && (
+              <motion.div 
+                className="mb-6 rounded-lg overflow-hidden shadow-lg"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.6, delay: 0.1 }}
+              >
+                <OptimizedImage
+                  src={blog.coverImage}
+                  alt={blog.title}
+                  className="w-full h-64 md:h-80 object-cover"
+                  width={800}
+                  height={320}
+                />
+              </motion.div>
+            )}
             <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4 leading-tight">
               {blog.title}
             </h1>
@@ -265,6 +282,22 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                 </svg>
                 <span>{blog.readTime} 分钟阅读</span>
               </div>
+              {blog.author && (
+                <div className="flex items-center gap-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                  </svg>
+                  <span>{blog.author}</span>
+                </div>
+              )}
+              {blog.language && (
+                <div className="flex items-center gap-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M7 2a1 1 0 011 1v1h3a1 1 0 110 2H9.578a18.87 18.87 0 01-1.724 4.78c.29.354.596.696.914 1.026a1 1 0 01-1.44 1.389c-.188-.196-.373-.396-.554-.6a19.098 19.098 0 01-3.107 3.567 1 1 0 01-1.334-1.49 17.087 17.087 0 003.13-3.733 18.992 18.992 0 01-1.487-2.494 1 1 0 111.79-.89c.234.47.489.928.764 1.372.417-.675.753-1.402 1.008-2.174H4a1 1 0 110-2h3V3a1 1 0 011-1z" clipRule="evenodd" />
+                  </svg>
+                  <span>{blog.language}</span>
+                </div>
+              )}
             </div>
             {blog.tags.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-3">
@@ -276,6 +309,24 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                     {tag}
                   </span>
                 ))}
+              </div>
+            )}
+            {blog.excerpt && (
+              <div className="mt-4 p-4 bg-muted/30 rounded-lg border-l-4 border-primary">
+                <p className="text-muted-foreground italic">{blog.excerpt}</p>
+              </div>
+            )}
+            {blog.series && (
+              <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 6a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2zm0 6a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2z" clipRule="evenodd" />
+                </svg>
+                <span>系列: {blog.series}</span>
+                {blog.seriesOrder && (
+                  <span className="px-2 py-1 bg-primary/20 text-primary rounded-full text-xs">
+                    第 {blog.seriesOrder} 篇
+                  </span>
+                )}
               </div>
             )}
           </motion.header>

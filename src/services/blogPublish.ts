@@ -12,9 +12,18 @@ export interface BlogPost {
   category?: string;
   tags?: string[];
   excerpt?: string;
-  series?: string;
+  readTime?: number;
+  author?: string;
+  slug?: string;
+  coverImage?: string;
   draft?: boolean;
   featured?: boolean;
+  series?: string;
+  seriesOrder?: number;
+  language?: string;
+  canonicalUrl?: string;
+  seoTitle?: string;
+  seoDescription?: string;
 }
 
 /**
@@ -27,15 +36,24 @@ export function convertToMarkdownWithFrontmatter(post: BlogPost): string {
     category: post.category || '未分类',
     tags: post.tags || [],
     excerpt: post.excerpt || '',
-    series: post.series || '',
+    readTime: post.readTime || 0,
+    author: post.author || '歆橙',
+    slug: post.slug || '',
+    coverImage: post.coverImage || '',
     draft: post.draft || false,
     featured: post.featured || false,
+    series: post.series || '',
+    seriesOrder: post.seriesOrder || 0,
+    language: post.language || 'zh-CN',
+    canonicalUrl: post.canonicalUrl || '',
+    seoTitle: post.seoTitle || post.title,
+    seoDescription: post.seoDescription || post.excerpt || '',
   };
 
   // 构建frontmatter
   const frontmatterStr = Object.entries(frontmatter)
     .filter(([, value]) => {
-      if (value === '' || value === false) return false;
+      if (value === '' || value === false || value === 0) return false;
       if (Array.isArray(value) && value.length === 0) return false;
       return true;
     })
@@ -43,6 +61,8 @@ export function convertToMarkdownWithFrontmatter(post: BlogPost): string {
       if (Array.isArray(value)) {
         return `${key}: [${value.map(tag => `"${tag}"`).join(', ')}]`;
       } else if (typeof value === 'boolean') {
+        return `${key}: ${value}`;
+      } else if (typeof value === 'number') {
         return `${key}: ${value}`;
       } else {
         return `${key}: "${value}"`;

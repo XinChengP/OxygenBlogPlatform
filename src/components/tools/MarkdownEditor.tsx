@@ -1300,31 +1300,6 @@ seoDescription: "${blogMetadata.seoDescription}"
     });
 
     try {
-      // 生成符合项目规范的Markdown内容
-      const frontMatter = `---
-title: "${blogMetadata.title}"
-date: "${blogMetadata.date}"
-category: "${blogMetadata.category}"
-tags: [${blogMetadata.tags.map(tag => `"${tag}"`).join(', ')}]
-excerpt: "${blogMetadata.excerpt}"
-readTime: ${blogMetadata.readTime}
-author: "${blogMetadata.author}"
-slug: "${blogMetadata.slug}"
-coverImage: "${blogMetadata.coverImage}"
-draft: ${blogMetadata.draft}
-featured: ${blogMetadata.featured}
-series: "${blogMetadata.series}"
-seriesOrder: ${blogMetadata.seriesOrder}
-language: "${blogMetadata.language}"
-canonicalUrl: "${blogMetadata.canonicalUrl}"
-seoTitle: "${blogMetadata.seoTitle}"
-seoDescription: "${blogMetadata.seoDescription}"
----
-
-`;
-      
-      const fullContent = frontMatter + content;
-      
       // 生成文件名（基于标题，转换为安全的文件名）
       const safeFileName = blogMetadata.title
         .replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '-')
@@ -1342,7 +1317,21 @@ seoDescription: "${blogMetadata.seoDescription}"
         title: blogMetadata.title,
         content: content,
         date: blogMetadata.date,
-        metadata: blogMetadata
+        category: blogMetadata.category,
+        tags: blogMetadata.tags,
+        excerpt: blogMetadata.excerpt,
+        readTime: blogMetadata.readTime,
+        author: blogMetadata.author,
+        slug: blogMetadata.slug,
+        coverImage: blogMetadata.coverImage,
+        draft: blogMetadata.draft,
+        featured: blogMetadata.featured,
+        series: blogMetadata.series,
+        seriesOrder: blogMetadata.seriesOrder,
+        language: blogMetadata.language,
+        canonicalUrl: blogMetadata.canonicalUrl,
+        seoTitle: blogMetadata.seoTitle,
+        seoDescription: blogMetadata.seoDescription
       };
       
       const markdownContent = convertToMarkdownWithFrontmatter(blogPost);
