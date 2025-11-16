@@ -17,14 +17,14 @@ export default function CodeBlock({ language, code, displayLanguage }: CodeBlock
   return (
     <div className="code-block-container my-8 rounded-xl border-2 border-gray-200 dark:border-gray-700 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden bg-white dark:bg-gray-900">
       {/* 增强的头部 - 更明显的视觉层次 */}
-      <div className="code-block-header flex justify-between items-center bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 px-6 py-3 text-sm border-b-2 border-blue-200 dark:border-gray-600">
+      <div className="code-block-header flex justify-between items-center bg-gradient-to-r from-[#66ccff]/10 to-[#66ccff]/20 dark:from-gray-800 dark:to-gray-700 px-6 py-3 text-sm border-b-2 border-[#66ccff] dark:border-gray-600">
         <div className="flex items-center gap-3">
         <div className="flex items-center gap-2">
-          <span className="w-3 h-3 bg-red-400 rounded-full"></span>
+          <span className="w-3 h-3 bg-[#ee0000] rounded-full"></span>
           <span className="w-3 h-3 bg-yellow-400 rounded-full"></span>
           <span className="w-3 h-3 bg-green-400 rounded-full"></span>
         </div>
-        <span className="language-label font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide text-xs">
+        <span className="language-label font-semibold text-[#66ccff] dark:text-[#66ccff] uppercase tracking-wide text-xs">
           {displayLanguage || language || '代码'}
         </span>
       </div>

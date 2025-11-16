@@ -31,9 +31,22 @@ re.toString = function() {
     return '';
 };
 
-$(document).on('copy', function (){
-    showMessage('你都复制了些什么呀，转载要记得加上出处哦~~', 5000);
-});
+// 等待jQuery加载完成后再初始化
+function initLive2dMessage() {
+    if (typeof $ === 'undefined') {
+        // jQuery未加载，延迟初始化
+        setTimeout(initLive2dMessage, 100);
+        return;
+    }
+    
+    // jQuery已加载，初始化事件监听
+    $(document).on('copy', function (){
+        showMessage('你都复制了些什么呀，转载要记得加上出处哦~~', 5000);
+    });
+    
+    // 初始化提示
+    initTips();
+}
 
 function initTips(){
     // 使用window.messageConfig配置，如果没有则使用默认配置
@@ -71,28 +84,31 @@ function initTips(){
     };
     
     // 应用鼠标悬停事件 - 使用事件委托确保动态元素也能响应
-    $.each(config.mouseover, function (index, tips){
-        $(document).on('mouseover', tips.selector, function (e){
-            e.stopPropagation();
-            var text = tips.text;
-            if(Array.isArray(tips.text)) text = tips.text[Math.floor(Math.random() * tips.text.length)];
-            text = text.renderTip({text: $(this).text()});
-            showMessage(text, 3000);
+    if (typeof $ !== 'undefined') {
+        $.each(config.mouseover, function (index, tips){
+            $(document).on('mouseover', tips.selector, function (e){
+                e.stopPropagation();
+                var text = tips.text;
+                if(Array.isArray(tips.text)) text = tips.text[Math.floor(Math.random() * tips.text.length)];
+                text = text.renderTip({text: $(this).text()});
+                showMessage(text, 3000);
+            });
         });
-    });
-    
-    // 应用点击事件 - 使用事件委托确保动态元素也能响应
-    $.each(config.click, function (index, tips){
-        $(document).on('click', tips.selector, function (e){
-            e.stopPropagation();
-            var text = tips.text;
-            if(Array.isArray(tips.text)) text = tips.text[Math.floor(Math.random() * tips.text.length)];
-            text = text.renderTip({text: $(this).text()});
-            showMessage(text, 3000);
+        
+        // 应用点击事件 - 使用事件委托确保动态元素也能响应
+        $.each(config.click, function (index, tips){
+            $(document).on('click', tips.selector, function (e){
+                e.stopPropagation();
+                var text = tips.text;
+                if(Array.isArray(tips.text)) text = tips.text[Math.floor(Math.random() * tips.text.length)];
+                text = text.renderTip({text: $(this).text()});
+                showMessage(text, 3000);
+            });
         });
-    });
+    }
 }
-initTips();
+// 使用新的初始化函数
+initLive2dMessage();
 
 (function (){
     var text;
@@ -140,6 +156,10 @@ initTips();
 window.setInterval(showHitokoto,30000);
 
 function showHitokoto(){
+    if (typeof $ === 'undefined' || !$.getJSON) {
+        // jQuery未加载，跳过
+        return;
+    }
     $.getJSON('https://v1.hitokoto.cn/',function(result){
         showMessage(result.hitokoto, 5000);
     });
@@ -148,27 +168,68 @@ function showHitokoto(){
 function showMessage(text, timeout){
     if(Array.isArray(text)) text = text[Math.floor(Math.random() * text.length + 1)-1];
     //console.log('showMessage', text);
-    $('.message').stop();
-    $('.message').html(text).css('opacity', 1);
-    // 确保消息框可见
-    $('.message').show();
+    
+    // 检查jQuery是否可用，如果不可用则使用原生DOM
+    if (typeof $ !== 'undefined') {
+        $('.message').stop();
+        $('.message').html(text).css('opacity', 1);
+        $('.message').show();
+    } else {
+        // 使用原生DOM作为备选方案
+        const messageEl = document.querySelector('.message');
+        if (messageEl) {
+            messageEl.innerHTML = text;
+            messageEl.style.opacity = '1';
+            messageEl.style.display = 'block';
+        }
+    }
+    
     if (timeout === null) timeout = 5000;
-    hideMessage(timeout);
+    // 修复：只有当消息不是默认消息时才调用hideMessage
+    if (text !== '你好～我是洛天依！') {
+        hideMessage(timeout);
+    }
 }
 
 function hideMessage(timeout){
-    $('.message').stop().css('opacity', 1);
+    if (typeof $ !== 'undefined') {
+        $('.message').stop().css('opacity', 1);
+    }
     // 不隐藏消息框，只重置内容
     if (timeout === null) timeout = 5000;
     setTimeout(() => {
-        // 只在消息框当前没有显示内容时才重置为默认消息
-        if ($('.message').html() === '') {
-            $('.message').html('你好～我是洛天依！').css('opacity', 1);
+        // 修复：不要自动重置为默认消息，让消息系统保持当前状态
+        // 除非消息框是空的，否则不重置
+        let currentMessage;
+        if (typeof $ !== 'undefined') {
+            currentMessage = $('.message').html();
+        } else {
+            const messageEl = document.querySelector('.message');
+            currentMessage = messageEl ? messageEl.innerHTML : '';
         }
+        
+        if (!currentMessage || currentMessage.trim() === '') {
+            if (typeof $ !== 'undefined') {
+                $('.message').html('你好～我是洛天依！').css('opacity', 1);
+            } else {
+                const messageEl = document.querySelector('.message');
+                if (messageEl) {
+                    messageEl.innerHTML = '你好～我是洛天依！';
+                    messageEl.style.opacity = '1';
+                }
+            }
+        }
+        // 否则保持当前消息不变
     }, timeout);
 }
 
 function initLive2d (){
+    if (typeof $ === 'undefined') {
+        // jQuery未加载，延迟初始化
+        setTimeout(initLive2d, 100);
+        return;
+    }
+    
     $('.hide-button').fadeOut(0).on('click', () => {
         $('#landlord').css('display', 'none')
     })
@@ -190,18 +251,36 @@ var num=2;
 function getsong(){
 		if(num%2==0){
 					
-	$.getJSON(`${message_Path}songs.json`,function(songs_json){
-			var rnum = parseInt(Math.random()*songs_json.length);
-			var songs_url = songs_json[rnum]["url"];
-			var songs_name = songs_json[rnum]["name"];
-		showMessage("正在播放 [ " + songs_name + " ]", 5000);
-        document.getElementById("sing").innerHTML='<audio src='+songs_url+' id="myaudio" controls="controls" loop="false" hidden="true">';
-		
-		document.getElementById("sing-button").innerHTML="Pause";
-		var myAuto = document.getElementById('myaudio');
-            myAuto.play();
-			num=num+1;
-	});
+		if (typeof $ === 'undefined' || !$.getJSON) {
+			// jQuery未加载，使用原生fetch作为备选
+			fetch(`${message_Path}songs.json`)
+				.then(response => response.json())
+				.then(songs_json => {
+					var rnum = parseInt(Math.random()*songs_json.length);
+					var songs_url = songs_json[rnum]["url"];
+					var songs_name = songs_json[rnum]["name"];
+					showMessage("正在播放 [ " + songs_name + " ]", 5000);
+					document.getElementById("sing").innerHTML='<audio src='+songs_url+' id="myaudio" controls="controls" loop="false" hidden="true">';
+					
+					document.getElementById("sing-button").innerHTML="Pause";
+					var myAuto = document.getElementById('myaudio');
+					myAuto.play();
+					num=num+1;
+				});
+		} else {
+			$.getJSON(`${message_Path}songs.json`,function(songs_json){
+				var rnum = parseInt(Math.random()*songs_json.length);
+				var songs_url = songs_json[rnum]["url"];
+				var songs_name = songs_json[rnum]["name"];
+				showMessage("正在播放 [ " + songs_name + " ]", 5000);
+				document.getElementById("sing").innerHTML='<audio src='+songs_url+' id="myaudio" controls="controls" loop="false" hidden="true">';
+				
+				document.getElementById("sing-button").innerHTML="Pause";
+				var myAuto = document.getElementById('myaudio');
+				myAuto.play();
+				num=num+1;
+			});
+		}
 }
 		
 		else {

@@ -13,6 +13,8 @@ export default function Live2DController() {
   const router = useRouter();
   const [is404Page, setIs404Page] = useState(false);
   
+  console.log('[Live2DController] Current pathname:', pathname);
+  
   // 检测404页面的状态
   useEffect(() => {
     const check404Status = () => {
@@ -47,6 +49,7 @@ export default function Live2DController() {
       '/test',
       '/settings',
       '/guestbook',
+      '/tools',
       '/not-found',
       '/404',
       '/_not-found/page'
@@ -70,21 +73,10 @@ export default function Live2DController() {
     });
   }
   
-  // 隐藏首页和404页面的live2d
-  const hideLive2D = pathname === '/' || 
-                     pathname === '/not-found' || 
-                     pathname === '/404' || 
-                     pathname === '/_not-found/page' ||
-                     pathname.startsWith('/404') || 
-                     pathname.includes('/nonexistent') ||
-                     pathname.includes('not-found') ||
-                     is404Page ||
-                     !pathname.startsWith('/blogs') && 
-                     !pathname.startsWith('/archive') && 
-                     !pathname.startsWith('/about') && 
-                     !pathname.startsWith('/test') && 
-                     !pathname.startsWith('/settings') &&
-                     !pathname.startsWith('/guestbook');
+  // 简化的显示逻辑：只在首页和404页面隐藏，其他页面都由ConditionalComponents控制
+  const hideLive2D = pathname === '/' || pathname === '/404';
+  
+  console.log('[Live2DController] Hide Live2D:', hideLive2D);
   
   // 详细调试信息
   if (typeof window !== 'undefined') {
@@ -107,7 +99,8 @@ export default function Live2DController() {
         notAbout: !pathname.startsWith('/about'),
         notTest: !pathname.startsWith('/test'),
         notSettings: !pathname.startsWith('/settings'),
-        notGuestbook: !pathname.startsWith('/guestbook')
+        notGuestbook: !pathname.startsWith('/guestbook'),
+        notTools: !pathname.startsWith('/tools')
       }
     });
   }

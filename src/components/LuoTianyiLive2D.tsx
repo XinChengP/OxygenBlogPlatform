@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { getAssetPath, getBasePath } from '../utils/assetUtils';
 
 /**
@@ -28,12 +28,21 @@ export default function LuoTianyiLive2D() {
         }, 5000);
     }, []);
 
+  // useEffect将在组件挂载时执行，依赖loadLive2D函数
+
     // 消息管理功能
     const updateMessage = useCallback((newMessage: string) => {
-        // 如果消息是默认的"你好～我是洛天依！"，则不显示（避免覆盖点击交互）
-        if (newMessage === '你好～我是洛天依！') {
+        // 修复：改进消息过滤逻辑，更好地处理中文消息
+        const isDefaultMessage = newMessage.includes('你好') && newMessage.includes('洛天依') && newMessage.includes('！');
+        const isGenericGreeting = newMessage === '你好～我是洛天依！' || 
+                                 newMessage === '你好~我是洛天依！' ||
+                                 (newMessage.includes('你好') && newMessage.length < 15);
+        
+        // 只过滤掉真正的默认问候语，允许其他正常消息显示
+        if (isDefaultMessage || isGenericGreeting) {
             return;
         }
+        
         setMessage(newMessage);
         setMessageOpacity(1);
         lastMessageTimeRef.current = Date.now();
@@ -49,76 +58,81 @@ export default function LuoTianyiLive2D() {
         };
     }, []);
 
+    const loadLive2D = useCallback(async () => {
+        try {
+            // 使用工具函数获取基础路径，确保在GitHub Pages环境下正确加载
+            const basePath = getBasePath();
+            
+            // 设置全局变量供message.js使用 - 必须在脚本加载之前设置
+            if (typeof window !== 'undefined') {
+                // 使用assetUtils中的getAssetPath函数处理路径
+                (window as any).message_Path = getAssetPath('/luotianyi-live2d-master/live2d/');
+                (window as any).home_Path = window.location.origin;
+            }
+            
+            // 动态加载jQuery
+            if (typeof window !== 'undefined' && !window.jQuery) {
+                // 使用多个CDN源作为备份
+                const jquerySources = [
+                    'https://cdn.bootcss.com/jquery/2.2.4/jquery.min.js',
+                    'https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.min.js',
+                    'https://code.jquery.com/jquery-2.2.4.min.js'
+                ];
+                
+                for (const source of jquerySources) {
+                    try {
+                        await loadScript(source);
+                        break;
+                    } catch (error) {
+                        console.warn(`jQuery CDN ${source} 加载失败，尝试下一个源`);
+                    }
+                }
+            }
+
+            // 使用assetUtils中的getAssetPath函数处理路径
+            const live2dPath = getAssetPath('/luotianyi-live2d-master/live2d');
+            const messagePath = live2dPath; // 消息文件与live2d核心文件在同一目录
+            
+            await loadScript(`${live2dPath}/js/live2d.js`);
+            await loadScript(`${messagePath}/js/message.js`);
+
+            // 等待DOM准备
+            setTimeout(() => {
+                if (canvasRef.current && window.loadlive2d) {
+                    // 使用assetUtils中的getAssetPath函数处理模型文件路径
+                    const modelPath = getAssetPath('/luotianyi-live2d-master/live2d/model/tianyi/model.json');
+                    (window as any).loadlive2d("live2d", modelPath);
+                    
+                    // 设置消息显示
+                    setupMessageSystem(basePath);
+                    
+                    setIsLoading(false);
+                }
+            }, 1000);
+
+        } catch (error) {
+            console.error('加载Live2D失败:', error);
+            setIsLoading(false);
+        }
+    }, []);
+
+    // 主要的Live2D初始化useEffect
     useEffect(() => {
         // 检查是否为移动设备
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
         if (isMobile) {
             setIsVisible(false);
             return;
         }
 
-        const loadLive2D = async () => {
-            try {
-                // 使用工具函数获取基础路径，确保在GitHub Pages环境下正确加载
-                const basePath = getBasePath();
-                
-                // 设置全局变量供message.js使用 - 必须在脚本加载之前设置
-                if (typeof window !== 'undefined') {
-                    // 使用assetUtils中的getAssetPath函数处理路径
-                    (window as any).message_Path = getAssetPath('/luotianyi-live2d-master/live2d/');
-                    (window as any).home_Path = window.location.origin;
-                }
-                
-                // 动态加载jQuery
-                if (typeof window !== 'undefined' && !window.jQuery) {
-                    // 使用多个CDN源作为备份
-                    const jquerySources = [
-                        'https://cdn.bootcss.com/jquery/2.2.4/jquery.min.js',
-                        'https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.min.js',
-                        'https://code.jquery.com/jquery-2.2.4.min.js'
-                    ];
-                    
-                    for (const source of jquerySources) {
-                        try {
-                            await loadScript(source);
-                            break;
-                        } catch (error) {
-                            console.warn(`jQuery CDN ${source} 加载失败，尝试下一个源`);
-                        }
-                    }
-                }
-
-                // 使用assetUtils中的getAssetPath函数处理路径
-                const live2dPath = getAssetPath('/luotianyi-live2d-master/live2d');
-                const messagePath = live2dPath; // 消息文件与live2d核心文件在同一目录
-                
-                await loadScript(`${live2dPath}/js/live2d.js`);
-                await loadScript(`${messagePath}/js/message.js`);
-
-                // 等待DOM准备
-                setTimeout(() => {
-                    if (canvasRef.current && window.loadlive2d) {
-                        // 使用assetUtils中的getAssetPath函数处理模型文件路径
-                        const modelPath = getAssetPath('/luotianyi-live2d-master/live2d/model/tianyi/model.json');
-                        (window as any).loadlive2d("live2d", modelPath);
-                        
-                        // 设置消息显示
-                        setupMessageSystem(basePath);
-                        
-                        setIsLoading(false);
-                    }
-                }, 1000);
-
-            } catch (error) {
-                console.error('加载Live2D失败:', error);
-                setIsLoading(false);
-            }
-        };
-
-        // 延迟加载以确保其他资源先加载
-        const timer = setTimeout(loadLive2D, 2000);
-        return () => clearTimeout(timer);
-    }, []);
+        // 强制触发loadLive2D
+        try {
+            loadLive2D();
+        } catch (error) {
+            console.error('[LuoTianyiLive2D] loadLive2D failed:', error);
+        }
+    }, [loadLive2D]); // 添加loadLive2D依赖
 
     const loadScript = (src: string): Promise<void> => {
         return new Promise((resolve, reject) => {
@@ -139,12 +153,31 @@ export default function LuoTianyiLive2D() {
         // 设置洛天依的消息系统，适配网站主题
         // 重写消息显示函数以支持自动淡出
         const originalShowMessage = (window as any).showMessage;
-        (window as any).showMessage = (msg: string) => {
-            if (originalShowMessage) {
-                originalShowMessage(msg);
+        (window as any).showMessage = (msg: string, timeout?: number) => {
+            // 修复：增强消息处理，确保重要的用户交互消息能够显示
+            const isImportantMessage = 
+                msg.includes('编辑') || msg.includes('预览') || msg.includes('模式') ||
+                msg.includes('保存') || msg.includes('复制') || msg.includes('成功') ||
+                msg.includes('撤销') || msg.includes('重做') || msg.includes('清空') ||
+                msg.includes('发布') || msg.includes('示例') ||
+                msg.includes('唱歌') || msg.includes('音乐') ||
+                (msg.length > 5 && !msg.includes('你好～我是洛天依！'));
+            
+            if (isImportantMessage) {
+                // 重要消息直接显示，不经过过滤
+                setMessage(msg);
+                setMessageOpacity(1);
+                lastMessageTimeRef.current = Date.now();
+                triggerFadeOut();
+            } else {
+                // 使用我们的新消息管理函数
+                updateMessage(msg);
             }
-            // 使用我们的新消息管理函数
-            updateMessage(msg);
+            
+            // 也调用原始的消息函数（如果存在）
+            if (originalShowMessage) {
+                originalShowMessage(msg, timeout);
+            }
         };
 
         const messageConfig = {

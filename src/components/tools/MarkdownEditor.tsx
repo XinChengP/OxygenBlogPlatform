@@ -5,8 +5,10 @@ import { useTheme } from 'next-themes';
 import { motion } from 'framer-motion';
 import { categories } from '@/setting/blogSetting';
 import { ClipboardIcon } from '@heroicons/react/24/outline';
+import { Palette, Search, FileText, Download, Upload, Maximize2, Type, Eye, SpellCheck, BarChart3 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { safeMarkdownToHtml } from '@/utils/safeMarked';
+import live2dMessageManager, { Live2DMessages } from '@/utils/live2dMessageManager';
 
 const CodeBlock = dynamic(() => import('./CodeBlock'), {
   ssr: false
@@ -56,16 +58,16 @@ function ToolbarButton({ icon, title, onClick, variant = 'secondary', compact = 
     switch (variant) {
       case 'primary':
         return isDark 
-          ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-500' 
-          : 'bg-blue-500 hover:bg-blue-600 text-white border-blue-400';
+          ? 'bg-[#66ccff] hover:bg-[#55bbee] text-white border-[#66ccff]'
+                  : 'bg-[#66ccff] hover:bg-[#55bbee] text-white border-[#66ccff]';
       case 'success':
         return isDark 
           ? 'bg-green-600 hover:bg-green-700 text-white border-green-500' 
           : 'bg-green-500 hover:bg-green-600 text-white border-green-400';
       case 'danger':
         return isDark 
-          ? 'bg-red-600 hover:bg-red-700 text-white border-red-500' 
-          : 'bg-red-500 hover:bg-red-600 text-white border-red-400';
+          ? 'bg-[#ee0000] hover:bg-[#dd0000] text-white border-[#ee0000]'
+                : 'bg-[#ee0000] hover:bg-[#dd0000] text-white border-[#ee0000]';
       default:
         return isDark 
           ? 'bg-gray-700 hover:bg-gray-600 text-gray-200 border-gray-600' 
@@ -85,6 +87,183 @@ function ToolbarButton({ icon, title, onClick, variant = 'secondary', compact = 
     </motion.button>
   );
 }
+
+// 预设模板
+const presetTemplates = {
+  basic: `# 标题
+## 二级标题
+### 三级标题
+
+**粗体** *斜体* ~~删除线~~
+
+- 无序列表项1
+- 无序列表项2
+  - 嵌套列表项
+
+1. 有序列表项1
+2. 有序列表项2
+
+> 引用文本
+
+\`\`\`javascript
+console.log('代码示例');
+\`\`\`
+
+[链接](https://example.com)`,
+  
+  blog: `# 博客标题
+
+## 引言
+这是一篇博客的引言部分，可以简要介绍文章主题。
+
+## 主要内容
+### 要点一
+这里阐述第一个要点，可以包含**重点内容**和*强调内容*。
+
+### 要点二
+第二个要点的详细说明。
+
+## 代码示例
+\`\`\`javascript
+function example() {
+  return "示例代码";
+}
+\`\`\`
+
+## 总结
+文章的总结部分，概括主要观点。`,
+
+  technical: `# 技术文档标题
+
+## 概述
+简要介绍技术概念或工具。
+
+## 安装
+\`\`\`bash
+npm install package-name
+\`\`\`
+
+## 使用方法
+\`\`\`javascript
+import { Module } from 'package';
+
+const instance = new Module();
+instance.method();
+\`\`\`
+
+## API参考
+| 方法 | 参数 | 返回值 |
+|------|------|--------|
+| get | id | object |
+| set | id, value | boolean |
+
+## 注意事项
+> **注意**: 使用时需要注意的事项。`,
+
+  notes: `# 笔记标题
+
+## 核心概念
+- **概念1**: 简要说明
+- **概念2**: 简要说明
+
+## 重要公式
+当 \\(a \\ne 0\\) 时，方程 \\(ax^2 + bx + c = 0\\) 的解为：
+\\[x = {-b \\pm \\sqrt{b^2-4ac} \\over 2a}\\]
+
+## 待办事项
+- [ ] 任务1
+- [x] 已完成任务
+- [ ] 任务2
+
+## 参考资料
+1. [参考资料1](https://example.com)
+2. [参考资料2](https://example.com)`
+};
+
+// 博客模板（包含Frontmatter）
+const getBlogTemplateWithFrontmatter = () => {
+  return `---
+title: "示例博客文章"
+date: "${new Date().toISOString().split('T')[0]}"
+category: "技术"
+tags: ["示例", "Markdown"]
+excerpt: "这是一篇示例博客文章的摘要"
+author: "歆橙"
+draft: false
+featured: false
+---
+
+# 示例博客文章
+
+## 引言
+这是一篇示例博客文章的引言部分，可以简要介绍文章主题。
+
+## 主要内容
+### 要点一
+这里阐述第一个要点，可以包含**重点内容**和*强调内容*。
+
+### 要点二
+第二个要点的详细说明。
+
+## 代码示例
+\`\`\`javascript
+function example() {
+  return "示例代码";
+}
+\`\`\`
+
+## 总结
+文章的总结部分，概括主要观点。`;
+};
+
+// 基础模板
+const getBasicTemplate = () => {
+  return `# 标题
+## 二级标题
+### 三级标题
+
+**粗体** *斜体* ~~删除线~~
+
+- 无序列表项1
+- 无序列表项2
+  - 嵌套列表项
+
+1. 有序列表项1
+2. 有序列表项2
+
+> 引用文本
+
+\`\`\`javascript
+console.log('代码示例');
+\`\`\`
+
+[链接](https://example.com)`;
+};
+
+// 博客模板
+const getBlogTemplate = () => {
+  return `# 博客标题
+
+## 引言
+这是一篇博客的引言部分，可以简要介绍文章主题。
+
+## 主要内容
+### 要点一
+这里阐述第一个要点，可以包含**重点内容**和*强调内容*。
+
+### 要点二
+第二个要点的详细说明。
+
+## 代码示例
+\`\`\`javascript
+function example() {
+  return "示例代码";
+}
+\`\`\`
+
+## 总结
+文章的总结部分，概括主要观点。`;
+};
 
 export default function MarkdownEditor({ 
   initialContent = '', 
@@ -149,7 +328,7 @@ export default function MarkdownEditor({
   const [blogMetadata, setBlogMetadata] = useState<BlogMetadata>({
     title: '',
     date: new Date().toISOString().split('T')[0],
-    category: '技术',
+    category: '',
     tags: [],
     excerpt: '',
     readTime: 0,
@@ -168,10 +347,68 @@ export default function MarkdownEditor({
   const [newTag, setNewTag] = useState('');
   const [showMetadataPanel, setShowMetadataPanel] = useState(false);
   const [showCustomMetadataDialog, setShowCustomMetadataDialog] = useState(false);
-  const [tempMetadata, setTempMetadata] = useState<BlogMetadata>(blogMetadata);
+  const [showTemplateDialog, setShowTemplateDialog] = useState(false);
+  const [tempMetadata, setTempMetadata] = useState<BlogMetadata>({
+    title: '',
+    date: new Date().toISOString().split('T')[0],
+    category: '',
+    tags: [],
+    excerpt: '',
+    readTime: 0,
+    author: '歆橙',
+    slug: '',
+    coverImage: '',
+    draft: false,
+    featured: false,
+    series: '',
+    seriesOrder: 1,
+    language: 'zh-CN',
+    canonicalUrl: '',
+    seoTitle: '',
+    seoDescription: ''
+  });
   const [showAdvancedMetadata, setShowAdvancedMetadata] = useState(false);
   
+  // GitHub配置
+  const [githubConfig, setGithubConfig] = useState({
+    owner: 'XinChengP',
+    repo: 'OxygenBlogPlatform',
+    branch: 'main',
+    token: '',
+  });
+  
+  // 发布状态
+  const [publishStatus, setPublishStatus] = useState({
+    isPublishing: false,
+    message: '',
+    success: false,
+  });
+  
+  // 新增功能状态
+  const [showFindReplace, setShowFindReplace] = useState(false);
+  const [findText, setFindText] = useState('');
+  const [replaceText, setReplaceText] = useState('');
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [selectedColor, setSelectedColor] = useState('#ff0000');
+  const [showSpellCheck, setShowSpellCheck] = useState(false);
+  const [fontSize, setFontSize] = useState(14);
+  const [showWordCountDetails, setShowWordCountDetails] = useState(false);
+  const [textAlign, setTextAlign] = useState<'left' | 'center' | 'right'>('left');
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  
   const isDark = resolvedTheme === 'dark';
+
+  // 初始化时设置默认内容
+  useEffect(() => {
+    // 不再自动设置默认内容，保持编辑器为空
+    // 用户需要点击"示例"按钮才会加载模板
+    
+    // 确保编辑器内容为空，不加载任何预设模板
+    if (content && content.trim() !== '') {
+      // 如果内容不为空，可能是从其他地方传来的，保持不变
+      return;
+    }
+  }, [blogMode, initialContent]); // 只在blogMode或initialContent变化时执行
 
   // 计算字数统计和阅读时间
   useEffect(() => {
@@ -282,7 +519,7 @@ export default function MarkdownEditor({
         setRenderedContent(html);
       } catch (error) {
         console.error('预览渲染失败:', error);
-        setRenderedContent(`<div class="text-red-500 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+        setRenderedContent(`<div class="text-[#ee0000] p-4 bg-[#ee0000]/10 dark:bg-[#ee0000]/20 rounded-lg border border-[#ee0000] dark:border-[#ee0000]">
           <p>预览渲染失败: ${error instanceof Error ? error.message : '未知错误'}</p>
         </div>`);
       } finally {
@@ -399,14 +636,14 @@ export default function MarkdownEditor({
               // 更新按钮状态
               const originalText = button.innerHTML;
               button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 h-4 w-4"><polyline points="20 6 9 17 4 12"></polyline></svg>已复制!';
-              button.classList.remove('bg-blue-500', 'hover:bg-blue-600');
+              button.classList.remove('bg-[#66ccff]', 'hover:bg-[#55bbee]');
               button.classList.add('bg-green-500', 'hover:bg-green-600');
               
               // 2秒后恢复原状
               setTimeout(() => {
                 button.innerHTML = originalText;
                 button.classList.remove('bg-green-500', 'hover:bg-green-600');
-                button.classList.add('bg-blue-500', 'hover:bg-blue-600');
+                button.classList.add('bg-[#66ccff]', 'hover:bg-[#55bbee]');
               }, 2000);
               
             } catch (error) {
@@ -449,9 +686,12 @@ export default function MarkdownEditor({
   
   // 初始化博客模式
   useEffect(() => {
-    if (blogMode && !initialContent) {
-      setContent(getBlogTemplate());
+    // 默认情况下不加载模板，除非明确指定了初始内容
+    if (blogMode && initialContent) {
+      setContent(initialContent);
     }
+    // 如果需要在博客模式下加载默认内容，可以在这里添加逻辑
+    // 例如：if (blogMode && someCondition) { setContent(getBlogTemplate()); }
   }, [blogMode, initialContent]);
   
   // 博客元数据变化通知
@@ -490,13 +730,21 @@ export default function MarkdownEditor({
             e.preventDefault();
             redo();
             break;
+          case 'f':
+            e.preventDefault();
+            setShowFindReplace(!showFindReplace);
+            break;
+          case 'g':
+            e.preventDefault();
+            setShowFindReplace(!showFindReplace);
+            break;
         }
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [content, undo, redo]);
+  }, [content, undo, redo, showFindReplace]);
 
   // 监听文本选择
   const handleTextSelection = () => {
@@ -548,6 +796,12 @@ export default function MarkdownEditor({
     }
   };
 
+
+
+
+
+
+
   // 工具栏操作 - 按功能分组
   const toolbarActions = {
     format: [
@@ -561,6 +815,12 @@ export default function MarkdownEditor({
       { icon: 'U', title: '下划线', action: () => handleToolbarAction('<u>', '</u>') },
       { icon: 'S', title: '删除线', action: () => handleToolbarAction('~~', '~~') },
     ],
+    style: [
+      { id: 'textColor', icon: '颜色', title: '文本颜色', action: () => setShowColorPicker(!showColorPicker) },
+      { id: 'findReplace', icon: '查找', title: '查找替换', action: () => setShowFindReplace(!showFindReplace) },
+      { id: 'wordCount', icon: '统计', title: '字数统计', action: () => setShowWordCountDetails(!showWordCountDetails) },
+      { id: 'spellCheck', icon: '拼写', title: '拼写检查', action: () => setShowSpellCheck(!showSpellCheck) },
+    ],
     code: [
       { icon: '</>', title: '行内代码', action: () => handleToolbarAction('`', '`') },
       { icon: '{ }', title: '代码块', action: () => handleToolbarAction('```\n', '\n```') },
@@ -572,14 +832,24 @@ export default function MarkdownEditor({
       { icon: '> ', title: '引用', action: () => handleToolbarAction('> ', '') },
     ],
     media: [
-      { icon: '🔗', title: '链接', action: () => handleToolbarAction('[', '](url)') },
-      { icon: '🖼️', title: '图片', action: () => handleToolbarAction('![', '](image-url)') },
+      { icon: '链接', title: '链接', action: () => handleToolbarAction('[', '](url)') },
+      { icon: '图片', title: '图片', action: () => handleToolbarAction('![', '](image-url)') },
     ],
+    file: [],
     table: [
       { icon: '⊞', title: '表格', action: () => handleToolbarAction('\n| 标题1 | 标题2 | 标题3 |\n|-------|-------|-------|\n| 内容1 | 内容2 | 内容3 |\n', '') },
       { icon: '∥', title: '分割线', action: () => handleToolbarAction('\n---\n', '') },
     ]
   };
+
+  // 第二行工具栏操作
+  const secondRowActions = [
+    { icon: '链接', title: '链接', action: () => handleToolbarAction('[', '](url)') },
+    { icon: '图片', title: '图片', action: () => handleToolbarAction('![', '](image-url)') },
+    { id: 'increaseFont', icon: 'A+', title: '增大字体', action: () => setFontSize(Math.min(fontSize + 2, 24)) },
+    { id: 'decreaseFont', icon: 'A-', title: '减小字体', action: () => setFontSize(Math.max(fontSize - 2, 12)) },
+    { id: 'shortcuts', icon: '快捷键', title: '快捷键', action: () => setShowShortcuts(!showShortcuts) },
+  ];
 
   // 直接处理工具栏按钮点击，确保历史记录正确保存
   const handleToolbarAction = (before: string, after: string = '') => {
@@ -690,7 +960,7 @@ export default function MarkdownEditor({
       html = html.replace(/<h3>/g, '<h3 class="text-xl font-semibold mt-4 mb-2 text-gray-900 dark:text-gray-100">');
       
       // 添加自定义链接样式
-      html = html.replace(/<a /g, '<a class="text-blue-600 dark:text-blue-400 hover:underline hover:text-blue-800 dark:hover:text-blue-300 transition-colors" target="_blank" rel="noopener noreferrer" ');
+      html = html.replace(/<a /g, '<a class="text-[#66ccff] dark:text-[#66ccff] hover:underline hover:text-[#55bbee] dark:hover:text-[#55bbee] transition-colors" target="_blank" rel="noopener noreferrer" ');
       
       // 添加自定义图片样式
       html = html.replace(/<img /g, '<img class="max-w-full h-auto rounded-lg my-3 shadow-md hover:shadow-lg transition-shadow" ');
@@ -779,14 +1049,14 @@ export default function MarkdownEditor({
       
       // 返回增强的HTML结构 - 更明显的代码块
       return `<div class="my-8 rounded-xl border-2 border-gray-200 dark:border-gray-700 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden bg-white dark:bg-gray-900" data-code-id="code-${Date.now()}-${Math.random().toString(36).substr(2, 9)}">
-        <div class="flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 px-6 py-3 border-b-2 border-blue-200 dark:border-gray-600">
+        <div class="flex items-center justify-between bg-gradient-to-r from-[#66ccff]/10 to-[#66ccff]/20 dark:from-gray-800 dark:to-gray-700 px-6 py-3 border-b-2 border-[#66ccff] dark:border-gray-600">
           <div class="flex items-center gap-3">
             <div class="flex items-center gap-2">
-              <span class="w-3 h-3 bg-red-400 rounded-full"></span>
+              <span class="w-3 h-3 bg-[#ee0000] rounded-full"></span>
               <span class="w-3 h-3 bg-yellow-400 rounded-full"></span>
               <span class="w-3 h-3 bg-green-400 rounded-full"></span>
             </div>
-            <span class="text-sm font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide">${displayLanguage || '代码'}</span>
+            <span class="text-sm font-semibold text-[#66ccff] dark:text-[#66ccff] uppercase tracking-wide">${displayLanguage || '代码'}</span>
           </div>
         </div>
         <div class="p-6 bg-gray-50 dark:bg-gray-950">
@@ -810,7 +1080,7 @@ export default function MarkdownEditor({
     });
     
     // 链接
-    html = html.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<a href="$2" class="text-blue-600 dark:text-blue-400 hover:underline hover:text-blue-800 dark:hover:text-blue-300 transition-colors" target="_blank" rel="noopener noreferrer">$1</a>');
+    html = html.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<a href="$2" class="text-[#66ccff] dark:text-[#66ccff] hover:underline hover:text-[#55bbee] dark:hover:text-[#55bbee] transition-colors" target="_blank" rel="noopener noreferrer">$1</a>');
     
     // 图片
     html = html.replace(/!\[([^\]]*)\]\(([^\)]+)\)/g, '<img src="$2" alt="$1" class="max-w-full h-auto rounded-lg my-3 shadow-md hover:shadow-lg transition-shadow" />');
@@ -890,6 +1160,52 @@ seoDescription: "${blogMetadata.seoDescription}"
     setTimeout(() => setSaved(false), 2000);
   };
 
+  // 新增功能函数
+  // 查找替换功能
+  const handleFindReplace = () => {
+    if (!findText) return;
+    
+    let newContent = content;
+    const regex = new RegExp(findText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+    newContent = newContent.replace(regex, replaceText);
+    
+    setContent(newContent);
+    addToHistory(newContent);
+    setShowFindReplace(false);
+  };
+
+  // 应用文本颜色
+  const applyTextColor = (color?: string) => {
+    const targetColor = color || selectedColor;
+    if (!selectedText) {
+      insertText(`<span style="color: ${targetColor}">`, '</span>');
+    } else {
+      formatSelectedText(`<span style="color: ${targetColor}">`, '</span>');
+    }
+    setShowColorPicker(false);
+  };
+
+  // 应用文本高亮
+  const applyTextHighlight = (color?: string) => {
+    const targetColor = color || '#ffff00';
+    if (!selectedText) {
+      insertText(`<mark style="background-color: ${targetColor}">`, '</mark>');
+    } else {
+      formatSelectedText(`<mark style="background-color: ${targetColor}">`, '</mark>');
+    }
+    setShowColorPicker(false);
+  };
+
+  // 应用文本对齐
+  const applyTextAlignment = (alignment: 'left' | 'center' | 'right') => {
+    setTextAlign(alignment);
+    if (!selectedText) {
+      insertText(`<div style="text-align: ${alignment}">`, '</div>');
+    } else {
+      formatSelectedText(`<div style="text-align: ${alignment}">`, '</div>');
+    }
+  };
+
   // 一键生成博客元数据
   const generateBlogMetadata = () => {
     if (!content.trim()) {
@@ -948,7 +1264,7 @@ seoDescription: "${blogMetadata.seoDescription}"
   };
 
   // 处理发布到项目
-  const handlePublish = () => {
+  const handlePublish = async () => {
     if (!blogMode) {
       alert('发布功能仅在博客模式下可用');
       return;
@@ -968,6 +1284,18 @@ seoDescription: "${blogMetadata.seoDescription}"
       alert('请输入文章内容');
       return;
     }
+
+    // 验证GitHub配置
+    if (!githubConfig.owner || !githubConfig.repo || !githubConfig.token) {
+      alert('请先配置GitHub仓库信息');
+      return;
+    }
+
+    setPublishStatus({
+      isPublishing: true,
+      message: '正在发布到GitHub...',
+      success: false,
+    });
 
     try {
       // 生成符合项目规范的Markdown内容
@@ -1003,24 +1331,46 @@ seoDescription: "${blogMetadata.seoDescription}"
         .toLowerCase() || 'blog-post';
       
       const fileName = `${safeFileName}.md`;
+
+      // 直接调用GitHub API发布（适用于静态导出模式）
+      const { createOrUpdateFile } = await import('../../services/githubApi');
+      const { convertToMarkdownWithFrontmatter } = await import('../../services/blogPublish');
       
-      // 创建下载链接
-      const blob = new Blob([fullContent], { type: 'text/markdown' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      const blogPost = {
+        title: blogMetadata.title,
+        content: content,
+        date: blogMetadata.date,
+        metadata: blogMetadata
+      };
       
-      // 显示发布成功信息
-      alert(`文章已成功生成！\n文件名：${fileName}\n请将文件保存到 src/content/blogs 目录中`);
+      const markdownContent = convertToMarkdownWithFrontmatter(blogPost);
+      const message = `Add new blog post: ${blogMetadata.title}`;
+      
+      await createOrUpdateFile(
+        githubConfig,
+        `src/content/blogs/${fileName}`,
+        {
+          message: message,
+          content: btoa(markdownContent), // 转换为base64编码
+        }
+      );
+
+      setPublishStatus({
+        isPublishing: false,
+        message: '发布成功！',
+        success: true,
+      });
+      alert(`文章发布成功！\n文件名：${fileName}\n已提交到GitHub仓库`);
       
     } catch (error) {
       console.error('发布失败:', error);
-      alert('发布失败，请检查控制台错误信息');
+      const errorMessage = error instanceof Error ? error.message : '未知错误';
+      setPublishStatus({
+        isPublishing: false,
+        message: `发布失败: ${errorMessage}`,
+        success: false,
+      });
+      alert(`发布失败: ${errorMessage}`);
     }
   };
 
@@ -1035,323 +1385,139 @@ seoDescription: "${blogMetadata.seoDescription}"
     }
   };
 
-  // 加载示例内容
-  const loadSample = () => {
-    addToHistory(content); // 加载示例前记录当前状态
-    const sampleContent = blogMode ? getBlogTemplate() : getBasicTemplate();
-    setContent(sampleContent);
-    addToHistory(sampleContent); // 记录加载后的状态
-    // 立即强制重新渲染以确保样式正确应用
-    setRenderTrigger(prev => prev + 1);
-  };
-  
-  // 基础模板
-  const getBasicTemplate = () => {
-    return `# Markdown 编辑器
-
-欢迎使用 **Markdown 编辑器**！
-
-## 功能特性
-
-- ✅ 实时预览
-- ✅ 智能格式化
-- ✅ 快捷键支持
-- ✅ 主题适配
-
-## 代码示例
-
-### JavaScript
-\`\`\`js
-const message = "Hello World";
-console.log(message);
-\`\`\`
-
-### Python
-\`\`\`python
-message = "Hello World"
-print(message)
-\`\`\`
-
-### HTML
-\`\`\`html
-<button>点击我</button>
-\`\`\`
-
-| 功能 | 状态 |
-|------|------|
-| 编辑 | ✅ |
-| 预览 | ✅ |
-
----
-
-> 开始创作你的技术文档吧！`;
-  };
-  
-  // 博客模板
-  const getBlogTemplate = () => {
-    return `# 文章标题
-
-> **摘要**：
-
-> **关键词**：
-
----
-
-## 引言
-
-
-## 核心内容
-
-### 第一部分
-
-
-### 第二部分
-
-
-## 总结
-
-
-### 🏷️ 推荐标签
-示例标签1, 示例标签2, 示例标签3
-
-### 📅 发布建议
-- **最佳时间**：周二至周四的上午 10-12 点
-  pages: {
-    signIn: '/login',
-    signUp: '/register'
-  }
-}
-\`\`\`
-
-### 📊 性能优化策略
-
-#### 数据获取优化
-
-使用 Server Components 和缓存策略：
-
-\`\`\`typescript
-// app/posts/[id]/page.tsx
-import { prisma } from '@/lib/db'
-import { notFound } from 'next/navigation'
-import { cache } from 'react'
-
-// 缓存数据获取函数
-const getPost = cache(async (id: string) => {
-  const post = await prisma.post.findUnique({
-    where: { id },
-    include: {
-      author: {
-        select: { name: true, email: true }
-      },
-      comments: {
-        include: {
-          author: {
-            select: { name: true }
-          }
-        },
-        orderBy: { createdAt: 'desc' }
+  // 处理内容变化，自动检测并解析Frontmatter
+  const handleContentChange = (newContent: string) => {
+    setContent(newContent);
+    addToHistory(newContent);
+    
+    // 如果是博客模式，检测并解析Frontmatter
+    if (blogMode) {
+      const frontmatterRegex = /^---\s*\n([\s\S]*?)\n---\s*\n([\s\S]*)$/;
+      const match = newContent.match(frontmatterRegex);
+      
+      if (match) {
+        parseFrontmatterAndUpdateMetadata(newContent);
       }
     }
-  })
+  };
   
-  return post
-})
-
-export default async function PostPage({ 
-  params 
-}: { 
-  params: { id: string } 
-}) {
-  const post = await getPost(params.id)
-  
-  if (!post) {
-    notFound()
-  }
-  
-  return (
-    <article className="max-w-4xl mx-auto p-6">
-      <h1 className="text-4xl font-bold mb-4">{post.title}</h1>
-      <div className="text-gray-600 mb-8">
-        作者: {post.author.name} | 发布时间: {new Date(post.createdAt).toLocaleDateString()}
-      </div>
-      <div className="prose prose-lg">{post.content}</div>
+  // 解析Frontmatter并更新元数据
+  const parseFrontmatterAndUpdateMetadata = (content: string) => {
+    // 检查内容是否包含Frontmatter
+    const frontmatterRegex = /^---\s*\n([\s\S]*?)\n---\s*\n([\s\S]*)$/;
+    const match = content.match(frontmatterRegex);
+    
+    if (match) {
+      const frontmatterStr = match[1];
+      const markdownContent = match[2];
       
-      <section className="mt-12">
-        <h2 className="text-2xl font-bold mb-4">评论</h2>
-        <CommentList comments={post.comments} />
-      </section>
-    </article>
-  )
-}
-\`\`\`
-
-#### 图片优化
-
-使用 Next.js Image 组件优化图片加载：
-
-\`\`\`typescript
-// components/OptimizedImage.tsx
-import Image from 'next/image'
-import { getImageUrl } from '@/lib/utils'
-
-interface OptimizedImageProps {
-  src: string
-  alt: string
-  width?: number
-  height?: number
-  className?: string
-  priority?: boolean
-}
-
-### 🛡️ 错误处理与监控
-
-#### 错误边界实现
-
-创建错误边界组件处理运行时错误：
-
-\`\`\`typescript
-// components/error-boundary.tsx
-'use client'
-
-import { Component, ErrorInfo, ReactNode } from 'react'
-
-interface Props {
-  children: ReactNode
-  fallback?: ReactNode
-}
-
-interface State {
-  hasError: boolean
-  error: Error | null
-}
-
-export class ErrorBoundary extends Component<Props, State> {
-  constructor(props: Props) {
-    super(props)
-    this.state = { hasError: false, error: null }
-  }
-
-  static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error }
-  }
-
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Error caught by boundary:', error, errorInfo)
-    // 这里可以发送错误到监控服务
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return this.props.fallback || (
-        <div className="flex flex-col items-center justify-center min-h-[400px] p-8">
-          <div className="text-red-500 text-6xl mb-4">⚠️</div>
-          <h2 className="text-2xl font-bold mb-2">出错了</h2>
-          <p className="text-gray-600 mb-4">
-            {this.state.error?.message || '发生了未知错误'}
-          </p>
-          <button
-            onClick={() => this.setState({ hasError: false, error: null })}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            重试
-          </button>
-        </div>
-      )
+      try {
+        // 解析Frontmatter
+        const frontmatterLines = frontmatterStr.split('\n');
+        const parsedMetadata: Partial<BlogMetadata> = {};
+        
+        frontmatterLines.forEach(line => {
+          const trimmedLine = line.trim();
+          if (!trimmedLine) return;
+          
+          const colonIndex = trimmedLine.indexOf(':');
+          if (colonIndex === -1) return;
+          
+          const key = trimmedLine.substring(0, colonIndex).trim();
+          let value = trimmedLine.substring(colonIndex + 1).trim();
+          
+          // 处理引号
+          if ((value.startsWith('"') && value.endsWith('"')) || 
+              (value.startsWith("'") && value.endsWith("'"))) {
+            value = value.slice(1, -1);
+          }
+          
+          // 处理数组
+          if (value.startsWith('[') && value.endsWith(']')) {
+            try {
+              value = value.slice(1, -1);
+              const items = value.split(',').map(item => {
+                item = item.trim();
+                if ((item.startsWith('"') && item.endsWith('"')) || 
+                    (item.startsWith("'") && item.endsWith("'"))) {
+                  return item.slice(1, -1);
+                }
+                return item;
+              });
+              (parsedMetadata as any)[key] = items;
+            } catch (e) {
+              // 如果解析失败，保留原始字符串
+              (parsedMetadata as any)[key] = value;
+            }
+          } else {
+            // 处理布尔值
+            if (value === 'true') {
+              (parsedMetadata as any)[key] = true;
+            } else if (value === 'false') {
+              (parsedMetadata as any)[key] = false;
+            } else {
+              (parsedMetadata as any)[key] = value;
+            }
+          }
+        });
+        
+        // 更新元数据状态
+        setBlogMetadata(prev => ({
+          ...prev,
+          ...parsedMetadata
+        }));
+        
+        // 更新内容（移除Frontmatter）
+        setContent(markdownContent);
+      } catch (error) {
+        console.error('解析Frontmatter失败:', error);
+      }
     }
+  };
+  
+  // 加载示例内容 - 随机加载模板，去掉Frontmatter
+  const loadSample = () => {
+    console.log('loadSample函数被调用 - 随机加载模板');
+    
+    try {
+      addToHistory(content); // 加载示例前记录当前状态
+      
+      // 定义模板数组（去掉Frontmatter）
+      const templates = [
+        presetTemplates.basic,
+        presetTemplates.blog,
+        presetTemplates.technical,
+        presetTemplates.notes
+      ];
+      
+      // 随机选择一个模板
+      const randomTemplate = templates[Math.floor(Math.random() * templates.length)];
+      
+      // 移除Frontmatter部分（如果有的话）
+      const contentWithoutFrontmatter = randomTemplate.replace(/^---[\s\S]*?---\n*/, '');
+      
+      console.log('随机加载的模板内容长度:', contentWithoutFrontmatter.length);
+      
+      setContent(contentWithoutFrontmatter);
+      addToHistory(contentWithoutFrontmatter);
+      
+      // 立即强制重新渲染以确保样式正确应用
+      setRenderTrigger(prev => prev + 1);
+      
+      console.log('随机模板加载完成');
+    } catch (error) {
+      console.error('加载示例内容时出错:', error);
+      alert('加载示例内容时出错，请查看控制台了解详情');
+    }
+  };
 
-    return this.props.children
-  }
-}
-\`\`\`
 
-## 📊 效果验证
-
-### 性能对比测试
-
-通过实际项目测试，Next.js 15 相比前一版本在多个维度都有显著提升：
-
-#### 核心性能指标
-| 指标 | Next.js 14 | Next.js 15 | 提升幅度 |
-|------|------------|------------|----------|
-| 首屏加载时间 | 1.2s | 0.8s | **33% ↓** |
-| 交互就绪时间 | 2.1s | 1.4s | **33% ↓** |
-| JS 包大小 | 85KB | 65KB | **24% ↓** |
-| 构建时间 | 45s | 32s | **29% ↓** |
-| Lighthouse 评分 | 92 | 98 | **6% ↑** |
-
-#### 用户体验指标
-- **Largest Contentful Paint (LCP)**: 从 1.8s 优化到 1.2s
-- **First Input Delay (FID)**: 保持在 16ms 的优秀水平
-- **Cumulative Layout Shift (CLS)**: 从 0.08 优化到 0.03
-
-### 开发者体验提升
-
-> "Next.js 15 的开发体验真的太棒了！热更新速度明显提升，错误提示更加友好，特别是新的调试工具让我们能够快速定位和解决问题。"
-> 
-> —— 某大型互联网公司前端架构师
-
-> "Server Components 的性能表现超出预期，我们的页面加载速度提升了 40%，同时 SEO 效果也有显著改善。"
-> 
-> —— 某电商平台技术负责人
-
-## 🛠️ 最佳实践总结
-
-### ✅ 强烈推荐
-1. **采用 App Router**：新特性只有在 App Router 中才能完全发挥优势
-2. **合理使用 Server Components**：默认使用服务端组件，只在需要客户端交互时使用 Client Components
-3. **优化数据获取**：使用缓存和增量静态再生成策略
-4. **重视类型安全**：充分利用 TypeScript 和 Zod 等工具
-5. **建立监控体系**：集成 Sentry、LogRocket 等监控工具
-
-### ❌ 常见陷阱
-- **过度使用 Client Components**：这会失去服务端渲染的优势
-- **忽视错误处理**：生产环境中一定要有完善的错误边界
-- **忽略性能监控**：性能问题往往在生产环境才暴露
-- **数据库查询优化不足**：N+1 查询问题在服务端渲染中影响更大
-
-## 🔮 未来发展趋势
-
-### 技术演进方向
-- **边缘计算集成**：Next.js 与边缘计算平台的深度整合
-- **AI 辅助开发**：智能化的代码生成和优化建议
-- **微前端支持**：更好的大型应用架构支持
-- **WebAssembly 集成**：利用 WASM 提升计算密集型任务性能
-
-### 生态系统展望
-- **更多数据库适配器**：Prisma、Drizzle ORM 的深度集成
-- **云服务集成**：Vercel、Netlify、AWS 等平台的原生支持
-- **开发工具完善**：更强大的调试、测试、部署工具链
-
-## 📖 总结
-
-### 核心要点回顾
-1. **技术选型**：Next.js 15 + React 19 提供了强大的全栈开发能力
-2. **架构设计**：合理规划项目结构，分离关注点
-3. **性能优化**：从多个维度提升应用性能和用户体验
-4. **最佳实践**：遵循推荐的模式，避免常见陷阱
-
-### 行动建议
-- **立即开始**：使用本文提供的模板和最佳实践开始你的 Next.js 15 项目
-- **持续学习**：关注官方文档和社区动态，及时了解新特性
-- **实践验证**：在实际项目中验证这些最佳实践的效果
-- **分享经验**：将你的经验分享给社区，共同推进技术进步
-
----
-
-> **💡 开发小贴士**：
-> - 使用 \`next dev --turbo\` 启用 Turbopack 加速开发
-> - 配置 \`experimental.optimizeCss\` 优化生产环境 CSS
-> - 利用 \`@next/bundle-analyzer\` 分析包大小
-> - 设置 \`images.domains\` 优化图片加载
-
-### 🏷️ 推荐标签
-Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, App Router
-
-### 📅 发布建议
-- **最佳时间**：周二至周四的上午 10-12 点
-- **预热策略**：提前在社交媒体分享关键观点
-- **互动跟进**：发布后及时回复评论，与读者互动
-- **后续更新**：根据读者反馈持续完善内容`;
+  
+  // 处理模板选择（现在不需要了，但保留以备后用）
+  const handleTemplateSelect = (templateKey: string) => {
+    // 这个函数现在不再使用，因为loadSample直接随机加载
+    // 保留是为了向后兼容性
+    console.log('handleTemplateSelect函数被调用，但不再使用');
   };
   
   // 渲染自定义元数据对话框
@@ -1362,7 +1528,7 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
       <div className="fixed inset-0 bg-black/20 dark:bg-gray-900/20 backdrop-blur-md flex items-center justify-center z-50">
         <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            ✨ 自定义博客元数据
+            自定义博客元数据
           </h3>
           
           <div className="space-y-4">
@@ -1377,7 +1543,7 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
                   type="text"
                   value={tempMetadata.title}
                   onChange={(e) => setTempMetadata(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#66ccff] focus:border-[#66ccff] text-sm"
                   placeholder="输入文章标题"
                 />
               </div>
@@ -1391,7 +1557,7 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
                   type="text"
                   value={tempMetadata.author}
                   onChange={(e) => setTempMetadata(prev => ({ ...prev, author: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#66ccff] focus:border-[#66ccff] text-sm"
                   placeholder="作者名称"
                 />
               </div>
@@ -1404,7 +1570,7 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
                 <select
                   value={tempMetadata.category}
                   onChange={(e) => setTempMetadata(prev => ({ ...prev, category: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#66ccff] focus:border-[#66ccff] text-sm"
                 >
                   {categories.map(category => (
                     <option key={category} value={category}>{category}</option>
@@ -1421,7 +1587,7 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
                   type="date"
                   value={tempMetadata.date}
                   onChange={(e) => setTempMetadata(prev => ({ ...prev, date: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#66ccff] focus:border-[#66ccff] text-sm"
                 />
               </div>
               
@@ -1433,7 +1599,7 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
                 <select
                   value={tempMetadata.language}
                   onChange={(e) => setTempMetadata(prev => ({ ...prev, language: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#66ccff] focus:border-[#66ccff] text-sm"
                 >
                   <option value="zh-CN">简体中文</option>
                   <option value="zh-TW">繁體中文</option>
@@ -1451,7 +1617,7 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
                   type="text"
                   value={tempMetadata.series}
                   onChange={(e) => setTempMetadata(prev => ({ ...prev, series: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#66ccff] focus:border-[#66ccff] text-sm"
                   placeholder="系列文章名称（可选）"
                 />
               </div>
@@ -1469,7 +1635,7 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
                   const tags = e.target.value.split(/[,，\s]+/).map(tag => tag.trim()).filter(tag => tag.length > 0);
                   setTempMetadata(prev => ({ ...prev, tags: tags.slice(0, 5) }));
                 }}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#66ccff] focus:border-[#66ccff] text-sm"
                 placeholder="例如: Next.js, React, 前端开发"
               />
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -1485,7 +1651,7 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
               <textarea
                 value={tempMetadata.excerpt}
                 onChange={(e) => setTempMetadata(prev => ({ ...prev, excerpt: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#66ccff] focus:border-[#66ccff] text-sm"
                 rows={3}
                 placeholder="输入文章摘要"
                 maxLength={200}
@@ -1499,7 +1665,7 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
             <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
               <button
                 onClick={() => setShowAdvancedMetadata(!showAdvancedMetadata)}
-                className="flex items-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                className="flex items-center text-sm text-[#66ccff] dark:text-[#66ccff] hover:text-[#55bbee] dark:hover:text-[#55bbee]"
               >
                 {showAdvancedMetadata ? '收起高级设置' : '展开高级设置'}
                 <svg 
@@ -1524,7 +1690,7 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
                         type="checkbox"
                         checked={tempMetadata.draft}
                         onChange={(e) => setTempMetadata(prev => ({ ...prev, draft: e.target.checked }))}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="rounded border-gray-300 text-[#66ccff] focus:ring-[#66ccff]"
                       />
                       <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                         草稿状态
@@ -1539,7 +1705,7 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
                         type="checkbox"
                         checked={tempMetadata.featured}
                         onChange={(e) => setTempMetadata(prev => ({ ...prev, featured: e.target.checked }))}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="rounded border-gray-300 text-[#66ccff] focus:ring-[#66ccff]"
                       />
                       <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                         特色文章
@@ -1557,7 +1723,7 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
                       min="1"
                       value={tempMetadata.seriesOrder}
                       onChange={(e) => setTempMetadata(prev => ({ ...prev, seriesOrder: parseInt(e.target.value) || 1 }))}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#66ccff] focus:border-[#66ccff] text-sm"
                       placeholder="1"
                     />
                   </div>
@@ -1571,7 +1737,7 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
                       type="url"
                       value={tempMetadata.coverImage}
                       onChange={(e) => setTempMetadata(prev => ({ ...prev, coverImage: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#66ccff] focus:border-[#66ccff] text-sm"
                       placeholder="https://example.com/image.jpg"
                     />
                   </div>
@@ -1585,7 +1751,7 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
                       type="url"
                       value={tempMetadata.canonicalUrl}
                       onChange={(e) => setTempMetadata(prev => ({ ...prev, canonicalUrl: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#66ccff] focus:border-[#66ccff] text-sm"
                       placeholder="https://example.com/original-post"
                     />
                   </div>
@@ -1599,7 +1765,7 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
                       type="text"
                       value={tempMetadata.seoTitle}
                       onChange={(e) => setTempMetadata(prev => ({ ...prev, seoTitle: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#66ccff] focus:border-[#66ccff] text-sm"
                       placeholder="优化搜索引擎显示的标题（可选）"
                     />
                   </div>
@@ -1612,7 +1778,7 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
                     <textarea
                       value={tempMetadata.seoDescription}
                       onChange={(e) => setTempMetadata(prev => ({ ...prev, seoDescription: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#66ccff] focus:border-[#66ccff] text-sm"
                       rows={2}
                       placeholder="优化搜索引擎显示的描述（可选）"
                       maxLength={160}
@@ -1631,7 +1797,7 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
                       type="text"
                       value={tempMetadata.slug}
                       onChange={(e) => setTempMetadata(prev => ({ ...prev, slug: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#66ccff] focus:border-[#66ccff] text-sm"
                       placeholder="文章URL的自定义标识（可选）"
                     />
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -1650,7 +1816,7 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
                 setBlogMetadata(tempMetadata);
                 setShowCustomMetadataDialog(false);
               }}
-              className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors text-sm font-medium"
+              className="flex-1 px-4 py-2 bg-[#66ccff] text-white rounded-md hover:bg-[#55bbee] transition-colors text-sm font-medium"
             >
               应用更改
             </button>
@@ -1661,17 +1827,31 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
               取消
             </button>
           </div>
+          <button
+            onClick={() => setShowColorPicker(false)}
+            className={`absolute top-0 right-0 px-2 py-1 rounded text-xs ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-800'}`}
+          >
+            ✕
+          </button>
         </div>
       </div>
     );
   };
+
+  // 渲染模板选择对话框（现在不需要了，因为直接随机加载）
+  const renderTemplateDialog = () => {
+    // 这个对话框不再显示，因为loadSample直接随机加载模板
+    return null;
+  };
+
+
 
   // 渲染博客元数据面板
   const renderBlogMetadataPanel = () => {
     if (!blogMode) return null;
     
     return (
-      <div className="w-80 bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-4 overflow-y-auto">
+      <div className="h-full bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-4 overflow-y-auto rounded-l-lg">
         <div className="space-y-4">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">博客元数据</h3>
           
@@ -1684,7 +1864,7 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
               type="text"
               value={blogMetadata.title}
               onChange={(e) => handleBlogMetadataChange('title', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#66ccff] focus:border-[#66ccff]"
               placeholder="输入文章标题"
             />
           </div>
@@ -1698,7 +1878,7 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
               type="date"
               value={blogMetadata.date}
               onChange={(e) => handleBlogMetadataChange('date', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#66ccff] focus:border-[#66ccff]"
             />
           </div>
           
@@ -1710,7 +1890,7 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
             <select
               value={blogMetadata.category}
               onChange={(e) => handleBlogMetadataChange('category', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#66ccff] focus:border-[#66ccff]"
             >
               {categories.map(category => (
                 <option key={category} value={category}>{category}</option>
@@ -1729,23 +1909,23 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
                 value={newTag}
                 onChange={(e) => setNewTag(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && addTag()}
-                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#66ccff] focus:border-[#66ccff]"
                 placeholder="添加标签"
               />
               <button
                 onClick={addTag}
-                className="px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+                className="px-3 py-2 bg-[#66ccff] text-white rounded-md hover:bg-[#55bbee] transition-colors"
               >
                 添加
               </button>
             </div>
             <div className="flex flex-wrap gap-2">
               {blogMetadata.tags.map(tag => (
-                <span key={tag} className="inline-flex items-center px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-sm rounded">
+                <span key={tag} className="inline-flex items-center px-2 py-1 bg-[#66ccff] dark:bg-[#1e40af] text-white text-sm rounded">
                   {tag}
                   <button
                     onClick={() => removeTag(tag)}
-                    className="ml-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200"
+                    className="ml-1 text-white hover:text-gray-200"
                   >
                     ×
                   </button>
@@ -1762,7 +1942,7 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
             <textarea
               value={blogMetadata.excerpt}
               onChange={(e) => handleBlogMetadataChange('excerpt', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#66ccff] focus:border-[#66ccff]"
               rows={3}
               placeholder="输入文章摘要"
             />
@@ -1786,7 +1966,7 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
                   type="text"
                   value={blogMetadata.author}
                   onChange={(e) => handleBlogMetadataChange('author', e.target.value)}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-[#66ccff] focus:border-[#66ccff]"
                   placeholder="文章作者"
                 />
               </div>
@@ -1799,7 +1979,7 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
                 <select
                   value={blogMetadata.language}
                   onChange={(e) => handleBlogMetadataChange('language', e.target.value)}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-[#66ccff] focus:border-[#66ccff]"
                 >
                   <option value="zh-CN">简体中文</option>
                   <option value="zh-TW">繁體中文</option>
@@ -1818,7 +1998,7 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
                   type="text"
                   value={blogMetadata.series}
                   onChange={(e) => handleBlogMetadataChange('series', e.target.value)}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-[#66ccff] focus:border-[#66ccff]"
                   placeholder="系列文章名称（可选）"
                 />
               </div>
@@ -1834,7 +2014,7 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
                     min="1"
                     value={blogMetadata.seriesOrder}
                     onChange={(e) => handleBlogMetadataChange('seriesOrder', parseInt(e.target.value) || 1)}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-[#66ccff] focus:border-[#66ccff]"
                   />
                 </div>
               )}
@@ -1847,7 +2027,7 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
               <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">高级设置</h4>
               <button
                 onClick={() => setShowAdvancedMetadata(!showAdvancedMetadata)}
-                className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                className="text-xs text-[#66ccff] dark:text-[#66ccff] hover:text-[#55bbee] dark:hover:text-[#55bbee]"
               >
                 {showAdvancedMetadata ? '收起' : '展开'}
               </button>
@@ -1862,7 +2042,7 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
                     id="draft"
                     checked={blogMetadata.draft}
                     onChange={(e) => handleBlogMetadataChange('draft', e.target.checked)}
-                    className="h-3 w-3 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                    className="h-3 w-3 text-[#66ccff] bg-gray-100 border-gray-300 rounded focus:ring-[#66ccff] dark:focus:ring-[#66ccff] dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                   />
                   <label htmlFor="draft" className="ml-2 text-xs font-medium text-gray-700 dark:text-gray-300">
                     草稿文章
@@ -1876,7 +2056,7 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
                     id="featured"
                     checked={blogMetadata.featured}
                     onChange={(e) => handleBlogMetadataChange('featured', e.target.checked)}
-                    className="h-3 w-3 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                    className="h-3 w-3 text-[#66ccff] bg-gray-100 border-gray-300 rounded focus:ring-[#66ccff] dark:focus:ring-[#66ccff] dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                   />
                   <label htmlFor="featured" className="ml-2 text-xs font-medium text-gray-700 dark:text-gray-300">
                     特色文章
@@ -1892,7 +2072,7 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
                     type="url"
                     value={blogMetadata.coverImage}
                     onChange={(e) => handleBlogMetadataChange('coverImage', e.target.value)}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-[#66ccff] focus:border-[#66ccff]"
                     placeholder="https://example.com/image.jpg"
                   />
                 </div>
@@ -1906,7 +2086,7 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
                     type="text"
                     value={blogMetadata.slug}
                     onChange={(e) => handleBlogMetadataChange('slug', e.target.value)}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-[#66ccff] focus:border-[#66ccff]"
                     placeholder="留空将自动生成"
                   />
                 </div>
@@ -1920,7 +2100,7 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
                     type="url"
                     value={blogMetadata.canonicalUrl}
                     onChange={(e) => handleBlogMetadataChange('canonicalUrl', e.target.value)}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-[#66ccff] focus:border-[#66ccff]"
                     placeholder="https://example.com/original-post"
                   />
                 </div>
@@ -1934,7 +2114,7 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
                     type="text"
                     value={blogMetadata.seoTitle}
                     onChange={(e) => handleBlogMetadataChange('seoTitle', e.target.value)}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-[#66ccff] focus:border-[#66ccff]"
                     placeholder="针对搜索引擎优化的标题"
                   />
                 </div>
@@ -1947,7 +2127,7 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
                   <textarea
                     value={blogMetadata.seoDescription}
                     onChange={(e) => handleBlogMetadataChange('seoDescription', e.target.value)}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-[#66ccff] focus:border-[#66ccff]"
                     rows={2}
                     placeholder="针对搜索引擎优化的描述（150-160字符）"
                   />
@@ -1956,30 +2136,80 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
             )}
           </div>
           
-          {/* 快速操作 */}
+          {/* GitHub配置 */}
           <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">快速操作</h4>
-            <div className="space-y-2">
-              <button
-                onClick={generateBlogMetadata}
-                className="w-full px-3 py-2 text-sm bg-yellow-500 text-white rounded-md hover:bg-yellow-600 transition-colors"
-              >
-                ✨ 生成元数据
-              </button>
-              <button
-                onClick={loadSample}
-                className="w-full px-3 py-2 text-sm bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
-              >
-                加载博客模板
-              </button>
-              <button
-                onClick={() => setShowMetadataPanel(!showMetadataPanel)}
-                className="w-full px-3 py-2 text-sm bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
-              >
-                {showMetadataPanel ? '隐藏面板' : '显示面板'}
-              </button>
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">GitHub配置</h4>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  仓库所有者
+                </label>
+                <input
+                  type="text"
+                  value={githubConfig.owner}
+                  onChange={(e) => setGithubConfig(prev => ({ ...prev, owner: e.target.value }))}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-[#66ccff] focus:border-[#66ccff]"
+                  placeholder="GitHub用户名或组织名"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  仓库名称
+                </label>
+                <input
+                  type="text"
+                  value={githubConfig.repo}
+                  onChange={(e) => setGithubConfig(prev => ({ ...prev, repo: e.target.value }))}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-[#66ccff] focus:border-[#66ccff]"
+                  placeholder="仓库名称（不包含.git）"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  分支
+                </label>
+                <input
+                  type="text"
+                  value={githubConfig.branch}
+                  onChange={(e) => setGithubConfig(prev => ({ ...prev, branch: e.target.value }))}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-[#66ccff] focus:border-[#66ccff]"
+                  placeholder="默认分支（如：main）"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Personal Access Token
+                </label>
+                <input
+                  type="password"
+                  value={githubConfig.token}
+                  onChange={(e) => setGithubConfig(prev => ({ ...prev, token: e.target.value }))}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-[#66ccff] focus:border-[#66ccff]"
+                  placeholder="GitHub Personal Access Token"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  需要repo权限，<a href="https://github.com/settings/tokens" target="_blank" rel="noopener noreferrer" className="text-[#66ccff] hover:underline">创建Token</a>
+                </p>
+              </div>
+              
+              {/* 发布状态 */}
+              {publishStatus.message && (
+                <div className={`p-2 rounded text-xs ${
+                  publishStatus.success 
+                    ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' 
+                    : 'bg-[#ee0000]/20 dark:bg-[#ee0000]/30 text-[#ee0000] dark:text-[#ee0000]'
+                }`}>
+                  {publishStatus.message}
+                </div>
+              )}
             </div>
           </div>
+          
+          {/* 快速操作 */}
+
         </div>
       </div>
     );
@@ -2014,11 +2244,11 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
               </p>
             )}
             {blogMetadata.series && (
-              <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 rounded">
-                <p className="text-sm text-blue-700 dark:text-blue-300">
+              <div className="mt-4 p-3 bg-[#66ccff]/10 dark:bg-[#66ccff]/20 border-l-4 border-[#66ccff] rounded">
+                <p className="text-sm text-[#66ccff] dark:text-[#66ccff]">
                   📚 系列文章: {blogMetadata.series}
                   {blogMetadata.seriesOrder > 1 && (
-                    <span className="ml-2 text-blue-600 dark:text-blue-400">
+                    <span className="ml-2 text-[#55bbee] dark:text-[#55bbee]">
                       (第{blogMetadata.seriesOrder}篇)
                     </span>
                   )}
@@ -2028,14 +2258,14 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
             {blogMetadata.draft && (
               <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-500 rounded">
                 <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                  📝 这是一篇草稿文章
+                  这是一篇草稿文章
                 </p>
               </div>
             )}
             {blogMetadata.featured && (
               <div className="mt-4 p-3 bg-purple-50 dark:bg-purple-900/20 border-l-4 border-purple-500 rounded">
                 <p className="text-sm text-purple-700 dark:text-purple-300">
-                  ⭐ 这是一篇特色文章
+                  这是一篇特色文章
                 </p>
               </div>
             )}
@@ -2046,7 +2276,7 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
             <div className="mb-6">
               <div className="flex flex-wrap gap-2">
                 {blogMetadata.tags.map(tag => (
-                  <span key={tag} className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-sm rounded-full">
+                  <span key={tag} className="px-3 py-1 bg-[#66ccff]/20 dark:bg-[#66ccff]/30 text-[#66ccff] dark:text-[#66ccff] text-sm rounded-full">
                     {tag}
                   </span>
                 ))}
@@ -2082,7 +2312,7 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
             {(blogMetadata.canonicalUrl || blogMetadata.slug) && (
               <div className="mt-2 text-xs text-gray-400 dark:text-gray-500">
                 {blogMetadata.canonicalUrl && (
-                  <div>规范URL: <a href={blogMetadata.canonicalUrl} className="text-blue-500 hover:underline" target="_blank" rel="noopener noreferrer">{blogMetadata.canonicalUrl}</a></div>
+                  <div>规范URL: <a href={blogMetadata.canonicalUrl} className="text-[#66ccff] hover:underline" target="_blank" rel="noopener noreferrer">{blogMetadata.canonicalUrl}</a></div>
                 )}
                 {blogMetadata.slug && (
                   <div>URL标识: {blogMetadata.slug}</div>
@@ -2103,10 +2333,10 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
   };
 
   return (
-    <div className="w-full backdrop-blur-sm bg-white/30 dark:bg-gray-900/30">
+    <div className="w-full backdrop-blur-sm bg-white/30 dark:bg-gray-900/30 transition-all duration-300">
       {/* 工具栏 - 超紧凑设计 */}
         <div className={`mb-3 p-2 rounded-lg border ${isDark ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'} shadow-sm backdrop-blur-sm`}>
-        {/* 主要工具栏 - 超紧凑布局 */}
+        {/* 主要工具栏 - 响应式布局 */}
         <div className="flex flex-wrap items-center gap-1 mb-2">
           {Object.entries(toolbarActions).map(([group, actions]) => (
             <div key={group} className="flex items-center gap-0.5">
@@ -2117,24 +2347,58 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
                   title={action.title}
                   onClick={action.action}
                   compact={true}
+                  className={`${
+                    (action.id === 'findReplace' && showFindReplace) ||
+                    (action.id === 'textColor' && showColorPicker) ||
+                    (action.id === 'wordCount' && showWordCountDetails) ||
+                    (action.id === 'spellCheck' && showSpellCheck) ||
+                    (action.id === 'shortcuts' && showShortcuts)
+                      ? (isDark ? 'bg-[#66ccff] text-white' : 'bg-[#66ccff] text-white')
+                      : ''}
+                  `}
                 />
               ))}
-              {group !== 'table' && <div className="w-1.5 h-4 border-l ${isDark ? 'border-gray-600' : 'border-gray-300'} mx-0.5" />} {/* 更紧凑的分隔 */}
+              {group !== 'file' && <div className={`w-1.5 h-4 border-l ${isDark ? 'border-gray-600' : 'border-gray-300'} mx-0.5`} />} {/* 更紧凑的分隔 */}
             </div>
           ))}
         </div>
         
-        {/* 模式切换和快速操作 - 更紧凑的单行布局 */}
+        {/* 第二行工具栏 - 链接、图片、字体大小、快捷键 */}
+        <div className="flex flex-wrap items-center gap-1 mb-2">
+          {secondRowActions.map((action, index) => (
+            <ToolbarButton
+              key={`second-row-${index}`}
+              icon={action.icon}
+              title={action.title}
+              onClick={action.action}
+              compact={true}
+              className={`${
+                (action.id === 'shortcuts' && showShortcuts)
+                  ? (isDark ? 'bg-[#66ccff] text-white' : 'bg-[#66ccff] text-white')
+                  : ''}
+              `}
+            />
+          ))}
+        </div>
+        
+        {/* 模式切换和快速操作 - 响应式布局 */}
         <div className="flex flex-wrap items-center justify-between gap-1">
+          {/* 模式切换 - 在小屏幕上隐藏标签 */}
           <div className="flex items-center gap-0.5">
-            <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'} mr-1`}>
+            <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'} mr-1 hidden sm:inline`}>
+              模式
+            </span>
+            <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'} mr-1 sm:hidden`}>
               模式
             </span>
             <button
-              onClick={() => setPreviewMode('edit')}
+              onClick={() => {
+                setPreviewMode('edit');
+                live2dMessageManager.showMessage(Live2DMessages.MARKDOWN.PREVIEW_EDIT);
+              }}
               className={`px-2 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
                 previewMode === 'edit'
-                  ? (isDark ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-500' : 'bg-blue-500 hover:bg-blue-600 text-white border-blue-400')
+                  ? (isDark ? 'bg-[#66ccff] hover:bg-[#55bbee] text-white border-[#66ccff]' : 'bg-[#66ccff] hover:bg-[#55bbee] text-white border-[#66ccff]')
                   : (isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-200 border-gray-600' : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300')
               }`}
               title="编辑模式"
@@ -2142,10 +2406,13 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
               编辑
             </button>
             <button
-              onClick={() => setPreviewMode('preview')}
+              onClick={() => {
+                setPreviewMode('preview');
+                live2dMessageManager.showMessage(Live2DMessages.MARKDOWN.PREVIEW_PREVIEW);
+              }}
               className={`px-2 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
                 previewMode === 'preview'
-                  ? (isDark ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-500' : 'bg-blue-500 hover:bg-blue-600 text-white border-blue-400')
+                  ? (isDark ? 'bg-[#66ccff] hover:bg-[#55bbee] text-white border-[#66ccff]' : 'bg-[#66ccff] hover:bg-[#55bbee] text-white border-[#66ccff]')
                   : (isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-200 border-gray-600' : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300')
               }`}
               title="预览模式"
@@ -2153,10 +2420,13 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
               预览
             </button>
             <button
-              onClick={() => setPreviewMode('split')}
+              onClick={() => {
+                setPreviewMode('split');
+                live2dMessageManager.showMessage(Live2DMessages.MARKDOWN.PREVIEW_SPLIT);
+              }}
               className={`px-2 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
                 previewMode === 'split'
-                  ? (isDark ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-500' : 'bg-blue-500 hover:bg-blue-600 text-white border-blue-400')
+                  ? (isDark ? 'bg-[#66ccff] hover:bg-[#55bbee] text-white border-[#66ccff]' : 'bg-[#66ccff] hover:bg-[#55bbee] text-white border-[#66ccff]')
                   : (isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-200 border-gray-600' : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300')
               }`}
               title="分屏模式"
@@ -2165,10 +2435,13 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
             </button>
             {blogMode && (
               <button
-                onClick={() => setPreviewMode('blog')}
+                onClick={() => {
+                  setPreviewMode('blog');
+                  live2dMessageManager.showMessage(Live2DMessages.MARKDOWN.PREVIEW_BLOG);
+                }}
                 className={`px-2 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
                   previewMode === 'blog'
-                    ? (isDark ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-500' : 'bg-blue-500 hover:bg-blue-600 text-white border-blue-400')
+                    ? (isDark ? 'bg-[#66ccff] hover:bg-[#55bbee] text-white border-[#66ccff]' : 'bg-[#66ccff] hover:bg-[#55bbee] text-white border-[#66ccff]')
                     : (isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-200 border-gray-600' : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300')
                 }`}
                 title="博客预览模式"
@@ -2178,9 +2451,13 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
             )}
           </div>
           
+          {/* 快速操作 - 在小屏幕上简化显示 */}
           <div className="flex items-center gap-0.5">
             <button
-              onClick={undo}
+              onClick={() => {
+                undo();
+                live2dMessageManager.showMessage(Live2DMessages.MARKDOWN.UNDO);
+              }}
               className={`px-2 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
                 historyIndex <= 0
                   ? (isDark ? 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed' : 'bg-gray-200 text-gray-400 border-gray-300 cursor-not-allowed')
@@ -2192,7 +2469,10 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
               ↶ 撤销
             </button>
             <button
-              onClick={redo}
+              onClick={() => {
+                redo();
+                live2dMessageManager.showMessage(Live2DMessages.MARKDOWN.REDO);
+              }}
               className={`px-2 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
                 historyIndex >= history.length - 1
                   ? (isDark ? 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed' : 'bg-gray-200 text-gray-400 border-gray-300 cursor-not-allowed')
@@ -2205,10 +2485,13 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
             </button>
 
             <button
-              onClick={handleSave}
+              onClick={() => {
+                handleSave();
+                live2dMessageManager.showMessage(Live2DMessages.MARKDOWN.SAVE);
+              }}
               className={`px-2 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
                 saved
-                  ? (isDark ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-500' : 'bg-blue-500 hover:bg-blue-600 text-white border-blue-400')
+                  ? (isDark ? 'bg-[#66ccff] hover:bg-[#55bbee] text-white border-[#66ccff]' : 'bg-[#66ccff] hover:bg-[#55bbee] text-white border-[#66ccff]')
                   : (isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-200 border-gray-600' : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300')
               }`}
               title={saved ? "已保存" : "保存"}
@@ -2216,16 +2499,28 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
               {saved ? "已保存" : "保存"}
             </button>
             <button
-              onClick={handleClear}
+              onClick={() => {
+                handleClear();
+                live2dMessageManager.showMessage(Live2DMessages.MARKDOWN.CLEAR);
+              }}
               className={`px-2 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
-                isDark ? 'bg-red-600 hover:bg-red-700 text-white border-red-500' : 'bg-red-500 hover:bg-red-600 text-white border-red-400'
+                isDark ? 'bg-[#ee0000] hover:bg-[#dd0000] text-white border-[#ee0000]' : 'bg-[#ee0000] hover:bg-[#dd0000] text-white border-[#ee0000]'
               }`}
               title="清空"
             >
               清空
             </button>
             <button
-              onClick={loadSample}
+              onClick={() => {
+                try {
+                  console.log('示例按钮被点击');
+                  loadSample();
+                  live2dMessageManager.showMessage(Live2DMessages.MARKDOWN.SAMPLE);
+                } catch (error) {
+                  console.error('示例按钮点击出错:', error);
+                  alert('示例功能出错，请查看控制台了解详情');
+                }
+              }}
               className={`px-2 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
                 isDark ? 'bg-purple-600 hover:bg-purple-700 text-white border-purple-500' : 'bg-purple-500 hover:bg-purple-600 text-white border-purple-400'
               }`}
@@ -2233,19 +2528,31 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
             >
               示例
             </button>
+
             {blogMode && (
               <>
+
                 <button
-                  onClick={generateBlogMetadata}
+                  onClick={() => {
+                    setShowMetadataPanel(!showMetadataPanel);
+                    live2dMessageManager.showMessage(
+                      showMetadataPanel ? Live2DMessages.MARKDOWN.METADATA_HIDE : Live2DMessages.MARKDOWN.METADATA_SHOW
+                    );
+                  }}
                   className={`px-2 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
-                    isDark ? 'bg-yellow-600 hover:bg-yellow-700 text-white border-yellow-500' : 'bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-400'
+                    showMetadataPanel
+                      ? (isDark ? 'bg-yellow-600 hover:bg-yellow-700 text-white border-yellow-500' : 'bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-400')
+                      : (isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-200 border-gray-600' : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300')
                   }`}
-                  title="一键生成博客元数据"
+                  title={showMetadataPanel ? "隐藏博客元数据面板" : "显示博客元数据面板"}
                 >
-                  生成元数据
+                  {showMetadataPanel ? '隐藏元数据' : '显示元数据'}
                 </button>
                 <button
-                  onClick={handlePublish}
+                  onClick={() => {
+                    handlePublish();
+                    live2dMessageManager.showMessage(Live2DMessages.MARKDOWN.PUBLISH);
+                  }}
                   className={`px-2 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
                     isDark ? 'bg-green-600 hover:bg-green-700 text-white border-green-500' : 'bg-green-500 hover:bg-green-600 text-white border-green-400'
                   }`}
@@ -2259,17 +2566,202 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
         </div>
       </div>
 
+      {/* 功能面板 - 查找替换 */}
+      {showFindReplace && (
+        <div className={`mb-3 p-3 rounded-lg border ${isDark ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'} shadow-sm backdrop-blur-sm`}>
+          <div className="flex flex-wrap items-center gap-2 mb-2">
+            <h4 className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>查找替换</h4>
+            <button
+              onClick={() => setShowFindReplace(false)}
+              className={`ml-auto px-2 py-1 rounded text-xs ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-800'}`}
+            >
+              ✕
+            </button>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="text"
+              placeholder="查找内容"
+              value={findText}
+              onChange={(e) => setFindText(e.target.value)}
+              className={`px-2 py-1.5 rounded border text-sm ${isDark ? 'bg-gray-700 border-gray-600 text-gray-200' : 'bg-white border-gray-300 text-gray-900'}`}
+            />
+            <input
+              type="text"
+              placeholder="替换内容"
+              value={replaceText}
+              onChange={(e) => setReplaceText(e.target.value)}
+              className={`px-2 py-1.5 rounded border text-sm ${isDark ? 'bg-gray-700 border-gray-600 text-gray-200' : 'bg-white border-gray-300 text-gray-900'}`}
+            />
+            <button
+              onClick={handleFindReplace}
+              className={`px-3 py-1.5 rounded text-sm font-medium ${isDark ? 'bg-[#66ccff] hover:bg-[#55bbee] text-white' : 'bg-[#66ccff] hover:bg-[#55bbee] text-white'}`}
+            >
+              替换
+            </button>
+            <button
+              onClick={() => handleFindReplace(true)}
+              className={`px-3 py-1.5 rounded text-sm font-medium ${isDark ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-green-500 hover:bg-green-600 text-white'}`}
+            >
+              全部替换
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 功能面板 - 颜色选择器 */}
+      {showColorPicker && (
+        <div className={`mb-3 p-3 rounded-lg border ${isDark ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'} shadow-sm backdrop-blur-sm`}>
+          <div className="flex flex-wrap items-center gap-2 relative">
+            <div className="flex gap-1">
+              {/* 文本颜色提示 */}
+              <div className={`flex items-center px-2 py-1 rounded text-xs ${isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>
+                文本颜色
+              </div>
+              {['#66ccff', '#ee0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#000000', '#ffffff'].map(color => (
+                <button
+                  key={color}
+                  onClick={() => applyTextColor(color)}
+                  className="w-6 h-6 rounded border-2"
+                  style={{ 
+                    backgroundColor: color,
+                    borderColor: selectedColor === color ? (isDark ? '#66ccff' : '#66ccff') : (isDark ? '#4b5563' : '#d1d5db')
+                  }}
+                  title={color}
+                  onMouseEnter={() => {
+                    if (color === '#ee0000') {
+                      live2dMessageManager.showMessage('这是阿绫红哦~(　ﾟ∀ﾟ) ﾉ♡', 2000);
+                    } else if (color === '#66ccff') {
+                      live2dMessageManager.showMessage('这是天依蓝(〃\'▽\'〃)', 2000);
+                    }
+                  }}
+                  onMouseLeave={() => {
+                    if (color === '#ee0000' || color === '#66ccff') {
+                      live2dMessageManager.hideMessage();
+                    }
+                  }}
+                />
+              ))}
+            </div>
+            <div className="flex gap-1">
+              {/* 高亮颜色提示 */}
+              <div className={`flex items-center px-2 py-1 rounded text-xs ${isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>
+                高亮颜色
+              </div>
+              {['#ffff00', '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57', '#ff9ff3', '#a55eea', '#ee0000', '#66ccff'].map(color => (
+                <button
+                  key={color}
+                  onClick={() => applyTextHighlight(color)}
+                  className="w-6 h-6 rounded border-2"
+                  style={{ 
+                    backgroundColor: color,
+                    borderColor: selectedColor === color ? (isDark ? '#66ccff' : '#66ccff') : (isDark ? '#4b5563' : '#d1d5db')
+                  }}
+                  title={color}
+                  onMouseEnter={() => {
+                    if (color === '#ee0000') {
+                      live2dMessageManager.showMessage('这是阿绫红哦~(　ﾟ∀ﾟ) ﾉ♡', 2000);
+                    } else if (color === '#66ccff') {
+                      live2dMessageManager.showMessage('这是天依蓝(〃\'▽\'〃)', 2000);
+                    }
+                  }}
+                  onMouseLeave={() => {
+                    if (color === '#ee0000' || color === '#66ccff') {
+                      live2dMessageManager.hideMessage();
+                    }
+                  }}
+                />
+              ))}
+            </div>
+            <button
+              onClick={() => applyTextAlignment('left')}
+              className={`px-2 py-1.5 rounded text-sm ${isDark ? 'bg-gray-600 hover:bg-gray-500 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-800'}`}
+              title="左对齐"
+            >
+              左
+            </button>
+            <button
+              onClick={() => applyTextAlignment('center')}
+              className={`px-2 py-1.5 rounded text-sm ${isDark ? 'bg-gray-600 hover:bg-gray-500 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-800'}`}
+              title="居中对齐"
+            >
+              中
+            </button>
+            <button
+              onClick={() => applyTextAlignment('right')}
+              className={`px-2 py-1.5 rounded text-sm ${isDark ? 'bg-gray-600 hover:bg-gray-500 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-800'}`}
+              title="右对齐"
+            >
+              右
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 功能面板 - 字数统计详情 */}
+      {showWordCountDetails && (
+        <div className={`mb-3 p-3 rounded-lg border ${isDark ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'} shadow-sm backdrop-blur-sm`}>
+          <div className="flex items-center gap-2 mb-2">
+            <h4 className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>字数统计详情</h4>
+            <button
+              onClick={() => setShowWordCountDetails(false)}
+              className={`ml-auto px-2 py-1 rounded text-xs ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-800'}`}
+            >
+              关闭
+            </button>
+          </div>
+          <div className={`text-sm flex flex-wrap gap-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+            <span>总字数: {wordCount}</span>
+            <span>总字符: {charCount}</span>
+            <span>段落数: {content.split('\n\n').filter(p => p.trim()).length}</span>
+            <span>行数: {content.split('\n').length}</span>
+            <span>预计阅读时间: {Math.ceil(wordCount / 500)} 分钟</span>
+          </div>
+        </div>
+      )}
+
+      {/* 快捷键提示面板 */}
+      {showShortcuts && (
+        <div className={`mb-3 p-3 rounded-lg border ${isDark ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'} shadow-sm backdrop-blur-sm`}>
+          <div className="flex items-center gap-2 mb-2">
+            <h4 className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>快捷键</h4>
+            <button
+              onClick={() => setShowShortcuts(false)}
+              className={`ml-auto px-2 py-1 rounded text-xs ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-800'}`}
+            >
+              关闭
+            </button>
+          </div>
+          <div className={`text-sm flex flex-wrap gap-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+            <span className="flex items-center gap-1"><kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs">Ctrl+B</kbd> 粗体</span>
+            <span className="flex items-center gap-1"><kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs">Ctrl+I</kbd> 斜体</span>
+            <span className="flex items-center gap-1"><kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs">Ctrl+K</kbd> 链接</span>
+            <span className="flex items-center gap-1"><kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs">Ctrl+S</kbd> 保存</span>
+            <span className="flex items-center gap-1"><kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs">Ctrl+Z</kbd> 撤销</span>
+            <span className="flex items-center gap-1"><kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs">Ctrl+Y</kbd> 重做</span>
+            <span className="flex items-center gap-1"><kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs">Ctrl+F</kbd> 查找</span>
+            <span className="flex items-center gap-1"><kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs">Ctrl+G</kbd> 替换</span>
+          </div>
+        </div>
+      )}
+
+
+
       {/* 编辑器主体 */}
       <div className="flex gap-4" style={{ height }}>
-        {/* 博客模式下显示元数据面板 */}
-        {blogMode && showMetadataPanel && renderBlogMetadataPanel()}
+        {/* 博客模式下显示元数据面板 - 固定在左侧 */}
+        {blogMode && showMetadataPanel && (
+          <div className="w-80 flex-shrink-0">
+            {renderBlogMetadataPanel()}
+          </div>
+        )}
         
         {/* 编辑区域 - 更紧凑 */}
         {(previewMode === 'edit' || previewMode === 'split') && (
-          <div className={`${previewMode === 'split' ? 'w-1/2' : 'w-full'} rounded-lg border ${isDark ? 'border-gray-700/50' : 'border-gray-200/50'} overflow-hidden backdrop-blur-sm`}>
+          <div className={`${previewMode === 'split' ? 'w-1/2' : blogMode && showMetadataPanel ? 'flex-1' : 'w-full'} rounded-lg border ${isDark ? 'border-gray-700/50' : 'border-gray-200/50'} overflow-hidden backdrop-blur-sm`}>
             <div className={`px-3 py-2 border-b ${isDark ? 'bg-gray-800/50 border-gray-700/50' : 'bg-gray-50/50 border-gray-200/50'} backdrop-blur-sm`}>
               <h3 className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                ✏️ 编辑器
+                编辑器
               </h3>
             </div>
             <div className="h-full">
@@ -2277,17 +2769,20 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
                 name="markdown-content"
                 value={content}
                 onChange={(e) => {
-                  const newContent = e.target.value;
-                  setContent(newContent);
-                  addToHistory(newContent);
+                  handleContentChange(e.target.value);
                 }}
                 onSelect={handleTextSelection}
-                className={`w-full h-full p-3 resize-none focus:outline-none transition-colors duration-200 ${
+                className={`w-full h-full p-3 resize-none focus:outline-none transition-all duration-200 ${
                   isDark 
                     ? 'bg-gray-800/50 text-gray-100 placeholder-gray-400' 
                     : 'bg-white/50 text-gray-900 placeholder-gray-500'
                 }`}
-                placeholder="编写 Markdown... 快捷键：Ctrl+B 粗体，Ctrl+I 斜体，Ctrl+K 链接，Ctrl+S 保存，Ctrl+Z 撤销，Ctrl+Y 重做   祝您使用愉快！"
+                style={{ 
+                  fontSize: `${fontSize}px`,
+                  lineHeight: '1.5'
+                }}
+                placeholder="请输入文本... 祝您使用愉快！"
+                spellCheck={showSpellCheck}
               />
             </div>
           </div>
@@ -2295,10 +2790,10 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
 
         {/* 预览区域 - 修复背景透明问题 */}
         {(previewMode === 'preview' || previewMode === 'split') && (
-          <div className={`${previewMode === 'split' ? 'w-1/2' : 'w-full'} rounded-lg border ${isDark ? 'border-gray-700/50' : 'border-gray-200/50'} overflow-hidden bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm`}>
+          <div className={`${previewMode === 'split' ? 'w-1/2' : blogMode && showMetadataPanel ? 'flex-1' : 'w-full'} rounded-lg border ${isDark ? 'border-gray-700/50' : 'border-gray-200/50'} overflow-hidden bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm`}>
             <div className={`px-3 py-2 border-b ${isDark ? 'bg-gray-800/50 border-gray-700/50' : 'bg-gray-50/50 border-gray-200/50'} backdrop-blur-sm`}>
               <h3 className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                👁️ 预览
+                预览
               </h3>
             </div>
             <div className={`h-full p-4 overflow-y-auto prose prose-sm max-w-none ${
@@ -2341,12 +2836,13 @@ Next.js, React 19, 全栈开发, 性能优化, TypeScript, Server Components, Ap
             <span>{charCount} 字符</span>
             <span className="hidden sm:inline">{previewMode === 'edit' ? '编辑' : previewMode === 'preview' ? '预览' : '分屏'}</span>
           </div>
-          <div className="text-xs opacity-75 hidden md:inline">
-            快捷键: Ctrl+B 粗体, Ctrl+I 斜体, Ctrl+K 链接, Ctrl+S 保存, Ctrl+Z 撤销, Ctrl+Y 重做
-          </div>
+
         </div>
       </div>
 
+      {/* 模板选择对话框 */}
+      {renderTemplateDialog()}
+      
       {/* 自定义元数据对话框 */}
       {renderCustomMetadataDialog()}
     </div>

@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import MusicPlayer from './MusicPlayer';
-import LuoTianyiLive2D from './LuoTianyiLive2D';
+import Live2DController from './Live2DController';
 
 export default function ConditionalComponents() {
   const pathname = usePathname();
@@ -18,8 +18,8 @@ export default function ConditionalComponents() {
       <div className={hideLive2DAndMusic ? 'aplayer-container hidden' : 'aplayer-container'}>
         <MusicPlayer />
       </div>
-      {/* 条件渲染Live2D - 在首页和404页面隐藏 */}
-      {!hideLive2DAndMusic && <LuoTianyiLive2D />}
+      {/* 使用Live2DController进行智能路径控制 */}
+      <Live2DController />
     </>
   );
 }
