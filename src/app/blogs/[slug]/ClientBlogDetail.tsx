@@ -183,6 +183,14 @@ interface BlogPost {
   excerpt: string;
   content: string;
   slug: string;
+  author?: string;
+  series?: string;
+  seriesOrder?: number;
+  coverImage?: string;
+  language?: string;
+  canonicalUrl?: string;
+  seoTitle?: string;
+  seoDescription?: string;
   reference?: Array<{description: string; link: string}>;
 }
 
