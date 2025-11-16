@@ -48,9 +48,10 @@ interface ToolbarButtonProps {
   onClick: () => void;
   variant?: 'primary' | 'secondary' | 'success' | 'danger';
   compact?: boolean;
+  className?: string;
 }
 
-function ToolbarButton({ icon, title, onClick, variant = 'secondary', compact = false }: ToolbarButtonProps) {
+function ToolbarButton({ icon, title, onClick, variant = 'secondary', compact = false, className = '' }: ToolbarButtonProps) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
   
@@ -81,7 +82,7 @@ function ToolbarButton({ icon, title, onClick, variant = 'secondary', compact = 
       whileTap={{ scale: 0.95 }}
       onClick={onClick}
       title={title}
-      className={`${compact ? 'px-2 py-1.5' : 'px-3 py-2'} rounded-lg font-medium text-sm border transition-all duration-200 ${getVariantStyles()}`}
+      className={`${compact ? 'px-2 py-1.5' : 'px-3 py-2'} rounded-lg font-medium text-sm border transition-all duration-200 ${getVariantStyles()} ${className}`}
     >
       <span className={compact ? 'text-sm' : 'text-base'}>{icon}</span>
     </motion.button>
@@ -805,15 +806,15 @@ export default function MarkdownEditor({
   // 工具栏操作 - 按功能分组
   const toolbarActions = {
     format: [
-      { icon: 'H1', title: '一级标题', action: () => handleToolbarAction('# ', '') },
-      { icon: 'H2', title: '二级标题', action: () => handleToolbarAction('## ', '') },
-      { icon: 'H3', title: '三级标题', action: () => handleToolbarAction('### ', '') },
+      { id: 'h1', icon: 'H1', title: '一级标题', action: () => handleToolbarAction('# ', '') },
+      { id: 'h2', icon: 'H2', title: '二级标题', action: () => handleToolbarAction('## ', '') },
+      { id: 'h3', icon: 'H3', title: '三级标题', action: () => handleToolbarAction('### ', '') },
     ],
     text: [
-      { icon: 'B', title: '粗体', action: () => handleToolbarAction('**', '**') },
-      { icon: 'I', title: '斜体', action: () => handleToolbarAction('*', '*') },
-      { icon: 'U', title: '下划线', action: () => handleToolbarAction('<u>', '</u>') },
-      { icon: 'S', title: '删除线', action: () => handleToolbarAction('~~', '~~') },
+      { id: 'bold', icon: 'B', title: '粗体', action: () => handleToolbarAction('**', '**') },
+      { id: 'italic', icon: 'I', title: '斜体', action: () => handleToolbarAction('*', '*') },
+      { id: 'underline', icon: 'U', title: '下划线', action: () => handleToolbarAction('<u>', '</u>') },
+      { id: 'strikethrough', icon: 'S', title: '删除线', action: () => handleToolbarAction('~~', '~~') },
     ],
     style: [
       { id: 'textColor', icon: '颜色', title: '文本颜色', action: () => setShowColorPicker(!showColorPicker) },
@@ -822,30 +823,30 @@ export default function MarkdownEditor({
       { id: 'spellCheck', icon: '拼写', title: '拼写检查', action: () => setShowSpellCheck(!showSpellCheck) },
     ],
     code: [
-      { icon: '</>', title: '行内代码', action: () => handleToolbarAction('`', '`') },
-      { icon: '{ }', title: '代码块', action: () => handleToolbarAction('```\n', '\n```') },
+      { id: 'inlineCode', icon: '</>', title: '行内代码', action: () => handleToolbarAction('`', '`') },
+      { id: 'codeBlock', icon: '{ }', title: '代码块', action: () => handleToolbarAction('```\n', '\n```') },
     ],
     list: [
-      { icon: '•', title: '无序列表', action: () => handleToolbarAction('- ', '') },
-      { icon: '1.', title: '有序列表', action: () => handleToolbarAction('1. ', '') },
-      { icon: '☐', title: '任务列表', action: () => handleToolbarAction('- [ ] ', '') },
-      { icon: '> ', title: '引用', action: () => handleToolbarAction('> ', '') },
+      { id: 'unorderedList', icon: '•', title: '无序列表', action: () => handleToolbarAction('- ', '') },
+      { id: 'orderedList', icon: '1.', title: '有序列表', action: () => handleToolbarAction('1. ', '') },
+      { id: 'taskList', icon: '☐', title: '任务列表', action: () => handleToolbarAction('- [ ] ', '') },
+      { id: 'quote', icon: '> ', title: '引用', action: () => handleToolbarAction('> ', '') },
     ],
     media: [
-      { icon: '链接', title: '链接', action: () => handleToolbarAction('[', '](url)') },
-      { icon: '图片', title: '图片', action: () => handleToolbarAction('![', '](image-url)') },
+      { id: 'link', icon: '链接', title: '链接', action: () => handleToolbarAction('[', '](url)') },
+      { id: 'image', icon: '图片', title: '图片', action: () => handleToolbarAction('![', '](image-url)') },
     ],
     file: [],
     table: [
-      { icon: '⊞', title: '表格', action: () => handleToolbarAction('\n| 标题1 | 标题2 | 标题3 |\n|-------|-------|-------|\n| 内容1 | 内容2 | 内容3 |\n', '') },
-      { icon: '∥', title: '分割线', action: () => handleToolbarAction('\n---\n', '') },
+      { id: 'table', icon: '⊞', title: '表格', action: () => handleToolbarAction('\n| 标题1 | 标题2 | 标题3 |\n|-------|-------|-------|\n| 内容1 | 内容2 | 内容3 |\n', '') },
+      { id: 'divider', icon: '∥', title: '分割线', action: () => handleToolbarAction('\n---\n', '') },
     ]
   };
 
   // 第二行工具栏操作
   const secondRowActions = [
-    { icon: '链接', title: '链接', action: () => handleToolbarAction('[', '](url)') },
-    { icon: '图片', title: '图片', action: () => handleToolbarAction('![', '](image-url)') },
+    { id: 'link2', icon: '链接', title: '链接', action: () => handleToolbarAction('[', '](url)') },
+    { id: 'image2', icon: '图片', title: '图片', action: () => handleToolbarAction('![', '](image-url)') },
     { id: 'increaseFont', icon: 'A+', title: '增大字体', action: () => setFontSize(Math.min(fontSize + 2, 24)) },
     { id: 'decreaseFont', icon: 'A-', title: '减小字体', action: () => setFontSize(Math.max(fontSize - 2, 12)) },
     { id: 'shortcuts', icon: '快捷键', title: '快捷键', action: () => setShowShortcuts(!showShortcuts) },
@@ -1162,11 +1163,12 @@ seoDescription: "${blogMetadata.seoDescription}"
 
   // 新增功能函数
   // 查找替换功能
-  const handleFindReplace = () => {
+  const handleFindReplace = (replaceAll: boolean = false) => {
     if (!findText) return;
     
     let newContent = content;
-    const regex = new RegExp(findText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+    const flags = replaceAll ? 'g' : '';
+    const regex = new RegExp(findText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), flags);
     newContent = newContent.replace(regex, replaceText);
     
     setContent(newContent);
@@ -2594,7 +2596,7 @@ seoDescription: "${blogMetadata.seoDescription}"
               className={`px-2 py-1.5 rounded border text-sm ${isDark ? 'bg-gray-700 border-gray-600 text-gray-200' : 'bg-white border-gray-300 text-gray-900'}`}
             />
             <button
-              onClick={handleFindReplace}
+              onClick={() => handleFindReplace(false)}
               className={`px-3 py-1.5 rounded text-sm font-medium ${isDark ? 'bg-[#66ccff] hover:bg-[#55bbee] text-white' : 'bg-[#66ccff] hover:bg-[#55bbee] text-white'}`}
             >
               替换
