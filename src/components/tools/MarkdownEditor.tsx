@@ -1353,7 +1353,8 @@ seoDescription: "${blogMetadata.seoDescription}"
         `src/content/blogs/${fileName}`,
         {
           message: message,
-          content: btoa(markdownContent), // 转换为base64编码
+          content: btoa(encodeURIComponent(markdownContent).replace(/%([0-9A-F]{2})/g, 
+            (match, p1) => String.fromCharCode(parseInt(p1, 16)))), // 安全转换为base64编码
         }
       );
 
