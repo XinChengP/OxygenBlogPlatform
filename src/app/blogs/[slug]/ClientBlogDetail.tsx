@@ -3,7 +3,7 @@
 import { useState, lazy, Suspense, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import LazyMarkdown from '../../../components/LazyMarkdown';
-import { extractImageUrls, imagePreloadManager, preloadCriticalImages } from '../../../utils/imagePreloader';
+import { extractImageUrls, preloadCriticalImages } from '../../../utils/imagePreloader';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { 
@@ -234,7 +234,7 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
   const { containerStyle } = useBackgroundStyle('blog-detail');
   const [copiedCode, setCopiedCode] = useState<string>('');
   const [readingProgress, setReadingProgress] = useState(0);
-  const [markdownComponents, setMarkdownComponents] = useState<any>(null);
+  const [, setMarkdownComponents] = useState<any>(null);
   const isLoadedRef = useRef(false);
 
 

@@ -45,11 +45,12 @@ export default function ClientRouterWrapper({ children }: { children: React.Reac
         if (typeof window !== 'undefined' && (window as any).__imageCache) {
           // 只清理非博客相关的图片缓存
           const cache = (window as any).__imageCache;
-          const entriesToKeep = Array.from(cache.entries()).filter(([src]) => 
-            src.includes('/blogs/') || src.includes('coverImage')
-          );
+          const entriesToKeep = Array.from(cache.entries()).filter((entry) => {
+            const [src] = entry as [string, any];
+            return src.includes('/blogs/') || src.includes('coverImage');
+          });
           
-          (window as any).__imageCache = new Map(entriesToKeep);
+          (window as any).__imageCache = new Map(entriesToKeep as Iterable<readonly [string, any]>);
           console.log('Selective cache cleanup completed');
         }
       }

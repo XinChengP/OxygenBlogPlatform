@@ -1,4 +1,4 @@
-const isStaticExport = process.env.NODE_ENV === 'production';
+const isStaticExport = process.env.NODE_ENV === 'production' || process.env.NEXT_PRIVATE_STATIC_EXPORT === 'true';
 const repoName = process.env.NEXT_PUBLIC_GITHUB_REPO_NAME || 'OxygenBlogPlatform';
 
 const nextConfig = {
@@ -46,6 +46,15 @@ const nextConfig = {
         },
       ],
     },
+  }),
+  
+  // 开发环境配置（非静态导出）
+  ...(!isStaticExport && {
+    // 开发环境禁用静态导出
+    output: undefined,
+    // 开发环境不使用basePath
+    basePath: '',
+    assetPrefix: '',
   }),
   
   // 环境变量配置

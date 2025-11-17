@@ -128,7 +128,7 @@ export const imagePreloadManager = new ImagePreloadManager();
  */
 export function optimizeForMobile(): void {
   // 限制并发加载数量（移动端网络限制）
-  const MAX_CONCURRENT_LOADS = 3;
+  // const MAX_CONCURRENT_LOADS = 3;
   
   // 监听网络状态变化
   if ('connection' in navigator) {
