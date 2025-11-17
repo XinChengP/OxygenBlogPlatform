@@ -6,6 +6,7 @@ import { useState, useMemo } from 'react';
 import { categories } from '@/setting/blogSetting';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 import Pagination from '@/components/Pagination';
+import { getAssetPath } from '@/utils/assetUtils';
 
 
 /**
@@ -301,7 +302,7 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                     {post.coverImage && (
                       <div className="relative h-48 overflow-hidden">
                         <img
-                          src={post.coverImage}
+                          src={getAssetPath(post.coverImage)}
                           alt={post.title}
                           className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                           loading="lazy"

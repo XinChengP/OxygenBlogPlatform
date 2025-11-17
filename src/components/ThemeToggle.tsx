@@ -35,9 +35,6 @@ export default function ThemeToggle() {
       return sunIcon;
     } else if (theme === 'dark') {
       return moonIcon;
-    } else if (theme === 'system') {
-      // 跟随系统时，如果系统是深色模式显示sun图标，浅色模式显示moon图标
-      return resolvedTheme === 'light' ? sunIcon : moonIcon;
     }
     return sunIcon; // 默认
   };
@@ -45,22 +42,21 @@ export default function ThemeToggle() {
   const themes = [
     { key: 'light', label: '浅色模式', icon: sunIcon },
     { key: 'dark', label: '深色模式', icon: moonIcon },
-    { key: 'system', label: '跟随系统', icon: getCurrentIcon() },
   ];
 
-  const currentTheme = themes.find(t => t.key === theme) || themes[2];
+  const currentTheme = themes.find(t => t.key === theme) || themes[0];
 
   /**
    * 切换主题
    */
   const handleThemeChange = (newTheme: string) => {
     const previousTheme = theme;
-    console.log(`[ThemeToggle] 主题切换: ${previousTheme || 'system'} -> ${newTheme}`);
+    console.log(`[ThemeToggle] 主题切换: ${previousTheme || 'light'} -> ${newTheme}`);
     setTheme(newTheme);
     setIsOpen(false);
     
     // 发送主题切换事件给Live2D看板娘
-    emitThemeChangeEvent(newTheme, previousTheme || 'system');
+    emitThemeChangeEvent(newTheme, previousTheme || 'light');
     console.log(`[ThemeToggle] 已发送Live2D主题切换事件`);
   };
 

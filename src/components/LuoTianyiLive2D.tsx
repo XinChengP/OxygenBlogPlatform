@@ -300,7 +300,7 @@ export default function LuoTianyiLive2D() {
             // 确保只在第一次加载时显示欢迎消息
             if (!(window as any).__luotianyiWelcomeShown) {
                 console.log(`[LuoTianyiLive2D] 显示欢迎消息`);
-                updateMessage('天依已上线！试试切换主题吧～');
+                updateMessage('天依已上线！很高兴见到你～');
                 (window as any).__luotianyiWelcomeShown = true;
             } else {
                 console.log(`[LuoTianyiLive2D] 欢迎消息已显示过，跳过`);

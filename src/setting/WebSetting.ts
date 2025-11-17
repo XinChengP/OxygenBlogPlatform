@@ -14,57 +14,12 @@ export const backgroundMode = "cover"; // 背景图片显示模式
  */
 export const backgroundFixed = true; // 是否固定背景（视差效果）
 
-//预设的主题色方案，如果你要添加自定义主题色，你可以参考这里的配置添加
+//预设的主题色方案，只保留蓝色主题
 const themePresets = {
   blue: {
     primary: "#66ccff", // 蓝色
     secondary: "#1e40af", // 深蓝色
     accent: "#06b6d4", // 青色
-  },
-  purple: {
-    primary: "#8b5cf6", // 紫色
-    secondary: "#7c3aed", // 深紫色
-    accent: "#a855f7", // 亮紫色
-  },
-  green: {
-    primary: "#10b981", // 翠绿色
-    secondary: "#059669", // 深绿色
-    accent: "#34d399", // 亮绿色
-  },
-  orange: {
-    primary: "#f97316", // 橙色
-    secondary: "#ea580c", // 深橙色
-    accent: "#fb923c", // 亮橙色
-  },
-  red: {
-    primary: "#ef4444", // 红色
-    secondary: "#dc2626", // 深红色
-    accent: "#f87171", // 亮红色
-  },
-  cyan: {
-    primary: "#06b6d4", // 青色
-    secondary: "#0891b2", // 深青色
-    accent: "#22d3ee", // 亮青色
-  },
-  pink: {
-    primary: "#ec4899", // 粉色
-    secondary: "#db2777", // 深粉色
-    accent: "#f472b6", // 亮粉色
-  },
-  gold: {
-    primary: "#f59e0b", // 金色
-    secondary: "#d97706", // 深金色
-    accent: "#fbbf24", // 亮金色
-  },
-  indigo: {
-    primary: "#6366f1", // 靛蓝色
-    secondary: "#4f46e5", // 深靛蓝色
-    accent: "#818cf8", // 亮靛蓝色
-  },
-  emerald: {
-    primary: "#059669", // 祖母绿
-    secondary: "#047857", // 深祖母绿
-    accent: "#10b981", // 亮祖母绿
   },
 } as const;
 

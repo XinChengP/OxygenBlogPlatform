@@ -699,29 +699,20 @@ const loadLive2D = useCallback(async () => {
 }
 ```
 
-##### 交互事件规范 - 联动扩展版本
+##### 交互事件规范
 ```tsx
-// 1. 鼠标事件 - 支持联动状态
+// 1. 鼠标事件
 const handleMouseEnter = useCallback(() => {
-  const stateMessages = {
-    idle: '鼠标移入消息',
-    music: '音乐模式激活中...',
-    theme: '主题切换模式...',
-    page: '页面交互模式...'
-  };
-  updateMessage(stateMessages[interactionState] || '鼠标移入消息');
-}, [updateMessage, interactionState]);
+  updateMessage('鼠标移入消息');
+}, [updateMessage]);
 
 const handleMouseLeave = useCallback(() => {
-  // 联动状态下不清除消息
-  if (interactionState === 'idle') {
-    // 可选：鼠标离开时清除消息
-  }
-}, [interactionState]);
+  // 可选：鼠标离开时清除消息
+}, []);
 
-// 2. 点击事件 - 增强联动响应
+// 2. 点击事件
 const handleClick = useCallback(() => {
-  const baseMessages = [
+  const clickMessages = [
     '想听我唱歌吗？',
     '不要动手动脚的！快把手拿开~~',
     '真…真的是不知羞耻！',
@@ -733,408 +724,27 @@ const handleClick = useCallback(() => {
     '我是世界第一吃货殿下哦！'
   ];
   
-  // 联动增强消息
-  const interactionMessages = {
-    music: [
-      '正在享受音乐呢~',
-      '这首歌很好听对吧？',
-      '音乐让人心情愉悦呢！'
-    ],
-    theme: [
-      '新主题很漂亮呢！',
-      '这个颜色搭配很棒~',
-      '主题切换成功了！'
-    ],
-    page: [
-      '页面加载完成了！',
-      '新页面内容很丰富呢~',
-      '浏览愉快哦！'
-    ]
-  };
-  
-  let messages = baseMessages;
-  if (interactionState !== 'idle' && interactionMessages[interactionState]) {
-    messages = [...baseMessages, ...interactionMessages[interactionState]];
-  }
-  
-  const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-  updateMessage(randomMessage, interactionState === 'idle' ? 'normal' : 'interaction');
-}, [updateMessage, interactionState]);
+  const randomMessage = clickMessages[Math.floor(Math.random() * clickMessages.length)];
+  updateMessage(randomMessage);
+}, [updateMessage]);
 
-// 3. 键盘事件 - 支持联动快捷键
+// 3. 键盘事件
 const handleKeyDown = useCallback((event: KeyboardEvent) => {
   if (event.key === 'Escape') {
     setIsVisible(false); // ESC 键隐藏组件
-    setInteractionState('idle'); // 重置联动状态
-  }
-  
-  // 联动快捷键
-  if (event.ctrlKey || event.metaKey) {
-    switch (event.key) {
-      case 'm':
-        event.preventDefault();
-        // 触发音乐联动
-        Live2DEventEmitter.emit('music:shortcut', 'toggle');
-        break;
-      case 't':
-        event.preventDefault();
-        // 触发主题联动
-        Live2DEventEmitter.emit('theme:shortcut', 'cycle');
-        break;
-    }
   }
 }, []);
 ```
 
-#### 功能联动实现指南
-
-##### 新增功能联动标准
-所有新增功能组件都应考虑与 Live2D 看板娘的联动可能性，遵循以下标准：
-
-###### 1. 事件系统规范
+##### 错误处理规范
 ```tsx
-// 事件总线 - 统一管理所有联动事件
-class Live2DEventEmitter {
-  // 音乐相关事件
-  static emit('music:play', { songName, artist, duration });
-  static emit('music:pause', { songName });
-  static emit('music:next', { songName });
-  static emit('music:volume', { volume });
-  
-  // 主题相关事件
-  static emit('theme:change', { theme, prevTheme });
-  static emit('theme:cycle', { direction });
-  
-  // 页面相关事件
-  static emit('page:load', { pageName, loadTime });
-  static emit('page:navigate', { from, to });
-  static emit('page:scroll', { position, direction });
-  
-  // 用户交互事件
-  static emit('user:click', { element, text });
-  static emit('user:copy', { text });
-  static emit('user:search', { query, results });
-  
-  // 系统事件
-  static emit('system:online', { status });
-  static emit('system:offline', { status });
-  static emit('system:error', { error, context });
-}
-```
-
-###### 2. 消息配置系统
-```json
-{
-  "interactions": {
-    "music": {
-      "play": ["正在播放：{songName}，好听吗？", "这首歌的节奏很棒呢~", "音乐开始播放啦！"],
-      "pause": ["音乐暂停了", "休息一下也好~", "静音模式开启"],
-      "next": ["下一首歌", "换首歌试试", "听听这首怎么样"],
-      "volume": {
-        "up": ["音量调大了", "声音更响亮啦~"],
-        "down": ["音量调小了", "安静一些也好"],
-        "mute": ["静音了", "需要安静的时候到了"]
-      }
-    },
-    "theme": {
-      "change": {
-        "dark": ["切换到深色模式了，天依也喜欢夜晚呢~", "暗色模式护眼哦", "夜晚模式激活"],
-        "light": ["亮堂的模式，心情也变好了！", "明亮的界面很舒适", "白昼模式开启"],
-        "blue": ["蓝色主题，像天空一样清澈~", "清新的蓝色风格", "天空的颜色"],
-        "green": ["绿色主题，充满生机呢！", "自然的绿色很好看", "森林的气息"]
-      }
-    },
-    "page": {
-      "load": ["页面加载完成了！", "新页面内容很丰富呢~", "浏览愉快哦！"],
-      "navigate": ["跳转到新页面了", "探索新的内容吧", "页面切换成功"],
-      "scroll": ["页面滚动中", "内容很丰富呢", "慢慢浏览吧"]
-    }
-  }
-}
-```
-
-###### 3. 组件集成标准
-```tsx
-// 新增功能组件的 Live2D 集成示例
-export function NewFeatureComponent() {
-  const handleFeatureAction = useCallback(() => {
-    // 功能逻辑
-    const result = performFeatureAction();
-    
-    // Live2D 联动通知
-    if (result.success) {
-      Live2DEventEmitter.emit('feature:success', {
-        featureName: 'NewFeature',
-        message: '功能执行成功',
-        data: result.data
-      });
-    } else {
-      Live2DEventEmitter.emit('feature:error', {
-        featureName: 'NewFeature',
-        error: result.error
-      });
-    }
-  }, []);
-  
-  return (
-    <div>
-      {/* 组件内容 */}
-      <button onClick={handleFeatureAction}>
-        执行功能
-      </button>
-    </div>
-  );
-}
-```
-
-###### 4. 联动消息优先级
-```tsx
-// 消息优先级管理
-const MESSAGE_PRIORITY = {
-  HIGH: 1,     // 用户直接交互 (点击、键盘)
-  MEDIUM: 2,   // 功能联动 (音乐、主题)
-  LOW: 3,     // 系统事件 (页面加载、滚动)
-  IDLE: 4     // 空闲消息
-};
-
-// 消息队列管理
-class MessageQueue {
-  private queue: Array<{
-    message: string;
-    priority: number;
-    timestamp: number;
-    type: string;
-  }> = [];
-  
-  add(message: string, priority: number, type: string) {
-    this.queue.push({ message, priority, timestamp: Date.now(), type });
-    this.queue.sort((a, b) => a.priority - b.priority);
-  }
-  
-  getNext(): string | null {
-    const item = this.queue.shift();
-    return item ? item.message : null;
-  }
-}
-```
-
-##### 音乐播放器联动示例
-```tsx
-// MusicPlayer.tsx 中的 Live2D 联动
-import { Live2DEventEmitter } from '@/utils/live2dEventEmitter';
-
-export function MusicPlayer() {
-  const handlePlay = useCallback((song: Song) => {
-    // 音乐播放逻辑
-    playMusic(song);
-    
-    // Live2D 联动 - 播放通知
-    Live2DEventEmitter.emit('music:play', {
-      songName: song.name,
-      artist: song.artist,
-      duration: song.duration
-    });
-  }, []);
-  
-  const handleThemeChange = useCallback((theme: string) => {
-    // 主题切换逻辑
-    setTheme(theme);
-    
-    // Live2D 联动 - 主题通知
-    Live2DEventEmitter.emit('theme:change', {
-      theme: theme,
-      prevTheme: currentTheme
-    });
-  }, [currentTheme]);
-  
-  return (
-    <div className="music-player">
-      {/* 播放器界面 */}
-      <button onClick={() => handlePlay(currentSong)}>播放</button>
-      <ThemeSelector onThemeChange={handleThemeChange} />
-    </div>
-  );
-}
-```
-
-##### 页面导航联动示例
-```tsx
-// Navigation.tsx 中的 Live2D 联动
-export function Navigation() {
-  const handleNavigation = useCallback((path: string) => {
-    // 导航逻辑
-    router.push(path);
-    
-    // 获取页面名称
-    const pageName = getPageName(path);
-    
-    // Live2D 联动 - 页面切换通知
-    Live2DEventEmitter.emit('page:navigate', {
-      from: currentPath,
-      to: path,
-      pageName: pageName
-    });
-  }, [currentPath, router]);
-  
-  return (
-    <nav>
-      {navItems.map(item => (
-        <Link
-          key={item.path}
-          href={item.path}
-          onClick={() => handleNavigation(item.path)}
-        >
-          {item.name}
-        </Link>
-      ))}
-    </nav>
-  );
-}
-```
-
-##### 工具功能联动示例
-```tsx
-// tools/markdown-editor.tsx 中的 Live2D 联动
-export function MarkdownEditor() {
-  const handleWordCount = useCallback((count: number) => {
-    // 字数统计逻辑
-    updateWordCount(count);
-    
-    // Live2D 联动 - 写作鼓励
-    if (count > 0 && count % 100 === 0) {
-      Live2DEventEmitter.emit('writing:milestone', {
-        count: count,
-        message: `已经写了 ${count} 字了，继续加油！`
-      });
-    }
-  }, []);
-  
-  const handleSave = useCallback(() => {
-    // 保存逻辑
-    saveContent();
-    
-    // Live2D 联动 - 保存成功
-    Live2DEventEmitter.emit('content:save', {
-      type: 'markdown',
-      size: content.length,
-      message: '内容已保存，天依帮你保管好了~'
-    });
-  }, [content]);
-  
-  return (
-    <div className="markdown-editor">
-      <textarea 
-        onChange={(e) => handleWordCount(e.target.value.length)}
-      />
-      <button onClick={handleSave}>保存</button>
-    </div>
-  );
-}
-```
-
-#### 新增功能开发检查清单
-
-##### 功能开发前
-- [ ] 分析功能是否与用户交互相关
-- [ ] 考虑功能状态变化时的用户反馈需求
-- [ ] 设计合适的联动消息内容
-- [ ] 评估联动的频率和时机
-
-##### 功能开发中
-- [ ] 集成 `Live2DEventEmitter` 事件系统
-- [ ] 在关键状态变化点添加联动通知
-- [ ] 实现错误状态的联动处理
-- [ ] 添加用户配置选项（是否启用联动）
-
-##### 功能开发后
-- [ ] 更新联动消息配置文件
-- [ ] 测试不同状态下的联动效果
-- [ ] 验证联动不会对性能造成影响
-- [ ] 文档化联动功能的使用方法
-
-#### 性能优化建议
-
-##### 联动频率控制
-```tsx
-// 防抖处理
-const debouncedInteraction = useMemo(
-  () => debounce((message: string) => {
-    Live2DEventEmitter.emit('interaction', message);
-  }, 300),
-  []
-);
-
-// 节流处理
-const throttledScroll = useMemo(
-  () => throttle((position: number) => {
-    Live2DEventEmitter.emit('page:scroll', { position });
-  }, 1000),
-  []
-);
-```
-
-##### 条件联动
-```tsx
-// 只在特定条件下触发联动
-const shouldTriggerInteraction = useCallback(() => {
-  // 检查用户设置
-  if (!userSettings.enableLive2DInteraction) return false;
-  
-  // 检查页面状态
-  if (document.hidden) return false;
-  
-  // 检查频率限制
-  const now = Date.now();
-  if (now - lastInteractionTime < 1000) return false;
-  
-  return true;
-}, [userSettings, lastInteractionTime]);
-```
-
-#### 用户体验设计原则
-
-1. **适度原则**: 联动消息不应过于频繁，避免干扰用户正常操作
-2. **相关性原则**: 联动内容应与用户操作直接相关，避免无关提示
-3. **个性化原则**: 提供用户配置选项，允许自定义联动行为
-4. **情感化原则**: 联动消息应具有情感色彩，增强用户亲和力
-5. **一致性原则**: 联动风格应与整体博客风格保持一致
-
-#### 扩展功能建议
-
-##### 智能联动系统
-- 基于用户行为模式学习，智能调整联动频率
-- 根据时间、季节、节日自动调整联动内容
-- 结合用户偏好，个性化联动消息
-
-##### 多模态交互
-- 支持语音输入和反馈
-- 集成表情识别和情感分析
-- 实现手势控制和交互
-
-##### 社交功能联动
-- 评论系统联动：收到评论时看板娘提醒
-- 分享功能联动：分享成功时给予鼓励
-- 访客统计联动：欢迎新访客回访
-
----
-
-*最后更新: 2025年*  
-*维护者: 歆橙*  
-*版本: v3.1 - 功能联动增强版项目规范*
-
-##### 错误处理规范 - 联动增强版本
-```tsx
-// 1. 加载错误处理 - 支持联动降级
+// 1. 加载错误处理
 const handleLoadError = useCallback((error: Error, resource: string) => {
   console.error(`Live2D 资源加载失败: ${resource}`, error);
-  
-  // 联动错误通知
-  Live2DEventEmitter.emit('error:load', { error, resource });
   
   // 降级处理
   setIsLoading(false);
   setMessage('模型加载失败了...');
-  setInteractionState('idle');
   
   // 可选：显示错误提示给用户
   showNotification({
@@ -1144,45 +754,8 @@ const handleLoadError = useCallback((error: Error, resource: string) => {
   });
 }, []);
 
-// 2. 运行时错误处理 - 联动保护
-const handleRuntimeError = useCallback((error: Error, context?: string) => {
-  console.error(`Live2D 运行时错误: ${context || 'unknown'}`, error);
-  
-  // 联动错误保护
-  Live2DEventEmitter.emit('error:runtime', { error, context });
-  
-  // 重置联动状态
-  setInteractionState('idle');
-  
-  // 用户友好的错误消息
-  const errorMessages = {
-    'music': '音乐播放出错了，试试其他功能吧~',
-    'theme': '主题切换遇到了问题，稍后再试哦~',
-    'page': '页面交互有点异常，刷新一下试试？',
-    'default': '天依遇到了点小问题，不过没关系~'
-  };
-  
-  const message = errorMessages[context] || errorMessages.default;
-  updateMessage(message, 'interaction');
-}, [updateMessage]);
-
-// 3. 联动状态恢复
-const recoverFromError = useCallback(() => {
-  setInteractionState('idle');
-  setMessage('');
-  setMessageOpacity(1);
-  
-  // 清除所有定时器
-  if (fadeTimeoutRef.current) {
-    clearTimeout(fadeTimeoutRef.current);
-    fadeTimeoutRef.current = null;
-  }
-  
-  if (interactionTimeoutRef.current) {
-    clearTimeout(interactionTimeoutRef.current);
-    interactionTimeoutRef.current = null;
-  }
-}, []);
+// 2. 运行时错误处理
+const handleRuntimeError = useCallback((error: Error) => {
   console.error('Live2D 运行时错误:', error);
   
   // 尝试恢复
