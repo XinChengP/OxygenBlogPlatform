@@ -1,5 +1,5 @@
 import { useMemo, useEffect, useState } from 'react';
-import { enableBackground, backgroundImage } from '@/setting/WebSetting';
+import { enableBackground, backgroundImage } from '../setting/WebSetting';
 
 type PageType = 'home' | 'blogs' | 'about' | 'blog-detail' | 'archive' | 'guestbook' | 'tools';
 

@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
-import { copyrightConfig, getCCLicenseInfo, type CCLicenseType } from '@/setting/blogSetting';
+import { copyrightConfig, getCCLicenseInfo, type CCLicenseType } from '../setting/blogSetting';
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 
 /**

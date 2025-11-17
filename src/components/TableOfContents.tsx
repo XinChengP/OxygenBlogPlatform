@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
+import { useState, useEffect } from 'react';
+import { useBackgroundStyle } from '../hooks/useBackgroundStyle';
 
 interface TocItem {
   id: string;

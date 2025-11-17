@@ -1,6 +1,6 @@
 import { motion } from "motion/react"
 import { useEffect, useState } from "react"
-import { GithubIcon, MailIcon, GlobeIcon } from "lucide-react"
+import { Github, Mail, Globe } from "lucide-react"
 import Image from 'next/image'
 import Link from 'next/link'
 import { friendsLinks } from '@/setting/AboutSetting'
@@ -50,7 +50,7 @@ export default function FriendsLink() {
             color: 'white'
           }}
         >
-          <GlobeIcon className="w-8 h-8" />
+          <Globe className="w-8 h-8" />
         </motion.div>
         <h3 
           className="text-2xl font-bold bg-clip-text text-transparent mb-3 transition-all duration-500"
@@ -132,7 +132,7 @@ export default function FriendsLink() {
                         color: 'white'
                       }}
                     >
-                      <GlobeIcon className="w-6 h-6" />
+                      <Globe className="w-6 h-6" />
                     </div>
                   )}
                   <div>
@@ -146,11 +146,11 @@ export default function FriendsLink() {
                 </div>
                 <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
                   {link.url.includes('github') ? (
-                    <GithubIcon className="w-4 h-4 mr-1" />
+                    <Github className="w-4 h-4 mr-1" />
                   ) : link.url.includes('mail') ? (
-                    <MailIcon className="w-4 h-4 mr-1" />
+                    <Mail className="w-4 h-4 mr-1" />
                   ) : (
-                    <GlobeIcon className="w-4 h-4 mr-1" />
+                    <Globe className="w-4 h-4 mr-1" />
                   )}
                   <span className="truncate">{link.url}</span>
                 </div>
@@ -161,7 +161,7 @@ export default function FriendsLink() {
       ) : (
         <div className="text-center py-12">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 bg-gray-100 dark:bg-gray-800">
-            <GlobeIcon className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+            <Globe className="w-8 h-8 text-gray-400 dark:text-gray-500" />
           </div>
           <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">
             暂无友情链接

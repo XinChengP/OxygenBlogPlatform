@@ -1,11 +1,15 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import BackgroundLayer from "@/components/BackgroundLayer";
 import ConditionalComponents from "@/components/ConditionalComponents";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import SmoothScrollProvider from "@/components/SmoothScrollProvider";
+import { ImageCacheProvider } from "@/contexts/ImageCacheContext";
+import ClientRouterWrapper from "@/components/ClientRouterWrapper";
 
 import { webTitle, webDescription } from "@/setting/WebSetting";
 
@@ -116,6 +120,8 @@ export default function RootLayout({
             `,
           }}
         />
+        {/* 平滑导航脚本 */}
+        <Script src="/js/smooth-navigation.js" strategy="beforeInteractive" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased text-foreground transition-colors duration-300`}
@@ -130,13 +136,19 @@ export default function RootLayout({
           disableTransitionOnChange={false}
           storageKey="theme"
         >
-          <BackgroundLayer />
-          <Navigation />
-          <main className="min-h-screen transition-colors duration-300 relative">
-            {children}
-          </main>
-          <Footer />
-          <ConditionalComponents />
+          <ImageCacheProvider>
+            <ClientRouterWrapper>
+              <SmoothScrollProvider>
+                <BackgroundLayer />
+                <Navigation />
+                <main className="min-h-screen transition-colors duration-300 relative">
+                  {children}
+                </main>
+                <Footer />
+                <ConditionalComponents />
+              </SmoothScrollProvider>
+            </ClientRouterWrapper>
+          </ImageCacheProvider>
         </ThemeProvider>
       </body>
     </html>

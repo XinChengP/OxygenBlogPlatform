@@ -111,6 +111,30 @@ export default function Navigation() {
   const closeMobileMenu = () => {
     setIsMenuOpen(false);
   };
+
+  /**
+   * 处理链接点击事件
+   * 优化页面切换体验
+   */
+  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    // 如果点击的是当前页面，滚动到顶部
+    if (pathname === href) {
+      e.preventDefault();
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+      return;
+    }
+
+    // 移动端关闭菜单
+    if (isMenuOpen) {
+      closeMobileMenu();
+    }
+
+    // 保存当前滚动位置
+    sessionStorage.setItem(`scrollPos_${pathname}`, window.scrollY.toString());
+  };
   
   return (
     <motion.nav 
@@ -139,6 +163,7 @@ export default function Navigation() {
                   <Link
                     key={item.href}
                     href={item.href}
+                    onClick={(e) => handleLinkClick(e, item.href)}
                     className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300 nav-link ${
                       pathname === item.href
                         ? isAtTop ? 'text-white' : 'text-primary dark:text-primary'
@@ -193,7 +218,7 @@ export default function Navigation() {
                   <Link
                     key={item.href}
                     href={item.href}
-                    onClick={closeMobileMenu}
+                    onClick={(e) => handleLinkClick(e, item.href)}
                     className={`block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300 nav-link ${
                       pathname === item.href
                         ? isAtTop ? 'text-white' : 'text-primary dark:text-primary'

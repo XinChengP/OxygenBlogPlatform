@@ -198,6 +198,20 @@ async function getBlogContent(slug: string): Promise<BlogPost | null> {
     // 自动计算阅读时长，如果元数据中已有readTime则优先使用
     const readTime = frontMatter.readTime || calculateReadingTime(content);
     
+    // 处理封面图片路径 - 与内容中的图片路径处理保持一致
+    let processedCoverImage = frontMatter.coverImage;
+    if (processedCoverImage && !processedCoverImage.startsWith('http') && !processedCoverImage.startsWith('/')) {
+      // 如果是相对路径，转换为绝对路径
+      if (processedCoverImage.startsWith('./')) {
+        processedCoverImage = processedCoverImage.substring(2);
+      } else if (processedCoverImage.startsWith('../')) {
+        processedCoverImage = processedCoverImage.replace(/^\.\.\//, '');
+      }
+      if (!processedCoverImage.startsWith('/')) {
+        processedCoverImage = '/' + processedCoverImage;
+      }
+    }
+    
     return {
       title: title,
       date: formatBlogDate(frontMatter.date),
@@ -210,7 +224,7 @@ async function getBlogContent(slug: string): Promise<BlogPost | null> {
       author: frontMatter.author,
       series: frontMatter.series,
       seriesOrder: frontMatter.seriesOrder,
-      coverImage: frontMatter.coverImage,
+      coverImage: processedCoverImage,
       language: frontMatter.language,
       canonicalUrl: frontMatter.canonicalUrl,
       seoTitle: frontMatter.seoTitle,

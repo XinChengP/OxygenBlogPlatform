@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
+import Image from 'next/image';
 import { ChevronUpIcon, ChevronDownIcon, SunIcon, MoonIcon, AdjustmentsHorizontalIcon } from '@heroicons/react/24/outline';
 
-import { getAssetPath } from '@/utils/assetUtils';
+import { getAssetPath } from '../utils/assetUtils';
 
 /**
  * 页面导航组件
@@ -164,9 +165,11 @@ export default function ScrollToTop() {
           disabled={!currentSong}
         >
           {currentSong && currentSong.cover && (
-            <img 
+            <Image 
               src={currentSong.cover} 
               alt={currentSong.title} 
+              width={48} 
+              height={48} 
               className="absolute inset-0 w-full h-full object-cover rounded-lg"
             />
           )}

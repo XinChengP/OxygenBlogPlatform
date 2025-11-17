@@ -10,14 +10,11 @@ const nextConfig = {
     optimizeCss: true,
     // 优化构建性能
     webpackBuildWorker: true,
-    // 启用React 18的并发特性
-    reactRoot: true,
+    // 滚动恢复配置
+    scrollRestoration: true,
   },
   // 启用严格模式
   reactStrictMode: true,
-  
-  // 生产环境优化
-  swcMinify: true,
   
   // 编译优化
   compiler: {

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
+import Image from 'next/image';
 
 interface DiscussionMessage {
   id: string;
@@ -509,10 +510,12 @@ ${replyData.content}
             <div key={message.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-6">
               {/* 留言头部 */}
               <div className="flex items-start space-x-4 mb-4">
-                <img
+                <Image
                   src={message.author.avatar_url}
                   alt={message.author.login}
-                  className="w-12 h-12 rounded-full"
+                  width={48}
+                  height={48}
+                  className="rounded-full"
                 />
                 <div className="flex-1">
                   <div className="flex items-center space-x-2">
@@ -564,10 +567,12 @@ ${replyData.content}
                 <div className="mt-4 pl-4 border-l-2 border-gray-200 dark:border-gray-600 space-y-3">
                   {message.comments.nodes.map((comment) => (
                     <div key={comment.id} className="flex space-x-3">
-                      <img
+                      <Image
                         src={comment.author.avatar_url}
                         alt={comment.author.login}
-                        className="w-8 h-8 rounded-full"
+                        width={32}
+                        height={32}
+                        className="rounded-full"
                       />
                       <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-1">
