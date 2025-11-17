@@ -84,6 +84,23 @@ public/
 - **路径别名**: 使用 `@/*` 指向 `src/*`
 - **客户端组件**: 使用 `'use client'` 标记明确区分
 
+### 代码风格规范
+- **导入顺序**: React → 第三方库 → 内部组件 → 工具函数 → 类型定义 → 样式文件
+- **组件定义**: 优先使用函数组件和 React Hooks
+- **Props 类型**: 使用接口定义 Props，避免使用 any 类型
+- **状态管理**: 使用 useState、useReducer，避免直接修改状态
+- **副作用**: 在 useEffect 中处理，确保正确的依赖数组
+- **事件处理**: 使用 camelCase 命名，如 `onClick={handleClick}`
+- **条件渲染**: 使用短路运算符或条件表达式，避免嵌套过深
+- **列表渲染**: 必须提供 key 属性，使用稳定的唯一标识符
+
+### CSS 规范
+- **类名命名**: 使用 Tailwind CSS 工具类，避免自定义 CSS
+- **响应式**: 使用 Tailwind 响应式前缀，如 `md:text-lg`
+- **状态样式**: 使用 Tailwind 状态变体，如 `hover:bg-blue-500`
+- **自定义样式**: 仅在必要时使用 CSS Modules 或 styled-components
+- **动画**: 优先使用 Framer Motion，避免 CSS 动画冲突
+
 ## 开发环境配置
 
 ### 环境变量配置
@@ -332,13 +349,973 @@ const nextConfig = {
 4. **合并策略**: 使用 Squash 合并保持主分支整洁
 5. **分支清理**: 合并后删除已完成功能分支
 
-### 特殊功能开发指南
+## 数据管理规范
 
-#### Live2D 模型集成
-- **模型文件**: 存储在 `public/luotianyi-live2d-master/` 目录
-- **交互系统**: 通过 `message.js` 实现点击和悬停交互
-- **消息管理**: 使用 `GlobalMessageManager` 统一管理消息显示
-- **性能优化**: 模型加载采用懒加载策略
+### 状态管理原则
+- **局部状态**: 使用 useState 管理组件内部状态
+- **全局状态**: 使用 React Context 或自定义 Hooks
+- **持久化状态**: 使用 localStorage 或 sessionStorage
+- **服务器状态**: 使用 SWR 或 React Query 进行缓存管理
+
+### 数据获取规范
+- **静态生成**: 使用 `getStaticProps` 生成静态内容
+- **服务端渲染**: 使用 `getServerSideProps` 处理动态内容
+- **客户端获取**: 使用 `useEffect` + `fetch` 或 SWR
+- **错误处理**: 统一的错误处理和加载状态管理
+
+### API 设计规范
+- **RESTful**: 遵循 RESTful API 设计原则
+- **版本控制**: API 版本号管理，如 `/api/v1/`
+- **状态码**: 使用标准的 HTTP 状态码
+- **错误响应**: 统一的错误响应格式
+
+## 组件设计模式
+
+### 复合组件模式
+```tsx
+// 主组件
+const Card = ({ children, className }: CardProps) => {
+  return <div className={`card ${className}`}>{children}</div>;
+};
+
+// 子组件
+Card.Header = ({ title }: { title: string }) => <h3>{title}</h3>;
+Card.Body = ({ children }: { children: ReactNode }) => <div>{children}</div>;
+
+// 使用
+<Card>
+  <Card.Header title="标题" />
+  <Card.Body>内容</Card.Body>
+</Card>
+```
+
+### 高阶组件 (HOC)
+```tsx
+// withLoading 高阶组件
+const withLoading = <P extends object>(
+  Component: ComponentType<P>
+) => {
+  return ({ isLoading, ...props }: P & { isLoading: boolean }) => {
+    if (isLoading) return <LoadingSpinner />;
+    return <Component {...(props as P)} />;
+  };
+};
+```
+
+### 自定义 Hooks
+```tsx
+// useLocalStorage 自定义 Hook
+const useLocalStorage = <T,>(
+  key: string,
+  initialValue: T
+): [T, (value: T) => void] => {
+  const [storedValue, setStoredValue] = useState<T>(() => {
+    try {
+      const item = window.localStorage.getItem(key);
+      return item ? JSON.parse(item) : initialValue;
+    } catch (error) {
+      return initialValue;
+    }
+  });
+
+  const setValue = (value: T) => {
+    setStoredValue(value);
+    window.localStorage.setItem(key, JSON.stringify(value));
+  };
+
+  return [storedValue, setValue];
+};
+```
+
+## 性能优化最佳实践
+
+### React 性能优化
+- **React.memo**: 对纯函数组件进行记忆化
+- **useMemo**: 缓存昂贵的计算结果
+- **useCallback**: 缓存函数引用，避免不必要的重渲染
+- **key 属性**: 在列表渲染中使用稳定的 key
+- **虚拟滚动**: 长列表使用虚拟滚动技术
+
+### 图片优化策略
+- **懒加载**: 使用 loading="lazy" 属性
+- **响应式图片**: 使用 srcset 和 sizes 属性
+- **现代格式**: 优先使用 WebP、AVIF 格式
+- **占位符**: 使用模糊占位符提升感知性能
+
+### 代码分割
+- **动态导入**: 使用 `import()` 进行代码分割
+- **路由级别**: 按路由进行代码分割
+- **组件级别**: 对大型组件进行动态导入
+- **第三方库**: 延迟加载非关键第三方库
+
+## 安全最佳实践
+
+### 前端安全
+- **XSS 防护**: 对用户输入进行转义
+- **CSRF 防护**: 使用 CSRF Token
+- **CSP 策略**: 实施内容安全策略
+- **HTTPS**: 强制使用 HTTPS
+
+### 数据安全
+- **敏感数据**: 不在客户端存储敏感信息
+- **API 密钥**: 使用环境变量存储 API 密钥
+- **输入验证**: 前后端都要进行输入验证
+- **错误信息**: 不要暴露敏感的错误信息
+
+## 监控和分析
+
+### 性能监控
+- **Core Web Vitals**: 监控 LCP、FID、CLS 指标
+- **自定义指标**: 监控关键用户流程的性能
+- **错误监控**: 使用 Sentry 等工具监控运行时错误
+- **性能预算**: 设置并监控性能预算
+
+### 用户分析
+- **页面浏览**: 使用 Google Analytics 等工具
+- **用户行为**: 分析用户在站点的行为模式
+- **转化率**: 监控关键功能的转化率
+- **A/B 测试**: 进行功能优化的 A/B 测试
+
+### 功能联动开发规范
+
+### Live2D 看板娘联动系统
+
+#### 核心设计理念
+Live2D 看板娘作为博客的情感化交互中心，所有新增功能都应考虑与看板娘的联动可能性，创造沉浸式的用户体验。
+
+#### 组件架构规范
+```tsx
+// Live2D 组件标准结构
+interface Live2DConfig {
+  modelPath: string;           // 模型文件路径
+  messagePath: string;         // 消息配置文件路径
+  width: number;               // 画布宽度 (默认: 280)
+  height: number;              // 画布高度 (默认: 250)
+  mobileDisabled: boolean;     // 是否在移动端禁用 (默认: true)
+  autoHideTimeout: number;     // 自动隐藏消息超时时间 (默认: 5000ms)
+  fadeOutDuration: number;     // 淡出动画持续时间 (默认: 500ms)
+  // 联动配置
+  enableMusicInteraction: boolean;  // 启用音乐联动 (默认: true)
+  enableThemeInteraction: boolean;  // 启用主题联动 (默认: true)
+  enablePageInteraction: boolean;   // 启用页面联动 (默认: true)
+  interactionDelay: number;        // 联动响应延迟 (默认: 300ms)
+}
+
+// 消息类型定义 - 扩展联动支持
+interface Live2DMessage {
+  type: 'mouseover' | 'click' | 'time' | 'copy' | 'error' | 'music' | 'theme' | 'page' | 'feature';
+  selector?: string;            // CSS 选择器 (mouseover/click 类型)
+  text: string | string[];      // 消息内容
+  weight?: number;              // 权重，用于随机选择
+  condition?: () => boolean;    // 显示条件函数
+  // 联动专用字段
+  triggerEvent?: string;        // 触发事件名称
+  featureName?: string;        // 功能名称 (用于功能联动)
+  responseType?: 'immediate' | 'delayed' | 'random'; // 响应类型
+}
+```
+
+##### 文件结构规范
+```
+public/luotianyi-live2d-master/
+├── live2d/
+│   ├── js/
+│   │   ├── live2d.js          # Live2D 核心库
+│   │   ├── message.js         # 消息系统
+│   │   └── controller.js      # 组件控制器
+│   ├── css/
+│   │   └── live2d.css         # 组件样式
+│   ├── model/
+│   │   └── tianyi/
+│   │       ├── model.json     # 模型配置
+│   │       ├── textures/      # 贴图文件
+│   │       └── motions/       # 动作文件
+│   └── config/
+│       ├── messages.json      # 消息配置文件
+│       ├── settings.json      # 组件设置
+│       └── interactions.json  # 联动配置 (新增)
+
+src/utils/
+├── live2dMessageManager.ts    # Live2D消息管理器
+├── live2dInteractionManager.ts # Live2D联动管理器 (新增)
+└── live2dEventEmitter.ts     # Live2D事件总线 (新增)
+```
+
+##### 组件实现规范
+```tsx
+// 1. 状态管理 - 支持联动状态
+const [isVisible, setIsVisible] = useState(true);
+const [isLoading, setIsLoading] = useState(true);
+const [message, setMessage] = useState('');
+const [messageOpacity, setMessageOpacity] = useState(1);
+const [interactionState, setInteractionState] = useState<'idle' | 'music' | 'theme' | 'page'>('idle');
+
+// 2. 性能优化
+const fadeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+const lastMessageTimeRef = useRef<number>(0);
+const canvasRef = useRef<HTMLCanvasElement>(null);
+const interactionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+// 3. 联动消息系统
+const updateMessage = useCallback((newMessage: string, type: 'normal' | 'interaction' = 'normal') => {
+  // 过滤默认消息
+  const isDefaultMessage = newMessage.includes('你好') && 
+                          newMessage.includes('洛天依') && 
+                          newMessage.includes('！');
+  
+  if (isDefaultMessage) return;
+  
+  // 消息去重
+  const now = Date.now();
+  if (now - lastMessageTimeRef.current < 1000) return;
+  
+  // 联动类型处理
+  if (type === 'interaction') {
+    setInteractionState('music'); // 或其他相应状态
+    if (interactionTimeoutRef.current) {
+      clearTimeout(interactionTimeoutRef.current);
+    }
+    interactionTimeoutRef.current = setTimeout(() => {
+      setInteractionState('idle');
+    }, 3000);
+  }
+  
+  setMessage(newMessage);
+  setMessageOpacity(1);
+  lastMessageTimeRef.current = now;
+  triggerFadeOut();
+}, [triggerFadeOut]);
+
+// 4. 联动事件监听
+useEffect(() => {
+  // 监听音乐播放事件
+  const handleMusicPlay = (songName: string) => {
+    updateMessage(`正在播放：${songName}，好听吗？`, 'interaction');
+  };
+  
+  // 监听主题切换事件
+  const handleThemeChange = (theme: string) => {
+    const themeMessages = {
+      'dark': '切换到深色模式了，天依也喜欢夜晚呢~',
+      'light': '亮堂的模式，心情也变好了！',
+      'blue': '蓝色主题，像天空一样清澈~',
+      'green': '绿色主题，充满生机呢！'
+    };
+    updateMessage(themeMessages[theme] || '主题换了，新风格很棒呢！', 'interaction');
+  };
+  
+  // 注册事件监听
+  Live2DEventEmitter.on('music:play', handleMusicPlay);
+  Live2DEventEmitter.on('theme:change', handleThemeChange);
+  
+  return () => {
+    Live2DEventEmitter.off('music:play', handleMusicPlay);
+    Live2DEventEmitter.off('theme:change', handleThemeChange);
+  };
+}, [updateMessage]);
+
+// 5. 资源加载策略
+const loadLive2D = useCallback(async () => {
+  try {
+    // CDN 备份策略
+    const jquerySources = [
+      'https://cdn.bootcss.com/jquery/2.2.4/jquery.min.js',
+      'https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.min.js',
+      'https://code.jquery.com/jquery-2.2.4.min.js'
+    ];
+    
+    // 动态加载依赖
+    for (const source of jquerySources) {
+      try {
+        await loadScript(source);
+        break;
+      } catch (error) {
+        console.warn(`jQuery CDN ${source} 加载失败`);
+      }
+    }
+    
+    // 加载 Live2D 核心文件
+    await loadScript(getAssetPath('/luotianyi-live2d-master/live2d/js/live2d.js'));
+    await loadScript(getAssetPath('/luotianyi-live2d-master/live2d/js/message.js'));
+    
+  } catch (error) {
+    console.error('Live2D 加载失败:', error);
+  }
+}, []);
+```
+
+##### 样式规范
+```css
+/* 1. 主题适配 */
+.luotianyi-theme {
+  --live2d-bg: rgba(102, 204, 255, 0.2);
+  --live2d-border: rgba(102, 204, 255, 0.4);
+  --live2d-shadow: 0 3px 15px 2px rgba(102, 204, 255, 0.4);
+  --live2d-text: var(--aplayer-fg);
+}
+
+/* 2. 响应式设计 */
+@media (max-width: 640px) {
+  .landlord {
+    display: none; /* 移动端默认隐藏 */
+  }
+}
+
+/* 3. 消息气泡样式 */
+.message {
+  position: absolute;
+  top: -20px;
+  left: 50px;
+  opacity: 1;
+  transition: opacity 0.5s ease-in-out;
+  background: var(--live2d-bg);
+  padding: 7px;
+  border-radius: 12px;
+  border: 1px solid var(--live2d-border);
+  box-shadow: var(--live2d-shadow);
+  color: var(--live2d-text);
+  font-size: 13px;
+  max-width: 300px;
+  word-wrap: break-word;
+  z-index: 9997;
+}
+
+/* 4. 画布样式 */
+.live2d {
+  cursor: pointer;
+  user-select: none;
+  pointer-events: auto;
+}
+
+/* 5. 控制按钮 */
+.hide-button,
+.sing-button {
+  position: absolute;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+```
+
+##### 交互事件规范 - 联动扩展版本
+```tsx
+// 1. 鼠标事件 - 支持联动状态
+const handleMouseEnter = useCallback(() => {
+  const stateMessages = {
+    idle: '鼠标移入消息',
+    music: '音乐模式激活中...',
+    theme: '主题切换模式...',
+    page: '页面交互模式...'
+  };
+  updateMessage(stateMessages[interactionState] || '鼠标移入消息');
+}, [updateMessage, interactionState]);
+
+const handleMouseLeave = useCallback(() => {
+  // 联动状态下不清除消息
+  if (interactionState === 'idle') {
+    // 可选：鼠标离开时清除消息
+  }
+}, [interactionState]);
+
+// 2. 点击事件 - 增强联动响应
+const handleClick = useCallback(() => {
+  const baseMessages = [
+    '想听我唱歌吗？',
+    '不要动手动脚的！快把手拿开~~',
+    '真…真的是不知羞耻！',
+    '再摸的话我可要报警了！⌇●﹏●⌇',
+    '110吗，这里有个变态一直在摸我(ó﹏ò｡)',
+    '呀！你摸到我了！',
+    '害羞ing...',
+    '天依很萌的！',
+    '我是世界第一吃货殿下哦！'
+  ];
+  
+  // 联动增强消息
+  const interactionMessages = {
+    music: [
+      '正在享受音乐呢~',
+      '这首歌很好听对吧？',
+      '音乐让人心情愉悦呢！'
+    ],
+    theme: [
+      '新主题很漂亮呢！',
+      '这个颜色搭配很棒~',
+      '主题切换成功了！'
+    ],
+    page: [
+      '页面加载完成了！',
+      '新页面内容很丰富呢~',
+      '浏览愉快哦！'
+    ]
+  };
+  
+  let messages = baseMessages;
+  if (interactionState !== 'idle' && interactionMessages[interactionState]) {
+    messages = [...baseMessages, ...interactionMessages[interactionState]];
+  }
+  
+  const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+  updateMessage(randomMessage, interactionState === 'idle' ? 'normal' : 'interaction');
+}, [updateMessage, interactionState]);
+
+// 3. 键盘事件 - 支持联动快捷键
+const handleKeyDown = useCallback((event: KeyboardEvent) => {
+  if (event.key === 'Escape') {
+    setIsVisible(false); // ESC 键隐藏组件
+    setInteractionState('idle'); // 重置联动状态
+  }
+  
+  // 联动快捷键
+  if (event.ctrlKey || event.metaKey) {
+    switch (event.key) {
+      case 'm':
+        event.preventDefault();
+        // 触发音乐联动
+        Live2DEventEmitter.emit('music:shortcut', 'toggle');
+        break;
+      case 't':
+        event.preventDefault();
+        // 触发主题联动
+        Live2DEventEmitter.emit('theme:shortcut', 'cycle');
+        break;
+    }
+  }
+}, []);
+```
+
+#### 功能联动实现指南
+
+##### 新增功能联动标准
+所有新增功能组件都应考虑与 Live2D 看板娘的联动可能性，遵循以下标准：
+
+###### 1. 事件系统规范
+```tsx
+// 事件总线 - 统一管理所有联动事件
+class Live2DEventEmitter {
+  // 音乐相关事件
+  static emit('music:play', { songName, artist, duration });
+  static emit('music:pause', { songName });
+  static emit('music:next', { songName });
+  static emit('music:volume', { volume });
+  
+  // 主题相关事件
+  static emit('theme:change', { theme, prevTheme });
+  static emit('theme:cycle', { direction });
+  
+  // 页面相关事件
+  static emit('page:load', { pageName, loadTime });
+  static emit('page:navigate', { from, to });
+  static emit('page:scroll', { position, direction });
+  
+  // 用户交互事件
+  static emit('user:click', { element, text });
+  static emit('user:copy', { text });
+  static emit('user:search', { query, results });
+  
+  // 系统事件
+  static emit('system:online', { status });
+  static emit('system:offline', { status });
+  static emit('system:error', { error, context });
+}
+```
+
+###### 2. 消息配置系统
+```json
+{
+  "interactions": {
+    "music": {
+      "play": ["正在播放：{songName}，好听吗？", "这首歌的节奏很棒呢~", "音乐开始播放啦！"],
+      "pause": ["音乐暂停了", "休息一下也好~", "静音模式开启"],
+      "next": ["下一首歌", "换首歌试试", "听听这首怎么样"],
+      "volume": {
+        "up": ["音量调大了", "声音更响亮啦~"],
+        "down": ["音量调小了", "安静一些也好"],
+        "mute": ["静音了", "需要安静的时候到了"]
+      }
+    },
+    "theme": {
+      "change": {
+        "dark": ["切换到深色模式了，天依也喜欢夜晚呢~", "暗色模式护眼哦", "夜晚模式激活"],
+        "light": ["亮堂的模式，心情也变好了！", "明亮的界面很舒适", "白昼模式开启"],
+        "blue": ["蓝色主题，像天空一样清澈~", "清新的蓝色风格", "天空的颜色"],
+        "green": ["绿色主题，充满生机呢！", "自然的绿色很好看", "森林的气息"]
+      }
+    },
+    "page": {
+      "load": ["页面加载完成了！", "新页面内容很丰富呢~", "浏览愉快哦！"],
+      "navigate": ["跳转到新页面了", "探索新的内容吧", "页面切换成功"],
+      "scroll": ["页面滚动中", "内容很丰富呢", "慢慢浏览吧"]
+    }
+  }
+}
+```
+
+###### 3. 组件集成标准
+```tsx
+// 新增功能组件的 Live2D 集成示例
+export function NewFeatureComponent() {
+  const handleFeatureAction = useCallback(() => {
+    // 功能逻辑
+    const result = performFeatureAction();
+    
+    // Live2D 联动通知
+    if (result.success) {
+      Live2DEventEmitter.emit('feature:success', {
+        featureName: 'NewFeature',
+        message: '功能执行成功',
+        data: result.data
+      });
+    } else {
+      Live2DEventEmitter.emit('feature:error', {
+        featureName: 'NewFeature',
+        error: result.error
+      });
+    }
+  }, []);
+  
+  return (
+    <div>
+      {/* 组件内容 */}
+      <button onClick={handleFeatureAction}>
+        执行功能
+      </button>
+    </div>
+  );
+}
+```
+
+###### 4. 联动消息优先级
+```tsx
+// 消息优先级管理
+const MESSAGE_PRIORITY = {
+  HIGH: 1,     // 用户直接交互 (点击、键盘)
+  MEDIUM: 2,   // 功能联动 (音乐、主题)
+  LOW: 3,     // 系统事件 (页面加载、滚动)
+  IDLE: 4     // 空闲消息
+};
+
+// 消息队列管理
+class MessageQueue {
+  private queue: Array<{
+    message: string;
+    priority: number;
+    timestamp: number;
+    type: string;
+  }> = [];
+  
+  add(message: string, priority: number, type: string) {
+    this.queue.push({ message, priority, timestamp: Date.now(), type });
+    this.queue.sort((a, b) => a.priority - b.priority);
+  }
+  
+  getNext(): string | null {
+    const item = this.queue.shift();
+    return item ? item.message : null;
+  }
+}
+```
+
+##### 音乐播放器联动示例
+```tsx
+// MusicPlayer.tsx 中的 Live2D 联动
+import { Live2DEventEmitter } from '@/utils/live2dEventEmitter';
+
+export function MusicPlayer() {
+  const handlePlay = useCallback((song: Song) => {
+    // 音乐播放逻辑
+    playMusic(song);
+    
+    // Live2D 联动 - 播放通知
+    Live2DEventEmitter.emit('music:play', {
+      songName: song.name,
+      artist: song.artist,
+      duration: song.duration
+    });
+  }, []);
+  
+  const handleThemeChange = useCallback((theme: string) => {
+    // 主题切换逻辑
+    setTheme(theme);
+    
+    // Live2D 联动 - 主题通知
+    Live2DEventEmitter.emit('theme:change', {
+      theme: theme,
+      prevTheme: currentTheme
+    });
+  }, [currentTheme]);
+  
+  return (
+    <div className="music-player">
+      {/* 播放器界面 */}
+      <button onClick={() => handlePlay(currentSong)}>播放</button>
+      <ThemeSelector onThemeChange={handleThemeChange} />
+    </div>
+  );
+}
+```
+
+##### 页面导航联动示例
+```tsx
+// Navigation.tsx 中的 Live2D 联动
+export function Navigation() {
+  const handleNavigation = useCallback((path: string) => {
+    // 导航逻辑
+    router.push(path);
+    
+    // 获取页面名称
+    const pageName = getPageName(path);
+    
+    // Live2D 联动 - 页面切换通知
+    Live2DEventEmitter.emit('page:navigate', {
+      from: currentPath,
+      to: path,
+      pageName: pageName
+    });
+  }, [currentPath, router]);
+  
+  return (
+    <nav>
+      {navItems.map(item => (
+        <Link
+          key={item.path}
+          href={item.path}
+          onClick={() => handleNavigation(item.path)}
+        >
+          {item.name}
+        </Link>
+      ))}
+    </nav>
+  );
+}
+```
+
+##### 工具功能联动示例
+```tsx
+// tools/markdown-editor.tsx 中的 Live2D 联动
+export function MarkdownEditor() {
+  const handleWordCount = useCallback((count: number) => {
+    // 字数统计逻辑
+    updateWordCount(count);
+    
+    // Live2D 联动 - 写作鼓励
+    if (count > 0 && count % 100 === 0) {
+      Live2DEventEmitter.emit('writing:milestone', {
+        count: count,
+        message: `已经写了 ${count} 字了，继续加油！`
+      });
+    }
+  }, []);
+  
+  const handleSave = useCallback(() => {
+    // 保存逻辑
+    saveContent();
+    
+    // Live2D 联动 - 保存成功
+    Live2DEventEmitter.emit('content:save', {
+      type: 'markdown',
+      size: content.length,
+      message: '内容已保存，天依帮你保管好了~'
+    });
+  }, [content]);
+  
+  return (
+    <div className="markdown-editor">
+      <textarea 
+        onChange={(e) => handleWordCount(e.target.value.length)}
+      />
+      <button onClick={handleSave}>保存</button>
+    </div>
+  );
+}
+```
+
+#### 新增功能开发检查清单
+
+##### 功能开发前
+- [ ] 分析功能是否与用户交互相关
+- [ ] 考虑功能状态变化时的用户反馈需求
+- [ ] 设计合适的联动消息内容
+- [ ] 评估联动的频率和时机
+
+##### 功能开发中
+- [ ] 集成 `Live2DEventEmitter` 事件系统
+- [ ] 在关键状态变化点添加联动通知
+- [ ] 实现错误状态的联动处理
+- [ ] 添加用户配置选项（是否启用联动）
+
+##### 功能开发后
+- [ ] 更新联动消息配置文件
+- [ ] 测试不同状态下的联动效果
+- [ ] 验证联动不会对性能造成影响
+- [ ] 文档化联动功能的使用方法
+
+#### 性能优化建议
+
+##### 联动频率控制
+```tsx
+// 防抖处理
+const debouncedInteraction = useMemo(
+  () => debounce((message: string) => {
+    Live2DEventEmitter.emit('interaction', message);
+  }, 300),
+  []
+);
+
+// 节流处理
+const throttledScroll = useMemo(
+  () => throttle((position: number) => {
+    Live2DEventEmitter.emit('page:scroll', { position });
+  }, 1000),
+  []
+);
+```
+
+##### 条件联动
+```tsx
+// 只在特定条件下触发联动
+const shouldTriggerInteraction = useCallback(() => {
+  // 检查用户设置
+  if (!userSettings.enableLive2DInteraction) return false;
+  
+  // 检查页面状态
+  if (document.hidden) return false;
+  
+  // 检查频率限制
+  const now = Date.now();
+  if (now - lastInteractionTime < 1000) return false;
+  
+  return true;
+}, [userSettings, lastInteractionTime]);
+```
+
+#### 用户体验设计原则
+
+1. **适度原则**: 联动消息不应过于频繁，避免干扰用户正常操作
+2. **相关性原则**: 联动内容应与用户操作直接相关，避免无关提示
+3. **个性化原则**: 提供用户配置选项，允许自定义联动行为
+4. **情感化原则**: 联动消息应具有情感色彩，增强用户亲和力
+5. **一致性原则**: 联动风格应与整体博客风格保持一致
+
+#### 扩展功能建议
+
+##### 智能联动系统
+- 基于用户行为模式学习，智能调整联动频率
+- 根据时间、季节、节日自动调整联动内容
+- 结合用户偏好，个性化联动消息
+
+##### 多模态交互
+- 支持语音输入和反馈
+- 集成表情识别和情感分析
+- 实现手势控制和交互
+
+##### 社交功能联动
+- 评论系统联动：收到评论时看板娘提醒
+- 分享功能联动：分享成功时给予鼓励
+- 访客统计联动：欢迎新访客回访
+
+---
+
+*最后更新: 2025年*  
+*维护者: 歆橙*  
+*版本: v3.1 - 功能联动增强版项目规范*
+
+##### 错误处理规范 - 联动增强版本
+```tsx
+// 1. 加载错误处理 - 支持联动降级
+const handleLoadError = useCallback((error: Error, resource: string) => {
+  console.error(`Live2D 资源加载失败: ${resource}`, error);
+  
+  // 联动错误通知
+  Live2DEventEmitter.emit('error:load', { error, resource });
+  
+  // 降级处理
+  setIsLoading(false);
+  setMessage('模型加载失败了...');
+  setInteractionState('idle');
+  
+  // 可选：显示错误提示给用户
+  showNotification({
+    type: 'error',
+    message: 'Live2D 模型加载失败',
+    description: '请检查网络连接或刷新页面重试'
+  });
+}, []);
+
+// 2. 运行时错误处理 - 联动保护
+const handleRuntimeError = useCallback((error: Error, context?: string) => {
+  console.error(`Live2D 运行时错误: ${context || 'unknown'}`, error);
+  
+  // 联动错误保护
+  Live2DEventEmitter.emit('error:runtime', { error, context });
+  
+  // 重置联动状态
+  setInteractionState('idle');
+  
+  // 用户友好的错误消息
+  const errorMessages = {
+    'music': '音乐播放出错了，试试其他功能吧~',
+    'theme': '主题切换遇到了问题，稍后再试哦~',
+    'page': '页面交互有点异常，刷新一下试试？',
+    'default': '天依遇到了点小问题，不过没关系~'
+  };
+  
+  const message = errorMessages[context] || errorMessages.default;
+  updateMessage(message, 'interaction');
+}, [updateMessage]);
+
+// 3. 联动状态恢复
+const recoverFromError = useCallback(() => {
+  setInteractionState('idle');
+  setMessage('');
+  setMessageOpacity(1);
+  
+  // 清除所有定时器
+  if (fadeTimeoutRef.current) {
+    clearTimeout(fadeTimeoutRef.current);
+    fadeTimeoutRef.current = null;
+  }
+  
+  if (interactionTimeoutRef.current) {
+    clearTimeout(interactionTimeoutRef.current);
+    interactionTimeoutRef.current = null;
+  }
+}, []);
+  console.error('Live2D 运行时错误:', error);
+  
+  // 尝试恢复
+  try {
+    // 重新初始化
+    loadLive2D();
+  } catch (recoveryError) {
+    console.error('Live2D 恢复失败:', recoveryError);
+  }
+}, [loadLive2D]);
+```
+
+##### 性能优化规范
+```tsx
+// 1. 懒加载
+const LazyLive2D = lazy(() => import('@/components/LuoTianyiLive2D'));
+
+// 2. 防抖处理
+const debouncedUpdateMessage = useMemo(
+  () => debounce(updateMessage, 300),
+  [updateMessage]
+);
+
+// 3. 内存清理
+useEffect(() => {
+  return () => {
+    if (fadeTimeoutRef.current) {
+      clearTimeout(fadeTimeoutRef.current);
+    }
+    
+    // 清理全局变量
+    delete (window as any).showMessage;
+    delete (window as any).message_Path;
+    delete (window as any).messageConfig;
+  };
+}, []);
+
+// 4. 条件渲染优化
+const shouldRender = useMemo(() => {
+  return isVisible && !isMobile && !isLoading;
+}, [isVisible, isMobile, isLoading]);
+```
+
+##### 可访问性规范
+```tsx
+// 1. ARIA 标签
+<canvas
+  ref={canvasRef}
+  id="live2d"
+  width="280"
+  height="250"
+  className="live2d"
+  role="img"
+  aria-label="洛天依 Live2D 看板娘"
+  aria-describedby="live2d-description"
+/>
+
+<div id="live2d-description" className="sr-only">
+  这是洛天依的 Live2D 模型，点击可以与她互动
+</div>
+
+// 2. 键盘导航支持
+<div
+  className="hide-button"
+  onClick={toggleVisibility}
+  role="button"
+  tabIndex={0}
+  onKeyDown={(e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      toggleVisibility();
+    }
+  }}
+>
+  隐藏
+</div>
+
+// 3. 高对比度模式支持
+@media (prefers-contrast: high) {
+  .message {
+    border: 2px solid currentColor;
+    background: Canvas;
+    color: CanvasText;
+  }
+}
+
+// 4. 减少动画偏好
+@media (prefers-reduced-motion: reduce) {
+  .message {
+    transition: none;
+  }
+}
+```
+
+##### 测试规范
+```tsx
+// 1. 单元测试
+describe('LuoTianyiLive2D', () => {
+  it('应该正确加载模型', async () => {
+    render(<LuoTianyiLive2D />);
+    await waitFor(() => {
+      expect(screen.getByRole('img')).toBeInTheDocument();
+    });
+  });
+  
+  it('应该处理消息显示', () => {
+    const { getByText } = render(<LuoTianyiLive2D />);
+    fireEvent.click(screen.getByRole('img'));
+    expect(getByText(/天依/)).toBeInTheDocument();
+  });
+  
+  it('应该响应键盘事件', () => {
+    render(<LuoTianyiLive2D />);
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
+  });
+});
+
+// 2. 集成测试
+describe('Live2D 集成', () => {
+  it('应该正确集成到页面中', () => {
+    const Page = () => (
+      <main>
+        <h1>测试页面</h1>
+        <LuoTianyiLive2D />
+      </main>
+    );
+    
+    render(<Page />);
+    expect(screen.getByRole('img')).toBeInTheDocument();
+  });
+});
+```
 
 #### 音乐播放器系统
 - **状态管理**: 使用 `GlobalMusicPlayerManager` 实现跨页面状态保持
@@ -351,8 +1328,199 @@ const nextConfig = {
 - **主题同步**: 评论系统主题与博客主题保持一致
 - **懒加载**: 评论组件采用懒加载优化页面性能
 
+## 博客内容管理规范
+
+### 文章结构标准
+```markdown
+---
+title: "文章标题"
+date: "YYYY-MM-DD"
+category: "分类"
+tags: ["标签1", "标签2"]
+excerpt: "文章摘要"
+coverImage: "/path/to/image.png"  # 可选：封面图片路径
+---
+
+# 文章标题
+
+文章内容使用 Markdown 格式编写，支持以下扩展功能：
+
+## 支持的 Markdown 扩展
+
+### 代码块高亮
+```language
+// 代码内容
+```
+
+### 数学公式
+行内公式：$E = mc^2$
+块级公式：
+$$
+\sum_{i=1}^{n} x_i = x_1 + x_2 + \cdots + x_n
+$$
+
+### 表格
+| 列1 | 列2 | 列3 |
+|-----|-----|-----|
+| 内容1 | 内容2 | 内容3 |
+
+### 图片优化
+![图片描述](/path/to/image.png)
+```
+
+### 封面图片规范
+- **尺寸建议**: 1200x630 像素 (适合社交媒体分享)
+- **文件格式**: WebP、PNG、JPG 均可
+- **文件大小**: 建议不超过 500KB
+- **存储位置**: `public/` 目录下的相关子目录
+- **路径格式**: 使用绝对路径，如 `/Blogabout/benou/benou.png`
+
+### 内容分类标准
+- **技术文章**: 编程、开发、技术分享
+- **生活随笔**: 个人感悟、生活记录
+- **洛佬相关**: VOCALOID、洛天依相关内容
+- **学习笔记**: 学习过程中的笔记总结
+- **项目文档**: 项目相关的说明文档
+
+### 标签使用规范
+- **使用小写字母**: 统一使用小写字母
+- **连字符分隔**: 多词标签使用连字符，如 `machine-learning`
+- **避免过多**: 每篇文章标签数量控制在 3-5 个
+- **保持一致**: 相同概念使用相同标签
+
+## 响应式设计规范
+
+### 断点设置
+- **移动端**: < 640px
+- **平板端**: 640px - 1024px
+- **桌面端**: > 1024px
+- **大屏**: > 1280px (可选)
+
+### 组件适配原则
+- **移动优先**: 默认样式适配移动端，然后通过媒体查询适配大屏
+- **弹性布局**: 使用 Flexbox 和 Grid 进行响应式布局
+- **图片响应**: 使用 `max-width: 100%` 确保图片自适应
+- **字体大小**: 使用 rem 单位，便于响应式调整
+
+## 性能监控规范
+
+### 核心指标
+- **LCP (Largest Contentful Paint)**: < 2.5s
+- **FID (First Input Delay)**: < 100ms
+- **CLS (Cumulative Layout Shift)**: < 0.1
+- **FCP (First Contentful Paint)**: < 1.8s
+
+### 监控工具
+- **Lighthouse**: 定期进行性能审计
+- **Web Vitals**: 监控真实用户体验
+- **Bundle Analyzer**: 分析打包大小
+- **Chrome DevTools**: 开发时性能调优
+
+## 可访问性规范
+
+### WCAG 2.1 标准
+- **颜色对比**: 确保文本与背景对比度 ≥ 4.5:1
+- **键盘导航**: 所有交互元素支持键盘操作
+- **屏幕阅读器**: 提供适当的 ARIA 标签
+- **焦点指示**: 清晰的焦点状态显示
+
+### 图片可访问性
+- **Alt 文本**: 所有图片提供有意义的 alt 属性
+- **装饰图片**: 使用空 alt 属性或 CSS 背景
+- **复杂图像**: 提供详细的描述文本
+
+## 国际化规范
+
+### 多语言支持
+- **默认语言**: 简体中文 (zh-CN)
+- **语言检测**: 根据用户浏览器设置自动检测
+- **回退策略**: 不支持的语言回退到简体中文
+
+### 内容翻译
+- **关键内容**: 导航、按钮、提示信息等提供多语言支持
+- **文章内容**: 支持多语言文章，通过文件命名区分
+- **SEO 优化**: 正确设置 hreflang 标签
+
+## 错误处理规范
+
+### 错误类型
+- **404 错误**: 自定义友好的 404 页面
+- **500 错误**: 服务器错误的优雅处理
+- **网络错误**: 离线状态的友好提示
+- **加载错误**: 资源加载失败的处理
+
+### 错误日志
+- **客户端日志**: 使用 `console.error()` 记录关键错误
+- **错误边界**: React 错误边界捕获组件错误
+- **用户反馈**: 提供错误反馈机制
+
+## 开发工具规范
+
+### 推荐插件
+- **ESLint**: 代码质量检查
+- **Prettier**: 代码格式化
+- **Tailwind CSS IntelliSense**: CSS 类名智能提示
+- **TypeScript Vue Plugin**: TypeScript 支持
+
+### 调试工具
+- **React Developer Tools**: React 组件调试
+- **Redux DevTools**: 状态管理调试
+- **Chrome DevTools**: 性能和网络调试
+
 ---
 
 *最后更新: 2025年*  
 *维护者: 歆橙*  
-*版本: v2.0 - 优化版项目规范*
+*版本: v3.0 - 全面规范化版项目规范*
+
+## 附录
+
+### 常用命令速查表
+```bash
+# 开发
+npm run dev              # 启动开发服务器
+npm run build            # 生产环境构建
+npm run build:pages      # GitHub Pages 构建
+npm run lint             # 代码质量检查
+npm run sync-theme       # 同步主题配置
+
+# 测试
+npm run test             # 运行测试
+npm run test:watch       # 监听模式运行测试
+npm run test:coverage    # 生成测试覆盖率报告
+
+# 部署
+npm run export           # 静态导出
+npm run serve            # 本地预览构建结果
+```
+
+### 项目结构速览
+```
+OxygenBlogPlatform/
+├── src/                   # 源代码目录
+│   ├── app/              # Next.js App Router
+│   ├── components/       # React 组件
+│   ├── content/          # 博客内容 (Markdown)
+│   ├── setting/          # 配置文件
+│   ├── utils/            # 工具函数
+│   └── types/            # TypeScript 类型定义
+├── public/               # 静态资源
+│   ├── music/           # 音乐文件
+│   ├── luotianyi-live2d-master/  # Live2D 模型
+│   └── Blogabout/       # 博客相关图片
+├── scripts/              # 构建脚本
+└── .github/              # GitHub Actions 配置
+```
+
+### 开发环境要求
+- **Node.js**: 18.x 或更高版本
+- **npm**: 9.x 或更高版本
+- **Git**: 2.x 或更高版本
+- **操作系统**: Windows/macOS/Linux
+
+### 浏览器支持
+- **Chrome**: 最新版本
+- **Firefox**: 最新版本
+- **Safari**: 最新版本
+- **Edge**: 最新版本
+- **移动端**: iOS Safari, Chrome for Android

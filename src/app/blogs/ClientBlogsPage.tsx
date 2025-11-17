@@ -20,6 +20,7 @@ interface BlogPost {
   tags: string[];
   slug: string;
   readTime: number;
+  coverImage?: string;
 }
 
 interface ClientBlogsPageProps {
@@ -296,6 +297,18 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                   className={getGlassStyle("rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow cursor-pointer border")}
                 >
                   <Link href={`/blogs/${encodeURIComponent(post.slug)}`} className="nav-link">
+                    {/* 封面图片 */}
+                    {post.coverImage && (
+                      <div className="relative h-48 overflow-hidden">
+                        <img
+                          src={post.coverImage}
+                          alt={post.title}
+                          className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                          loading="lazy"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+                      </div>
+                    )}
                     <div className="p-6">
                       <div className="flex items-center justify-between mb-3">
                         <span className="bg-primary/10 text-primary px-2 py-1 rounded text-sm font-medium border border-primary/20">

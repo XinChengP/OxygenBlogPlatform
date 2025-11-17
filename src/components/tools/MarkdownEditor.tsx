@@ -2826,6 +2826,7 @@ seoDescription: "${blogMetadata.seoDescription}"
               {wordCount} 字
             </span>
             <span>{charCount} 字符</span>
+            <span className="hidden sm:inline">预计阅读 {Math.ceil(wordCount / 500)} 分钟</span>
             <span className="hidden sm:inline">{previewMode === 'edit' ? '编辑' : previewMode === 'preview' ? '预览' : '分屏'}</span>
           </div>
 

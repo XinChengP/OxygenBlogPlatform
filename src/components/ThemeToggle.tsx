@@ -5,6 +5,7 @@ import { useTheme } from 'next-themes';
 import Image from 'next/image';
 import sunIcon from '@/assets/sun.svg';
 import moonIcon from '@/assets/moon.svg';
+import { emitThemeChangeEvent } from '@/utils/live2dEventEmitter';
 
 /**
  * 主题切换组件
@@ -53,8 +54,14 @@ export default function ThemeToggle() {
    * 切换主题
    */
   const handleThemeChange = (newTheme: string) => {
+    const previousTheme = theme;
+    console.log(`[ThemeToggle] 主题切换: ${previousTheme || 'system'} -> ${newTheme}`);
     setTheme(newTheme);
     setIsOpen(false);
+    
+    // 发送主题切换事件给Live2D看板娘
+    emitThemeChangeEvent(newTheme, previousTheme || 'system');
+    console.log(`[ThemeToggle] 已发送Live2D主题切换事件`);
   };
 
   /**

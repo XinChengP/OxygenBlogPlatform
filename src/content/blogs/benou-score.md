@@ -3,7 +3,8 @@ title: "笨鸥 简谱"
 date: "2025-08-31"
 category: "洛佬"
 tags: ["洛天依", "简谱", "笨鸥", "VOCALOID"]
-excerpt: "洛天依歌曲《笨鸥》简谱分享"
+excerpt: "你是否能成为谁 关于大海的形容"
+coverImage: "/Blogabout/benou/benou.png"
 ---
 
 # 笨鸥 简谱

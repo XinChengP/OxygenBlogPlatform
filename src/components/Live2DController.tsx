@@ -114,6 +114,7 @@ export default function Live2DController() {
   
   if (typeof window !== 'undefined') {
     console.log('✅ Live2DController: Showing Live2D for path:', pathname);
+    console.log('🎯 Live2DController: 即将渲染 LuoTianyiLive2D 组件');
   }
   
   return <LuoTianyiLive2D />;
