@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useTheme } from 'next-themes';
 import { motion } from 'motion/react';
-import GiscusGuestbookBoard from '@/components/GiscusGuestbookBoard';
+
+// 动态导入大型组件
+const LazyGiscusGuestbookBoard = lazy(() => import('@/components/GiscusGuestbookBoard'));
 
 export default function Guestbook() {
   const { theme } = useTheme();
@@ -66,7 +68,9 @@ export default function Guestbook() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
-              <GiscusGuestbookBoard />
+              <Suspense fallback={<div className="h-64 bg-gray-200 dark:bg-gray-700 animate-pulse rounded-lg"></div>}>
+                <LazyGiscusGuestbookBoard />
+              </Suspense>
             </motion.div>
           </div>
         </div>

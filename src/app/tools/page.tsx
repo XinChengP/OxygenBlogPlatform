@@ -4,7 +4,7 @@
  */
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from 'next-themes';
 import { 
@@ -13,9 +13,11 @@ import {
   getFeaturedTools,
   ToolItem 
 } from '@/setting/toolsSetting';
-import ScrollToTop from '@/components/ScrollToTop';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 import Link from 'next/link';
+
+// 动态导入大型组件
+const LazyScrollToTop = lazy(() => import('@/components/ScrollToTop'));
 
 // 工具卡片组件
 interface ToolCardProps {
@@ -286,7 +288,9 @@ export default function ToolsPage() {
         </div>
       </div>
       
-      <ScrollToTop />
+      <Suspense fallback={null}>
+        <LazyScrollToTop />
+      </Suspense>
     </main>
   );
 }

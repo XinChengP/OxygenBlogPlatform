@@ -1,22 +1,24 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import { motion } from 'motion/react';
 import Link from 'next/link';
 import LazyMarkdown from '@/components/LazyMarkdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { ClipboardIcon } from '@heroicons/react/24/outline';
-import CopyrightNotice from '@/components/CopyrightNotice';
 
 import OptimizedImage from '@/components/OptimizedImage';
-import TableOfContents from '@/components/TableOfContents';
-import ScrollToTop from '@/components/ScrollToTop';
-import GiscusComments from '@/components/GiscusComments';
 import 'katex/dist/katex.min.css';
 import { EndWord } from '@/setting/blogSetting';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 import { useTheme } from 'next-themes';
+
+// 动态导入大型组件，优化初始加载性能
+const LazyTableOfContents = lazy(() => import('@/components/TableOfContents').then(mod => ({ default: mod.default })));
+const LazyScrollToTop = lazy(() => import('@/components/ScrollToTop').then(mod => ({ default: mod.default })));
+const LazyGiscusComments = lazy(() => import('@/components/GiscusComments').then(mod => ({ default: mod.default })));
+const LazyCopyrightNotice = lazy(() => import('@/components/CopyrightNotice').then(mod => ({ default: mod.default })));
 
 /**
  * 标准化编程语言名称，解决大小写敏感问题
@@ -346,7 +348,9 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
-            <TableOfContents content={blog.content} />
+            <Suspense fallback={<div className="h-32 bg-gray-200 dark:bg-gray-700 animate-pulse rounded-lg"></div>}>
+              <LazyTableOfContents content={blog.content} />
+            </Suspense>
           </motion.div>
 
           {/* 文章内容 */}
@@ -575,12 +579,14 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
             </div>
           </motion.article>
           
-          <CopyrightNotice
-            title={blog.title}
-            publishDate={blog.date}
-            slug={blog.slug}
-            reference={blog.reference}
-          />
+          <Suspense fallback={<div className="text-center text-sm text-gray-500 dark:text-gray-400">版权信息加载中...</div>}>
+            <LazyCopyrightNotice
+              title={blog.title}
+              publishDate={blog.date}
+              slug={blog.slug}
+              reference={blog.reference}
+            />
+          </Suspense>
           
           {/* 评论区 */}
           <motion.div 
@@ -591,7 +597,9 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
           >
             <div className="bg-card rounded-lg shadow-sm p-6 md:p-8">
               <h3 className="text-xl font-semibold mb-4 text-foreground">评论区</h3>
-              <GiscusComments id={blog.slug} title={blog.title} />
+              <Suspense fallback={<div className="animate-pulse bg-gray-200 dark:bg-gray-700 h-32 rounded-lg" />}>
+                <LazyGiscusComments id={blog.slug} title={blog.title} />
+              </Suspense>
             </div>
           </motion.div>
           
@@ -616,7 +624,9 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
       </div>
       
       {/* 添加页面滚动导航组件 */}
-      <ScrollToTop />
+      <Suspense fallback={null}>
+        <LazyScrollToTop />
+      </Suspense>
     </div>
   );
 }

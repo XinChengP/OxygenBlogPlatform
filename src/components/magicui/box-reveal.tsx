@@ -10,7 +10,7 @@ interface BoxRevealProps {
   duration?: number;
 }
 
-export const BoxReveal = ({
+const BoxReveal = ({
   children,
   width = "fit-content",
   boxColor = "#5046e6",
@@ -67,3 +67,5 @@ export const BoxReveal = ({
     </div>
   );
 };
+
+export default BoxReveal;

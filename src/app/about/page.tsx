@@ -4,12 +4,10 @@
  */
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { useTheme } from 'next-themes';
-import FriendsLink from '@/components/FriendsLink';
-import ScrollToTop from '@/components/ScrollToTop';
 import { Cover } from '@/components/ui/cover'
 import { EvervaultCard, Icon } from '@/components/ui/evervault-card';
 import MailIcon from '@/assets/mail.svg';
@@ -19,6 +17,10 @@ import {title, BeforeAnimationText, AnimationText, name, slogan, aboutMeP1, abou
 from '@/setting/AboutSetting';
 import { useMemo } from 'react';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
+
+// 动态导入大型组件
+const LazyFriendsLink = lazy(() => import('@/components/FriendsLink'));
+const LazyScrollToTop = lazy(() => import('@/components/ScrollToTop'));
 
 /**
  * 关于页面组件
@@ -521,7 +523,9 @@ export default function AboutPage() {
         </div> {/* 主要内容卡片闭合 */}
 
         {/* 友情链接模块 */}
-        <FriendsLink />
+        <Suspense fallback={<div className="h-32 bg-gray-200 dark:bg-gray-700 animate-pulse rounded-lg"></div>}>
+          <LazyFriendsLink />
+        </Suspense>
 
         {/* 底部装饰 */}
         <div className="text-center mt-8">
@@ -532,7 +536,9 @@ export default function AboutPage() {
       </div>
       
       {/* 添加页面滚动导航组件 */}
-      <ScrollToTop />
+      <Suspense fallback={null}>
+        <LazyScrollToTop />
+      </Suspense>
     </div>
   );
 }

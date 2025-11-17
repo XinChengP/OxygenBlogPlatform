@@ -13,7 +13,7 @@ interface MeteorsProps {
   className?: string;
 }
 
-export const Meteors = ({
+const Meteors = ({
   number = 20,
   minDelay = 0.2,
   maxDelay = 1.2,
@@ -58,3 +58,5 @@ export const Meteors = ({
     </>
   );
 };
+
+export default Meteors;

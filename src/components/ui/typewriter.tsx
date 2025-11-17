@@ -9,7 +9,7 @@ export interface ITypewriterProps {
   baseText?: string
 }
 
-export function Typewriter({ delay, texts, baseText = "" }: ITypewriterProps) {
+function Typewriter({ delay, texts, baseText = "" }: ITypewriterProps) {
   const [animationComplete, setAnimationComplete] = useState(false)
   const count = useMotionValue(0)
   const rounded = useTransform(count, (latest) => Math.round(latest))
@@ -40,6 +40,8 @@ export function Typewriter({ delay, texts, baseText = "" }: ITypewriterProps) {
     </span>
   )
 }
+
+export default Typewriter;
 
 export interface IRepeatedTextAnimationProps {
   delay: number

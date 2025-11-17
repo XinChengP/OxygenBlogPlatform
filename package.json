@@ -26,6 +26,7 @@
     "clsx": "^2.1.1",
     "compression": "^1.8.1",
     "cors": "^2.8.5",
+    "critters": "^0.0.23",
     "dompurify": "^3.3.0",
     "express": "^5.1.0",
     "framer-motion": "^12.23.24",

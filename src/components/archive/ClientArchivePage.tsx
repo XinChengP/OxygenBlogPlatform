@@ -1,11 +1,13 @@
 "use client";
 
-import React, { useMemo } from 'react';
+import React, { useMemo, lazy, Suspense } from 'react';
 import Link from 'next/link';
 import { motion } from 'motion/react';
 import { Timeline } from '@/components/ui/timeline';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
-import ScrollToTop from '@/components/ScrollToTop';
+
+// 动态导入大型组件
+const LazyScrollToTop = lazy(() => import('@/components/ScrollToTop'));
 
 /**
  * 博客文章接口
@@ -149,7 +151,9 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
       </div>
       
       {/* 添加页面滚动导航组件 */}
-      <ScrollToTop />
+      <Suspense fallback={null}>
+        <LazyScrollToTop />
+      </Suspense>
     </div>
   );
 }
