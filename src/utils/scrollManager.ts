@@ -12,6 +12,7 @@ export class AdvancedScrollManager {
   private readonly SCROLL_TIMEOUT = 100;
   private readonly STORAGE_KEY = 'advanced-scroll-positions';
   private readonly HISTORY_KEY = 'navigation-history';
+  private hasRestored = false; // 添加标记防止重复恢复
 
   constructor() {
     this.currentPath = window.location.pathname;
@@ -103,14 +104,18 @@ export class AdvancedScrollManager {
   private restoreScrollPosition(): void {
     const savedPosition = this.scrollPositions.get(this.currentPath);
     
-    if (savedPosition !== undefined) {
-      // 使用 requestAnimationFrame 确保在下一个渲染周期执行
-      requestAnimationFrame(() => {
-        window.scrollTo({
-          top: savedPosition,
-          behavior: 'instant' // 使用即时滚动避免闪烁
+    if (savedPosition !== undefined && !this.hasRestored) {
+      this.hasRestored = true; // 防止重复恢复
+      
+      // 延迟恢复，避免阻塞首屏渲染
+      setTimeout(() => {
+        requestAnimationFrame(() => {
+          window.scrollTo({
+            top: savedPosition,
+            behavior: 'instant' // 使用即时滚动避免闪烁
+          });
         });
-      });
+      }, 50); // 50ms延迟
     }
   }
 
@@ -144,6 +149,7 @@ export class AdvancedScrollManager {
    */
   private startNavigation(newPath: string): void {
     this.isNavigating = true;
+    this.hasRestored = false; // 重置恢复标记
     this.navigationHistory.push(this.currentPath);
     this.currentPath = newPath;
     

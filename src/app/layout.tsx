@@ -8,7 +8,6 @@ import BackgroundLayer from "@/components/BackgroundLayer";
 import ConditionalComponents from "@/components/ConditionalComponents";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import SmoothScrollProvider from "@/components/SmoothScrollProvider";
-import { ImageCacheProvider } from "@/contexts/ImageCacheContext";
 import ClientRouterWrapper from "@/components/ClientRouterWrapper";
 
 import { webTitle, webDescription } from "@/setting/WebSetting";
@@ -136,19 +135,17 @@ export default function RootLayout({
           disableTransitionOnChange={false}
           storageKey="theme"
         >
-          <ImageCacheProvider>
-            <ClientRouterWrapper>
-              <SmoothScrollProvider>
-                <BackgroundLayer />
-                <Navigation />
-                <main className="min-h-screen transition-colors duration-300 relative">
-                  {children}
-                </main>
-                <Footer />
-                <ConditionalComponents />
-              </SmoothScrollProvider>
-            </ClientRouterWrapper>
-          </ImageCacheProvider>
+          <ClientRouterWrapper>
+            <SmoothScrollProvider>
+              <BackgroundLayer />
+              <Navigation />
+              <main className="min-h-screen transition-colors duration-300 relative">
+                {children}
+              </main>
+              <Footer />
+              <ConditionalComponents />
+            </SmoothScrollProvider>
+          </ClientRouterWrapper>
         </ThemeProvider>
       </body>
     </html>

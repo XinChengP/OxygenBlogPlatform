@@ -3,7 +3,6 @@
 import { useState, lazy, Suspense, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import LazyMarkdown from '../../../components/LazyMarkdown';
-import { extractImageUrls, preloadCriticalImages } from '../../../utils/imagePreloader';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { 
@@ -15,7 +14,7 @@ import {
   BookOpenIcon
 } from '@heroicons/react/24/outline';
 
-import OptimizedImage from '../../../components/OptimizedImage';
+
 import 'katex/dist/katex.min.css';
 import { EndWord } from '../../../setting/blogSetting';
 import { useBackgroundStyle } from '../../../hooks/useBackgroundStyle';
@@ -270,14 +269,6 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
           rehypePlugins: [rehypeKatex, rehypeHighlight]
         });
         isLoadedRef.current = true;
-        
-        // 预加载文章中的图片
-        const imageUrls = extractImageUrls(blog.content);
-        if (imageUrls.length > 0) {
-          setTimeout(() => {
-            preloadCriticalImages(imageUrls);
-          }, 100); // 延迟100ms预加载，避免阻塞首屏渲染
-        }
       } catch (error) {
         console.error('Failed to load markdown components:', error);
       }
@@ -327,12 +318,11 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
             {/* 封面图片 */}
             {blog.coverImage && (
               <div className="mb-6 rounded-xl overflow-hidden shadow-2xl">
-                <OptimizedImage
+                <img
                   src={blog.coverImage}
                   alt={blog.title}
                   className="w-full h-64 md:h-96 object-cover transform hover:scale-105 transition-transform duration-500"
-                  width={800}
-                  height={384}
+                  loading="lazy"
                 />
               </div>
             )}
@@ -613,17 +603,15 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                         </a>
                       );
                     },
-                    // 图片 - 移除动画效果，让图片立即显示
+                    // 图片 - 基础加载
                     img({ src, alt }: any) {
                       return (
                         <div className="my-8 text-center">
-                          <OptimizedImage
+                          <img
                             src={src}
                             alt={alt || '图片'}
                             className="rounded-xl shadow-lg mx-auto max-w-full h-auto"
-                            width={800}
-                            height={400}
-                            priority={true} // 设置为优先级图片，立即加载
+                            loading="lazy"
                           />
                           {alt && (
                             <p className="text-sm text-muted-foreground mt-3 italic">{alt}</p>
