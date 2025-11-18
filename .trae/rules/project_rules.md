@@ -1,400 +1,324 @@
-# OxygenBlogPlatform 项目规则文档
+# OxygenBlogPlatform 开发规范
 
 ## 项目概述
-OxygenBlogPlatform 是一个基于 Next.js 15.3.4 的现代化个人博客平台，支持 GitHub Pages 静态部署，具有响应式设计和主题切换功能。项目集成了洛天依Live2D看板娘、音乐播放器、粒子动画等特色功能。
+基于 Next.js 15.3.4 的现代化个人博客平台，支持 GitHub Pages 静态部署，集成 Live2D 看板娘、音乐播放器、主题切换等特色功能。
 
-## 技术栈规范
+## 核心技术栈
 
 ### 核心框架
-- **Next.js 15.3.4** - 使用 Turbopack 进行快速开发，支持 App Router
-- **React 19.0.0** - 最新版本的 React
-- **TypeScript 5.x** - 严格模式启用的类型安全开发
+- **Next.js 15.3.4** - App Router + Turbopack，静态导出模式
+- **React 19.0.0** - 函数组件 + Hooks
+- **TypeScript 5.x** - 严格模式，类型安全
 
 ### 样式系统
-- **Tailwind CSS 4** - 原子化 CSS 框架，支持深色模式
-- **@tailwindcss/typography** - 文章排版样式优化
-- **CSS Variables** - 动态主题色系统，支持10种预设主题
-- **Framer Motion** - 流畅的动画和过渡效果
+- **Tailwind CSS 4** - 原子化CSS，深色模式支持
+- **CSS Variables** - 10种预设主题色系统
+- **Framer Motion** - 动画和过渡效果
 
-### 功能组件
-- **Next Themes** - 主题切换管理（亮色/暗色/系统）
-- **Heroicons & Lucide React** - 现代化图标库
-- **Particles.js** - 动态粒子背景效果
+### 核心功能
+- **Live2D看板娘** - 洛天依互动系统
+- **APlayer音乐** - 播放状态持久化
+- **GitHub评论** - Giscus评论系统
+- **粒子动画** - Particles.js背景效果
 
-### 内容处理
-- **React Markdown** - Markdown 内容渲染
-- **Remark & Rehype** - Markdown 处理插件链
-- **Highlight.js** - 代码语法高亮显示
-- **KaTeX** - 数学公式渲染支持
+## 项目架构
 
-### 特色功能
-- **洛天依Live2D** - 集成看板娘互动系统
-- **APlayer** - 音乐播放器，支持播放状态持久化
-- **Giscus** - 基于GitHub Issues的评论系统
-
-## 项目架构规范
-
-### 目录结构
+### 目录结构规范
 ```
 src/
-├── app/                    # Next.js App Router 页面路由
+├── app/                    # Next.js App Router
 │   ├── about/             # 关于页面
-│   ├── archive/           # 文章归档页面
+│   ├── archive/           # 文章归档
 │   ├── blogs/             # 博客文章动态路由
-│   ├── guestbook/         # 留言板页面
+│   ├── guestbook/         # 留言板
 │   ├── settings/          # 设置页面
 │   └── tools/             # 工具页面
 ├── components/            # 可复用组件
-│   ├── archive/           # 归档页面专用组件
-│   ├── magicui/         # 特效UI组件
 │   ├── ui/               # 基础UI组件
-│   ├── LuoTianyiLive2D.tsx    # Live2D看板娘组件
-│   ├── MusicPlayer.tsx        # 音乐播放器组件
-│   ├── Navigation.tsx         # 导航栏组件
-│   └── ThemeToggle.tsx        # 主题切换组件
+│   ├── magicui/          # 特效UI组件
+│   ├── archive/          # 归档专用组件
+│   └── [功能组件].tsx     # 功能组件
 ├── utils/                 # 工具函数
-│   ├── assetUtils.ts      # 资源路径处理工具
-│   ├── globalMusicPlayerManager.ts  # 音乐播放状态管理
-│   └── loadScript.ts      # 脚本加载工具
-├── setting/               # 配置设置
-│   ├── WebSetting.ts      # 网站全局配置
-│   ├── NavigationSetting.ts   # 导航配置
-│   ├── FooterSetting.ts   # 页脚配置
-│   └── AboutSetting.ts    # 关于页面配置
-├── types/                 # TypeScript 类型定义
-├── contexts/              # React 上下文
-└── hooks/                 # 自定义React Hooks
+├── setting/               # 配置文件
+├── types/                 # TypeScript类型
+├── contexts/              # React上下文
+└── hooks/                 # 自定义Hooks
 
 public/
-├── luotianyi-live2d-master/   # Live2D模型资源
+├── luotianyi-live2d-master/   # Live2D资源
 ├── music/                 # 音乐文件
 └── assets/               # 静态资源
 ```
 
-### 文件命名规范
-- **组件文件**: PascalCase (如 `Navigation.tsx`)
-- **工具函数**: camelCase (如 `assetUtils.ts`)
-- **配置文件**: camelCase (如 `WebSetting.ts`)
-- **页面文件**: 使用 Next.js App Router 约定 (如 `page.tsx`, `layout.tsx`)
-- **类型定义**: PascalCase 接口，camelCase 类型文件 (如 `types.ts`)
+### 命名规范
+- **组件**: PascalCase (`Navigation.tsx`)
+- **工具函数**: camelCase (`assetUtils.ts`)
+- **配置文件**: camelCase (`WebSetting.ts`)
+- **页面文件**: Next.js约定 (`page.tsx`, `layout.tsx`)
 
-### 代码规范
-- **ESLint**: 使用 Next.js 推荐的配置 + TypeScript严格模式
-- **TypeScript**: 启用严格模式，使用接口定义组件Props
-- **路径别名**: 使用 `@/*` 指向 `src/*`
-- **客户端组件**: 使用 `'use client'` 标记明确区分
+### 开发规范
+- **TypeScript**: 严格模式，接口定义Props，禁用any
+- **组件**: 函数组件优先，明确'use client'标记
+- **状态管理**: useState/useReducer，禁止直接修改状态
+- **导入顺序**: React → 第三方 → 内部组件 → 工具 → 类型 → 样式
+- **命名**: 事件处理camelCase (`onClick={handleClick}`)
+- **列表渲染**: 必须提供稳定key属性
 
-### 代码风格规范
-- **导入顺序**: React → 第三方库 → 内部组件 → 工具函数 → 类型定义 → 样式文件
-- **组件定义**: 优先使用函数组件和 React Hooks
-- **Props 类型**: 使用接口定义 Props，避免使用 any 类型
-- **状态管理**: 使用 useState、useReducer，避免直接修改状态
-- **副作用**: 在 useEffect 中处理，确保正确的依赖数组
-- **事件处理**: 使用 camelCase 命名，如 `onClick={handleClick}`
-- **条件渲染**: 使用短路运算符或条件表达式，避免嵌套过深
-- **列表渲染**: 必须提供 key 属性，使用稳定的唯一标识符
+### 样式规范
+- **Tailwind优先**: 避免自定义CSS
+- **响应式设计**: 使用Tailwind响应式前缀
+- **状态样式**: 使用Tailwind状态变体
+- **动画**: Framer Motion优先
 
-### CSS 规范
-- **类名命名**: 使用 Tailwind CSS 工具类，避免自定义 CSS
-- **响应式**: 使用 Tailwind 响应式前缀，如 `md:text-lg`
-- **状态样式**: 使用 Tailwind 状态变体，如 `hover:bg-blue-500`
-- **自定义样式**: 仅在必要时使用 CSS Modules 或 styled-components
-- **动画**: 优先使用 Framer Motion，避免 CSS 动画冲突
+## 环境配置
 
-## 开发环境配置
-
-### 环境变量配置
-- **开发环境** (`.env.local`): 
-  - `NODE_ENV=development`
-  - `NEXT_PUBLIC_BASE_PATH=` (空值，本地开发)
-  - `NEXT_PRIVATE_STATIC_EXPORT=false`
-
-- **生产环境** (`.env`):
-  - `NODE_ENV=production`
-  - `NEXT_PUBLIC_GITHUB_REPO_NAME=OxygenBlogPlatform`
-  - `NEXT_PUBLIC_BASE_PATH=/OxygenBlogPlatform` (GitHub Pages路径)
-
-### 开发命令
+### 环境变量
 ```bash
-npm run dev          # 开发服务器 (Turbopack加速)
-npm run build        # 生产构建 (自动同步主题)
-npm run build:pages  # GitHub Pages专用构建
-npm run sync-theme   # 同步主题颜色配置
-npm run lint         # 代码质量检查
-npm run export       # 静态导出构建
+# 开发环境 (.env.local)
+NODE_ENV=development
+NEXT_PUBLIC_BASE_PATH=              # 空值，本地开发
+NEXT_PRIVATE_STATIC_EXPORT=false
+
+# 生产环境 (.env)
+NODE_ENV=production
+NEXT_PUBLIC_GITHUB_REPO_NAME=OxygenBlogPlatform
+NEXT_PUBLIC_BASE_PATH=/OxygenBlogPlatform  # GitHub Pages路径
+```
+
+### 核心命令
+```bash
+npm run dev          # 开发服务器 (Turbopack)
+npm run build:pages  # GitHub Pages构建
+npm run sync-theme   # 主题同步
+npm run lint         # 代码检查
 ```
 
 ### 构建流程
-1. **开发模式**: `npm run dev` - 启用Turbopack，支持热更新
-2. **生产构建**: `npm run build` - 自动执行主题同步，生成优化构建
-3. **GitHub Pages**: `npm run build:pages` - 专为GitHub Pages优化的构建流程
+1. **开发**: `npm run dev` - 热更新，Turbopack加速
+2. **构建**: `npm run build:pages` - 静态导出，GitHub Pages优化
 
-## 静态资源处理规范
+## 资源管理
 
-### 资源路径管理
-- **核心工具**: 使用 `src/utils/assetUtils.ts` 中的工具函数处理路径
-- **开发环境**: 直接使用相对路径，无需额外处理
-- **生产环境**: 自动检测并添加 GitHub Pages basePath
-- **路径函数**: 
-  - `getAssetPath()` - 处理静态资源路径
-  - `getBasePath()` - 获取基础路径
-  - `formatAudioUrl()` - 处理音频文件路径
+### 路径处理
+- **核心工具**: `src/utils/assetUtils.ts`
+- **开发环境**: 相对路径
+- **生产环境**: 自动添加GitHub Pages basePath
+- **关键函数**:
+  - `getAssetPath()` - 静态资源路径
+  - `getBasePath()` - 基础路径
+  - `formatAudioUrl()` - 音频路径
 
-### 图片优化策略
-- **静态导出模式**: 禁用图片优化 (`unoptimized: true`)
-- **图片组件**: 使用 `OptimizedImage` 组件进行统一图片加载
-- **格式支持**: 支持 WebP、AVIF 等现代格式
-- **懒加载**: 实现图片懒加载和占位符
+### 图片优化
+- **组件**: `OptimizedImage` - 统一图片加载
+- **格式**: WebP/AVIF优先
+- **懒加载**: 内置支持
+- **缓存**: 全局图片缓存系统
 
-### 音乐文件管理
-- **存储位置**: 音乐文件存储在 `public/music/` 目录
-- **播放器**: 使用 APlayer 进行音乐播放管理
-- **状态持久化**: 通过 `GlobalMusicPlayerManager` 实现播放状态跨页面保持
-- **播放列表**: 支持自定义播放列表，自动提取文件名作为标题
+### 音乐管理
+- **存储**: `public/music/`
+- **播放器**: APlayer
+- **状态**: 跨页面持久化
+- **播放列表**: 自动提取文件名
 
-## 主题系统规范
+## 主题系统
 
-### 主题色配置系统
-- **配置文件**: `src/setting/WebSetting.ts` - 集中管理主题配置
-- **预设方案**: 支持 10 种精心设计的主题色方案
-- **当前主题**: 蓝色主题 (`themePresets.blue`)
-- **动态生成**: 基于主色调自动生成辅助色和文本色
+### 主题配置
+- **配置**: `src/setting/WebSetting.ts`
+- **预设**: 10种主题色方案
+- **动态**: 基于主色调生成辅助色
 
-### 主题切换机制
-- **模式支持**: 亮色/暗色/系统主题三模式切换
-- **技术实现**: 使用 `next-themes` 进行主题状态管理
-- **持久化**: 主题状态自动存储在 localStorage
-- **组件集成**: `ThemeToggle` 组件提供用户界面
+### 主题切换
+- **模式**: 亮色/暗色/系统
+- **状态**: localStorage持久化
+- **组件**: `ThemeToggle`提供界面
 
-### CSS 变量系统
-- **变量定义**: 使用 CSS 自定义属性定义完整颜色系统
-- **动态调整**: 智能计算颜色亮度、对比度和可访问性
-- **响应式**: 支持媒体查询适配不同设备
-- **类型安全**: TypeScript 类型定义确保变量使用正确
+### CSS变量
+- **定义**: CSS自定义属性
+- **智能**: 自动计算亮度和对比度
+- **类型**: TypeScript类型安全
 
-## 组件开发规范
+## 组件开发
 
-### 组件结构标准
+### 组件标准
 ```tsx
-// 1. 导入区域 - 按类型分组导入
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-
-// 2. 类型定义 - 清晰的Props接口
+// Props接口
 interface ComponentProps {
   title: string;
   className?: string;
 }
 
-// 3. 组件实现 - 函数组件优先
+// 函数组件
 export default function Component({ title, className }: ComponentProps) {
-  // 状态管理 - 使用描述性变量名
   const [isVisible, setIsVisible] = useState(false);
   
-  // 副作用处理 - 包含清理逻辑
   useEffect(() => {
     // 逻辑处理
-    return () => {
-      // 清理函数
-    };
+    return () => { /* 清理 */ };
   }, [dependency]);
   
-  // 渲染逻辑 - 语义化JSX
-  return (
-    <div className={className}>
-      {/* 组件内容 */}
-    </div>
-  );
+  return <div className={className}>{/* 内容 */}</div>;
 }
 ```
 
 ### 动画规范
-- **动画库**: 使用 Framer Motion 进行动画处理
-- **设计原则**: 遵循 Material Design 动画原则
-- **性能优化**: 确保动画流畅度，避免重排重绘
-- **可访问性**: 提供 prefers-reduced-motion 媒体查询支持
+- **库**: Framer Motion
+- **性能**: 避免重排重绘
+- **可访问性**: 支持prefers-reduced-motion
 
-## 部署配置规范
+## 部署配置
 
-### GitHub Pages 部署策略
-- **自动化部署**: 使用 GitHub Actions 自动部署流程
-- **静态导出**: 启用静态导出模式 (`output: "export"`)
-- **路径处理**: 自动设置 basePath 和 assetPrefix
-- **分支保护**: main 分支自动触发部署流程
+### GitHub Pages部署
+- **自动化**: GitHub Actions
+- **模式**: 静态导出 (`output: "export"`)
+- **路径**: 自动basePath配置
+- **触发**: main分支推送
 
-### Next.js 构建配置
+### Next.js配置
 ```typescript
-// next.config.ts - 生产环境优化配置
-const isStaticExport = process.env.NODE_ENV === 'production';
-const repoName = process.env.NEXT_PUBLIC_GITHUB_REPO_NAME || 'OxygenBlogPlatform';
-
 const nextConfig = {
-  output: "export",                    // 静态导出模式
-  basePath: `/${repoName}`,           // GitHub Pages 仓库路径
+  output: "export",                    // 静态导出
+  basePath: `/${repoName}`,           // 仓库路径
   assetPrefix: `/${repoName}`,        // 资源前缀
-  images: { unoptimized: true },      // 禁用图片优化
-  trailingSlash: true,                // 确保URL一致性
-  distDir: 'out',                     // 构建输出目录
-  experimental: {
-    optimizeCss: true,                 // CSS优化
-  },
+  images: { unoptimized: true },      // 禁用优化
+  trailingSlash: true,                 // URL一致性
+  distDir: 'out',                      // 输出目录
 };
 ```
 
-### 部署流程详解
-1. **代码推送**: 推送到 main 分支触发 GitHub Actions
-2. **自动构建**: 执行 `npm run build:pages` 进行优化构建
-3. **环境配置**: 自动设置生产环境变量和路径配置
-4. **静态导出**: 生成优化后的静态文件到 `out/` 目录
-5. **Pages 部署**: 自动部署到 GitHub Pages 服务
-6. **CDN 缓存**: 利用 GitHub 全球 CDN 加速内容分发
+### 部署流程
+1. **推送**: main分支触发
+2. **构建**: `npm run build:pages`
+3. **导出**: 静态文件到`out/`
+4. **部署**: GitHub Pages自动部署
+5. **CDN**: 全球加速分发
 
-## 性能优化规范
+## 性能优化
 
-### 代码分割策略
-- **自动分割**: 利用 Next.js 自动代码分割功能
-- **动态导入**: 对大型组件和库使用动态导入
-- **包大小优化**: 定期分析并优化 bundle 大小
-- **依赖管理**: 移除未使用的依赖，使用更轻量的替代方案
+### 代码优化
+- **分割**: Next.js自动分割 + 动态导入
+- **包大小**: 定期分析，移除未使用依赖
+- **缓存**: 浏览器代码缓存机制
 
-### 图片优化方案
-- **格式选择**: 优先使用 WebP/AVIF 格式，提供 JPEG/PNG 回退
-- **懒加载**: 实现图片懒加载和渐进式占位符
-- **尺寸优化**: 根据显示需求优化图片尺寸和质量
-- **CDN加速**: 利用 GitHub Pages 全球 CDN 加速图片分发
+### 图片优化
+- **格式**: WebP/AVIF优先
+- **加载**: 懒加载 + 渐进式占位符
+- **尺寸**: 按需优化
+- **CDN**: GitHub Pages全球加速
 
 ### 缓存策略
-- **HTTP缓存**: 合理设置 Cache-Control 和 ETag 头
-- **资源预加载**: 使用 `<link rel="preload">` 预加载关键资源
-- **代码缓存**: 利用浏览器代码缓存机制
-- **离线支持**: 考虑实现 Service Worker 进行离线缓存
+- **HTTP**: 合理设置Cache-Control
+- **预加载**: 关键资源preload
+- **离线**: Service Worker支持
 
 ## 测试规范
 
-### 单元测试标准
-- **工具函数**: 为所有工具函数编写完整单元测试
-- **组件测试**: 测试组件渲染、props处理和用户交互
-- **测试框架**: 使用 Jest + React Testing Library 组合
-- **覆盖率**: 追求核心功能 80% 以上测试覆盖率
-- **测试结构**: 遵循 Arrange-Act-Assert 模式
+### 单元测试
+- **工具函数**: 完整测试覆盖
+- **组件**: 渲染、props、交互测试
+- **框架**: Jest + React Testing Library
+- **覆盖率**: 核心功能80%+
 
-### 集成测试要求
-- **路由测试**: 验证页面路由和导航功能正常
-- **主题系统**: 测试主题切换和持久化功能
-- **响应式设计**: 检查不同设备尺寸的适配性
-- **跨浏览器**: 确保主流浏览器兼容性
-- **性能测试**: 验证页面加载和交互响应时间
+### 集成测试
+- **路由**: 页面导航验证
+- **主题**: 切换和持久化
+- **响应式**: 多设备适配
+- **性能**: 加载和响应时间
 
 ## 安全规范
 
-### 内容安全防护
-- **类型安全**: 严格使用 TypeScript 进行类型检查
-- **输入验证**: 验证所有用户输入和外部数据源
-- **XSS防护**: 防止跨站脚本攻击，转义用户内容
-- **CSRF防护**: 实施跨站请求伪造保护措施
-- **内容策略**: 实施 Content Security Policy
+### 前端安全
+- **类型**: TypeScript严格检查
+- **输入**: 验证所有用户输入
+- **XSS**: 内容转义防护
+- **CSRF**: 跨站请求保护
+- **CSP**: 内容安全策略
 
-### 依赖安全管理
-- **定期审计**: 使用 `npm audit` 定期检查依赖漏洞
-- **自动更新**: 配置 Dependabot 自动更新安全补丁
-- **最小权限**: 遵循最小权限原则，限制第三方访问
-- **供应链**: 验证依赖包来源，避免供应链攻击
+### 依赖安全
+- **审计**: `npm audit`定期检查
+- **更新**: Dependabot自动补丁
+- **权限**: 最小权限原则
+- **供应链**: 验证依赖来源
 
 ## 文档规范
 
-### 代码注释标准
-- **复杂逻辑**: 为算法和业务逻辑添加详细注释
-- **JSDoc格式**: 使用标准 JSDoc 格式注释所有公共函数
-- **组件文档**: 说明组件用途、props 和使用示例
-- **类型注释**: 为复杂类型定义提供使用说明
-- **变更记录**: 重要修改添加注释说明原因
+### 代码注释
+- **复杂逻辑**: 算法和业务逻辑详细注释
+- **JSDoc**: 公共函数标准格式
+- **组件**: 用途、props、示例说明
+- **类型**: 复杂类型使用说明
+- **变更**: 重要修改原因注释
 
-### README 文档要求
-- **项目概述**: 清晰描述项目目标和核心功能
-- **快速开始**: 提供简明的安装和运行步骤
-- **部署指南**: 详细说明 GitHub Pages 部署流程
-- **配置说明**: 解释环境变量和配置文件
-- **故障排除**: 包含常见问题解决方案
-- **贡献指南**: 说明如何参与项目开发
-- **许可证**: 明确项目许可证信息
+### README要求
+- **概述**: 项目目标和核心功能
+- **开始**: 简明安装运行步骤
+- **部署**: GitHub Pages流程
+- **配置**: 环境变量说明
+- **问题**: 常见故障排除
+- **贡献**: 开发参与指南
 
-## 版本控制规范
+## 版本控制
 
-### 提交策略指南
-- **本地开发**: 在本地完成完整功能开发和测试后再提交
-- **原子提交**: 保持提交的原子性，每个提交对应一个逻辑变更
-- **批量提交**: 推荐批量提交相关修改，避免频繁小提交
-- **测试验证**: 确保代码在本地测试通过后再推送
-- **代码审查**: 提交前进行自我代码审查
-- **禁止自动提交**: 不要设置自动提交到GitHub，所有提交都需要人工确认
+### 提交策略
+- **本地**: 完整功能开发测试后提交
+- **原子**: 每个提交对应单一逻辑变更
+- **批量**: 相关修改批量提交
+- **测试**: 本地验证通过后推送
+- **审查**: 提交前自我审查
 
-### 提交信息规范
-- **格式标准**: 使用约定式提交格式 (Conventional Commits)
-- **类型明确**: 使用明确的类型标识 (feat, fix, docs, style, refactor, test, chore)
-- **描述清晰**: 简洁描述功能修改和修复内容
-- **关联引用**: 关联相关 Issue 和 Pull Request
-- ** Breaking Change**: 重大变更需要明确标注
+### 提交信息
+- **格式**: Conventional Commits
+- **类型**: feat, fix, docs, style, refactor, test, chore
+- **描述**: 简洁说明修改内容
+- **关联**: 关联Issue和PR
 
-### 分支管理策略
-- **main 分支**: 生产环境代码，保持稳定可部署状态
-- **develop 分支**: 开发集成分支，合并功能开发
-- **feature 分支**: 功能开发分支，命名格式 `feature/功能描述`
-- **hotfix 分支**: 紧急修复分支，命名格式 `hotfix/问题描述`
-- **个人分支**: 开发者个人工作分支，完成开发后合并到 develop
+### 分支管理
+- **main**: 生产环境，稳定可部署
+- **develop**: 开发集成
+- **feature**: 功能开发 (`feature/描述`)
+- **hotfix**: 紧急修复 (`hotfix/描述`)
 
 ### 合并流程
-1. **功能完成**: 在功能分支完成开发和测试
-2. **代码审查**: 创建 Pull Request 进行代码审查
-3. **自动化测试**: 通过 CI/CD 自动化测试
-4. **合并策略**: 使用 Squash 合并保持主分支整洁
-5. **分支清理**: 合并后删除已完成功能分支
+1. **开发**: 功能分支完成
+2. **审查**: PR代码审查
+3. **测试**: CI/CD验证
+4. **合并**: Squash合并
+5. **清理**: 删除功能分支
 
-## 数据管理规范
+## 数据管理
 
-### 状态管理原则
-- **局部状态**: 使用 useState 管理组件内部状态
-- **全局状态**: 使用 React Context 或自定义 Hooks
-- **持久化状态**: 使用 localStorage 或 sessionStorage
-- **服务器状态**: 使用 SWR 或 React Query 进行缓存管理
+### 状态管理
+- **局部**: useState管理组件状态
+- **全局**: React Context或自定义Hooks
+- **持久化**: localStorage/sessionStorage
+- **服务器**: SWR或React Query缓存
 
-### 数据获取规范
-- **静态生成**: 使用 `getStaticProps` 生成静态内容
-- **服务端渲染**: 使用 `getServerSideProps` 处理动态内容
-- **客户端获取**: 使用 `useEffect` + `fetch` 或 SWR
-- **错误处理**: 统一的错误处理和加载状态管理
+### 数据获取
+- **静态**: `getStaticProps`生成内容
+- **动态**: `getServerSideProps`处理
+- **客户端**: `useEffect` + fetch/SWR
+- **错误**: 统一错误处理
 
-### API 设计规范
-- **RESTful**: 遵循 RESTful API 设计原则
-- **版本控制**: API 版本号管理，如 `/api/v1/`
-- **状态码**: 使用标准的 HTTP 状态码
-- **错误响应**: 统一的错误响应格式
+### API设计
+- **RESTful**: 标准设计原则
+- **版本**: `/api/v1/`版本管理
+- **状态码**: 标准HTTP状态码
+- **错误**: 统一响应格式
 
-## 组件设计模式
+## 设计模式
 
-### 复合组件模式
+### 复合组件
 ```tsx
-// 主组件
 const Card = ({ children, className }: CardProps) => {
   return <div className={`card ${className}`}>{children}</div>;
 };
 
-// 子组件
 Card.Header = ({ title }: { title: string }) => <h3>{title}</h3>;
 Card.Body = ({ children }: { children: ReactNode }) => <div>{children}</div>;
-
-// 使用
-<Card>
-  <Card.Header title="标题" />
-  <Card.Body>内容</Card.Body>
-</Card>
 ```
 
-### 高阶组件 (HOC)
+### 高阶组件
 ```tsx
-// withLoading 高阶组件
-const withLoading = <P extends object>(
-  Component: ComponentType<P>
-) => {
+const withLoading = <P extends object>(Component: ComponentType<P>) => {
   return ({ isLoading, ...props }: P & { isLoading: boolean }) => {
     if (isLoading) return <LoadingSpinner />;
     return <Component {...(props as P)} />;
@@ -402,18 +326,14 @@ const withLoading = <P extends object>(
 };
 ```
 
-### 自定义 Hooks
+### 自定义Hooks
 ```tsx
-// useLocalStorage 自定义 Hook
-const useLocalStorage = <T,>(
-  key: string,
-  initialValue: T
-): [T, (value: T) => void] => {
+const useLocalStorage = <T,>(key: string, initialValue: T) => {
   const [storedValue, setStoredValue] = useState<T>(() => {
     try {
       const item = window.localStorage.getItem(key);
       return item ? JSON.parse(item) : initialValue;
-    } catch (error) {
+    } catch {
       return initialValue;
     }
   });
@@ -427,82 +347,75 @@ const useLocalStorage = <T,>(
 };
 ```
 
-## 性能优化最佳实践
+## 性能最佳实践
 
-### React 性能优化
-- **React.memo**: 对纯函数组件进行记忆化
-- **useMemo**: 缓存昂贵的计算结果
-- **useCallback**: 缓存函数引用，避免不必要的重渲染
-- **key 属性**: 在列表渲染中使用稳定的 key
-- **虚拟滚动**: 长列表使用虚拟滚动技术
+### React优化
+- **memo**: 纯函数组件记忆化
+- **useMemo**: 昂贵计算缓存
+- **useCallback**: 函数引用缓存
+- **key**: 稳定列表键值
+- **虚拟滚动**: 长列表优化
 
-### 图片优化策略
-- **懒加载**: 使用 loading="lazy" 属性
-- **响应式图片**: 使用 srcset 和 sizes 属性
-- **现代格式**: 优先使用 WebP、AVIF 格式
-- **占位符**: 使用模糊占位符提升感知性能
+### 图片策略
+- **懒加载**: `loading="lazy"`
+- **响应式**: `srcset`和`sizes`
+- **格式**: WebP/AVIF优先
+- **占位符**: 模糊占位提升感知
 
 ### 代码分割
-- **动态导入**: 使用 `import()` 进行代码分割
-- **路由级别**: 按路由进行代码分割
-- **组件级别**: 对大型组件进行动态导入
-- **第三方库**: 延迟加载非关键第三方库
+- **动态导入**: `import()`分割
+- **路由级**: 按路由分割
+- **组件级**: 大型组件动态导入
+- **第三方库**: 延迟非关键库
 
 ## 安全最佳实践
 
 ### 前端安全
-- **XSS 防护**: 对用户输入进行转义
-- **CSRF 防护**: 使用 CSRF Token
-- **CSP 策略**: 实施内容安全策略
-- **HTTPS**: 强制使用 HTTPS
+- **XSS**: 输入转义防护
+- **CSRF**: Token验证
+- **CSP**: 内容安全策略
+- **HTTPS**: 强制加密
 
 ### 数据安全
-- **敏感数据**: 不在客户端存储敏感信息
-- **API 密钥**: 使用环境变量存储 API 密钥
-- **输入验证**: 前后端都要进行输入验证
-- **错误信息**: 不要暴露敏感的错误信息
+- **敏感信息**: 禁止客户端存储
+- **API密钥**: 环境变量存储
+- **验证**: 前后端双重验证
+- **错误**: 避免敏感信息泄露
 
-## 监控和分析
+## 监控分析
 
 ### 性能监控
-- **Core Web Vitals**: 监控 LCP、FID、CLS 指标
-- **自定义指标**: 监控关键用户流程的性能
-- **错误监控**: 使用 Sentry 等工具监控运行时错误
-- **性能预算**: 设置并监控性能预算
+- **Web Vitals**: LCP、FID、CLS指标
+- **自定义**: 关键流程性能
+- **错误**: Sentry运行时监控
+- **预算**: 性能预算设置
 
 ### 用户分析
-- **页面浏览**: 使用 Google Analytics 等工具
-- **用户行为**: 分析用户在站点的行为模式
-- **转化率**: 监控关键功能的转化率
-- **A/B 测试**: 进行功能优化的 A/B 测试
+- **分析**: Google Analytics工具
+- **行为**: 用户模式分析
+- **转化**: 关键功能监控
+- **测试**: A/B功能优化
 
-### 功能联动开发规范
+### 功能联动
 
-### Live2D 看板娘联动系统
+### Live2D看板娘联动
 
-#### 核心设计理念
-Live2D 看板娘作为博客的情感化交互中心，所有新增功能都应考虑与看板娘的联动可能性，创造沉浸式的用户体验。
+#### 设计理念
+看板娘作为交互中心，新功能需考虑联动可能性。
 
-#### 组件架构规范
+#### 组件规范
 ```tsx
-// Live2D 组件标准结构
 interface Live2DConfig {
-  modelPath: string;           // 模型文件路径
-  messagePath: string;         // 消息配置文件路径
-  width: number;               // 画布宽度 (默认: 280)
-  height: number;              // 画布高度 (默认: 250)
-  mobileDisabled: boolean;     // 是否在移动端禁用 (默认: true)
-  autoHideTimeout: number;     // 自动隐藏消息超时时间 (默认: 5000ms)
-  fadeOutDuration: number;     // 淡出动画持续时间 (默认: 500ms)
+  modelPath: string;           // 模型路径
+  messagePath: string;         // 消息配置
+  width: number;               // 画布宽度
+  height: number;              // 画布高度
   // 联动配置
-  enableMusicInteraction: boolean;  // 启用音乐联动 (默认: true)
-  enableThemeInteraction: boolean;  // 启用主题联动 (默认: true)
-  enablePageInteraction: boolean;   // 启用页面联动 (默认: true)
-  interactionDelay: number;        // 联动响应延迟 (默认: 300ms)
+  enableMusicInteraction: boolean;  // 音乐联动
+  enableThemeInteraction: boolean;  // 主题联动
+  enablePageInteraction: boolean;   // 页面联动
 }
-
-// 消息类型定义 - 扩展联动支持
-interface Live2DMessage {
+```sage {
   type: 'mouseover' | 'click' | 'time' | 'copy' | 'error' | 'music' | 'theme' | 'page' | 'feature';
   selector?: string;            // CSS 选择器 (mouseover/click 类型)
   text: string | string[];      // 消息内容

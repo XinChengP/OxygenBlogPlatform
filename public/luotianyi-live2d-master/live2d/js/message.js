@@ -61,7 +61,7 @@ function initTips(){
                 text: ["在找什么东西呢，需要帮忙吗？", "搜索很重要哦，我来帮你～", "找不到想要的内容吗？"]
             },
             {
-                selector: ".nav-link, .navigation a, a[href]",
+                selector: "nav a, .nav-link, .navigation a, header a, .navbar a, .menu-item a",
                 text: ["这里好像有很好玩的内容！", "要去看其他地方吗？", "导航很重要呢～"]
             }
         ],
@@ -381,11 +381,23 @@ window.GlobalMessageManager = (function() {
     console.log('事件目标:', event.target);
     console.log('事件当前目标:', event.currentTarget);
     
+    // 检查是否是 React 组件处理的复制事件（通过特定标记）
+    if (event.target && event.target.closest && event.target.closest('[data-live2d-copy-handled]')) {
+      console.log('🔄 检测到 React 组件已处理此复制事件，跳过原生处理');
+      return true;
+    }
+    
     // 延迟执行，确保复制操作已完成
     setTimeout(() => {
-      showMessage(getCopyMessage(), 2000);
-      console.log('🎉 复制事件处理完成，显示消息');
-    }, 100);
+      // 再次检查是否有 React 处理标记
+      const selection = window.getSelection()?.toString();
+      if (selection && selection.length > 10 && !document.querySelector('[data-live2d-copy-handled]')) {
+        showMessage(getCopyMessage(), 2000);
+        console.log('🎉 复制事件处理完成，显示消息');
+      } else {
+        console.log('⏭️ 跳过原生复制消息显示');
+      }
+    }, 200); // 增加延迟，让 React 组件优先处理
     
     // 不阻止默认行为
     return true;

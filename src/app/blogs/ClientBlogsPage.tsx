@@ -9,6 +9,7 @@ import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 import Pagination from '@/components/Pagination';
 import { getAssetPath } from '@/utils/assetUtils';
 import { Search, Calendar, Clock, Tag, ArrowRight, LayoutGrid, LayoutList, X, Filter, BookOpen } from 'lucide-react';
+import live2dMessageManager from '@/utils/live2dMessageManager';
 
 /**
  * 博客文章接口
@@ -148,6 +149,54 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
     }
     return `bg-card ${baseStyle} border-border`;
   };
+
+  /**
+   * 处理文章卡片鼠标悬停事件
+   */
+  const handlePostHover = (post: BlogPost) => {
+    // 笨鸥文章特殊彩蛋 - 只显示彩蛋消息，不显示其他内容
+    if (post.slug === 'benou-score') {
+      // 清除其他消息，确保只显示彩蛋，使用最高优先级(10)
+      live2dMessageManager.clearMessageQueue();
+      // 增加延迟，确保动画完成后再显示消息，避免被动画打断
+      setTimeout(() => {
+        live2dMessageManager.showMessage('如果双腿跑不动，那就试着抓住风～天依相信每一只笨鸥都能飞到自己的天空！', 4000, 10);
+      }, 200);
+      return;
+    }
+    
+    // 其他彩蛋文章 - 同样使用最高优先级
+    if (post.slug === 'markdown-editor' || post.slug === 'color-egg') {
+      // 清除其他消息，确保彩蛋优先显示
+      live2dMessageManager.clearMessageQueue();
+      setTimeout(() => {
+        live2dMessageManager.showMessage('发现了彩蛋文章！天依为你准备了特别的惊喜～', 4000, 10);
+      }, 200);
+      return;
+    }
+    
+    // 其他文章显示随机消息，使用低优先级(1)
+    const hoverMessages = [
+      `对《${post.title}》感兴趣吗？点击查看详情～`,
+      `这是一篇关于${post.category}的文章，阅读时间大约${post.readTime}分钟`,
+      `发布于${formatDate(post.date)}，${post.excerpt?.substring(0, 30)}...`,
+      `天依觉得这篇文章看起来很有趣呢～`,
+      `这篇${post.category}文章有${post.readTime}分钟的阅读时间`,
+      `想看看「${post.title}」吗？天依推荐你阅读一下～`
+    ];
+    
+    const randomMessage = hoverMessages[Math.floor(Math.random() * hoverMessages.length)];
+    live2dMessageManager.showMessage(randomMessage, 3000, 1);
+  };
+
+  /**
+   * 处理文章卡片鼠标离开事件
+   */
+  const handlePostLeave = () => {
+    // 延迟1秒隐藏消息，让用户有时间阅读
+    // 只隐藏优先级 <= 10 的消息，彩蛋消息现在都是最高优先级
+    live2dMessageManager.hideMessage(1000, 10);
+  };
   
   /**
    * 过滤和搜索博客文章
@@ -264,6 +313,26 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
       }
     }
   };
+
+  // 初始化调试 - 显示所有文章的标题和slug
+  useEffect(() => {
+    console.log('=== 博客文章调试信息 ===');
+    console.log(`总共有 ${initialPosts.length} 篇文章`);
+    initialPosts.forEach((post, index) => {
+      console.log(`文章 ${index + 1}: 标题="${post.title}", slug="${post.slug}"`);
+    });
+    console.log('======================');
+  }, [initialPosts]);
+
+  // Live2D消息管理器状态调试
+  useEffect(() => {
+    const debugInterval = setInterval(() => {
+      const status = live2dMessageManager.getStatus();
+      console.log('Live2D消息管理器状态:', status);
+    }, 2000);
+
+    return () => clearInterval(debugInterval);
+  }, []);
 
   // 如果没有任何博客数据，显示空页面提示
   if (initialPosts.length === 0) {
@@ -797,6 +866,8 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                       transition={{ duration: 0.4, ease: "easeOut" }}
                       whileHover={{ y: -4, scale: 1.01 }}
                       className={getGlassStyle("rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 cursor-pointer border group relative")}
+                      onMouseEnter={() => handlePostHover(post)}
+                      onMouseLeave={handlePostLeave}
                     >
                       <Link href={`/blogs/${encodeURIComponent(post.slug)}`} className="nav-link">
                         {/* 封面图片 */}
@@ -945,6 +1016,8 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                         transition: { duration: 0.2 }
                       }}
                       className={getGlassStyle("rounded-xl shadow-lg p-4 sm:p-6 hover:shadow-2xl transition-all duration-300 cursor-pointer border group relative")}
+                      onMouseEnter={() => handlePostHover(post)}
+                      onMouseLeave={handlePostLeave}
                     >
                       <Link href={`/blogs/${encodeURIComponent(post.slug)}`} className="nav-link">
                         <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">

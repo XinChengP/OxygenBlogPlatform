@@ -6,6 +6,13 @@
 class Live2DMessageManager {
   private static instance: Live2DMessageManager;
   private isInitialized = false;
+  private messageQueue: Array<{message: string, duration: number, priority: number}> = [];
+  private isDisplayingMessage = false;
+  private currentTimeout: NodeJS.Timeout | null = null;
+  private lastMessage = '';
+  private lastMessageTime = 0;
+  private readonly MESSAGE_COOLDOWN = 500; // 消息冷却时间（毫秒）
+  private currentPriority = 0; // 当前显示消息的优先级
 
   private constructor() {}
 
@@ -20,39 +27,94 @@ class Live2DMessageManager {
    * 显示消息给Live2D看板娘
    * @param message 要显示的消息文本
    * @param duration 显示时长（毫秒），默认3000ms
+   * @param priority 消息优先级（0-10），数值越高优先级越高，默认1
    */
-  showMessage(message: string, duration: number = 3000): void {
+  showMessage(message: string, duration: number = 3000, priority: number = 1): void {
     if (typeof window === 'undefined') return;
 
-    console.log('尝试显示Live2D消息:', message);
-    console.log('window.showMessage 存在:', !!(window as any).showMessage);
-    console.log('window.GlobalMessageManager 存在:', !!(window as any).GlobalMessageManager);
-    console.log('消息DOM元素存在:', !!document.querySelector('.message'));
-    console.log('Live2D容器存在:', !!document.querySelector('#live2d'));
-    console.log('所有window对象:', Object.keys(window as any).filter(key => key.toLowerCase().includes('message') || key.toLowerCase().includes('live2d')));
+    // 防止重复消息和消息洪水
+    const now = Date.now();
+    if (message === this.lastMessage && now - this.lastMessageTime < this.MESSAGE_COOLDOWN) {
+      console.log('消息重复，跳过显示:', message);
+      return;
+    }
+
+    // 如果正在显示消息，检查优先级
+    if (this.isDisplayingMessage) {
+      // 高优先级消息可以中断当前消息
+      if (priority > this.currentPriority) {
+        console.log(`高优先级消息(${priority})中断当前消息(${this.currentPriority}):`, message);
+        this.interruptCurrentMessage();
+        this.displayMessage(message, duration, priority);
+        return;
+      }
+      
+      // 低优先级消息加入队列
+      console.log('消息队列中添加消息:', message);
+      this.messageQueue.push({ message, duration, priority });
+      // 按优先级排序队列
+      this.messageQueue.sort((a, b) => b.priority - a.priority);
+      return;
+    }
+
+    // 立即显示消息
+    this.displayMessage(message, duration, priority);
+  }
+
+  /**
+   * 内部消息显示方法
+   */
+  private displayMessage(message: string, duration: number, priority: number = 0): void {
+    this.isDisplayingMessage = true;
+    this.lastMessage = message;
+    this.lastMessageTime = Date.now();
+    this.currentPriority = priority;
+
+    console.log(`显示Live2D消息(优先级${priority}):`, message);
+
+    // 清除之前的超时
+    if (this.currentTimeout) {
+      clearTimeout(this.currentTimeout);
+    }
 
     // 使用原始的 showMessage 函数
     if ((window as any).showMessage) {
       console.log('使用window.showMessage发送消息');
       (window as any).showMessage(message, duration);
-      return;
+    } else {
+      // 降级处理 - 直接操作DOM
+      this.displayMessageDirectly(message);
     }
 
+    // 设置消息结束后的处理
+    this.currentTimeout = setTimeout(() => {
+      this.onMessageComplete();
+    }, duration);
+  }
+
+  /**
+   * 直接操作DOM显示消息
+   */
+  private displayMessageDirectly(message: string): void {
+    // 先淡出任何现有的消息
+    this.fadeOutMessage();
+    
+    // 短暂延迟后显示新消息，确保淡出动画完成
+    setTimeout(() => {
+      this.showMessageDirectly(message);
+    }, 150);
+  }
+
+  /**
+   * 直接显示消息（内部方法）
+   */
+  private showMessageDirectly(message: string): void {
     // 检查是否有消息DOM元素 - 使用更具体的选择器
     const messageElement = document.querySelector('.message');
     if (messageElement) {
       console.log('找到消息DOM元素，直接更新内容');
       (messageElement as HTMLElement).innerHTML = message;
-      (messageElement as HTMLElement).style.opacity = '1';
-      (messageElement as HTMLElement).style.display = 'block';
-      
-      // 自动隐藏
-      setTimeout(() => {
-        (messageElement as HTMLElement).style.opacity = '0';
-        setTimeout(() => {
-          (messageElement as HTMLElement).style.display = 'none';
-        }, 500);
-      }, duration);
+      this.fadeInMessage(messageElement as HTMLElement);
       return;
     }
 
@@ -61,11 +123,7 @@ class Live2DMessageManager {
     if (waifuMessage) {
       console.log('找到waifu消息元素');
       (waifuMessage as HTMLElement).innerHTML = message;
-      (waifuMessage as HTMLElement).style.display = 'block';
-      
-      setTimeout(() => {
-        (waifuMessage as HTMLElement).style.display = 'none';
-      }, duration);
+      this.fadeInMessage(waifuMessage as HTMLElement);
       return;
     }
 
@@ -74,15 +132,7 @@ class Live2DMessageManager {
     if (landlordMessage) {
       console.log('找到landlord消息元素');
       (landlordMessage as HTMLElement).innerHTML = message;
-      (landlordMessage as HTMLElement).style.opacity = '1';
-      (landlordMessage as HTMLElement).style.display = 'block';
-      
-      setTimeout(() => {
-        (landlordMessage as HTMLElement).style.opacity = '0';
-        setTimeout(() => {
-          (landlordMessage as HTMLElement).style.display = 'none';
-        }, 500);
-      }, duration);
+      this.fadeInMessage(landlordMessage as HTMLElement);
       return;
     }
 
@@ -90,31 +140,163 @@ class Live2DMessageManager {
   }
 
   /**
-   * 主动隐藏当前显示的消息
+   * 中断当前消息显示
    */
-  hideMessage(): void {
+  private interruptCurrentMessage(): void {
+    if (this.currentTimeout) {
+      clearTimeout(this.currentTimeout);
+      this.currentTimeout = null;
+    }
+    
+    // 立即淡出当前消息
+    this.fadeOutMessage();
+    
+    // 重置状态
+    this.isDisplayingMessage = false;
+    this.currentPriority = 0;
+  }
+
+  /**
+   * 消息显示完成后的处理
+   */
+  private onMessageComplete(): void {
+    this.isDisplayingMessage = false;
+    this.currentPriority = 0;
+    
+    // 先淡出当前消息
+    this.fadeOutMessage();
+    
+    // 检查队列中是否有待显示的消息
+    if (this.messageQueue.length > 0) {
+      const nextMessage = this.messageQueue.shift();
+      if (nextMessage) {
+        console.log('从队列中取出下一条消息:', nextMessage.message);
+        // 延迟一点时间再显示下一条消息，避免消息闪烁
+        setTimeout(() => {
+          this.displayMessage(nextMessage.message, nextMessage.duration, nextMessage.priority);
+        }, 300);
+      }
+    }
+  }
+
+  /**
+   * 淡出消息动画
+   */
+  private fadeOutMessage(): void {
+    const messageElement = document.querySelector('.message');
+    const waifuMessage = document.querySelector('#waifu-tips');
+    const landlordMessage = document.querySelector('#landlord .message');
+
+    // 淡出动画
+    const fadeOut = (element: Element) => {
+      if (element) {
+        (element as HTMLElement).style.transition = 'opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+        (element as HTMLElement).style.opacity = '0';
+      }
+    };
+
+    if (messageElement) fadeOut(messageElement);
+    if (waifuMessage) fadeOut(waifuMessage);
+    if (landlordMessage) fadeOut(landlordMessage);
+  }
+
+  /**
+   * 淡入消息动画
+   */
+  private fadeInMessage(element: HTMLElement): void {
+    element.style.transition = 'opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+    element.style.opacity = '0';
+    element.style.display = 'block';
+    
+    // 强制重绘以触发动画
+    void element.offsetHeight;
+    
+    // 淡入
+    requestAnimationFrame(() => {
+      element.style.opacity = '1';
+    });
+  }
+
+  /**
+   * 主动隐藏当前显示的消息
+   * @param delay 延迟时间（毫秒），默认0立即隐藏
+   * @param maxPriority 最大优先级，只有当前消息优先级小于等于此值时才隐藏，默认5（中等优先级）
+   */
+  hideMessage(delay: number = 0, maxPriority: number = 5): void {
     if (typeof window === 'undefined') return;
 
-    const messageElement = document.querySelector('.message');
-    if (messageElement) {
-      (messageElement as HTMLElement).style.opacity = '0';
+    // 检查当前消息的优先级，只有低优先级消息才允许被隐藏
+    if (this.currentPriority > maxPriority) {
+      console.log(`当前消息优先级${this.currentPriority}高于最大允许优先级${maxPriority}，不执行隐藏操作`);
+      return;
+    }
+
+    // 如果指定了延迟，使用延迟隐藏
+    if (delay > 0) {
       setTimeout(() => {
+        // 再次检查，因为延迟期间可能有新消息
+        if (this.currentPriority <= maxPriority) {
+          this.performHideMessage();
+        }
+      }, delay);
+    } else {
+      // 立即隐藏
+      this.performHideMessage();
+    }
+  }
+
+  /**
+   * 执行隐藏消息的实际操作
+   */
+  private performHideMessage(): void {
+    // 清除当前超时
+    if (this.currentTimeout) {
+      clearTimeout(this.currentTimeout);
+      this.currentTimeout = null;
+    }
+
+    // 清空消息队列
+    this.messageQueue = [];
+    this.isDisplayingMessage = false;
+
+    // 淡出消息
+    this.fadeOutMessage();
+    
+    // 延迟隐藏元素
+    setTimeout(() => {
+      const messageElement = document.querySelector('.message');
+      const waifuMessage = document.querySelector('#waifu-tips');
+      const landlordMessage = document.querySelector('#landlord .message');
+
+      if (messageElement) {
         (messageElement as HTMLElement).style.display = 'none';
-      }, 500);
-    }
-
-    const waifuMessage = document.querySelector('#waifu-tips');
-    if (waifuMessage) {
-      (waifuMessage as HTMLElement).style.display = 'none';
-    }
-
-    const landlordMessage = document.querySelector('#landlord .message');
-    if (landlordMessage) {
-      (landlordMessage as HTMLElement).style.opacity = '0';
-      setTimeout(() => {
+      }
+      if (waifuMessage) {
+        (waifuMessage as HTMLElement).style.display = 'none';
+      }
+      if (landlordMessage) {
         (landlordMessage as HTMLElement).style.display = 'none';
-      }, 500);
-    }
+      }
+    }, 300);
+  }
+
+  /**
+   * 清除消息队列
+   */
+  clearMessageQueue(): void {
+    this.messageQueue = [];
+    console.log('消息队列已清空');
+  }
+
+  /**
+   * 获取当前状态信息
+   */
+  getStatus(): { isDisplaying: boolean; queueLength: number; lastMessage: string } {
+    return {
+      isDisplaying: this.isDisplayingMessage,
+      queueLength: this.messageQueue.length,
+      lastMessage: this.lastMessage
+    };
   }
 
   /**
@@ -171,7 +353,7 @@ export const Live2DMessages = {
     CLEAR: '编辑器已清空，重新开始吧！',
     SAMPLE: '示例内容加载完成，可以参考一下哦～',
     COPY: '复制成功！代码已复制到剪贴板～',
-    PUBLISH: '发布成功！天依为你鼓掌👏',
+    PUBLISH: '好耶，发布成功！',
     METADATA_SHOW: '元数据面板已显示～',
     METADATA_HIDE: '元数据面板已隐藏～',
     MODE_EDIT: '切换到编辑模式～',

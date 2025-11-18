@@ -1208,6 +1208,38 @@ seoDescription: "${blogMetadata.seoDescription}"
     }
   };
 
+  // 彩蛋功能管理器
+  const easterEggManager = {
+    // 颜色彩蛋配置
+    colorEggs: {
+      '#ee0000': {
+        message: '这是阿绫红哦~(　ﾟ∀ﾟ) ﾉ♡',
+        description: '乐正绫的代表红色'
+      },
+      '#66ccff': {
+        message: '这是天依蓝(〃\'▽\'〃)',
+        description: '洛天依的代表蓝色'
+      }
+    },
+
+    // 触发颜色彩蛋
+    triggerColorEgg: (color: string, duration: number = 2000) => {
+      const egg = easterEggManager.colorEggs[color as keyof typeof easterEggManager.colorEggs];
+      if (egg) {
+        live2dMessageManager.showMessage(egg.message, duration, 10); // 彩蛋消息使用最高优先级10
+      }
+    },
+
+    // 隐藏颜色彩蛋消息
+    hideColorEgg: (color: string) => {
+      const egg = easterEggManager.colorEggs[color as keyof typeof easterEggManager.colorEggs];
+      if (egg) {
+        // 只隐藏优先级 <= 10 的消息，彩蛋消息现在也是最高优先级
+        live2dMessageManager.hideMessage(0, 10);
+      }
+    }
+  };
+
   // 一键生成博客元数据
   const generateBlogMetadata = () => {
     if (!content.trim()) {
@@ -2386,7 +2418,7 @@ seoDescription: "${blogMetadata.seoDescription}"
             <button
               onClick={() => {
                 setPreviewMode('edit');
-                live2dMessageManager.showMessage(Live2DMessages.MARKDOWN.PREVIEW_EDIT);
+                live2dMessageManager.showMessage(Live2DMessages.MARKDOWN.PREVIEW_EDIT, 2000, 1);
               }}
               className={`px-2 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
                 previewMode === 'edit'
@@ -2400,7 +2432,7 @@ seoDescription: "${blogMetadata.seoDescription}"
             <button
               onClick={() => {
                 setPreviewMode('preview');
-                live2dMessageManager.showMessage(Live2DMessages.MARKDOWN.PREVIEW_PREVIEW);
+                live2dMessageManager.showMessage(Live2DMessages.MARKDOWN.PREVIEW_PREVIEW, 2000, 1);
               }}
               className={`px-2 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
                 previewMode === 'preview'
@@ -2414,7 +2446,7 @@ seoDescription: "${blogMetadata.seoDescription}"
             <button
               onClick={() => {
                 setPreviewMode('split');
-                live2dMessageManager.showMessage(Live2DMessages.MARKDOWN.PREVIEW_SPLIT);
+                live2dMessageManager.showMessage(Live2DMessages.MARKDOWN.PREVIEW_SPLIT, 2000, 1);
               }}
               className={`px-2 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
                 previewMode === 'split'
@@ -2429,7 +2461,7 @@ seoDescription: "${blogMetadata.seoDescription}"
               <button
                 onClick={() => {
                   setPreviewMode('blog');
-                  live2dMessageManager.showMessage(Live2DMessages.MARKDOWN.PREVIEW_BLOG);
+                  live2dMessageManager.showMessage(Live2DMessages.MARKDOWN.PREVIEW_BLOG, 2000, 1);
                 }}
                 className={`px-2 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
                   previewMode === 'blog'
@@ -2448,7 +2480,7 @@ seoDescription: "${blogMetadata.seoDescription}"
             <button
               onClick={() => {
                 undo();
-                live2dMessageManager.showMessage(Live2DMessages.MARKDOWN.UNDO);
+                live2dMessageManager.showMessage(Live2DMessages.MARKDOWN.UNDO, 1500, 1);
               }}
               className={`px-2 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
                 historyIndex <= 0
@@ -2463,7 +2495,7 @@ seoDescription: "${blogMetadata.seoDescription}"
             <button
               onClick={() => {
                 redo();
-                live2dMessageManager.showMessage(Live2DMessages.MARKDOWN.REDO);
+                live2dMessageManager.showMessage(Live2DMessages.MARKDOWN.REDO, 1500, 1);
               }}
               className={`px-2 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
                 historyIndex >= history.length - 1
@@ -2479,7 +2511,7 @@ seoDescription: "${blogMetadata.seoDescription}"
             <button
               onClick={() => {
                 handleSave();
-                live2dMessageManager.showMessage(Live2DMessages.MARKDOWN.SAVE);
+                live2dMessageManager.showMessage(Live2DMessages.MARKDOWN.SAVE, 1500, 1);
               }}
               className={`px-2 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
                 saved
@@ -2493,7 +2525,7 @@ seoDescription: "${blogMetadata.seoDescription}"
             <button
               onClick={() => {
                 handleClear();
-                live2dMessageManager.showMessage(Live2DMessages.MARKDOWN.CLEAR);
+                live2dMessageManager.showMessage(Live2DMessages.MARKDOWN.CLEAR, 1500, 1);
               }}
               className={`px-2 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
                 isDark ? 'bg-[#ee0000] hover:bg-[#dd0000] text-white border-[#ee0000]' : 'bg-[#ee0000] hover:bg-[#dd0000] text-white border-[#ee0000]'
@@ -2507,7 +2539,7 @@ seoDescription: "${blogMetadata.seoDescription}"
                 try {
                   console.log('示例按钮被点击');
                   loadSample();
-                  live2dMessageManager.showMessage(Live2DMessages.MARKDOWN.SAMPLE);
+                  live2dMessageManager.showMessage(Live2DMessages.MARKDOWN.SAMPLE, 1500, 1);
                 } catch (error) {
                   console.error('示例按钮点击出错:', error);
                   alert('示例功能出错，请查看控制台了解详情');
@@ -2527,9 +2559,9 @@ seoDescription: "${blogMetadata.seoDescription}"
                 <button
                   onClick={() => {
                     setShowMetadataPanel(!showMetadataPanel);
-                    live2dMessageManager.showMessage(
-                      showMetadataPanel ? Live2DMessages.MARKDOWN.METADATA_HIDE : Live2DMessages.MARKDOWN.METADATA_SHOW
-                    );
+                  live2dMessageManager.showMessage(
+                    showMetadataPanel ? Live2DMessages.MARKDOWN.METADATA_HIDE : Live2DMessages.MARKDOWN.METADATA_SHOW, 1500, 1
+                  );
                   }}
                   className={`px-2 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
                     showMetadataPanel
@@ -2543,7 +2575,7 @@ seoDescription: "${blogMetadata.seoDescription}"
                 <button
                   onClick={() => {
                     handlePublish();
-                    live2dMessageManager.showMessage(Live2DMessages.MARKDOWN.PUBLISH);
+                  live2dMessageManager.showMessage(Live2DMessages.MARKDOWN.PUBLISH, 1500, 1);
                   }}
                   className={`px-2 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
                     isDark ? 'bg-green-600 hover:bg-green-700 text-white border-green-500' : 'bg-green-500 hover:bg-green-600 text-white border-green-400'
@@ -2621,16 +2653,10 @@ seoDescription: "${blogMetadata.seoDescription}"
                   }}
                   title={color}
                   onMouseEnter={() => {
-                    if (color === '#ee0000') {
-                      live2dMessageManager.showMessage('这是阿绫红哦~(　ﾟ∀ﾟ) ﾉ♡', 2000);
-                    } else if (color === '#66ccff') {
-                      live2dMessageManager.showMessage('这是天依蓝(〃\'▽\'〃)', 2000);
-                    }
+                    easterEggManager.triggerColorEgg(color, 2000);
                   }}
                   onMouseLeave={() => {
-                    if (color === '#ee0000' || color === '#66ccff') {
-                      live2dMessageManager.hideMessage();
-                    }
+                    easterEggManager.hideColorEgg(color);
                   }}
                 />
               ))}
@@ -2651,16 +2677,10 @@ seoDescription: "${blogMetadata.seoDescription}"
                   }}
                   title={color}
                   onMouseEnter={() => {
-                    if (color === '#ee0000') {
-                      live2dMessageManager.showMessage('这是阿绫红哦~(　ﾟ∀ﾟ) ﾉ♡', 2000);
-                    } else if (color === '#66ccff') {
-                      live2dMessageManager.showMessage('这是天依蓝(〃\'▽\'〃)', 2000);
-                    }
+                    easterEggManager.triggerColorEgg(color, 2000);
                   }}
                   onMouseLeave={() => {
-                    if (color === '#ee0000' || color === '#66ccff') {
-                      live2dMessageManager.hideMessage();
-                    }
+                    easterEggManager.hideColorEgg(color);
                   }}
                 />
               ))}

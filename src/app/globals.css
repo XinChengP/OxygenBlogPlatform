@@ -317,6 +317,8 @@ pre code {
     z-index: 10000;
     font-size: 0;
     transition: all .3s ease-in-out;
+    will-change: transform; /* 确保在GPU层上渲染，避免被其他动画影响 */
+    transform: translateZ(0); /* 强制创建新的复合层 */
 }
 
 #live2d {
@@ -345,7 +347,9 @@ pre code {
     overflow: hidden;
     position: absolute;
     z-index: 10001;
-    /* 移除可能影响显示的动画 */
+    will-change: transform, opacity; /* GPU加速，确保动画流畅 */
+    transform: translateZ(0); /* 强制创建新的复合层 */
+    backface-visibility: hidden; /* 防止背面可见导致的闪烁 */
 }
 
 .hide-button, .sing-button {
