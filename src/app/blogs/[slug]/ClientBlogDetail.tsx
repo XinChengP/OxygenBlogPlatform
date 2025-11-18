@@ -19,6 +19,7 @@ import 'katex/dist/katex.min.css';
 import { EndWord } from '../../../setting/blogSetting';
 import { useBackgroundStyle } from '../../../hooks/useBackgroundStyle';
 import { useTheme } from 'next-themes';
+import { getAssetPath } from '../../../utils/assetUtils';
 
 // 动态导入大型组件，优化初始加载性能
 const LazyTableOfContents = lazy(() => import('../../../components/TableOfContents'));
@@ -319,7 +320,7 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
             {blog.coverImage && (
               <div className="mb-6 rounded-xl overflow-hidden shadow-2xl">
                 <img
-                  src={blog.coverImage}
+                  src={getAssetPath(blog.coverImage)}
                   alt={blog.title}
                   className="w-full h-64 md:h-96 object-cover transform hover:scale-105 transition-transform duration-500"
                   loading="lazy"
@@ -605,10 +606,12 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                     },
                     // 图片 - 基础加载
                     img({ src, alt }: any) {
+                      // 处理 GitHub Pages 基础路径
+                      const processedSrc = src ? getAssetPath(src) : src;
                       return (
                         <div className="my-8 text-center">
                           <img
-                            src={src}
+                            src={processedSrc}
                             alt={alt || '图片'}
                             className="rounded-xl shadow-lg mx-auto max-w-full h-auto"
                             loading="lazy"
@@ -628,7 +631,7 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
           {/* 文章结尾 */}
           <div className="mt-12 text-center">
             {/* 标签和系列信息 - 移动到文章后面 */}
-            <div className="flex flex-wrap items-center justify-center gap-4 mb-8">
+            <div className="flex flex-wrap items-start gap-4 mb-8">
               {blog.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2 bg-card/50 backdrop-blur-sm rounded-xl p-4 border-l-4 border-primary shadow-sm">
                   {blog.tags.map((tag, index) => (

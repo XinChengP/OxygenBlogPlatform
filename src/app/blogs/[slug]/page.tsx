@@ -191,6 +191,36 @@ async function getBlogContent(slug: string): Promise<BlogPost | null> {
       }
     );
     
+    // 处理 HTML <img> 标签中的图片路径
+    content = content.replace(
+      /<img\s+([^>]*?)src=["'](?!https?:\/\/)([^"']+)["']([^>]*?)>/g,
+      (match, before, src: string, after) => {
+        // 如果是相对路径，转换为 public 目录路径
+        if (src.startsWith('./') || src.startsWith('../') || (!src.startsWith('/') && !src.startsWith('http'))) {
+          // 处理相对路径，统一指向 public 目录
+          let publicPath = src;
+          
+          // 移除相对路径前缀
+          if (src.startsWith('./')) {
+            publicPath = src.substring(2);
+          } else if (src.startsWith('../')) {
+            // 处理 ../assets/example.svg 这样的路径
+            publicPath = src.replace(/^\.\.\//, '');
+          }
+          
+          // 确保路径以 / 开头
+          if (!publicPath.startsWith('/')) {
+            publicPath = '/' + publicPath;
+          }
+          
+          return `<img ${before}src="${publicPath}"${after}>`;
+        }
+        
+        // 保持原始路径（绝对路径或外部链接）
+        return match;
+      }
+    );
+    
     // 标题处理：优先使用元数据中的 title，否则使用文件名
     const fileName = path.basename(filePath, '.md');
     const title = frontMatter.title || fileName;
