@@ -16,10 +16,13 @@
 - **Framer Motion** - 动画和过渡效果
 
 ### 核心功能
-- **Live2D看板娘** - 洛天依互动系统
-- **APlayer音乐** - 播放状态持久化
-- **GitHub评论** - Giscus评论系统
-- **粒子动画** - Particles.js背景效果
+- **Live2D看板娘** - 洛天依互动系统，支持音乐/主题/页面联动
+- **APlayer音乐** - 播放状态持久化，跨页面保持播放状态
+- **GitHub评论** - Giscus评论系统，基于GitHub Discussions
+- **粒子动画** - Particles.js背景效果，增强视觉体验
+- **拼音转换器** - 支持多音字识别、声调转换、只显示多音字模式
+- **Markdown编辑器** - 实时预览、语法高亮、导出功能
+- **拼音转换器** - 支持多音字识别、声调转换、只显示多音字模式
 
 ## 项目架构
 
@@ -33,12 +36,18 @@ src/
 │   ├── guestbook/         # 留言板
 │   ├── settings/          # 设置页面
 │   └── tools/             # 工具页面
+│       ├── pinyin-converter/     # 拼音转换器
+│       └── markdown-editor/      # Markdown编辑器
 ├── components/            # 可复用组件
 │   ├── ui/               # 基础UI组件
 │   ├── magicui/          # 特效UI组件
 │   ├── archive/          # 归档专用组件
+│   ├── tools/            # 工具专用组件
 │   └── [功能组件].tsx     # 功能组件
 ├── utils/                 # 工具函数
+│   ├── assetUtils.ts     # 资源路径处理
+│   ├── live2d*.ts        # Live2D相关工具
+│   └── pinyinUtils.ts    # 拼音转换工具
 ├── setting/               # 配置文件
 ├── types/                 # TypeScript类型
 ├── contexts/              # React上下文
@@ -47,6 +56,9 @@ src/
 public/
 ├── luotianyi-live2d-master/   # Live2D资源
 ├── music/                 # 音乐文件
+├── tools/                 # 工具相关静态资源
+│   ├── pinyin-data/      # 拼音数据文件
+│   └── markdown-editor/  # Markdown编辑器资源
 └── assets/               # 静态资源
 ```
 
@@ -91,6 +103,14 @@ npm run dev          # 开发服务器 (Turbopack)
 npm run build:pages  # GitHub Pages构建
 npm run sync-theme   # 主题同步
 npm run lint         # 代码检查
+```
+
+### 工具页面命令
+```bash
+# 拼音转换器相关
+npm run dev          # 访问 http://localhost:3000/tools/pinyin-converter
+# Markdown编辑器相关  
+npm run dev          # 访问 http://localhost:3000/tools/markdown-editor
 ```
 
 ### 构建流程
@@ -396,7 +416,177 @@ const useLocalStorage = <T,>(key: string, initialValue: T) => {
 - **转化**: 关键功能监控
 - **测试**: A/B功能优化
 
-### 功能联动
+### 工具开发规范
+
+### 拼音转换器 (Pinyin Converter)
+- **功能特性**:
+  - 支持汉字转拼音，包含声调数字表示
+  - 智能多音字识别，提供多音字选择功能
+  - 支持只显示多音字模式，便于学习
+  - 实时转换，输入即时显示结果
+  - 支持拼音首字母提取
+  - 支持声调数字与符号转换
+
+- **技术实现**:
+  - 使用 `pinyin-pro` 库进行拼音转换
+  - 自定义拼音数据加载：`/tools/pinyin-data/pinyin.txt`
+  - 多音字状态管理：`selectedHeteronyms` 状态
+  - 过滤模式：`showOnlyHeteronyms` 状态
+
+- **文件结构**:
+  ```
+  src/app/tools/pinyin-converter/page.tsx    # 主页面组件
+  public/tools/pinyin-data/                # 拼音数据文件
+  └── pinyin.txt                          # 拼音数据库
+  ```
+
+### Markdown编辑器 (Markdown Editor)
+- **功能特性**:
+  - 实时预览：左侧编辑，右侧实时渲染
+  - 语法高亮：支持代码块语法高亮
+  - 工具栏：常用格式快捷按钮
+  - 导出功能：支持导出为HTML或Markdown
+  - 主题适配：自动适配当前主题色
+  - 响应式设计：移动端友好
+
+- **技术实现**:
+  - 使用 `react-markdown` 进行Markdown渲染
+  - 使用 `remark` 和 `rehype` 插件系统
+  - 代码高亮：`highlight.js` 集成
+  - 状态管理：`useState` 管理编辑内容
+
+- **文件结构**:
+  ```
+  src/app/tools/markdown-editor/page.tsx    # 主页面组件
+  src/components/tools/MarkdownToolbar.tsx  # 工具栏组件
+  ```
+
+### 工具组件开发标准
+```tsx
+// Props接口定义
+interface ToolComponentProps {
+  className?: string;
+  onChange?: (value: string) => void;
+  defaultValue?: string;
+}
+
+// 函数组件实现
+export default function ToolComponent({ 
+  className, 
+  onChange, 
+  defaultValue 
+}: ToolComponentProps) {
+  const [inputValue, setInputValue] = useState(defaultValue || '');
+  const [outputValue, setOutputValue] = useState('');
+  
+  // 工具逻辑处理
+  const processContent = useCallback((input: string) => {
+    // 实现工具核心逻辑
+    return processedContent;
+  }, []);
+  
+  // 输入变化处理
+  const handleInputChange = useCallback((value: string) => {
+    setInputValue(value);
+    const result = processContent(value);
+    setOutputValue(result);
+    onChange?.(result);
+  }, [processContent, onChange]);
+  
+  return (
+    <div className={cn("tool-container", className)}>
+      {/* 工具界面 */}
+    </div>
+  );
+}
+```
+
+## 工具开发规范
+
+### 拼音转换器 (Pinyin Converter)
+- **功能特性**:
+  - 支持汉字转拼音，包含声调数字表示
+  - 智能多音字识别，提供多音字选择功能
+  - 支持只显示多音字模式，便于学习
+  - 实时转换，输入即时显示结果
+  - 支持拼音首字母提取
+  - 支持声调数字与符号转换
+
+- **技术实现**:
+  - 使用 `pinyin-pro` 库进行拼音转换
+  - 自定义拼音数据加载：`/tools/pinyin-data/pinyin.txt`
+  - 多音字状态管理：`selectedHeteronyms` 状态
+  - 过滤模式：`showOnlyHeteronyms` 状态
+
+- **文件结构**:
+  ```
+  src/app/tools/pinyin-converter/page.tsx    # 主页面组件
+  public/tools/pinyin-data/                # 拼音数据文件
+  └── pinyin.txt                          # 拼音数据库
+  ```
+
+### Markdown编辑器 (Markdown Editor)
+- **功能特性**:
+  - 实时预览：左侧编辑，右侧实时渲染
+  - 语法高亮：支持代码块语法高亮
+  - 工具栏：常用格式快捷按钮
+  - 导出功能：支持导出为HTML或Markdown
+  - 主题适配：自动适配当前主题色
+  - 响应式设计：移动端友好
+
+- **技术实现**:
+  - 使用 `react-markdown` 进行Markdown渲染
+  - 使用 `remark` 和 `rehype` 插件系统
+  - 代码高亮：`highlight.js` 集成
+  - 状态管理：`useState` 管理编辑内容
+
+- **文件结构**:
+  ```
+  src/app/tools/markdown-editor/page.tsx    # 主页面组件
+  src/components/tools/MarkdownToolbar.tsx  # 工具栏组件
+  ```
+
+### 工具组件开发标准
+```tsx
+// Props接口定义
+interface ToolComponentProps {
+  className?: string;
+  onChange?: (value: string) => void;
+  defaultValue?: string;
+}
+
+// 函数组件实现
+export default function ToolComponent({ 
+  className, 
+  onChange, 
+  defaultValue 
+}: ToolComponentProps) {
+  const [inputValue, setInputValue] = useState(defaultValue || '');
+  const [outputValue, setOutputValue] = useState('');
+  
+  // 工具逻辑处理
+  const processContent = useCallback((input: string) => {
+    // 实现工具核心逻辑
+    return processedContent;
+  }, []);
+  
+  // 输入变化处理
+  const handleInputChange = useCallback((value: string) => {
+    setInputValue(value);
+    const result = processContent(value);
+    setOutputValue(result);
+    onChange?.(result);
+  }, [processContent, onChange]);
+  
+  return (
+    <div className={cn("tool-container", className)}>
+      {/* 工具界面 */}
+    </div>
+  );
+}
+```
+
+## 功能联动
 
 ### Live2D看板娘联动
 

@@ -668,14 +668,27 @@ export default function LuoTianyiLive2D() {
     // 监听Live2D事件
     useEffect(() => {
         console.log(`[LuoTianyiLive2D] 订阅主题变化事件`);
-        const unsubscribe = live2dEventEmitter.on('theme-change', handleThemeChange);
+        const unsubscribeTheme = live2dEventEmitter.on('theme-change', handleThemeChange);
         console.log(`[LuoTianyiLive2D] 主题变化事件订阅成功`);
+        
+        // 监听自定义消息事件
+        console.log(`[LuoTianyiLive2D] 订阅自定义消息事件`);
+        const unsubscribeCustom = live2dEventEmitter.on('custom-message', (event: any) => {
+            console.log(`[LuoTianyiLive2D] 收到自定义消息事件:`, event);
+            // 处理事件数据，可能是字符串或包含message属性的对象
+            const message = typeof event === 'string' ? event : (event?.message || event?.data?.message || '收到消息啦～');
+            console.log(`[LuoTianyiLive2D] 提取的消息内容:`, message);
+            updateMessage(message);
+        });
+        console.log(`[LuoTianyiLive2D] 自定义消息事件订阅成功`);
         
         // 测试事件系统状态 - 仅记录日志，不触发实际事件
         setTimeout(() => {
             console.log(`[LuoTianyiLive2D] 事件系统状态检查:`, {
-                hasListeners: live2dEventEmitter.listenerCount('theme-change') > 0,
-                listenerCount: live2dEventEmitter.listenerCount('theme-change')
+                hasThemeListeners: live2dEventEmitter.listenerCount('theme-change') > 0,
+                themeListenerCount: live2dEventEmitter.listenerCount('theme-change'),
+                hasCustomListeners: live2dEventEmitter.listenerCount('custom-message') > 0,
+                customListenerCount: live2dEventEmitter.listenerCount('custom-message')
             });
             
             // 显示欢迎消息，但不触发主题切换测试
@@ -690,8 +703,9 @@ export default function LuoTianyiLive2D() {
         }, 2000);
         
         return () => {
-            console.log(`[LuoTianyiLive2D] 取消订阅主题变化事件`);
-            unsubscribe();
+            console.log(`[LuoTianyiLive2D] 取消订阅所有事件`);
+            unsubscribeTheme();
+            unsubscribeCustom();
         };
     }, [handleThemeChange, updateMessage]);
 

@@ -41,10 +41,12 @@
 - **阅读时间** - 自动计算文章阅读时间，提升用户体验
 
 ### 🎵 特色功能
-- **洛天依Live2D** - 集成看板娘互动系统，支持点击和悬停交互
+- **洛天依Live2D** - 集成看板娘互动系统
 - **音乐播放器** - 内置 APlayer 音乐播放器，支持播放状态跨页面保持
 - **粒子动画** - 动态粒子背景效果，增强视觉体验
 - **评论系统** - 集成 Giscus 评论系统，基于 GitHub Discussions
+- **拼音转换器** - 支持多音字识别、声调转换、只显示多音字模式
+- **Markdown编辑器** - 实时预览、语法高亮、导出功能
 
 ### ⚡ 技术优势
 - **Next.js 15.3.4** - 使用 Turbopack 进行快速开发，支持 App Router
@@ -95,10 +97,30 @@ pnpm dev
 | `npm run sync-theme` | 同步主题颜色配置 |
 | `npm run lint` | 代码质量检查 |
 | `npm run export` | 静态导出构建 |
+
+### 工具页面访问
+
+| 工具 | 访问路径 |
+|------|----------|
+| **拼音转换器** | [http://localhost:3000/tools/pinyin-converter](http://localhost:3000/tools/pinyin-converter) |
+| **Markdown编辑器** | [http://localhost:3000/tools/markdown-editor](http://localhost:3000/tools/markdown-editor) |
 ## 📝 博客管理
 
 ### 文章存放位置
 博客文章存放在 `src/content/blogs` 文件夹中，支持深层嵌套目录结构。
+
+### 工具页面
+项目提供两个实用工具页面：
+
+#### 拼音转换器
+- **访问路径**: `/tools/pinyin-converter`
+- **功能**: 汉字转拼音、多音字识别、声调转换
+- **特色**: 支持只显示多音字模式，便于学习
+
+#### Markdown编辑器
+- **访问路径**: `/tools/markdown-editor`
+- **功能**: 实时预览、语法高亮、导出功能
+- **特色**: 支持代码高亮、数学公式、表格等扩展功能
 
 ### Markdown 元数据规范
 
@@ -422,6 +444,13 @@ MIT License 允许您：
 | [Remark](https://remark.js.org/) | Markdown 解析和处理 |
 | [Rehype](https://github.com/rehypejs/rehype) | HTML 处理和转换 |
 | [Highlight.js](https://highlightjs.org/) | 代码语法高亮 |
+
+### 工具功能
+| 功能 | 技术 | 描述 |
+|------|------|------|
+| **拼音转换器** | pinyin-pro | 支持多音字、声调转换 |
+| **Markdown 编辑器** | react-markdown | 实时预览与语法高亮 |
+| **Remark/Rehype 插件** | 多个插件 | 扩展 Markdown 功能 |
 
 ### 特色功能
 | 功能 | 技术 | 描述 |

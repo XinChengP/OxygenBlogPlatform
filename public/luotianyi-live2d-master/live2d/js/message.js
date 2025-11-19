@@ -39,12 +39,7 @@ function initLive2dMessage() {
         return;
     }
     
-    // jQuery已加载，初始化事件监听
-    $(document).on('copy', function (){
-        showMessage('你都复制了些什么呀，转载要记得加上出处哦~~', 5000);
-    });
-    
-    // 初始化提示
+    // 初始化提示（移除复制事件监听）
     initTips();
 }
 

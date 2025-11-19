@@ -33,6 +33,16 @@ export const availableTools: ToolItem[] = [
     featured: true
   },
   {
+    id: 'pinyin-converter',
+    name: '拼音转换器',
+    description: '智能汉字转拼音工具，支持多音字识别、多种声调格式和灵活的输出选项',
+    category: '文本工具',
+    icon: '🔤',
+    isActive: true,
+    path: '/tools/pinyin-converter',
+    featured: true
+  },
+  {
     id: 'image-compressor',
     name: '图片压缩器',
     description: '在线图片压缩工具，支持多种格式，保持质量的同时减小文件大小',
