@@ -681,6 +681,35 @@ export default function LuoTianyiLive2D() {
             updateMessage(message);
         });
         console.log(`[LuoTianyiLive2D] 自定义消息事件订阅成功`);
+
+        // 监听音乐播放事件
+        console.log(`[LuoTianyiLive2D] 订阅音乐播放事件`);
+        const unsubscribeMusicPlay = live2dEventEmitter.on('music-play', (event: any) => {
+            console.log(`[LuoTianyiLive2D] 收到音乐播放事件:`, event);
+            const musicMessages = [
+                '天依给你唱首歌~',
+                '要听天依唱歌吗？',
+                '天依来为你唱首歌！',
+                '听歌时间到了~',
+                '让天依为你唱首歌吧！',
+                '天依要唱歌给你听~'
+            ];
+            const randomMessage = musicMessages[Math.floor(Math.random() * musicMessages.length)];
+            updateMessage(randomMessage);
+        });
+
+        const unsubscribeMusicPause = live2dEventEmitter.on('music-pause', (event: any) => {
+            console.log(`[LuoTianyiLive2D] 收到音乐暂停事件:`, event);
+            const pauseMessages = [
+                '歌曲暂停了~',
+                '休息一下吧！',
+                '天依也休息一下~',
+                '暂停一会儿~'
+            ];
+            const randomMessage = pauseMessages[Math.floor(Math.random() * pauseMessages.length)];
+            updateMessage(randomMessage);
+        });
+        console.log(`[LuoTianyiLive2D] 音乐播放事件订阅成功`);
         
         // 测试事件系统状态 - 仅记录日志，不触发实际事件
         setTimeout(() => {
@@ -706,6 +735,8 @@ export default function LuoTianyiLive2D() {
             console.log(`[LuoTianyiLive2D] 取消订阅所有事件`);
             unsubscribeTheme();
             unsubscribeCustom();
+            unsubscribeMusicPlay();
+            unsubscribeMusicPause();
         };
     }, [handleThemeChange, updateMessage]);
 
@@ -921,22 +952,11 @@ export default function LuoTianyiLive2D() {
                 className="live2d"
             />
             
-            <div id="sing"></div>
-            
             <div 
                 className={`hide-button ${getCurrentThemeClass()}`}
                 onClick={toggleVisibility}
             >
                 隐藏
-            </div>
-            
-            <div 
-                className={`sing-button ${getCurrentThemeClass()}`}
-                onClick={() => {
-                    updateMessage('天依想唱歌给你听～');
-                }}
-            >
-                Sing
             </div>
         </div>
     );

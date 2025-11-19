@@ -352,7 +352,7 @@ pre code {
     backface-visibility: hidden; /* 防止背面可见导致的闪烁 */
 }
 
-.hide-button, .sing-button {
+.hide-button {
     position: absolute;
     top: 75px;
     left: 0;
@@ -370,15 +370,7 @@ pre code {
     transition: all 0.3s ease;
 }
 
-.sing-button {
-    top: 45px;
-}
-
-.hide-button {
-    top: 75px;
-}
-
-.hide-button:hover, .sing-button:hover {
+.hide-button:hover {
     border: 1px solid rgba(102,204,255,.6);
     background: rgba(102,204,255,.6);
 }
@@ -398,13 +390,13 @@ pre code {
     box-shadow: 0 3px 15px 2px rgba(0,0,0,.15);
 }
 
-.hide-button.luotianyi-theme, .sing-button.luotianyi-theme {
+.hide-button.luotianyi-theme {
     border-color: rgba(var(--primary), 0.4);
     background: rgba(var(--primary), 0.2);
     box-shadow: 0 3px 15px 2px rgba(var(--primary), 0.4);
 }
 
-.hide-button.luotianyi-theme:hover, .sing-button.luotianyi-theme:hover {
+.hide-button.luotianyi-theme:hover {
     border-color: rgba(var(--primary), 0.6);
     background: rgba(var(--primary), 0.6);
 }

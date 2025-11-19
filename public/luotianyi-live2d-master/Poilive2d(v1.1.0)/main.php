@@ -32,7 +32,7 @@
             } else {
                 $maincolor = hex2rgb(get_option('live2d_maincolor'));
             }
-            echo "<style>.message{border-color:rgba($maincolor,.4);background-color:rgba($maincolor,.2);box-shadow:0 3px 15px 2px rgba($maincolor,.4);color:rgba($maincolor,.6);}.hide-button,.switch-button,.sing-button{border-color:rgba($maincolor,.4);background:rgba($maincolor,.2);box-shadow:0 3px 15px 2px rgba($maincolor,.4);color:rgba($maincolor,.6);}.hide-button:hover,.switch-button:hover,.sing-button:hover{border-color:rgba($maincolor,.6);background:rgba($maincolor,.4);color:rgba($maincolor,.8);}</style>";
+            echo "<style>.message{border-color:rgba($maincolor,.4);background-color:rgba($maincolor,.2);box-shadow:0 3px 15px 2px rgba($maincolor,.4);color:rgba($maincolor,.6);}.hide-button,.switch-button{border-color:rgba($maincolor,.4);background:rgba($maincolor,.2);box-shadow:0 3px 15px 2px rgba($maincolor,.4);color:rgba($maincolor,.6);}.hide-button:hover,.switch-button:hover{border-color:rgba($maincolor,.6);background:rgba($maincolor,.4);color:rgba($maincolor,.8);}</style>";
         }
     }
 
@@ -46,8 +46,6 @@
                 <canvas id="live2d" width="280" height="250" class="live2d" style="opacity:0;"></canvas>
                 <div class="hide-button">隐藏</div>
                 <!-- <div class="switch-button">变装</div> -->
-				<div id="sing"></div>
-				<div class="sing-button" id="sing-button" onclick="getsong()">Sing</div>
             </div>
         <?php
         }

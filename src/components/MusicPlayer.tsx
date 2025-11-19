@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import GlobalMusicPlayerManager from '@/utils/globalMusicPlayerManager';
 import type { APlayerNS } from '@/types/aplayer';
+import { emitMusicEvent } from '@/utils/live2dEventEmitter';
 
 interface AudioItem {
   name: string;
@@ -83,6 +84,22 @@ export default function MusicPlayer({
     return displayName;
   };
 
+  // 获取封面文件路径，支持jpg和png格式
+  const getCoverPath = (songFileName: string): string => {
+    const baseName = songFileName.replace(/\.[^/.]+$/, '');
+    
+    // 根据实际文件格式返回正确的路径
+    if (baseName === '三月雨 - 洛天依') {
+      return '/music/covers/三月雨 - 洛天依.png';
+    }
+    if (baseName === '白石溪 - 洛天依、乐正绫') {
+      return '/music/covers/白石溪 - 洛天依、乐正绫.png';
+    }
+    
+    // 默认返回jpg格式
+    return `/music/covers/${baseName}.jpg`;
+  };
+
   // 音乐列表 - 使用extractDisplayName函数自动处理文件名
   const defaultMusicList: AudioItem[] = [
     "/music/一半一半 - 洛天依.mp3",
@@ -94,13 +111,20 @@ export default function MusicPlayer({
     "/music/异样的风暴中心 - 洛天依.mp3",
     "/music/歌行四方 - 洛天依.mp3",
     "/music/蝴蝶 - 洛天依.mp3",
-    "/music/珍珠.mp3"
-  ].map(filePath => ({
-    name: extractDisplayName(filePath),
-    artist: "洛天依",
-    url: filePath,
-    cover: "/placeholder-album.png"
-  }));
+    "/music/白石溪 - 洛天依、乐正绫.mp3"
+  ].map(filePath => {
+    const songName = extractDisplayName(filePath);
+    const fullFileName = filePath.split('/').pop() || '';
+    const nameWithoutExt = fullFileName.replace(/\.[^/.]+$/, '');
+    
+    return {
+      name: songName,
+      artist: nameWithoutExt.includes('乐正绫') ? '洛天依、乐正绫' : '洛天依',
+      url: filePath,
+      cover: getCoverPath(fullFileName),
+      lrc: `/music/lyrics/${nameWithoutExt}.lrc`
+    };
+  });
 
   useEffect(() => {
     const globalManager = GlobalMusicPlayerManager.getInstance();
@@ -189,7 +213,7 @@ export default function MusicPlayer({
         preload: 'metadata',
         volume: 0.7,
         mutex: true, // 阻止其他播放器同时播放
-        lrcType: 0, // 禁用歌词显示
+        lrcType: 3, // 启用歌词显示，使用lrc文件
         listFolded: true, // 折叠列表
         listMaxHeight: 400, // 增加列表最大高度以确保完整显示
         storageName: 'musicPlayer', // 本地存储名称
@@ -214,9 +238,27 @@ export default function MusicPlayer({
         globalManager.savePlayState();
       };
 
+      // 监听播放开始事件，触发Live2D提示
+      const handlePlayStart = () => {
+        const currentAudio = ap.list.audios[ap.list.index];
+        if (currentAudio) {
+          emitMusicEvent('play', {
+            title: currentAudio.name || '',
+            artist: currentAudio.artist || ''
+          });
+        }
+        globalManager.savePlayState();
+      };
+
+      // 监听暂停事件
+      const handlePause = () => {
+        emitMusicEvent('pause');
+        globalManager.savePlayState();
+      };
+
       // 监听各种播放器事件
-      ap.on('play', handlePlayerEvent);
-      ap.on('pause', handlePlayerEvent);
+      ap.on('play', handlePlayStart);
+      ap.on('pause', handlePause);
       ap.on('timeupdate', handlePlayerEvent);
       ap.on('volumechange', handlePlayerEvent);
       ap.on('listswitch', handlePlayerEvent);
@@ -247,8 +289,8 @@ export default function MusicPlayer({
         window.removeEventListener('beforeunload', saveStateBeforeUnload);
         document.removeEventListener('visibilitychange', handlePageVisibilityChange);
         // 移除APlayer事件监听器
-        ap.off('play', handlePlayerEvent);
-        ap.off('pause', handlePlayerEvent);
+        ap.off('play', handlePlayStart);
+        ap.off('pause', handlePause);
         ap.off('timeupdate', handlePlayerEvent);
         ap.off('volumechange', handlePlayerEvent);
         ap.off('listswitch', handlePlayerEvent);

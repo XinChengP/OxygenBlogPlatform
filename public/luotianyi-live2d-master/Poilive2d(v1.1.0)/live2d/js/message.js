@@ -120,7 +120,6 @@ function showMessage(text, timeout){
     if (timeout === null) timeout = 5000;
        $('.hide-button').css("top",$("#landlord .message").height() - 30 + "px");
         $('.switch-button').css("top",$("#landlord .message").height() - 5 + "px");
-		$('.sing-button').css("top",$("#landlord .message").height() - 5 + "px");
     hideMessage(timeout);
 }
 
@@ -138,47 +137,16 @@ function initLive2d (){
         $("#live2d").animate({opacity:'0'},100);
         setTimeout("ChangePoi()",100);
     });
-	$('.sing-button').fadeOut(0).on('click', () => {
-        //$("#sing").animate({opacity:'0'},100);
-        //setTimeout("sing()",100);
-    });
     $('#landlord').hover(() => {
         $('.hide-button').css("top",$("#landlord .message").height() - 30 + "px");
         $('.switch-button').css("top",$("#landlord .message").height() - 5 + "px");
-		$('.sing-button').css("top",$("#landlord .message").height() - 5 + "px");
         $('.hide-button').fadeIn(200);
         $('.switch-button').fadeIn(200);
-		$('.sing-button').fadeIn(200);
     }, () => {
         $('.hide-button').fadeOut(200);
         $('.switch-button').fadeOut(200);
-		$('.sing-button').fadeOut(200);
     })
 }
 initLive2d ();
 
-var num=2;
-function getsong(){
-		if(num%2==0){
-					
-	$.getJSON(`${live2d_Path}songs.json`,function(songs_json){
-			var rnum = parseInt(Math.random()*songs_json.length);
-			var songs_url = songs_json[rnum]["url"];
-			var songs_name = songs_json[rnum]["name"];
-		showMessage("正在播放 [ " + songs_name + " ]", 5000);
-        document.getElementById("sing").innerHTML='<audio src='+songs_url+' id="myaudio" controls="controls" loop="false" hidden="true">';
-		
-		document.getElementById("sing-button").innerHTML="Pause";
-		var myAuto = document.getElementById('myaudio');
-            myAuto.play();
-			num=num+1;
-	});
-}
-		
-		else {
-		document.getElementById("sing-button").innerHTML="Sing";
-		document.getElementById("sing").innerHTML='<audio src="" id="myaudio" controls="controls" loop="false" hidden="true">';
-		num=num+1;
-        }
 
-}

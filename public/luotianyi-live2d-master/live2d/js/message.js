@@ -242,50 +242,6 @@ function initLive2d (){
 initLive2d ();
 
 
-var num=2;
-function getsong(){
-		if(num%2==0){
-					
-		if (typeof $ === 'undefined' || !$.getJSON) {
-			// jQuery未加载，使用原生fetch作为备选
-			fetch(`${message_Path}songs.json`)
-				.then(response => response.json())
-				.then(songs_json => {
-					var rnum = parseInt(Math.random()*songs_json.length);
-					var songs_url = songs_json[rnum]["url"];
-					var songs_name = songs_json[rnum]["name"];
-					showMessage("正在播放 [ " + songs_name + " ]", 5000);
-					document.getElementById("sing").innerHTML='<audio src='+songs_url+' id="myaudio" controls="controls" loop="false" hidden="true">';
-					
-					document.getElementById("sing-button").innerHTML="Pause";
-					var myAuto = document.getElementById('myaudio');
-					myAuto.play();
-					num=num+1;
-				});
-		} else {
-			$.getJSON(`${message_Path}songs.json`,function(songs_json){
-				var rnum = parseInt(Math.random()*songs_json.length);
-				var songs_url = songs_json[rnum]["url"];
-				var songs_name = songs_json[rnum]["name"];
-				showMessage("正在播放 [ " + songs_name + " ]", 5000);
-				document.getElementById("sing").innerHTML='<audio src='+songs_url+' id="myaudio" controls="controls" loop="false" hidden="true">';
-				
-				document.getElementById("sing-button").innerHTML="Pause";
-				var myAuto = document.getElementById('myaudio');
-				myAuto.play();
-				num=num+1;
-			});
-		}
-}
-		
-		else {
-		document.getElementById("sing-button").innerHTML="Sing";
-		document.getElementById("sing").innerHTML='<audio src="" id="myaudio" controls="controls" loop="false" hidden="true">';
-		num=num+1;
-        }
-
-}
-
 
 // 全局消息管理器 - 增强复制事件监听
 window.GlobalMessageManager = (function() {

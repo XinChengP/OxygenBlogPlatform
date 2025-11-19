@@ -41,7 +41,7 @@
    /*  color: rgba(132,132,132,.6); */
 }
 
-.hide-button,.switch-button,.sing-button {
+.hide-button,.switch-button {
     position: absolute;
     top: 10px;
     right: 0;
@@ -60,7 +60,7 @@
     cursor: pointer;
 }
 
-.hide-button:hover,.switch-button:hover,.sing-button:hover {
+.hide-button:hover,.switch-button:hover {
     border: 1px solid rgba(102,204,255,.6);
     background: rgba(102,204,255,.6);
     /* color: rgba(132,132,132,.8); */
@@ -72,10 +72,6 @@
 
 .switch-button {
     top: 20px;
-}
-
-.sing-button {
-    top: 30px;
 }
 @media (max-width: 860px) {
     #landlord {
