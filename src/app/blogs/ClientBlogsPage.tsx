@@ -462,25 +462,6 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
             
             {/* 排序 */}
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-              {/* 分类筛选 */}
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-muted-foreground whitespace-nowrap">
-                  分类：
-                </label>
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 hover:border-primary/50"
-                >
-                  <option value="">全部分类</option>
-                  {categories.map((category) => (
-                    <option key={category} value={category}>
-                      {category}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              
               {/* 排序方式 */}
               <div className="flex items-center gap-2">
                 <label className="text-sm font-medium text-muted-foreground whitespace-nowrap">
@@ -871,7 +852,7 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                     >
                       <Link href={`/blogs/${encodeURIComponent(post.slug)}`} className="nav-link">
                         {/* 封面图片 */}
-                        {post.coverImage && (
+                        {post.coverImage ? (
                           <div className="relative h-48 sm:h-56 overflow-hidden">
                             <Image
                               src={getAssetPath(post.coverImage)}
@@ -897,6 +878,36 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                             {/* 悬停时的阅读按钮 */}
                             <motion.div 
                               className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                              initial={{ scale: 0.8 }}
+                              whileHover={{ scale: 1 }}
+                            >
+                              <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium text-gray-800 dark:text-gray-200 shadow-lg">
+                                阅读文章
+                              </div>
+                            </motion.div>
+                          </div>
+                        ) : (
+                          /* 无封面图片时的占位图 */
+                          <div className="relative h-48 sm:h-56 overflow-hidden bg-gradient-to-br from-primary/10 via-primary/5 to-transparent dark:from-primary/20 dark:via-primary/10 dark:to-transparent">
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="text-center space-y-3">
+                                <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto bg-primary/20 dark:bg-primary/30 rounded-full flex items-center justify-center backdrop-blur-sm">
+                                  <BookOpen className="w-8 h-8 sm:w-10 sm:h-10 text-primary/60 dark:text-primary/80" />
+                                </div>
+                                <div className="text-xs sm:text-sm text-muted-foreground font-medium">
+                                  {post.category}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="absolute top-3 right-3">
+                              <span className="bg-black/60 text-white px-2 py-1 rounded-full text-xs backdrop-blur-sm">
+                                {post.readTime}分钟
+                              </span>
+                            </div>
+                            
+                            {/* 悬停时的阅读按钮 */}
+                            <motion.div 
+                              className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/10 backdrop-blur-sm"
                               initial={{ scale: 0.8 }}
                               whileHover={{ scale: 1 }}
                             >
@@ -997,7 +1008,7 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
             
             {/* 列表视图 */}
             {viewMode === 'list' && (
-              <div className="space-y-4">
+              <div className="space-y-2">
                 <AnimatePresence mode="popLayout">
                   {paginationData.currentPosts.map((post, index) => (
                     <motion.article
@@ -1007,34 +1018,34 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: 20 }}
                       transition={{ 
-                        duration: 0.3, 
-                        delay: index * 0.03,
+                        duration: 0.15, 
+                        delay: index * 0.01,
                         ease: "easeOut"
                       }}
                       whileHover={{ 
-                        x: 8,
-                        transition: { duration: 0.2 }
+                        x: 2,
+                        transition: { duration: 0.1 }
                       }}
-                      className={getGlassStyle("rounded-xl shadow-lg p-4 sm:p-6 hover:shadow-2xl transition-all duration-300 cursor-pointer border group relative")}
+                      className={getGlassStyle("rounded-md shadow-sm p-2.5 hover:shadow-md transition-all duration-150 cursor-pointer border group relative")}
                       onMouseEnter={() => handlePostHover(post)}
                       onMouseLeave={handlePostLeave}
                     >
                       <Link href={`/blogs/${encodeURIComponent(post.slug)}`} className="nav-link">
-                        <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
+                        <div className="flex flex-col sm:flex-row gap-2.5">
                           {/* 封面图片 */}
                           {post.coverImage && (
-                            <div className="relative w-full sm:w-40 h-32 sm:h-24 flex-shrink-0 rounded-lg overflow-hidden">
+                            <div className="relative w-full sm:w-32 h-20 sm:h-24 flex-shrink-0 rounded-md overflow-hidden">
                               <Image
                                 src={getAssetPath(post.coverImage)}
                                 alt={post.title}
-                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                                 fill
-                                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 33vw, 160px"
+                                sizes="(max-width: 640px) 100vw, 128px"
                                 priority={index < 3}
                               />
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent"></div>
-                              <div className="absolute top-2 left-2">
-                                <span className="bg-primary/95 text-primary-foreground px-2 py-1 rounded text-xs font-medium backdrop-blur-sm shadow-lg">
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent"></div>
+                              <div className="absolute top-1 left-1">
+                                <span className="bg-primary/90 text-primary-foreground px-1.5 py-0.5 rounded text-xs font-medium backdrop-blur-sm leading-none">
                                   {post.category}
                                 </span>
                               </div>
@@ -1042,37 +1053,30 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                           )}
                           
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3">
-                              <span className="flex items-center gap-1 group/date">
-                                <Calendar className="w-3 h-3 group-hover/date:text-primary transition-colors" />
-                                {formatDate(post.date)}
-                              </span>
-                            </div>
-                            
-                            <h2 className="text-lg sm:text-xl font-bold text-foreground mb-2 sm:mb-3 line-clamp-2 group-hover:text-primary transition-colors duration-300">
+                            <h2 className="text-sm font-semibold text-foreground mb-1 line-clamp-2 group-hover:text-primary transition-colors duration-150">
                               {post.title}
                             </h2>
                             
                             {post.excerpt && (
-                              <p className="text-muted-foreground mb-3 sm:mb-4 text-sm sm:text-base line-clamp-2 sm:line-clamp-3 leading-relaxed">
+                              <p className="text-muted-foreground mb-1.5 text-sm line-clamp-2 leading-tight">
                                 {post.excerpt}
                               </p>
                             )}
                             
                             {/* 标签 */}
                             {post.tags && post.tags.length > 0 && (
-                              <div className="flex flex-wrap gap-1 mb-3 sm:mb-4">
-                                {post.tags.slice(0, 3).map((tag) => (
+                              <div className="flex flex-wrap gap-0.5 mb-1.5">
+                                {post.tags.slice(0, 2).map((tag) => (
                                   <span
                                     key={tag}
-                                    className="px-2 py-1 bg-primary/10 text-primary text-xs rounded-full border border-primary/20"
+                                    className="px-1 py-0.5 bg-primary/10 text-primary text-xs rounded-sm border border-primary/15 leading-none"
                                   >
                                     {tag}
                                   </span>
                                 ))}
-                                {post.tags.length > 3 && (
-                                  <span className="px-2 py-1 bg-primary/10 text-primary text-xs rounded-full border border-primary/20">
-                                    +{post.tags.length - 3}
+                                {post.tags.length > 2 && (
+                                  <span className="px-1 py-0.5 bg-primary/10 text-primary text-xs rounded-sm border border-primary/15 leading-none">
+                                    +{post.tags.length - 2}
                                   </span>
                                 )}
                               </div>
@@ -1080,43 +1084,38 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                             
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
-                                {post.author && (
-                                  <motion.div 
-                                    className="flex items-center gap-2 group/author"
-                                    whileHover={{ scale: 1.02 }}
-                                    transition={{ duration: 0.2 }}
-                                  >
-                                    {post.author.avatar && (
-                                      <motion.div
-                                        whileHover={{ rotate: 5 }}
-                                        transition={{ duration: 0.2 }}
-                                      >
-                                        <Image
-                                          src={getAssetPath(post.author.avatar)}
-                                          alt={post.author.name}
-                                          className="rounded-full object-cover ring-2 ring-background group-hover/author:ring-primary transition-all duration-300"
-                                          width={32}
-                                          height={32}
-                                          sizes="32px"
-                                        />
-                                      </motion.div>
-                                    )}
-                                    <span className="text-xs sm:text-sm text-muted-foreground group-hover/author:text-foreground transition-colors truncate font-medium">
-                                      {post.author.name}
-                                    </span>
-                                  </motion.div>
-                                )}
+                                <div className="flex items-center gap-1">
+                                  {post.author && (
+                                    <div className="flex items-center gap-1 group/author">
+                                      {post.author.avatar && (
+                                        <div className="w-4 h-4 rounded-full overflow-hidden ring-1 ring-background group-hover/author:ring-primary transition-all duration-150">
+                                          <Image
+                                            src={getAssetPath(post.author.avatar)}
+                                            alt={post.author.name}
+                                            className="w-full h-full object-cover"
+                                            width={16}
+                                            height={16}
+                                            sizes="16px"
+                                          />
+                                        </div>
+                                      )}
+                                      <span className="text-xs text-muted-foreground group-hover/author:text-foreground transition-colors font-medium">
+                                        {post.author.name}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                <span className="flex items-center gap-0.5 text-xs text-muted-foreground group/date">
+                                  <Calendar className="w-3 h-3 group-hover/date:text-primary transition-colors" />
+                                  {formatDate(post.date)}
+                                </span>
                               </div>
                               
-                              <motion.div
-                                initial={{ x: -10, opacity: 0 }}
-                                animate={{ x: 0, opacity: 1 }}
-                                transition={{ delay: 0.2 }}
-                                className="flex items-center gap-2 text-primary text-sm font-medium group-hover:gap-3 transition-all duration-300"
-                              >
-                                <span className="hidden sm:inline">阅读文章</span>
-                                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
-                              </motion.div>
+                              <div className="flex items-center gap-0.5 text-primary text-xs font-medium">
+                                <span className="hidden sm:inline">阅读</span>
+                                <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform duration-150" />
+                              </div>
                             </div>
                           </div>
                         </div>

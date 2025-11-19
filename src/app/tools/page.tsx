@@ -73,18 +73,11 @@ function ToolCard({ tool, index, isDark }: ToolCardProps) {
       transition={{ duration: 0.4, delay: index * 0.1 }}
       whileHover={{ y: -5 }}
     >
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <span className="text-2xl">{tool.icon}</span>
-          <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            {tool.name}
-          </h3>
-        </div>
-        {tool.featured && (
-          <span className="px-2 py-1 text-xs bg-primary text-primary-foreground rounded-full">
-            特色
-          </span>
-        )}
+      <div className="flex items-center gap-3 mb-4">
+        <span className="text-2xl">{tool.icon}</span>
+        <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+          {tool.name}
+        </h3>
       </div>
       <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'} mb-4`}>
         {tool.description}
@@ -255,11 +248,8 @@ export default function ToolsPage() {
             </div>
 
             {/* 特色工具展示（当选择全部分类时显示） */}
-            {selectedCategory === 'all' && (
+            {selectedCategory === 'all' && getFeaturedTools().length > 0 && (
               <div className="mb-8">
-                <h2 className={`text-xl font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  ⭐ 特色工具
-                </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {getFeaturedTools().map((tool, index) => (
                     <ToolCard key={tool.id} tool={tool} index={index} isDark={isDark} />

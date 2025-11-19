@@ -695,7 +695,10 @@ export default function PinyinConverter() {
   const isDark = resolvedTheme === 'dark';
 
   return (
-    <div className={`min-h-screen ${containerStyle} relative`}>
+    <main 
+      className={`min-h-screen transition-colors duration-300 ${isDark ? 'dark' : ''} ${containerStyle.className}`}
+      style={containerStyle.style}
+    >
       <BackgroundLayer />
       
       {/* 加载状态容器 */}
@@ -708,17 +711,8 @@ export default function PinyinConverter() {
         </div>
       )}
 
-
-
-      {/* 右下角导航按钮 */}
-      <div className="fixed bottom-4 right-4 z-50">
-        <Suspense fallback={<div>Loading...</div>}>
-          <LazyScrollToTop />
-        </Suspense>
-      </div>
-
       {/* 主内容区域 */}
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20 mt-16">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <motion.div 
           className="text-center mb-12"
           initial={{ opacity: 0, y: 20 }}
@@ -1121,6 +1115,11 @@ export default function PinyinConverter() {
           </motion.div>
         )}
       </main>
-    </div>
+
+      {/* 右下角导航按钮 */}
+      <Suspense fallback={null}>
+        <LazyScrollToTop />
+      </Suspense>
+    </main>
   );
 }
