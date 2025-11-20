@@ -43,7 +43,6 @@ interface ClientBlogsPageProps {
  */
 export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [isCategoryCollapsed, setIsCategoryCollapsed] = useState<boolean>(true);
   const [currentPage, setCurrentPage] = useState<number>(1);
   // 搜索和筛选状态
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -54,6 +53,7 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
   const [showAdvancedSearch, setShowAdvancedSearch] = useState<boolean>(false);
   const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
+  const [isCategoryCollapsed, setIsCategoryCollapsed] = useState<boolean>(true);
 
   // 获取所有可用的标签
   const allTags = useMemo(() => {
@@ -281,6 +281,10 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
   const handleCategoryChange = (category: string) => {
     setSelectedCategory(category);
     setCurrentPage(1); // 切换分类时重置到第一页
+    // 移动端自动收起分类筛选面板
+    if (window.innerWidth < 1024) {
+      setIsCategoryCollapsed(true);
+    }
   };
 
   /**
@@ -513,64 +517,67 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
           </div>
         </div>
         
-        {/* 移动端分类筛选折叠按钮 */}
-        <motion.div 
-          className="mb-6 lg:hidden"
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          <button
-            onClick={() => setIsCategoryCollapsed(!isCategoryCollapsed)}
-            className={getGlassStyle("w-full rounded-lg shadow-md p-4 flex items-center justify-between text-foreground hover:bg-card/90 transition-colors border")}
+        {/* 移动端分类筛选折叠按钮 - 已移除 */}
+        
+        {/* 移动端分类筛选面板 */}
+        {!isCategoryCollapsed && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="lg:hidden mb-6 overflow-hidden"
           >
-            <span className="flex items-center gap-2">
-              <Filter className="w-4 h-4" />
-              <span className="font-medium">分类筛选</span>
-              <span className="text-sm text-muted-foreground">
-                ({selectedCategory === 'all' ? '全部' : selectedCategory})
-              </span>
-            </span>
-            <motion.span
-              animate={{ rotate: isCategoryCollapsed ? 0 : 180 }}
-              transition={{ duration: 0.2 }}
-              className="text-muted-foreground"
+            <div className={getGlassStyle("rounded-lg border p-4")}>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                  <Filter className="w-4 h-4" />
+                  分类筛选
+                </h3>
+                <button
+                  onClick={() => setIsCategoryCollapsed(true)}
+                  className="p-1 hover:bg-accent rounded transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="space-y-2">
+                {categories.map((category) => {
+                  const count = initialPosts.filter(post => 
+                    category === 'all' ? true : post.category === category
+                  ).length;
+                  
+                  return (
+                    <button
+                      key={category}
+                      onClick={() => handleCategoryChange(category)}
+                      className={`w-full text-left px-3 py-2 rounded-md transition-colors flex items-center justify-between ${
+                        selectedCategory === category
+                          ? 'bg-primary/10 text-primary border border-primary/20'
+                          : 'text-muted-foreground hover:bg-primary/5 hover:text-primary'
+                      }`}
+                    >
+                      <span>{category === 'all' ? '全部' : category}</span>
+                      <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </motion.div>
+        )}
+        {isCategoryCollapsed && (
+          <div className="lg:hidden mb-4">
+            <button
+              onClick={() => setIsCategoryCollapsed(false)}
+              className={getGlassStyle("w-full px-4 py-2 rounded-lg border flex items-center justify-center gap-2 hover:bg-primary/5 transition-colors")}
             >
-              ▼
-            </motion.span>
-          </button>
-          
-          {/* 移动端分类选项 */}
-          <AnimatePresence>
-            {!isCategoryCollapsed && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.3, ease: 'easeInOut' }}
-                className="overflow-hidden"
-              >
-                <div className={getGlassStyle("rounded-lg shadow-md mt-2 p-4 border")}>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {categories.map((category) => (
-                       <button
-                         key={category}
-                         onClick={() => handleCategoryChange(category)}
-                         className={`px-3 py-2 rounded-md text-sm transition-colors ${
-                           selectedCategory === category
-                             ? 'bg-primary/10 text-primary border border-primary/20'
-                             : 'text-muted-foreground hover:bg-primary/5 hover:text-primary'
-                         }`}
-                       >
-                         {category === 'all' ? '全部' : category}
-                       </button>
-                     ))}
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.div>
+              <Filter className="w-4 h-4" />
+              显示分类筛选
+            </button>
+          </div>
+        )}
 
         {/* 高级搜索面板 */}
         <AnimatePresence>
@@ -682,64 +689,7 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
           )}
         </AnimatePresence>
         
-        {/* 移动端分类筛选折叠按钮 */}
-        <motion.div 
-          className="mb-6 lg:hidden"
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          <button
-            onClick={() => setIsCategoryCollapsed(!isCategoryCollapsed)}
-            className={getGlassStyle("w-full rounded-lg shadow-md p-4 flex items-center justify-between text-foreground hover:bg-card/90 transition-colors border")}
-          >
-            <span className="flex items-center gap-2">
-              <Filter className="w-4 h-4" />
-              <span className="font-medium">分类筛选</span>
-              <span className="text-sm text-muted-foreground">
-                ({selectedCategory === 'all' ? '全部' : selectedCategory})
-              </span>
-            </span>
-            <motion.span
-              animate={{ rotate: isCategoryCollapsed ? 0 : 180 }}
-              transition={{ duration: 0.2 }}
-              className="text-muted-foreground"
-            >
-              ▼
-            </motion.span>
-          </button>
-          
-          {/* 移动端分类选项 */}
-          <AnimatePresence>
-            {!isCategoryCollapsed && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.3, ease: 'easeInOut' }}
-                className="overflow-hidden"
-              >
-                <div className={getGlassStyle("rounded-lg shadow-md mt-2 p-4 border")}>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {categories.map((category) => (
-                       <button
-                         key={category}
-                         onClick={() => handleCategoryChange(category)}
-                         className={`px-3 py-2 rounded-md text-sm transition-colors ${
-                           selectedCategory === category
-                             ? 'bg-primary/10 text-primary border border-primary/20'
-                             : 'text-muted-foreground hover:bg-primary/5 hover:text-primary'
-                         }`}
-                       >
-                         {category === 'all' ? '全部' : category}
-                       </button>
-                     ))}
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.div>
+        {/* 移动端分类筛选 - 已移除 */}
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* 桌面端左侧边栏 */}
