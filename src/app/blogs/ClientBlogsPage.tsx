@@ -3,13 +3,16 @@
 import { motion, AnimatePresence } from 'motion/react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, lazy, Suspense } from 'react';
 import { categories } from '@/setting/blogSetting';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 import Pagination from '@/components/Pagination';
 import { getAssetPath } from '@/utils/assetUtils';
 import { Search, Calendar, Clock, Tag, ArrowRight, LayoutGrid, LayoutList, X, Filter, BookOpen } from 'lucide-react';
 import live2dMessageManager from '@/utils/live2dMessageManager';
+
+// 动态导入滚动控制组件
+const LazyScrollToTop = lazy(() => import('@/components/ScrollToTop'));
 
 /**
  * 博客文章接口
@@ -1160,6 +1163,11 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
           </motion.main>
         </div>
       </div>
+      
+      {/* 右下角滚动控制组件 */}
+      <Suspense fallback={null}>
+        <LazyScrollToTop />
+      </Suspense>
     </div>
   );
 }

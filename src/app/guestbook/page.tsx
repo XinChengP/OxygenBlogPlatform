@@ -6,6 +6,7 @@ import { motion } from 'motion/react';
 
 // 动态导入大型组件
 const LazyGiscusGuestbookBoard = lazy(() => import('@/components/GiscusGuestbookBoard'));
+const LazyScrollToTop = lazy(() => import('@/components/ScrollToTop'));
 
 export default function Guestbook() {
   const { theme } = useTheme();
@@ -75,6 +76,11 @@ export default function Guestbook() {
           </div>
         </div>
       </div>
+      
+      {/* 右下角滚动控制组件 */}
+      <Suspense fallback={null}>
+        <LazyScrollToTop />
+      </Suspense>
     </div>
   );
 }
