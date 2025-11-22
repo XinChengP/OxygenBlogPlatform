@@ -542,7 +542,7 @@ export default function PinyinConverter() {
     } else {
       return parts.join(options.separator);
     }
-  }, [detailedResults, heteronymSelections, options.toneStyle, options.outputFormat, options.lowercase, convertToneMarkToNumber, getPinyinInitials, options.separator]);
+  }, [heteronymSelections, options.toneStyle, options.outputFormat, options.lowercase, convertToneMarkToNumber, getPinyinInitials, options.separator]);
 
   // 处理转换结果中的多音字点击
   const handleOutputCharClick = useCallback((char: string, index: number) => {

@@ -13,7 +13,7 @@ import {
   GlobeAltIcon,
   BookOpenIcon
 } from '@heroicons/react/24/outline';
-
+import Image from 'next/image';
 
 import 'katex/dist/katex.min.css';
 import { EndWord } from '../../../setting/blogSetting';
@@ -277,17 +277,17 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
         if (password) {
           navigator.clipboard.writeText(password).then(() => {
             const originalText = passwordSpan.textContent;
-            const originalBackgroundColor = passwordSpan.style.backgroundColor;
-            const originalColor = passwordSpan.style.color;
+            const originalBackgroundColor = (passwordSpan as HTMLElement).style.backgroundColor;
+            const originalColor = (passwordSpan as HTMLElement).style.color;
             
-            passwordSpan.textContent = '已复制!';
-            passwordSpan.style.backgroundColor = '#4CAF50';
-            passwordSpan.style.color = 'white';
-            
-            setTimeout(() => {
-              passwordSpan.textContent = originalText;
-              passwordSpan.style.backgroundColor = originalBackgroundColor;
-              passwordSpan.style.color = originalColor;
+            (passwordSpan as HTMLElement).textContent = '已复制!';
+              (passwordSpan as HTMLElement).style.backgroundColor = '#4CAF50';
+              (passwordSpan as HTMLElement).style.color = 'white';
+              
+              setTimeout(() => {
+                (passwordSpan as HTMLElement).textContent = originalText || '';
+                (passwordSpan as HTMLElement).style.backgroundColor = originalBackgroundColor;
+                (passwordSpan as HTMLElement).style.color = originalColor;
             }, 1500);
           }).catch(() => {
             // 降级方案
@@ -300,20 +300,20 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
             textArea.select();
             try {
               document.execCommand('copy');
-              const originalText = passwordSpan.textContent;
-              const originalBackgroundColor = passwordSpan.style.backgroundColor;
-              const originalColor = passwordSpan.style.color;
+              const originalText = (passwordSpan as HTMLElement).textContent;
+              const originalBackgroundColor = (passwordSpan as HTMLElement).style.backgroundColor;
+              const originalColor = (passwordSpan as HTMLElement).style.color;
               
-              passwordSpan.textContent = '已复制!';
-              passwordSpan.style.backgroundColor = '#4CAF50';
-              passwordSpan.style.color = 'white';
+              (passwordSpan as HTMLElement).textContent = '已复制!';
+              (passwordSpan as HTMLElement).style.backgroundColor = '#4CAF50';
+              (passwordSpan as HTMLElement).style.color = 'white';
               
               setTimeout(() => {
-                passwordSpan.textContent = originalText;
-                passwordSpan.style.backgroundColor = originalBackgroundColor;
-                passwordSpan.style.color = originalColor;
+                (passwordSpan as HTMLElement).textContent = originalText || '';
+                (passwordSpan as HTMLElement).style.backgroundColor = originalBackgroundColor;
+                (passwordSpan as HTMLElement).style.color = originalColor;
               }, 1500);
-            } catch (err) {
+            } catch {
               alert('复制失败，请手动复制：' + password);
             }
             document.body.removeChild(textArea);
@@ -329,9 +329,9 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
       
       if (passwordSpan && !passwordSpan.textContent?.includes('已复制!')) {
         if (e.type === 'mouseenter') {
-          passwordSpan.style.backgroundColor = theme === 'dark' ? 'rgba(75, 85, 99, 0.5)' : 'rgba(229, 229, 229, 0.5)';
+          (passwordSpan as HTMLElement).style.backgroundColor = theme === 'dark' ? 'rgba(75, 85, 99, 0.5)' : 'rgba(229, 229, 229, 0.5)';
         } else if (e.type === 'mouseleave') {
-          passwordSpan.style.backgroundColor = '';
+          (passwordSpan as HTMLElement).style.backgroundColor = '';
         }
       }
     };
@@ -432,9 +432,11 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
             {/* 封面图片 */}
             {blog.coverImage && (
               <div className="mb-6 rounded-xl overflow-hidden shadow-2xl">
-                <img
+                <Image
                   src={getAssetPath(blog.coverImage)}
                   alt={blog.title}
+                  width={800}
+                  height={384}
                   className="w-full h-64 md:h-96 object-cover transform hover:scale-105 transition-transform duration-500"
                   loading="lazy"
                 />
@@ -718,7 +720,7 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                       );
                     },
                     // 图片 - 基础加载
-                    img({ src, alt }: any) {
+                    img({ src, alt, ...props }: any) {
                       // 处理 GitHub Pages 基础路径
                       const processedSrc = src ? getAssetPath(src) : src;
                       return (
@@ -728,6 +730,7 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                             alt={alt || '图片'}
                             className="rounded-xl shadow-lg mx-auto max-w-full h-auto"
                             loading="lazy"
+                            {...props}
                           />
                           {alt && (
                             <p className="text-sm text-muted-foreground mt-3 italic">{alt}</p>
