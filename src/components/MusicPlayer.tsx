@@ -121,8 +121,8 @@ export default function MusicPlayer({
       name: songName,
       artist: nameWithoutExt.includes('乐正绫') ? '洛天依、乐正绫' : '洛天依',
       url: filePath,
-      cover: getCoverPath(fullFileName),
-      lrc: `/music/lyrics/${nameWithoutExt}.lrc`
+      cover: formatAudioUrl(getCoverPath(fullFileName)),
+      lrc: formatAudioUrl(`/music/lyrics/${nameWithoutExt}.lrc`)
     };
   });
 
