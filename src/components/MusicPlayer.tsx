@@ -135,15 +135,15 @@ export default function MusicPlayer({
         try {
           // 检查是否已经加载过APlayer
           if (!(window as any).APlayer) {
-            // 动态加载APlayer脚本和样式
+            // 动态加载APlayer脚本和样式（使用本地文件）
             const link = document.createElement('link');
             link.rel = 'stylesheet';
-            link.href = 'https://cdn.jsdelivr.net/npm/aplayer@1.10.1/dist/APlayer.min.css';
+            link.href = formatAudioUrl('/aplayer/APlayer.min.css');
             document.head.appendChild(link);
 
             // 加载APlayer脚本
             const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/aplayer@1.10.1/dist/APlayer.min.js';
+            script.src = formatAudioUrl('/aplayer/APlayer.min.js');
             script.onload = () => {
               initializePlayer();
             };
