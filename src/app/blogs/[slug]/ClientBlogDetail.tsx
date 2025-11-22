@@ -247,6 +247,119 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
     });
   };
 
+  // 复制密码功能
+  useEffect(() => {
+    // 设置CSS变量以支持深色模式
+    const setPasswordStyles = () => {
+      const root = document.documentElement;
+      if (theme === 'dark') {
+        root.style.setProperty('--password-bg', 'rgba(55, 65, 81, 0.3)'); // gray-700 30% 透明
+        root.style.setProperty('--password-text', '#f3f4f6'); // gray-100
+        root.style.setProperty('--password-border', 'rgba(75, 85, 99, 0.5)'); // gray-600 50% 透明
+        root.style.setProperty('--password-hover-bg', 'rgba(75, 85, 99, 0.5)'); // gray-600 50% 透明
+      } else {
+        root.style.setProperty('--password-bg', 'rgba(240, 240, 240, 0.3)'); // 30% 透明
+        root.style.setProperty('--password-text', 'inherit');
+        root.style.setProperty('--password-border', 'rgba(221, 221, 221, 0.5)'); // 50% 透明
+        root.style.setProperty('--password-hover-bg', 'rgba(229, 229, 229, 0.5)'); // 50% 透明
+      }
+    };
+
+    setPasswordStyles();
+
+    const handlePasswordClick = (e: Event) => {
+      const target = e.target as HTMLElement;
+      const passwordSpan = target.closest('[data-password]');
+      
+      if (passwordSpan) {
+        e.preventDefault();
+        const password = passwordSpan.getAttribute('data-password');
+        if (password) {
+          navigator.clipboard.writeText(password).then(() => {
+            const originalText = passwordSpan.textContent;
+            const originalBackgroundColor = passwordSpan.style.backgroundColor;
+            const originalColor = passwordSpan.style.color;
+            
+            passwordSpan.textContent = '已复制!';
+            passwordSpan.style.backgroundColor = '#4CAF50';
+            passwordSpan.style.color = 'white';
+            
+            setTimeout(() => {
+              passwordSpan.textContent = originalText;
+              passwordSpan.style.backgroundColor = originalBackgroundColor;
+              passwordSpan.style.color = originalColor;
+            }, 1500);
+          }).catch(() => {
+            // 降级方案
+            const textArea = document.createElement('textarea');
+            textArea.value = password;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+              document.execCommand('copy');
+              const originalText = passwordSpan.textContent;
+              const originalBackgroundColor = passwordSpan.style.backgroundColor;
+              const originalColor = passwordSpan.style.color;
+              
+              passwordSpan.textContent = '已复制!';
+              passwordSpan.style.backgroundColor = '#4CAF50';
+              passwordSpan.style.color = 'white';
+              
+              setTimeout(() => {
+                passwordSpan.textContent = originalText;
+                passwordSpan.style.backgroundColor = originalBackgroundColor;
+                passwordSpan.style.color = originalColor;
+              }, 1500);
+            } catch (err) {
+              alert('复制失败，请手动复制：' + password);
+            }
+            document.body.removeChild(textArea);
+          });
+        }
+      }
+    };
+
+    // 为密码元素添加悬停效果
+    const handlePasswordHover = (e: Event) => {
+      const target = e.target as HTMLElement;
+      const passwordSpan = target.closest('[data-password]');
+      
+      if (passwordSpan && !passwordSpan.textContent?.includes('已复制!')) {
+        if (e.type === 'mouseenter') {
+          passwordSpan.style.backgroundColor = theme === 'dark' ? 'rgba(75, 85, 99, 0.5)' : 'rgba(229, 229, 229, 0.5)';
+        } else if (e.type === 'mouseleave') {
+          passwordSpan.style.backgroundColor = '';
+        }
+      }
+    };
+
+    // 添加事件监听器
+    document.addEventListener('click', handlePasswordClick);
+    document.addEventListener('mouseenter', handlePasswordHover, true);
+    document.addEventListener('mouseleave', handlePasswordHover, true);
+    
+    // 监听主题变化
+    const observer = new MutationObserver(() => {
+      setPasswordStyles();
+    });
+    
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+    
+    // 清理函数
+    return () => {
+      document.removeEventListener('click', handlePasswordClick);
+      document.removeEventListener('mouseenter', handlePasswordHover, true);
+      document.removeEventListener('mouseleave', handlePasswordHover, true);
+      observer.disconnect();
+    };
+  }, [theme]);
+
   // 语法高亮主题
   const syntaxTheme = theme === 'dark' ? oneDark : oneLight;
 

@@ -52,3 +52,8 @@ coverImage: "/Blogabout/benou/benou.png"
 </div>
 
 PS：小白第一次扒谱，还有很多地方需要完善，欢迎各位大佬指正（博主太菜了，前奏扒不出来QAQ）
+
+## 资源下载
+
+- **VSQX工程文件**： [点击下载](https://www.vsqx.top/project/vn14209) 
+- **蓝奏云资源包**： [点击下载](https://wwtx.lanzout.com/iBGMc3b82qcd) （密码：<span id="password-0524" style="cursor: pointer; background-color: var(--password-bg, transparent); color: var(--password-text, inherit); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--password-border, transparent); transition: all 0.2s ease;" data-password="0524">0524</span>）
