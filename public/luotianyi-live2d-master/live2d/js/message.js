@@ -338,6 +338,14 @@ window.GlobalMessageManager = (function() {
       return true;
     }
     
+    // 添加频率限制，避免短时间内重复触发
+    const now = Date.now();
+    if (window.__lastCopyMessageTime && (now - window.__lastCopyMessageTime) < 3000) {
+      console.log('⏭️ 复制消息频率限制，跳过');
+      return true;
+    }
+    window.__lastCopyMessageTime = now;
+    
     // 延迟执行，确保复制操作已完成
     setTimeout(() => {
       // 再次检查是否有 React 处理标记
@@ -361,6 +369,15 @@ window.GlobalMessageManager = (function() {
     // 检查是否是复制按钮
     if (target.closest && target.closest('.copy-button')) {
       console.log('🖱️ 检测到复制按钮点击');
+      
+      // 添加频率限制，避免短时间内重复触发
+      const now = Date.now();
+      if (window.__lastCopyMessageTime && (now - window.__lastCopyMessageTime) < 3000) {
+        console.log('⏭️ 复制按钮消息频率限制，跳过');
+        return;
+      }
+      window.__lastCopyMessageTime = now;
+      
       // 延迟执行，确保复制操作已完成
       setTimeout(() => {
         showMessage(getCopyMessage(), 2000);
@@ -387,6 +404,14 @@ window.GlobalMessageManager = (function() {
       console.warn('消息容器未初始化');
       return;
     }
+
+    // 添加全局频率限制，避免消息洪水
+    const now = Date.now();
+    if (window.__lastMessageTime && (now - window.__lastMessageTime) < 1500) {
+      console.log('⏭️ 全局消息频率限制，跳过');
+      return;
+    }
+    window.__lastMessageTime = now;
 
     const messageElement = document.getElementById('live2d-message');
     const contentElement = messageElement.querySelector('.message-content');

@@ -19,6 +19,7 @@ export default function LuoTianyiLive2D() {
     const [message, setMessage] = useState('');
     const [messageOpacity, setMessageOpacity] = useState(1);
     const [isLoading, setIsLoading] = useState(true);
+    const [loadProgress, setLoadProgress] = useState(0);
     const [currentPage, setCurrentPage] = useState('');
     const [pageStartTime, setPageStartTime] = useState(Date.now());
     const [readingProgress, setReadingProgress] = useState(0);
@@ -87,6 +88,59 @@ export default function LuoTianyiLive2D() {
         };
     }, []);
 
+    // 资源预加载函数 - 优化为只加载核心资源
+    const preloadLive2DResources = useCallback(async () => {
+        const basePath = getAssetPath('/luotianyi-live2d-master');
+        const resources = [
+            `${basePath}/live2d/js/live2d.js`,
+            `${basePath}/live2d/js/message.js`,
+            `${basePath}/live2d/model/tianyi/model.json`,
+            `${basePath}/live2d/model/tianyi/textures/1.png`
+        ];
+
+        let loadedCount = 0;
+        
+        const loadResource = (url: string): Promise<void> => {
+            return new Promise((resolve, reject) => {
+                const link = document.createElement('link');
+                link.rel = 'preload';
+                link.as = url.endsWith('.js') ? 'script' : 
+                          url.endsWith('.json') ? 'fetch' : 'image';
+                link.href = url;
+                link.onload = () => {
+                    loadedCount++;
+                    setLoadProgress(Math.round((loadedCount / resources.length) * 100));
+                    resolve();
+                };
+                link.onerror = () => {
+                    console.warn(`[Live2D] 资源预加载失败: ${url}`);
+                    loadedCount++;
+                    setLoadProgress(Math.round((loadedCount / resources.length) * 100));
+                    resolve(); // 继续加载其他资源
+                };
+                document.head.appendChild(link);
+                
+                // 设置超时
+                setTimeout(() => resolve(), 5000);
+            });
+        };
+
+        // 分批加载资源，避免同时加载过多资源
+        const batchSize = 2; // 减少批次大小为2，优化加载体验
+        for (let i = 0; i < resources.length; i += batchSize) {
+            const batch = resources.slice(i, i + batchSize);
+            console.log(`[Live2D] 加载资源批次 ${Math.floor(i/batchSize) + 1}/${Math.ceil(resources.length/batchSize)}`);
+            await Promise.allSettled(batch.map(url => loadResource(url)));
+            
+            // 小延迟，给浏览器喘息时间
+            if (i + batchSize < resources.length) {
+                await new Promise(resolve => setTimeout(resolve, 150)); // 增加延迟到150ms
+            }
+        }
+        
+        console.log(`[Live2D] 资源预加载完成: ${loadedCount}/${resources.length}`);
+    }, []);
+
     // 自动淡出功能 - 已移至前面定义，避免循环依赖
 
     // 获取当前页面类型和路径
@@ -128,7 +182,7 @@ export default function LuoTianyiLive2D() {
         
         const pageMessages = {
             '首页': [
-                '欢迎来到天依的博客！这里有很多有趣的内容哦～',
+                '欢迎来到歆橙的博客！这里有很多有趣的内容哦～',
                 '首页是博客的门面呢，设计得很漂亮吧？',
                 '从这里开始探索博主的精彩世界吧！'
             ],
@@ -196,13 +250,33 @@ export default function LuoTianyiLive2D() {
         const stayMinutes = Math.floor(stayTime / 60000);
         
         if (stayMinutes >= 5 && stayMinutes < 6) {
-            updateMessage('你已经在这里停留了5分钟呢，天依很开心能陪伴你～');
+            const message = '你已经在这里停留了5分钟呢，天依很开心能陪伴你～';
+            if (typeof window !== 'undefined' && (window as any).live2dMessageManager) {
+                (window as any).live2dMessageManager.showMessage(message, 3000, 1);
+            } else {
+                updateMessage(message);
+            }
         } else if (stayMinutes >= 10 && stayMinutes < 11) {
-            updateMessage('10分钟了！看来你对这个内容很感兴趣呢～');
+            const message = '10分钟了！看来你对这个内容很感兴趣呢～';
+            if (typeof window !== 'undefined' && (window as any).live2dMessageManager) {
+                (window as any).live2dMessageManager.showMessage(message, 3000, 1);
+            } else {
+                updateMessage(message);
+            }
         } else if (stayMinutes >= 15 && stayMinutes < 16) {
-            updateMessage('15分钟了！天依很享受这段共处的时光～');
+            const message = '15分钟了！天依很享受这段共处的时光～';
+            if (typeof window !== 'undefined' && (window as any).live2dMessageManager) {
+                (window as any).live2dMessageManager.showMessage(message, 3000, 1);
+            } else {
+                updateMessage(message);
+            }
         } else if (stayMinutes >= 30 && stayMinutes < 31) {
-            updateMessage('半小时了！长时间阅读要注意休息眼睛哦～');
+            const message = '半小时了！长时间阅读要注意休息眼睛哦～';
+            if (typeof window !== 'undefined' && (window as any).live2dMessageManager) {
+                (window as any).live2dMessageManager.showMessage(message, 3000, 1);
+            } else {
+                updateMessage(message);
+            }
         }
     }, [pageStartTime, updateMessage]);
 
@@ -233,15 +307,23 @@ export default function LuoTianyiLive2D() {
             console.log('[LuoTianyiLive2D] 在浏览器环境中运行');
             window.console.log('[LuoTianyiLive2D] 浏览器控制台日志测试');
             
-            // 获取当前页面信息并显示智能提示
+            // 获取当前页面信息并显示智能提示 - 增加延迟，避免与欢迎消息冲突
             setTimeout(() => {
                 showSmartPageMessage();
-            }, 1500);
+            }, 3000); // 从1.5秒增加到3秒
             
-            // 延迟显示功能提示
+            // 延迟显示功能提示 - 进一步延迟，减少初始消息数量
             setTimeout(() => {
-                updateMessage('今天也是元气满满的一天呢！');
-            }, 3000);
+                // 只在没有显示过其他消息的情况下才显示
+                if (typeof window !== 'undefined' && (window as any).live2dMessageManager) {
+                    const status = (window as any).live2dMessageManager.getStatus();
+                    if (status.queueLength === 0 && !status.isDisplaying) {
+                        (window as any).live2dMessageManager.showMessage('今天也是元气满满的一天呢！', 3000, 1);
+                    }
+                } else {
+                    updateMessage('今天也是元气满满的一天呢！');
+                }
+            }, 8000); // 从3秒增加到8秒
         }
     }, [updateMessage, showSmartPageMessage]);
 
@@ -346,8 +428,13 @@ export default function LuoTianyiLive2D() {
         
         console.log('[LuoTianyiLive2D] 当前是博客文章页面，启用阅读进度检测:', currentPath);
 
+        let lastProgressMessage = 0; // 记录最后一条进度消息的时间，避免重复
         const handleScroll = () => {
+            const now = Date.now();
+            if (now - lastProgressMessage < 10000) return; // 10秒内不重复显示进度消息
+            
             detectReadingProgress();
+            lastProgressMessage = now;
         };
 
         window.addEventListener('scroll', handleScroll);
@@ -541,6 +628,10 @@ export default function LuoTianyiLive2D() {
     const loadLive2D = useCallback(async () => {
         console.log('[LuoTianyiLive2D] 开始加载Live2D资源...');
         try {
+            // 第一步：预加载资源
+            console.log('[LuoTianyiLive2D] 📦 开始预加载资源...');
+            await preloadLive2DResources();
+
             // 使用工具函数获取基础路径，确保在GitHub Pages环境下正确加载
             const basePath = getBasePath();
             
@@ -577,38 +668,67 @@ export default function LuoTianyiLive2D() {
             const messagePath = live2dPath; // 消息文件与live2d核心文件在同一目录
             
             console.log('[LuoTianyiLive2D] 开始加载Live2D脚本...');
-            await loadScript(`${live2dPath}/js/live2d.js`);
-            console.log('[LuoTianyiLive2D] live2d.js 加载成功');
             
-            await loadScript(`${messagePath}/js/message.js`);
-            console.log('[LuoTianyiLive2D] message.js 加载成功');
+            // 串行加载核心脚本，确保依赖顺序
+            const loadCoreScripts = async () => {
+                const scripts = [
+                    `${live2dPath}/js/live2d.js`,
+                    `${messagePath}/js/message.js`
+                ];
+                
+                console.log('[LuoTianyiLive2D] 串行加载核心脚本...');
+                // 先加载live2d.js，再加载message.js，确保依赖正确
+                for (const script of scripts) {
+                    try {
+                        await loadScript(script);
+                        console.log(`[LuoTianyiLive2D] 脚本加载完成: ${script}`);
+                    } catch (error) {
+                        console.error(`[LuoTianyiLive2D] 脚本加载失败: ${script}`, error);
+                        throw error;
+                    }
+                }
+                console.log('[LuoTianyiLive2D] 核心脚本加载完成');
+            };
+            
+            await loadCoreScripts();
 
-            // 等待DOM准备
+            // 等待DOM准备，使用更短的延迟
             setTimeout(() => {
                 if (canvasRef.current && window.loadlive2d) {
                     // 使用assetUtils中的getAssetPath函数处理模型文件路径
                     const modelPath = getAssetPath('/luotianyi-live2d-master/live2d/model/tianyi/model.json');
                     console.log('[LuoTianyiLive2D] 开始加载模型:', modelPath);
-                    (window as any).loadlive2d("live2d", modelPath);
                     
-                    // 设置消息显示
-                    setupMessageSystem(basePath);
-                    
-                    setIsLoading(false);
-                    console.log('[LuoTianyiLive2D] Live2D加载完成');
+                    try {
+                        (window as any).loadlive2d("live2d", modelPath);
+                        console.log('[LuoTianyiLive2D] 模型加载成功');
+                        
+                        // 设置消息显示
+                        setupMessageSystem(basePath);
+                        
+                        // 延迟隐藏加载状态，确保模型完全渲染
+                        setTimeout(() => {
+                            setIsLoading(false);
+                            console.log('[LuoTianyiLive2D] Live2D加载完成');
+                        }, 800);
+                    } catch (error) {
+                        console.error('[LuoTianyiLive2D] 模型加载失败:', error);
+                        setIsLoading(false);
+                    }
                 } else {
                     console.warn('[LuoTianyiLive2D] 模型加载条件不满足:', { 
                         hasCanvas: !!canvasRef.current, 
                         hasLoadLive2d: !!window.loadlive2d 
                     });
+                    setIsLoading(false);
                 }
-            }, 1000);
+            }, 300); // 进一步减少等待时间到300ms
 
         } catch (error) {
             console.error('[LuoTianyiLive2D] 加载Live2D失败:', error);
             setIsLoading(false);
         }
-    }, []);
+    }, [preloadLive2DResources]);
 
     // 主要的Live2D初始化useEffect
     useEffect(() => {
@@ -630,10 +750,35 @@ export default function LuoTianyiLive2D() {
         console.log('[LuoTianyiLive2D] 非移动设备, 开始加载Live2D...');
         setIsVisible(true);
 
+        // 使用更智能的加载策略
+        const initLive2D = () => {
+            // 确保页面完全加载后再初始化
+            if (document.readyState === 'complete') {
+                console.log('[LuoTianyiLive2D] 页面已完全加载，立即初始化');
+                loadLive2D();
+            } else if (document.readyState === 'interactive') {
+                // DOM已加载，但资源还在加载中
+                console.log('[LuoTianyiLive2D] DOM已加载，等待资源加载完成');
+                window.addEventListener('load', () => {
+                    setTimeout(() => {
+                        loadLive2D();
+                    }, 300); // 延迟300ms确保其他关键资源加载
+                });
+            } else {
+                // 页面还在加载中
+                console.log('[LuoTianyiLive2D] 页面加载中，等待DOMContentLoaded');
+                document.addEventListener('DOMContentLoaded', () => {
+                    setTimeout(() => {
+                        loadLive2D();
+                    }, 500); // 延迟500ms确保DOM完全就绪
+                });
+            }
+        };
+
         // 强制触发loadLive2D
         try {
             console.log('[LuoTianyiLive2D] 调用loadLive2D函数...');
-            loadLive2D();
+            initLive2D();
             console.log('[LuoTianyiLive2D] loadLive2D调用完成');
         } catch (error) {
             console.error('[LuoTianyiLive2D] loadLive2D failed:', error);
@@ -720,16 +865,20 @@ export default function LuoTianyiLive2D() {
                 customListenerCount: live2dEventEmitter.listenerCount('custom-message')
             });
             
-            // 显示欢迎消息，但不触发主题切换测试
-            // 确保只在第一次加载时显示欢迎消息
+            // 显示欢迎消息，但不触发主题切换测试 - 延迟更长时间，避免与页面加载消息冲突
             if (!(window as any).__luotianyiWelcomeShown) {
                 console.log(`[LuoTianyiLive2D] 显示欢迎消息`);
-                updateMessage('天依已上线！很高兴见到你～');
+                // 使用较低优先级，避免与页面相关消息冲突
+                if (typeof window !== 'undefined' && (window as any).live2dMessageManager) {
+                    (window as any).live2dMessageManager.showMessage('天依已上线！很高兴见到你～', 3000, 1);
+                } else {
+                    updateMessage('天依已上线！很高兴见到你～');
+                }
                 (window as any).__luotianyiWelcomeShown = true;
             } else {
                 console.log(`[LuoTianyiLive2D] 欢迎消息已显示过，跳过`);
             }
-        }, 2000);
+        }, 5000); // 增加到5秒延迟
         
         return () => {
             console.log(`[LuoTianyiLive2D] 取消订阅所有事件`);
@@ -919,46 +1068,94 @@ export default function LuoTianyiLive2D() {
     }
 
     return (
-        <div id="landlord" className={`landlord ${getCurrentThemeClass()}`}>
-            <div 
-                className={`message ${getCurrentThemeClass()}`} 
-                style={{ 
-                    opacity: messageOpacity,
-                    position: 'absolute',
-                    top: '-20px',
-                    left: '50px',
-                    display: message ? 'block' : 'none',
-                    transition: 'opacity 0.5s ease-in-out',
-                    background: 'rgba(102, 204, 255, 0.2)',
-                    padding: '7px',
-                    borderRadius: '12px',
-                    border: '1px solid rgba(102,204,255,.4)',
-                    boxShadow: '0 3px 15px 2px rgba(102,204,255,.4)',
-                    color: 'var(--aplayer-fg)',
-                    fontSize: '13px',
-                    maxWidth: '300px',
-                    wordWrap: 'break-word',
-                    zIndex: 10001 // 统一使用最高层级，避免被其他动画元素覆盖
-                }}
-            >
-                {message}
+        <>
+            <Live2DStyles />
+            <div id="landlord" className={`landlord ${getCurrentThemeClass()}`}>
+                {/* 加载进度指示器 - 取消阴影效果 */}
+                {isLoading && (
+                    <div 
+                        className={`loading-overlay ${getCurrentThemeClass()}`}
+                        style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            background: 'transparent', // 改为透明背景，取消阴影
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            borderRadius: '12px',
+                            zIndex: 10002
+                        }}
+                    >
+                        <div style={{
+                            textAlign: 'center',
+                            color: '#66ccff', // 使用主题色，提高可见性
+                            fontSize: '12px',
+                            background: 'rgba(255, 255, 255, 0.9)', // 添加轻微背景提高可读性
+                            padding: '10px',
+                            borderRadius: '8px',
+                            border: '1px solid rgba(102, 204, 255, 0.3)'
+                        }}>
+                            <div style={{
+                                width: '40px', // 减小加载动画大小
+                                height: '40px',
+                                border: '3px solid rgba(102, 204, 255, 0.3)',
+                                borderTop: '3px solid rgba(102, 204, 255, 1)',
+                                borderRadius: '50%',
+                                animation: 'spin 1s linear infinite',
+                                margin: '0 auto 6px'
+                            }}></div>
+                            <div>加载中... {loadProgress}%</div>
+                        </div>
+                    </div>
+                )}
+                
+                <div 
+                    className={`message ${getCurrentThemeClass()}`} 
+                    style={{ 
+                        opacity: messageOpacity,
+                        position: 'absolute',
+                        top: '-20px',
+                        left: '50px',
+                        display: message ? 'block' : 'none',
+                        transition: 'opacity 0.5s ease-in-out',
+                        background: 'rgba(102, 204, 255, 0.2)',
+                        padding: '7px',
+                        borderRadius: '12px',
+                        border: '1px solid rgba(102,204,255,.4)',
+                        boxShadow: '0 3px 15px 2px rgba(102,204,255,.4)',
+                        color: 'var(--aplayer-fg)',
+                        fontSize: '13px',
+                        maxWidth: '300px',
+                        wordWrap: 'break-word',
+                        zIndex: 10001 // 统一使用最高层级，避免被其他动画元素覆盖
+                    }}
+                >
+                    {message}
+                </div>
+                
+                <canvas 
+                    ref={canvasRef}
+                    id="live2d" 
+                    width="280" 
+                    height="250" 
+                    className="live2d"
+                    style={{
+                        opacity: isLoading ? 0.3 : 1,
+                        transition: 'opacity 0.3s ease-in-out'
+                    }}
+                />
+                
+                <div 
+                    className={`hide-button ${getCurrentThemeClass()}`}
+                    onClick={toggleVisibility}
+                >
+                    隐藏
+                </div>
             </div>
-            
-            <canvas 
-                ref={canvasRef}
-                id="live2d" 
-                width="280" 
-                height="250" 
-                className="live2d"
-            />
-            
-            <div 
-                className={`hide-button ${getCurrentThemeClass()}`}
-                onClick={toggleVisibility}
-            >
-                隐藏
-            </div>
-        </div>
+        </>
     );
 }
 
@@ -967,8 +1164,23 @@ declare global {
     interface Window {
         loadlive2d?: (canvasId: string, modelPath: string) => void;
         jQuery?: any;
+        $?: any;
         message_Path?: string;
         home_Path?: string;
         messageConfig?: any;
+        showMessage?: (msg: string, timeout?: number) => void;
+        live2dMessageManager?: any;
+        __luotianyiWelcomeShown?: boolean;
+        __lastThemeChangeTime?: number;
     }
 }
+
+// 添加CSS动画样式
+const Live2DStyles = () => (
+    <style jsx global>{`
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    `}</style>
+);

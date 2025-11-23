@@ -32,10 +32,20 @@ class Live2DMessageManager {
   showMessage(message: string, duration: number = 3000, priority: number = 1): void {
     if (typeof window === 'undefined') return;
 
-    // 防止重复消息和消息洪水
+    // 防止重复消息和消息洪水 - 增强防重复机制
     const now = Date.now();
-    if (message === this.lastMessage && now - this.lastMessageTime < this.MESSAGE_COOLDOWN) {
-      console.log('消息重复，跳过显示:', message);
+    const isSimilarMessage = this.isSimilarToLastMessage(message);
+    const timeSinceLastMessage = now - this.lastMessageTime;
+    
+    // 更严格的重复消息检测
+    if (isSimilarMessage && timeSinceLastMessage < this.MESSAGE_COOLDOWN * 2) {
+      console.log('相似消息跳过显示:', message);
+      return;
+    }
+    
+    // 防止消息洪水 - 限制短时间内消息数量
+    if (timeSinceLastMessage < 500 && priority < 3) {
+      console.log('消息过于频繁，跳过:', message);
       return;
     }
 
@@ -286,6 +296,37 @@ class Live2DMessageManager {
   clearMessageQueue(): void {
     this.messageQueue = [];
     console.log('消息队列已清空');
+  }
+
+  /**
+   * 检查消息是否与上一条消息相似
+   */
+  private isSimilarToLastMessage(message: string): boolean {
+    if (!this.lastMessage) return false;
+    
+    // 完全相同的消息
+    if (message === this.lastMessage) return true;
+    
+    // 检查是否是相似的问候语
+    const greetings = ['你好', '嗨', '哈喽', '欢迎', '天依'];
+    const isCurrentGreeting = greetings.some(greeting => message.includes(greeting));
+    const isLastGreeting = greetings.some(greeting => this.lastMessage.includes(greeting));
+    
+    if (isCurrentGreeting && isLastGreeting) {
+      return true;
+    }
+    
+    // 检查消息内容相似度（简单的关键词匹配）
+    const keywords = ['复制', '成功', '完成', '加载', '切换', '模式'];
+    const currentHasKeyword = keywords.some(keyword => message.includes(keyword));
+    const lastHasKeyword = keywords.some(keyword => this.lastMessage.includes(keyword));
+    
+    if (currentHasKeyword && lastHasKeyword) {
+      // 如果两条消息都包含相似的功能性关键词，认为是相似的
+      return true;
+    }
+    
+    return false;
   }
 
   /**
