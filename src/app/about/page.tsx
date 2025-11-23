@@ -20,6 +20,7 @@ import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 
 // 动态导入大型组件
 const LazyFriendsLink = lazy(() => import('@/components/FriendsLink'));
+const LazyRelatedLinks = lazy(() => import('@/components/RelatedLinks'));
 const LazyScrollToTop = lazy(() => import('@/components/ScrollToTop'));
 
 /**
@@ -527,8 +528,15 @@ export default function AboutPage() {
           <LazyFriendsLink />
         </Suspense>
 
-        {/* 底部装饰 */}
-        <div className="text-center mt-8">
+        {/* 相关链接模块 - 更紧凑的间距 */}
+        <div className="mt-4">
+          <Suspense fallback={<div className="h-24 bg-gray-200 dark:bg-gray-700 animate-pulse rounded-lg"></div>}>
+            <LazyRelatedLinks />
+          </Suspense>
+        </div>
+
+        {/* 底部装饰 - 减少间距 */}
+        <div className="text-center mt-4">
           <p className="text-gray-500 dark:text-gray-400 text-sm">
             &ldquo;这世界的浪漫有很多，孤独的人永远没有错&rdquo;
           </p>

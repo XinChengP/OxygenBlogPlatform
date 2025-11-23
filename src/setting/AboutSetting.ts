@@ -76,3 +76,49 @@ export const friendsLinks = [
     avatar: "/friendlink/Allenwdk.jpg"
   }
 ];
+
+//相关链接配置
+export const relatedLinks = [
+  {
+    name: "博客模版",
+    url: "https://github.com/seasalt-haiyan/OxygenBlogPlatform",
+    description: "本博客使用的模版",
+    icon: "template"
+  },
+  {
+    name: "Next.js",
+    url: "https://nextjs.org/",
+    description: "本站使用的框架",
+    icon: "nextjs"
+  },
+  {
+    name: "Live2D",
+    url: "https://github.com/unsignedzhang/luotianyi-live2d?tab=readme-ov-file",
+    description: "洛天依Live2D看板娘",
+    icon: "live2d"
+  },
+  {
+    name: "APlayer",
+    url: "https://github.com/DIYgod/APlayer",
+    description: "音乐播放器",
+    icon: "aplayer"
+  },
+  {
+    name: "Giscus",
+    url: "https://giscus.app/zh-CN",
+    description: "评论区/留言板系统",
+    icon: "giscus"
+  },
+  {
+    name: "Markdown编辑器",
+    url: "https://github.com/XinChengP/Markdown-Editor",
+    description: "本站使用的Markdown编辑器工具",
+    icon: "markdown"
+  },
+  {
+    name: "拼音转换器",
+    url: "https://github.com/XinChengP/Pinyin-converter",
+    description: "本站使用的拼音转换工具",
+    icon: "pinyin"
+  }
+];

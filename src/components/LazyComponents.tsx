@@ -74,3 +74,11 @@ export const LazyTimeline = dynamic(
     ssr: false,
   }
 );
+
+export const LazyRelatedLinks = dynamic(
+  () => import('@/components/RelatedLinks').then(mod => mod.default),
+  {
+    loading: () => <div className="animate-pulse bg-gray-200 dark:bg-gray-700 h-32 rounded-lg" />,
+    ssr: false,
+  }
+);

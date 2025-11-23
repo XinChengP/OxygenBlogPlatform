@@ -26,50 +26,6 @@ export default function NotFound() {
   useEffect(() => {
     setMounted(true);
     
-    // 确保视频自动播放
-    const ensureVideoAutoplay = () => {
-      const video = document.querySelector('video');
-      if (video) {
-        // 尝试多种方式确保视频播放
-        const playVideo = async () => {
-          try {
-            // 方法1: 直接播放
-            await video.play();
-            console.log('✅ 视频自动播放成功');
-          } catch (error) {
-            console.log('🔄 尝试备用播放方法:', error);
-            try {
-              // 方法2: 静音后播放
-              video.muted = true;
-              await video.play();
-              console.log('✅ 静音播放成功');
-            } catch (error2) {
-              console.log('🔄 尝试最终播放方法:', error2);
-              // 方法3: 用户交互后播放
-              const playOnInteraction = () => {
-                video.play().catch(() => {});
-                document.removeEventListener('click', playOnInteraction);
-                document.removeEventListener('touchstart', playOnInteraction);
-              };
-              document.addEventListener('click', playOnInteraction);
-              document.addEventListener('touchstart', playOnInteraction);
-            }
-          }
-        };
-        
-        // 等待视频可以播放时尝试播放
-        video.addEventListener('canplay', playVideo, { once: true });
-        
-        // 如果视频已经准备好，立即播放
-        if (video.readyState >= 3) {
-          playVideo();
-        }
-      }
-    };
-    
-    // 延迟执行以确保DOM完全加载
-    setTimeout(ensureVideoAutoplay, 100);
-    
     // 在404页面隐藏Live2D
     console.log('🚫 NotFound页面: 隐藏Live2D');
     
@@ -167,12 +123,10 @@ export default function NotFound() {
       {/* 视频背景 - 确保在静态构建中包含 */}
       <video
           className="absolute inset-0 w-full h-full object-cover"
-          autoPlay
+          autoPlay={mounted === true}
           muted
           loop
           playsInline
-          disablePictureInPicture
-          preload="auto"
           onLoadStart={() => console.log('Video: onLoadStart')}
           onCanPlay={() => console.log('Video: onCanPlay')}
           onError={(e) => console.log('Video: onError', e)}

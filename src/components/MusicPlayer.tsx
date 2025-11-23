@@ -273,6 +273,68 @@ export default function MusicPlayer({
       globalManager.setPlayer(ap);
       (window as any).globalAPlayer = ap;
 
+      // 添加歌手名称高亮功能（只高亮特定歌手名字）
+      const highlightArtistNames = () => {
+        const artistElements = document.querySelectorAll('.aplayer-list-author');
+        artistElements.forEach(element => {
+          const text = element.textContent || '';
+          let highlightedText = text;
+          
+          // 高亮洛天依
+          if (text.includes('洛天依')) {
+            highlightedText = highlightedText.replace(/洛天依/g, '<span style="color: #66ccff">洛天依</span>');
+          }
+          
+          // 高亮乐正绫
+          if (text.includes('乐正绫')) {
+            highlightedText = highlightedText.replace(/乐正绫/g, '<span style="color: #ee0000">乐正绫</span>');
+          }
+          
+          // 高亮言和
+          if (text.includes('言和')) {
+            highlightedText = highlightedText.replace(/言和/g, '<span style="color: #00ffcc">言和</span>');
+          }
+          
+          // 高亮星尘（第一个字9999ff，第二个字ffff00）
+          if (text.includes('星尘')) {
+            // 将"星尘"拆分为"星"和"尘"，分别设置不同颜色
+            highlightedText = highlightedText.replace(/星尘/g, '<span style="color: #9999ff">星</span><span style="color: #ffff00">尘</span>');
+          }
+          
+          if (highlightedText !== text) {
+            element.innerHTML = highlightedText;
+          }
+        });
+      };
+
+      // 监听列表切换事件，重新应用高亮
+      ap.on('listswitch', () => {
+        setTimeout(highlightArtistNames, 100);
+      });
+
+      // 重写列表显示方法，确保高亮效果
+      const originalListShow = ap.list.show;
+      ap.list.show = function() {
+        originalListShow.call(this);
+        setTimeout(highlightArtistNames, 100);
+      };
+
+      // 初始应用高亮
+      setTimeout(highlightArtistNames, 200);
+
+      // 默认隐藏歌词 - 使用更可靠的方法
+      setTimeout(() => {
+        if (ap.lrc) {
+          ap.lrc.hide();
+          // 确保歌词元素被正确隐藏
+          const lrcElement = document.querySelector('.aplayer-lrc');
+          if (lrcElement) {
+            lrcElement.classList.add('aplayer-lrc-hide');
+            lrcElement.classList.remove('aplayer-lrc-show');
+          }
+        }
+      }, 100);
+
       setIsInitialized(true);
 
       // 设置页面切换监听器，确保播放器在页面切换时保持状态

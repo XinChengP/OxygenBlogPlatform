@@ -14,16 +14,16 @@
 
 /* 深色模式 */
 .dark .aplayer {
-  --aplayer-bg: #1a1a1a;
-  --aplayer-fg: #ffffff;
-  --aplayer-border: #333333;
-  --aplayer-highlight: #00d4ff;
-  --aplayer-shadow: rgba(0, 0, 0, 0.5);
-  --aplayer-info-fg: #b0b0b0;
-  --aplayer-button-fg: #e0e0e0;
-  --aplayer-button-bg-hover: #2a2a2a;
-  --aplayer-disabled: #666666;
-  --aplayer-muted-bg: #252525;
+  --aplayer-bg: #0f172a;
+  --aplayer-fg: #3c3d3f;
+  --aplayer-border: #1e293b;
+  --aplayer-highlight: #60a5fa;
+  --aplayer-shadow: rgba(0, 0, 0, 0.7);
+  --aplayer-info-fg: #94a3b8;
+  --aplayer-button-fg: #cbd5e1;
+  --aplayer-button-bg-hover: #1e293b;
+  --aplayer-disabled: #475569;
+  --aplayer-muted-bg: #1e293b;
 }
 
 /* APlayer 基础样式 */
@@ -128,7 +128,22 @@
 }
 
 .dark .aplayer-list::-webkit-scrollbar-thumb:hover {
-  background: #888;
+  background: #555555;
+}
+
+/* 歌词显示控制 */
+.aplayer-lrc.aplayer-lrc-hide {
+  display: none !important;
+}
+
+/* 默认隐藏歌词 */
+.aplayer .aplayer-lrc {
+  display: none;
+}
+
+/* 当需要显示歌词时 */
+.aplayer .aplayer-lrc.aplayer-lrc-show {
+  display: block;
 }
 
 /* 深色模式下的Firefox滚动条 */
@@ -229,21 +244,21 @@
 
 /* 深色模式下的列表增强效果 */
 .dark .aplayer .aplayer-list {
-  background: linear-gradient(135deg, #1a1a1a, #1f1f1f);
+  background: linear-gradient(135deg, #0f172a, #1e293b);
 }
 
 .dark .aplayer .aplayer-list .aplayer-list-item:hover {
-  background: linear-gradient(135deg, rgba(0, 212, 255, 0.15), rgba(0, 212, 255, 0.08));
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.6));
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 .dark .aplayer .aplayer-list .aplayer-list-light {
-  background: linear-gradient(135deg, rgba(0, 212, 255, 0.25), rgba(0, 212, 255, 0.15));
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.2), rgba(59, 130, 246, 0.1));
 }
 
 /* 进度条样式增强 */
 .aplayer .aplayer-bar {
-  background: rgba(0, 212, 255, 0.2);
+  background: rgba(30, 41, 59, 0.4);
   height: 4px;
   border-radius: 2px;
   position: relative;
@@ -251,14 +266,14 @@
 }
 
 .aplayer .aplayer-bar .aplayer-bar-loaded {
-  background: linear-gradient(90deg, rgba(0, 212, 255, 0.3), rgba(0, 212, 255, 0.1));
+  background: linear-gradient(90deg, rgba(96, 165, 250, 0.3), rgba(59, 130, 246, 0.1));
   height: 100%;
   border-radius: 2px;
   transition: all 0.3s ease;
 }
 
 .aplayer .aplayer-bar .aplayer-bar-played {
-  background: linear-gradient(90deg, var(--aplayer-highlight), #00a8cc);
+  background: linear-gradient(90deg, var(--aplayer-highlight), #3b82f6);
   height: 100%;
   border-radius: 2px;
   position: relative;
@@ -275,13 +290,13 @@
   top: 50%;
   transform: translate(-50%, -50%);
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 212, 255, 0.4);
+  box-shadow: 0 2px 8px rgba(96, 165, 250, 0.4);
   transition: all 0.2s ease;
 }
 
 .aplayer .aplayer-bar .aplayer-bar-handle:hover {
   transform: translate(-50%, -50%) scale(1.2);
-  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.6);
+  box-shadow: 0 4px 12px rgba(96, 165, 250, 0.6);
 }
 
 .aplayer .aplayer-bar .aplayer-bar-handle:active {
@@ -335,12 +350,12 @@
 /* 深色模式下的特殊按钮效果 */
 .dark .aplayer .aplayer-icon.aplayer-icon-play,
 .dark .aplayer .aplayer-icon.aplayer-icon-pause {
-  box-shadow: 0 2px 8px rgba(0, 212, 255, 0.4);
+  box-shadow: 0 2px 8px rgba(96, 165, 250, 0.4);
 }
 
 .dark .aplayer .aplayer-icon.aplayer-icon-play:hover,
 .dark .aplayer .aplayer-icon.aplayer-icon-pause:hover {
-  box-shadow: 0 4px 16px rgba(0, 212, 255, 0.6);
+  box-shadow: 0 4px 16px rgba(96, 165, 250, 0.6);
 }
 
 /* 响应式设计 - 确保播放器在移动设备上也能正常展开 */
@@ -381,4 +396,51 @@
 .aplayer .aplayer-list .aplayer-list-item {
   padding: 10px 12px;
   margin: 2px 8px;
+}
+
+/* 歌手名称高亮样式 */
+.aplayer-list-author span[style*="color: #66ccff"] {
+  color: #66ccff !important;
+}
+
+.aplayer-list-author span[style*="color: #ee0000"] {
+  color: #ee0000 !important;
+}
+
+.aplayer-list-author span[style*="color: #00ffcc"] {
+  color: #00ffcc !important;
+}
+
+.aplayer-list-author span[style*="color: #9999ff"] {
+  color: #9999ff !important;
+}
+
+.aplayer-list-author span[style*="color: #ffff00"] {
+  color: #ffff00 !important;
+}
+
+/* 深色模式下的歌手名称高亮样式 - 确保颜色不变 */
+.dark .aplayer-list-author span[style*="color: #66ccff"] {
+  color: #66ccff !important;
+  opacity: 1 !important;
+}
+
+.dark .aplayer-list-author span[style*="color: #ee0000"] {
+  color: #ee0000 !important;
+  opacity: 1 !important;
+}
+
+.dark .aplayer-list-author span[style*="color: #00ffcc"] {
+  color: #00ffcc !important;
+  opacity: 1 !important;
+}
+
+.dark .aplayer-list-author span[style*="color: #9999ff"] {
+  color: #9999ff !important;
+  opacity: 1 !important;
+}
+
+.dark .aplayer-list-author span[style*="color: #ffff00"] {
+  color: #ffff00 !important;
+  opacity: 1 !important;
 }

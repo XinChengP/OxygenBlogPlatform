@@ -149,6 +149,63 @@ class GlobalMusicPlayerManager {
       return null;
     }
   }
+
+  // 控制歌词显示
+  showLyrics() {
+    if (this.player && this.player.lrc) {
+      this.player.lrc.show();
+      // 同时更新CSS类
+      const lrcElement = document.querySelector('.aplayer-lrc');
+      if (lrcElement) {
+        lrcElement.classList.remove('aplayer-lrc-hide');
+        lrcElement.classList.add('aplayer-lrc-show');
+      }
+    }
+  }
+
+  // 隐藏歌词
+  hideLyrics() {
+    if (this.player && this.player.lrc) {
+      this.player.lrc.hide();
+      // 同时更新CSS类
+      const lrcElement = document.querySelector('.aplayer-lrc');
+      if (lrcElement) {
+        lrcElement.classList.add('aplayer-lrc-hide');
+        lrcElement.classList.remove('aplayer-lrc-show');
+      }
+    }
+  }
+
+  // 切换歌词显示状态
+  toggleLyrics() {
+    if (this.player && this.player.lrc) {
+      this.player.lrc.toggle();
+      // 同时更新CSS类
+      const lrcElement = document.querySelector('.aplayer-lrc');
+      if (lrcElement) {
+        if (lrcElement.classList.contains('aplayer-lrc-hide')) {
+          lrcElement.classList.remove('aplayer-lrc-hide');
+          lrcElement.classList.add('aplayer-lrc-show');
+        } else {
+          lrcElement.classList.add('aplayer-lrc-hide');
+          lrcElement.classList.remove('aplayer-lrc-show');
+        }
+      }
+    }
+  }
+
+  // 获取歌词当前显示状态
+  isLyricsVisible(): boolean {
+    if (this.player && this.player.lrc) {
+      // APlayer的歌词组件有一个隐藏的样式类来判断是否显示
+      const lrcElement = document.querySelector('.aplayer-lrc');
+      if (lrcElement) {
+        return !lrcElement.classList.contains('aplayer-lrc-hide') && 
+               lrcElement.classList.contains('aplayer-lrc-show');
+      }
+    }
+    return false;
+  }
 }
 
 export default GlobalMusicPlayerManager;
