@@ -38,13 +38,6 @@ coverImage: "/Blogabout/Xingqiubei/cover.jpg"
 曲绘：Ar極光，舟屿
 映像：纸鸢
 
-<div style="text-align: center; margin: 20px 0;">
-  <img src="/Blogabout/Xingqiubei/picture.jpg" alt="曲绘1" style="max-width: 100%; height: auto; border-radius: 8px;">
-</div>
-<div style="text-align: center; margin: 20px 0;">
-  <img src="/Blogabout/Xingqiubei/picture2.jpg" alt="曲绘2" style="max-width: 100%; height: auto; border-radius: 8px;">
-</div>
-
 ## 简谱
 > 扒谱：歆橙
 <div style="text-align: center; margin: 20px 0;">
@@ -60,4 +53,15 @@ PS：小白第二次扒谱，还有很多地方需要完善，欢迎各位大佬
 ## 资源下载
 
 - **VSQX工程文件**：[点击下载](https://www.vsqx.top/project/vn14261)
-- **蓝奏云资源包**：[点击下载](https://wwtx.lanzout.com/iVLc13c2d32b) （密码：<span id="password-1115" style="cursor: pointer; background-color: var(--password-bg, transparent); color: var(--password-text, inherit); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--password-border, transparent); transition: all 0.2s ease;" data-password="1115">1115</span>） 
+- **蓝奏云资源包**：[点击下载](https://wwtx.lanzout.com/iVLc13c2d32b) （密码：<span id="password-1115" style="cursor: pointer; background-color: var(--password-bg, transparent); color: var(--password-text, inherit); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--password-border, transparent); transition: all 0.2s ease;" data-password="1115">1115</span>）
+
+---
+
+## 曲绘展示
+
+<div style="text-align: center; margin: 20px 0;">
+  <img src="/Blogabout/Xingqiubei/picture.jpg" alt="曲绘1" style="max-width: 100%; height: auto; border-radius: 8px;">
+</div>
+<div style="text-align: center; margin: 20px 0;">
+  <img src="/Blogabout/Xingqiubei/picture2.jpg" alt="曲绘2" style="max-width: 100%; height: auto; border-radius: 8px;">
+</div> 

@@ -16,7 +16,7 @@
 
 .message {
     opacity: 0;
-    width: 300px;
+    width: 250px; /* 从300px减小到250px，避免遮挡右下角组件 */
     height: auto;
     margin: auto;
     padding: 7px;

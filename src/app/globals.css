@@ -327,7 +327,7 @@ pre code {
 
 .message {
     opacity: 1;
-    width: 300px;
+    width: 250px; /* 从300px减小到250px，避免遮挡右下角组件 */
     height: auto;
     margin: auto;
     padding: 7px;
@@ -431,7 +431,7 @@ pre code {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   font-size: 14px;
   line-height: 1.4;
-  max-width: 300px;
+  max-width: 250px; /* 从300px减小到250px，避免遮挡右下角组件 */
   opacity: 0;
   transform: translateY(-10px);
   transition: all 0.3s ease;

@@ -2,6 +2,11 @@
 
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { useTheme } from 'next-themes';
+import { 
+  getMusicPlayerVisibility, 
+  setMusicPlayerVisibility, 
+  onMusicPlayerVisibilityChange 
+} from '@/utils/musicPlayerVisibility';
 // 音乐播放器相关组件已隐藏 - 清理导入
 // import MusicPlayer from '@/components/MusicPlayer';
 // import MusicConfig from '@/components/MusicConfig';
@@ -14,6 +19,7 @@ export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [isDark, setIsDark] = useState(false);
+  const [musicPlayerVisible, setMusicPlayerVisible] = useState(true);
   // 音乐播放器相关状态已完全移除
   // const [playlists, setPlaylists] = useState<Playlist[]>([]);
   // const [showMusicConfig, setShowMusicConfig] = useState(false);
@@ -26,6 +32,17 @@ export default function SettingsPage() {
   useEffect(() => {
     setMounted(true);
     setIsDark(theme === 'dark');
+    // 初始化音乐播放器显示状态
+    setMusicPlayerVisible(getMusicPlayerVisibility());
+    
+    // 监听音乐播放器显示状态变化
+    const unsubscribe = onMusicPlayerVisibilityChange((visible) => {
+      setMusicPlayerVisible(visible);
+    });
+    
+    return () => {
+      unsubscribe();
+    };
   }, [theme]);
 
   // 音乐播放器相关函数已移除
@@ -33,6 +50,13 @@ export default function SettingsPage() {
   //   setPlaylists([playlist]);
   //   setShowMusicConfig(false);
   // };
+
+  // 处理音乐播放器显示状态切换
+  const handleMusicPlayerToggle = () => {
+    const newVisibility = !musicPlayerVisible;
+    setMusicPlayerVisibility(newVisibility);
+    setMusicPlayerVisible(newVisibility);
+  };
 
   if (!mounted) {
     return null;
@@ -191,7 +215,83 @@ export default function SettingsPage() {
               </div>
             </div>
             
-            {/* 音乐播放器区块 - 已完全隐藏 */}
+            {/* 音乐播放器显示控制区块 */}
+            <div className="mb-12">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+                <div className="flex items-center gap-3">
+                  <h2 className="text-2xl font-bold" style={{ color: isDark ? '#f1f5f9' : '#1e293b' }}>
+                    音乐播放器
+                  </h2>
+                  <span 
+                    className="px-3 py-1 rounded-full text-sm font-medium"
+                    style={{
+                      backgroundColor: musicPlayerVisible 
+                        ? (isDark ? 'rgba(34, 197, 94, 0.2)' : 'rgba(34, 197, 94, 0.1)')
+                        : (isDark ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.1)'),
+                      color: musicPlayerVisible 
+                        ? (isDark ? '#86efac' : '#16a34a')
+                        : (isDark ? '#fca5a5' : '#dc2626')
+                    }}
+                  >
+                    {musicPlayerVisible ? '显示中' : '已隐藏'}
+                  </span>
+                </div>
+                
+                {/* 音乐播放器开关 */}
+                <button
+                  onClick={handleMusicPlayerToggle}
+                  className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                    musicPlayerVisible
+                      ? 'bg-blue-600'
+                      : isDark
+                        ? 'bg-gray-600'
+                        : 'bg-gray-200'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
+                      musicPlayerVisible ? 'translate-x-7' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+              
+              <div className={`p-6 rounded-lg ${
+                isDark ? 'bg-gray-700/50' : 'bg-gray-100/50'
+              }`}>
+                <p className={`text-sm mb-4 ${
+                  isDark ? 'text-gray-300' : 'text-gray-600'
+                }`}>
+                  控制右下角音乐播放器的显示状态。隐藏后，音乐播放将在后台继续运行。
+                </p>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-3 h-3 rounded-full ${
+                      musicPlayerVisible ? 'bg-green-500' : 'bg-gray-400'
+                    }`}></div>
+                    <span className={`text-sm ${
+                      isDark ? 'text-gray-300' : 'text-gray-600'
+                    }`}>
+                      {musicPlayerVisible ? '播放器可见' : '播放器隐藏'}
+                    </span>
+                  </div>
+                  {musicPlayerVisible && (
+                    <div className="flex items-center gap-2">
+                      <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 11-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.415z" clipRule="evenodd" />
+                      </svg>
+                      <span className={`text-sm ${
+                        isDark ? 'text-gray-300' : 'text-gray-600'
+                      }`}>
+                        正在播放洛天依歌曲
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            {/* 音乐播放器配置区块 - 已完全隐藏 */}
             {/* <div className="mb-12">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
                 <div className="flex items-center gap-3">

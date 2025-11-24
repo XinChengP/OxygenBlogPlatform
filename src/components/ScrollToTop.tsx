@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 import Image from 'next/image';
-import { ChevronUpIcon, ChevronDownIcon, SunIcon, MoonIcon, AdjustmentsHorizontalIcon } from '@heroicons/react/24/outline';
+import { ChevronUpIcon, ChevronDownIcon, SunIcon, MoonIcon, AdjustmentsHorizontalIcon, MusicalNoteIcon } from '@heroicons/react/24/outline';
 
 import { getAssetPath } from '../utils/assetUtils';
+import { getMusicPlayerVisibility, setMusicPlayerVisibility, onMusicPlayerVisibilityChange } from '@/utils/musicPlayerVisibility';
 
 /**
  * 页面导航组件
@@ -25,7 +26,7 @@ export default function ScrollToTop() {
   const [isAtBottom, setIsAtBottom] = useState(false);
   const [isAtTop, setIsAtTop] = useState(true);
   const [showThemeButton, setShowThemeButton] = useState(false);
-  // 相关状态和效果已完全移除 - 音乐播放器已隐藏
+  const [musicPlayerVisible, setMusicPlayerVisible] = useState(getMusicPlayerVisibility());
 
   // 监听滚动事件
   useEffect(() => {
@@ -55,6 +56,17 @@ export default function ScrollToTop() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // 监听音乐播放器显示状态变化
+  useEffect(() => {
+    const unsubscribe = onMusicPlayerVisibilityChange((visible) => {
+      setMusicPlayerVisible(visible);
+    });
+    
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
   // 滚动到顶部
   const scrollToTop = () => {
     window.scrollTo({
@@ -81,6 +93,13 @@ export default function ScrollToTop() {
     setShowThemeButton(!showThemeButton);
   };
 
+  // 切换音乐播放器显示状态
+  const toggleMusicPlayer = () => {
+    const newVisibility = !musicPlayerVisible;
+    setMusicPlayerVisibility(newVisibility);
+    setMusicPlayerVisible(newVisibility);
+  };
+
   return (
     <div className={`fixed bottom-6 z-50 transition-all duration-300 ${isAtTop ? 'right-[-80px]' : 'right-6'}`}>
       {/* 下一首按钮 - 已完全隐藏 */}
@@ -105,6 +124,24 @@ export default function ScrollToTop() {
       )} */}
       
       <div className="flex flex-col space-y-2">
+        {/* 音乐播放器控制按钮 - 条件显示，在主题切换按钮上方 */}
+        {showThemeButton && (
+          <button
+            onClick={toggleMusicPlayer}
+            className={`p-3 ${musicPlayerVisible ? 'bg-primary text-primary-foreground hover:bg-primary/90' : theme === 'dark' ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'} rounded-lg shadow-lg transition-all duration-300 transform hover:scale-110 relative animate-[fadeIn_0.2s_ease-in-out]`}
+            aria-label={musicPlayerVisible ? "隐藏音乐播放器" : "显示音乐播放器"}
+            title={musicPlayerVisible ? "隐藏音乐播放器" : "显示音乐播放器"}
+            style={{ animation: 'fadeIn 0.2s ease-in-out' }}
+          >
+            <MusicalNoteIcon className={`h-5 w-5 ${!musicPlayerVisible ? 'opacity-50' : ''}`} />
+            {!musicPlayerVisible && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className={`w-6 h-0.5 ${theme === 'dark' ? 'bg-gray-400' : 'bg-gray-600'} transform rotate-45`}></div>
+              </div>
+            )}
+          </button>
+        )}
+
         {/* 主题切换按钮 - 条件显示 */}
         {showThemeButton && (
           <button

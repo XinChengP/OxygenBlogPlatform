@@ -153,8 +153,13 @@ export class AdvancedScrollManager {
     this.navigationHistory.push(this.currentPath);
     this.currentPath = newPath;
     
-    // 添加页面过渡效果
-    document.documentElement.classList.add('page-transitioning');
+    // 检查音乐播放器是否正在播放
+    const isMusicPlaying = (window as any).globalAPlayer && !(window as any).globalAPlayer.paused;
+    
+    if (!isMusicPlaying) {
+      // 只有在音乐未播放时才添加页面过渡效果
+      document.documentElement.classList.add('page-transitioning');
+    }
     
     // 导航完成后恢复滚动位置
     setTimeout(() => {

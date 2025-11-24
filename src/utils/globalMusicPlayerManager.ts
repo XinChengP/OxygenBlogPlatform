@@ -32,10 +32,11 @@ class GlobalMusicPlayerManager {
     // 监听页面可见性变化
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'hidden') {
-        this.isPageTransitioning = true;
+        // 只有在页面真正隐藏（不是路由切换）时才保存状态
         this.savePlayState();
+        // 不设置isPageTransitioning，避免影响音频播放
       } else {
-        // 延迟重置状态，确保页面完全加载
+        // 页面重新可见时，延迟重置状态
         setTimeout(() => {
           this.isPageTransitioning = false;
         }, 100);

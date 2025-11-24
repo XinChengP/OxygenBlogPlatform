@@ -340,7 +340,7 @@ export default function MusicPlayer({
       // 设置页面切换监听器，确保播放器在页面切换时保持状态
       const handlePageVisibilityChange = () => {
         if (document.visibilityState === 'hidden') {
-          // 页面隐藏时保存状态
+          // 页面隐藏时保存状态，但不暂停播放
           globalManager.savePlayState();
         }
       };
