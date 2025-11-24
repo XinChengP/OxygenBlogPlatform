@@ -36,7 +36,7 @@ export default function PinyinConverter() {
   const [outputText, setOutputText] = useState('');
   const [detailedResults, setDetailedResults] = useState<DetailedResult[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [pinyinData, setPinyinData] = useState<any>(null);
+  const [pinyinConverter, setPinyinConverter] = useState<any>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editedOutput, setEditedOutput] = useState('');// 多音字选择状态
   const [heteronymSelections, setHeteronymSelections] = useState<Record<string, number>>({});
@@ -71,48 +71,48 @@ export default function PinyinConverter() {
     setMounted(true);
   }, []);
 
-  // 加载拼音数据
+  // 加载拼音转换器
   useEffect(() => {
-    const loadPinyinData = async () => {
+    const loadPinyinConverter = async () => {
       try {
-        const response = await fetch(getAssetPath('/tools/pinyin-data/pinyin.txt'));
-        const text = await response.text();
+        // 使用script标签动态加载库
+        const script = document.createElement('script');
+        script.src = '/tools/pinyin-converter.esm.js';
+        script.type = 'module';
         
-        // 解析拼音数据
-        const data = new Map();
-        text.split(/\r?\n/).forEach(line => {
-          // 跳过注释行
-          if (line.startsWith('#') || !line.trim()) return;
-          
-          // 处理 Unicode 编码格式: U+3007: líng,yuán,xīng
-          const unicodeMatch = line.match(/U\+([0-9A-Fa-f]+):\s*([^#]+)/);
-          if (unicodeMatch) {
-            const unicodeCode = unicodeMatch[1];
-            const pinyinPart = unicodeMatch[2].trim();
-            
-            // 将 Unicode 编码转换为字符
-            const char = String.fromCodePoint(parseInt(unicodeCode, 16));
-            const pinyins = pinyinPart.split(',').map(p => p.trim());
-            
-            data.set(char, pinyins);
-          } else {
-            // 处理简单格式: 字符:拼音
-            const [char, pinyin] = line.split(':');
-            if (char && pinyin) {
-              data.set(char, pinyin.split(',').map(p => p.trim()));
+        script.onload = async () => {
+          try {
+            // 全局变量应该已经可用
+            const pinyinLib = (window as any).PinyinConverter;
+            if (pinyinLib && pinyinLib.getPinyinConverter) {
+              const converter = await pinyinLib.getPinyinConverter();
+              setPinyinConverter(converter);
+            } else {
+              throw new Error('PinyinConverter not found in window object');
             }
+          } catch (error) {
+            console.error('初始化拼音转换器失败:', error);
           }
-        });
+          setIsLoading(false);
+        };
         
-        setPinyinData(data);
-        setIsLoading(false);
+        script.onerror = () => {
+          console.error('加载拼音转换器脚本失败');
+          setIsLoading(false);
+        };
+        
+        document.head.appendChild(script);
+        
+        return () => {
+          document.head.removeChild(script);
+        };
       } catch (error) {
-        console.error('加载拼音数据失败:', error);
+        console.error('加载拼音转换器失败:', error);
         setIsLoading(false);
       }
     };
 
-    loadPinyinData();
+    loadPinyinConverter();
   }, []);
 
   // 符号声调转数字声调 - 数字放在拼音后面
@@ -154,160 +154,103 @@ export default function PinyinConverter() {
     return cleanPinyin.charAt(0).toUpperCase();
   }, []);
 
-  // 转换拼音
-  const convertToPinyin = useCallback((text: string, options: PinyinOptions) => {
-    if (!pinyinData || !text) return { text: '', detailed: [] };
+  // 转换拼音 - 使用拼音转换器库
+  const convertToPinyin = useCallback(async (text: string, options: PinyinOptions) => {
+    if (!pinyinConverter || !text) return { text: '', detailed: [] };
 
-    const detailedResults: DetailedResult[] = [];
-    const result: string[] = [];
-    let i = 0;
-
-    while (i < text.length) {
-      const char = text[i];
+    try {
+      // 使用拼音转换器库进行转换
+      const converterOptions = {
+        toneStyle: options.toneStyle,
+        outputFormat: options.outputFormat,
+        separator: options.separator,
+        nonChinese: options.nonChinese,
+        replaceChar: options.replaceChar,
+        lowercase: options.lowercase,
+        heteronym: true // 启用多音字支持
+      };
       
-      // 处理非中文字符和特殊符号
-      if (!/[\u4e00-\u9fa5]/.test(char)) {
-        // 收集连续的非中文字符
-        let nonChineseSegment = '';
-        let j = i;
-        
-        while (j < text.length && !/[\u4e00-\u9fa5]/.test(text[j])) {
-          nonChineseSegment += text[j];
-          j++;
+      // 获取详细转换结果
+      const detailedResults = pinyinConverter.convert(text, converterOptions);
+      
+      // 应用用户的多音字选择
+      const processedResults = detailedResults.map((result: any, index: number) => {
+        if (result.isHeteronym && result.pinyin.length > 1) {
+          // 检查是否有用户选择的多音字
+          const charKey = `${result.origin}_${index}`;
+          const userSelection = heteronymSelections[charKey];
+          
+          if (userSelection !== undefined && userSelection < result.pinyin.length) {
+            // 使用用户选择的读音
+            const selectedPinyin = result.pinyin[userSelection];
+            
+            // 根据选项处理选中的拼音
+            let processedPinyin = selectedPinyin;
+            
+            // 处理声调
+            if (options.toneStyle === 'none') {
+              processedPinyin = processedPinyin.replace(/[āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]/g, (match: string) => {
+                const toneMap: Record<string, string> = { 
+                  'ā': 'a', 'á': 'a', 'ǎ': 'a', 'à': 'a', 
+                  'ē': 'e', 'é': 'e', 'ě': 'e', 'è': 'e', 
+                  'ī': 'i', 'í': 'i', 'ǐ': 'i', 'ì': 'i', 
+                  'ō': 'o', 'ó': 'o', 'ǒ': 'o', 'ò': 'o', 
+                  'ū': 'u', 'ú': 'u', 'ǔ': 'u', 'ù': 'u', 
+                  'ǖ': 'ü', 'ǘ': 'ü', 'ǚ': 'ü', 'ǜ': 'ü' 
+                };
+                return toneMap[match] || match;
+              });
+            } else if (options.toneStyle === 'number') {
+              processedPinyin = convertToneMarkToNumber(selectedPinyin);
+            }
+            
+            // 处理大小写
+            if (options.lowercase) {
+              processedPinyin = processedPinyin.toLowerCase();
+            }
+            
+            // 处理输出格式
+            let finalOutput = processedPinyin;
+            if (options.outputFormat === 'initials') {
+              finalOutput = getPinyinInitials(processedPinyin);
+            } else if (options.outputFormat === 'both') {
+              const initials = getPinyinInitials(processedPinyin);
+              finalOutput = `${processedPinyin}(${initials})`;
+            }
+            
+            return {
+              ...result,
+              pinyin: [finalOutput], // 使用处理后的拼音
+              selectedPinyinIndex: userSelection // 记录选择的索引
+            };
+          }
         }
         
-        // 检查整个非中文字符段是否包含标点符号
-      const hasPunctuation = /[，。！？、；：""''【】《》（）〈〉「」『』〔〕［］｛｝]/g.test(nonChineseSegment);
-      const hasCJKSymbol = /[\u3000-\u303F]/g.test(nonChineseSegment);
-      const hasSpecialSymbol = nonChineseSegment.includes('〇');
-      
-      // 处理非中文字符
-      let processedSegment = '';
-      if (hasCJKSymbol || hasSpecialSymbol || hasPunctuation) {
-        // 这些符号应该按照非中文字符处理
-        switch (options.nonChinese) {
-          case 'keep':
-            processedSegment = nonChineseSegment;
-            break;
-          case 'remove':
-            processedSegment = '';
-            break;
-          case 'replace':
-            const replaceChar = options.replaceChar || '';
-            processedSegment = replaceChar.repeat(nonChineseSegment.length);
-            break;
-        }
-      } else {
-        // 其他非中文字符（如英文字母、数字等）
-        switch (options.nonChinese) {
-          case 'keep':
-            processedSegment = nonChineseSegment;
-            break;
-          case 'remove':
-            processedSegment = '';
-            break;
-          case 'replace':
-            const replaceChar = options.replaceChar || '';
-            processedSegment = replaceChar.repeat(nonChineseSegment.length);
-            break;
-        }
-      }
-      
-      // 添加到结果
-      if (processedSegment) {
-        result.push(processedSegment);
-      }
-      
-      // 添加到详细结果 - 记录非中文字符信息
-      detailedResults.push({
-        origin: nonChineseSegment,
-        pinyin: [processedSegment || ''], // 使用处理后的结果作为拼音
-        isHeteronym: false, // 非中文字符不是多音字
-        isNonChinese: true // 标记为非中文字符
-      });
-        
-        i = j;
-        continue;
-      }
-
-      // 查找拼音
-      const pinyins = pinyinData.get(char);
-      if (!pinyins || pinyins.length === 0) {
-        // 没有找到拼音，作为普通字符处理
-        result.push(char);
-        detailedResults.push({
-          origin: char,
-          pinyin: [char],
-          isHeteronym: false,
-          isNonChinese: false
-        });
-        i++;
-        continue;
-      }
-
-      // 处理多音字 - 使用用户选择或默认第一个
-      let selectedPinyin = pinyins[0];
-      const selectionKey = `${char}_${i}`;
-      const userSelection = heteronymSelections[selectionKey];
-      
-      if (userSelection !== undefined && userSelection < pinyins.length) {
-        // 用户有选择，使用用户选择的读音
-        selectedPinyin = pinyins[userSelection];
-      } else {
-        // 用户没有选择，使用默认第一个读音
-        selectedPinyin = pinyins[0];
-      }
-
-      // 处理声调
-      let processedPinyin = selectedPinyin;
-      if (options.toneStyle === 'none') {
-        // 移除所有声调
-        processedPinyin = selectedPinyin.replace(/[āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]/g, (match: string) => {
-          const toneMap: Record<string, string> = { 'ā': 'a', 'á': 'a', 'ǎ': 'a', 'à': 'a', 'ē': 'e', 'é': 'e', 'ě': 'e', 'è': 'e', 'ī': 'i', 'í': 'i', 'ǐ': 'i', 'ì': 'i', 'ō': 'o', 'ó': 'o', 'ǒ': 'o', 'ò': 'o', 'ū': 'u', 'ú': 'u', 'ǔ': 'u', 'ù': 'u', 'ǖ': 'ü', 'ǘ': 'ü', 'ǚ': 'ü', 'ǜ': 'ü' };
-          return toneMap[match] || match;
-        });
-      } else if (options.toneStyle === 'number') {
-        // 转换为数字声调
-        processedPinyin = convertToneMarkToNumber(selectedPinyin);
-      }
-
-      // 处理大小写
-      if (options.lowercase) {
-        processedPinyin = processedPinyin.toLowerCase();
-      }
-
-      // 处理输出格式
-      let finalOutput = processedPinyin;
-      if (options.outputFormat === 'initials') {
-        finalOutput = getPinyinInitials(processedPinyin);
-      } else if (options.outputFormat === 'both') {
-        const initials = getPinyinInitials(processedPinyin);
-        finalOutput = `${processedPinyin}(${initials})`;
-      }
-
-      // 添加到结果
-      result.push(finalOutput);
-
-      // 添加到详细结果
-      detailedResults.push({
-        origin: char,
-        pinyin: pinyins,
-        isHeteronym: pinyins.length > 1
+        return result;
       });
       
-      i++;
+      // 构建最终的文本输出
+      let finalText = '';
+      if (options.outputFormat === 'both') {
+        finalText = processedResults.map((result: any) => {
+          const pinyin = result.pinyin[0];
+          if (options.outputFormat === 'both' && result.isHeteronym) {
+            const initials = getPinyinInitials(pinyin);
+            return `${pinyin}(${initials})`;
+          }
+          return pinyin;
+        }).join('');
+      } else {
+        finalText = processedResults.map((result: any) => result.pinyin[0]).join(options.separator);
+      }
+      
+      return { text: finalText, detailed: processedResults };
+      
+    } catch (error) {
+      console.error('拼音转换失败:', error);
+      return { text: text, detailed: [] };
     }
-
-    // 添加分隔符
-    let finalText = '';
-    if (options.outputFormat === 'both') {
-      finalText = result.join('');
-    } else {
-      finalText = result.join(options.separator);
-    }
-
-    return { text: finalText, detailed: detailedResults };
-  }, [pinyinData, heteronymSelections, convertToneMarkToNumber, getPinyinInitials]);
+  }, [pinyinConverter, heteronymSelections, convertToneMarkToNumber, getPinyinInitials]);
 
   // 处理输入变化
   const handleInputChange = useCallback((text: string) => {
@@ -320,11 +263,25 @@ export default function PinyinConverter() {
   }, []);
 
   // 处理多音字选择
-  const handleHeteronymSelect = useCallback((charKey: string, pinyinIndex: number) => {
+  const handleHeteronymSelect = useCallback(async (charKey: string, pinyinIndex: number) => {
     setHeteronymSelections(prev => ({
       ...prev,
       [charKey]: pinyinIndex
     }));
+    
+    // 重新转换当前文本
+    if (inputText) {
+      setIsLoading(true);
+      try {
+        const result = await convertToPinyin(inputText, options);
+        setOutputText(result.text);
+        setDetailedResults(result.detailed);
+      } catch (error) {
+        console.error('转换失败:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
     
     // 高亮显示对应的转换结果
     const resultElement = document.querySelector(`[data-char-key="${charKey}"]`);
@@ -347,7 +304,7 @@ export default function PinyinConverter() {
         resultElement.classList.remove('bg-[#66ccff]', 'bg-opacity-10');
       }, 3000);
     }
-  }, []);
+  }, [inputText, options, convertToPinyin]);
 
   // 清空输入
   const clearInput = useCallback(() => {
@@ -448,12 +405,19 @@ export default function PinyinConverter() {
 
   // 初始转换 - 这个 useEffect 必须在所有其他 Hooks 之后调用
   useEffect(() => {
-    if (inputText && pinyinData) {
-      const { text, detailed } = convertToPinyin(inputText, options);
-      setOutputText(text);
-      setDetailedResults(detailed);
+    if (inputText && pinyinConverter) {
+      const performConversion = async () => {
+        try {
+          const result = await convertToPinyin(inputText, options);
+          setOutputText(result.text);
+          setDetailedResults(result.detailed);
+        } catch (error) {
+          console.error('初始转换失败:', error);
+        }
+      };
+      performConversion();
     }
-  }, [inputText, pinyinData, convertToPinyin, options]);
+  }, [inputText, pinyinConverter, options, convertToPinyin]);
 
   // 高亮显示转换结果中的多音字拼音
   const highlightHeteronymInOutput = useCallback((outputText: string, detailedResults: DetailedResult[]) => {
