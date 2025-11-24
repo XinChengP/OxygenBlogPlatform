@@ -19,13 +19,10 @@ declare global {
  * @returns 404 错误页面
  */
 export default function NotFound() {
-  const [mounted, setMounted] = useState(false);
   const [cardVisible, setCardVisible] = useState(true);
 
   // 确保组件已挂载
   useEffect(() => {
-    setMounted(true);
-    
     // 确保视频自动播放
     const ensureVideoAutoplay = () => {
       const video = document.querySelector('video');

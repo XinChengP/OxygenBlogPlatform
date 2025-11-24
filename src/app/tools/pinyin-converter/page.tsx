@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import BackgroundLayer from '@/components/BackgroundLayer';
 import { useTheme } from 'next-themes';
-import { getAssetPath } from '@/utils/assetUtils';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 
 // 动态导入ScrollToTop组件

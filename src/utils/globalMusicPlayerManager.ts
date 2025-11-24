@@ -152,8 +152,8 @@ class GlobalMusicPlayerManager {
 
   // 控制歌词显示
   showLyrics() {
-    if (this.player && this.player.lrc) {
-      this.player.lrc.show();
+    if (this.player && (this.player as any).lrc) {
+      (this.player as any).lrc.show();
       // 同时更新CSS类
       const lrcElement = document.querySelector('.aplayer-lrc');
       if (lrcElement) {
@@ -165,8 +165,8 @@ class GlobalMusicPlayerManager {
 
   // 隐藏歌词
   hideLyrics() {
-    if (this.player && this.player.lrc) {
-      this.player.lrc.hide();
+    if (this.player && (this.player as any).lrc) {
+      (this.player as any).lrc.hide();
       // 同时更新CSS类
       const lrcElement = document.querySelector('.aplayer-lrc');
       if (lrcElement) {
@@ -178,8 +178,8 @@ class GlobalMusicPlayerManager {
 
   // 切换歌词显示状态
   toggleLyrics() {
-    if (this.player && this.player.lrc) {
-      this.player.lrc.toggle();
+    if (this.player && (this.player as any).lrc) {
+      (this.player as any).lrc.toggle();
       // 同时更新CSS类
       const lrcElement = document.querySelector('.aplayer-lrc');
       if (lrcElement) {
@@ -196,7 +196,7 @@ class GlobalMusicPlayerManager {
 
   // 获取歌词当前显示状态
   isLyricsVisible(): boolean {
-    if (this.player && this.player.lrc) {
+    if (this.player && (this.player as any).lrc) {
       // APlayer的歌词组件有一个隐藏的样式类来判断是否显示
       const lrcElement = document.querySelector('.aplayer-lrc');
       if (lrcElement) {
