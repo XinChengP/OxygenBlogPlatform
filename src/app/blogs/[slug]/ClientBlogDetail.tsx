@@ -725,6 +725,7 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                       const processedSrc = src ? getAssetPath(src) : src;
                       return (
                         <div className="my-8 text-center">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={processedSrc}
                             alt={alt || '图片'}
