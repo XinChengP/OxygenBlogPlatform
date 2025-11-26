@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import BackgroundLayer from '@/components/BackgroundLayer';
 import { useTheme } from 'next-themes';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
+import { getAssetPath } from '@/utils/assetUtils';
 
 // 动态导入ScrollToTop组件
 const LazyScrollToTop = lazy(() => import('@/components/ScrollToTop'));
@@ -76,7 +77,7 @@ export default function PinyinConverter() {
       try {
         // 使用script标签动态加载库
         const script = document.createElement('script');
-        script.src = '/tools/pinyin-converter.js';
+        script.src = getAssetPath('/tools/pinyin-converter.js');
         script.type = 'text/javascript';
         
         script.onload = async () => {

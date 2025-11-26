@@ -562,17 +562,7 @@ export default function MarkdownEditor({
             try {
               await navigator.clipboard.writeText(codeText);
               
-              // 方法1: 使用 jQuery 触发（优先）
-              if (typeof window !== 'undefined' && (window as any).jQuery) {
-                try {
-                  (window as any).jQuery(document).trigger('copy');
-                  console.log('✅ jQuery 复制事件已触发');
-                } catch (jqueryError) {
-                  console.log('❌ jQuery 触发失败:', jqueryError);
-                }
-              }
-              
-              // 方法2: 使用原生事件
+              // 使用原生事件触发copy事件
               try {
                 const copyEvent = new Event('copy', { 
                   bubbles: true, 
@@ -667,12 +657,8 @@ export default function MarkdownEditor({
                 document.execCommand('copy');
                 
                 // 同样触发copy事件
-                if (typeof window !== 'undefined' && (window as any).jQuery) {
-                  (window as any).jQuery(document).trigger('copy');
-                } else {
-                  const copyEvent = new Event('copy', { bubbles: true });
-                  document.dispatchEvent(copyEvent);
-                }
+                const copyEvent = new Event('copy', { bubbles: true });
+                document.dispatchEvent(copyEvent);
                 
                 console.log('使用降级方案复制成功并分发事件');
               } catch (err) {

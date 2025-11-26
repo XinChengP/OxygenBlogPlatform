@@ -63,9 +63,18 @@
             return './';
         }
         
-        // 对于Next.js环境，直接返回/tools/路径
-        // 因为数据文件位于public/tools/pinyin-data/
-        return '/tools/';
+        // 对于Next.js环境，检查当前URL路径
+        const pathname = window.location.pathname;
+        const pathSegments = pathname.split('/').filter(segment => segment);
+        
+        // 如果路径包含仓库名（GitHub Pages部署），则使用仓库名作为基础路径
+        let basePath = '';
+        if (pathSegments.length > 0 && pathSegments[0] !== '' && pathSegments[0] !== 'settings') {
+            basePath = `/${pathSegments[0]}`;
+        }
+        
+        // 数据文件位于public/tools/pinyin-data/
+        return `${basePath}/tools/`;
     }
 
     /**

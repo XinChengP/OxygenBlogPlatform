@@ -642,26 +642,7 @@ export default function LuoTianyiLive2D() {
                 (window as any).home_Path = window.location.origin;
             }
             
-            // 动态加载jQuery
-            if (typeof window !== 'undefined' && !window.jQuery) {
-                console.log('[LuoTianyiLive2D] jQuery未找到，开始加载jQuery...');
-                // 使用多个CDN源作为备份
-                const jquerySources = [
-                    'https://cdn.bootcss.com/jquery/2.2.4/jquery.min.js',
-                    'https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.min.js',
-                    'https://code.jquery.com/jquery-2.2.4.min.js'
-                ];
-                
-                for (const source of jquerySources) {
-                    try {
-                        await loadScript(source);
-                        console.log(`[LuoTianyiLive2D] jQuery加载成功: ${source}`);
-                        break;
-                    } catch (error) {
-                        console.warn(`[LuoTianyiLive2D] jQuery CDN ${source} 加载失败，尝试下一个源`);
-                    }
-                }
-            }
+            // 移除jQuery依赖，使用原生JavaScript实现所有功能
 
             // 使用assetUtils中的getAssetPath函数处理路径
             const live2dPath = getAssetPath('/luotianyi-live2d-master/live2d');
@@ -980,15 +961,23 @@ export default function LuoTianyiLive2D() {
 
         // 重写消息系统以支持频率限制
         const setupThrottledEvents = () => {
-            if (typeof (window as any).jQuery !== 'undefined') {
-                const $ = (window as any).jQuery;
-                
-                // 获取全局的showMessage函数
-                const globalShowMessage = (window as any).showMessage;
-                
-                // 为mouseover事件添加节流
-                $.each(messageConfig.mouseover, function (index: number, tips: any) {
-                    $(document).on('mouseover', tips.selector, function (this: HTMLElement, e: Event) {
+            // 获取全局的showMessage函数
+            const globalShowMessage = (window as any).showMessage;
+            
+            // 辅助函数：渲染消息模板
+            const renderTip = (text: string, data: any) => {
+                if (data && data.text) {
+                    return text.replace(/{text}/g, data.text);
+                }
+                return text;
+            };
+            
+            // 为mouseover事件添加节流
+            messageConfig.mouseover.forEach((tips: any) => {
+                // 使用事件委托实现
+                document.addEventListener('mouseover', (e: Event) => {
+                    const target = e.target as HTMLElement;
+                    if (target.matches(tips.selector)) {
                         e.stopPropagation();
                         
                         // 检查触发频率限制
@@ -1002,20 +991,26 @@ export default function LuoTianyiLive2D() {
                         // 更新最后触发时间
                         triggerLimits.mouseover.set(tips.selector, now);
                         
-                        var text = tips.text;
-                        if (Array.isArray(tips.text)) text = tips.text[Math.floor(Math.random() * tips.text.length)];
-                        text = text.renderTip({ text: $(this).text() });
+                        let text = tips.text;
+                        if (Array.isArray(tips.text)) {
+                            text = tips.text[Math.floor(Math.random() * tips.text.length)];
+                        }
+                        text = renderTip(text, { text: target.textContent || '' });
                         
                         // 使用全局showMessage函数
                         if (globalShowMessage) {
                             globalShowMessage(text, 3000);
                         }
-                    });
+                    }
                 });
-                
-                // 为click事件添加节流
-                $.each(messageConfig.click, function (index: number, tips: any) {
-                    $(document).on('click', tips.selector, function (this: HTMLElement, e: Event) {
+            });
+            
+            // 为click事件添加节流
+            messageConfig.click.forEach((tips: any) => {
+                // 使用事件委托实现
+                document.addEventListener('click', (e: Event) => {
+                    const target = e.target as HTMLElement;
+                    if (target.matches(tips.selector)) {
                         e.stopPropagation();
                         
                         // 检查触发频率限制
@@ -1029,17 +1024,19 @@ export default function LuoTianyiLive2D() {
                         // 更新最后触发时间
                         triggerLimits.click.set(tips.selector, now);
                         
-                        var text = tips.text;
-                        if (Array.isArray(tips.text)) text = tips.text[Math.floor(Math.random() * tips.text.length)];
-                        text = text.renderTip({ text: $(this).text() });
+                        let text = tips.text;
+                        if (Array.isArray(tips.text)) {
+                            text = tips.text[Math.floor(Math.random() * tips.text.length)];
+                        }
+                        text = renderTip(text, { text: target.textContent || '' });
                         
                         // 使用全局showMessage函数
                         if (globalShowMessage) {
                             globalShowMessage(text, 3000);
                         }
-                    });
+                    }
                 });
-            }
+            });
         };
 
         // 将配置应用到窗口对象，支持GitHub Pages部署
