@@ -76,23 +76,42 @@ export default function PinyinConverter() {
       try {
         // 使用script标签动态加载库
         const script = document.createElement('script');
-        script.src = '/tools/pinyin-converter.esm.js';
-        script.type = 'module';
+        script.src = '/tools/pinyin-converter.js';
+        script.type = 'text/javascript';
         
         script.onload = async () => {
           try {
-            // 全局变量应该已经可用
-            const pinyinLib = (window as any).PinyinConverter;
-            if (pinyinLib && pinyinLib.getPinyinConverter) {
-              const converter = await pinyinLib.getPinyinConverter();
-              setPinyinConverter(converter);
-            } else {
-              throw new Error('PinyinConverter not found in window object');
-            }
+            // 等待全局变量可用
+            let retryCount = 0;
+            const maxRetries = 20;
+            
+            const checkAndInit = async () => {
+              if (retryCount >= maxRetries) {
+                throw new Error('PinyinConverter not available after maximum retries');
+              }
+              
+              const pinyinLib = (window as any).PinyinConverter;
+              if (pinyinLib && pinyinLib.getPinyinConverter) {
+                try {
+                  const converter = await pinyinLib.getPinyinConverter();
+                  setPinyinConverter(converter);
+                  setIsLoading(false);
+                } catch (error) {
+                  console.error('获取拼音转换器实例失败:', error);
+                  throw error;
+                }
+              } else {
+                retryCount++;
+                console.log(`等待PinyinConverter可用，重试 ${retryCount}/${maxRetries}`);
+                setTimeout(checkAndInit, 300);
+              }
+            };
+            
+            await checkAndInit();
           } catch (error) {
             console.error('初始化拼音转换器失败:', error);
+            setIsLoading(false);
           }
-          setIsLoading(false);
         };
         
         script.onerror = () => {
@@ -103,7 +122,9 @@ export default function PinyinConverter() {
         document.head.appendChild(script);
         
         return () => {
-          document.head.removeChild(script);
+          if (document.head.contains(script)) {
+            document.head.removeChild(script);
+          }
         };
       } catch (error) {
         console.error('加载拼音转换器失败:', error);

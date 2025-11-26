@@ -30,58 +30,79 @@
             return PinyinDataLoader.instance;
         }
         /**
-         * 加载拼音数据
-         */
-        async loadData() {
-            if (this.loaded)
-                return;
-            try {
-                // 优先使用kMandarin数据，然后使用pinyin.txt作为补充
-                await this.loadMandarinData();
-                await this.loadPinyinData();
-                this.loaded = true;
-                console.log(`拼音数据加载完成，共${Object.keys(this.data).length}个字符`);
-            }
-            catch (error) {
-                console.error('加载拼音数据失败:', error);
-                throw new Error('Failed to load pinyin data');
-            }
+     * 加载拼音数据
+     */
+    async loadData() {
+        if (this.loaded)
+            return;
+        try {
+            // 获取当前脚本的基础路径
+            const basePath = this.getBasePath();
+            console.log('Loading pinyin data with basePath:', basePath);
+            
+            // 优先使用kMandarin数据，然后使用pinyin.txt作为补充
+            console.log('Loading kMandarin data from:', basePath + 'pinyin-data/kMandarin.txt');
+            await this.loadMandarinData(basePath);
+            
+            console.log('Loading pinyin data from:', basePath + 'pinyin-data/pinyin.txt');
+            await this.loadPinyinData(basePath);
+            
+            this.loaded = true;
+            console.log(`拼音数据加载完成，共${Object.keys(this.data).length}个字符`);
         }
+        catch (error) {
+            console.error('加载拼音数据失败:', error);
+            throw new Error('Failed to load pinyin data');
+        }
+    }
         /**
-         * 获取拼音数据
-         */
-        getData() {
-            if (!this.loaded) {
-                throw new Error('Pinyin data not loaded. Call loadData() first.');
-            }
-            return this.data;
+     * 获取当前脚本的基础路径
+     */
+    getBasePath() {
+        if (typeof window === 'undefined') {
+            return './';
         }
+        
+        // 对于Next.js环境，直接返回/tools/路径
+        // 因为数据文件位于public/tools/pinyin-data/
+        return '/tools/';
+    }
+
+    /**
+     * 获取拼音数据
+     */
+    getData() {
+        if (!this.loaded) {
+            throw new Error('Pinyin data not loaded. Call loadData() first.');
+        }
+        return this.data;
+    }
         /**
-         * 从kMandarin.txt加载数据
-         */
-        async loadMandarinData() {
-            try {
-                // 在浏览器环境中使用fetch，在Node.js环境中使用fs
-                const mandarinData = await this.loadTextFile('./pinyin-data/kMandarin.txt');
-                this.parseMandarinData(mandarinData);
-            }
-            catch (error) {
-                console.warn('无法加载kMandarin数据，将使用pinyin.txt作为主要数据源');
-            }
+     * 从kMandarin.txt加载数据
+     */
+    async loadMandarinData(basePath) {
+        try {
+            // 在浏览器环境中使用fetch，在Node.js环境中使用fs
+            const mandarinData = await this.loadTextFile(basePath + 'pinyin-data/kMandarin.txt');
+            this.parseMandarinData(mandarinData);
         }
-        /**
-         * 从pinyin.txt加载数据
-         */
-        async loadPinyinData() {
-            try {
-                const pinyinData = await this.loadTextFile('./pinyin-data/pinyin.txt');
-                this.parsePinyinData(pinyinData);
-            }
-            catch (error) {
-                console.error('无法加载pinyin数据:', error);
-                throw error;
-            }
+        catch (error) {
+            console.warn('无法加载kMandarin数据，将使用pinyin.txt作为主要数据源');
         }
+    }
+    /**
+     * 从pinyin.txt加载数据
+     */
+    async loadPinyinData(basePath) {
+        try {
+            const pinyinData = await this.loadTextFile(basePath + 'pinyin-data/pinyin.txt');
+            this.parsePinyinData(pinyinData);
+        }
+        catch (error) {
+            console.error('无法加载pinyin数据:', error);
+            throw error;
+        }
+    }
         /**
          * 加载文本文件
          */
