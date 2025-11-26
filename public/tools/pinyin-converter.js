@@ -63,7 +63,25 @@
             return './';
         }
         
-        // 对于Next.js环境，检查当前URL路径
+        // 从当前脚本的src属性中提取基础路径
+        let scriptPath = '';
+        const scripts = document.getElementsByTagName('script');
+        for (let i = 0; i < scripts.length; i++) {
+            const script = scripts[i];
+            if (script.src.includes('pinyin-converter.js')) {
+                scriptPath = script.src;
+                break;
+            }
+        }
+        
+        // 如果找到了脚本路径，提取基础路径
+        if (scriptPath) {
+            // 移除文件名，只保留目录路径
+            const basePath = scriptPath.replace('pinyin-converter.js', '');
+            return basePath;
+        }
+        
+        // 降级方案：使用URL路径
         const pathname = window.location.pathname;
         const pathSegments = pathname.split('/').filter(segment => segment);
         
