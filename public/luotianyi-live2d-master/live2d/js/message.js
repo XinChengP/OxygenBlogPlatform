@@ -1,5 +1,14 @@
-// 动态设置路径变量
-var message_Path = window.message_Path || '/luotianyi-live2d-master/live2d/';
+// 动态设置路径变量 - 支持GitHub Pages部署
+var message_Path = window.message_Path || (function() {
+    // 检测是否在GitHub Pages环境下
+    const pathSegments = window.location.pathname.split('/');
+    if (pathSegments.length >= 3 && pathSegments[1] && pathSegments[2]) {
+        // GitHub Pages路径格式: /username/repo-name/
+        return '/' + pathSegments[1] + '/' + pathSegments[2] + '/luotianyi-live2d-master/live2d/';
+    }
+    // 默认路径
+    return '/luotianyi-live2d-master/live2d/';
+})();
 var home_Path = window.home_Path || '/';
 
 function renderTip(template, context) {
