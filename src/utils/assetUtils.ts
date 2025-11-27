@@ -12,6 +12,11 @@ export const getAssetPath = (path: string): string => {
   
   // 在浏览器环境中，检查当前URL路径
   if (typeof window !== 'undefined') {
+    // 开发环境：直接返回路径
+    if (process.env.NODE_ENV === 'development') {
+      return cleanPath;
+    }
+    
     // 优先使用环境变量中的配置（通过next.config.ts注入）
     const envBasePath = (window as any).__NEXT_DATA__?.buildId ? 
                        (window as any).__NEXT_DATA__.runtimeConfig?.basePath || '' : '';
