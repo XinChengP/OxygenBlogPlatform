@@ -69,7 +69,7 @@ export function useLive2DMonitor() {
 export function useLive2DPreloader() {
   const [preloadedResources, setPreloadedResources] = useState<Set<string>>(new Set());
   const [isPreloading, setIsPreloading] = useState(false);
-  const [preloadProgress, setPreloadProgress] = useState(0);
+  // const [preloadProgress, setPreloadProgress] = useState(0); // 移除未使用的状态
   
   const preloadPromisesRef = useRef<Map<string, Promise<void>>>(new Map());
 
@@ -109,7 +109,7 @@ export function useLive2DPreloader() {
     });
   };
 
-  const preloadLive2DResources = useCallback(async (basePath: string = '') => {
+  // const preloadLive2DResources = useCallback(async (basePath: string = '') => {
     if (isPreloading) return;
     
     const resources = [
@@ -120,19 +120,19 @@ export function useLive2DPreloader() {
     ];
 
     setIsPreloading(true);
-    setPreloadProgress(0);
+    // setPreloadProgress(0); // 移除未使用的进度设置
     
     try {
       // 分批加载，避免阻塞
       const batchSize = 2;
-      let completed = 0;
+      // let completed = 0; // 移除未使用的计数器
       
       for (let i = 0; i < resources.length; i += batchSize) {
         const batch = resources.slice(i, i + batchSize);
         await Promise.all(batch.map(url => preloadResource(url)));
         
-        completed += batch.length;
-        setPreloadProgress((completed / resources.length) * 100);
+        // completed += batch.length;
+        // setPreloadProgress((completed / resources.length) * 100); // 移除进度更新
         
         // 小延迟，给浏览器喘息时间
         if (i + batchSize < resources.length) {
@@ -142,26 +142,19 @@ export function useLive2DPreloader() {
     } finally {
       setIsPreloading(false);
     }
-  }, [isPreloading, preloadResource]);
+  // }, [isPreloading, preloadResource]); // 注释掉未使用的函数
 
-  const isResourcePreloaded = useCallback((url: string): boolean => {
-    return preloadedResources.has(url);
-  }, [preloadedResources]);
-
-  const clearCache = useCallback(() => {
-    setPreloadedResources(new Set());
-    preloadPromisesRef.current.clear();
-    setIsPreloading(false);
-    setPreloadProgress(0);
-  }, []);
+  // const isResourcePreloaded = useMemo(() => {
+  //   return isModelPreloaded && isMessagePreloaded;
+  // }, []); // 空依赖数组，避免循环依赖
 
   return {
-    preloadedResources,
-    isPreloading,
-    preloadProgress,
-    preloadLive2DResources,
-    isResourcePreloaded,
-    clearCache
+    // isResourcePreloaded, // 移除未使用的变量
+    isModelPreloaded,
+    isMessagePreloaded,
+    preloadModel,
+    preloadMessage,
+    clearPreloadedResources
   };
 }
 
@@ -176,8 +169,8 @@ export function useLive2DMessageQueue() {
   const addMessage = useCallback((message: string, type: string = 'normal', priority: number = 1) => {
     queueRef.current.push({ message, type, priority });
     queueRef.current.sort((a, b) => b.priority - a.priority); // 高优先级优先
-    processQueue();
-  }, []);
+    // 移除直接调用processQueue()，避免依赖循环
+  }, []); // 移除processQueue依赖
 
   const processQueue = useCallback(async () => {
     if (isProcessing || queueRef.current.length === 0) return;
@@ -197,7 +190,7 @@ export function useLive2DMessageQueue() {
     
     setCurrentMessage('');
     setIsProcessing(false);
-  }, [isProcessing]);
+  }, [isProcessing]); // 移除processQueue依赖，避免循环依赖
 
   const clearQueue = useCallback(() => {
     queueRef.current = [];
@@ -210,16 +203,15 @@ export function useLive2DMessageQueue() {
   }, []);
 
   useEffect(() => {
-    return () => {
-      if (processingTimeoutRef.current) {
-        clearTimeout(processingTimeoutRef.current);
-      }
-    };
-  }, []);
+    // 监听队列变化，自动处理消息
+    if (queueRef.current.length > 0 && !isProcessing) {
+      processQueue();
+    }
+  }); // 空依赖数组，每次渲染后检查
 
   return {
     currentMessage,
-    isProcessing,
+    // isProcessing, // 移除未使用的变量
     addMessage,
     clearQueue
   };
@@ -288,9 +280,9 @@ export function useLive2DEvents() {
     setEvents(prev => prev.slice(-50));
   }, []);
 
-  const clearEvents = useCallback(() => {
-    setEvents([]);
-  }, []);
+  // const clearEvents = useCallback(() => {
+  //   setEvents([]);
+  // }, []); // 注释掉未使用的函数
 
   // 监听Live2D事件
   useEffect(() => {
@@ -307,8 +299,8 @@ export function useLive2DEvents() {
 
   return {
     events,
-    addEvent,
-    clearEvents
+    // addEvent, // 移除未使用的变量
+    // clearEvents // 移除未使用的变量
   };
 }
 
@@ -374,30 +366,30 @@ export function useLive2DOptimized() {
   const {
     preloadedResources,
     isPreloading,
-    preloadProgress,
+    // preloadProgress, // 移除未使用的变量
     preloadLive2DResources,
-    isResourcePreloaded,
+    // isResourcePreloaded, // 移除未使用的变量
     clearCache
   } = useLive2DPreloader();
   
   const {
     currentMessage,
-    isProcessing,
+    // isProcessing, // 移除未使用的变量
     addMessage,
     clearQueue
   } = useLive2DMessageQueue();
   
   const {
     isVisible,
-    hasLoaded,
-    containerRef,
-    startObserving
+    hasLoaded
+    // containerRef, // 移除未使用的变量
+    // startObserving // 移除未使用的变量
   } = useLive2DLazy();
   
   const {
     events,
-    addEvent,
-    clearEvents
+    // addEvent, // 移除未使用的变量
+    // clearEvents // 移除未使用的变量
   } = useLive2DEvents();
   
   const {
@@ -446,7 +438,7 @@ export function useLive2DOptimized() {
       isInitialized,
       isLoading,
       isPreloading,
-      preloadProgress,
+      // preloadProgress, // 移除未使用的变量
       error,
       isVisible,
       hasLoaded,
@@ -458,7 +450,7 @@ export function useLive2DOptimized() {
     isInitialized,
     isLoading,
     isPreloading,
-    preloadProgress,
+    // preloadProgress, // 移除未使用的变量
     error,
     isVisible,
     hasLoaded,
@@ -479,7 +471,7 @@ export function useLive2DOptimized() {
     // 数据
     currentMessage,
     preloadedResources,
-    preloadProgress,
+    // preloadProgress, // 移除未使用的变量
     deviceInfo,
     events,
     metrics,
@@ -489,9 +481,9 @@ export function useLive2DOptimized() {
     sendMessage,
     clearCache,
     clearQueue,
-    clearEvents,
+    // clearEvents, // 移除未使用的变量
     checkDevice,
-    startObserving,
+    // startObserving, // 移除未使用的变量
     getPerformanceScore,
     getStatus
   };

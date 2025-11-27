@@ -4,20 +4,16 @@ const repoName = process.env.NEXT_PUBLIC_GITHUB_REPO_NAME || 'OxygenBlogPlatform
 const nextConfig = {
   // 实验性功能
   experimental: {
-    // 优化包导入
-    optimizePackageImports: ["react-markdown", "remark-gfm", "rehype-katex", "framer-motion", "lucide-react", "@heroicons/react", "react-syntax-highlighter"],
+    // 优化包导入 - 移除有问题的react-syntax-highlighter
+    optimizePackageImports: ["react-markdown", "remark-gfm", "rehype-katex", "framer-motion", "lucide-react", "@heroicons/react"],
     // 启用现代CSS特性
     optimizeCss: true,
     // 优化构建性能
     webpackBuildWorker: true,
     // 滚动恢复配置
     scrollRestoration: true,
-    // 启用SWC优化
-    swcMinify: true,
     // 优化内存使用
     workerThreads: false,
-    // 缓存配置
-    isrMemoryCacheSize: 0,
   },
   // 启用严格模式
   reactStrictMode: true,
@@ -32,8 +28,7 @@ const nextConfig = {
     emotion: true,
   },
   
-  // 性能优化配置
-  swcMinify: true,
+  // 性能优化配置 - 移除重复的swcMinify配置
   // 启用HTTP压缩
   compress: true,
   
@@ -84,7 +79,7 @@ const nextConfig = {
   // 确保正确处理Unicode字符
   pageExtensions: ["tsx", "ts", "jsx", "js"],
   
-  // 模块化导入优化
+  // 模块化导入优化 - 修复配置问题
   modularizeImports: {
     '@heroicons/react/24/outline': {
       transform: '@heroicons/react/24/outline/{{member}}',
@@ -96,10 +91,6 @@ const nextConfig = {
     },
     'lucide-react': {
       transform: 'lucide-react/dist/esm/icons/{{kebabCase member}}',
-      preventFullImport: true,
-    },
-    '@tsparticles/react': {
-      transform: '@tsparticles/react/{{member}}',
       preventFullImport: true,
     },
     'framer-motion': {

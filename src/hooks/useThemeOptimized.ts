@@ -84,7 +84,7 @@ export function useThemeOptimized(config: ThemeOptimizerConfig = {}) {
     };
     
     return loadTheme();
-  }, [enableCache, enablePrefetch, themeCache]);
+  }, [enableCache, enablePrefetch, themeCache]); // 修复依赖数组
   
   // 批量预加载多个主题
   const prefetchThemes = useCallback(async (themes: string[]) => {
@@ -92,7 +92,7 @@ export function useThemeOptimized(config: ThemeOptimizerConfig = {}) {
     
     const promises = themes.map(prefetchTheme);
     await Promise.allSettled(promises);
-  }, [prefetchTheme]);
+  }, [prefetchTheme, enablePrefetch]);
   
   // 监听系统主题变化
   useEffect(() => {

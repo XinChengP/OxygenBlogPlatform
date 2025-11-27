@@ -320,7 +320,7 @@ export default function PinyinConverter() {
       console.error('拼音转换失败:', error);
       return { text: text, detailed: [] };
     }
-  }, [pinyinConverter, heteronymSelections, convertToneMarkToNumber, getPinyinInitials]);
+  }, [heteronymSelections, convertToneMarkToNumber, getPinyinInitials, pinyinConverter]); // 移除不必要的options依赖
 
   // 处理输入变化
   const handleInputChange = useCallback((text: string) => {
@@ -445,7 +445,7 @@ export default function PinyinConverter() {
         // Live2D联动失败，静默处理
       }
     }
-  }, [isEditing, editedOutput, outputText]);
+  }, [isEditing, editedOutput, outputText]); // 修复依赖数组 - textToCopy是内部变量，不需要在依赖中
 
   // 切换编辑模式
   const toggleEditMode = useCallback(() => {
@@ -473,7 +473,7 @@ export default function PinyinConverter() {
       };
       performConversion();
     }
-  }, [inputText, pinyinConverter, options, convertToPinyin]);
+  }, [inputText, pinyinConverter, options, convertToPinyin]); // 添加convertToPinyin依赖
 
   // 当多音字选择变化时重新转换
   useEffect(() => {
@@ -489,7 +489,7 @@ export default function PinyinConverter() {
       };
       performConversion();
     }
-  }, [heteronymSelections]); // 监听多音字选择变化
+  }, [heteronymSelections, convertToPinyin, inputText, options, pinyinConverter]); // 添加缺失的依赖
 
   // 高亮显示转换结果中的多音字拼音
   const highlightHeteronymInOutput = useCallback((outputText: string, detailedResults: DetailedResult[]) => {
@@ -639,7 +639,7 @@ export default function PinyinConverter() {
         }
       }
     }
-  }, [heteronymSelections, detailedResults, handleHeteronymSelect]);
+  }, [heteronymSelections, detailedResults]); // 移除不必要的handleHeteronymSelect依赖
 
   // 处理读音选择
   const handlePinyinSelection = useCallback((charIndex: number, pinyinIndex: number) => {
@@ -718,7 +718,7 @@ export default function PinyinConverter() {
       document.removeEventListener('click', handleClick, true);
     };
 
-  }, [handleOutputPinyinClick, detailedResults]);
+  }, [handleOutputPinyinClick, detailedResults, heteronymSelections]); // 修复依赖数组 - options已经在handleOutputPinyinClick依赖中
 
   // 如果组件未挂载，返回 null - 这必须在所有的 Hooks 之后
   if (!mounted) {
