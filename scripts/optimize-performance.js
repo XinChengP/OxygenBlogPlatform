@@ -85,14 +85,55 @@ function optimizeImages() {
   const images = findImages(publicDir);
   console.log(`📸 发现 ${images.length} 张图片`);
   
+  let totalSize = 0;
+  let largeImages = 0;
+  let webpConvertible = 0;
+  
   images.forEach(imagePath => {
     const stats = fs.statSync(imagePath);
     const sizeInKB = stats.size / 1024;
+    totalSize += sizeInKB;
+    
+    const ext = path.extname(imagePath).toLowerCase();
+    const relativePath = path.relative(publicDir, imagePath);
     
     if (sizeInKB > 500) { // 大于500KB的图片
-      console.log(`⚠️  大图片警告: ${path.relative(publicDir, imagePath)} (${sizeInKB.toFixed(2)} KB)`);
+      console.log(`⚠️  大图片警告: ${relativePath} (${sizeInKB.toFixed(2)} KB)`);
+      largeImages++;
+    }
+    
+    // 检查可转换为WebP的图片
+    if (['.jpg', '.jpeg', '.png'].includes(ext)) {
+      webpConvertible++;
+      if (sizeInKB > 100) {
+        console.log(`💡 WebP转换建议: ${relativePath} (${sizeInKB.toFixed(2)} KB)`);
+      }
+    }
+    
+    // 检查SVG优化
+    if (ext === '.svg') {
+      const content = fs.readFileSync(imagePath, 'utf8');
+      if (content.length > 10000) { // 大于10KB的SVG
+        console.log(`🔧 SVG优化建议: ${relativePath} (${(content.length / 1024).toFixed(2)} KB)`);
+      }
     }
   });
+  
+  console.log(`\n📊 图片统计:`);
+  console.log(`   总图片数: ${images.length}`);
+  console.log(`   总大小: ${(totalSize / 1024).toFixed(2)} MB`);
+  console.log(`   大图片(>500KB): ${largeImages}`);
+  console.log(`   可转WebP: ${webpConvertible}`);
+  
+  // 生成优化建议
+  if (largeImages > 0) {
+    console.log(`\n💡 优化建议:`);
+    console.log(`   1. 将大图片压缩至500KB以下`);
+    console.log(`   2. JPG/PNG图片转换为WebP格式`);
+    console.log(`   3. 使用响应式图片，提供多种尺寸`);
+    console.log(`   4. 启用图片懒加载`);
+    console.log(`   5. 使用CDN加速图片加载`);
+  }
 }
 
 // 检查未使用的依赖

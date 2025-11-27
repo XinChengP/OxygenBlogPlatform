@@ -5,13 +5,19 @@ const nextConfig = {
   // 实验性功能
   experimental: {
     // 优化包导入
-    optimizePackageImports: ["react-markdown", "remark-gfm", "rehype-katex", "framer-motion", "lucide-react"],
+    optimizePackageImports: ["react-markdown", "remark-gfm", "rehype-katex", "framer-motion", "lucide-react", "@heroicons/react", "react-syntax-highlighter"],
     // 启用现代CSS特性
     optimizeCss: true,
     // 优化构建性能
     webpackBuildWorker: true,
     // 滚动恢复配置
     scrollRestoration: true,
+    // 启用SWC优化
+    swcMinify: true,
+    // 优化内存使用
+    workerThreads: false,
+    // 缓存配置
+    isrMemoryCacheSize: 0,
   },
   // 启用严格模式
   reactStrictMode: true,
@@ -22,7 +28,14 @@ const nextConfig = {
     reactRemoveProperties: isStaticExport,
     // 移除console.*语句（生产环境）
     removeConsole: isStaticExport ? { exclude: ['error'] } : false,
+    // 启用 emotion 优化
+    emotion: true,
   },
+  
+  // 性能优化配置
+  swcMinify: true,
+  // 启用HTTP压缩
+  compress: true,
   
   // GitHub Pages静态导出配置
   ...(isStaticExport && {
@@ -71,17 +84,85 @@ const nextConfig = {
   // 确保正确处理Unicode字符
   pageExtensions: ["tsx", "ts", "jsx", "js"],
   
-  // 性能优化：模块化导入
+  // 模块化导入优化
   modularizeImports: {
     '@heroicons/react/24/outline': {
       transform: '@heroicons/react/24/outline/{{member}}',
+      preventFullImport: true,
     },
     '@heroicons/react/24/solid': {
       transform: '@heroicons/react/24/solid/{{member}}',
+      preventFullImport: true,
     },
     'lucide-react': {
       transform: 'lucide-react/dist/esm/icons/{{kebabCase member}}',
+      preventFullImport: true,
     },
+    '@tsparticles/react': {
+      transform: '@tsparticles/react/{{member}}',
+      preventFullImport: true,
+    },
+    'framer-motion': {
+      transform: 'framer-motion/{{member}}',
+      preventFullImport: true,
+    },
+  },
+  
+  // 缓存配置
+  generateBuildId: async () => {
+    // 使用当前时间戳作为构建ID，确保每次构建都是唯一的
+    return new Date().getTime().toString();
+  },
+  
+  // 优化打包
+  webpack: (config, { isServer }) => {
+    // 优化chunk分割
+    if (!isServer) {
+      config.optimization.splitChunks = {
+        ...config.optimization.splitChunks,
+        chunks: 'all',
+        cacheGroups: {
+          default: false,
+          vendors: false,
+          // vendor chunk
+          vendor: {
+            name: 'vendor',
+            chunks: 'all',
+            test: /node_modules/,
+            priority: 20,
+          },
+          // common chunk
+          common: {
+            name: 'common',
+            minChunks: 2,
+            chunks: 'all',
+            priority: 10,
+            reuseExistingChunk: true,
+            enforce: true,
+          },
+          // 第三方库单独打包
+          ...['react', 'react-dom', 'framer-motion', 'next'].reduce((acc, name) => {
+            acc[name] = {
+              name,
+              priority: 30,
+              test: new RegExp(`[\\/]node_modules[\\/]${name}[\\/]`),
+              chunks: 'all',
+            };
+            return acc;
+          }, {} as any),
+        },
+      };
+    }
+    
+    // 优化解析
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+      net: false,
+      tls: false,
+    };
+    
+    return config;
   },
   
   // 头部优化
