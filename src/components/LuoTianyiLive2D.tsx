@@ -640,6 +640,14 @@ export default function LuoTianyiLive2D() {
                 // 使用assetUtils中的getAssetPath函数处理路径
                 (window as any).message_Path = getAssetPath('/luotianyi-live2d-master/live2d/');
                 (window as any).home_Path = window.location.origin;
+                
+                // 调试路径信息
+                console.log('[LuoTianyiLive2D] 路径调试信息:', {
+                    basePath: basePath,
+                    message_Path: getAssetPath('/luotianyi-live2d-master/live2d/'),
+                    currentPath: window.location.pathname,
+                    hostname: window.location.hostname
+                });
             }
             
             // 移除jQuery依赖，使用原生JavaScript实现所有功能
@@ -647,6 +655,13 @@ export default function LuoTianyiLive2D() {
             // 使用assetUtils中的getAssetPath函数处理路径
             const live2dPath = getAssetPath('/luotianyi-live2d-master/live2d');
             const messagePath = live2dPath; // 消息文件与live2d核心文件在同一目录
+            
+            console.log('[LuoTianyiLive2D] 构建的脚本路径:', {
+                live2dPath: live2dPath,
+                messagePath: messagePath,
+                expectedLive2dJs: `${live2dPath}/js/live2d.js`,
+                expectedMessageJs: `${messagePath}/js/message.js`
+            });
             
             console.log('[LuoTianyiLive2D] 开始加载Live2D脚本...');
             

@@ -73,12 +73,42 @@ export default function PinyinConverter() {
 
   // 加载拼音转换器
   useEffect(() => {
+    // 防止重复加载
+    if ((window as any).__pinyinConverterLoading) {
+      return;
+    }
+    
     const loadPinyinConverter = async () => {
       try {
+        // 检查是否已经加载过
+        if ((window as any).PinyinConverter) {
+          const pinyinLib = (window as any).PinyinConverter;
+          if (pinyinLib && pinyinLib.getPinyinConverter) {
+            const converter = await pinyinLib.getPinyinConverter();
+            setPinyinConverter(converter);
+            setIsLoading(false);
+            return;
+          }
+        }
+        
+        // 标记正在加载
+        (window as any).__pinyinConverterLoading = true;
+        
         // 使用script标签动态加载库
         const script = document.createElement('script');
         script.src = getAssetPath('/tools/pinyin-converter.js');
         script.type = 'text/javascript';
+        script.async = true;
+        
+        // 调试路径信息
+        console.log('拼音转换器脚本路径:', getAssetPath('/tools/pinyin-converter.js'));
+        console.log('当前页面路径:', window.location.pathname);
+        console.log('基础路径检测:', {
+          hostname: window.location.hostname,
+          pathname: window.location.pathname,
+          basePath: (window as any).__NEXT_DATA__?.runtimeConfig?.basePath,
+          repoName: process.env.NEXT_PUBLIC_GITHUB_REPO_NAME
+        });
         
         script.onload = async () => {
           try {
@@ -97,6 +127,7 @@ export default function PinyinConverter() {
                   const converter = await pinyinLib.getPinyinConverter();
                   setPinyinConverter(converter);
                   setIsLoading(false);
+                  delete (window as any).__pinyinConverterLoading;
                 } catch (error) {
                   console.error('获取拼音转换器实例失败:', error);
                   throw error;
@@ -112,12 +143,14 @@ export default function PinyinConverter() {
           } catch (error) {
             console.error('初始化拼音转换器失败:', error);
             setIsLoading(false);
+            delete (window as any).__pinyinConverterLoading;
           }
         };
         
         script.onerror = () => {
           console.error('加载拼音转换器脚本失败');
           setIsLoading(false);
+          delete (window as any).__pinyinConverterLoading;
         };
         
         document.head.appendChild(script);
@@ -130,6 +163,7 @@ export default function PinyinConverter() {
       } catch (error) {
         console.error('加载拼音转换器失败:', error);
         setIsLoading(false);
+        delete (window as any).__pinyinConverterLoading;
       }
     };
 
@@ -194,67 +228,79 @@ export default function PinyinConverter() {
       // 获取详细转换结果
       const detailedResults = pinyinConverter.convert(text, converterOptions);
       
-      // 应用用户的多音字选择
-      const processedResults = detailedResults.map((result: any, index: number) => {
-        if (result.isHeteronym && result.pinyin.length > 1) {
-          // 检查是否有用户选择的多音字
-          const charKey = `${result.origin}_${index}`;
-          const userSelection = heteronymSelections[charKey];
-          
-          if (userSelection !== undefined && userSelection < result.pinyin.length) {
-            // 使用用户选择的读音
-            const selectedPinyin = result.pinyin[userSelection];
-            
-            // 根据选项处理选中的拼音
-            let processedPinyin = selectedPinyin;
-            
-            // 处理声调
-            if (options.toneStyle === 'none') {
-              processedPinyin = processedPinyin.replace(/[āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]/g, (match: string) => {
-                const toneMap: Record<string, string> = { 
-                  'ā': 'a', 'á': 'a', 'ǎ': 'a', 'à': 'a', 
-                  'ē': 'e', 'é': 'e', 'ě': 'e', 'è': 'e', 
-                  'ī': 'i', 'í': 'i', 'ǐ': 'i', 'ì': 'i', 
-                  'ō': 'o', 'ó': 'o', 'ǒ': 'o', 'ò': 'o', 
-                  'ū': 'u', 'ú': 'u', 'ǔ': 'u', 'ù': 'u', 
-                  'ǖ': 'ü', 'ǘ': 'ü', 'ǚ': 'ü', 'ǜ': 'ü' 
-                };
-                return toneMap[match] || match;
-              });
-            } else if (options.toneStyle === 'number') {
-              processedPinyin = convertToneMarkToNumber(selectedPinyin);
-            }
-            
-            // 处理大小写
-            if (options.lowercase) {
-              processedPinyin = processedPinyin.toLowerCase();
-            }
-            
-            // 处理输出格式
-            let finalOutput = processedPinyin;
-            if (options.outputFormat === 'initials') {
-              finalOutput = getPinyinInitials(processedPinyin);
-            } else if (options.outputFormat === 'both') {
-              const initials = getPinyinInitials(processedPinyin);
-              finalOutput = `${processedPinyin}(${initials})`;
-            }
-            
-            return {
-              ...result,
-              pinyin: [finalOutput], // 使用处理后的拼音
-              selectedPinyinIndex: userSelection // 记录选择的索引
-            };
-          }
-        }
-        
-        return result;
+      // 为每个结果添加 isNonChinese 字段
+      const resultsWithNonChineseFlag = detailedResults.map((result: any) => {
+        // 检查是否为非中文字符
+        const isNonChinese = !pinyinConverter.isChinese(result.origin);
+        return {
+          ...result,
+          isNonChinese
+        };
       });
+      
+      // 应用用户的多音字选择
+          const processedResults = resultsWithNonChineseFlag.map((result: any, index: number) => {
+            if (result.isHeteronym && result.pinyin.length > 1) {
+              // 检查是否有用户选择的多音字
+              const charKey = `${result.origin}_${index}`;
+              const userSelection = heteronymSelections[charKey];
+              
+              if (userSelection !== undefined && userSelection < result.pinyin.length) {
+                // 使用用户选择的读音
+                const selectedPinyin = result.pinyin[userSelection];
+                
+                // 根据选项处理选中的拼音
+                let processedPinyin = selectedPinyin;
+                
+                // 处理声调
+                if (options.toneStyle === 'none') {
+                  processedPinyin = processedPinyin.replace(/[āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]/g, (match: string) => {
+                    const toneMap: Record<string, string> = { 
+                      'ā': 'a', 'á': 'a', 'ǎ': 'a', 'à': 'a', 
+                      'ē': 'e', 'é': 'e', 'ě': 'e', 'è': 'e', 
+                      'ī': 'i', 'í': 'i', 'ǐ': 'i', 'ì': 'i', 
+                      'ō': 'o', 'ó': 'o', 'ǒ': 'o', 'ò': 'o', 
+                      'ū': 'u', 'ú': 'u', 'ǔ': 'u', 'ù': 'u', 
+                      'ǖ': 'ü', 'ǘ': 'ü', 'ǚ': 'ü', 'ǜ': 'ü' 
+                    };
+                    return toneMap[match] || match;
+                  });
+                } else if (options.toneStyle === 'number') {
+                  processedPinyin = convertToneMarkToNumber(selectedPinyin);
+                }
+                
+                // 处理大小写
+                if (options.lowercase) {
+                  processedPinyin = processedPinyin.toLowerCase();
+                }
+                
+                // 处理输出格式
+                let finalOutput = processedPinyin;
+                if (options.outputFormat === 'initials') {
+                  finalOutput = getPinyinInitials(processedPinyin);
+                } else if (options.outputFormat === 'both') {
+                  const initials = getPinyinInitials(processedPinyin);
+                  finalOutput = `${processedPinyin}(${initials})`;
+                }
+                
+                return {
+                  ...result,
+                  pinyin: result.pinyin, // 保留所有读音，不覆盖原始数组
+                  selectedPinyinIndex: userSelection, // 记录选择的索引
+                  selectedPinyin: finalOutput // 添加选中的拼音用于输出显示
+                };
+              }
+            }
+            
+            return result;
+          });
       
       // 构建最终的文本输出
       let finalText = '';
       if (options.outputFormat === 'both') {
         finalText = processedResults.map((result: any) => {
-          const pinyin = result.pinyin[0];
+          // 如果有选中的拼音，使用选中的；否则使用第一个
+          const pinyin = result.selectedPinyin || result.pinyin[0];
           if (options.outputFormat === 'both' && result.isHeteronym) {
             const initials = getPinyinInitials(pinyin);
             return `${pinyin}(${initials})`;
@@ -262,7 +308,10 @@ export default function PinyinConverter() {
           return pinyin;
         }).join('');
       } else {
-        finalText = processedResults.map((result: any) => result.pinyin[0]).join(options.separator);
+        finalText = processedResults.map((result: any) => {
+          // 如果有选中的拼音，使用选中的；否则使用第一个
+          return result.selectedPinyin || result.pinyin[0];
+        }).join(options.separator);
       }
       
       return { text: finalText, detailed: processedResults };
@@ -290,20 +339,6 @@ export default function PinyinConverter() {
       [charKey]: pinyinIndex
     }));
     
-    // 重新转换当前文本
-    if (inputText) {
-      setIsLoading(true);
-      try {
-        const result = await convertToPinyin(inputText, options);
-        setOutputText(result.text);
-        setDetailedResults(result.detailed);
-      } catch (error) {
-        console.error('转换失败:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    
     // 高亮显示对应的转换结果
     const resultElement = document.querySelector(`[data-char-key="${charKey}"]`);
     
@@ -325,7 +360,7 @@ export default function PinyinConverter() {
         resultElement.classList.remove('bg-[#66ccff]', 'bg-opacity-10');
       }, 3000);
     }
-  }, [inputText, options, convertToPinyin]);
+  }, []);
 
   // 清空输入
   const clearInput = useCallback(() => {
@@ -439,6 +474,22 @@ export default function PinyinConverter() {
       performConversion();
     }
   }, [inputText, pinyinConverter, options, convertToPinyin]);
+
+  // 当多音字选择变化时重新转换
+  useEffect(() => {
+    if (inputText && pinyinConverter) {
+      const performConversion = async () => {
+        try {
+          const result = await convertToPinyin(inputText, options);
+          setOutputText(result.text);
+          setDetailedResults(result.detailed);
+        } catch (error) {
+          console.error('多音字选择后转换失败:', error);
+        }
+      };
+      performConversion();
+    }
+  }, [heteronymSelections]); // 监听多音字选择变化
 
   // 高亮显示转换结果中的多音字拼音
   const highlightHeteronymInOutput = useCallback((outputText: string, detailedResults: DetailedResult[]) => {
@@ -588,7 +639,7 @@ export default function PinyinConverter() {
         }
       }
     }
-  }, [heteronymSelections, detailedResults]);
+  }, [heteronymSelections, detailedResults, handleHeteronymSelect]);
 
   // 处理读音选择
   const handlePinyinSelection = useCallback((charIndex: number, pinyinIndex: number) => {
@@ -974,7 +1025,7 @@ export default function PinyinConverter() {
                 <button
                   key={index}
                   onClick={() => handlePinyinSelection(selectionMenu.charIndex, index)}
-                  className={`w-full text-left px-3 py-2 rounded-md text-sm transition-all duration-200 ${
+                  className={`w-full text-left px-2 py-1.5 rounded-md text-xs transition-all duration-200 ${
                     index === selectionMenu.currentSelection
                       ? 'bg-[#66ccff] text-white shadow-md'
                       : isDark
@@ -984,7 +1035,7 @@ export default function PinyinConverter() {
                 >
                   {pinyin}
                   {index === selectionMenu.currentSelection && (
-                    <span className="ml-2 text-xs opacity-75">✓</span>
+                    <span className="ml-1 text-xs opacity-75">✓</span>
                   )}
                 </button>
               ))}
@@ -1005,7 +1056,7 @@ export default function PinyinConverter() {
               <div className="flex space-x-2">
                 <button
                   onClick={() => setHideNonChinese(!hideNonChinese)}
-                  className={`px-3 py-1 text-sm rounded-md transition-all duration-200 ${
+                  className={`px-2 py-1 text-xs rounded-md transition-all duration-200 ${
                     hideNonChinese
                       ? 'bg-[#66ccff] text-white shadow-md'
                       : isDark
@@ -1017,7 +1068,7 @@ export default function PinyinConverter() {
                 </button>
                 <button
                   onClick={() => setShowOnlyHeteronyms(!showOnlyHeteronyms)}
-                  className={`px-3 py-1 text-sm rounded-md transition-all duration-200 ${
+                  className={`px-2 py-1 text-xs rounded-md transition-all duration-200 ${
                     showOnlyHeteronyms
                       ? 'bg-[#66ccff] text-white shadow-md'
                       : isDark
@@ -1056,28 +1107,38 @@ export default function PinyinConverter() {
                           ? 'bg-gray-800/30 border-gray-600 hover:bg-gray-700/30' 
                           : 'bg-gray-50/50 border-gray-200 hover:bg-gray-100/50'
                       } ${
-                        isSelected ? 'ring-2 ring-[#66ccff] ring-opacity-50 bg-[#66ccff] bg-opacity-10' : ''
+                        isSelected ? 'ring-2 ring-[#66ccff] ring-opacity-50 bg-[#66ccff] bg-opacity-10 shadow-md transform scale-105' : ''
                       }`}
                     >
                       <div className="text-center">
                         <div className="text-lg font-bold text-foreground mb-1">{result.origin}</div>
                         {result.isHeteronym ? (
-                          <div className="flex flex-wrap gap-1 justify-center">
-                            {result.pinyin.map((pinyin, pinyinIndex) => (
-                              <button
-                                key={pinyinIndex}
-                                onClick={() => handleHeteronymSelect(charKey, pinyinIndex)}
-                                className={`px-1.5 py-0.5 text-xs rounded transition-all duration-200 ${
-                                  userSelection === pinyinIndex
-                                    ? 'bg-[#66ccff] text-white shadow-md'
-                                    : isDark
-                                    ? 'bg-gray-700 hover:bg-gray-600 text-gray-300'
-                                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                                }`}
-                              >
-                                {pinyin}
-                              </button>
-                            ))}
+                          <div className="flex flex-wrap gap-2 justify-center p-2 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+                            {result.pinyin.map((pinyin, pinyinIndex) => {
+                              // 确定当前按钮是否被选中
+                              const isThisSelected = userSelection === pinyinIndex;
+                              
+                              return (
+                                <button
+                                  key={pinyinIndex}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleHeteronymSelect(charKey, pinyinIndex);
+                                  }}
+                                  className={`px-2 py-1 text-[11px] rounded transition-all duration-200 font-semibold relative border shadow-sm ${
+                                    isThisSelected
+                                      ? 'bg-[#66ccff] text-white shadow-lg ring-2 ring-[#66ccff] ring-opacity-50 transform scale-105 border-[#66ccff]'
+                                      : isDark
+                                      ? 'bg-gray-700 hover:bg-gray-600 text-gray-200 hover:shadow-md border-gray-400 hover:border-gray-300 opacity-90 hover:opacity-100'
+                                      : 'bg-gray-50 hover:bg-gray-100 text-gray-700 hover:shadow-md border-gray-300 hover:border-gray-400 opacity-90 hover:opacity-100'
+                                  }`}
+                                  title={`选择读音: ${pinyin}`}
+                                >
+                                  {pinyin}
+                                </button>
+                              );
+                            })}
                           </div>
                         ) : (
                           <div className="text-sm text-[#66ccff] font-medium">{result.pinyin[0]}</div>

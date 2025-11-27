@@ -27,9 +27,17 @@ export default function MusicPlayer({
   const aplayerRef = useRef<HTMLDivElement>(null);
   const [currentAudioList, setCurrentAudioList] = useState<AudioItem[]>(defaultAudioList);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+
+  // 确保客户端挂载完成
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // 获取正确的basePath，处理GitHub Pages部署
   const getBasePath = () => {
+    if (!isClient) return ''; // 服务端渲染时返回空字符串
+    
     if (typeof window !== 'undefined') {
       // 在开发模式下（localhost），不需要basePath
       if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
@@ -52,6 +60,8 @@ export default function MusicPlayer({
 
   // 格式化音频URL，确保在GitHub Pages上正确访问
   const formatAudioUrl = (url: string) => {
+    if (!isClient) return url; // 服务端渲染时返回原始URL
+    
     // 在开发模式下（localhost），直接返回原始URL，不进行编码
     if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
       // 确保URL以/开头
@@ -127,6 +137,8 @@ export default function MusicPlayer({
   });
 
   useEffect(() => {
+    if (!isClient) return; // 确保客户端挂载完成后再初始化
+    
     const globalManager = GlobalMusicPlayerManager.getInstance();
     
     const initAPlayer = async () => {
@@ -363,7 +375,7 @@ export default function MusicPlayer({
   };
 
     initAPlayer();
-  }, [autoPlay, loop, currentAudioList, defaultMusicList]);
+  }, [isClient, autoPlay, loop, currentAudioList, defaultMusicList]);
 
   // 切换音乐列表
   const switchAudioList = (newList: AudioItem[]) => {

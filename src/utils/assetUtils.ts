@@ -12,13 +12,31 @@ export const getAssetPath = (path: string): string => {
   
   // 在浏览器环境中，检查当前URL路径
   if (typeof window !== 'undefined') {
-    const pathname = window.location.pathname;
-    const pathSegments = pathname.split('/').filter(segment => segment);
+    // 优先使用环境变量中的配置（通过next.config.ts注入）
+    const envBasePath = (window as any).__NEXT_DATA__?.buildId ? 
+                       (window as any).__NEXT_DATA__.runtimeConfig?.basePath || '' : '';
     
-    // 如果路径包含仓库名（GitHub Pages部署），则使用仓库名作为基础路径
-    if (pathSegments.length > 0 && pathSegments[0] !== '' && pathSegments[0] !== 'settings') {
-      const basePath = `/${pathSegments[0]}`;
-      return `${basePath}${cleanPath}`;
+    if (envBasePath) {
+      return `${envBasePath}${cleanPath}`;
+    }
+    
+    // 检查是否是GitHub Pages环境
+    if (isGitHubPages()) {
+      const pathname = window.location.pathname;
+      const pathSegments = pathname.split('/').filter(segment => segment);
+      
+      // GitHub Pages的典型路径结构是 /username/repo-name/
+      // 我们需要识别真正的仓库名，而不是页面路径
+      if (pathSegments.length >= 2) {
+        // 通常GitHub Pages的URL是 username.github.io/repo-name
+        // 所以第二个段通常是仓库名
+        const repoName = pathSegments[1];
+        // 验证这是否是一个有效的仓库名（不是常见的页面路径）
+        const commonPages = ['about', 'archive', 'blogs', 'guestbook', 'settings', 'tools'];
+        if (!commonPages.includes(repoName)) {
+          return `/${pathSegments[0]}/${repoName}${cleanPath}`;
+        }
+      }
     }
     
     // 否则直接返回路径
@@ -49,11 +67,28 @@ export function isGitHubPages(): boolean {
 export function getBasePath(): string {
   // 在浏览器环境中，检查当前URL路径
   if (typeof window !== 'undefined') {
-    const pathname = window.location.pathname;
-    // 如果路径包含仓库名，则提取它作为基础路径
-    const pathSegments = pathname.split('/').filter(segment => segment);
-    if (pathSegments.length > 0 && pathSegments[0] !== '' && pathSegments[0] !== 'settings') {
-      return `/${pathSegments[0]}`;
+    // 优先使用Next.js注入的运行时配置
+    const envBasePath = (window as any).__NEXT_DATA__?.runtimeConfig?.basePath || '';
+    if (envBasePath) {
+      return envBasePath;
+    }
+    
+    // 检查是否是GitHub Pages环境
+    if (isGitHubPages()) {
+      const pathname = window.location.pathname;
+      const pathSegments = pathname.split('/').filter(segment => segment);
+      
+      // GitHub Pages的典型路径结构是 /username/repo-name/
+      if (pathSegments.length >= 2) {
+        // 通常GitHub Pages的URL是 username.github.io/repo-name
+        // 所以第二个段通常是仓库名
+        const repoName = pathSegments[1];
+        // 验证这是否是一个有效的仓库名（不是常见的页面路径）
+        const commonPages = ['about', 'archive', 'blogs', 'guestbook', 'settings', 'tools'];
+        if (!commonPages.includes(repoName)) {
+          return `/${pathSegments[0]}/${repoName}`;
+        }
+      }
     }
   }
   

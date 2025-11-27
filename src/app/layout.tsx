@@ -127,6 +127,7 @@ export default function RootLayout({
         style={{
           colorScheme: 'light dark',
         }}
+        suppressHydrationWarning
       >
         <ThemeProvider
           attribute="class"
