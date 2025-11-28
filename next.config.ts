@@ -73,9 +73,6 @@ const nextConfig = {
     NEXT_PUBLIC_GITHUB_REPO_NAME: repoName,
   },
   
-  // 压缩配置
-  compress: true,
-  
   // 确保正确处理Unicode字符
   pageExtensions: ["tsx", "ts", "jsx", "js"],
   
@@ -106,7 +103,7 @@ const nextConfig = {
   },
   
   // 优化打包
-  webpack: (config, { isServer }) => {
+  webpack: (config: any, { isServer }: { isServer: boolean }) => {
     // 优化chunk分割
     if (!isServer) {
       config.optimization.splitChunks = {

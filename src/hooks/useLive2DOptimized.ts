@@ -109,7 +109,7 @@ export function useLive2DPreloader() {
     });
   };
 
-  // const preloadLive2DResources = useCallback(async (basePath: string = '') => {
+  const preloadLive2DResources = useCallback(async (basePath: string = '') => {
     if (isPreloading) return;
     
     const resources = [
@@ -142,18 +142,22 @@ export function useLive2DPreloader() {
     } finally {
       setIsPreloading(false);
     }
-  // }, [isPreloading, preloadResource]); // 注释掉未使用的函数
+  }, [isPreloading, preloadResource]);
+
+  const clearPreloadedResources = useCallback(() => {
+    setPreloadedResources(new Set());
+    setIsPreloading(false);
+    preloadPromisesRef.current.clear();
+  }, []);
 
   // const isResourcePreloaded = useMemo(() => {
   //   return isModelPreloaded && isMessagePreloaded;
   // }, []); // 空依赖数组，避免循环依赖
 
   return {
-    // isResourcePreloaded, // 移除未使用的变量
-    isModelPreloaded,
-    isMessagePreloaded,
-    preloadModel,
-    preloadMessage,
+    preloadedResources,
+    isPreloading,
+    preloadLive2DResources,
     clearPreloadedResources
   };
 }
@@ -369,7 +373,7 @@ export function useLive2DOptimized() {
     // preloadProgress, // 移除未使用的变量
     preloadLive2DResources,
     // isResourcePreloaded, // 移除未使用的变量
-    clearCache
+    clearPreloadedResources
   } = useLive2DPreloader();
   
   const {
@@ -479,7 +483,7 @@ export function useLive2DOptimized() {
     // 方法
     initialize,
     sendMessage,
-    clearCache,
+    clearPreloadedResources,
     clearQueue,
     // clearEvents, // 移除未使用的变量
     checkDevice,

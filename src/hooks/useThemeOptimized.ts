@@ -141,7 +141,7 @@ export function useThemeOptimized(config: ThemeOptimizerConfig = {}) {
 
 // 辅助函数：获取主题色
 function getThemeColors(themeName: string) {
-  const themes = {
+  const themes: Record<string, { primary: string; secondary: string; accent: string }> = {
     blue: { primary: '#66ccff', secondary: '#1e40af', accent: '#06b6d4' },
     green: { primary: '#10b981', secondary: '#059669', accent: '#34d399' },
     purple: { primary: '#8b5cf6', secondary: '#7c3aed', accent: '#a78bfa' },

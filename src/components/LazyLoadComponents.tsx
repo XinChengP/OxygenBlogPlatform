@@ -3,10 +3,9 @@
 import { lazy, Suspense, useMemo, useState, useEffect, useRef } from 'react';
 
 // 懒加载大型组件
-const MagicCard = lazy(() => import('@/components/magicui/magic-card'));
-const Sparkles = lazy(() => import('@/components/magicui/sparkles'));
-const Timeline = lazy(() => import('@/components/magicui/timeline'));
-const EvervaultCard = lazy(() => import('@/components/magicui/evervault-card'));
+const Sparkles = lazy(() => import('@/components/ui/sparkles').then(module => ({ default: module.SparklesCore })));
+const Timeline = lazy(() => import('@/components/ui/timeline').then(module => ({ default: module.Timeline })));
+const EvervaultCard = lazy(() => import('@/components/ui/evervault-card').then(module => ({ default: module.EvervaultCard })));
 
 interface LazyLoadWrapperProps {
   children: React.ReactNode;
@@ -49,14 +48,6 @@ export function LazyLoadWrapper({ children, fallback = null, threshold = 0.1 }: 
 }
 
 // 优化的大型组件加载器
-export function OptimizedMagicCard(props: any) {
-  return (
-    <Suspense fallback={<div className="w-full h-64 bg-gray-200 dark:bg-gray-800 animate-pulse rounded-lg" />}>
-      <MagicCard {...props} />
-    </Suspense>
-  );
-}
-
 export function OptimizedSparkles(props: any) {
   return (
     <Suspense fallback={<div className="w-full h-32 bg-gradient-to-r from-blue-500 to-purple-500 animate-pulse rounded-lg" />}>
@@ -83,18 +74,13 @@ export function OptimizedEvervaultCard(props: any) {
 
 // 工具函数：预加载关键组件
 export const preloadComponents = () => {
-  // 预加载关键组件
-  MagicCard.preload?.();
-  Sparkles.preload?.();
-  Timeline.preload?.();
-  EvervaultCard.preload?.();
+  // React.lazy组件不支持preload方法
+  // 这里可以添加其他预加载逻辑
 };
 
 // 按需加载工具函数
 export const loadComponent = (componentName: string) => {
   switch (componentName) {
-    case 'MagicCard':
-      return MagicCard;
     case 'Sparkles':
       return Sparkles;
     case 'Timeline':

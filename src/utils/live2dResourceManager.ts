@@ -232,25 +232,21 @@ class Live2DResourceManager {
     let url: string;
     let type: string;
     
-    switch (config.type) {
-      case 'model':
-        url = config.modelPath;
-        type = 'json';
-        break;
-      case 'texture':
-        url = config.texturePath;
-        type = 'image';
-        break;
-      case 'motion':
-        url = config.motionPath;
-        type = 'json';
-        break;
-      case 'sound':
-        url = config.soundPath!;
-        type = 'audio';
-        break;
-      default:
-        throw new Error(`不支持的资源类型: ${(config as any).type}`);
+    // 根据路径确定资源类型
+    if (config.modelPath) {
+      url = config.modelPath;
+      type = 'json';
+    } else if (config.texturePath) {
+      url = config.texturePath;
+      type = 'image';
+    } else if (config.motionPath) {
+      url = config.motionPath;
+      type = 'json';
+    } else if (config.soundPath) {
+      url = config.soundPath;
+      type = 'audio';
+    } else {
+      throw new Error(`无法确定资源类型: ${JSON.stringify(config)}`);
     }
     
     const response = await fetch(url);
@@ -383,7 +379,18 @@ class Live2DResourceManager {
    * 获取资源键
    */
   private getResourceKey(config: Live2DResourceConfig): string {
-    return `${config.type}:${config.modelPath}`;
+    // 根据路径确定资源类型
+    if (config.modelPath) {
+      return `model:${config.modelPath}`;
+    } else if (config.texturePath) {
+      return `texture:${config.texturePath}`;
+    } else if (config.motionPath) {
+      return `motion:${config.motionPath}`;
+    } else if (config.soundPath) {
+      return `sound:${config.soundPath}`;
+    } else {
+      return `unknown:${config.modelPath}`;
+    }
   }
 
   /**
