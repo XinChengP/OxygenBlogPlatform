@@ -359,7 +359,7 @@ export function smartWordCount(text: string, textType: 'general' | 'technical' |
 export const calculateAdvancedWordCount = advancedWordCount;
 export const calculateReadingTime = calculateAdvancedReadingTime;
 
-export default {
+const wordCountUtils = {
   advancedWordCount,
   calculateAdvancedReadingTime,
   calculateAdvancedWordCount,
@@ -367,3 +367,5 @@ export default {
   getTextComplexity,
   smartWordCount
 };
+
+export default wordCountUtils;

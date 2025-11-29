@@ -5,10 +5,10 @@ import { useState } from 'react';
 
 export default function WordCountTest() {
   const [inputText, setInputText] = useState('');
-  const [stats, setStats] = useState(null);
-  const [readingTime, setReadingTime] = useState(0);
+  const [stats, setStats] = useState<any>(null);
+  const [readingTime, setReadingTime] = useState<any>(null);
 
-  const handleTextChange = (text) => {
+  const handleTextChange = (text: string) => {
     setInputText(text);
     const wordStats = calculateAdvancedWordCount(text);
     const time = calculateReadingTime(text);
@@ -99,7 +99,7 @@ export default function WordCountTest() {
           
           <div className="mt-4 p-4 bg-blue-50 rounded">
             <div className="text-sm text-gray-600">预计阅读时间</div>
-            <div className="text-2xl font-bold text-blue-700">{readingTime} 分钟</div>
+            <div className="text-2xl font-bold text-blue-700">{readingTime?.formattedTime || '0 分钟'}</div>
           </div>
         </div>
       )}
