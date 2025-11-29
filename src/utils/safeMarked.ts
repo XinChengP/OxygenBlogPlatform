@@ -183,7 +183,10 @@ function fallbackMarkdownToHtml(markdown: string): string {
     html = html.replace(/\n\n/g, '</p><p>');
     html = '<p>' + html + '</p>';
     
-    return html;
+    // 使用DOMPurify清理HTML，防止XSS攻击
+    const sanitizedHtml = DOMPurify.sanitize(html);
+    
+    return sanitizedHtml;
   } catch (error) {
     console.error('备用Markdown解析失败:', error);
     return markdown; // 最坏情况下返回原始内容

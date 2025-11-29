@@ -14,10 +14,6 @@ const nextConfig = {
     scrollRestoration: true,
     // 优化内存使用
     workerThreads: false,
-    // 启用并行路由优化
-    parallelRoutes: true,
-    // 启用服务器组件流式渲染
-    serverComponentsStream: true,
     // 启用客户端路由缓存
     clientRouterFilter: true,
   },
@@ -32,8 +28,6 @@ const nextConfig = {
     removeConsole: isStaticExport ? { exclude: ['error'] } : false,
     // 启用 emotion 优化
     emotion: true,
-    // 启用JSX运行时优化
-    jsxImportSource: 'react',
   },
   
   // 性能优化配置
