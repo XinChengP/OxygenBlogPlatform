@@ -1564,6 +1564,22 @@ seoDescription: "${blogMetadata.seoDescription}"
       
       if (match) {
         parseFrontmatterAndUpdateMetadata(newContent);
+      } else {
+        // 如果没有Frontmatter，提取第一个一级标题作为默认标题
+        const firstLevel1Heading = newContent
+          .split('\n')
+          .find(line => line.trim().startsWith('# '))
+          ?.replace(/^#\s+/, '')
+          ?.trim();
+        
+        // 如果有第一个一级标题且当前标题为空，使用它作为标题
+        if (firstLevel1Heading && !blogMetadata.title) {
+          setBlogMetadata(prev => ({
+            ...prev,
+            title: firstLevel1Heading,
+            readTime: prev.readTime || calculateReadingTime(newContent),
+          }));
+        }
       }
     }
   };
@@ -1629,10 +1645,24 @@ seoDescription: "${blogMetadata.seoDescription}"
         });
         
         // 更新元数据状态
-        setBlogMetadata(prev => ({
-          ...prev,
-          ...parsedMetadata
-        }));
+        setBlogMetadata(prev => {
+          const updatedMetadata = { ...prev, ...parsedMetadata };
+          
+          // 如果没有标题，从内容中提取第一个一级标题作为默认标题
+          if (!updatedMetadata.title && markdownContent) {
+            const firstLevel1Heading = markdownContent
+              .split('\n')
+              .find(line => line.trim().startsWith('# '))
+              ?.replace(/^#\s+/, '')
+              ?.trim();
+            
+            if (firstLevel1Heading) {
+              updatedMetadata.title = firstLevel1Heading;
+            }
+          }
+          
+          return updatedMetadata;
+        });
         
         // 更新内容（移除Frontmatter）
         setContent(markdownContent);
