@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
@@ -12,7 +12,7 @@ import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
  * 导航栏组件
  * 支持响应式设计和主题切换
  */
-export default function Navigation() {
+const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
@@ -22,12 +22,72 @@ export default function Navigation() {
   const pathname = usePathname();
   const { navigationStyle } = useBackgroundStyle('home');
 
+  // 导航项配置
+  const navItems = useMemo(() => [
+    { href: '/', label: '首页' },
+    { href: '/blogs', label: '博客' },
+    { href: '/archive', label: '归档' },
+    { href: '/guestbook', label: '留言板' },
+    { href: '/tools', label: '小工具' },
+    { href: '/about', label: '关于' },
+    // 设置选项已从导航栏隐藏，但功能仍然保留
+  ], []);
+
+  /**
+   * 检查链接是否为当前页面
+   */
+  const isActive = useCallback((href: string) => {
+    if (href === '/') {
+      return pathname === '/';
+    }
+    return pathname.startsWith(href);
+  }, [pathname]);
+
+  /**
+   * 切换移动端菜单显示状态
+   */
+  const toggleMobileMenu = useCallback(() => {
+    setIsMenuOpen(prev => !prev);
+  }, []);
+  
+  /**
+   * 关闭移动端菜单
+   */
+  const closeMobileMenu = useCallback(() => {
+    setIsMenuOpen(false);
+  }, []);
+
+  /**
+   * 处理链接点击事件
+   * 优化页面切换体验
+   */
+  const handleLinkClick = useCallback((e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    // 如果点击的是当前页面，滚动到顶部
+    if (pathname === href) {
+      e.preventDefault();
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+      return;
+    }
+
+    // 移动端关闭菜单
+    setIsMenuOpen(false);
+
+    // 保存当前滚动位置
+    sessionStorage.setItem(`scrollPos_${pathname}`, window.scrollY.toString());
+  }, [pathname]);
+
   /**
    * 监听滚动事件，添加滚动效果和隐藏/显示逻辑
    */
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
+      
+      // 节流：只在滚动位置变化超过10px时更新状态
+      if (Math.abs(currentScrollY - lastScrollY) < 10) return;
       
       // 设置滚动状态
       setIsScrolled(currentScrollY > 10);
@@ -63,86 +123,39 @@ export default function Navigation() {
 
   /**
    * 监听鼠标移动，检测是否在页面顶部区域
+   * 使用节流优化
    */
   useEffect(() => {
+    let mouseMoveTimeout: NodeJS.Timeout;
+    
     const handleMouseMove = (e: MouseEvent) => {
-      // 当鼠标在页面顶部100px区域内时，显示导航栏
-      if (e.clientY <= 100) {
-        setIsNearTop(true);
-      } else {
-        setIsNearTop(false);
-      }
+      // 节流：只在鼠标移动事件触发后50ms更新状态
+      clearTimeout(mouseMoveTimeout);
+      mouseMoveTimeout = setTimeout(() => {
+        // 当鼠标在页面顶部100px区域内时，显示导航栏
+        setIsNearTop(e.clientY <= 100);
+      }, 50);
     };
 
     window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      clearTimeout(mouseMoveTimeout);
+    };
   }, []);
 
-  /**
-   * 检查链接是否为当前页面
-   */
-  const isActive = (href: string) => {
-    if (href === '/') {
-      return pathname === '/';
-    }
-    return pathname.startsWith(href);
-  };
-  
-  const navItems = [
-    { href: '/', label: '首页' },
-    { href: '/blogs', label: '博客' },
-    { href: '/archive', label: '归档' },
-    { href: '/guestbook', label: '留言板' },
-    { href: '/tools', label: '小工具' },
-    { href: '/about', label: '关于' },
-    // 设置选项已从导航栏隐藏，但功能仍然保留
-  ];
-  
-  /**
-   * 切换移动端菜单显示状态
-   */
-  const toggleMobileMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
-  };
-  
-  /**
-   * 关闭移动端菜单
-   */
-  const closeMobileMenu = () => {
-    setIsMenuOpen(false);
-  };
-
-  /**
-   * 处理链接点击事件
-   * 优化页面切换体验
-   */
-  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-    // 如果点击的是当前页面，滚动到顶部
-    if (pathname === href) {
-      e.preventDefault();
-      window.scrollTo({
-        top: 0,
-        behavior: 'smooth'
-      });
-      return;
-    }
-
-    // 移动端关闭菜单
-    if (isMenuOpen) {
-      closeMobileMenu();
-    }
-
-    // 保存当前滚动位置
-    sessionStorage.setItem(`scrollPos_${pathname}`, window.scrollY.toString());
-  };
+  // 导航栏样式
+  const navClassName = useMemo(() => {
+    return `fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+      isAtTop 
+        ? 'bg-transparent dark:bg-transparent border-transparent' 
+        : 'bg-white/70 dark:bg-gray-900/70 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-700/50'
+    }`;
+  }, [isAtTop]);
   
   return (
     <motion.nav 
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isAtTop 
-          ? 'bg-transparent dark:bg-transparent border-transparent' 
-          : 'bg-white/70 dark:bg-gray-900/70 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-700/50'
-      }`}
+      className={navClassName}
       style={navigationStyle.style}
       initial={{ y: 0 }}
       animate={{ y: isVisible ? 0 : -100 }}
@@ -235,4 +248,7 @@ export default function Navigation() {
       </div>
     </motion.nav>
   );
-}
+};
+
+// 使用React.memo减少不必要的渲染
+export default React.memo(Navigation);

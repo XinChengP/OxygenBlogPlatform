@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import DOMPurify from 'dompurify';
 import GlobalMusicPlayerManager from '@/utils/globalMusicPlayerManager';
 import type { APlayerNS } from '@/types/aplayer';
 import { emitMusicEvent } from '@/utils/live2dEventEmitter';
@@ -404,7 +405,8 @@ export default function MusicPlayerOptimized({
           }
           
           if (highlightedText !== text) {
-            element.innerHTML = highlightedText;
+            // 使用DOMPurify清理HTML内容，防止XSS攻击
+            element.innerHTML = DOMPurify.sanitize(highlightedText);
             (element as any)._highlighted = true;
           }
         });

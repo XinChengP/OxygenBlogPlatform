@@ -1,12 +1,13 @@
 'use client';
 
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
 import MusicPlayer from './MusicPlayer';
 import Live2DController from './Live2DController';
 import { getMusicPlayerVisibility, onMusicPlayerVisibilityChange } from '@/utils/musicPlayerVisibility';
 
-export default function ConditionalComponents() {
+// 使用React.memo减少不必要的渲染
+export default React.memo(function ConditionalComponents() {
   const pathname = usePathname();
   const [musicPlayerVisible, setMusicPlayerVisible] = useState(false);
   const [isClient, setIsClient] = useState(false);
@@ -30,15 +31,17 @@ export default function ConditionalComponents() {
     };
   }, [isClient]);
   
-  // 在首页(/)、404页面(/404)和错误页面隐藏Live2D
-  // 但是为了确保音乐播放不中断，我们在所有页面都渲染音乐播放器
-  // 通过CSS来控制其可见性
-  const hideLive2DAndMusic = pathname === '/' || pathname === '/404' || pathname.startsWith('/_not-found');
+  // 计算是否需要隐藏Live2D和音乐播放器
+  const hideLive2DAndMusic = useMemo(() => {
+    return pathname === '/' || pathname === '/404' || pathname.startsWith('/_not-found');
+  }, [pathname]);
   
   // 使用suppressHydrationWarning避免水合警告
-  const containerClassName = isClient 
-    ? (hideLive2DAndMusic || !musicPlayerVisible ? 'aplayer-container hidden' : 'aplayer-container')
-    : 'aplayer-container';
+  const containerClassName = useMemo(() => {
+    return isClient 
+      ? (hideLive2DAndMusic || !musicPlayerVisible ? 'aplayer-container hidden' : 'aplayer-container')
+      : 'aplayer-container';
+  }, [isClient, hideLive2DAndMusic, musicPlayerVisible]);
   
   return (
     <>
@@ -50,4 +53,4 @@ export default function ConditionalComponents() {
       <Live2DController />
     </>
   );
-}
+});

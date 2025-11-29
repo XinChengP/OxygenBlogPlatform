@@ -1,7 +1,9 @@
 /**
  * 安全的marked库包装器
- * 防止String.repeat错误
+ * 防止String.repeat错误并使用DOMPurify防止XSS攻击
  */
+
+import DOMPurify from 'dompurify';
 
 // 保存原始的String.repeat方法
 const originalRepeat = String.prototype.repeat;
@@ -96,7 +98,10 @@ export async function safeMarkdownToHtml(markdown: string): Promise<string> {
     // 处理行内代码样式 - 简洁的视觉样式
     html = html.replace(/<code>(.*?)<\/code>/g, '<code class="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-md text-sm font-mono border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200">$1</code>');
     
-    return html;
+    // 使用DOMPurify清理HTML，防止XSS攻击
+    const sanitizedHtml = DOMPurify.sanitize(html);
+    
+    return sanitizedHtml;
   } catch (error) {
     console.error('Marked解析失败，使用备用方案:', error);
     return fallbackMarkdownToHtml(markdown);

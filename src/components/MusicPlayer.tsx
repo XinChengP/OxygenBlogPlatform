@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import DOMPurify from 'dompurify';
 import GlobalMusicPlayerManager from '@/utils/globalMusicPlayerManager';
 import type { APlayerNS } from '@/types/aplayer';
 import { emitMusicEvent } from '@/utils/live2dEventEmitter';
@@ -19,7 +20,8 @@ interface MusicPlayerProps {
   loop?: boolean;
 }
 
-export default function MusicPlayer({ 
+// 使用React.memo减少不必要的渲染
+const MusicPlayerComponent = function MusicPlayer({ 
   defaultAudioList = [],
   autoPlay = false,
   loop = false 
@@ -35,7 +37,7 @@ export default function MusicPlayer({
   }, []);
 
   // 获取正确的basePath，处理GitHub Pages部署
-  const getBasePath = () => {
+  const getBasePath = useCallback(() => {
     if (!isClient) return ''; // 服务端渲染时返回空字符串
     
     if (typeof window !== 'undefined') {
@@ -56,10 +58,10 @@ export default function MusicPlayer({
     }
     // 在服务器端，使用构建时的basePath
     return process.env.NEXT_PUBLIC_BASE_PATH || '';
-  };
+  }, [isClient]);
 
   // 格式化音频URL，确保在GitHub Pages上正确访问
-  const formatAudioUrl = (url: string) => {
+  const formatAudioUrl = useCallback((url: string) => {
     if (!isClient) return url; // 服务端渲染时返回原始URL
     
     // 在开发模式下（localhost），直接返回原始URL，不进行编码
@@ -81,10 +83,10 @@ export default function MusicPlayer({
     
     // 不进行编码，让APlayer内部处理URL编码，避免双重编码
     return fullPath;
-  };
+  }, [isClient, getBasePath]);
 
   // 从文件路径中提取显示名称，隐藏"-"后面的所有文字
-  const extractDisplayName = (filePath: string): string => {
+  const extractDisplayName = useCallback((filePath: string): string => {
     // 提取文件名（去掉路径）
     const fileName = filePath.split('/').pop() || '';
     // 去掉扩展名
@@ -92,10 +94,10 @@ export default function MusicPlayer({
     // 去掉"-"后面的所有文字
     const displayName = nameWithoutExt.split(' - ')[0];
     return displayName;
-  };
+  }, []);
 
   // 获取封面文件路径，支持jpg和png格式
-  const getCoverPath = (songFileName: string): string => {
+  const getCoverPath = useCallback((songFileName: string): string => {
     const baseName = songFileName.replace(/\.[^/.]+$/, '');
     
     // 根据实际文件格式返回正确的路径
@@ -108,38 +110,48 @@ export default function MusicPlayer({
     
     // 默认返回jpg格式
     return `/music/covers/${baseName}.jpg`;
-  };
+  }, []);
 
   // 音乐列表 - 使用extractDisplayName函数自动处理文件名
-  const defaultMusicList: AudioItem[] = [
-    "/music/一半一半 - 洛天依.mp3",
-    "/music/三月雨 - 洛天依.mp3",
-    "/music/夏虫 - 洛天依.mp3",
-    "/music/天星问 - 洛天依.mp3",
-    "/music/流光 (Light Me Up) - 洛天依.mp3",
-    "/music/啥啊 - 洛天依.mp3",
-    "/music/异样的风暴中心 - 洛天依.mp3",
-    "/music/歌行四方 - 洛天依.mp3",
-    "/music/蝴蝶 - 洛天依.mp3",
-    "/music/白石溪 - 洛天依、乐正绫.mp3"
-  ].map(filePath => {
-    const songName = extractDisplayName(filePath);
-    const fullFileName = filePath.split('/').pop() || '';
-    const nameWithoutExt = fullFileName.replace(/\.[^/.]+$/, '');
-    
-    return {
-      name: songName,
-      artist: nameWithoutExt.includes('乐正绫') ? '洛天依、乐正绫' : '洛天依',
-      url: filePath,
-      cover: formatAudioUrl(getCoverPath(fullFileName)),
-      lrc: formatAudioUrl(`/music/lyrics/${nameWithoutExt}.lrc`)
-    };
-  });
+  const defaultMusicList = useMemo(() => {
+    return [
+      "/music/一半一半 - 洛天依.mp3",
+      "/music/三月雨 - 洛天依.mp3",
+      "/music/夏虫 - 洛天依.mp3",
+      "/music/天星问 - 洛天依.mp3",
+      "/music/流光 (Light Me Up) - 洛天依.mp3",
+      "/music/啥啊 - 洛天依.mp3",
+      "/music/异样的风暴中心 - 洛天依.mp3",
+      "/music/歌行四方 - 洛天依.mp3",
+      "/music/蝴蝶 - 洛天依.mp3",
+      "/music/白石溪 - 洛天依、乐正绫.mp3"
+    ].map(filePath => {
+      const songName = extractDisplayName(filePath);
+      const fullFileName = filePath.split('/').pop() || '';
+      const nameWithoutExt = fullFileName.replace(/\.[^/.]+$/, '');
+      
+      return {
+        name: songName,
+        artist: nameWithoutExt.includes('乐正绫') ? '洛天依、乐正绫' : '洛天依',
+        url: filePath,
+        cover: formatAudioUrl(getCoverPath(fullFileName)),
+        lrc: formatAudioUrl(`/music/lyrics/${nameWithoutExt}.lrc`)
+      };
+    });
+  }, [extractDisplayName, formatAudioUrl, getCoverPath]);
+
+  // 切换音乐列表
+  const switchAudioList = useCallback((newList: AudioItem[]) => {
+    setCurrentAudioList(newList);
+  }, []);
 
   useEffect(() => {
     if (!isClient) return; // 确保客户端挂载完成后再初始化
     
     const globalManager = GlobalMusicPlayerManager.getInstance();
+    
+    // 检查是否已经初始化过播放器
+    if (isInitialized) return;
     
     const initAPlayer = async () => {
       // 动态加载APlayer
@@ -314,7 +326,8 @@ export default function MusicPlayer({
           }
           
           if (highlightedText !== text) {
-            element.innerHTML = highlightedText;
+            // 使用DOMPurify清理HTML内容，防止XSS攻击
+            element.innerHTML = DOMPurify.sanitize(highlightedText);
           }
         });
       };
@@ -375,14 +388,14 @@ export default function MusicPlayer({
   };
 
     initAPlayer();
-  }, [isClient, autoPlay, loop, currentAudioList, defaultMusicList]);
+  }, [isClient, isInitialized, autoPlay, loop, currentAudioList, formatAudioUrl]);
 
-  // 切换音乐列表
-  const switchAudioList = (newList: AudioItem[]) => {
-    setCurrentAudioList(newList);
-  };
+  
 
   return (
     <div ref={aplayerRef} className="aplayer-container" />
   );
-}
+};
+
+// 使用React.memo减少不必要的渲染
+export default React.memo(MusicPlayerComponent);

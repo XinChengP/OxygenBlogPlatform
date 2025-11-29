@@ -4,7 +4,7 @@ const repoName = process.env.NEXT_PUBLIC_GITHUB_REPO_NAME || 'OxygenBlogPlatform
 const nextConfig = {
   // 实验性功能
   experimental: {
-    // 优化包导入 - 移除有问题的react-syntax-highlighter
+    // 优化包导入
     optimizePackageImports: ["react-markdown", "remark-gfm", "rehype-katex", "framer-motion", "lucide-react", "@heroicons/react"],
     // 启用现代CSS特性
     optimizeCss: true,
@@ -14,6 +14,12 @@ const nextConfig = {
     scrollRestoration: true,
     // 优化内存使用
     workerThreads: false,
+    // 启用并行路由优化
+    parallelRoutes: true,
+    // 启用服务器组件流式渲染
+    serverComponentsStream: true,
+    // 启用客户端路由缓存
+    clientRouterFilter: true,
   },
   // 启用严格模式
   reactStrictMode: true,
@@ -26,11 +32,27 @@ const nextConfig = {
     removeConsole: isStaticExport ? { exclude: ['error'] } : false,
     // 启用 emotion 优化
     emotion: true,
+    // 启用JSX运行时优化
+    jsxImportSource: 'react',
   },
   
-  // 性能优化配置 - 移除重复的swcMinify配置
+  // 性能优化配置
   // 启用HTTP压缩
   compress: true,
+  // 优化图像加载
+  images: {
+    // 启用图像优化
+    formats: ['image/avif', 'image/webp'],
+    // 配置图像域名
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "**",
+      },
+    ],
+    // 静态导出时必须禁用图片优化
+    unoptimized: isStaticExport,
+  },
   
   // GitHub Pages静态导出配置
   ...(isStaticExport && {
@@ -109,6 +131,8 @@ const nextConfig = {
       config.optimization.splitChunks = {
         ...config.optimization.splitChunks,
         chunks: 'all',
+        maxInitialRequests: 10,
+        minSize: 20000,
         cacheGroups: {
           default: false,
           vendors: false,
@@ -118,6 +142,7 @@ const nextConfig = {
             chunks: 'all',
             test: /node_modules/,
             priority: 20,
+            maxSize: 500000,
           },
           // common chunk
           common: {
@@ -127,6 +152,7 @@ const nextConfig = {
             priority: 10,
             reuseExistingChunk: true,
             enforce: true,
+            maxSize: 300000,
           },
           // 第三方库单独打包
           ...['react', 'react-dom', 'framer-motion', 'next'].reduce((acc, name) => {
@@ -135,11 +161,18 @@ const nextConfig = {
               priority: 30,
               test: new RegExp(`[\\/]node_modules[\\/]${name}[\\/]`),
               chunks: 'all',
+              maxSize: 400000,
             };
             return acc;
           }, {} as any),
         },
       };
+      
+      // 优化运行时代码
+      config.optimization.runtimeChunk = 'single';
+      config.optimization.removeAvailableModules = true;
+      config.optimization.removeEmptyChunks = true;
+      config.optimization.mergeDuplicateChunks = true;
     }
     
     // 优化解析
@@ -148,7 +181,32 @@ const nextConfig = {
       fs: false,
       net: false,
       tls: false,
+      crypto: false,
+      path: false,
     };
+    
+    // 优化资源加载
+    config.module.rules.push(
+      {
+        test: /\.(png|jpg|gif|webp|avif)$/,
+        type: 'asset',
+        generator: {
+          filename: 'static/[hash][ext]',
+        },
+        parser: {
+          dataUrlCondition: {
+            maxSize: 8192, // 8KB以下的图片转为base64
+          },
+        },
+      },
+      {
+        test: /\.(woff|woff2|eot|ttf|otf)$/,
+        type: 'asset/resource',
+        generator: {
+          filename: 'static/fonts/[hash][ext]',
+        },
+      }
+    );
     
     return config;
   },
@@ -158,6 +216,58 @@ const nextConfig = {
   
   // 生成源映射（仅在开发环境）
   productionBrowserSourceMaps: !isStaticExport,
+  
+  // 优化HTTP头
+  headers: async () => {
+    return [
+      {
+        // 所有路由
+        source: '/:path*',
+        headers: [
+          // 缓存静态资源
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+          // 预连接到关键域名
+          {
+            key: 'Link',
+            value: '<https://fonts.googleapis.com>; rel=preconnect; crossorigin',
+          },
+          // 启用HSTS
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=31536000; includeSubDomains; preload',
+          },
+          // 防止XSS攻击
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          // 防止点击劫持
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+          // 防止MIME类型嗅探
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+        ],
+      },
+      // API路由不缓存
+      {
+        source: '/api/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, max-age=0',
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

@@ -1,7 +1,7 @@
 'use client';
 
-import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
+import { useEffect, useState, useMemo } from 'react';
 import LuoTianyiLive2D from './LuoTianyiLive2D';
 
 /**
@@ -10,111 +10,41 @@ import LuoTianyiLive2D from './LuoTianyiLive2D';
  */
 export default function Live2DController() {
   const pathname = usePathname();
-  const router = useRouter();
-  const [is404Page, setIs404Page] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   
-  console.log('[Live2DController] Current pathname:', pathname);
-  
-  // 检测404页面的状态
+  // 确保客户端挂载完成
   useEffect(() => {
-    const check404Status = () => {
-      // 多种方式检测404页面
-      const is404 = 
-        // 方式1: 检查页面标题是否包含404
-        (typeof document !== 'undefined' && document.title.includes('404')) ||
-        // 方式2: 检查body class是否包含not-found
-        (typeof document !== 'undefined' && document.body.classList.contains('not-found')) ||
-        // 方式3: 检查URL路径模式（不匹配已知路由）
-        !isKnownRoute(pathname);
-      
-      setIs404Page(is404);
-      
-      if (is404) {
-        console.log('🚫 404页面检测成功 - 隐藏Live2D');
-      }
-    };
-    
-    // 延迟检查确保页面完全加载
-    const timer = setTimeout(check404Status, 500);
-    return () => clearTimeout(timer);
-  }, [pathname]);
+    setIsClient(true);
+  }, []);
   
   // 检查是否为已知路由
-  const isKnownRoute = (path: string): boolean => {
+  const isKnownRoute = useMemo(() => {
     const knownRoutes = [
-      '/',
       '/about',
       '/blogs',
       '/archive', 
       '/test',
       '/settings',
       '/guestbook',
-      '/tools',
-      '/not-found',
-      '/404',
-      '/_not-found/page'
+      '/tools'
     ];
     
     // 检查路径是否匹配已知路由或包含已知前缀
     return knownRoutes.some(route => {
-      if (route === path) return true;
-      if (path.startsWith(route + '/')) return true;
+      if (route === pathname) return true;
+      if (pathname.startsWith(route + '/')) return true;
       return false;
     });
-  };
+  }, [pathname]);
   
-  // 强制调试输出
-  if (typeof window !== 'undefined') {
-    console.log('🔍 Live2DController RENDERED:', { 
-      pathname, 
-      is404Page,
-      timestamp: new Date().toISOString(),
-      userAgent: navigator.userAgent.substring(0, 50) + '...'
-    });
-  }
+  // 简化的显示逻辑：只在首页和404页面隐藏，其他页面都显示
+  const shouldShowLive2D = useMemo(() => {
+    // 只在首页(/)、404页面和不存在的路由隐藏Live2D
+    return pathname !== '/' && pathname !== '/404' && pathname !== '/not-found' && pathname !== '/_not-found/page' && isKnownRoute;
+  }, [pathname, isKnownRoute]);
   
-  // 简化的显示逻辑：只在首页和404页面隐藏，其他页面都由ConditionalComponents控制
-  const hideLive2D = pathname === '/' || pathname === '/404';
-  
-  console.log('[Live2DController] Hide Live2D:', hideLive2D);
-  
-  // 详细调试信息
-  if (typeof window !== 'undefined') {
-    console.log('🔍 Live2DController Debug:', {
-      pathname,
-      hideLive2D,
-      is404Page,
-      timestamp: new Date().toISOString(),
-      conditions: {
-        isRoot: pathname === '/',
-        isNotFound: pathname === '/not-found',
-        is404: pathname === '/404',
-        isNotFoundPage: pathname === '/_not-found/page',
-        startsWith404: pathname.startsWith('/404'),
-        includesNonexistent: pathname.includes('/nonexistent'),
-        includesNotFound: pathname.includes('not-found'),
-        is404Page,
-        notBlogs: !pathname.startsWith('/blogs'),
-        notArchive: !pathname.startsWith('/archive'),
-        notAbout: !pathname.startsWith('/about'),
-        notTest: !pathname.startsWith('/test'),
-        notSettings: !pathname.startsWith('/settings'),
-        notGuestbook: !pathname.startsWith('/guestbook'),
-        notTools: !pathname.startsWith('/tools')
-      }
-    });
-  }
-  
-  if (hideLive2D) {
-    if (typeof window !== 'undefined') {
-      console.log('🚫 Live2DController: Hiding Live2D for path:', pathname, '404Page:', is404Page);
-    }
+  if (!shouldShowLive2D) {
     return null;
-  }
-  
-  if (typeof window !== 'undefined') {
-    console.log('✅ Live2DController: Showing Live2D for path:', pathname);
-    console.log('🎯 Live2DController: 即将渲染 LuoTianyiLive2D 组件');
   }
   
   return <LuoTianyiLive2D />;

@@ -66,24 +66,27 @@ export default function LuoTianyiLive2D() {
         triggerFadeOut();
     }, [triggerFadeOut]);
 
-    // 关键调试：确认组件被挂载
+    // 组件挂载和卸载清理
     useEffect(() => {
-        console.log('[LuoTianyiLive2D] 🎯 组件已挂载！组件实例创建成功');
-        console.log('[LuoTianyiLive2D] 组件状态:', {
-            isLoading,
-            isMobileDevice,
-            hasCanvas: !!canvasRef.current,
-            userAgent: typeof navigator !== 'undefined' ? navigator.userAgent.substring(0, 50) : 'undefined'
-        });
-        
+        // 清理所有定时器和事件监听器
         return () => {
-            console.log('[LuoTianyiLive2D] 🎯 组件即将卸载');
             // 清理所有定时器
             if (fadeTimeoutRef.current) {
                 clearTimeout(fadeTimeoutRef.current);
             }
             if (interactionTimeoutRef.current) {
                 clearTimeout(interactionTimeoutRef.current);
+            }
+            
+            // 清理全局事件监听器
+            if (typeof window !== 'undefined') {
+                // 清理可能存在的全局定时器
+                if ((window as any).__live2dInterval) {
+                    clearInterval((window as any).__live2dInterval);
+                }
+                if ((window as any).__live2dTimeout) {
+                    clearTimeout((window as any).__live2dTimeout);
+                }
             }
         };
     }, []);
