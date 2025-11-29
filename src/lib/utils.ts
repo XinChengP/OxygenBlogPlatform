@@ -17,38 +17,124 @@ export function cn(...inputs: ClassValue[]) {
  * @param enWordsPerMinute - 英文每分钟阅读单词数，默认为200
  * @returns 阅读时长（分钟），最小为1分钟
  */
-export function calculateReadingTime(
-  content: string, 
-  cnCharsPerMinute: number = 400, 
-  enWordsPerMinute: number = 200
-): number {
-  if (!content) return 1;
+export function calculateReadingTime(content: string): number {
+  if (!content || content.trim().length === 0) return 1;
   
   // 移除HTML标签和Markdown标记
-  const text = content
-    .replace(/<\/?[^>]+(>|$)/g, '') // 移除HTML标签
+  const cleanContent = content
+    .replace(/<\/?[^>]+(>|$)/g, '')
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/`[^`]*`/g, '')
     .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1') // 处理Markdown链接和图片
-    .replace(/```[\s\S]*?```/g, '') // 移除代码块
-    .replace(/`[^`]*`/g, '') // 移除行内代码
     .replace(/#{1,6}\s/g, '') // 移除标题标记
-    .replace(/\*\*|__|~~|\*|_/g, ''); // 移除加粗、斜体等标记
+    .replace(/\*\*|__|~~|\*|_/g, '') // 移除加粗、斜体等标记
+    .trim();
   
-  // 分别计算中文字符和英文单词
-  const cnCharCount = (text.match(/[\u4e00-\u9fa5]/g) || []).length;
+  if (cleanContent.length === 0) return 1;
   
-  // 提取所有非中文部分，按空格分割计算英文单词数
-  const nonCnText = text.replace(/[\u4e00-\u9fa5]/g, ' ');
-  const enWordCount = nonCnText.trim().split(/\s+/).filter(Boolean).length;
+  // CJK字符范围（包含中日韩统一表意符号）
+  const CJK_RANGES = [
+    [0x4e00, 0x9fff],   // CJK Unified Ideographs
+    [0x3400, 0x4dbf],   // CJK Extension A
+    [0xf900, 0xfaff],   // CJK Compatibility Ideographs
+    [0x3000, 0x303f],   // CJK Symbols and Punctuation
+  ];
   
-  // 分别计算中文和英文的阅读时间
-  const cnReadingTime = cnCharCount / cnCharsPerMinute;
-  const enReadingTime = enWordCount / enWordsPerMinute;
+  // 检查字符是否在指定范围内
+  const isCharInRanges = (charCode: number, ranges: number[][]) => {
+    return ranges.some(([start, end]) => charCode >= start && charCode <= end);
+  };
   
-  // 计算总阅读时间（分钟）
-  const totalReadingTime = Math.ceil(cnReadingTime + enReadingTime);
+  let chineseChars = 0;
+  let englishWords = 0;
+  let numbers = 0;
+  let totalWords = 0;
   
-  // 返回至少1分钟的阅读时间
-  return Math.max(1, totalReadingTime);
+  let currentWord = '';
+  let inEnglishWord = false;
+  
+  // 逐字符分析
+  for (let i = 0; i < cleanContent.length; i++) {
+    const char = cleanContent[i];
+    const charCode = char.codePointAt(0) || 0;
+    
+    // 统计中文字符
+    if (isCharInRanges(charCode, CJK_RANGES)) {
+      chineseChars++;
+      if (inEnglishWord && currentWord) {
+        englishWords++;
+        currentWord = '';
+        inEnglishWord = false;
+      }
+      continue;
+    }
+    
+    // 统计数字
+    if (charCode >= 0x30 && charCode <= 0x39) {
+      numbers++;
+      if (inEnglishWord && currentWord) {
+        englishWords++;
+        currentWord = '';
+        inEnglishWord = false;
+      }
+      continue;
+    }
+    
+    // 处理英文字符
+    if ((charCode >= 0x41 && charCode <= 0x5a) || // A-Z
+        (charCode >= 0x61 && charCode <= 0x7a)) {  // a-z
+      currentWord += char;
+      inEnglishWord = true;
+      continue;
+    }
+    
+    // 处理空格和标点符号
+    if (char === ' ' || char === '\t' || char === '\n') {
+      if (inEnglishWord && currentWord) {
+        englishWords++;
+        currentWord = '';
+        inEnglishWord = false;
+      }
+      continue;
+    }
+    
+    // 处理其他情况
+    if (inEnglishWord && currentWord) {
+      englishWords++;
+      currentWord = '';
+      inEnglishWord = false;
+    }
+  }
+  
+  // 处理最后一个单词
+  if (inEnglishWord && currentWord) {
+    englishWords++;
+  }
+  
+  // 总词数 = 中文字符 + 英文单词 + 数字
+  totalWords = chineseChars + englishWords + numbers;
+  
+  // 基于文本复杂度调整阅读速度
+  let readingSpeed = 400; // 基础阅读速度（中文）
+  
+  // 如果英文比例较高，降低阅读速度
+  const englishRatio = englishWords / totalWords;
+  if (englishRatio > 0.3) {
+    readingSpeed = 350; // 混合文本降低速度
+  } else if (englishRatio > 0.6) {
+    readingSpeed = 300; // 英文为主进一步降低
+  }
+  
+  // 如果数字较多，适当增加阅读时间
+  const numberRatio = numbers / totalWords;
+  if (numberRatio > 0.1) {
+    readingSpeed *= 0.9; // 数字多，阅读速度降低10%
+  }
+  
+  // 计算阅读时间
+  const readingTime = totalWords / readingSpeed;
+  
+  return Math.max(1, Math.ceil(readingTime));
 }
 
 /**

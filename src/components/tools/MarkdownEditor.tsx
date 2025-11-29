@@ -403,6 +403,154 @@ export default function MarkdownEditor({
     const englishTime = englishWords / 200; // 英文阅读速度：200词/分钟
     return Math.max(1, Math.ceil(chineseTime + englishTime));
   }, []);
+
+  // 高级字数统计函数
+  const calculateAdvancedWordCount = useCallback((text: string) => {
+    if (!text || text.trim().length === 0) {
+      return {
+        totalChars: 0,
+        totalWords: 0,
+        chineseChars: 0,
+        englishWords: 0,
+        numbers: 0,
+        punctuation: 0,
+        spaces: 0,
+        lines: 0,
+        paragraphs: 0
+      };
+    }
+
+    // 清理文本（移除Markdown标记和HTML标签）
+    const cleanedText = text
+      .replace(/<\/?[^>]+(>|$)/g, '') // 移除HTML标签
+      .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1') // 处理Markdown链接和图片
+      .replace(/```[\s\S]*?```/g, '') // 移除代码块
+      .replace(/`[^`]*`/g, '') // 移除行内代码
+      .replace(/#{1,6}\s/g, '') // 移除标题标记
+      .replace(/\*\*|__|~~|\*|_/g, ''); // 移除加粗、斜体等标记
+
+    let chineseChars = 0;
+    let englishWords = 0;
+    let numbers = 0;
+    let punctuation = 0;
+    let spaces = 0;
+    
+    let currentWord = '';
+    let inEnglishWord = false;
+
+    // CJK字符范围（包含中日韩统一表意符号）
+    const CJK_RANGES = [
+      [0x4e00, 0x9fff],   // CJK Unified Ideographs
+      [0x3400, 0x4dbf],   // CJK Extension A
+      [0xf900, 0xfaff],   // CJK Compatibility Ideographs
+      [0x3000, 0x303f],   // CJK Symbols and Punctuation
+    ];
+
+    // 标点符号范围
+    const PUNCTUATION_RANGES = [
+      [0x21, 0x2f],     // ! " # $ % & ' ( ) * + , - . /
+      [0x3a, 0x40],     // : ; < = > ? @
+      [0x5b, 0x60],     // [ \ ] ^ _ `
+      [0x7b, 0x7e],     // { | } ~
+      [0x3001, 0x303f], // CJK标点符号
+    ];
+
+    // 检查字符是否在指定范围内
+    const isCharInRanges = (charCode: number, ranges: number[][]) => {
+      return ranges.some(([start, end]) => charCode >= start && charCode <= end);
+    };
+
+    // 逐字符分析
+    for (let i = 0; i < cleanedText.length; i++) {
+      const char = cleanedText[i];
+      const charCode = char.codePointAt(0) || 0;
+      
+      // 统计空格
+      if (char === ' ' || char === '\t') {
+        spaces++;
+        if (inEnglishWord && currentWord) {
+          englishWords++;
+          currentWord = '';
+          inEnglishWord = false;
+        }
+        continue;
+      }
+      
+      // 统计中文字符
+      if (isCharInRanges(charCode, CJK_RANGES)) {
+        chineseChars++;
+        if (inEnglishWord && currentWord) {
+          englishWords++;
+          currentWord = '';
+          inEnglishWord = false;
+        }
+        continue;
+      }
+      
+      // 统计数字
+      if (charCode >= 0x30 && charCode <= 0x39) {
+        numbers++;
+        if (inEnglishWord && currentWord) {
+          englishWords++;
+          currentWord = '';
+          inEnglishWord = false;
+        }
+        continue;
+      }
+      
+      // 统计标点符号
+      if (isCharInRanges(charCode, PUNCTUATION_RANGES)) {
+        punctuation++;
+        if (inEnglishWord && currentWord) {
+          englishWords++;
+          currentWord = '';
+          inEnglishWord = false;
+        }
+        continue;
+      }
+      
+      // 处理英文字符
+      if ((charCode >= 0x41 && charCode <= 0x5a) || // A-Z
+          (charCode >= 0x61 && charCode <= 0x7a)) {  // a-z
+        currentWord += char;
+        inEnglishWord = true;
+        continue;
+      }
+      
+      // 处理其他情况（如特殊字符）
+      if (inEnglishWord && currentWord) {
+        englishWords++;
+        currentWord = '';
+        inEnglishWord = false;
+      }
+    }
+    
+    // 处理最后一个单词
+    if (inEnglishWord && currentWord) {
+      englishWords++;
+    }
+    
+    // 计算行数
+    const lines = cleanedText.split('\n').length;
+    
+    // 计算段落数（空行分隔）
+    const paragraphs = cleanedText.split(/\n\s*\n/).filter(p => p.trim()).length || 1;
+    
+    // 总词数 = 中文字符 + 英文单词 + 数字
+    const totalWords = chineseChars + englishWords + numbers;
+    
+    return {
+      totalChars: text.length,
+      totalWords,
+      chineseChars,
+      englishWords,
+      numbers,
+      punctuation,
+      spaces,
+      lines,
+      paragraphs
+    };
+  }, []);
   const [textAlign, setTextAlign] = useState<'left' | 'center' | 'right'>('left');
   const [showShortcuts, setShowShortcuts] = useState(false);
   
@@ -422,14 +570,14 @@ export default function MarkdownEditor({
 
   // 计算字数统计和阅读时间
   useEffect(() => {
-    const words = content.trim().split(/\s+/).filter(word => word.length > 0);
-    setWordCount(words.length);
-    setCharCount(content.length);
+    const advancedStats = calculateAdvancedWordCount(content);
+    setWordCount(advancedStats.totalWords);
+    setCharCount(advancedStats.totalChars);
     
-    // 计算阅读时间（按每分钟500字计算）
-    const readTime = Math.ceil(words.length / 500) || 1;
+    // 使用优化的阅读时间计算
+    const readTime = calculateReadingTime(content);
     setBlogMetadata(prev => ({ ...prev, readTime }));
-  }, [content]);
+  }, [content, calculateReadingTime, calculateAdvancedWordCount]);
 
   // 撤销功能
   const undo = useCallback(() => {
