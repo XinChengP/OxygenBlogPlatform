@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useTheme } from 'next-themes';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { categories } from '@/setting/blogSetting';
 import { ClipboardIcon } from '@heroicons/react/24/outline';
 import { Palette, Search, FileText, Download, Upload, Maximize2, Type, Eye, SpellCheck, BarChart3 } from 'lucide-react';

@@ -1,6 +1,6 @@
 import { motion } from "motion/react"
 import { useEffect, useState } from "react"
-import { Link2, ExternalLink } from "lucide-react"
+import { Link2, ExternalLink, Github, Mail, Globe } from "lucide-react"
 import Link from 'next/link'
 import { relatedLinks } from '@/setting/AboutSetting'
 import { getAssetPath } from '@/utils/assetUtils'
@@ -33,7 +33,7 @@ export default function RelatedLinks() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: 0.7 }}
-      className="relative z-10 mt-8 p-8 rounded-2xl transition-all duration-500 backdrop-blur-md bg-blue-50/90 dark:bg-blue-950/90 border border-blue-200 dark:border-blue-800 shadow-lg supports-[backdrop-filter]:bg-blue-50/75 dark:supports-[backdrop-filter]:bg-blue-950/75"
+      className="relative z-10 mt-8 p-8 rounded-2xl transition-all duration-500 backdrop-blur-md bg-card/90 border shadow-lg supports-[backdrop-filter]:bg-card/75"
     >
       {/* 标题和描述 - 更紧凑的标题区域 */}
       <div className="text-center mb-6">
@@ -78,7 +78,7 @@ export default function RelatedLinks() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.9 + index * 0.1 }}
-              className="group relative bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 shadow-sm hover:shadow-lg border border-blue-200 dark:border-blue-800 transition-all duration-300 cursor-pointer overflow-hidden hover:bg-blue-100 dark:hover:bg-blue-900/30 hover:border-blue-300 dark:hover:border-blue-700"
+              className="group relative bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md hover:shadow-xl border border-gray-200 dark:border-gray-700 transition-all duration-300 cursor-pointer overflow-hidden"
             >
               <div className="relative z-10">
                 <div className="flex items-center mb-3">
@@ -118,17 +118,23 @@ export default function RelatedLinks() {
                       <ExternalLink className="w-5 h-5" />
                     </div>
                   )}
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-base font-semibold text-blue-800 dark:text-blue-100 truncate group-hover:text-blue-900 dark:group-hover:text-blue-50 transition-colors duration-200">
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-800 dark:text-white">
                       {link.name}
                     </h4>
-                    <p className="text-xs text-blue-500 dark:text-blue-400 line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors duration-200">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
                       {link.description}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center text-xs text-blue-600 dark:text-blue-300 group-hover:text-blue-700 dark:group-hover:text-blue-200 transition-colors duration-200">
-                  <ExternalLink className="w-3 h-3 mr-1 flex-shrink-0" />
+                <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                  {link.url.includes('github') ? (
+                    <Github className="w-4 h-4 mr-1" />
+                  ) : link.url.includes('mail') ? (
+                    <Mail className="w-4 h-4 mr-1" />
+                  ) : (
+                    <Globe className="w-4 h-4 mr-1" />
+                  )}
                   <span className="truncate">{link.url}</span>
                 </div>
               </div>
@@ -154,9 +160,9 @@ export default function RelatedLinks() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5, delay: 1.2 }}
-        className="text-center mt-8 pt-6 border-t border-blue-200/50 dark:border-blue-700/50"
+        className="text-center mt-8 pt-6 border-t border-gray-200/50 dark:border-gray-700/50"
       >
-        <p className="text-blue-500 dark:text-blue-400 text-sm">
+        <p className="text-gray-500 dark:text-gray-400 text-sm">
           🔗 相关链接 · 探索更多精彩内容和项目
         </p>
       </motion.div>

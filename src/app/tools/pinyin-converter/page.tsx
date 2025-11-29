@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import BackgroundLayer from '@/components/BackgroundLayer';
 import { useTheme } from 'next-themes';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';

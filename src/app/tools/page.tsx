@@ -5,7 +5,7 @@
 'use client';
 
 import React, { useState, useEffect, lazy, Suspense } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { useTheme } from 'next-themes';
 import { 
   toolCategories, 

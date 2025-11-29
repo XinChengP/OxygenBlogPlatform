@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { useTheme } from 'next-themes';
 import { useState, useEffect, lazy, Suspense } from 'react';
 import BackgroundLayer from '@/components/BackgroundLayer';
