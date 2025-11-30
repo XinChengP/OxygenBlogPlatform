@@ -32,7 +32,7 @@ if(nospecialtip == false){
 function initTips(){
     $.ajax({
         cache: true,
-        url: `${message_Path}message.json.php`,
+        url: `${message_Path}message.json`,
         dataType: "json",
         success: function (result){
             $.each(result.mouseover, function (index, tips){
