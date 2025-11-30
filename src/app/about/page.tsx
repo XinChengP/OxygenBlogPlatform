@@ -171,18 +171,18 @@ export default function AboutPage() {
     color: 'white'
   }), [primaryColor, accentColor]);
 
-  // Email 图标背景样式 - 增强渐变效果
+  // Email 图标背景样式 - 统一配色方案
   const emailIconStyle = useMemo(() => ({
     background: `
       linear-gradient(135deg, 
-        ${primaryColor} 0%, 
+        ${secondaryColor} 0%, 
         ${accentColor} 50%, 
-        ${primaryColor} 100%
+        ${secondaryColor} 100%
       )`,
     backgroundSize: '200% 200%',
-    animation: 'gradientShift 4s ease-in-out infinite',
+    animation: 'gradientShift 5s ease-in-out infinite',
     color: 'white'
-  }), [primaryColor, accentColor]);
+  }), [secondaryColor, accentColor]);
 
   // GitHub 图标背景样式 - 增强渐变效果
   const githubIconStyle = useMemo(() => ({
@@ -199,6 +199,19 @@ export default function AboutPage() {
 
     // B站 图标背景样式 - 增强渐变效果
   const BilibiliIconStyle = useMemo(() => ({
+    background: `
+      linear-gradient(135deg, 
+        ${secondaryColor} 0%, 
+        ${accentColor} 50%, 
+        ${secondaryColor} 100%
+      )`,
+    backgroundSize: '200% 200%',
+    animation: 'gradientShift 5s ease-in-out infinite',
+    color: 'white'
+  }), [secondaryColor, accentColor]);
+
+  // VSQX 图标背景样式 - 使用与GitHub/B站相同的主题色渐变
+  const vsqxIconStyle = useMemo(() => ({
     background: `
       linear-gradient(135deg, 
         ${secondaryColor} 0%, 
@@ -406,8 +419,8 @@ export default function AboutPage() {
                 </p>
               </div>
               
-              {/* 修复：网格布局改为 md:grid-cols-3，容纳3张卡片 */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
+              {/* 修复：网格布局改为 md:grid-cols-4，容纳4张卡片 */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 max-w-5xl mx-auto">
                 {/* Email 卡片（补全内部内容，之前省略了） */}
                 <motion.a
                   href={`mailto:${mail}`}
@@ -516,8 +529,47 @@ export default function AboutPage() {
                       观看我的视频
                     </p>
                     <div className="mt-3 text-center">
-                      <span className="text-xs text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-900/20 px-2 py-1 rounded-full">
-                        进入空间
+                      <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
+                        访问空间
+                      </span>
+                    </div>
+                  </div>
+                </motion.a>
+
+                {/* VSQX 卡片（新增） */}
+                <motion.a
+                  href="https://www.vsqx.top/space/16984"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  whileHover={{ scale: 1.05, y: -5 }}
+                  whileTap={{ scale: 0.95 }}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 1.0 }}
+                  className="group relative bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md hover:shadow-xl border border-gray-200 dark:border-gray-700 transition-all duration-300 cursor-pointer overflow-hidden"
+                >
+                  <div className="relative z-10">
+                    <div 
+                      className="flex items-center justify-center w-12 h-12 rounded-lg mb-4 mx-auto group-hover:scale-110 transition-transform duration-300"
+                      style={vsqxIconStyle}
+                    >
+                      <OptimizedIcon 
+                        src="/assets/vsqx.ico" 
+                        alt="VSQX" 
+                        className="text-white"
+                        width={24}
+                        height={24}
+                      />
+                    </div>
+                    <h4 className="text-lg font-semibold text-gray-800 dark:text-white text-center mb-2">
+                      VSQX
+                    </h4>
+                    <p className="text-gray-600 dark:text-gray-300 text-sm text-center">
+                      下载我扒的谱
+                    </p>
+                    <div className="mt-3 text-center">
+                      <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
+                        访问空间
                       </span>
                     </div>
                   </div>
