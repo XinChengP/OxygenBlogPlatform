@@ -6,13 +6,11 @@
 
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { motion } from 'motion/react';
-import Image from 'next/image';
 import { useTheme } from 'next-themes';
 import { Cover } from '@/components/ui/cover'
 import { EvervaultCard, Icon } from '@/components/ui/evervault-card';
-import MailIcon from '@/assets/mail.svg';
-import GitHubIcon from '@/assets/github.svg';
-import BilibiliIcon from '@/assets/bilibili.png';
+import OptimizedIcon from '@/components/core/OptimizedIcon';
+
 import {title, BeforeAnimationText, AnimationText, name, slogan, aboutMeP1, aboutMeP2, aboutMeP3, mainContactMeDescription, subContactMeDescription, mail, github, bilibili, isBorder, isRainbowGradient}
 from '@/setting/AboutSetting';
 import { useMemo } from 'react';
@@ -425,7 +423,13 @@ export default function AboutPage() {
                       className="flex items-center justify-center w-12 h-12 rounded-lg mb-4 mx-auto group-hover:scale-110 transition-transform duration-300"
                       style={emailIconStyle}
                     >
-                      <Image src={MailIcon as string} alt="Mail" width={24} height={24} className="text-white" />
+                      <OptimizedIcon 
+                        src="/assets/mail.svg" 
+                        alt="Mail" 
+                        className="text-white"
+                        width={24}
+                        height={24}
+                      />
                     </div>
                     <h4 className="text-lg font-semibold text-gray-800 dark:text-white text-center mb-2">
                       邮箱联系
@@ -458,7 +462,13 @@ export default function AboutPage() {
                       className="flex items-center justify-center w-12 h-12 rounded-lg mb-4 mx-auto group-hover:scale-110 transition-transform duration-300"
                       style={githubIconStyle}
                     >
-                      <Image src={GitHubIcon as string} alt="GitHub" width={24} height={24} className="text-white" />
+                      <OptimizedIcon 
+                        src="/assets/github.svg" 
+                        alt="GitHub" 
+                        className="text-white"
+                        width={24}
+                        height={24}
+                      />
                     </div>
                     <h4 className="text-lg font-semibold text-gray-800 dark:text-white text-center mb-2">
                       GitHub
@@ -491,7 +501,13 @@ export default function AboutPage() {
                       className="flex items-center justify-center w-12 h-12 rounded-lg mb-4 mx-auto group-hover:scale-110 transition-transform duration-300"
                       style={BilibiliIconStyle}
                     >
-                      <Image src={BilibiliIcon} alt="Bilibili" width={24} height={24} className="text-white" />
+                      <OptimizedIcon 
+                        src="/assets/bilibili.png" 
+                        alt="Bilibili" 
+                        className="text-white"
+                        width={24}
+                        height={24}
+                      />
                     </div>
                     <h4 className="text-lg font-semibold text-gray-800 dark:text-white text-center mb-2">
                       哔哩哔哩
