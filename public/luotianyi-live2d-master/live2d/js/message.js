@@ -58,15 +58,51 @@ function initTips(){
         mouseover: [
             {
                 selector: ".title a, h1, h2, h3",
-                text: ["要看看 {text} 么？", "这是什么呢？好有趣的样子～", "想要了解更多吗？"]
+                text: ["要看看 {text} 么？", "这是什么呢？", "想了解更多吗？"]
             },
             {
                 selector: ".searchbox, input[type='search']",
-                text: ["在找什么东西呢，需要帮忙吗？", "搜索很重要哦，我来帮你～", "找不到想要的内容吗？"]
+                text: ["在找什么呢？", "需要帮忙吗？", "我来帮你搜索~"]
             },
             {
                 selector: "nav a, .nav-link, .navigation a, header a, .navbar a, .menu-item a",
-                text: ["这里好像有很好玩的内容！", "要去看其他地方吗？", "导航很重要呢～"]
+                text: ["这里有好玩的内容！", "要去看其他地方吗？", "导航在这里~"]
+            },
+            {
+                selector: "textarea, input[type='text']",
+                text: ["要输入什么呢？", "这里可以输入内容~", "写点什么吧！"]
+            },
+            {
+                selector: "button, input[type='button'], input[type='submit']",
+                text: ["要点击这里吗？", "按下去会怎样呢？", "试试看吧~"]
+            },
+            {
+                selector: "img, .image, .thumbnail, .avatar",
+                text: ["哇，是图片！", "图片很好看~", "要看看吗？"]
+            },
+            {
+                selector: "code, pre",
+                text: ["这是代码！", "代码很重要~", "要仔细看看吗？"]
+            },
+            {
+                selector: "a[href*='github']",
+                text: ["GitHub链接！", "要看看吗？", "GitHub很棒~"]
+            },
+            {
+                selector: "a[href*='music'], a[href*='song'], a[href*='audio']",
+                text: ["音乐链接！", "要听听吗？", "音乐很棒~"]
+            },
+            {
+                selector: "a[href*='video'], a[href*='youtube'], a[href*='bilibili']",
+                text: ["视频链接！", "要看看吗？", "视频很有趣~"]
+            },
+            {
+                selector: "a[href*='blog'], a[href*='post'], a[href*='article']",
+                text: ["博客链接！", "要读读吗？", "文章很有意思~"]
+            },
+            {
+                selector: "a[href*='tool'], a[href*='utility'], a[href*='app']",
+                text: ["工具链接！", "要试试吗？", "工具很实用~"]
             }
         ],
         click: [
@@ -132,32 +168,33 @@ initLive2dMessage();
         if (window.location.href == `${home_Path}`) { //主页URL判断，需要斜杠结尾
             var now = (new Date()).getHours();
             if (now > 23 || now <= 5) {
-                text = '你是夜猫子呀？这么晚还不睡觉，明天起的来嘛？';
+                text = '夜深了，注意休息哦~';
             } else if (now > 5 && now <= 7) {
-                text = '早上好！一日之计在于晨，美好的一天就要开始了！';
+                text = '早上好！新的一天开始啦~';
             } else if (now > 7 && now <= 11) {
-                text = '上午好！工作顺利嘛，不要久坐，多起来走动走动哦！';
+                text = '上午好！工作顺利吗？';
             } else if (now > 11 && now <= 14) {
-                text = '中午了，工作了一个上午，现在是午餐时间！';
+                text = '午餐时间到了~';
             } else if (now > 14 && now <= 17) {
-                text = '午后很容易犯困呢，今天的运动目标完成了吗？';
+                text = '下午好！继续加油哦~';
             } else if (now > 17 && now <= 19) {
-                text = '傍晚了！窗外夕阳的景色很美丽呢，最美不过夕阳红~~';
+                text = '傍晚时分，夕阳很美~';
             } else if (now > 19 && now <= 21) {
-                text = '晚上好，今天过得怎么样？';
+                text = '晚上好！今天过得怎么样？';
             } else if (now > 21 && now <= 23) {
-                text = '已经这么晚了呀，早点休息吧，晚安~~';
+                text = '早点休息，晚安~';
             } else {
-                text = '嗨~ 快来逗我玩吧！';
+                text = '你好~我是洛天依！';
             }
         }else {
             text = '欢迎阅读<span style="color:#66ccff;">「 ' + document.title.split(' - ')[0] + ' 」</span>';
         }
     }
-    showMessage(text, 12000);
+    showMessage(text, 8000);
 })();
 
-window.setInterval(showHitokoto,30000);
+// 优化：延长一言显示的间隔时间，减少干扰
+window.setInterval(showHitokoto,45000);
 
 function showHitokoto(){
     if (typeof $ === 'undefined' || !$.getJSON) {
@@ -165,65 +202,65 @@ function showHitokoto(){
         return;
     }
     $.getJSON('https://v1.hitokoto.cn/',function(result){
-        showMessage(result.hitokoto, 5000);
+        showMessage(result.hitokoto, 4000);
     });
 }
 
 function showMessage(text, timeout){
     if(Array.isArray(text)) text = text[Math.floor(Math.random() * text.length + 1)-1];
-    //console.log('showMessage', text);
     
     // 检查jQuery是否可用，如果不可用则使用原生DOM
     if (typeof $ !== 'undefined') {
         $('.message').stop();
         $('.message').html(text).css('opacity', 1);
-        $('.message').show();
+        $('.message').removeClass('hide').addClass('show');
     } else {
         // 使用原生DOM作为备选方案
         const messageEl = document.querySelector('.message');
         if (messageEl) {
             messageEl.innerHTML = text;
             messageEl.style.opacity = '1';
-            messageEl.style.display = 'block';
+            messageEl.classList.remove('hide');
+            messageEl.classList.add('show');
         }
     }
     
-    if (timeout === null) timeout = 5000;
-    // 修复：只有当消息不是默认消息时才调用hideMessage
+    if (timeout === null) timeout = 4000;
+    // 只有当消息不是默认消息时才调用hideMessage
     if (text !== '你好～我是洛天依！') {
         hideMessage(timeout);
     }
 }
 
 function hideMessage(timeout){
-    if (typeof $ !== 'undefined') {
-        $('.message').stop().css('opacity', 1);
-    }
-    // 不隐藏消息框，只重置内容
-    if (timeout === null) timeout = 5000;
+    if (timeout === null) timeout = 4000;
     setTimeout(() => {
-        // 修复：不要自动重置为默认消息，让消息系统保持当前状态
-        // 除非消息框是空的，否则不重置
-        let currentMessage;
+        // 使用新的动画效果隐藏消息
         if (typeof $ !== 'undefined') {
-            currentMessage = $('.message').html();
+            $('.message').removeClass('show').addClass('hide');
+            // 动画完成后重置状态
+            setTimeout(() => {
+                $('.message').removeClass('hide');
+                let currentMessage = $('.message').html();
+                if (!currentMessage || currentMessage.trim() === '') {
+                    $('.message').html('你好～我是洛天依！').css('opacity', 1);
+                }
+            }, 300);
         } else {
             const messageEl = document.querySelector('.message');
-            currentMessage = messageEl ? messageEl.innerHTML : '';
-        }
-        
-        if (!currentMessage || currentMessage.trim() === '') {
-            if (typeof $ !== 'undefined') {
-                $('.message').html('你好～我是洛天依！').css('opacity', 1);
-            } else {
-                const messageEl = document.querySelector('.message');
-                if (messageEl) {
-                    messageEl.innerHTML = '你好～我是洛天依！';
-                    messageEl.style.opacity = '1';
-                }
+            if (messageEl) {
+                messageEl.classList.remove('show');
+                messageEl.classList.add('hide');
+                // 动画完成后重置状态
+                setTimeout(() => {
+                    messageEl.classList.remove('hide');
+                    if (!messageEl.innerHTML || messageEl.innerHTML.trim() === '') {
+                        messageEl.innerHTML = '你好～我是洛天依！';
+                        messageEl.style.opacity = '1';
+                    }
+                }, 300);
             }
         }
-        // 否则保持当前消息不变
     }, timeout);
 }
 
@@ -268,10 +305,10 @@ window.GlobalMessageManager = (function() {
     setupEventListeners();
     isInitialized = true;
     
-    // 显示欢迎消息
-    setTimeout(() => {
-      showMessage('洛天依 Live2D 看板娘已就绪！点击我可以互动哦~', 3000);
-    }, 1000);
+    // 移除初始欢迎消息，避免干扰用户体验
+    // setTimeout(() => {
+    //   showMessage('洛天依 Live2D 看板娘已就绪！点击我可以互动哦~', 3000);
+    // }, 1000);
   }
 
   // 创建消息容器
@@ -472,29 +509,26 @@ window.GlobalMessageManager = (function() {
   };
 })();
 
-// 禁用 GlobalMessageManager 自动初始化，避免重复的消息气泡
-// 保留功能但不禁用，只在需要时手动调用
-console.log('📦 GlobalMessageManager 已加载，自动初始化已禁用');
+// 完全禁用 GlobalMessageManager 自动初始化和调试信息，保持系统简洁
+// console.log('📦 GlobalMessageManager 已加载，自动初始化已禁用');
 
-// 立即初始化（确保在页面加载完成后）
+// 移除所有自动初始化逻辑
 // if (document.readyState === 'loading') {
 //   document.addEventListener('DOMContentLoaded', function() {
 //     window.GlobalMessageManager.init();
 //   });
 // } else {
-//   // 如果页面已经加载完成，立即初始化
 //   setTimeout(function() {
 //     window.GlobalMessageManager.init();
 //   }, 500);
 // }
 
-// 确保在 Live2D 模型加载完成后也初始化
 // document.addEventListener('live2d-model-loaded', function() {
 //   console.log('🎯 Live2D 模型加载完成，初始化消息管理器');
 //   window.GlobalMessageManager.init();
 // });
 
-// 添加一些调试信息
-console.log('📦 message.js 已加载');
-console.log('当前页面状态:', document.readyState);
-console.log('jQuery 是否可用:', typeof window.jQuery !== 'undefined');
+// 移除调试信息输出
+// console.log('📦 message.js 已加载');
+// console.log('当前页面状态:', document.readyState);
+// console.log('jQuery 是否可用:', typeof window.jQuery !== 'undefined');

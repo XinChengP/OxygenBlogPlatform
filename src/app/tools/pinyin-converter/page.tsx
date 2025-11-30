@@ -381,8 +381,7 @@ export default function PinyinConverter() {
       try {
         const { emitLive2DEvent } = await import('@/utils/live2dEventEmitter');
         
-        // 根据复制内容长度和内容类型选择不同的消息
-        let message = '拼音转换结果已复制到剪贴板！';
+        let message = '';
         
         if (textToCopy.length > 50) {
           // 长内容复制

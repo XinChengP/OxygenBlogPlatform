@@ -370,6 +370,10 @@ pre code {
     transition: all 0.3s ease;
 }
 
+#landlord:hover .hide-button {
+    display: block;
+}
+
 .hide-button:hover {
     border: 1px solid rgba(102,204,255,.6);
     background: rgba(102,204,255,.6);
