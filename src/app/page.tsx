@@ -52,7 +52,12 @@ export default function Home() {
            <span className="opacity-50">加载中...</span>
          </div>}>
            <div className="mt-1 sm:mt-2 text-lg sm:text-xl lg:text-[1.3rem]">
-              <Typewriter texts={TypewriterTexts} delay={0.5} ></Typewriter>
+              <Typewriter 
+                texts={TypewriterTexts} 
+                delay={0.5}
+                specialStyleIndex={0}
+                specialStyleClass="bg-gradient-to-r from-blue-500 via-sky-400 via-cyan-400 via-blue-400 to-blue-600 bg-clip-text text-transparent font-bold drop-shadow-lg hover:drop-shadow-2xl transition-all duration-300 hover:scale-105 bg-[length:300%_300%] animate-[gradientShift_2s_ease-in-out_infinite] shadow-2xl hover:shadow-blue-500/50"
+              />
            </div>
          </Suspense>
          

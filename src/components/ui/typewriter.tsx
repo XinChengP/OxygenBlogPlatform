@@ -7,9 +7,11 @@ export interface ITypewriterProps {
   delay: number
   texts: string[]
   baseText?: string
+  specialStyleIndex?: number
+  specialStyleClass?: string
 }
 
-function Typewriter({ delay, texts, baseText = "" }: ITypewriterProps) {
+function Typewriter({ delay, texts, baseText = "", specialStyleIndex = 0, specialStyleClass = "" }: ITypewriterProps) {
   const [animationComplete, setAnimationComplete] = useState(false)
   const count = useMotionValue(0)
   const rounded = useTransform(count, (latest) => Math.round(latest))
@@ -34,7 +36,12 @@ function Typewriter({ delay, texts, baseText = "" }: ITypewriterProps) {
     <span>
       <motion.span>{displayText}</motion.span>
       {animationComplete && (
-        <RepeatedTextAnimation texts={texts} delay={delay + 1} />
+        <RepeatedTextAnimation 
+          texts={texts} 
+          delay={delay + 1} 
+          specialStyleIndex={specialStyleIndex}
+          specialStyleClass={specialStyleClass}
+        />
       )}
       <BlinkingCursor />
     </span>
@@ -46,6 +53,8 @@ export default Typewriter;
 export interface IRepeatedTextAnimationProps {
   delay: number
   texts: string[]
+  specialStyleIndex?: number
+  specialStyleClass?: string
 }
 
 const defaultTexts = [
@@ -60,41 +69,46 @@ const defaultTexts = [
 function RepeatedTextAnimation({
   delay,
   texts = defaultTexts,
+  specialStyleIndex = 0,
+  specialStyleClass = "",
 }: IRepeatedTextAnimationProps) {
-  const textIndex = useMotionValue(0)
-
-  const baseText = useTransform(textIndex, (latest) => texts[latest] || "")
+  const [currentTextIndex, setCurrentTextIndex] = useState(0)
+  const [displayText, setDisplayText] = useState("")
   const count = useMotionValue(0)
   const rounded = useTransform(count, (latest) => Math.round(latest))
-  const displayText = useTransform(rounded, (latest) =>
-    baseText.get().slice(0, latest)
-  )
-  const updatedThisRound = useMotionValue(true)
 
   useEffect(() => {
-    const animation = animate(count, 60, {
+    const currentText = texts[currentTextIndex] || ""
+    const controls = animate(count, currentText.length, {
       type: "tween",
       delay,
-      duration: 2, // 从1改为2，让重复文本动画变慢
+      duration: 2,
       ease: "easeIn",
       repeat: Infinity,
       repeatType: "reverse",
       repeatDelay: 1,
       onUpdate(latest) {
-        if (updatedThisRound.get() && latest > 0) {
-          updatedThisRound.set(false)
-        } else if (!updatedThisRound.get() && latest === 0) {
-          textIndex.set((textIndex.get() + 1) % texts.length)
-          updatedThisRound.set(true)
-        }
+        const roundedValue = Math.round(latest)
+        setDisplayText(currentText.slice(0, roundedValue))
+      },
+      onComplete() {
+        setCurrentTextIndex((prev) => (prev + 1) % texts.length)
+        count.set(0)
       },
     })
     return () => {
-      animation.stop && animation.stop()
+      controls.stop && controls.stop()
     }
-  }, [count, delay, textIndex, texts, updatedThisRound])
+  }, [count, delay, currentTextIndex, texts])
 
-  return <motion.span className="inline">{displayText}</motion.span>
+  const isSpecialText = currentTextIndex === specialStyleIndex && specialStyleClass
+  
+  return (
+    <motion.span
+      className={isSpecialText ? specialStyleClass : "inline"}
+      dangerouslySetInnerHTML={{ __html: displayText }}
+    />
+  )
 }
 
 const cursorVariants = {
