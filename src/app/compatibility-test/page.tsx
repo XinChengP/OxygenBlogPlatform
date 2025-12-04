@@ -49,11 +49,12 @@ export default function CompatibilityTestPage() {
       const canvas = document.createElement('canvas');
       const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
       
-      if (gl) {
-        const info = gl.getExtension('WEBGL_debug_renderer_info');
+      if (gl && 'getExtension' in gl) {
+        const webglGl = gl as WebGLRenderingContext;
+        const info = webglGl.getExtension('WEBGL_debug_renderer_info');
         if (info) {
-          const renderer = gl.getParameter(info.UNMASKED_RENDERER_WEBGL);
-          const vendor = gl.getParameter(info.UNMASKED_VENDOR_WEBGL);
+          const renderer = webglGl.getParameter(info.UNMASKED_RENDERER_WEBGL);
+          const vendor = webglGl.getParameter(info.UNMASKED_VENDOR_WEBGL);
           results.push(`WebGL 渲染器: ${renderer}`);
           results.push(`WebGL 供应商: ${vendor}`);
         }
@@ -67,7 +68,7 @@ export default function CompatibilityTestPage() {
         ];
         
         const supportedExtensions = extensions.filter(ext => 
-          gl.getExtension(ext)
+          webglGl.getExtension(ext)
         );
         
         results.push(`支持的 WebGL 扩展: ${supportedExtensions.length}/${extensions.length}`);
@@ -76,7 +77,7 @@ export default function CompatibilityTestPage() {
           results.push(`具体扩展: ${supportedExtensions.join(', ')}`);
         }
       }
-    } catch (error) {
+    } catch {
       results.push('WebGL 详细测试失败');
     }
     
@@ -90,7 +91,7 @@ export default function CompatibilityTestPage() {
         try {
           localStorage.setItem(`${testKey}${i}`, testData);
           storageSize += 1;
-        } catch (e) {
+        } catch {
           break;
         }
       }
@@ -101,19 +102,18 @@ export default function CompatibilityTestPage() {
       }
       
       results.push(`LocalStorage 容量: ${storageSize}KB`);
-    } catch (error) {
+    } catch {
       results.push('LocalStorage 容量测试失败');
     }
     
     // 性能测试
     try {
-      if (window.performance && window.performance.now) {
+      if (typeof window !== 'undefined' && window.performance) {
         const start = performance.now();
         
         // 执行一些计算
-        let sum = 0;
         for (let i = 0; i < 1000000; i++) {
-          sum += Math.sqrt(i);
+          Math.sqrt(i);
         }
         
         const end = performance.now();
@@ -125,7 +125,7 @@ export default function CompatibilityTestPage() {
           results.push('性能警告: 计算性能较低');
         }
       }
-    } catch (error) {
+    } catch {
       results.push('性能测试失败');
     }
     

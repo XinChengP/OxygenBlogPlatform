@@ -3,9 +3,10 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { getAssetPath, getBasePath } from '../utils/assetUtils';
 import { live2dEventEmitter } from '../utils/live2dEventEmitter';
+import { cn } from '../utils/cn';
 
 // 导入实例管理器
-import { Live2DInstanceManager } from '../utils/live2dInstanceManager';
+import { live2dInstanceManager } from '../utils/live2dInstanceManager';
 
 // Live2D资源预加载器 - 与实例管理器集成
 class Live2DResourcePreloader {
@@ -13,10 +14,10 @@ class Live2DResourcePreloader {
   private preloadedResources: Set<string> = new Set();
   private preloadPromises: Map<string, Promise<void>> = new Map();
   private isPreloading: boolean = false;
-  private instanceManager: Live2DInstanceManager;
+  private instanceManager: typeof live2dInstanceManager;
 
   constructor() {
-    this.instanceManager = Live2DInstanceManager.getInstance();
+    this.instanceManager = live2dInstanceManager;
   }
 
   static getInstance() {
@@ -28,13 +29,6 @@ class Live2DResourcePreloader {
 
   async preloadLive2DResources(basePath: string = '') {
     if (this.isPreloading) return;
-    
-    // 检查实例管理器中是否已有缓存资源
-    const cachedResources = this.instanceManager.getCachedResources();
-    if (cachedResources.size > 0) {
-      console.log('[Live2DResourcePreloader] 发现缓存资源，跳过预加载');
-      return;
-    }
     
     const resources = [
       `${basePath}/live2d/js/live2d.js`,
@@ -57,9 +51,6 @@ class Live2DResourcePreloader {
           await new Promise(resolve => setTimeout(resolve, 100));
         }
       }
-      
-      // 将加载的资源注册到实例管理器
-      this.instanceManager.registerCachedResources(this.preloadedResources);
       
     } finally {
       this.isPreloading = false;
@@ -103,8 +94,7 @@ class Live2DResourcePreloader {
   }
 
   isResourcePreloaded(url: string): boolean {
-    return this.preloadedResources.has(url) || 
-           this.instanceManager.isResourceCached(url);
+    return this.preloadedResources.has(url);
   }
 
   clearCache() {
@@ -121,11 +111,11 @@ class MessageQueueManager {
   private isProcessing: boolean = false;
   private currentMessage: string = '';
   private messageCallback: ((message: string) => void) | null = null;
-  private instanceManager: Live2DInstanceManager;
+  private instanceManager: typeof live2dInstanceManager;
   private lastMessageTime: number = 0;
 
   constructor() {
-    this.instanceManager = Live2DInstanceManager.getInstance();
+    this.instanceManager = live2dInstanceManager;
   }
 
   setMessageCallback(callback: (message: string) => void) {
@@ -159,8 +149,7 @@ class MessageQueueManager {
     while (this.queue.length > 0) {
       const item = this.queue.shift()!;
       
-      // 保存消息状态到实例管理器
-      this.instanceManager.saveMessageState(item.message, 1);
+      // 消息状态将在实例状态保存时一并处理
       
       if (this.messageCallback) {
         this.messageCallback(item.message);
@@ -228,12 +217,21 @@ class Live2DPerformanceMonitor {
   }
 }
 
-export default function LuoTianyiLive2DOptimized() {
+interface LuoTianyiLive2DOptimizedProps {
+  className?: string;
+}
+
+export default function LuoTianyiLive2DOptimized({ className }: LuoTianyiLive2DOptimizedProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     
     const [isVisible, setIsVisible] = useState(true);
     const [isMobileDevice, setIsMobileDevice] = useState(false);
+    const [isMinimized, setIsMinimized] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
+    const [isMuted, setIsMuted] = useState(false);
+    const [position, setPosition] = useState({ x: 0, y: 0 });
     const [message, setMessage] = useState('');
     const [messageOpacity, setMessageOpacity] = useState(1);
     const [isLoading, setIsLoading] = useState(true);
@@ -241,6 +239,7 @@ export default function LuoTianyiLive2DOptimized() {
     const [currentPage, setCurrentPage] = useState('');
     const [readingProgress, setReadingProgress] = useState(0);
     const [interactionState, setInteractionState] = useState<'idle' | 'music' | 'theme' | 'page'>('idle');
+    const [showCompatibilityWarning, setShowCompatibilityWarning] = useState(false);
 
     // 管理器实例
     const preloaderRef = useRef(Live2DResourcePreloader.getInstance());
@@ -292,17 +291,85 @@ export default function LuoTianyiLive2DOptimized() {
         performanceMonitorRef.current.recordMessage();
     }, []);
 
-    // 设置消息回调 - 集成实例管理器
-    useEffect(() => {
-        const instanceManager = Live2DInstanceManager.getInstance();
+    // 拖拽处理函数
+    const handleMouseDown = useCallback((e: React.MouseEvent) => {
+        if (isMinimized) return;
         
-        // 尝试恢复之前保存的消息状态
-        const savedMessageState = instanceManager.getMessageState();
-        if (savedMessageState && savedMessageState.message) {
-            setMessage(savedMessageState.message);
-            setMessageOpacity(savedMessageState.opacity || 1);
+        setIsDragging(true);
+        const startX = e.clientX - position.x;
+        const startY = e.clientY - position.y;
+        
+        const handleMouseMove = (e: MouseEvent) => {
+            setPosition({
+                x: e.clientX - startX,
+                y: e.clientY - startY
+            });
+        };
+        
+        const handleMouseUp = () => {
+            setIsDragging(false);
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
+        
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+    }, [isMinimized, position]);
+
+    const handleTouchStart = useCallback((e: React.TouchEvent) => {
+        if (isMinimized) return;
+        
+        setIsDragging(true);
+        const touch = e.touches[0];
+        const startX = touch.clientX - position.x;
+        const startY = touch.clientY - position.y;
+        
+        const handleTouchMove = (e: TouchEvent) => {
+            const touch = e.touches[0];
+            setPosition({
+                x: touch.clientX - startX,
+                y: touch.clientY - startY
+            });
+        };
+        
+        const handleTouchEnd = () => {
+            setIsDragging(false);
+            document.removeEventListener('touchmove', handleTouchMove);
+            document.removeEventListener('touchend', handleTouchEnd);
+        };
+        
+        document.addEventListener('touchmove', handleTouchMove);
+        document.addEventListener('touchend', handleTouchEnd);
+    }, [isMinimized, position]);
+
+    const toggleMinimize = useCallback(() => {
+        setIsMinimized(prev => !prev);
+    }, []);
+
+    const toggleMute = useCallback(() => {
+        setIsMuted(prev => !prev);
+    }, []);
+
+    const handleRefresh = useCallback(() => {
+        // 刷新Live2D模型
+        if (canvasRef.current) {
+            const canvas = canvasRef.current;
+            const context = canvas.getContext('2d');
+            if (context) {
+                context.clearRect(0, 0, canvas.width, canvas.height);
+            }
         }
         
+        // 重新初始化
+        setIsLoading(true);
+        setTimeout(() => {
+            setIsLoading(false);
+            updateMessage('刷新完成！天依重新上线啦～');
+        }, 1000);
+    }, [updateMessage]);
+
+    // 设置消息回调 - 集成实例管理器
+    useEffect(() => {
         messageQueueRef.current.setMessageCallback((msg) => {
             setMessage(msg);
             setMessageOpacity(1);
@@ -314,8 +381,6 @@ export default function LuoTianyiLive2DOptimized() {
             
             fadeTimeoutRef.current = setTimeout(() => {
                 setMessageOpacity(0);
-                // 保存淡出状态到实例管理器
-                instanceManager.saveMessageState(msg, 0);
             }, 5000);
         });
     }, []);
@@ -325,293 +390,95 @@ export default function LuoTianyiLive2DOptimized() {
         const checkDevice = () => {
             const userAgent = navigator.userAgent.toLowerCase();
             const mobileKeywords = ['mobile', 'android', 'iphone', 'ipad', 'ipod'];
-            const isMobile = mobileKeywords.some(keyword => userAgent.includes(keyword));
+            const isMobileDevice = mobileKeywords.some(keyword => userAgent.includes(keyword));
             
             // 检查屏幕尺寸
             const isSmallScreen = window.innerWidth < 768;
             
-            setIsMobileDevice(isMobile || isSmallScreen);
+            setIsMobileDevice(isMobileDevice || isSmallScreen);
+            setIsMobile(isMobileDevice || isSmallScreen);
         };
         
         checkDevice();
-        window.addEventListener('resize', checkDevice);
         
-        return () => window.removeEventListener('resize', checkDevice);
+        const handleResize = () => {
+            checkDevice();
+        };
+        
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
     }, []);
 
     // 浏览器兼容性检测
-  const [showCompatibilityWarning, setShowCompatibilityWarning] = useState(false);
-  
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    
-    const checkCompatibility = async () => {
-      try {
-        const { live2DBrowserCompatibility } = await import('../utils/browserCompatibility');
-        const detector = live2DBrowserCompatibility;
-        const compatibility = detector.detectCompatibility();
-        
-        console.log('[LuoTianyiLive2D] 浏览器兼容性检测结果:');
-        console.log(detector.getCompatibilityReport());
-        
-        if (!compatibility.isSupported) {
-          console.warn('[LuoTianyiLive2D] 浏览器不支持 Live2D，将显示降级提示');
-          setShowCompatibilityWarning(true);
-          updateMessage('当前浏览器可能不支持 Live2D 功能哦～');
-        }
-        
-        // 检查 WebGL 支持
-        if (!compatibility.webglSupport) {
-          console.warn('[LuoTianyiLive2D] WebGL 不支持');
-          setShowCompatibilityWarning(true);
-          updateMessage('需要 WebGL 支持才能显示天依呢～');
-        }
-        
-      } catch (error) {
-        console.error('[LuoTianyiLive2D] 兼容性检测失败:', error);
-      }
-    };
-    
-    checkCompatibility();
-  }, [updateMessage]);
-  
-  // 导入兼容性警告组件
-  const BrowserCompatibilityWarning = showCompatibilityWarning ? 
-    require('./BrowserCompatibilityWarning').default : null;
-
-  return (
-    <>
-      {BrowserCompatibilityWarning && (
-        <BrowserCompatibilityWarning 
-          onDismiss={() => setShowCompatibilityWarning(false)}
-        />
-      )}
-      
-      <div className={cn(
-        "fixed z-50 transition-all duration-300",
-        isMinimized ? "w-16 h-16" : "w-80 h-96",
-        isMobile ? "bottom-4 right-4" : "bottom-8 right-8",
-        isDragging ? "cursor-grabbing" : "cursor-grab",
-        className
-      )}
-      ref={containerRef}
-      style={{
-        left: position.x,
-        top: position.y,
-        transform: isDragging ? 'scale(1.05)' : 'scale(1)'
-      }}
-      onMouseDown={handleMouseDown}
-      onTouchStart={handleTouchStart}
-      >
-        {/* 主要内容 */}
-        <canvas
-          ref={canvasRef}
-          id="live2d-main"
-          className={cn(
-            "w-full h-full rounded-lg transition-opacity duration-300",
-            isMinimized ? "opacity-0 pointer-events-none" : "opacity-100"
-          )}
-          width={300}
-          height={400}
-        />
-        
-        {/* 控制按钮 */}
-        <div className={cn(
-          "absolute top-2 right-2 flex flex-col space-y-1 transition-opacity duration-300",
-          isMinimized ? "opacity-0 pointer-events-none" : "opacity-100"
-        )}>
-          <button
-            onClick={toggleMinimize}
-            className="w-8 h-8 bg-white/80 dark:bg-gray-800/80 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 transition-all duration-200 shadow-sm"
-            title={isMinimized ? "展开" : "最小化"}
-          >
-            {isMinimized ? "🗖" : "🗕"}
-          </button>
-          
-          <button
-            onClick={toggleMute}
-            className="w-8 h-8 bg-white/80 dark:bg-gray-800/80 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 transition-all duration-200 shadow-sm"
-            title={isMuted ? "开启声音" : "静音"}
-          >
-            {isMuted ? "🔇" : "🔊"}
-          </button>
-          
-          <button
-            onClick={handleRefresh}
-            className="w-8 h-8 bg-white/80 dark:bg-gray-800/80 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 transition-all duration-200 shadow-sm"
-            title="刷新"
-          >
-            🔄
-          </button>
-        </div>
-        
-        {/* 消息气泡 */}
-        {message && (
-          <div className={cn(
-            "absolute top-12 left-1/2 transform -translate-x-1/2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg p-3 shadow-lg max-w-xs z-10 transition-all duration-300",
-            "border border-gray-200 dark:border-gray-700"
-          )}>
-            <p className="text-sm text-gray-800 dark:text-gray-200">{message}</p>
-            <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-white dark:bg-gray-800 rotate-45 border-r border-b border-gray-200 dark:border-gray-700"></div>
-          </div>
-        )}
-        
-        {/* 加载指示器 */}
-        {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-gray-900/50 rounded-lg">
-            <div className="flex flex-col items-center space-y-2">
-              <div className="w-8 h-8 border-4 border-blue-200 dark:border-blue-800 border-t-blue-500 dark:border-t-blue-400 rounded-full animate-spin"></div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">正在加载天依...</p>
-            </div>
-          </div>
-        )}
-      </div>
-    </>
-  );
-}
-        performanceMonitorRef.current.startMonitoring();
-        
-        const instanceManager = Live2DInstanceManager.getInstance();
-        
-        const initializeLive2D = async () => {
-            try {
-                // 检查是否存在可用的实例状态
-                const savedInstance = instanceManager.getInstanceState('live2d-main');
-                if (savedInstance && savedInstance.isActive) {
-                    console.log('[LuoTianyiLive2D] 发现保存的实例状态，恢复中...');
-                    await restoreLive2DInstance(savedInstance);
-                    return;
-                }
-                
-                // 设置初始化超时
-                initializationTimeoutRef.current = setTimeout(() => {
-                    console.warn('[LuoTianyiLive2D] 初始化超时，强制完成');
-                    setIsLoading(false);
-                    performanceMonitorRef.current.recordInitializationComplete();
-                }, 10000);
-                
-                // 预加载资源
-                const basePath = getAssetPath('/luotianyi-live2d-master');
-                await preloaderRef.current.preloadLive2DResources(basePath);
-                
-                // 延迟初始化，避免阻塞页面渲染
-                requestAnimationFrame(() => {
-                    loadLive2DScript();
-                });
-                
-            } catch (error) {
-                console.error('[LuoTianyiLive2D] 初始化失败:', error);
-                performanceMonitorRef.current.recordError();
-                setIsLoading(false);
-            }
-        };
-        
-        // 内存监控和清理
-        const memoryCheckInterval = setInterval(() => {
-            if ((performance as any).memory) {
-                const memoryInfo = (performance as any).memory;
-                const usedMemoryMB = memoryInfo.usedJSHeapSize / (1024 * 1024);
-                const totalMemoryMB = memoryInfo.totalJSHeapSize / (1024 * 1024);
-                
-                console.log(`[LuoTianyiLive2D] 内存使用: ${usedMemoryMB.toFixed(2)}MB / ${totalMemoryMB.toFixed(2)}MB`);
-                
-                // 如果内存使用超过80%，触发清理
-                if (usedMemoryMB > totalMemoryMB * 0.8) {
-                    console.warn('[LuoTianyiLive2D] 内存使用过高，触发清理');
-                    instanceManager.cleanup();
-                }
-            }
-        }, 30000); // 每30秒检查一次
-        
-        return () => {
-            clearInterval(memoryCheckInterval);
-        };
-        
-        const restoreLive2DInstance = async (savedInstance: any) => {
-            try {
-                // 恢复实例状态
-                if (canvasRef.current && savedInstance.modelConfig) {
-                    const canvas = canvasRef.current;
-                    canvas.width = savedInstance.canvasWidth || 280;
-                    canvas.height = savedInstance.canvasHeight || 250;
-                    
-                    // 快速恢复模型
-                    if ((window as any).live2d) {
-                        (window as any).live2d.initialize(canvas, savedInstance.modelConfig);
-                        
-                        // 恢复之前的消息状态
-                        if (savedInstance.lastMessage) {
-                            setMessage(savedInstance.lastMessage);
-                            setMessageOpacity(savedInstance.messageOpacity || 1);
-                        }
-                        
-                        // 使用 requestAnimationFrame 优化恢复时机
-                        requestAnimationFrame(() => {
-                            setIsLoading(false);
-                            performanceMonitorRef.current.recordInitializationComplete();
-                            
-                            // 标记实例为活跃状态
-                            instanceManager.setInstanceActive(true);
-                            
-                            console.log('[LuoTianyiLive2D] 实例状态恢复完成');
-                        });
-                    } else {
-                        // 如果live2d未加载，走正常初始化流程
-                        loadLive2DScript();
-                    }
-                }
-            } catch (error) {
-                console.error('[LuoTianyiLive2D] 实例恢复失败:', error);
-                // 恢复失败时走正常初始化流程
-                loadLive2DScript();
-            }
-        };
-        
-        const loadLive2DScript = () => {
-            if (typeof window === 'undefined') return;
+    useEffect(() => {
+        const checkCompatibility = () => {
+            // 检查WebGL支持
+            const canvas = document.createElement('canvas');
+            const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
             
-            // 检查是否已经加载
-            if ((window as any).live2d) {
-                setupLive2D();
+            if (!gl) {
+                console.warn('[LuoTianyiLive2D] 浏览器不支持WebGL');
+                setShowCompatibilityWarning(true);
                 return;
             }
             
-            const script = document.createElement('script');
-            const basePath = getAssetPath('/luotianyi-live2d-master');
-            script.src = `${basePath}/live2d/js/live2d.js`;
-            
-            // 使用预加载策略
-            const preloadLink = document.createElement('link');
-            preloadLink.rel = 'preload';
-            preloadLink.as = 'script';
-            preloadLink.href = script.src;
-            document.head.appendChild(preloadLink);
-            
-            script.onload = () => {
-                console.log('[LuoTianyiLive2D] Live2D脚本加载成功');
-                setupLive2D();
-                // 清理预加载链接
-                if (preloadLink.parentNode) {
-                    preloadLink.parentNode.removeChild(preloadLink);
-                }
-            };
-            
-            script.onerror = () => {
-                console.error('[LuoTianyiLive2D] Live2D脚本加载失败');
-                performanceMonitorRef.current.recordError();
-                setIsLoading(false);
-                // 清理预加载链接
-                if (preloadLink.parentNode) {
-                    preloadLink.parentNode.removeChild(preloadLink);
-                }
-            };
-            
-            document.head.appendChild(script);
+            // 检查Web Audio API支持
+            if (!(window as any).AudioContext && !(window as any).webkitAudioContext) {
+                console.warn('[LuoTianyiLive2D] 浏览器不支持Web Audio API');
+            }
         };
         
-        const setupLive2D = () => {
-            if (!canvasRef.current) return;
-            
+        checkCompatibility();
+    }, []);
+
+    // 初始化Live2D - 优化版本
+    useEffect(() => {
+        if (isMobileDevice) return;
+        
+        performanceMonitorRef.current.startMonitoring();
+        
+        // 检查实例管理器中是否有保存的状态
+        const instanceId = 'luotianyi-main';
+        const savedState = live2dInstanceManager.getInstanceState(instanceId);
+        if (savedState) {
+            console.log('[LuoTianyiLive2D] 恢复保存的实例状态');
+            setMessage(savedState.lastMessage || '');
+            setIsLoading(false);
+            return;
+        }
+        
+        // 预加载资源
+        preloaderRef.current.preloadLive2DResources(getAssetPath(''));
+        
+        // 加载Live2D脚本
+        const loadLive2DScript = () => {
+            return new Promise<void>((resolve) => {
+                if ((window as any).live2d) {
+                    resolve();
+                    return;
+                }
+                
+                const script = document.createElement('script');
+                script.src = getAssetPath('/luotianyi-live2d-master/live2d/js/live2d.js');
+                script.async = true;
+                
+                script.onload = () => {
+                    console.log('[LuoTianyiLive2D] Live2D脚本加载成功');
+                    resolve();
+                };
+                
+                script.onerror = () => {
+                    console.error('[LuoTianyiLive2D] Live2D脚本加载失败');
+                    setIsLoading(false);
+                    resolve();
+                };
+                
+                document.head.appendChild(script);
+            });
+        };
+        
+        // 设置Live2D
+        const setupLive2D = async () => {
             try {
                 // 清理初始化超时
                 if (initializationTimeoutRef.current) {
@@ -631,14 +498,6 @@ export default function LuoTianyiLive2DOptimized() {
                         const canvas = canvasRef.current!;
                         canvas.width = 280;
                         canvas.height = 250;
-                        
-                        // 保存实例状态
-                        instanceManager.saveInstanceState({
-                            canvasWidth: 280,
-                            canvasHeight: 250,
-                            modelConfig: modelConfig,
-                            isActive: true
-                        });
                         
                         // 初始化Live2D模型
                         if ((window as any).live2d) {
@@ -671,7 +530,7 @@ export default function LuoTianyiLive2DOptimized() {
         
         // 延迟初始化，避免阻塞页面渲染
         const initTimer = setTimeout(() => {
-            initializeLive2D();
+            setupLive2D();
         }, 500);
         
         return () => {
@@ -679,197 +538,106 @@ export default function LuoTianyiLive2DOptimized() {
             if (initializationTimeoutRef.current) {
                 clearTimeout(initializationTimeoutRef.current);
             }
+        };
+    }, [updateMessage, isMobileDevice]);
+
+    // 监听页面变化
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        
+        const handleRouteChange = () => {
+            const currentPath = window.location.pathname;
+            setCurrentPage(currentPath);
             
-            // 保存当前实例状态
-            if (!isLoading) {
-                instanceManager.saveInstanceState({
-                    lastMessage: message,
-                    messageOpacity: messageOpacity,
-                    isActive: false // 页面卸载时标记为非活跃
-                });
-            }
-        };
-    }, [updateMessage, message, messageOpacity, isLoading]);
-
-    // 优化的页面信息获取
-    const getCurrentPageInfo = useCallback(() => {
-        if (typeof window === 'undefined') return { page: '', path: '' };
-        
-        const path = window.location.pathname;
-        const pageMap = {
-            '/': '首页',
-            '/about': '关于页面',
-            '/archive': '归档页面',
-            '/guestbook': '留言板',
-            '/settings': '设置页面',
-            '/tools': '工具页面',
-            '/blogs': '博客文章'
+            // 页面变化时显示智能消息
+            const pageMessages: Record<string, string> = {
+                '/': '欢迎来到首页！天依在这里等你～',
+                '/about': '关于页面！想了解更多关于天依吗？',
+                '/archive': '归档页面！这里有很多精彩内容～',
+                '/guestbook': '留言板！给天依留言吧～',
+                '/settings': '设置页面！可以调整天依的设置哦～',
+                '/tools/pinyin-converter': '拼音转换器！天依来帮你转换拼音～',
+                '/tools/markdown-editor': 'Markdown编辑器！天依陪你一起写作～'
+            };
+            
+            const message = pageMessages[currentPath] || `来到了新页面！天依陪你探索${currentPath}～`;
+            updateMessage(message, 'interaction');
         };
         
-        let pageType = '其他页面';
-        for (const [route, name] of Object.entries(pageMap)) {
-            if (path.startsWith(route)) {
-                pageType = name;
-                break;
-            }
-        }
+        // 初始页面检测
+        handleRouteChange();
         
-        if (path.includes('/blogs/') && path !== '/blogs/') {
-            pageType = '博客文章';
-        }
-        
-        return { page: pageType, path };
-    }, []);
-
-    // 优化的智能页面消息
-    const showSmartPageMessage = useCallback(() => {
-        const { page } = getCurrentPageInfo();
-        const hour = new Date().getHours();
-        
-        const pageMessages = {
-            '首页': [
-                '欢迎来到歆橙的博客！这里有很多有趣的内容哦～',
-                '首页是博客的门面呢，设计得很漂亮吧？',
-                '从这里开始探索博主的精彩世界吧！'
-            ],
-            '关于页面': [
-                '想了解博主更多信息吗？这里有很多有趣的故事哦～',
-                '关于页面能让我们更好地了解博主的背景和兴趣～',
-                '每个博主的关于页面都很有特色呢！'
-            ],
-            '归档页面': [
-                '这里记录了博主的所有创作历程呢～',
-                '归档页面就像时间胶囊，记录着点点滴滴～',
-                '可以按时间顺序回顾博主的成长轨迹哦！'
-            ],
-            '留言板': [
-                '留言板是和大家交流的好地方，有什么想说的吗？',
-                '这里可以留下你的想法和建议，博主会很开心的～',
-                '天依也喜欢热闹的留言板呢！'
-            ],
-            '博客文章': [
-                '开始阅读新文章了呢，天依陪你一起～',
-                '这篇文章看起来很有意思，期待你的感想～',
-                '博主的文笔真不错，天依也学到了很多呢～'
-            ],
-            '工具页面': [
-                '工具页面有很多实用的功能哦，试试看吧～',
-                '这里的小工具会让你的体验更加便利呢！',
-                '天依也觉得这些工具很实用呢～'
-            ],
-            '设置页面': [
-                '想要个性化你的浏览体验吗？这里可以调整各种设置哦～',
-                '设置页面让你可以按照自己的喜好来定制界面～',
-                '天依也喜欢个性化的设置呢！'
-            ],
-            '其他页面': [
-                '欢迎来到这个页面！天依在这里等你哦～',
-                '这是一个特别的页面呢，有什么新发现吗？',
-                '天依会在这里陪伴你浏览每一个页面～'
-            ]
+        // 监听路由变化（简化版本）
+        const originalPushState = window.history.pushState;
+        window.history.pushState = function(...args) {
+            originalPushState.apply(this, args);
+            setTimeout(handleRouteChange, 100);
         };
         
-        const timeGreetings = {
-            night: '夜深了，注意休息哦～',
-            morning: '早上好！今天也要充满活力哦～',
-            afternoon: '下午好！午后的阳光很适合阅读呢～',
-            evening: '晚上好！天依陪你度过美好的夜晚～'
+        window.addEventListener('popstate', handleRouteChange);
+        
+        return () => {
+            window.history.pushState = originalPushState;
+            window.removeEventListener('popstate', handleRouteChange);
         };
-        
-        let timeGreeting = '';
-        if (hour < 6) timeGreeting = timeGreetings.night;
-        else if (hour < 12) timeGreeting = timeGreetings.morning;
-        else if (hour < 18) timeGreeting = timeGreetings.afternoon;
-        else timeGreeting = timeGreetings.evening;
-        
-        const messages = pageMessages[page as keyof typeof pageMessages] || pageMessages['其他页面'];
-        const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-        
-        // 30%概率显示时间问候
-        const finalMessage = Math.random() < 0.3 ? timeGreeting : randomMessage;
-        
-        updateMessage(finalMessage);
-    }, [getCurrentPageInfo, updateMessage]);
-
-    // 优化的主题切换处理
-    const handleThemeChange = useCallback((event: any) => {
-        if (!event.data) return;
-        
-        const { newTheme, previousTheme } = event.data;
-        
-        // 防抖处理
-        const now = Date.now();
-        const lastThemeChangeTime = (window as any).__lastThemeChangeTime || 0;
-        if (now - lastThemeChangeTime < 1000) return;
-        (window as any).__lastThemeChangeTime = now;
-        
-        const themeMessages = {
-            light: [
-                '切换到亮色模式了！眼睛会舒服一些～',
-                '哇，好明亮啊！像阳光一样温暖☀️',
-                '亮色模式开启！今天也是元气满满的一天！'
-            ],
-            dark: [
-                '切换到深色模式了！夜晚模式启动🌙',
-                '哇，好酷的黑色！像夜空一样神秘✨',
-                '深色模式开启！保护眼睛，从我做起～'
-            ],
-            system: [
-                '跟随系统主题了！智能切换，贴心～',
-                '系统主题模式！让设备来决定吧～',
-                '跟随系统设置，这样最自然了！'
-            ]
-        };
-
-        const messages = themeMessages[newTheme as keyof typeof themeMessages] || themeMessages.system;
-        const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-        
-        updateMessage(randomMessage, 'interaction');
     }, [updateMessage]);
 
-    // 优化的阅读进度检测
+    // 监听复制事件
+    useEffect(() => {
+        const handleCopy = () => {
+            updateMessage('复制成功！天依已经记录下来了～', 'interaction');
+        };
+        
+        document.addEventListener('copy', handleCopy, true);
+        return () => document.removeEventListener('copy', handleCopy, true);
+    }, [updateMessage]);
+
+    // 监听滚动事件
     const detectReadingProgress = useCallback(() => {
         if (typeof window === 'undefined') return;
         
-        // 节流处理
-        if (scrollTimeoutRef.current) {
-            clearTimeout(scrollTimeoutRef.current);
-        }
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+        const progress = Math.min((scrollTop / scrollHeight) * 100, 100);
         
-        scrollTimeoutRef.current = setTimeout(() => {
-            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-            const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
-            const progress = Math.min((scrollTop / scrollHeight) * 100, 100);
-            
-            setReadingProgress(progress);
-            
-            // 只在关键进度点给出提示
-            const keyPoints = [25, 50, 75];
-            const currentPoint = keyPoints.find(point => 
-                progress >= point && progress < point + 5
-            );
-            
-            if (currentPoint) {
-                const messages = {
-                    25: '已经阅读了四分之一了呢，继续加油哦～',
-                    50: '一半了！这篇文章很吸引人吧？',
-                    75: '快要读完了呢，有什么感想吗？'
-                };
-                
-                updateMessage(messages[currentPoint as keyof typeof messages]);
-            }
-        }, 200); // 200ms节流
+        setReadingProgress(progress);
+        
+        // 阅读进度消息
+        if (progress > 80) {
+            updateMessage('你已经阅读了大部分内容，真厉害！', 'interaction');
+        } else if (progress > 50) {
+            updateMessage('阅读进度已经过半了，继续加油～', 'interaction');
+        }
     }, [updateMessage]);
 
-    // 优化的页面停留时间检测
-    const checkPageStayTime = useCallback(() => {
-        const stayTime = Date.now() - pageStartTime;
-        const stayMinutes = Math.floor(stayTime / 60000);
+    // 主题切换处理
+    const handleThemeChange = useCallback((event: any) => {
+        const theme = typeof event === 'string' ? event : event?.data?.theme || 'default';
+        const themeMessages: Record<string, string> = {
+            'blue': '切换到蓝色主题！这是天依最喜欢的颜色～',
+            'purple': '切换到紫色主题！神秘而优雅～',
+            'pink': '切换到粉色主题！可爱又温馨～',
+            'green': '切换到绿色主题！清新自然～',
+            'orange': '切换到橙色主题！活力满满～',
+            'red': '切换到红色主题！热情如火～',
+            'yellow': '切换到黄色主题！阳光灿烂～',
+            'indigo': '切换到靛蓝色主题！深邃优雅～',
+            'teal': '切换到青色主题！清爽怡人～',
+            'cyan': '切换到青色主题！清澈透明～'
+        };
         
-        const keyMinutes = [5, 10, 15, 30];
-        const currentKey = keyMinutes.find(min => 
-            stayMinutes >= min && stayMinutes < min + 1
-        );
+        const message = themeMessages[theme] || `切换到${theme}主题！天依很喜欢这个颜色～`;
+        updateMessage(message, 'interaction');
+    }, [updateMessage]);
+
+    // 页面停留时间检测
+    const checkPageStayTime = useCallback(() => {
+        const stayTime = Math.floor((Date.now() - pageStartTime) / 1000 / 60); // 分钟
+        
+        const currentKey = stayTime >= 30 ? 30 : 
+                          stayTime >= 15 ? 15 : 
+                          stayTime >= 10 ? 10 : 
+                          stayTime >= 5 ? 5 : null;
         
         if (currentKey) {
             const messages = {
@@ -896,17 +664,12 @@ export default function LuoTianyiLive2DOptimized() {
     // 页面初始化完成后的处理
     useEffect(() => {
         if (!isLoading) {
-            // 显示智能页面消息
-            setTimeout(() => {
-                showSmartPageMessage();
-            }, 1000);
-            
             // 延迟显示欢迎消息
             setTimeout(() => {
                 updateMessage('天依已经准备好陪伴你啦～');
             }, 3000);
         }
-    }, [isLoading, showSmartPageMessage, updateMessage]);
+    }, [isLoading, updateMessage]);
 
     // 阅读进度检测（仅在博客文章页面）
     useEffect(() => {
@@ -917,22 +680,56 @@ export default function LuoTianyiLive2DOptimized() {
         
         if (!isBlogPostPage) return;
         
+        let lastScrollY = 0;
+        let scrollTimeout: NodeJS.Timeout;
+        
         const handleScroll = () => {
-            detectReadingProgress();
+            const currentScrollY = window.scrollY;
+            
+            // 清除之前的定时器
+            if (scrollTimeout) {
+                clearTimeout(scrollTimeout);
+            }
+            
+            // 延迟执行，优化性能
+            scrollTimeout = setTimeout(() => {
+                if (currentScrollY > lastScrollY + 50) {
+                    updateMessage('页面滚动得很快呢，在找什么吗？');
+                } else if (currentScrollY > lastScrollY + 200) {
+                    updateMessage('滚动得好快！有什么着急的事情吗？');
+                }
+                
+                lastScrollY = currentScrollY;
+                detectReadingProgress();
+            }, 100);
         };
         
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, [detectReadingProgress]);
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+            if (scrollTimeout) {
+                clearTimeout(scrollTimeout);
+            }
+        };
+    }, [detectReadingProgress, updateMessage]);
 
     // 页面停留时间检测
     useEffect(() => {
-        const interval = setInterval(() => {
-            checkPageStayTime();
-        }, 60000); // 每分钟检查一次
+        const pageEnterTime = Date.now();
+        
+        const checkPageStayTime = () => {
+            const stayTime = Date.now() - pageEnterTime;
+            
+            // 如果页面停留时间超过30分钟，显示消息
+            if (stayTime > 30 * 60 * 1000) {
+                updateMessage('你已经在这里停留了很长时间呢，记得休息一下哦～');
+            }
+        };
+        
+        const interval = setInterval(checkPageStayTime, 5 * 60 * 1000); // 每5分钟检查一次
         
         return () => clearInterval(interval);
-    }, [checkPageStayTime]);
+    }, [updateMessage]);
 
     // 清理函数 - 优化生命周期管理
     useEffect(() => {
@@ -957,13 +754,7 @@ export default function LuoTianyiLive2DOptimized() {
             messageQueueRef.current.clear();
             
             // 保存当前状态到实例管理器
-            const instanceManager = Live2DInstanceManager.getInstance();
-            instanceManager.saveInstanceState({
-                lastMessage: message,
-                messageOpacity: messageOpacity,
-                isActive: false,
-                lastAccessTime: Date.now()
-            });
+            // 这里可以添加内存清理逻辑，但目前先记录警告
             
             // 清理预加载器缓存（保留实例管理器的缓存）
             preloaderRef.current.clearCache();
@@ -985,7 +776,7 @@ export default function LuoTianyiLive2DOptimized() {
             
             console.log('[LuoTianyiLive2D] 清理工作完成');
         };
-    }, [message, messageOpacity]);
+    }, []);
 
     // 性能报告
     const getPerformanceReport = useCallback(() => {
@@ -999,75 +790,140 @@ export default function LuoTianyiLive2DOptimized() {
         };
     }, []);
 
+    // 智能页面消息
+    const showSmartPageMessage = useCallback(() => {
+        if (typeof window === 'undefined') return;
+        
+        const currentPath = window.location.pathname;
+        const time = new Date().getHours();
+        
+        let message = '';
+        
+        // 时间相关的问候
+        if (time >= 6 && time < 12) {
+            message = '早上好！今天也要加油哦～';
+        } else if (time >= 12 && time < 18) {
+            message = '下午好！工作学习辛苦了～';
+        } else if (time >= 18 && time < 22) {
+            message = '晚上好！今天过得怎么样呢～';
+        } else {
+            message = '夜深了，注意休息哦～';
+        }
+        
+        // 页面特定的消息
+        const pageMessages: Record<string, string> = {
+            '/': '欢迎来到首页！',
+            '/about': '想了解更多关于天依吗？',
+            '/archive': '这里有很多精彩内容～',
+            '/guestbook': '给天依留言吧～',
+            '/settings': '可以调整天依的设置哦～',
+            '/tools/pinyin-converter': '天依来帮你转换拼音～',
+            '/tools/markdown-editor': '天依陪你一起写作～'
+        };
+        
+        if (pageMessages[currentPath]) {
+            message += ' ' + pageMessages[currentPath];
+        }
+        
+        updateMessage(message, 'interaction');
+    }, [updateMessage]);
+
     // 移动端设备隐藏
     if (isMobileDevice) {
         return null;
     }
 
+    // 导入兼容性警告组件
+    const BrowserCompatibilityWarning = showCompatibilityWarning ? 
+        require('./BrowserCompatibilityWarning').default : null;
+
     return (
-        <div 
+        <>
+            {BrowserCompatibilityWarning && (
+                <BrowserCompatibilityWarning 
+                    onDismiss={() => setShowCompatibilityWarning(false)}
+                />
+            )}
+            
+            <div className={cn(
+                "fixed z-50 transition-all duration-300",
+                isMinimized ? "w-16 h-16" : "w-80 h-96",
+                isMobile ? "bottom-4 right-4" : "bottom-8 right-8",
+                isDragging ? "cursor-grabbing" : "cursor-grab",
+                className
+            )}
             ref={containerRef}
-            className={`fixed right-8 bottom-8 z-50 transition-all duration-500 ${
-                isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8 pointer-events-none'
-            }`}
-            style={{ 
-                filter: 'drop-shadow(0 4px 20px rgba(0, 0, 0, 0.15))',
-                contain: 'layout style paint', // 优化渲染性能
-                willChange: 'transform, opacity' // 提前告知浏览器优化
+            style={{
+                left: position.x,
+                top: position.y,
+                transform: isDragging ? 'scale(1.05)' : 'scale(1)'
             }}
-        >
-            {/* 加载状态 - 优化过渡效果 */}
-            {isLoading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-white/80 rounded-lg backdrop-blur-sm transition-opacity duration-300">
-                    <div className="text-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
-                        <div className="text-sm text-gray-600 animate-pulse">天依加载中... {loadProgress}%</div>
+            onMouseDown={handleMouseDown}
+            onTouchStart={handleTouchStart}
+            >
+                {/* 主要内容 */}
+                <canvas
+                    ref={canvasRef}
+                    id="live2d-main"
+                    className={cn(
+                        "w-full h-full rounded-lg transition-opacity duration-300",
+                        isMinimized ? "opacity-0 pointer-events-none" : "opacity-100"
+                    )}
+                    width={300}
+                    height={400}
+                />
+                
+                {/* 控制按钮 */}
+                <div className={cn(
+                    "absolute top-2 right-2 flex flex-col space-y-1 transition-opacity duration-300",
+                    isMinimized ? "opacity-0 pointer-events-none" : "opacity-100"
+                )}>
+                    <button
+                        onClick={toggleMinimize}
+                        className="w-8 h-8 bg-white/80 dark:bg-gray-800/80 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 transition-all duration-200 shadow-sm"
+                        title={isMinimized ? "展开" : "最小化"}
+                    >
+                        {isMinimized ? "🗖" : "🗕"}
+                    </button>
+                    
+                    <button
+                        onClick={toggleMute}
+                        className="w-8 h-8 bg-white/80 dark:bg-gray-800/80 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 transition-all duration-200 shadow-sm"
+                        title={isMuted ? "开启声音" : "静音"}
+                    >
+                        {isMuted ? "🔇" : "🔊"}
+                    </button>
+                    
+                    <button
+                        onClick={handleRefresh}
+                        className="w-8 h-8 bg-white/80 dark:bg-gray-800/80 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 transition-all duration-200 shadow-sm"
+                        title="刷新"
+                    >
+                        🔄
+                    </button>
+                </div>
+                
+                {/* 消息气泡 */}
+                {message && (
+                    <div className={cn(
+                        "absolute top-12 left-1/2 transform -translate-x-1/2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg p-3 shadow-lg max-w-xs z-10 transition-all duration-300",
+                        "border border-gray-200 dark:border-gray-700"
+                    )}>
+                        <p className="text-sm text-gray-800 dark:text-gray-200">{message}</p>
+                        <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-white dark:bg-gray-800 rotate-45 border-r border-b border-gray-200 dark:border-gray-700"></div>
                     </div>
-                </div>
-            )}
-            
-            {/* 消息气泡 - 优化显示连续性 */}
-            {message && (
-                <div 
-                    className="absolute bottom-full mb-4 right-0 max-w-xs transition-all duration-300 ease-out"
-                    style={{ 
-                        opacity: messageOpacity,
-                        transform: messageOpacity > 0 ? 'translateY(0) scale(1)' : 'translateY(10px) scale(0.95)',
-                        contain: 'layout style paint',
-                        willChange: 'transform, opacity'
-                    }}
-                >
-                    <div className="bg-white/95 backdrop-blur-sm rounded-lg p-3 shadow-lg border border-gray-200 relative">
-                        <div className="text-sm text-gray-800 leading-relaxed">{message}</div>
-                        <div className="absolute bottom-0 right-4 transform translate-y-1/2 rotate-45 w-2 h-2 bg-white border-r border-b border-gray-200"></div>
+                )}
+                
+                {/* 加载指示器 */}
+                {isLoading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-gray-900/50 rounded-lg">
+                        <div className="flex flex-col items-center space-y-2">
+                            <div className="w-8 h-8 border-4 border-blue-200 dark:border-blue-800 border-t-blue-500 dark:border-t-blue-400 rounded-full animate-spin"></div>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">正在加载天依...</p>
+                        </div>
                     </div>
-                </div>
-            )}
-            
-            {/* Live2D画布 - 优化渲染性能 */}
-            <canvas
-                ref={canvasRef}
-                className="cursor-pointer hover:scale-105 transition-transform duration-200"
-                width={280}
-                height={250}
-                style={{ 
-                    contain: 'layout style paint',
-                    willChange: 'transform', // 优化动画性能
-                    imageRendering: 'optimizeQuality' // 优化图像质量
-                }}
-            />
-            
-            {/* 交互状态指示器 - 优化视觉反馈 */}
-            {interactionState !== 'idle' && (
-                <div className="absolute top-2 right-2 w-3 h-3 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full animate-pulse shadow-lg"></div>
-            )}
-            
-            {/* 性能监控指示器（开发模式） */}
-            {process.env.NODE_ENV === 'development' && (
-                <div className="absolute top-2 left-2 text-xs text-gray-500 bg-white/50 px-1 py-0.5 rounded">
-                    {loadProgress}%
-                </div>
-            )}
-        </div>
+                )}
+            </div>
+        </>
     );
 }

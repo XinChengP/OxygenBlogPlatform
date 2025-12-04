@@ -9,7 +9,7 @@ import { useLive2DOptimized } from '@/hooks/useLive2DOptimized';
 
 // 动态导入LuoTianyiLive2D组件，实现代码分割和懒加载
 const LuoTianyiLive2D = dynamic(
-  () => import('./LuoTianyiLive2DOptimized').then(mod => mod.default),
+  () => import('./LuoTianyiLive2DOptimized'),
   {
     loading: () => null, // 加载时不显示任何内容
     ssr: false, // 禁用服务端渲染

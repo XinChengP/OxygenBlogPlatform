@@ -6,14 +6,10 @@ import { Live2DBrowserCompatibility, live2DBrowserCompatibility } from './browse
 
 describe('Live2DBrowserCompatibility', () => {
   let originalUserAgent: string;
-  let originalLocalStorage: Storage;
-  let originalPerformance: Performance;
   
   beforeEach(() => {
     // 保存原始值
     originalUserAgent = navigator.userAgent;
-    originalLocalStorage = window.localStorage;
-    originalPerformance = window.performance;
     
     // 清除单例缓存
     (Live2DBrowserCompatibility as any).instance = null;

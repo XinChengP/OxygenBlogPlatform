@@ -48,6 +48,7 @@ interface InstanceState {
   lastMessage?: string;
   messageTime?: number;
   theme?: string;
+  lastAccessTime?: number;
 }
 
 class Live2DInstanceManager {
@@ -145,11 +146,11 @@ class Live2DInstanceManager {
 
     try {
       // 预加载资源 - 优化加载顺序
-      const criticalConfigs: Live2DResourceConfig[] = [
+      const resourceConfigs: Live2DResourceConfig[] = [
         {
-          modelPath,
-          texturePath: '',
-          motionPath: '',
+          modelPath: modelPath,
+          texturePath: `${modelPath}/textures`,
+          motionPath: `${modelPath}/motions`,
           priority: 10,
           preload: true,
           cache: true,
@@ -414,9 +415,9 @@ class Live2DInstanceManager {
     this.unbindCanvasEvents(canvas);
     
     const eventHandlers = {
-      mouseenter: () => this.handleCanvasMouseEnter(canvas),
-      mouseleave: () => this.handleCanvasMouseLeave(canvas),
-      click: (event: MouseEvent) => this.handleCanvasClick(canvas, event)
+      mouseenter: () => this.handleCanvasMouseEnter(),
+      mouseleave: () => this.handleCanvasMouseLeave(),
+      click: () => this.handleCanvasClick()
     };
     
     Object.entries(eventHandlers).forEach(([event, handler]) => {
@@ -443,16 +444,19 @@ class Live2DInstanceManager {
   /**
    * 画布事件处理
    */
-  private handleCanvasMouseEnter(canvas: HTMLCanvasElement): void {
+  private handleCanvasMouseEnter(): void {
     // 实现鼠标进入逻辑
+    // TODO: 实现鼠标进入时的交互效果
   }
 
-  private handleCanvasMouseLeave(canvas: HTMLCanvasElement): void {
+  private handleCanvasMouseLeave(): void {
     // 实现鼠标离开逻辑
+    // TODO: 实现鼠标离开时的交互效果
   }
 
-  private handleCanvasClick(canvas: HTMLCanvasElement, event: MouseEvent): void {
+  private handleCanvasClick(): void {
     // 实现点击逻辑
+    // TODO: 实现点击时的交互效果
   }
 
   /**
@@ -483,8 +487,7 @@ class Live2DInstanceManager {
         th: state.theme
       };
       localStorage.setItem(this.config.persistenceKey, JSON.stringify(compressedState));
-    } catch (error) {
-      console.warn(`[Live2DInstanceManager] 无法保存实例状态到localStorage:`, error);
+    } catch {
       // 如果localStorage满了，尝试清理旧数据
       this.cleanupLocalStorage();
     }
@@ -501,8 +504,8 @@ class Live2DInstanceManager {
       if (stored) {
         return JSON.parse(stored) as InstanceState;
       }
-    } catch (error) {
-      console.warn(`[Live2DInstanceManager] 加载实例状态失败:`, error);
+    } catch {
+      // 忽略解析错误
     }
     
     return null;
@@ -577,7 +580,6 @@ class Live2DInstanceManager {
    * 执行清理
    */
   private performCleanup(): void {
-    const now = Date.now();
     const toRemove: string[] = [];
     
     for (const [id, cached] of this.instances.entries()) {
@@ -585,7 +587,7 @@ class Live2DInstanceManager {
       if (cached.instance.isActive) continue;
       
       // 检查超时
-      if (now - cached.lastUsed > this.config.instanceTimeout) {
+      if (Date.now() - cached.lastUsed > this.config.instanceTimeout) {
         toRemove.push(id);
         continue;
       }
@@ -622,7 +624,6 @@ class Live2DInstanceManager {
   private cleanupLocalStorage(): void {
     try {
       const keys = Object.keys(localStorage);
-      const now = Date.now();
       const oneDay = 24 * 60 * 60 * 1000;
       
       for (const key of keys) {
@@ -632,20 +633,20 @@ class Live2DInstanceManager {
             if (value) {
               const data = JSON.parse(value);
               // 检查是否有过期时间字段
-              if (data.t && now - data.t > oneDay) {
+              if (data.t && Date.now() - data.t > oneDay) {
                 localStorage.removeItem(key);
                 console.log(`[Live2DInstanceManager] 清理localStorage过期数据: ${key}`);
               }
             }
-          } catch (error) {
+          } catch {
             // 如果解析失败，删除该键
             localStorage.removeItem(key);
             console.log(`[Live2DInstanceManager] 清理localStorage损坏数据: ${key}`);
           }
         }
       }
-    } catch (error) {
-      console.warn('[Live2DInstanceManager] 清理localStorage失败:', error);
+    } catch {
+      // 忽略清理错误
     }
   }
   
@@ -653,13 +654,9 @@ class Live2DInstanceManager {
    * 激进清理 - 保留最近使用的实例
    */
   private aggressiveCleanup(): void {
-    const now = Date.now();
-    const oneHour = 60 * 60 * 1000;
-    const twoHours = 2 * oneHour;
-    
     // 按最近使用时间排序，移除最久未使用的非活跃实例
     const candidates = Array.from(this.instances.entries())
-      .filter(([_, cached]) => !cached.instance.isActive)
+      .filter(([, cached]) => !cached.instance.isActive)
       .sort((a, b) => a[1].lastUsed - b[1].lastUsed);
     
     const toRemove = candidates.slice(0, Math.ceil(candidates.length * 0.3));
@@ -674,8 +671,8 @@ class Live2DInstanceManager {
       try {
         (window as any).gc();
         console.log('[Live2DInstanceManager] 执行垃圾回收');
-      } catch (error) {
-        console.warn('[Live2DInstanceManager] 垃圾回收执行失败:', error);
+      } catch {
+        console.warn('[Live2DInstanceManager] 垃圾回收执行失败');
       }
     }
     
@@ -693,7 +690,7 @@ class Live2DInstanceManager {
    */
   private async cleanupLeastUsedInstances(): Promise<void> {
     const instances = Array.from(this.instances.entries())
-      .filter(([_, cached]) => !cached.instance.isActive)
+      .filter(([, cached]) => !cached.instance.isActive)
       .sort((a, b) => a[1].useCount - b[1].useCount);
     
     const toRemove = instances.slice(0, Math.ceil(instances.length * 0.3));
@@ -708,7 +705,7 @@ class Live2DInstanceManager {
    */
   private evictLeastUsedInstance(): void {
     const instances = Array.from(this.instances.entries())
-      .filter(([_, cached]) => !cached.instance.isActive)
+      .filter(([, cached]) => !cached.instance.isActive)
       .sort((a, b) => {
         const scoreA = a[1].useCount * 0.7 + (Date.now() - a[1].lastUsed) * 0.0001;
         const scoreB = b[1].useCount * 0.7 + (Date.now() - b[1].lastUsed) * 0.0001;
@@ -803,8 +800,8 @@ class Live2DInstanceManager {
         console.log(`[Live2DInstanceManager] 从localStorage恢复实例状态: ${instanceId}`, decompressedState);
         return decompressedState;
       }
-    } catch (error) {
-      console.warn('[Live2DInstanceManager] 从localStorage恢复实例状态失败:', error);
+    } catch {
+      // 忽略恢复错误
     }
     
     return null;
