@@ -9,6 +9,7 @@ import ConditionalComponents from "@/components/ConditionalComponents";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import SmoothScrollProvider from "@/components/SmoothScrollProvider";
 import ClientRouterWrapper from "@/components/ClientRouterWrapper";
+import BrowserCompatibilityBanner from "@/components/BrowserCompatibilityBanner";
 
 import { webTitle, webDescription } from "@/setting/WebSetting";
 
@@ -139,6 +140,7 @@ export default function RootLayout({
           <ClientRouterWrapper>
             <SmoothScrollProvider>
               <BackgroundLayer />
+              <BrowserCompatibilityBanner />
               <Navigation />
               <main className="min-h-screen transition-colors duration-300 relative">
                 {children}
