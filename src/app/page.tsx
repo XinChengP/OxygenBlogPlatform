@@ -58,10 +58,10 @@ export default function Home() {
          
          <Suspense fallback={<div className="h-[3rem] flex items-center justify-center">
            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center py-4 sm:py-6 px-4 sm:px-6">
-             <button className="bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-lg font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg">
+             <button className="bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-lg font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg nav-link">
                浏览文章
              </button>
-             <button className="bg-transparent hover:bg-primary/10 text-primary border-2 border-primary hover:border-primary/80 px-8 py-3 rounded-lg font-medium transition-all duration-300 transform hover:-translate-y-0.5">
+             <button className="bg-transparent hover:bg-primary/10 text-primary border-2 border-primary hover:border-primary/80 px-8 py-3 rounded-lg font-medium transition-all duration-300 transform hover:-translate-y-0.5 nav-link">
                了解更多
              </button>
            </div>
@@ -81,19 +81,6 @@ export default function Home() {
                 onClick={() => router.push('/about')}
                 >
                 了解更多
-                </button>
-                {/* 测试按钮 - 测试消息 */}
-                <button 
-                className="bg-secondary hover:bg-secondary/90 text-white px-8 py-3 rounded-lg font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg nav-link"
-                onClick={() => {
-                  if (window.showMessage) {
-                    window.showMessage('天依：欢迎来到我的博客！点击这里可以浏览文章，或者去了解更多关于我的信息～');
-                  } else {
-                    alert('Live2D消息功能尚未就绪，请稍后再试～');
-                  }
-                }}
-                >
-                测试消息
                 </button>
              </div>
            </BoxReveal>

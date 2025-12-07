@@ -838,7 +838,7 @@ export default function LuoTianyiLive2DOptimized({ className }: LuoTianyiLive2DO
             showMessage: (window as any).showMessage,
             getPerformanceReport,
             messageQueue: messageQueueRef.current,
-            isReady: () => !isLoading && !isError
+            isReady: () => !isLoading
         };
         
         console.log('[LuoTianyiLive2D] 全局消息函数已设置');
@@ -856,7 +856,7 @@ export default function LuoTianyiLive2DOptimized({ className }: LuoTianyiLive2DO
             
             console.log('[LuoTianyiLive2D] 全局消息函数已清理');
         };
-    }, [updateMessage, getPerformanceReport, isLoading, isError]);
+    }, [updateMessage, getPerformanceReport, isLoading]);
 
     // 智能页面消息
     const showSmartPageMessage = useCallback(() => {
