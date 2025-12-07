@@ -799,26 +799,27 @@ export default function LuoTianyiLive2DOptimized({ className }: LuoTianyiLive2DO
         (window as any).showMessage = function(text: string, timeout?: number) {
             console.log('[LuoTianyiLive2D] 全局消息调用:', text);
             
-            // 重要消息判断
-            const isImportantMessage = text.includes('复制') || 
-                                     text.includes('天依') || 
-                                     text.includes('欢迎') ||
-                                     text.includes('你好') ||
-                                     text.includes('加油') ||
-                                     text.includes('辛苦') ||
-                                     text.includes('注意');
-            
-            // 触发频率限制
-            const now = Date.now();
-            const messageKey = `live2d_message_${Math.floor(now / 1000)}`;
-            const lastMessageTime = sessionStorage.getItem(messageKey);
-            
-            if (lastMessageTime && !isImportantMessage) {
-                console.log('[LuoTianyiLive2D] 消息频率限制，跳过:', text);
-                return;
-            }
-            
-            sessionStorage.setItem(messageKey, now.toString());
+            // 🚀 暂时移除频率限制，确保消息能正常显示
+        // 重要消息判断（保留用于后续可能的优化）
+        const isImportantMessage = text.includes('复制') || 
+                                 text.includes('天依') || 
+                                 text.includes('欢迎') ||
+                                 text.includes('你好') ||
+                                 text.includes('加油') ||
+                                 text.includes('辛苦') ||
+                                 text.includes('注意');
+        
+        // 暂时禁用频率限制，让消息系统正常工作
+        // const now = Date.now();
+        // const messageKey = `live2d_message_${Math.floor(now / 1000)}`;
+        // const lastMessageTime = sessionStorage.getItem(messageKey);
+        // 
+        // if (lastMessageTime && !isImportantMessage) {
+        //     console.log('[LuoTianyiLive2D] 消息频率限制，跳过:', text);
+        //     return;
+        // }
+        // 
+        // sessionStorage.setItem(messageKey, now.toString());
             
             // 使用内部消息系统显示
             updateMessage(text, 'interaction');

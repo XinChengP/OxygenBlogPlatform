@@ -11,6 +11,157 @@ var message_Path = window.message_Path || (function() {
 })();
 var home_Path = window.home_Path || '/';
 
+// 🚀 消息系统修复 - 解决初始加载后消息不再显示的问题
+var messageSystemFixed = false;
+function fixMessageSystem() {
+    if (messageSystemFixed) return;
+    messageSystemFixed = true;
+    
+    console.log('🔧 Live2D消息系统修复启动...');
+    
+    // 1. 确保消息容器存在
+    ensureMessageContainers();
+    
+    // 2. 增强showMessage函数
+    enhanceShowMessage();
+    
+    // 3. 修复事件监听
+    fixEventListeners();
+    
+    // 4. 移除频率限制
+    removeFrequencyLimits();
+    
+    console.log('✅ 消息系统修复完成');
+}
+
+// 确保消息容器存在
+function ensureMessageContainers() {
+    // 检查原始消息容器
+    let originalMessage = document.querySelector('.message');
+    if (!originalMessage) {
+        originalMessage = document.createElement('div');
+        originalMessage.className = 'message';
+        originalMessage.style.cssText = `
+            opacity: 0;
+            width: 240px;
+            height: auto;
+            margin: auto;
+            padding: 12px 16px;
+            top: -120px;
+            left: 20px;
+            text-align: center;
+            border: 1px solid rgba(102,204,255,.3);
+            border-radius: 16px;
+            background: linear-gradient(135deg, rgba(102,204,255,.15) 0%, rgba(102,204,255,.05) 100%);
+            box-shadow: 0 8px 32px rgba(102,204,255,.2);
+            font-size: 14px;
+            font-weight: 500;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            position: absolute;
+            z-index: 9998;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateY(10px) scale(0.95);
+            pointer-events: none;
+        `;
+        
+        const landlord = document.getElementById('landlord');
+        if (landlord) {
+            landlord.appendChild(originalMessage);
+        }
+    }
+}
+
+// 增强showMessage函数
+function enhanceShowMessage() {
+    const originalShowMessage = window.showMessage;
+    
+    window.showMessage = function(text, timeout = 4000) {
+        console.log('📢 showMessage调用:', text);
+        
+        try {
+            // 尝试多种消息系统
+            let success = false;
+            
+            // 1. 尝试原始showMessage
+            if (originalShowMessage) {
+                try {
+                    originalShowMessage(text, timeout);
+                    success = true;
+                } catch (error) {
+                    console.warn('原始showMessage失败:', error);
+                }
+            }
+            
+            // 2. 尝试GlobalMessageManager
+            if (!success && window.GlobalMessageManager && window.GlobalMessageManager.showGlobalMessage) {
+                try {
+                    window.GlobalMessageManager.showGlobalMessage(text, timeout);
+                    success = true;
+                } catch (error) {
+                    console.warn('GlobalMessageManager失败:', error);
+                }
+            }
+            
+            // 3. 手动显示（最后手段）
+            if (!success) {
+                manualShowMessage(text, timeout);
+            }
+            
+        } catch (error) {
+            console.error('showMessage完全失败:', error);
+        }
+    };
+}
+
+// 手动显示消息
+function manualShowMessage(text, timeout) {
+    const messageEl = document.querySelector('.message');
+    if (messageEl) {
+        messageEl.textContent = text;
+        messageEl.style.opacity = '1';
+        messageEl.style.display = 'block';
+        messageEl.classList.add('show');
+        
+        setTimeout(() => {
+            messageEl.classList.remove('show');
+            setTimeout(() => {
+                messageEl.style.opacity = '0';
+                messageEl.style.display = 'none';
+            }, 300);
+        }, timeout);
+    }
+}
+
+// 修复事件监听
+function fixEventListeners() {
+    // 确保复制事件正常工作
+    document.addEventListener('copy', handleCopyEvent, true);
+}
+
+// 复制事件处理
+function handleCopyEvent(event) {
+    setTimeout(() => {
+        const selection = window.getSelection()?.toString();
+        if (selection && selection.length > 5) {
+            const messages = [
+                '复制成功！代码已复制到剪贴板~',
+                '已复制！现在可以粘贴使用啦~',
+                '复制完成！天依帮你复制好了~'
+            ];
+            const message = messages[Math.floor(Math.random() * messages.length)];
+            window.showMessage(message, 2000);
+        }
+    }, 100);
+}
+
+// 移除频率限制
+function removeFrequencyLimits() {
+    window.__lastMessageTime = 0;
+    window.__lastCopyMessageTime = 0;
+}
+
 function renderTip(template, context) {
     var tokenReg = /(\\)?\{([^\{\}\\]+)(\\)?\}/g;
     return template.replace(tokenReg, function (word, slash1, token, slash2) {
@@ -151,6 +302,9 @@ function initTips(){
 initLive2dMessage();
 
 (function (){
+    // 🚀 启动消息系统修复
+    fixMessageSystem();
+    
     var text;
     if(document.referrer !== ''){
         var referrer = document.createElement('a');
@@ -207,22 +361,61 @@ function showHitokoto(){
 }
 
 function showMessage(text, timeout){
+    // 🚀 启动消息系统修复
+    fixMessageSystem();
+    
+    console.log('📢 showMessage调用:', text);
+    
     if(Array.isArray(text)) text = text[Math.floor(Math.random() * text.length + 1)-1];
     
-    // 检查jQuery是否可用，如果不可用则使用原生DOM
+    // 尝试多种消息系统
+    let success = false;
+    
+    // 1. 尝试jQuery方式
     if (typeof $ !== 'undefined') {
-        $('.message').stop();
-        $('.message').html(text).css('opacity', 1);
-        $('.message').removeClass('hide').addClass('show');
-    } else {
-        // 使用原生DOM作为备选方案
-        const messageEl = document.querySelector('.message');
-        if (messageEl) {
-            messageEl.innerHTML = text;
-            messageEl.style.opacity = '1';
-            messageEl.classList.remove('hide');
-            messageEl.classList.add('show');
+        try {
+            $('.message').stop();
+            $('.message').html(text).css('opacity', 1);
+            $('.message').removeClass('hide').addClass('show');
+            success = true;
+            console.log('✅ jQuery消息显示成功');
+        } catch (error) {
+            console.warn('jQuery消息显示失败:', error);
         }
+    }
+    
+    // 2. 尝试原生DOM方式
+    if (!success) {
+        try {
+            const messageEl = document.querySelector('.message');
+            if (messageEl) {
+                messageEl.innerHTML = text;
+                messageEl.style.opacity = '1';
+                messageEl.style.display = 'block';
+                messageEl.classList.remove('hide');
+                messageEl.classList.add('show');
+                success = true;
+                console.log('✅ 原生DOM消息显示成功');
+            }
+        } catch (error) {
+            console.warn('原生DOM消息显示失败:', error);
+        }
+    }
+    
+    // 3. 尝试GlobalMessageManager
+    if (!success && window.GlobalMessageManager && window.GlobalMessageManager.showGlobalMessage) {
+        try {
+            window.GlobalMessageManager.showGlobalMessage(text, timeout || 4000);
+            success = true;
+            console.log('✅ GlobalMessageManager消息显示成功');
+        } catch (error) {
+            console.warn('GlobalMessageManager消息显示失败:', error);
+        }
+    }
+    
+    // 4. 手动显示（最后手段）
+    if (!success) {
+        manualShowMessage(text, timeout);
     }
     
     if (timeout === null) timeout = 4000;
@@ -444,19 +637,20 @@ window.GlobalMessageManager = (function() {
     return messages[Math.floor(Math.random() * messages.length)];
   }
 
-  // 显示消息
-  function showMessage(text, duration = 3000) {
+  // 显示消息（重命名以避免与原始showMessage冲突）
+  function showGlobalMessage(text, duration = 3000) {
     if (!messageContainer) {
       console.warn('消息容器未初始化');
       return;
     }
 
-    // 添加全局频率限制，避免消息洪水
+    // 🚀 移除频率限制，确保消息能正常显示
     const now = Date.now();
-    if (window.__lastMessageTime && (now - window.__lastMessageTime) < 1500) {
-      console.log('⏭️ 全局消息频率限制，跳过');
-      return;
-    }
+    // 暂时移除频率限制，让消息系统正常工作
+    // if (window.__lastMessageTime && (now - window.__lastMessageTime) < 1500) {
+    //   console.log('⏭️ 全局消息频率限制，跳过');
+    //   return;
+    // }
     window.__lastMessageTime = now;
 
     const messageElement = document.getElementById('live2d-message');
@@ -503,11 +697,14 @@ window.GlobalMessageManager = (function() {
   // 公共API
   return {
     init: init,
-    show: showMessage,
+    show: showGlobalMessage,
     add: addMessage,
     showNext: showNextMessage
   };
 })();
+
+// 将原始showMessage函数暴露到全局作用域，确保彩蛋功能正常工作
+window.showMessage = showMessage;
 
 // 完全禁用 GlobalMessageManager 自动初始化和调试信息，保持系统简洁
 // console.log('📦 GlobalMessageManager 已加载，自动初始化已禁用');
