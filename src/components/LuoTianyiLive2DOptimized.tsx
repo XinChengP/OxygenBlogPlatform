@@ -790,6 +790,74 @@ export default function LuoTianyiLive2DOptimized({ className }: LuoTianyiLive2DO
         };
     }, []);
 
+    // 设置全局消息函数 - 保持与原版兼容
+    useEffect(() => {
+        // 保存原始函数（如果存在）
+        const originalShowMessage = (window as any).showMessage;
+        
+        // 设置全局消息函数
+        (window as any).showMessage = function(text: string, timeout?: number) {
+            console.log('[LuoTianyiLive2D] 全局消息调用:', text);
+            
+            // 重要消息判断
+            const isImportantMessage = text.includes('复制') || 
+                                     text.includes('天依') || 
+                                     text.includes('欢迎') ||
+                                     text.includes('你好') ||
+                                     text.includes('加油') ||
+                                     text.includes('辛苦') ||
+                                     text.includes('注意');
+            
+            // 触发频率限制
+            const now = Date.now();
+            const messageKey = `live2d_message_${Math.floor(now / 1000)}`;
+            const lastMessageTime = sessionStorage.getItem(messageKey);
+            
+            if (lastMessageTime && !isImportantMessage) {
+                console.log('[LuoTianyiLive2D] 消息频率限制，跳过:', text);
+                return;
+            }
+            
+            sessionStorage.setItem(messageKey, now.toString());
+            
+            // 使用内部消息系统显示
+            updateMessage(text, 'interaction');
+            
+            // 自动淡出逻辑
+            if (fadeTimeoutRef.current) {
+                clearTimeout(fadeTimeoutRef.current);
+            }
+            
+            fadeTimeoutRef.current = setTimeout(() => {
+                setMessage('');
+            }, timeout || 5000);
+        };
+        
+        // 设置全局访问点
+        (window as any).live2dOptimized = {
+            showMessage: (window as any).showMessage,
+            getPerformanceReport,
+            messageQueue: messageQueueRef.current,
+            isReady: () => !isLoading && !isError
+        };
+        
+        console.log('[LuoTianyiLive2D] 全局消息函数已设置');
+        
+        return () => {
+            // 恢复原始函数
+            if (originalShowMessage) {
+                (window as any).showMessage = originalShowMessage;
+            } else {
+                delete (window as any).showMessage;
+            }
+            
+            // 清理全局访问点
+            delete (window as any).live2dOptimized;
+            
+            console.log('[LuoTianyiLive2D] 全局消息函数已清理');
+        };
+    }, [updateMessage, getPerformanceReport, isLoading, isError]);
+
     // 智能页面消息
     const showSmartPageMessage = useCallback(() => {
         if (typeof window === 'undefined') return;

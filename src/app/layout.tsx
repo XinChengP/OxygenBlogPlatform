@@ -122,6 +122,8 @@ export default function RootLayout({
         />
         {/* 平滑导航脚本 */}
         <Script src="/js/smooth-navigation.js" strategy="beforeInteractive" />
+        {/* Live2D测试脚本 */}
+        <Script src="/live2d-test.js" strategy="lazyOnload" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased text-foreground transition-colors duration-300`}

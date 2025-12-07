@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试Live2D消息功能</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        .test-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .test-button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+        .test-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-family: monospace;
+        }
+        .status.success {
+            background: rgba(76, 175, 80, 0.3);
+            border: 1px solid #4CAF50;
+        }
+        .status.error {
+            background: rgba(244, 67, 54, 0.3);
+            border: 1px solid #f44336;
+        }
+        .status.info {
+            background: rgba(33, 150, 243, 0.3);
+            border: 1px solid #2196F3;
+        }
+        .log {
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🎤 洛天依Live2D消息功能测试</h1>
+        <p>测试优化版Live2D组件的全局消息功能</p>
+        
+        <div id="status" class="status info">正在检测Live2D组件状态...</div>
+        
+        <h3>快速测试</h3>
+        <div class="test-buttons">
+            <button class="test-button" onclick="testBasicMessage()">基础消息</button>
+            <button class="test-button" onclick="testWelcomeMessage()">欢迎消息</button>
+            <button class="test-button" onclick="testCopyMessage()">复制消息</button>
+            <button class="test-button" onclick="testThemeMessage()">主题消息</button>
+            <button class="test-button" onclick="testTimeMessage()">时间问候</button>
+            <button class="test-button" onclick="testLongMessage()">长消息</button>
+            <button class="test-button" onclick="testCustomTimeout()">自定义超时</button>
+            <button class="test-button" onclick="testPerformance()">性能报告</button>
+        </div>
+        
+        <h3>自定义消息</h3>
+        <div style="display: flex; gap: 10px; margin: 15px 0;">
+            <input type="text" id="customMessage" placeholder="输入自定义消息..." 
+                   style="flex: 1; padding: 10px; border: 1px solid rgba(255,255,255,0.3); border-radius: 5px; background: rgba(255,255,255,0.1); color: white;">
+            <button class="test-button" onclick="sendCustomMessage()" style="margin: 0;">发送</button>
+        </div>
+        
+        <h3>测试日志</h3>
+        <div id="log" class="log"></div>
+        
+        <h3>使用说明</h3>
+        <ul>
+            <li>确保Live2D优化版组件已加载</li>
+            <li>点击测试按钮发送不同类型的消息</li>
+            <li>观察Live2D看板娘的反应</li>
+            <li>检查控制台日志输出</li>
+        </ul>
+    </div>
+
+    <script>
+        let logEntries = [];
+        
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}`;
+            logEntries.push(logEntry);
+            
+            const logDiv = document.getElementById('log');
+            logDiv.innerHTML = logEntries.map(entry => 
+                `<div style="margin: 2px 0; opacity: 0.8;">${entry}</div>`
+            ).join('');
+            
+            logDiv.scrollTop = logDiv.scrollHeight;
+            
+            // 同时输出到控制台
+            console.log(`[Live2D Test] ${message}`);
+        }
+        
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+            addLog(`状态更新: ${message}`, type);
+        }
+        
+        function checkLive2DStatus() {
+            let checkCount = 0;
+            const maxChecks = 10;
+            
+            const checkInterval = setInterval(() => {
+                checkCount++;
+                
+                // 检查优化版
+                if (window.live2dOptimized && window.live2dOptimized.showMessage) {
+                    updateStatus('✅ Live2D优化版组件已就绪！', 'success');
+                    addLog('检测到 live2dOptimized 对象');
+                    addLog(`性能评分: ${window.live2dOptimized.getPerformanceReport().score}`);
+                    clearInterval(checkInterval);
+                    return;
+                }
+                
+                // 检查原版
+                if (window.showMessage && typeof window.showMessage === 'function') {
+                    updateStatus('✅ Live2D全局消息函数可用！', 'success');
+                    addLog('检测到 window.showMessage 函数');
+                    clearInterval(checkInterval);
+                    return;
+                }
+                
+                if (checkCount >= maxChecks) {
+                    updateStatus('❌ 未检测到Live2D消息功能，请确保组件已加载', 'error');
+                    addLog('超时：未检测到Live2D组件');
+                    clearInterval(checkInterval);
+                }
+            }, 1000);
+        }
+        
+        function testBasicMessage() {
+            addLog('发送基础消息测试');
+            if (window.showMessage) {
+                window.showMessage('这是一条基础测试消息～');
+                addLog('✅ 基础消息已发送');
+            } else {
+                addLog('❌ showMessage 函数不可用', 'error');
+            }
+        }
+        
+        function testWelcomeMessage() {
+            addLog('发送欢迎消息测试');
+            if (window.showMessage) {
+                window.showMessage('欢迎来到天依的博客！');
+                addLog('✅ 欢迎消息已发送');
+            } else {
+                addLog('❌ showMessage 函数不可用', 'error');
+            }
+        }
+        
+        function testCopyMessage() {
+            addLog('发送复制消息测试');
+            if (window.showMessage) {
+                window.showMessage('复制成功！天依已经记住这段话了～');
+                addLog('✅ 复制消息已发送');
+            } else {
+                addLog('❌ showMessage 函数不可用', 'error');
+            }
+        }
+        
+        function testThemeMessage() {
+            addLog('发送主题消息测试');
+            if (window.showMessage) {
+                window.showMessage('主题切换成功！天依很喜欢这个颜色呢～');
+                addLog('✅ 主题消息已发送');
+            } else {
+                addLog('❌ showMessage 函数不可用', 'error');
+            }
+        }
+        
+        function testTimeMessage() {
+            addLog('发送时间问候测试');
+            if (window.showMessage) {
+                const hour = new Date().getHours();
+                let greeting = '';
+                if (hour < 12) greeting = '早上好！';
+                else if (hour < 18) greeting = '下午好！';
+                else if (hour < 22) greeting = '晚上好！';
+                else greeting = '夜深了，';
+                
+                window.showMessage(greeting + '天依在这里陪着你～');
+                addLog('✅ 时间问候已发送');
+            } else {
+                addLog('❌ showMessage 函数不可用', 'error');
+            }
+        }
+        
+        function testLongMessage() {
+            addLog('发送长消息测试');
+            if (window.showMessage) {
+                window.showMessage('这是一条比较长的测试消息，用来测试Live2D看板娘对长文本的显示效果。天依会好好传达每一句话的～');
+                addLog('✅ 长消息已发送');
+            } else {
+                addLog('❌ showMessage 函数不可用', 'error');
+            }
+        }
+        
+        function testCustomTimeout() {
+            addLog('发送自定义超时消息测试');
+            if (window.showMessage) {
+                window.showMessage('这条消息会显示8秒钟哦～', 8000);
+                addLog('✅ 自定义超时消息已发送（8秒）');
+            } else {
+                addLog('❌ showMessage 函数不可用', 'error');
+            }
+        }
+        
+        function testPerformance() {
+            addLog('获取性能报告');
+            if (window.live2dOptimized && window.live2dOptimized.getPerformanceReport) {
+                const report = window.live2dOptimized.getPerformanceReport();
+                addLog(`性能评分: ${report.score}/100`);
+                addLog(`初始化时间: ${report.metrics.initializationTime}ms`);
+                addLog(`消息数量: ${report.metrics.messageCount}`);
+                addLog(`资源加载时间: ${report.metrics.resourceLoadTime}ms`);
+                addLog(`错误数量: ${report.metrics.errorCount}`);
+                addLog(`是否优化: ${report.isOptimized ? '是' : '否'}`);
+            } else {
+                addLog('❌ 性能报告功能不可用', 'error');
+            }
+        }
+        
+        function sendCustomMessage() {
+            const input = document.getElementById('customMessage');
+            const message = input.value.trim();
+            
+            if (!message) {
+                addLog('请输入消息内容', 'error');
+                return;
+            }
+            
+            addLog(`发送自定义消息: ${message}`);
+            if (window.showMessage) {
+                window.showMessage(message);
+                addLog('✅ 自定义消息已发送');
+                input.value = '';
+            } else {
+                addLog('❌ showMessage 函数不可用', 'error');
+            }
+        }
+        
+        // 监听回车键
+        document.getElementById('customMessage').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendCustomMessage();
+            }
+        });
+        
+        // 页面加载完成后开始检测
+        window.addEventListener('load', function() {
+            addLog('测试页面已加载');
+            setTimeout(checkLive2DStatus, 2000); // 2秒后开始检测
+        });
+        
+        // 监听可能的错误
+        window.addEventListener('error', function(e) {
+            addLog(`页面错误: ${e.message}`, 'error');
+        });
+    </script>
+</body>
+</html>

@@ -82,6 +82,19 @@ export default function Home() {
                 >
                 了解更多
                 </button>
+                {/* 测试按钮 - 测试消息 */}
+                <button 
+                className="bg-secondary hover:bg-secondary/90 text-white px-8 py-3 rounded-lg font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg nav-link"
+                onClick={() => {
+                  if (window.showMessage) {
+                    window.showMessage('天依：欢迎来到我的博客！点击这里可以浏览文章，或者去了解更多关于我的信息～');
+                  } else {
+                    alert('Live2D消息功能尚未就绪，请稍后再试～');
+                  }
+                }}
+                >
+                测试消息
+                </button>
              </div>
            </BoxReveal>
          </Suspense>
