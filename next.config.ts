@@ -162,8 +162,10 @@ const nextConfig = {
         },
       };
       
-      // 优化运行时代码
-      config.optimization.runtimeChunk = 'single';
+      // 优化运行时代码 (仅在非静态导出模式下启用)
+      if (!isStaticExport) {
+        config.optimization.runtimeChunk = 'single';
+      }
       config.optimization.removeAvailableModules = true;
       config.optimization.removeEmptyChunks = true;
       config.optimization.mergeDuplicateChunks = true;
@@ -211,57 +213,59 @@ const nextConfig = {
   // 生成源映射（仅在开发环境）
   productionBrowserSourceMaps: !isStaticExport,
   
-  // 优化HTTP头
-  headers: async () => {
-    return [
-      {
-        // 所有路由
-        source: '/:path*',
-        headers: [
-          // 缓存静态资源
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-          // 预连接到关键域名
-          {
-            key: 'Link',
-            value: '<https://fonts.googleapis.com>; rel=preconnect; crossorigin',
-          },
-          // 启用HSTS
-          {
-            key: 'Strict-Transport-Security',
-            value: 'max-age=31536000; includeSubDomains; preload',
-          },
-          // 防止XSS攻击
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          // 防止点击劫持
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY',
-          },
-          // 防止MIME类型嗅探
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-        ],
-      },
-      // API路由不缓存
-      {
-        source: '/api/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'no-store, max-age=0',
-          },
-        ],
-      },
-    ];
-  },
+  // 优化HTTP头 (仅在非静态导出模式下启用)
+  ...(isStaticExport ? {} : {
+    headers: async () => {
+      return [
+        {
+          // 所有路由
+          source: '/:path*',
+          headers: [
+            // 缓存静态资源
+            {
+              key: 'Cache-Control',
+              value: 'public, max-age=31536000, immutable',
+            },
+            // 预连接到关键域名
+            {
+              key: 'Link',
+              value: '<https://fonts.googleapis.com>; rel=preconnect; crossorigin',
+            },
+            // 启用HSTS
+            {
+              key: 'Strict-Transport-Security',
+              value: 'max-age=31536000; includeSubDomains; preload',
+            },
+            // 防止XSS攻击
+            {
+              key: 'X-Content-Type-Options',
+              value: 'nosniff',
+            },
+            // 防止点击劫持
+            {
+              key: 'X-Frame-Options',
+              value: 'DENY',
+            },
+            // 防止MIME类型嗅探
+            {
+              key: 'X-Content-Type-Options',
+              value: 'nosniff',
+            },
+          ],
+        },
+        // API路由不缓存
+        {
+          source: '/api/:path*',
+          headers: [
+            {
+              key: 'Cache-Control',
+              value: 'no-store, max-age=0',
+            },
+          ],
+        },
+      ];
+    },
+  }),
 };
 
 export default nextConfig;
