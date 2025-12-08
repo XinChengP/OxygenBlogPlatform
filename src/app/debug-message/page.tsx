@@ -32,17 +32,18 @@ export default function DebugMessage() {
     };
 
     // 监听消息事件
-    const handleMessageShow = (event: any) => {
-      addLog(`📢 Live2D消息显示: ${event.detail.message}`);
+    const handleMessageShow = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      addLog(`📢 Live2D消息显示: ${customEvent.detail.message}`);
       setMessageCount(prev => prev + 1);
     };
 
-    const handleMessageHide = (event: any) => {
+    const handleMessageHide = () => {
       addLog(`🚫 Live2D消息隐藏`);
     };
 
-    document.addEventListener('live2d-message-show', handleMessageShow);
-    document.addEventListener('live2d-message-hide', handleMessageHide);
+    document.addEventListener('live2d-message-show', handleMessageShow as EventListener);
+    document.addEventListener('live2d-message-hide', handleMessageHide as EventListener);
 
     // 检查全局函数
     addLog(`🔍 检查全局函数状态:`);
@@ -198,7 +199,7 @@ export default function DebugMessage() {
             </p>
             <div className="bg-muted p-3 rounded border">
               <code className="text-sm">
-                function hello() {'{'}\n  console.log('Hello, 洛天依!');\n{'}'}
+                function hello() {'{'}\n  console.log(&#39;Hello, 洛天依!&#39;);\n{'}'}
               </code>
             </div>
             <p className="text-muted-foreground">
