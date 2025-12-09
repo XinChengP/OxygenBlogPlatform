@@ -1,7 +1,7 @@
 ---
 title: "冻梦 简谱（预告）"
 date: "2025-11-30"
-category: "洛佬"
+category: "洛天依"
 tags: ["洛天依", "简谱", "冻梦", "VOCALOID"]
 excerpt: "“去成为你想成为的人吧“"
 coverImage: "/Blogabout/dongmeng/cover.jpg"

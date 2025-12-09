@@ -22,6 +22,8 @@
 - **实用工具** - 拼音转换器、Markdown编辑器等小工具
 - **GitHub评论** - Giscus评论系统，基于GitHub Discussions
 - **粒子动画** - Particles.js背景效果，增强视觉体验
+- **文章归档** - 按分类和时间整理文章
+- **GitHub发布** - 支持直接从编辑器发布到GitHub仓库
 
 ## 项目架构
 
@@ -42,7 +44,9 @@ src/
 │   ├── magicui/          # 特效UI组件
 │   ├── archive/          # 归档专用组件
 │   ├── tools/            # 工具专用组件
-│   └── [功能组件].tsx     # 功能组件
+│   └── widgets/          # 功能组件
+├── content/               # 内容文件
+│   └── blogs/            # Markdown博客文章
 ├── utils/                 # 工具函数
 │   ├── assetUtils.ts     # 资源路径处理
 │   ├── live2d*.ts        # Live2D相关工具
@@ -102,6 +106,15 @@ npm run dev          # 开发服务器 (Turbopack)
 npm run build:pages  # GitHub Pages构建
 npm run sync-theme   # 主题同步
 npm run lint         # 代码检查
+```
+
+### 工具页面访问
+```bash
+# 拼音转换器
+http://localhost:3000/tools/pinyin-converter
+
+# Markdown编辑器
+http://localhost:3000/tools/markdown-editor
 ```
 
 ### 工具页面命令
@@ -423,12 +436,14 @@ const useLocalStorage = <T,>(key: string, initialValue: T) => {
   - 实时转换，输入即时显示结果
   - 支持拼音首字母提取
   - 支持声调数字与符号转换
+  - 支持声调显示（数字/符号/无）
 
 - **技术实现**:
   - 使用 `pinyin-pro` 库进行拼音转换
   - 自定义拼音数据加载：`/tools/pinyin-data/pinyin.txt`
   - 多音字状态管理：`selectedHeteronyms` 状态
   - 过滤模式：`showOnlyHeteronyms` 状态
+  - 声调显示模式：`toneDisplayMode` 状态
 
 - **文件结构**:
   ```
@@ -445,12 +460,14 @@ const useLocalStorage = <T,>(key: string, initialValue: T) => {
   - 导出功能：支持导出为HTML或Markdown
   - 主题适配：自动适配当前主题色
   - 响应式设计：移动端友好
+  - GitHub发布：支持直接发布到GitHub仓库
 
 - **技术实现**:
   - 使用 `react-markdown` 进行Markdown渲染
   - 使用 `remark` 和 `rehype` 插件系统
   - 代码高亮：`highlight.js` 集成
   - 状态管理：`useState` 管理编辑内容
+  - GitHub集成：通过GitHub API发布文章
 
 - **文件结构**:
   ```
@@ -1051,7 +1068,7 @@ $$
 ### 内容分类标准
 - **技术文章**: 编程、开发、技术分享
 - **生活随笔**: 个人感悟、生活记录
-- **洛佬相关**: VOCALOID、洛天依相关内容
+- **洛天依**: VOCALOID、洛天依相关内容（原“洛佬”分类已更新）
 - **学习笔记**: 学习过程中的笔记总结
 - **项目文档**: 项目相关的说明文档
 

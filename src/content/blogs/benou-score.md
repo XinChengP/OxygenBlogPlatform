@@ -1,7 +1,7 @@
 ---
 title: "笨鸥 简谱"
 date: "2025-08-31"
-category: "洛佬"
+category: "洛天依"
 tags: ["洛天依", "简谱", "笨鸥", "VOCALOID"]
 excerpt: "你是否能成为谁 关于大海的形容"
 coverImage: "/Blogabout/benou/benou.png"

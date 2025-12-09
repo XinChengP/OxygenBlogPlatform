@@ -1413,13 +1413,13 @@ seoDescription: "${blogMetadata.seoDescription}"
         .substring(0, 50);
     };
 
-    // 准备临时元数据用于编辑 - 标题和摘要默认为空，分类默认为"洛佬"
+    // 准备临时元数据用于编辑 - 标题和摘要默认为空，分类默认为"洛天依"
     const generatedMetadata = {
       ...blogMetadata,
       title: '', // 标题默认为空
       excerpt: '', // 摘要默认为空
       tags: extractedTags.length > 0 ? extractedTags : blogMetadata.tags,
-      category: '洛佬', // 分类默认为"洛佬"
+      category: '洛天依', // 分类默认为"洛天依"
       date: blogMetadata.date || new Date().toISOString().split('T')[0],
       readTime: calculateReadingTime(content),
       author: blogMetadata.author || '歆橙',
