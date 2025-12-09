@@ -741,7 +741,7 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                         </div>
                       );
                     },
-                    // iframe 处理 - 修复布尔属性问题
+                    // iframe 处理
                     iframe({ src, allowfullscreen, ...props }: any) {
                       // 将字符串 "true" 转换为布尔值 true
                       const allowFullScreen = allowfullscreen === "true" || allowfullscreen === true;

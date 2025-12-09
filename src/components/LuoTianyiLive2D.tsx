@@ -971,7 +971,7 @@ export default function LuoTianyiLive2D() {
                         "呀！你摸到我了！",
                         "害羞ing...",
                         "天依很萌的！",
-                        "我是世界第一吃货殿下哦！"
+                        "你要请我吃小笼包吗qwq"
                     ]
                 }
             ]
