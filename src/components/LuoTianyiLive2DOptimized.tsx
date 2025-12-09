@@ -234,6 +234,7 @@ export default function LuoTianyiLive2DOptimized({ className }: LuoTianyiLive2DO
     const [position, setPosition] = useState({ x: 0, y: 0 });
     const [message, setMessage] = useState('');
     const [messageOpacity, setMessageOpacity] = useState(1);
+
     const [isLoading, setIsLoading] = useState(true);
     const [loadProgress, setLoadProgress] = useState(0);
     const [currentPage, setCurrentPage] = useState('');
@@ -260,36 +261,34 @@ export default function LuoTianyiLive2DOptimized({ className }: LuoTianyiLive2DO
 
     // 优化的消息更新函数
     const updateMessage = useCallback((newMessage: string, type: 'normal' | 'interaction' = 'normal') => {
-        // 消息过滤逻辑
-        const isDefaultMessage = newMessage.includes('你好') && newMessage.includes('洛天依') && newMessage.includes('！');
-        const isGenericGreeting = newMessage === '你好～我是洛天依！' || 
-                                 newMessage === '你好~我是洛天依！' ||
-                                 (newMessage.includes('你好') && newMessage.length < 15);
+        if (!newMessage || newMessage.trim() === '') return;
         
-        if (isDefaultMessage || isGenericGreeting) return;
+        // 防止重复消息
+        if (message === newMessage) return;
         
         // 防抖处理
         const now = Date.now();
-        if (now - lastMessageTimeRef.current < 500) return; // 500ms内不重复处理
+        if (now - lastMessageTimeRef.current < 300) return;
+        
+        setMessage(newMessage);
+        setMessageOpacity(1);
         lastMessageTimeRef.current = now;
         
-        // 处理交互类型消息
-        if (type === 'interaction') {
-            setInteractionState('music');
-            if (interactionTimeoutRef.current) {
-                clearTimeout(interactionTimeoutRef.current);
-            }
-            interactionTimeoutRef.current = setTimeout(() => {
-                setInteractionState('idle');
-            }, 3000);
-        }
+        // 设置交互状态
+        setInteractionState('music');
+        setTimeout(() => setInteractionState('idle'), 1000);
         
-        // 使用消息队列
-        messageQueueRef.current.addMessage(newMessage, type);
+        // 自动隐藏消息
+        if (fadeTimeoutRef.current) {
+            clearTimeout(fadeTimeoutRef.current);
+        }
+        fadeTimeoutRef.current = setTimeout(() => {
+            setMessageOpacity(0);
+        }, 3000);
         
         // 性能监控
         performanceMonitorRef.current.recordMessage();
-    }, []);
+    }, [message]);
 
     // 拖拽处理函数
     const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -507,11 +506,6 @@ export default function LuoTianyiLive2DOptimized({ className }: LuoTianyiLive2DO
                             requestAnimationFrame(() => {
                                 setIsLoading(false);
                                 performanceMonitorRef.current.recordInitializationComplete();
-                                
-                                // 显示欢迎消息
-                                requestAnimationFrame(() => {
-                                    updateMessage('天依已经准备好陪伴你啦～');
-                                });
                             });
                         }
                     })
@@ -564,8 +558,10 @@ export default function LuoTianyiLive2DOptimized({ className }: LuoTianyiLive2DO
             updateMessage(message, 'interaction');
         };
         
-        // 初始页面检测
-        handleRouteChange();
+        // 初始页面检测 - 只在非首页显示消息
+        if (window.location.pathname !== '/') {
+            handleRouteChange();
+        }
         
         // 监听路由变化（简化版本）
         const originalPushState = window.history.pushState;
@@ -661,15 +657,7 @@ export default function LuoTianyiLive2DOptimized({ className }: LuoTianyiLive2DO
         };
     }, [handleThemeChange]);
 
-    // 页面初始化完成后的处理
-    useEffect(() => {
-        if (!isLoading) {
-            // 延迟显示欢迎消息
-            setTimeout(() => {
-                updateMessage('天依已经准备好陪伴你啦～');
-            }, 3000);
-        }
-    }, [isLoading, updateMessage]);
+    // 页面初始化完成后的处理 - 移除重复的欢迎消息
 
     // 阅读进度检测（仅在博客文章页面）
     useEffect(() => {
@@ -974,10 +962,7 @@ export default function LuoTianyiLive2DOptimized({ className }: LuoTianyiLive2DO
                 
                 {/* 消息气泡 */}
                 {message && (
-                    <div className={cn(
-                        "absolute top-12 left-1/2 transform -translate-x-1/2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg p-3 shadow-lg max-w-xs z-10 transition-all duration-300",
-                        "border border-gray-200 dark:border-gray-700"
-                    )}>
+                    <div className="absolute left-1/2 transform -translate-x-1/2 bg-white dark:bg-gray-800 rounded-lg p-3 shadow-lg max-w-xs z-10 border border-gray-200 dark:border-gray-700" style={{top: '-80px'}}>
                         <p className="text-sm text-gray-800 dark:text-gray-200">{message}</p>
                         <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-white dark:bg-gray-800 rotate-45 border-r border-b border-gray-200 dark:border-gray-700"></div>
                     </div>
@@ -993,6 +978,8 @@ export default function LuoTianyiLive2DOptimized({ className }: LuoTianyiLive2DO
                     </div>
                 )}
             </div>
+            
+
         </>
     );
 }
