@@ -325,6 +325,8 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
     // 为密码元素添加悬停效果
     const handlePasswordHover = (e: Event) => {
       const target = e.target as HTMLElement;
+      if (!target || !target.closest) return;
+      
       const passwordSpan = target.closest('[data-password]');
       
       if (passwordSpan && !passwordSpan.textContent?.includes('已复制!')) {
@@ -736,6 +738,22 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                           {alt && (
                             <p className="text-sm text-muted-foreground mt-3 italic">{alt}</p>
                           )}
+                        </div>
+                      );
+                    },
+                    // iframe 处理 - 修复布尔属性问题
+                    iframe({ src, allowfullscreen, ...props }: any) {
+                      // 将字符串 "true" 转换为布尔值 true
+                      const allowFullScreen = allowfullscreen === "true" || allowfullscreen === true;
+                      
+                      return (
+                        <div className="my-8 rounded-xl overflow-hidden shadow-lg">
+                          <iframe
+                            src={src}
+                            allowFullScreen={allowFullScreen}
+                            {...props}
+                            className="w-full h-64 md:h-96 border-0"
+                          />
                         </div>
                       );
                     }
