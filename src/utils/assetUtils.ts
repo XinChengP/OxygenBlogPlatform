@@ -75,11 +75,12 @@ export const getAssetPath = (path: string): string => {
   return basePath ? `${basePath}${cleanPath}` : cleanPath;
 };
 
-// 检查是否是GitHub Pages环境
+// 检查是否是GitHub Pages环境（包括自定义域名）
 export function isGitHubPages(): boolean {
   return typeof window !== 'undefined' && 
       (window.location.hostname.includes('github.io') ||
-       window.location.hostname.includes('pages.dev'));
+       window.location.hostname.includes('pages.dev') ||
+       window.location.hostname === 'blog.xinchengp.cn');
 }
 
 // 获取基础路径
