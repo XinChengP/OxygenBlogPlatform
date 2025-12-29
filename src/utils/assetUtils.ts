@@ -30,6 +30,11 @@ export const getAssetPath = (path: string): string => {
     
     // 检查是否是GitHub Pages环境
     if (isGitHubPages()) {
+      // 对于自定义域名blog.xinchengp.cn，直接返回路径
+      if (window.location.hostname === 'blog.xinchengp.cn') {
+        return cleanPath;
+      }
+      
       const pathname = window.location.pathname;
       const pathSegments = pathname.split('/').filter(segment => segment);
       
@@ -53,8 +58,8 @@ export const getAssetPath = (path: string): string => {
       }
     }
     
-    // 如果环境变量中配置了基础路径，使用它
-    if (process.env.NEXT_PUBLIC_BASE_PATH) {
+    // 如果环境变量中配置了基础路径（包括空字符串），使用它
+    if (process.env.NEXT_PUBLIC_BASE_PATH !== undefined) {
       return `${process.env.NEXT_PUBLIC_BASE_PATH}${cleanPath}`;
     }
     
@@ -63,8 +68,10 @@ export const getAssetPath = (path: string): string => {
   }
   
   // 在服务器环境中，使用环境变量
-  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || 
-                   (process.env.NEXT_PUBLIC_GITHUB_REPO_NAME ? `/${process.env.NEXT_PUBLIC_GITHUB_REPO_NAME}` : '');
+  // 注意：检查NEXT_PUBLIC_BASE_PATH是否已定义，而不是检查其是否为真值
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH !== undefined 
+    ? process.env.NEXT_PUBLIC_BASE_PATH 
+    : (process.env.NEXT_PUBLIC_GITHUB_REPO_NAME ? `/${process.env.NEXT_PUBLIC_GITHUB_REPO_NAME}` : '');
   
   // 开发环境直接返回路径
   if (process.env.NODE_ENV === 'development') {
@@ -100,6 +107,11 @@ export function getBasePath(): string {
     
     // 检查是否是GitHub Pages环境
     if (isGitHubPages()) {
+      // 对于自定义域名blog.xinchengp.cn，返回空字符串
+      if (window.location.hostname === 'blog.xinchengp.cn') {
+        return '';
+      }
+      
       const pathname = window.location.pathname;
       const pathSegments = pathname.split('/').filter(segment => segment);
       
@@ -123,14 +135,14 @@ export function getBasePath(): string {
       }
     }
     
-    // 如果环境变量中配置了基础路径，使用它
-    if (process.env.NEXT_PUBLIC_BASE_PATH) {
+    // 如果环境变量中配置了基础路径（包括空字符串），使用它
+    if (process.env.NEXT_PUBLIC_BASE_PATH !== undefined) {
       return process.env.NEXT_PUBLIC_BASE_PATH;
     }
   }
   
-  // 在构建环境中，优先使用NEXT_PUBLIC_BASE_PATH，如果没有则使用NEXT_PUBLIC_GITHUB_REPO_NAME
-  if (process.env.NEXT_PUBLIC_BASE_PATH) {
+  // 在构建环境中，优先使用NEXT_PUBLIC_BASE_PATH（包括空字符串）
+  if (process.env.NEXT_PUBLIC_BASE_PATH !== undefined) {
     return process.env.NEXT_PUBLIC_BASE_PATH;
   }
   
