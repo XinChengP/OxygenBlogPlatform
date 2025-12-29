@@ -48,16 +48,16 @@ const nextConfig = {
     unoptimized: isStaticExport,
   },
   
-  // GitHub Pages静态导出配置
+  // 静态导出配置
   ...(isStaticExport && {
     // 静态导出配置
     output: "export",
     distDir: 'out',
     trailingSlash: true,
     
-    // GitHub Pages basePath配置
-    basePath: `/${repoName}`,
-    assetPrefix: `/${repoName}`,
+    // 自定义域名配置 - 移除GitHub Pages特有的basePath和assetPrefix
+    basePath: '',
+    assetPrefix: '',
     
     // 图片配置（仅在静态导出模式下需要）
     images: {
