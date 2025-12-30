@@ -234,7 +234,6 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
   const { theme } = useTheme();
   const { containerStyle } = useBackgroundStyle('blog-detail');
   const [copiedCode, setCopiedCode] = useState<string>('');
-  const [readingProgress, setReadingProgress] = useState(0);
   const [, setMarkdownComponents] = useState<any>(null);
   const isLoadedRef = useRef(false);
   const iframeRefs = useRef<Array<HTMLIFrameElement | null>>([]);
@@ -460,47 +459,11 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
     loadPlugins();
   }, [blog.content]);
 
-  // 监听滚动进度 - 添加节流优化，避免高频触发
-  useEffect(() => {
-    // 节流函数：限制30毫秒内只触发1次，提高流畅度
-    let scrollTimeout: NodeJS.Timeout;
-    const handleScroll = () => {
-      clearTimeout(scrollTimeout);
-      scrollTimeout = setTimeout(() => {
-        const windowHeight = window.innerHeight;
-        const documentHeight = document.documentElement.scrollHeight;
-        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-        
-        const scrollableHeight = documentHeight - windowHeight;
-        const progress = scrollableHeight > 0 ? (scrollTop / scrollableHeight) * 100 : 0;
-        
-        setReadingProgress(Math.min(100, Math.max(0, progress)));
-      }, 30); // 30毫秒节流，提高流畅度
-    };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll(); // 初始计算
-
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      if (scrollTimeout) clearTimeout(scrollTimeout);
-    };
-  }, []);
 
   return (
     <div className={containerStyle.className} style={containerStyle.style}>
-      {/* 阅读进度条 */}
-      <motion.div 
-        className="fixed top-0 left-0 w-full h-1 bg-background/80 backdrop-blur-sm z-40"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3 }}
-      >
-        <div 
-          className="h-full bg-primary transition-all duration-300 ease-out"
-          style={{ width: `${readingProgress}%` }}
-        />
-      </motion.div>
+
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div>
