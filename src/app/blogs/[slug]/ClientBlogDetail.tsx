@@ -3,6 +3,7 @@
 import { useState, lazy, Suspense, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import LazyMarkdown from '../../../components/LazyMarkdown';
+import BilibiliVideo from '../../../components/BilibiliVideo';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { 
@@ -781,21 +782,34 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                       );
                     },
                     // iframe 处理
-                    iframe({ src, allowfullscreen, ...props }: any) {
+                    iframe({ src, allowfullscreen, width, height, ...props }: any) {
                       // 将字符串 "true" 转换为布尔值 true
                       const allowFullScreen = allowfullscreen === "true" || allowfullscreen === true;
                       
-                      // 为B站视频添加crossOrigin属性，解决跨域凭证不匹配问题
+                      // 检测是否为B站视频
                       const isBilibiliVideo = src?.includes('bilibili.com') || src?.includes('player.bilibili.com');
                       
+                      if (isBilibiliVideo) {
+                        // 使用优化的 BilibiliVideo 组件处理B站视频
+                        return (
+                          <BilibiliVideo
+                            src={src}
+                            width={width || '100%'}
+                            height={height || 400}
+                            className="my-8"
+                          />
+                        );
+                      }
+                      
+                      // 普通iframe处理
                       return (
                         <div className="my-8 rounded-xl overflow-hidden shadow-lg">
                           <iframe
                             src={src}
                             allowFullScreen={allowFullScreen}
-                            crossOrigin={isBilibiliVideo ? "anonymous" : undefined}
                             {...props}
                             className="w-full h-64 md:h-96 border-0"
+                            loading="lazy"
                           />
                         </div>
                       );
