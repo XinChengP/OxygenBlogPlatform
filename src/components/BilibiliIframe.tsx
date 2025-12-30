@@ -42,14 +42,16 @@ export default function BilibiliIframe({ src, className = '', allowFullScreen = 
     const safeOriginalConsoleWarn = originalConsoleWarn;
 
     // 2. 重写addEventListener，安全处理消息事件和error事件
-    window.addEventListener = function(type, listener, options) {
+    window.addEventListener = function(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions) {
       if (type === 'message' && typeof listener === 'function') {
-        const wrappedListener = (event: MessageEvent) => {
+        const wrappedListener = (event: Event) => {
+          // 转换为 MessageEvent 类型
+          const messageEvent = event as MessageEvent;
           // 忽略B站指纹脚本的消息
-          if (typeof event.data === 'string' && (
-            event.data.includes('bili-fe-fp') ||
-            event.data.includes('nc-loader') ||
-            event.data.includes('addIceCandidate')
+          if (typeof messageEvent.data === 'string' && (
+            messageEvent.data.includes('bili-fe-fp') ||
+            messageEvent.data.includes('nc-loader') ||
+            messageEvent.data.includes('addIceCandidate')
           )) {
             return;
           }
@@ -64,27 +66,29 @@ export default function BilibiliIframe({ src, className = '', allowFullScreen = 
       }
       // 拦截error事件，防止B站脚本错误传播
       if (type === 'error' && typeof listener === 'function') {
-        const wrappedListener = (event: ErrorEvent) => {
+        const wrappedListener = (event: Event) => {
+          // 转换为 ErrorEvent 类型
+          const errorEvent = event as ErrorEvent;
           // 检查是否是B站相关错误
           const isBilibiliError = (
-            (typeof event.message === 'string' && (
-              event.message.includes('addIceCandidate') ||
-              event.message.includes('bili-user-fingerprint') ||
-              event.message.includes('report is not found') ||
-              event.message.includes('nc-loader')
+            (typeof errorEvent.message === 'string' && (
+              errorEvent.message.includes('addIceCandidate') ||
+              errorEvent.message.includes('bili-user-fingerprint') ||
+              errorEvent.message.includes('report is not found') ||
+              errorEvent.message.includes('nc-loader')
             )) ||
-            (typeof event.filename === 'string' && (
-              event.filename.includes('bili-user-fingerprint') ||
-              event.filename.includes('nc-loader') ||
-              event.filename.includes('player.bilibili.com')
+            (typeof errorEvent.filename === 'string' && (
+              errorEvent.filename.includes('bili-user-fingerprint') ||
+              errorEvent.filename.includes('nc-loader') ||
+              errorEvent.filename.includes('player.bilibili.com')
             ))
           );
           
           if (isBilibiliError) {
             // 忽略B站相关错误
-            console.debug('已拦截并忽略B站error事件:', event.message);
-            event.stopPropagation();
-            event.preventDefault();
+            console.debug('已拦截并忽略B站error事件:', errorEvent.message);
+            errorEvent.stopPropagation();
+            errorEvent.preventDefault();
             return;
           }
           
@@ -160,7 +164,8 @@ export default function BilibiliIframe({ src, className = '', allowFullScreen = 
 
       // 其他Promise错误继续处理
       if (safeOriginalOnunhandledrejection) {
-        return safeOriginalOnunhandledrejection.call(this, event);
+        // 修复类型错误：将this转换为Window类型
+        return safeOriginalOnunhandledrejection.call(this as Window, event);
       }
 
       return false;
@@ -351,8 +356,6 @@ export default function BilibiliIframe({ src, className = '', allowFullScreen = 
         title="B站视频"
         // 添加referrer策略，减少信息泄露
         referrerPolicy="strict-origin-when-cross-origin"
-        // 防止iframe劫持
-        crossOrigin="anonymous"
         // 添加Content Security Policy，阻止特定的B站脚本
         // 这会阻止iframe内加载指定的危险脚本
         style={{

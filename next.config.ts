@@ -55,9 +55,9 @@ const nextConfig = {
     distDir: 'out',
     trailingSlash: true,
     
-    // 自定义域名配置 - 移除GitHub Pages特有的basePath和assetPrefix
-    basePath: '',
-    assetPrefix: '',
+    // 使用环境变量设置basePath和assetPrefix，确保GitHub Pages部署正常
+    basePath: process.env.NEXT_PUBLIC_BASE_PATH || '',
+    assetPrefix: process.env.NEXT_PUBLIC_BASE_PATH || '',
     
     // 图片配置（仅在静态导出模式下需要）
     images: {
