@@ -26,6 +26,7 @@ const LazyTableOfContents = lazy(() => import('../../../components/TableOfConten
 const LazyScrollToTop = lazy(() => import('../../../components/ScrollToTop'));
 const LazyGiscusComments = lazy(() => import('../../../components/GiscusComments'));
 const LazyCopyrightNotice = lazy(() => import('../../../components/CopyrightNotice'));
+const BilibiliIframe = lazy(() => import('../../../components/BilibiliIframe'));
 
 /**
  * 标准化编程语言名称，解决大小写敏感问题
@@ -236,6 +237,7 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
   const [readingProgress, setReadingProgress] = useState(0);
   const [, setMarkdownComponents] = useState<any>(null);
   const isLoadedRef = useRef(false);
+  const iframeRefs = useRef<Array<HTMLIFrameElement | null>>([]);
 
 
 
@@ -396,6 +398,40 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
   // 语法高亮主题
   const syntaxTheme = theme === 'dark' ? oneDark : oneLight;
 
+  // 清理iframe资源 - 防止页面切换时的脚本错误
+  useEffect(() => {
+    return () => {
+      // 清理所有iframe引用
+      iframeRefs.current.forEach(iframe => {
+        if (iframe && iframe.src) {
+          try {
+            // 清空iframe的src，停止加载外部脚本
+            iframe.src = 'about:blank';
+            // 尝试清理iframe内容
+            iframe.contentWindow?.location?.replace('about:blank');
+          } catch (e) {
+            // 忽略跨域错误
+            console.debug('清理iframe时出错:', e);
+          }
+        }
+      });
+      iframeRefs.current = [];
+      
+      // 清理B站相关的全局脚本
+      if (typeof window !== 'undefined') {
+        // 移除可能存在的B站脚本创建的DOM元素
+        const bilibiliScripts = document.querySelectorAll('script[src*="bilibili"]');
+        bilibiliScripts.forEach(script => {
+          try {
+            script.remove();
+          } catch (e) {
+            console.debug('清理脚本时出错:', e);
+          }
+        });
+      }
+    };
+  }, []);
+
   // 延迟加载 Markdown 组件和插件，提升初始加载性能
   // 使用 useRef 防止路由切换时重复加载
   useEffect(() => {
@@ -426,7 +462,7 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
 
   // 监听滚动进度 - 添加节流优化，避免高频触发
   useEffect(() => {
-    // 节流函数：限制1秒内只触发1次
+    // 节流函数：限制30毫秒内只触发1次，提高流畅度
     let scrollTimeout: NodeJS.Timeout;
     const handleScroll = () => {
       clearTimeout(scrollTimeout);
@@ -439,7 +475,7 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
         const progress = scrollableHeight > 0 ? (scrollTop / scrollableHeight) * 100 : 0;
         
         setReadingProgress(Math.min(100, Math.max(0, progress)));
-      }, 1000); // 1秒节流
+      }, 30); // 30毫秒节流，提高流畅度
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -780,19 +816,46 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                         </div>
                       );
                     },
-                    // iframe 处理
+                    // iframe 处理 - 增强错误处理和清理
                     iframe({ src, allowfullscreen, ...props }: any) {
-                      // 将字符串 "true" 转换为布尔值 true
-                      const allowFullScreen = allowfullscreen === "true" || allowfullscreen === true;
+                      // 将字符串 "true" 转换为布尔值 true，确保传递布尔值给React属性
+                      const shouldAllowFullScreen = allowfullscreen === "true" || allowfullscreen === true;
+                      
+                      // B站视频特殊处理 - 使用专用组件处理
+                      const isBilibiliVideo = src?.includes('player.bilibili.com');
+                      
+                      if (isBilibiliVideo) {
+                        return (
+                          <Suspense fallback={
+                            <div className="my-8 rounded-xl overflow-hidden shadow-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center h-64 md:h-96">
+                              <div className="text-center">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+                                <p className="text-gray-600 dark:text-gray-400">B站视频加载中...</p>
+                              </div>
+                            </div>
+                          }>
+                            <BilibiliIframe 
+                              src={src} 
+                              allowFullScreen={shouldAllowFullScreen} 
+                            />
+                          </Suspense>
+                        );
+                      }
                       
                       // 普通iframe处理
                       return (
                         <div className="my-8 rounded-xl overflow-hidden shadow-lg">
                           <iframe
                             src={src}
-                            allowFullScreen={allowFullScreen}
+                            {...(shouldAllowFullScreen ? { allowFullScreen: true } : {})}
                             {...props}
                             className="w-full h-64 md:h-96 border-0"
+                            // 添加ref来跟踪iframe元素
+                            ref={(el) => {
+                              if (el) {
+                                iframeRefs.current.push(el);
+                              }
+                            }}
                           />
                         </div>
                       );

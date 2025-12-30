@@ -458,21 +458,13 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                 <div className="flex border border-border rounded-lg overflow-hidden">
                   <button
                     onClick={() => setViewMode('grid')}
-                    className={`px-3 py-2 text-sm transition-all duration-200 ${
-                      viewMode === 'grid'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                    }`}
+                    className={`px-3 py-2 text-sm transition-all duration-200 ${viewMode === 'grid' ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground'}`}
                   >
                     <LayoutGrid className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => setViewMode('list')}
-                    className={`px-3 py-2 text-sm transition-all duration-200 ${
-                      viewMode === 'list'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                    }`}
+                    className={`px-3 py-2 text-sm transition-all duration-200 ${viewMode === 'list' ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground'}`}
                   >
                     <LayoutList className="w-4 h-4" />
                   </button>
@@ -482,13 +474,9 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
           </div>
         </div>
         
-        {/* 移动端分类筛选折叠按钮 - 已移除 */}
-        
         {/* 移动端分类筛选面板 */}
         {!isCategoryCollapsed && (
-          <div
-            className="lg:hidden mb-6 overflow-hidden"
-          >
+          <div className="lg:hidden mb-6 overflow-hidden">
             <div className={getGlassStyle("rounded-lg border p-4")}>
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
@@ -504,19 +492,13 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
               </div>
               <div className="space-y-2">
                 {categories.map((category) => {
-                  const count = initialPosts.filter(post => 
-                    category === 'all' ? true : post.category === category
-                  ).length;
+                  const count = initialPosts.filter(post => category === 'all' ? true : post.category === category).length;
                   
                   return (
                     <button
                       key={category}
                       onClick={() => handleCategoryChange(category)}
-                      className={`w-full text-left px-3 py-2 rounded-md transition-colors flex items-center justify-between ${
-                        selectedCategory === category
-                          ? 'bg-primary/10 text-primary border border-primary/20'
-                          : 'text-muted-foreground hover:bg-primary/5 hover:text-primary'
-                      }`}
+                      className={`w-full text-left px-3 py-2 rounded-md transition-colors flex items-center justify-between ${selectedCategory === category ? 'bg-primary/10 text-primary border border-primary/20' : 'text-muted-foreground hover:bg-primary/5 hover:text-primary'}`}
                     >
                       <span>{category === 'all' ? '全部' : category}</span>
                       <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">
@@ -544,9 +526,7 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
         {/* 高级搜索面板 */}
         <AnimatePresence>
           {showAdvancedSearch && (
-            <div
-              className="mb-8 overflow-hidden"
-            >
+            <div className="mb-8 overflow-hidden">
               <div className={getGlassStyle("rounded-lg border p-6")}>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   
@@ -561,11 +541,7 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                         <button
                           key={tag}
                           onClick={() => handleTagToggle(tag)}
-                          className={`px-3 py-1 rounded-full text-xs transition-colors ${
-                            selectedTags.includes(tag)
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-primary/10 text-primary hover:bg-primary/20'
-                          }`}
+                          className={`px-3 py-1 rounded-full text-xs transition-colors ${selectedTags.includes(tag) ? 'bg-primary text-primary-foreground' : 'bg-primary/10 text-primary hover:bg-primary/20'}`}
                         >
                           {tag}
                         </button>
@@ -646,14 +622,10 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
             </div>
           )}
         </AnimatePresence>
-        
-        {/* 移动端分类筛选 - 已移除 */}
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* 桌面端左侧边栏 */}
-          <aside 
-            className="hidden lg:block lg:col-span-1"
-          >
+          <aside className="hidden lg:block lg:col-span-1">
             <div className={getGlassStyle("rounded-lg shadow-md p-6 sticky top-24 border")}>
               <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
                 <Filter className="w-4 h-4" />
@@ -661,19 +633,13 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
               </h3>
               <div className="space-y-2">
                 {categories.map((category) => {
-                  const count = initialPosts.filter(post => 
-                    category === 'all' ? true : post.category === category
-                  ).length;
+                  const count = initialPosts.filter(post => category === 'all' ? true : post.category === category).length;
                   
                   return (
                     <button
                       key={category}
                       onClick={() => handleCategoryChange(category)}
-                      className={`w-full text-left px-3 py-2 rounded-md transition-colors flex items-center justify-between ${
-                        selectedCategory === category
-                          ? 'bg-primary/10 text-primary border border-primary/20'
-                          : 'text-muted-foreground hover:bg-primary/5 hover:text-primary'
-                      }`}
+                      className={`w-full text-left px-3 py-2 rounded-md transition-colors flex items-center justify-between ${selectedCategory === category ? 'bg-primary/10 text-primary border border-primary/20' : 'text-muted-foreground hover:bg-primary/5 hover:text-primary'}`}
                     >
                       <span>{category === 'all' ? '全部' : category}</span>
                       <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">
@@ -694,16 +660,13 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                     </span>
                     <span className="font-medium">{initialPosts.length}</span>
                   </div>
-
                 </div>
               </div>
             </div>
           </aside>
           
           {/* 主内容区 */}
-          <main 
-            className="col-span-1 lg:col-span-3"
-          >
+          <main className="col-span-1 lg:col-span-3">
             {/* 搜索结果统计 */}
             {searchTerm && (
               <div className="mb-6 p-4 bg-primary/5 border border-primary/20 rounded-lg">
@@ -770,9 +733,7 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                             </div>
                             
                             {/* 悬停时的阅读按钮 */}
-                            <div 
-                              className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                            >
+                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                               <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium text-gray-800 dark:text-gray-200 shadow-lg">
                                 阅读文章
                               </div>
@@ -798,9 +759,7 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                             </div>
                             
                             {/* 悬停时的阅读按钮 */}
-                            <div 
-                              className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/10 backdrop-blur-sm"
-                            >
+                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/10 backdrop-blur-sm">
                               <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium text-gray-800 dark:text-gray-200 shadow-lg">
                                 阅读文章
                               </div>
@@ -815,16 +774,12 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                             </span>
                           </div>
                           
-                          <h2 
-                            className="text-lg sm:text-xl font-bold text-foreground mb-2 sm:mb-3 line-clamp-2 group-hover:text-primary transition-colors duration-300"
-                          >
+                          <h2 className="text-lg sm:text-xl font-bold text-foreground mb-2 sm:mb-3 line-clamp-2 group-hover:text-primary transition-colors duration-300">
                             {post.title}
                           </h2>
                           
                           {post.excerpt && (
-                            <p 
-                              className="text-muted-foreground mb-3 sm:mb-4 text-sm sm:text-base line-clamp-3 leading-relaxed"
-                            >
+                            <p className="text-muted-foreground mb-3 sm:mb-4 text-sm sm:text-base line-clamp-3 leading-relaxed">
                               {post.excerpt}
                             </p>
                           )}
@@ -865,9 +820,7 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                               </div>
                               
                               <div>
-                                <div
-                                  className="flex items-center gap-2 text-primary text-sm font-medium group-hover:gap-3 transition-all duration-300"
-                                >
+                                <div className="flex items-center gap-2 text-primary text-sm font-medium group-hover:gap-3 transition-all duration-300">
                                   <span>阅读文章</span>
                                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
                                 </div>

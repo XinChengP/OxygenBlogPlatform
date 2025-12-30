@@ -16,7 +16,7 @@ coverImage: "/Blogabout/Xingqiubei/cover.jpg"
   scrolling="no" 
   frameborder="no" 
   framespacing="0" 
-  allowfullscreen="true" 
+  allowfullscreen 
   style="width: 100%; height: 480px; border: 1px solid #ddd; border-radius: 8px;">
 </iframe>
 

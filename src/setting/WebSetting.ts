@@ -91,4 +91,27 @@ export const applyThemeColors = (isDark: boolean = false) => {
     "--secondary-foreground",
     isDark ? "#f0f0f0" : "#1f1f1f"
   );
+  
+  // Tailwind 颜色变量 - 带 --color- 前缀
+  root.style.setProperty("--color-primary", primaryColor);
+  root.style.setProperty("--color-primary-foreground", isDark ? "#0f0f0f" : "#ffffff");
+  root.style.setProperty("--color-accent", accentColor);
+  root.style.setProperty("--color-accent-foreground", isDark ? "#0f0f0f" : "#ffffff");
+  root.style.setProperty("--color-secondary", secondaryColor);
+  root.style.setProperty("--color-secondary-foreground", isDark ? "#f0f0f0" : "#1f1f1f");
+  
+  // 添加 Tailwind 需要的其他颜色变量
+  root.style.setProperty("--color-background", isDark ? "#111827" : "#ffffff");
+  root.style.setProperty("--color-foreground", isDark ? "#f9fafb" : "#111827");
+  root.style.setProperty("--color-muted", isDark ? "#374151" : "#f3f4f6");
+  root.style.setProperty("--color-muted-foreground", isDark ? "#9ca3af" : "#6b7280");
+  root.style.setProperty("--color-card", isDark ? "#1f2937" : "#ffffff");
+  root.style.setProperty("--color-card-foreground", isDark ? "#f9fafb" : "#111827");
+  root.style.setProperty("--color-popover", isDark ? "#1f2937" : "#ffffff");
+  root.style.setProperty("--color-popover-foreground", isDark ? "#f9fafb" : "#111827");
+  root.style.setProperty("--color-border", isDark ? "#374151" : "#e5e7eb");
+  root.style.setProperty("--color-input", isDark ? "#374151" : "#e5e7eb");
+  root.style.setProperty("--color-ring", primaryColor);
+  root.style.setProperty("--color-destructive", isDark ? "#ef4444" : "#dc2626");
+  root.style.setProperty("--color-destructive-foreground", isDark ? "#f9fafb" : "#ffffff");
 };
