@@ -424,23 +424,31 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
     loadPlugins();
   }, [blog.content]);
 
-  // 监听滚动进度
+  // 监听滚动进度 - 添加节流优化，避免高频触发
   useEffect(() => {
+    // 节流函数：限制1秒内只触发1次
+    let scrollTimeout: NodeJS.Timeout;
     const handleScroll = () => {
-      const windowHeight = window.innerHeight;
-      const documentHeight = document.documentElement.scrollHeight;
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-      
-      const scrollableHeight = documentHeight - windowHeight;
-      const progress = scrollableHeight > 0 ? (scrollTop / scrollableHeight) * 100 : 0;
-      
-      setReadingProgress(Math.min(100, Math.max(0, progress)));
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        const windowHeight = window.innerHeight;
+        const documentHeight = document.documentElement.scrollHeight;
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        
+        const scrollableHeight = documentHeight - windowHeight;
+        const progress = scrollableHeight > 0 ? (scrollTop / scrollableHeight) * 100 : 0;
+        
+        setReadingProgress(Math.min(100, Math.max(0, progress)));
+      }, 1000); // 1秒节流
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll(); // 初始计算
 
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (scrollTimeout) clearTimeout(scrollTimeout);
+    };
   }, []);
 
   return (
@@ -777,11 +785,15 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                       // 将字符串 "true" 转换为布尔值 true
                       const allowFullScreen = allowfullscreen === "true" || allowfullscreen === true;
                       
+                      // 为B站视频添加crossOrigin属性，解决跨域凭证不匹配问题
+                      const isBilibiliVideo = src?.includes('bilibili.com') || src?.includes('player.bilibili.com');
+                      
                       return (
                         <div className="my-8 rounded-xl overflow-hidden shadow-lg">
                           <iframe
                             src={src}
                             allowFullScreen={allowFullScreen}
+                            crossOrigin={isBilibiliVideo ? "anonymous" : undefined}
                             {...props}
                             className="w-full h-64 md:h-96 border-0"
                           />
