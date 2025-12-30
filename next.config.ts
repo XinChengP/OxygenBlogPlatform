@@ -70,6 +70,14 @@ const nextConfig = {
         },
       ],
     },
+    
+    // 确保环境变量正确注入
+    env: {
+      NEXT_PUBLIC_BASE_PATH: process.env.NEXT_PUBLIC_BASE_PATH || '',
+      NEXT_PUBLIC_GITHUB_REPO_NAME: process.env.NEXT_PUBLIC_GITHUB_REPO_NAME || '',
+      NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL || '',
+      CUSTOM_DOMAIN: process.env.CUSTOM_DOMAIN || 'false',
+    },
   }),
   
   // 开发环境配置（非静态导出）
