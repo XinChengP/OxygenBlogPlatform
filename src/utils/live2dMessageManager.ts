@@ -87,9 +87,11 @@ class Live2DMessageManager {
       clearTimeout(this.currentTimeout);
     }
 
-    // 使用原始的 showMessage 函数
-    if ((window as any).showMessage) {
-      console.log('使用window.showMessage发送消息');
+    // 检查是否有原始的showMessage函数（未被我们重写的）
+    const hasOriginalShowMessage = typeof (window as any).showMessage === 'function' && !(window as any).showMessageOverridden;
+    
+    if (hasOriginalShowMessage) {
+      console.log('使用原始window.showMessage发送消息');
       (window as any).showMessage(message, duration);
     } else {
       // 降级处理 - 直接操作DOM

@@ -38,7 +38,8 @@ export default function GiscusComments({ id, title }: GiscusCommentsProps) {
     script.setAttribute('data-repo-id', 'R_kgDOQQbz2g');
     script.setAttribute('data-category', 'General');
     script.setAttribute('data-category-id', 'DIC_kwDOQQbz2s4CxkZ6');
-    script.setAttribute('data-mapping', 'pathname');
+    // 处理pathname映射，确保在不同域名下能正确关联讨论
+    script.setAttribute('data-mapping', 'url');
     script.setAttribute('data-strict', '0');
     script.setAttribute('data-reactions-enabled', '1');
     script.setAttribute('data-emit-metadata', '0');

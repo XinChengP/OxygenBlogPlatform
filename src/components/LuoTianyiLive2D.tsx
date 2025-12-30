@@ -904,9 +904,17 @@ export default function LuoTianyiLive2D() {
     };
 
     const setupMessageSystem = (basePath: string) => {
+        // 确保消息系统只初始化一次
+        if ((window as any).messageSystemInitialized) {
+            console.log('[LuoTianyiLive2D] 消息系统已初始化，跳过重复初始化');
+            return;
+        }
+        
+        (window as any).messageSystemInitialized = true;
+        console.log('[LuoTianyiLive2D] 开始初始化消息系统');
+        
         // 设置洛天依的消息系统，适配网站主题
         // 重写消息显示函数以支持自动淡出
-        const originalShowMessage = (window as any).showMessage;
         
         // 添加触发频率限制机制
         const triggerLimits = {
@@ -936,11 +944,6 @@ export default function LuoTianyiLive2D() {
             } else {
                 // 使用我们的新消息管理函数
                 updateMessage(msg);
-            }
-            
-            // 也调用原始的消息函数（如果存在）
-            if (originalShowMessage) {
-                originalShowMessage(msg, timeout);
             }
         };
 
