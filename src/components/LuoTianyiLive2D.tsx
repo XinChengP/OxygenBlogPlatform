@@ -38,13 +38,12 @@ export default function LuoTianyiLive2D() {
 
     // 消息更新函数 - 必须在其他使用它的函数之前定义
     const updateMessage = useCallback((newMessage: string, type: 'normal' | 'interaction' = 'normal') => {
-        // 修复：改进消息过滤逻辑，更好地处理中文消息
+        // 修复：改进消息过滤逻辑，只过滤特定的默认问候语，允许彩蛋消息显示
         const isDefaultMessage = newMessage.includes('你好') && newMessage.includes('洛天依') && newMessage.includes('！');
         const isGenericGreeting = newMessage === '你好～我是洛天依！' || 
-                                 newMessage === '你好~我是洛天依！' ||
-                                 (newMessage.includes('你好') && newMessage.length < 15);
+                                 newMessage === '你好~我是洛天依！';
         
-        // 只过滤掉真正的默认问候语，允许其他正常消息显示
+        // 只过滤掉特定的默认问候语，允许其他正常消息和彩蛋消息显示
         if (isDefaultMessage || isGenericGreeting) {
             return;
         }
@@ -184,11 +183,6 @@ export default function LuoTianyiLive2D() {
         const hour = now.getHours();
         
         const pageMessages = {
-            '首页': [
-                '欢迎来到歆橙的博客！这里有很多有趣的内容哦～',
-                '首页是博客的门面呢，设计得很漂亮吧？',
-                '从这里开始探索博主的精彩世界吧！'
-            ],
             '关于页面': [
                 '想了解博主更多信息吗？这里有很多有趣的故事哦～',
                 '关于页面能让我们更好地了解博主的背景和兴趣～',
@@ -619,8 +613,10 @@ export default function LuoTianyiLive2D() {
             }
         };
 
-        // 页面加载时检查一次
-        checkSpecialDate();
+        // 恢复节日问候，但添加延迟，避免与其他初始消息冲突
+        setTimeout(() => {
+            checkSpecialDate();
+        }, 10000); // 10秒后检查，确保在其他初始消息之后显示
 
         // 每小时检查一次（用于时间问候）
         const interval = setInterval(checkSpecialDate, 3600000);
@@ -864,19 +860,19 @@ export default function LuoTianyiLive2D() {
                 customListenerCount: live2dEventEmitter.listenerCount('custom-message')
             });
             
-            // 显示欢迎消息，但不触发主题切换测试 - 延迟更长时间，避免与页面加载消息冲突
-            if (!(window as any).__luotianyiWelcomeShown) {
-                console.log(`[LuoTianyiLive2D] 显示欢迎消息`);
-                // 使用较低优先级，避免与页面相关消息冲突
-                if (typeof window !== 'undefined' && (window as any).live2dMessageManager) {
-                    (window as any).live2dMessageManager.showMessage('天依已上线！很高兴见到你～', 3000, 1);
-                } else {
-                    updateMessage('天依已上线！很高兴见到你～');
-                }
-                (window as any).__luotianyiWelcomeShown = true;
-            } else {
-                console.log(`[LuoTianyiLive2D] 欢迎消息已显示过，跳过`);
-            }
+            // 移除初始欢迎消息，减少加载时的消息数量
+            // if (!(window as any).__luotianyiWelcomeShown) {
+            //     console.log(`[LuoTianyiLive2D] 显示欢迎消息`);
+            //     // 使用较低优先级，避免与页面相关消息冲突
+            //     if (typeof window !== 'undefined' && (window as any).live2dMessageManager) {
+            //         (window as any).live2dMessageManager.showMessage('天依已上线！很高兴见到你～', 3000, 1);
+            //     } else {
+            //         updateMessage('天依已上线！很高兴见到你～');
+            //     }
+            //     (window as any).__luotianyiWelcomeShown = true;
+            // } else {
+            //     console.log(`[LuoTianyiLive2D] 欢迎消息已显示过，跳过`);
+            // }
         }, 5000); // 增加到5秒延迟
         
         return () => {
@@ -924,27 +920,11 @@ export default function LuoTianyiLive2D() {
         
         const THROTTLE_DELAY = 2000; // 2秒内只允许触发一次
         
+        // 简化showMessage实现，避免与live2dMessageManager冲突
         (window as any).showMessage = (msg: string, timeout?: number) => {
-            // 修复：增强消息处理，确保重要的用户交互消息能够显示
-            const isImportantMessage = 
-                msg.includes('编辑') || msg.includes('预览') || msg.includes('模式') ||
-                msg.includes('保存') || msg.includes('复制') || msg.includes('成功') ||
-                msg.includes('撤销') || msg.includes('重做') || msg.includes('清空') ||
-                msg.includes('发布') || msg.includes('示例') ||
-                msg.includes('唱歌') || msg.includes('音乐') ||
-                msg.includes('主题') || msg.includes('亮色') || msg.includes('暗色') || msg.includes('系统') ||
-                (msg.length > 5 && !msg.includes('你好～我是洛天依！'));
-            
-            if (isImportantMessage) {
-                // 重要消息直接显示，不经过过滤
-                setMessage(msg);
-                setMessageOpacity(1);
-                lastMessageTimeRef.current = Date.now();
-                triggerFadeOut();
-            } else {
-                // 使用我们的新消息管理函数
-                updateMessage(msg);
-            }
+            // 修复：避免直接操作DOM，统一通过live2dMessageManager处理
+            // 直接调用updateMessage，确保React状态和DOM状态一致
+            updateMessage(msg);
         };
 
         const messageConfig = {

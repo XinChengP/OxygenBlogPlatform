@@ -103,50 +103,33 @@ class Live2DMessageManager {
   }
 
   /**
-   * 直接操作DOM显示消息
+   * 直接操作DOM显示消息 - 已废弃，不再直接操作DOM
    */
   private displayMessageDirectly(message: string): void {
-    // 先淡出任何现有的消息
-    this.fadeOutMessage();
+    // 不再直接操作DOM，而是通过事件或状态管理
+    console.log('displayMessageDirectly已废弃，不再直接操作DOM');
     
-    // 短暂延迟后显示新消息，确保淡出动画完成
-    setTimeout(() => {
-      this.showMessageDirectly(message);
-    }, 150);
+    // 如果window.showMessage存在，使用它
+    if (typeof (window as any).showMessage === 'function') {
+      (window as any).showMessage(message, 3000);
+    } else {
+      console.warn('Live2D消息系统未初始化，消息无法显示:', message);
+    }
   }
 
   /**
-   * 直接显示消息（内部方法）
+   * 直接显示消息（内部方法） - 已废弃，不再直接操作DOM
    */
   private showMessageDirectly(message: string): void {
-    // 检查是否有消息DOM元素 - 使用更具体的选择器
-    const messageElement = document.querySelector('.message');
-    if (messageElement) {
-      console.log('找到消息DOM元素，直接更新内容');
-      (messageElement as HTMLElement).innerHTML = message;
-      this.fadeInMessage(messageElement as HTMLElement);
-      return;
+    // 不再直接操作DOM
+    console.log('showMessageDirectly已废弃，不再直接操作DOM');
+    
+    // 如果window.showMessage存在，使用它
+    if (typeof (window as any).showMessage === 'function') {
+      (window as any).showMessage(message, 3000);
+    } else {
+      console.warn('Live2D消息系统未初始化，消息无法显示:', message);
     }
-
-    // 尝试查找其他可能的消息元素
-    const waifuMessage = document.querySelector('#waifu-tips');
-    if (waifuMessage) {
-      console.log('找到waifu消息元素');
-      (waifuMessage as HTMLElement).innerHTML = message;
-      this.fadeInMessage(waifuMessage as HTMLElement);
-      return;
-    }
-
-    // 尝试查找Live2D容器中的消息元素
-    const landlordMessage = document.querySelector('#landlord .message');
-    if (landlordMessage) {
-      console.log('找到landlord消息元素');
-      (landlordMessage as HTMLElement).innerHTML = message;
-      this.fadeInMessage(landlordMessage as HTMLElement);
-      return;
-    }
-
-    console.warn('Live2D消息系统未初始化，消息无法显示:', message);
   }
 
   /**
@@ -158,8 +141,8 @@ class Live2DMessageManager {
       this.currentTimeout = null;
     }
     
-    // 立即淡出当前消息
-    this.fadeOutMessage();
+    // 不再直接操作DOM，让React组件自己处理隐藏动画
+    // this.fadeOutMessage();
     
     // 重置状态
     this.isDisplayingMessage = false;
@@ -173,8 +156,8 @@ class Live2DMessageManager {
     this.isDisplayingMessage = false;
     this.currentPriority = 0;
     
-    // 先淡出当前消息
-    this.fadeOutMessage();
+    // 不再直接操作DOM，让React组件自己处理隐藏动画
+    // this.fadeOutMessage();
     
     // 检查队列中是否有待显示的消息
     if (this.messageQueue.length > 0) {
@@ -265,29 +248,27 @@ class Live2DMessageManager {
       this.currentTimeout = null;
     }
 
-    // 清空消息队列
-    this.messageQueue = [];
     this.isDisplayingMessage = false;
 
-    // 淡出消息
-    this.fadeOutMessage();
+    // 不再直接操作DOM，让React组件自己处理隐藏动画
+    // this.fadeOutMessage();
     
-    // 延迟隐藏元素
-    setTimeout(() => {
-      const messageElement = document.querySelector('.message');
-      const waifuMessage = document.querySelector('#waifu-tips');
-      const landlordMessage = document.querySelector('#landlord .message');
+    // 不再直接操作DOM元素显示状态，让React组件自己处理
+    // setTimeout(() => {
+    //   const messageElement = document.querySelector('.message');
+    //   const waifuMessage = document.querySelector('#waifu-tips');
+    //   const landlordMessage = document.querySelector('#landlord .message');
 
-      if (messageElement) {
-        (messageElement as HTMLElement).style.display = 'none';
-      }
-      if (waifuMessage) {
-        (waifuMessage as HTMLElement).style.display = 'none';
-      }
-      if (landlordMessage) {
-        (landlordMessage as HTMLElement).style.display = 'none';
-      }
-    }, 300);
+    //   if (messageElement) {
+    //     (messageElement as HTMLElement).style.display = 'none';
+    //   }
+    //   if (waifuMessage) {
+    //     (waifuMessage as HTMLElement).style.display = 'none';
+    //   }
+    //   if (landlordMessage) {
+    //     (landlordMessage as HTMLElement).style.display = 'none';
+    //   }
+    // }, 300);
   }
 
   /**
@@ -307,10 +288,10 @@ class Live2DMessageManager {
     // 完全相同的消息
     if (message === this.lastMessage) return true;
     
-    // 检查是否是相似的问候语
-    const greetings = ['你好', '嗨', '哈喽', '欢迎', '天依'];
-    const isCurrentGreeting = greetings.some(greeting => message.includes(greeting));
-    const isLastGreeting = greetings.some(greeting => this.lastMessage.includes(greeting));
+    // 修复：改进相似消息检测，避免彩蛋消息影响后续所有消息
+    // 只检查特定的问候语组合，不再将所有包含'天依'的消息都视为相似
+    const isCurrentGreeting = message.includes('你好') && message.includes('洛天依');
+    const isLastGreeting = this.lastMessage.includes('你好') && this.lastMessage.includes('洛天依');
     
     if (isCurrentGreeting && isLastGreeting) {
       return true;
@@ -323,6 +304,12 @@ class Live2DMessageManager {
     
     if (currentHasKeyword && lastHasKeyword) {
       // 如果两条消息都包含相似的功能性关键词，认为是相似的
+      return true;
+    }
+    
+    // 检查是否是完全相同的问候语（如重复的早上好）
+    const simpleGreetings = ['早上好', '下午好', '晚上好', '夜深了'];
+    if (simpleGreetings.includes(message) && message === this.lastMessage) {
       return true;
     }
     
