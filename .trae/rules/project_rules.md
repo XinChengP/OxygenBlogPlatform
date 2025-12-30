@@ -48,9 +48,6 @@ src/
 ├── content/               # 内容文件
 │   └── blogs/            # Markdown博客文章
 ├── utils/                 # 工具函数
-│   ├── assetUtils.ts     # 资源路径处理
-│   ├── live2d*.ts        # Live2D相关工具
-│   └── pinyinUtils.ts    # 拼音转换工具
 ├── setting/               # 配置文件
 ├── types/                 # TypeScript类型
 ├── contexts/              # React上下文
@@ -60,8 +57,6 @@ public/
 ├── luotianyi-live2d-master/   # Live2D资源
 ├── music/                 # 音乐文件
 ├── tools/                 # 工具相关静态资源
-│   ├── pinyin-data/      # 拼音数据文件
-│   └── markdown-editor/  # Markdown编辑器资源
 └── assets/               # 静态资源
 ```
 
@@ -113,23 +108,6 @@ npm run sync-theme   # 主题同步
 npm run lint         # 代码检查
 ```
 
-### 工具页面访问
-```bash
-# 拼音转换器
-http://localhost:3000/tools/pinyin-converter
-
-# Markdown编辑器
-http://localhost:3000/tools/markdown-editor
-```
-
-### 工具页面命令
-```bash
-# 拼音转换器相关
-npm run dev          # 访问 http://localhost:3000/tools/pinyin-converter
-# Markdown编辑器相关  
-npm run dev          # 访问 http://localhost:3000/tools/markdown-editor
-```
-
 ### 构建流程
 1. **开发**: `npm run dev` - 热更新，Turbopack加速
 2. **构建**: `npm run build:pages` - 静态导出，GitHub Pages优化
@@ -140,16 +118,8 @@ npm run dev          # 访问 http://localhost:3000/tools/markdown-editor
 - **核心工具**: `src/utils/assetUtils.ts`
 - **开发环境**: 相对路径
 - **生产环境**: 根据配置自动处理
-  - GitHub Pages默认域名: 自动添加仓库名前缀
-  - 自定义域名: 直接使用根路径
-- **关键函数**:
-  - `getAssetPath()` - 静态资源路径处理
-  - `getBasePath()` - 基础路径获取
-  - `formatAudioUrl()` - 音频路径格式化
-- **环境适配**:
-  - 自动检测当前环境（开发/生产/GitHub Pages/自定义域名）
-  - 支持自定义域名`blog.xinchengp.cn`的特殊处理
-  - 当`NEXT_PUBLIC_BASE_PATH`为空字符串时，不添加仓库名前缀
+- **关键函数**: `getAssetPath()`, `getBasePath()`, `formatAudioUrl()`
+- **环境适配**: 自动检测当前环境，支持自定义域名处理
 
 ### 图片优化
 - **组件**: `OptimizedImage` - 统一图片加载
@@ -217,34 +187,7 @@ export default function Component({ title, className }: ComponentProps) {
 - **触发**: main分支推送
 
 ### Next.js配置
-
-#### GitHub Pages 默认域名配置
 ```typescript
-const nextConfig = {
-  output: "export",                    // 静态导出
-  basePath: `/${repoName}`,           // 仓库路径前缀
-  assetPrefix: `/${repoName}`,        // 资源前缀
-  images: { unoptimized: true },      // 禁用优化
-  trailingSlash: true,                 // URL一致性
-  distDir: 'out',                      // 输出目录
-};
-```
-
-#### 自定义域名配置
-```typescript
-const nextConfig = {
-  output: "export",                    // 静态导出
-  basePath: '',                        // 空值，自定义域名不需要仓库名前缀
-  assetPrefix: '',                     // 空值，自定义域名不需要仓库名前缀
-  images: { unoptimized: true },      // 禁用优化
-  trailingSlash: true,                 // URL一致性
-  distDir: 'out',                      // 输出目录
-};
-```
-
-#### 智能配置（推荐）
-```typescript
-// 根据环境自动选择配置
 const nextConfig = {
   output: "export",
   distDir: 'out',
@@ -284,7 +227,6 @@ const nextConfig = {
 - **格式**: WebP/AVIF优先
 - **加载**: 懒加载 + 渐进式占位符
 - **尺寸**: 按需优化
-- **CDN**: GitHub Pages全球加速
 
 ### 缓存策略
 - **HTTP**: 合理设置Cache-Control
@@ -342,7 +284,6 @@ const nextConfig = {
 ### 提交策略
 - **本地**: 完整功能开发测试后提交
 - **原子**: 每个提交对应单一逻辑变更
-- **批量**: 相关修改批量提交
 - **测试**: 本地验证通过后推送
 - **审查**: 提交前自我审查
 
@@ -350,18 +291,11 @@ const nextConfig = {
 - **格式**: 简洁描述修改内容
 - **类型**: 功能更新、问题修复、文档更新等
 - **描述**: 清晰说明修改目的和影响
-- **个人博客**: 记录开发过程中的思考与感悟
 
 ### 分支管理
 - **main**: 主分支，稳定可部署
 - **feature**: 功能开发分支
 - **个人开发**: 根据需求创建分支，保持简洁
-
-### 合并流程
-1. **开发**: 功能开发完成
-2. **测试**: 本地验证通过
-3. **合并**: 合并到主分支
-4. **部署**: 自动部署到GitHub Pages
 
 ## 数据管理
 
@@ -376,12 +310,6 @@ const nextConfig = {
 - **动态**: `getServerSideProps`处理
 - **客户端**: `useEffect` + fetch/SWR
 - **错误**: 统一错误处理
-
-### API设计
-- **RESTful**: 标准设计原则
-- **版本**: `/api/v1/`版本管理
-- **状态码**: 标准HTTP状态码
-- **错误**: 统一响应格式
 
 ## 设计模式
 
@@ -426,41 +354,6 @@ const useLocalStorage = <T,>(key: string, initialValue: T) => {
 };
 ```
 
-## 性能最佳实践
-
-### React优化
-- **memo**: 纯函数组件记忆化
-- **useMemo**: 昂贵计算缓存
-- **useCallback**: 函数引用缓存
-- **key**: 稳定列表键值
-- **虚拟滚动**: 长列表优化
-
-### 图片策略
-- **懒加载**: `loading="lazy"`
-- **响应式**: `srcset`和`sizes`
-- **格式**: WebP/AVIF优先
-- **占位符**: 模糊占位提升感知
-
-### 代码分割
-- **动态导入**: `import()`分割
-- **路由级**: 按路由分割
-- **组件级**: 大型组件动态导入
-- **第三方库**: 延迟非关键库
-
-## 安全最佳实践
-
-### 前端安全
-- **XSS**: 输入转义防护
-- **CSRF**: Token验证
-- **CSP**: 内容安全策略
-- **HTTPS**: 强制加密
-
-### 数据安全
-- **敏感信息**: 禁止客户端存储
-- **API密钥**: 环境变量存储
-- **验证**: 前后端双重验证
-- **错误**: 避免敏感信息泄露
-
 ## 个人博客特色
 
 ### 主题文化
@@ -475,594 +368,37 @@ const useLocalStorage = <T,>(key: string, initialValue: T) => {
 - **工具分享**: 提供实用的在线小工具
 - **学习笔记**: 整理知识体系和技能总结
 
-### 工具开发规范
-
-### 拼音转换器 (Pinyin Converter)
-- **功能特性**:
-  - 支持汉字转拼音，包含声调数字表示
-  - 智能多音字识别，提供多音字选择功能
-  - 支持只显示多音字模式，便于学习
-  - 实时转换，输入即时显示结果
-  - 支持拼音首字母提取
-  - 支持声调数字与符号转换
-  - 支持声调显示（数字/符号/无）
-
-- **技术实现**:
-  - 使用 `pinyin-pro` 库进行拼音转换
-  - 自定义拼音数据加载：`/tools/pinyin-data/pinyin.txt`
-  - 多音字状态管理：`selectedHeteronyms` 状态
-  - 过滤模式：`showOnlyHeteronyms` 状态
-  - 声调显示模式：`toneDisplayMode` 状态
-
-- **文件结构**:
-  ```
-  src/app/tools/pinyin-converter/page.tsx    # 主页面组件
-  public/tools/pinyin-data/                # 拼音数据文件
-  └── pinyin.txt                          # 拼音数据库
-  ```
-
-### Markdown编辑器 (Markdown Editor)
-- **功能特性**:
-  - 实时预览：左侧编辑，右侧实时渲染
-  - 语法高亮：支持代码块语法高亮
-  - 工具栏：常用格式快捷按钮
-  - 导出功能：支持导出为HTML或Markdown
-  - 主题适配：自动适配当前主题色
-  - 响应式设计：移动端友好
-  - GitHub发布：支持直接发布到GitHub仓库
-
-- **技术实现**:
-  - 使用 `react-markdown` 进行Markdown渲染
-  - 使用 `remark` 和 `rehype` 插件系统
-  - 代码高亮：`highlight.js` 集成
-  - 状态管理：`useState` 管理编辑内容
-  - GitHub集成：通过GitHub API发布文章
-
-- **文件结构**:
-  ```
-  src/app/tools/markdown-editor/page.tsx    # 主页面组件
-  src/components/tools/MarkdownToolbar.tsx  # 工具栏组件
-  ```
-
-### 工具组件开发标准
-```tsx
-// Props接口定义
-interface ToolComponentProps {
-  className?: string;
-  onChange?: (value: string) => void;
-  defaultValue?: string;
-}
-
-// 函数组件实现
-export default function ToolComponent({ 
-  className, 
-  onChange, 
-  defaultValue 
-}: ToolComponentProps) {
-  const [inputValue, setInputValue] = useState(defaultValue || '');
-  const [outputValue, setOutputValue] = useState('');
-  
-  // 工具逻辑处理
-  const processContent = useCallback((input: string) => {
-    // 实现工具核心逻辑
-    return processedContent;
-  }, []);
-  
-  // 输入变化处理
-  const handleInputChange = useCallback((value: string) => {
-    setInputValue(value);
-    const result = processContent(value);
-    setOutputValue(result);
-    onChange?.(result);
-  }, [processContent, onChange]);
-  
-  return (
-    <div className={cn("tool-container", className)}>
-      {/* 工具界面 */}
-    </div>
-  );
-}
-```
-
 ## 工具开发规范
 
 ### 拼音转换器 (Pinyin Converter)
-- **功能特性**:
-  - 支持汉字转拼音，包含声调数字表示
-  - 智能多音字识别，提供多音字选择功能
-  - 支持只显示多音字模式，便于学习
-  - 实时转换，输入即时显示结果
-  - 支持拼音首字母提取
-  - 支持声调数字与符号转换
-
-- **技术实现**:
-  - 使用 `pinyin-pro` 库进行拼音转换
-  - 自定义拼音数据加载：`/tools/pinyin-data/pinyin.txt`
-  - 多音字状态管理：`selectedHeteronyms` 状态
-  - 过滤模式：`showOnlyHeteronyms` 状态
-
-- **文件结构**:
-  ```
-  src/app/tools/pinyin-converter/page.tsx    # 主页面组件
-  public/tools/pinyin-data/                # 拼音数据文件
-  └── pinyin.txt                          # 拼音数据库
-  ```
+- **功能特性**: 汉字转拼音、多音字识别、拼音首字母提取、声调转换
+- **技术实现**: 使用 `pinyin-pro` 库，自定义拼音数据加载
+- **文件结构**: `src/app/tools/pinyin-converter/page.tsx`
 
 ### Markdown编辑器 (Markdown Editor)
-- **功能特性**:
-  - 实时预览：左侧编辑，右侧实时渲染
-  - 语法高亮：支持代码块语法高亮
-  - 工具栏：常用格式快捷按钮
-  - 导出功能：支持导出为HTML或Markdown
-  - 主题适配：自动适配当前主题色
-  - 响应式设计：移动端友好
-
-- **技术实现**:
-  - 使用 `react-markdown` 进行Markdown渲染
-  - 使用 `remark` 和 `rehype` 插件系统
-  - 代码高亮：`highlight.js` 集成
-  - 状态管理：`useState` 管理编辑内容
-
-- **文件结构**:
-  ```
-  src/app/tools/markdown-editor/page.tsx    # 主页面组件
-  src/components/tools/MarkdownToolbar.tsx  # 工具栏组件
-  ```
+- **功能特性**: 实时预览、语法高亮、工具栏、导出功能、GitHub发布
+- **技术实现**: 使用 `react-markdown`，`highlight.js` 集成
+- **文件结构**: `src/app/tools/markdown-editor/page.tsx`
 
 ### 工具组件开发标准
-```tsx
-// Props接口定义
-interface ToolComponentProps {
-  className?: string;
-  onChange?: (value: string) => void;
-  defaultValue?: string;
-}
-
-// 函数组件实现
-export default function ToolComponent({ 
-  className, 
-  onChange, 
-  defaultValue 
-}: ToolComponentProps) {
-  const [inputValue, setInputValue] = useState(defaultValue || '');
-  const [outputValue, setOutputValue] = useState('');
-  
-  // 工具逻辑处理
-  const processContent = useCallback((input: string) => {
-    // 实现工具核心逻辑
-    return processedContent;
-  }, []);
-  
-  // 输入变化处理
-  const handleInputChange = useCallback((value: string) => {
-    setInputValue(value);
-    const result = processContent(value);
-    setOutputValue(result);
-    onChange?.(result);
-  }, [processContent, onChange]);
-  
-  return (
-    <div className={cn("tool-container", className)}>
-      {/* 工具界面 */}
-    </div>
-  );
-}
-```
+- 明确的Props接口定义
+- 输入输出状态管理
+- 核心逻辑封装
+- 响应式设计
 
 ## 功能联动
 
 ### Live2D看板娘联动
+- **设计理念**: 看板娘作为交互中心，新功能需考虑联动可能性
+- **联动配置**: 支持音乐、主题、页面联动
+- **事件系统**: 基于事件总线的消息机制
 
-#### 设计理念
-看板娘作为交互中心，新功能需考虑联动可能性。
-
-#### 组件规范
-```tsx
-interface Live2DConfig {
-  modelPath: string;           // 模型路径
-  messagePath: string;         // 消息配置
-  width: number;               // 画布宽度
-  height: number;              // 画布高度
-  // 联动配置
-  enableMusicInteraction: boolean;  // 音乐联动
-  enableThemeInteraction: boolean;  // 主题联动
-  enablePageInteraction: boolean;   // 页面联动
-}
-```sage {
-  type: 'mouseover' | 'click' | 'time' | 'copy' | 'error' | 'music' | 'theme' | 'page' | 'feature';
-  selector?: string;            // CSS 选择器 (mouseover/click 类型)
-  text: string | string[];      // 消息内容
-  weight?: number;              // 权重，用于随机选择
-  condition?: () => boolean;    // 显示条件函数
-  // 联动专用字段
-  triggerEvent?: string;        // 触发事件名称
-  featureName?: string;        // 功能名称 (用于功能联动)
-  responseType?: 'immediate' | 'delayed' | 'random'; // 响应类型
-}
-```
-
-##### 文件结构规范
-```
-public/luotianyi-live2d-master/
-├── live2d/
-│   ├── js/
-│   │   ├── live2d.js          # Live2D 核心库
-│   │   ├── message.js         # 消息系统
-│   │   └── controller.js      # 组件控制器
-│   ├── css/
-│   │   └── live2d.css         # 组件样式
-│   ├── model/
-│   │   └── tianyi/
-│   │       ├── model.json     # 模型配置
-│   │       ├── textures/      # 贴图文件
-│   │       └── motions/       # 动作文件
-│   └── config/
-│       ├── messages.json      # 消息配置文件
-│       ├── settings.json      # 组件设置
-│       └── interactions.json  # 联动配置 (新增)
-
-src/utils/
-├── live2dMessageManager.ts    # Live2D消息管理器
-├── live2dInteractionManager.ts # Live2D联动管理器 (新增)
-└── live2dEventEmitter.ts     # Live2D事件总线 (新增)
-```
-
-##### 组件实现规范
-```tsx
-// 1. 状态管理 - 支持联动状态
-const [isVisible, setIsVisible] = useState(true);
-const [isLoading, setIsLoading] = useState(true);
-const [message, setMessage] = useState('');
-const [messageOpacity, setMessageOpacity] = useState(1);
-const [interactionState, setInteractionState] = useState<'idle' | 'music' | 'theme' | 'page'>('idle');
-
-// 2. 性能优化
-const fadeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-const lastMessageTimeRef = useRef<number>(0);
-const canvasRef = useRef<HTMLCanvasElement>(null);
-const interactionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-// 3. 联动消息系统
-const updateMessage = useCallback((newMessage: string, type: 'normal' | 'interaction' = 'normal') => {
-  // 过滤默认消息
-  const isDefaultMessage = newMessage.includes('你好') && 
-                          newMessage.includes('洛天依') && 
-                          newMessage.includes('！');
-  
-  if (isDefaultMessage) return;
-  
-  // 消息去重
-  const now = Date.now();
-  if (now - lastMessageTimeRef.current < 1000) return;
-  
-  // 联动类型处理
-  if (type === 'interaction') {
-    setInteractionState('music'); // 或其他相应状态
-    if (interactionTimeoutRef.current) {
-      clearTimeout(interactionTimeoutRef.current);
-    }
-    interactionTimeoutRef.current = setTimeout(() => {
-      setInteractionState('idle');
-    }, 3000);
-  }
-  
-  setMessage(newMessage);
-  setMessageOpacity(1);
-  lastMessageTimeRef.current = now;
-  triggerFadeOut();
-}, [triggerFadeOut]);
-
-// 4. 联动事件监听
-useEffect(() => {
-  // 监听音乐播放事件
-  const handleMusicPlay = (songName: string) => {
-    updateMessage(`正在播放：${songName}，好听吗？`, 'interaction');
-  };
-  
-  // 监听主题切换事件
-  const handleThemeChange = (theme: string) => {
-    const themeMessages = {
-      'dark': '切换到深色模式了，天依也喜欢夜晚呢~',
-      'light': '亮堂的模式，心情也变好了！',
-      'blue': '蓝色主题，像天空一样清澈~',
-      'green': '绿色主题，充满生机呢！'
-    };
-    updateMessage(themeMessages[theme] || '主题换了，新风格很棒呢！', 'interaction');
-  };
-  
-  // 注册事件监听
-  Live2DEventEmitter.on('music:play', handleMusicPlay);
-  Live2DEventEmitter.on('theme:change', handleThemeChange);
-  
-  return () => {
-    Live2DEventEmitter.off('music:play', handleMusicPlay);
-    Live2DEventEmitter.off('theme:change', handleThemeChange);
-  };
-}, [updateMessage]);
-
-// 5. 资源加载策略
-const loadLive2D = useCallback(async () => {
-  try {
-    // CDN 备份策略
-    const jquerySources = [
-      'https://cdn.bootcss.com/jquery/2.2.4/jquery.min.js',
-      'https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.min.js',
-      'https://code.jquery.com/jquery-2.2.4.min.js'
-    ];
-    
-    // 动态加载依赖
-    for (const source of jquerySources) {
-      try {
-        await loadScript(source);
-        break;
-      } catch (error) {
-        console.warn(`jQuery CDN ${source} 加载失败`);
-      }
-    }
-    
-    // 加载 Live2D 核心文件
-    await loadScript(getAssetPath('/luotianyi-live2d-master/live2d/js/live2d.js'));
-    await loadScript(getAssetPath('/luotianyi-live2d-master/live2d/js/message.js'));
-    
-  } catch (error) {
-    console.error('Live2D 加载失败:', error);
-  }
-}, []);
-```
-
-##### 样式规范
-```css
-/* 1. 主题适配 */
-.luotianyi-theme {
-  --live2d-bg: rgba(102, 204, 255, 0.2);
-  --live2d-border: rgba(102, 204, 255, 0.4);
-  --live2d-shadow: 0 3px 15px 2px rgba(102, 204, 255, 0.4);
-  --live2d-text: var(--aplayer-fg);
-}
-
-/* 2. 响应式设计 */
-@media (max-width: 640px) {
-  .landlord {
-    display: none; /* 移动端默认隐藏 */
-  }
-}
-
-/* 3. 消息气泡样式 */
-.message {
-  position: absolute;
-  top: -20px;
-  left: 50px;
-  opacity: 1;
-  transition: opacity 0.5s ease-in-out;
-  background: var(--live2d-bg);
-  padding: 7px;
-  border-radius: 12px;
-  border: 1px solid var(--live2d-border);
-  box-shadow: var(--live2d-shadow);
-  color: var(--live2d-text);
-  font-size: 13px;
-  max-width: 300px;
-  word-wrap: break-word;
-  z-index: 9997;
-}
-
-/* 4. 画布样式 */
-.live2d {
-  cursor: pointer;
-  user-select: none;
-  pointer-events: auto;
-}
-
-/* 5. 控制按钮 */
-.hide-button,
-.sing-button {
-  position: absolute;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-```
-
-##### 交互事件规范
-```tsx
-// 1. 鼠标事件
-const handleMouseEnter = useCallback(() => {
-  updateMessage('鼠标移入消息');
-}, [updateMessage]);
-
-const handleMouseLeave = useCallback(() => {
-  // 可选：鼠标离开时清除消息
-}, []);
-
-// 2. 点击事件
-const handleClick = useCallback(() => {
-  const clickMessages = [
-    '想听我唱歌吗？',
-    '不要动手动脚的！快把手拿开~~',
-    '真…真的是不知羞耻！',
-    '再摸的话我可要报警了！⌇●﹏●⌇',
-    '110吗，这里有个变态一直在摸我(ó﹏ò｡)',
-    '呀！你摸到我了！',
-    '害羞ing...',
-    '天依很萌的！',
-    '你要请我吃小笼包吗qwq'
-  ];
-  
-  const randomMessage = clickMessages[Math.floor(Math.random() * clickMessages.length)];
-  updateMessage(randomMessage);
-}, [updateMessage]);
-
-// 3. 键盘事件
-const handleKeyDown = useCallback((event: KeyboardEvent) => {
-  if (event.key === 'Escape') {
-    setIsVisible(false); // ESC 键隐藏组件
-  }
-}, []);
-```
-
-##### 错误处理规范
-```tsx
-// 1. 加载错误处理
-const handleLoadError = useCallback((error: Error, resource: string) => {
-  console.error(`Live2D 资源加载失败: ${resource}`, error);
-  
-  // 降级处理
-  setIsLoading(false);
-  setMessage('模型加载失败了...');
-  
-  // 可选：显示错误提示给用户
-  showNotification({
-    type: 'error',
-    message: 'Live2D 模型加载失败',
-    description: '请检查网络连接或刷新页面重试'
-  });
-}, []);
-
-// 2. 运行时错误处理
-const handleRuntimeError = useCallback((error: Error) => {
-  console.error('Live2D 运行时错误:', error);
-  
-  // 尝试恢复
-  try {
-    // 重新初始化
-    loadLive2D();
-  } catch (recoveryError) {
-    console.error('Live2D 恢复失败:', recoveryError);
-  }
-}, [loadLive2D]);
-```
-
-##### 性能优化规范
-```tsx
-// 1. 懒加载
-const LazyLive2D = lazy(() => import('@/components/LuoTianyiLive2D'));
-
-// 2. 防抖处理
-const debouncedUpdateMessage = useMemo(
-  () => debounce(updateMessage, 300),
-  [updateMessage]
-);
-
-// 3. 内存清理
-useEffect(() => {
-  return () => {
-    if (fadeTimeoutRef.current) {
-      clearTimeout(fadeTimeoutRef.current);
-    }
-    
-    // 清理全局变量
-    delete (window as any).showMessage;
-    delete (window as any).message_Path;
-    delete (window as any).messageConfig;
-  };
-}, []);
-
-// 4. 条件渲染优化
-const shouldRender = useMemo(() => {
-  return isVisible && !isMobile && !isLoading;
-}, [isVisible, isMobile, isLoading]);
-```
-
-##### 可访问性规范
-```tsx
-// 1. ARIA 标签
-<canvas
-  ref={canvasRef}
-  id="live2d"
-  width="280"
-  height="250"
-  className="live2d"
-  role="img"
-  aria-label="洛天依 Live2D 看板娘"
-  aria-describedby="live2d-description"
-/>
-
-<div id="live2d-description" className="sr-only">
-  这是洛天依的 Live2D 模型，点击可以与她互动
-</div>
-
-// 2. 键盘导航支持
-<div
-  className="hide-button"
-  onClick={toggleVisibility}
-  role="button"
-  tabIndex={0}
-  onKeyDown={(e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      toggleVisibility();
-    }
-  }}
->
-  隐藏
-</div>
-
-// 3. 高对比度模式支持
-@media (prefers-contrast: high) {
-  .message {
-    border: 2px solid currentColor;
-    background: Canvas;
-    color: CanvasText;
-  }
-}
-
-// 4. 减少动画偏好
-@media (prefers-reduced-motion: reduce) {
-  .message {
-    transition: none;
-  }
-}
-```
-
-##### 测试规范
-```tsx
-// 1. 单元测试
-describe('LuoTianyiLive2D', () => {
-  it('应该正确加载模型', async () => {
-    render(<LuoTianyiLive2D />);
-    await waitFor(() => {
-      expect(screen.getByRole('img')).toBeInTheDocument();
-    });
-  });
-  
-  it('应该处理消息显示', () => {
-    const { getByText } = render(<LuoTianyiLive2D />);
-    fireEvent.click(screen.getByRole('img'));
-    expect(getByText(/天依/)).toBeInTheDocument();
-  });
-  
-  it('应该响应键盘事件', () => {
-    render(<LuoTianyiLive2D />);
-    fireEvent.keyDown(window, { key: 'Escape' });
-    expect(screen.queryByRole('img')).not.toBeInTheDocument();
-  });
-});
-
-// 2. 集成测试
-describe('Live2D 集成', () => {
-  it('应该正确集成到页面中', () => {
-    const Page = () => (
-      <main>
-        <h1>测试页面</h1>
-        <LuoTianyiLive2D />
-      </main>
-    );
-    
-    render(<Page />);
-    expect(screen.getByRole('img')).toBeInTheDocument();
-  });
-});
-```
-
-#### 音乐播放器系统
+### 音乐播放器系统
 - **状态管理**: 使用 `GlobalMusicPlayerManager` 实现跨页面状态保持
 - **播放列表**: 支持自动扫描 `public/music/` 目录
-- **UI组件**: `MusicPlayer` 组件提供完整的播放控制界面
 - **主题适配**: 播放器样式自动适配当前主题色
 
-#### 评论系统集成
+### 评论系统集成
 - **Giscus集成**: 使用 GitHub Discussions 作为评论后端
 - **主题同步**: 评论系统主题与博客主题保持一致
 - **懒加载**: 评论组件采用懒加载优化页面性能
@@ -1082,42 +418,19 @@ coverImage: "/path/to/image.png"  # 可选：封面图片路径
 
 # 文章标题
 
-文章内容使用 Markdown 格式编写，支持以下扩展功能：
-
-## 支持的 Markdown 扩展
-
-### 代码块高亮
-```language
-// 代码内容
-```
-
-### 数学公式
-行内公式：$E = mc^2$
-块级公式：
-$$
-\sum_{i=1}^{n} x_i = x_1 + x_2 + \cdots + x_n
-$$
-
-### 表格
-| 列1 | 列2 | 列3 |
-|-----|-----|-----|
-| 内容1 | 内容2 | 内容3 |
-
-### 图片优化
-![图片描述](/path/to/image.png)
+文章内容使用 Markdown 格式编写
 ```
 
 ### 封面图片规范
-- **尺寸建议**: 1200x630 像素 (适合社交媒体分享)
+- **尺寸建议**: 1200x630 像素
 - **文件格式**: WebP、PNG、JPG 均可
 - **文件大小**: 建议不超过 500KB
 - **存储位置**: `public/` 目录下的相关子目录
-- **路径格式**: 使用绝对路径，如 `/Blogabout/benou/benou.png`
 
 ### 内容分类标准
 - **技术文章**: 编程、开发、技术分享
 - **生活随笔**: 个人感悟、生活记录
-- **洛天依**: VOCALOID、洛天依相关内容（原“洛佬”分类已更新）
+- **洛天依**: VOCALOID、洛天依相关内容
 - **学习笔记**: 学习过程中的笔记总结
 - **项目文档**: 项目相关的说明文档
 
@@ -1141,20 +454,6 @@ $$
 - **图片响应**: 使用 `max-width: 100%` 确保图片自适应
 - **字体大小**: 使用 rem 单位，便于响应式调整
 
-## 性能监控规范
-
-### 核心指标
-- **LCP (Largest Contentful Paint)**: < 2.5s
-- **FID (First Input Delay)**: < 100ms
-- **CLS (Cumulative Layout Shift)**: < 0.1
-- **FCP (First Contentful Paint)**: < 1.8s
-
-### 监控工具
-- **Lighthouse**: 定期进行性能审计
-- **Web Vitals**: 监控真实用户体验
-- **Bundle Analyzer**: 分析打包大小
-- **Chrome DevTools**: 开发时性能调优
-
 ## 可访问性规范
 
 ### WCAG 2.1 标准
@@ -1167,50 +466,6 @@ $$
 - **Alt 文本**: 所有图片提供有意义的 alt 属性
 - **装饰图片**: 使用空 alt 属性或 CSS 背景
 - **复杂图像**: 提供详细的描述文本
-
-## 国际化规范
-
-### 多语言支持
-- **默认语言**: 简体中文 (zh-CN)
-- **语言检测**: 根据用户浏览器设置自动检测
-- **回退策略**: 不支持的语言回退到简体中文
-
-### 内容翻译
-- **关键内容**: 导航、按钮、提示信息等提供多语言支持
-- **文章内容**: 支持多语言文章，通过文件命名区分
-- **SEO 优化**: 正确设置 hreflang 标签
-
-## 错误处理规范
-
-### 错误类型
-- **404 错误**: 自定义友好的 404 页面
-- **500 错误**: 服务器错误的优雅处理
-- **网络错误**: 离线状态的友好提示
-- **加载错误**: 资源加载失败的处理
-
-### 错误日志
-- **客户端日志**: 使用 `console.error()` 记录关键错误
-- **错误边界**: React 错误边界捕获组件错误
-- **用户反馈**: 提供错误反馈机制
-
-## 开发工具规范
-
-### 推荐插件
-- **ESLint**: 代码质量检查
-- **Prettier**: 代码格式化
-- **Tailwind CSS IntelliSense**: CSS 类名智能提示
-- **TypeScript Vue Plugin**: TypeScript 支持
-
-### 调试工具
-- **React Developer Tools**: React 组件调试
-- **Redux DevTools**: 状态管理调试
-- **Chrome DevTools**: 性能和网络调试
-
----
-
-*最后更新: 2025年*  
-*维护者: 歆橙*  
-*版本: v3.0 - 全面规范化版项目规范*
 
 ## 附录
 
@@ -1244,9 +499,6 @@ OxygenBlogPlatform/
 │   ├── utils/            # 工具函数
 │   └── types/            # TypeScript 类型定义
 ├── public/               # 静态资源
-│   ├── music/           # 音乐文件
-│   ├── luotianyi-live2d-master/  # Live2D 模型
-│   └── Blogabout/       # 博客相关图片
 ├── scripts/              # 构建脚本
 └── .github/              # GitHub Actions 配置
 ```
@@ -1255,7 +507,6 @@ OxygenBlogPlatform/
 - **Node.js**: 18.x 或更高版本
 - **npm**: 9.x 或更高版本
 - **Git**: 2.x 或更高版本
-- **操作系统**: Windows/macOS/Linux
 
 ### 浏览器支持
 - **Chrome**: 最新版本
@@ -1263,3 +514,9 @@ OxygenBlogPlatform/
 - **Safari**: 最新版本
 - **Edge**: 最新版本
 - **移动端**: iOS Safari, Chrome for Android
+
+---
+
+*最后更新: 2025年12月30日*  
+*维护者: 歆橙*  
+*版本: v3.0 - 简化版项目规范*

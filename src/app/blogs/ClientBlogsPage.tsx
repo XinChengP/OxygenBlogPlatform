@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useMemo, useEffect, lazy, Suspense } from 'react';
+import { AnimatePresence } from 'motion/react';
 import { categories } from '@/setting/blogSetting';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 import Pagination from '@/components/Pagination';
@@ -306,19 +307,6 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
       day: 'numeric'
     });
   };
-  
-  /**
-   * 容器动画配置
-   */
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  };
 
   // Live2D消息管理器状态调试 - 仅在开发环境下启用
   useEffect(() => {
@@ -408,10 +396,7 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
             
             {/* 搜索建议下拉列表 */}
             {showSuggestions && searchSuggestions.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
+              <div
                 className="absolute top-full left-0 right-0 mt-2 bg-background border border-border rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto"
               >
                 {searchSuggestions.map((suggestion, index) => (
@@ -426,7 +411,7 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                     </div>
                   </button>
                 ))}
-              </motion.div>
+              </div>
             )}
           </div>
           
@@ -501,10 +486,7 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
         
         {/* 移动端分类筛选面板 */}
         {!isCategoryCollapsed && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
+          <div
             className="lg:hidden mb-6 overflow-hidden"
           >
             <div className={getGlassStyle("rounded-lg border p-4")}>
@@ -545,7 +527,7 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                 })}
               </div>
             </div>
-          </motion.div>
+          </div>
         )}
         {isCategoryCollapsed && (
           <div className="lg:hidden mb-4">
@@ -562,11 +544,7 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
         {/* 高级搜索面板 */}
         <AnimatePresence>
           {showAdvancedSearch && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.3, ease: 'easeInOut' }}
+            <div
               className="mb-8 overflow-hidden"
             >
               <div className={getGlassStyle("rounded-lg border p-6")}>
@@ -665,7 +643,7 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                   </button>
                 </div>
               </div>
-            </motion.div>
+            </div>
           )}
         </AnimatePresence>
         
@@ -720,7 +698,7 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                 </div>
               </div>
             </div>
-          </motion.aside>
+          </aside>
           
           {/* 主内容区 */}
           <main 
@@ -792,15 +770,13 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                             </div>
                             
                             {/* 悬停时的阅读按钮 */}
-                            <motion.div 
+                            <div 
                               className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                              initial={{ scale: 0.8 }}
-                              whileHover={{ scale: 1 }}
                             >
                               <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium text-gray-800 dark:text-gray-200 shadow-lg">
                                 阅读文章
                               </div>
-                            </motion.div>
+                            </div>
                           </div>
                         ) : (
                           /* 无封面图片时的占位图 */
@@ -822,15 +798,13 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                             </div>
                             
                             {/* 悬停时的阅读按钮 */}
-                            <motion.div 
+                            <div 
                               className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/10 backdrop-blur-sm"
-                              initial={{ scale: 0.8 }}
-                              whileHover={{ scale: 1 }}
                             >
                               <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium text-gray-800 dark:text-gray-200 shadow-lg">
                                 阅读文章
                               </div>
-                            </motion.div>
+                            </div>
                           </div>
                         )}
                         <div className="p-4 sm:p-6">
@@ -841,39 +815,30 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                             </span>
                           </div>
                           
-                          <motion.h2 
+                          <h2 
                             className="text-lg sm:text-xl font-bold text-foreground mb-2 sm:mb-3 line-clamp-2 group-hover:text-primary transition-colors duration-300"
-                            whileHover={{ x: 2 }}
-                            transition={{ duration: 0.2 }}
                           >
                             {post.title}
-                          </motion.h2>
+                          </h2>
                           
                           {post.excerpt && (
-                            <motion.p 
+                            <p 
                               className="text-muted-foreground mb-3 sm:mb-4 text-sm sm:text-base line-clamp-3 leading-relaxed"
-                              initial={{ opacity: 0.8 }}
-                              whileHover={{ opacity: 1 }}
-                              transition={{ duration: 0.2 }}
                             >
                               {post.excerpt}
-                            </motion.p>
+                            </p>
                           )}
                           
                           {/* 标签 */}
                           {post.tags && post.tags.length > 0 && (
                             <div className="flex flex-wrap gap-2 mb-4">
-                              {post.tags.slice(0, 3).map((tag, tagIndex) => (
-                                <motion.span
+                              {post.tags.slice(0, 3).map((tag) => (
+                                <span
                                   key={tag}
                                   className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded-full text-xs font-medium border border-gray-200 dark:border-gray-600"
-                                  initial={{ opacity: 0, scale: 0.8 }}
-                                  animate={{ opacity: 1, scale: 1 }}
-                                  transition={{ delay: tagIndex * 0.1 }}
-                                  whileHover={{ scale: 1.05 }}
                                 >
                                   {tag}
-                                </motion.span>
+                                </span>
                               ))}
                             </div>
                           )}
@@ -899,26 +864,19 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                                 )}
                               </div>
                               
-                              <motion.div
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                              >
-                                <motion.div
-                                  initial={{ x: -10, opacity: 0 }}
-                                  animate={{ x: 0, opacity: 1 }}
-                                  transition={{ delay: 0.2 }}
+                              <div>
+                                <div
                                   className="flex items-center gap-2 text-primary text-sm font-medium group-hover:gap-3 transition-all duration-300"
                                 >
                                   <span>阅读文章</span>
                                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
-                                </motion.div>
-                              </motion.div>
+                                </div>
+                              </div>
                             </div>
                         </div>
                       </Link>
-                    </motion.article>
+                    </article>
                   ))}
-                </AnimatePresence>
               </div>
             )}
             
@@ -1022,9 +980,9 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                           </div>
                         </div>
                       </Link>
-                    </motion.article>
+                    </article>
                   ))}
-                </div>
+              </div>
             )}
             
             {paginationData.currentPosts.length === 0 && (
@@ -1049,7 +1007,7 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                 />
               </div>
             )}
-          </motion.main>
+          </main>
         </div>
       </div>
       
