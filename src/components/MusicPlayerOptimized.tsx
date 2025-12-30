@@ -5,6 +5,7 @@ import DOMPurify from 'dompurify';
 import GlobalMusicPlayerManager from '@/utils/globalMusicPlayerManager';
 import type { APlayerNS } from '@/types/aplayer';
 import { emitMusicEvent } from '@/utils/live2dEventEmitter';
+import { getAssetPath, getBasePath } from '@/utils/assetUtils';
 
 interface AudioItem {
   name: string;
@@ -81,33 +82,7 @@ export default function MusicPlayerOptimized({
     setIsClient(true);
   }, []);
 
-  // 优化的basePath获取 - 使用缓存
-  const getBasePath = useCallback(() => {
-    if (!isClient) return '';
-    
-    const cached = cacheRef.current.getCachedBasePath();
-    if (cached !== null) return cached;
-    
-    if (typeof window !== 'undefined') {
-      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        cacheRef.current.setCachedBasePath('');
-        return '';
-      }
-      
-      const pathArray = window.location.pathname.split('/');
-      if (pathArray.length > 1 && pathArray[1]) {
-        const basePath = `/${pathArray[1]}`;
-        cacheRef.current.setCachedBasePath(basePath);
-        return basePath;
-      }
-    }
-    
-    const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
-    cacheRef.current.setCachedBasePath(basePath);
-    return basePath;
-  }, [isClient]);
-
-  // 优化的URL格式化 - 使用缓存
+  // 优化的URL格式化 - 使用项目中的getAssetPath函数处理资源路径
   const formatAudioUrl = useCallback((url: string) => {
     if (!isClient) return url;
     
@@ -115,21 +90,12 @@ export default function MusicPlayerOptimized({
     const cached = cacheRef.current.getCachedUrl(cacheKey);
     if (cached) return cached;
     
-    let result: string;
-    
-    if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-      result = url.startsWith('/') ? url : `/${url}`;
-    } else if (url.startsWith('http')) {
-      result = url;
-    } else {
-      const basePath = getBasePath();
-      const cleanUrl = url.startsWith('/') ? url : `/${url}`;
-      result = basePath ? `${basePath}${cleanUrl}` : cleanUrl;
-    }
+    // 使用项目中已有的assetUtils.getAssetPath函数处理资源路径
+    const result = getAssetPath(url);
     
     cacheRef.current.setCachedUrl(cacheKey, result);
     return result;
-  }, [isClient, getBasePath]);
+  }, [isClient]);
 
   // 缓存音乐列表处理
   const processedMusicList = useMemo(() => {

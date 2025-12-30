@@ -5,6 +5,7 @@ import DOMPurify from 'dompurify';
 import GlobalMusicPlayerManager from '@/utils/globalMusicPlayerManager';
 import type { APlayerNS } from '@/types/aplayer';
 import { emitMusicEvent } from '@/utils/live2dEventEmitter';
+import { getAssetPath } from '@/utils/assetUtils';
 
 interface AudioItem {
   name: string;
@@ -36,54 +37,13 @@ const MusicPlayerComponent = function MusicPlayer({
     setIsClient(true);
   }, []);
 
-  // 获取正确的basePath，处理GitHub Pages部署
-  const getBasePath = useCallback(() => {
-    if (!isClient) return ''; // 服务端渲染时返回空字符串
-    
-    if (typeof window !== 'undefined') {
-      // 在开发模式下（localhost），不需要basePath
-      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        return '';
-      }
-      
-      // GitHub Pages部署时，使用固定的basePath
-      // GitHub Pages的basePath通常是仓库名
-      const pathArray = window.location.pathname.split('/');
-      // GitHub Pages通常将仓库名作为第一个路径段
-      // 例如：https://xinchengp.github.io/OxygenBlogPlatform/blogs/
-      // 其中"OxygenBlogPlatform"是仓库名
-      if (pathArray.length > 1 && pathArray[1]) {
-        return `/${pathArray[1]}`;
-      }
-    }
-    // 在服务器端，使用构建时的basePath
-    return process.env.NEXT_PUBLIC_BASE_PATH || '';
-  }, [isClient]);
-
-  // 格式化音频URL，确保在GitHub Pages上正确访问
+  // 使用项目中的getAssetPath函数处理资源路径，确保在所有环境下正确访问
   const formatAudioUrl = useCallback((url: string) => {
     if (!isClient) return url; // 服务端渲染时返回原始URL
     
-    // 在开发模式下（localhost），直接返回原始URL，不进行编码
-    if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-      // 确保URL以/开头
-      const cleanUrl = url.startsWith('/') ? url : `/${url}`;
-      return cleanUrl;
-    }
-    
-    // 在生产模式下，处理basePath
-    const basePath = getBasePath();
-    if (url.startsWith('http')) {
-      return url; // 外部URL直接返回
-    }
-    
-    // 确保路径以/开头
-    const cleanUrl = url.startsWith('/') ? url : `/${url}`;
-    const fullPath = basePath ? `${basePath}${cleanUrl}` : cleanUrl;
-    
-    // 不进行编码，让APlayer内部处理URL编码，避免双重编码
-    return fullPath;
-  }, [isClient, getBasePath]);
+    // 使用项目中已有的assetUtils.getAssetPath函数处理资源路径
+    return getAssetPath(url);
+  }, [isClient]);
 
   // 从文件路径中提取显示名称，隐藏"-"后面的所有文字
   const extractDisplayName = useCallback((filePath: string): string => {
