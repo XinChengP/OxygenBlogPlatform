@@ -1,6 +1,5 @@
 'use client';
 
-import { motion, AnimatePresence } from 'motion/react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useMemo, useEffect, lazy, Suspense } from 'react';
@@ -321,24 +320,16 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
     }
   };
 
-  // 初始化调试 - 显示所有文章的标题和slug
+  // Live2D消息管理器状态调试 - 仅在开发环境下启用
   useEffect(() => {
-    console.log('=== 博客文章调试信息 ===');
-    console.log(`总共有 ${initialPosts.length} 篇文章`);
-    initialPosts.forEach((post, index) => {
-      console.log(`文章 ${index + 1}: 标题="${post.title}", slug="${post.slug}"`);
-    });
-    console.log('======================');
-  }, [initialPosts]);
+    if (process.env.NODE_ENV === 'development') {
+      const debugInterval = setInterval(() => {
+        const status = live2dMessageManager.getStatus();
+        console.log('Live2D消息管理器状态:', status);
+      }, 5000);
 
-  // Live2D消息管理器状态调试
-  useEffect(() => {
-    const debugInterval = setInterval(() => {
-      const status = live2dMessageManager.getStatus();
-      console.log('Live2D消息管理器状态:', status);
-    }, 2000);
-
-    return () => clearInterval(debugInterval);
+      return () => clearInterval(debugInterval);
+    }
   }, []);
 
   // 如果没有任何博客数据，显示空页面提示
@@ -347,23 +338,17 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
       <div className={containerStyle.className} style={containerStyle.style}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* 页面标题 */}
-          <motion.div 
+          <div 
             className="text-center mb-12"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
           >
             <h1 className="text-4xl font-bold text-foreground mb-4">
               📝 博客文章
             </h1>
-          </motion.div>
+          </div>
           
           {/* 空页面提示 */}
-          <motion.div 
+          <div 
             className="text-center py-20"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
           >
             <div className="max-w-md mx-auto">
               <div className="text-6xl mb-6">📄</div>
@@ -380,7 +365,7 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                 返回首页
               </Link>
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
     );
@@ -390,19 +375,14 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
     <div className={containerStyle.className} style={containerStyle.style}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* 页面标题 */}
-        <motion.div 
-          className="text-center mb-12"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
+        <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-foreground mb-4 title">
             📝 博客文章
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             分享技术心得、生活感悟与创作灵感
           </p>
-        </motion.div>
+        </div>
         
         {/* 搜索和控制栏 */}
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
@@ -693,11 +673,8 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* 桌面端左侧边栏 */}
-          <motion.aside 
+          <aside 
             className="hidden lg:block lg:col-span-1"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
           >
             <div className={getGlassStyle("rounded-lg shadow-md p-6 sticky top-24 border")}>
               <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
@@ -746,19 +723,12 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
           </motion.aside>
           
           {/* 主内容区 */}
-          <motion.main 
+          <main 
             className="col-span-1 lg:col-span-3"
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
           >
             {/* 搜索结果统计 */}
             {searchTerm && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mb-6 p-4 bg-primary/5 border border-primary/20 rounded-lg"
-              >
+              <div className="mb-6 p-4 bg-primary/5 border border-primary/20 rounded-lg">
                 <div className="flex items-center gap-2 text-primary">
                   <Search className="w-4 h-4" />
                   <span className="text-sm font-medium">
@@ -771,7 +741,7 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                     清除搜索
                   </button>
                 </div>
-              </motion.div>
+              </div>
             )}
 
             {/* 文章统计信息 */}
@@ -789,20 +759,13 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
             {/* 网格视图 */}
             {viewMode === 'grid' && (
               <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2">
-                <AnimatePresence mode="popLayout">
-                  {paginationData.currentPosts.map((post, index) => (
-                    <motion.article
-                      key={post.slug}
-                      layout
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      transition={{ duration: 0.4, ease: "easeOut" }}
-                      whileHover={{ y: -4, scale: 1.01 }}
-                      className={getGlassStyle("rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 cursor-pointer border group relative")}
-                      onMouseEnter={() => handlePostHover(post)}
-                      onMouseLeave={handlePostLeave}
-                    >
+                {paginationData.currentPosts.map((post, index) => (
+                  <article
+                    key={post.slug}
+                    className={getGlassStyle("rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 cursor-pointer border group relative")}
+                    onMouseEnter={() => handlePostHover(post)}
+                    onMouseLeave={handlePostLeave}
+                  >
                       <Link href={`/blogs/${encodeURIComponent(post.slug)}`} className="nav-link">
                         {/* 封面图片 */}
                         {post.coverImage ? (
@@ -962,27 +925,13 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
             {/* 列表视图 */}
             {viewMode === 'list' && (
               <div className="space-y-2">
-                <AnimatePresence mode="popLayout">
-                  {paginationData.currentPosts.map((post, index) => (
-                    <motion.article
-                      key={post.id}
-                      layout
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 20 }}
-                      transition={{ 
-                        duration: 0.15, 
-                        delay: index * 0.01,
-                        ease: "easeOut"
-                      }}
-                      whileHover={{ 
-                        x: 2,
-                        transition: { duration: 0.1 }
-                      }}
-                      className={getGlassStyle("rounded-md shadow-sm p-2.5 hover:shadow-md transition-all duration-150 cursor-pointer border group relative")}
-                      onMouseEnter={() => handlePostHover(post)}
-                      onMouseLeave={handlePostLeave}
-                    >
+                {paginationData.currentPosts.map((post, index) => (
+                  <article
+                    key={post.id}
+                    className={getGlassStyle("rounded-md shadow-sm p-2.5 hover:shadow-md transition-all duration-150 cursor-pointer border group relative")}
+                    onMouseEnter={() => handlePostHover(post)}
+                    onMouseLeave={handlePostLeave}
+                  >
                       <Link href={`/blogs/${encodeURIComponent(post.slug)}`} className="nav-link">
                         <div className="flex flex-col sm:flex-row gap-2.5">
                           {/* 封面图片 */}
@@ -1075,17 +1024,11 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                       </Link>
                     </motion.article>
                   ))}
-                </AnimatePresence>
-              </div>
+                </div>
             )}
             
             {paginationData.currentPosts.length === 0 && (
-              <motion.div 
-                className="text-center py-12"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.5 }}
-              >
+              <div className="text-center py-12">
                 <div className="text-4xl mb-4">🔍</div>
                 <p className="text-muted-foreground text-lg mb-2">
                   没有找到相关文章
@@ -1093,22 +1036,18 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                 <p className="text-muted-foreground text-sm">
                   试试调整搜索条件或浏览其他分类
                 </p>
-              </motion.div>
+              </div>
             )}
 
             {/* 翻页器 */}
             {paginationData.totalPages > 1 && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-              >
+              <div>
                 <Pagination
                   currentPage={currentPage}
                   totalPages={paginationData.totalPages}
                   onPageChange={handlePageChange}
                 />
-              </motion.div>
+              </div>
             )}
           </motion.main>
         </div>
