@@ -63,6 +63,15 @@ export default function LuoTianyiLive2D() {
         setMessageOpacity(1);
         lastMessageTimeRef.current = Date.now();
         triggerFadeOut();
+        
+        // 确保live2dMessageManager的显示状态与实际消息显示状态同步
+        if (typeof window !== 'undefined' && (window as any).live2dMessageManager) {
+            const manager = (window as any).live2dMessageManager;
+            // 重置isDisplayingMessage状态，确保后续消息能正常显示
+            if (typeof manager.isDisplayingMessage !== 'undefined') {
+                manager.isDisplayingMessage = false;
+            }
+        }
     }, [triggerFadeOut]);
 
     // 组件挂载和卸载清理
@@ -920,11 +929,19 @@ export default function LuoTianyiLive2D() {
         
         const THROTTLE_DELAY = 2000; // 2秒内只允许触发一次
         
-        // 简化showMessage实现，避免与live2dMessageManager冲突
+        // 修复：确保window.showMessage与live2dMessageManager状态同步
         (window as any).showMessage = (msg: string, timeout?: number) => {
-            // 修复：避免直接操作DOM，统一通过live2dMessageManager处理
-            // 直接调用updateMessage，确保React状态和DOM状态一致
+            // 调用updateMessage显示消息
             updateMessage(msg);
+            
+            // 重置live2dMessageManager的显示状态，确保后续消息能正常显示
+            if (typeof window !== 'undefined' && (window as any).live2dMessageManager) {
+                const manager = (window as any).live2dMessageManager;
+                // 如果manager有isDisplayingMessage属性，重置它
+                if (typeof manager.isDisplayingMessage !== 'undefined') {
+                    manager.isDisplayingMessage = false;
+                }
+            }
         };
 
         const messageConfig = {
