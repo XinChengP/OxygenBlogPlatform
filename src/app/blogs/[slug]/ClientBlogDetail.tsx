@@ -3,7 +3,6 @@
 import { useState, lazy, Suspense, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import LazyMarkdown from '../../../components/LazyMarkdown';
-import BilibiliVideo from '../../../components/BilibiliVideo';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { 
@@ -785,21 +784,6 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                     iframe({ src, allowfullscreen, width, height, ...props }: any) {
                       // 将字符串 "true" 转换为布尔值 true
                       const allowFullScreen = allowfullscreen === "true" || allowfullscreen === true;
-                      
-                      // 检测是否为B站视频
-                      const isBilibiliVideo = src?.includes('bilibili.com') || src?.includes('player.bilibili.com');
-                      
-                      if (isBilibiliVideo) {
-                        // 使用优化的 BilibiliVideo 组件处理B站视频
-                        return (
-                          <BilibiliVideo
-                            src={src}
-                            width={width || '100%'}
-                            height={height || 400}
-                            className="my-8"
-                          />
-                        );
-                      }
                       
                       // 普通iframe处理
                       return (
