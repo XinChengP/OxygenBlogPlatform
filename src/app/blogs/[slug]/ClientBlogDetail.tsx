@@ -275,22 +275,53 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
         e.preventDefault();
         const password = passwordSpan.getAttribute('data-password');
         if (password) {
-          navigator.clipboard.writeText(password).then(() => {
-            const originalText = passwordSpan.textContent;
-            const originalBackgroundColor = (passwordSpan as HTMLElement).style.backgroundColor;
-            const originalColor = (passwordSpan as HTMLElement).style.color;
-            
-            (passwordSpan as HTMLElement).textContent = '已复制!';
-              (passwordSpan as HTMLElement).style.backgroundColor = '#4CAF50';
-              (passwordSpan as HTMLElement).style.color = 'white';
+          // 检查 clipboard API 是否可用
+          if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+            navigator.clipboard.writeText(password).then(() => {
+              const originalText = passwordSpan.textContent;
+              const originalBackgroundColor = (passwordSpan as HTMLElement).style.backgroundColor;
+              const originalColor = (passwordSpan as HTMLElement).style.color;
               
-              setTimeout(() => {
-                (passwordSpan as HTMLElement).textContent = originalText || '';
-                (passwordSpan as HTMLElement).style.backgroundColor = originalBackgroundColor;
-                (passwordSpan as HTMLElement).style.color = originalColor;
-            }, 1500);
-          }).catch(() => {
-            // 降级方案
+              (passwordSpan as HTMLElement).textContent = '已复制!';
+                (passwordSpan as HTMLElement).style.backgroundColor = '#4CAF50';
+                (passwordSpan as HTMLElement).style.color = 'white';
+                
+                setTimeout(() => {
+                  (passwordSpan as HTMLElement).textContent = originalText || '';
+                  (passwordSpan as HTMLElement).style.backgroundColor = originalBackgroundColor;
+                  (passwordSpan as HTMLElement).style.color = originalColor;
+              }, 1500);
+            }).catch(() => {
+              // 降级方案
+              const textArea = document.createElement('textarea');
+              textArea.value = password;
+              textArea.style.position = 'fixed';
+              textArea.style.left = '-999999px';
+              document.body.appendChild(textArea);
+              textArea.focus();
+              textArea.select();
+              try {
+                document.execCommand('copy');
+                const originalText = (passwordSpan as HTMLElement).textContent;
+                const originalBackgroundColor = (passwordSpan as HTMLElement).style.backgroundColor;
+                const originalColor = (passwordSpan as HTMLElement).style.color;
+                
+                (passwordSpan as HTMLElement).textContent = '已复制!';
+                (passwordSpan as HTMLElement).style.backgroundColor = '#4CAF50';
+                (passwordSpan as HTMLElement).style.color = 'white';
+                
+                setTimeout(() => {
+                  (passwordSpan as HTMLElement).textContent = originalText || '';
+                  (passwordSpan as HTMLElement).style.backgroundColor = originalBackgroundColor;
+                  (passwordSpan as HTMLElement).style.color = originalColor;
+                }, 1500);
+              } catch {
+                alert('复制失败，请手动复制：' + password);
+              }
+              document.body.removeChild(textArea);
+            });
+          } else {
+            // 直接使用降级方案
             const textArea = document.createElement('textarea');
             textArea.value = password;
             textArea.style.position = 'fixed';
@@ -300,7 +331,7 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
             textArea.select();
             try {
               document.execCommand('copy');
-              const originalText = (passwordSpan as HTMLElement).textContent;
+              const originalText = passwordSpan.textContent;
               const originalBackgroundColor = (passwordSpan as HTMLElement).style.backgroundColor;
               const originalColor = (passwordSpan as HTMLElement).style.color;
               
@@ -317,7 +348,7 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
               alert('复制失败，请手动复制：' + password);
             }
             document.body.removeChild(textArea);
-          });
+          }
         }
       }
     };

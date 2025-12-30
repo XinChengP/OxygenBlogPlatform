@@ -94,10 +94,15 @@ NODE_ENV=development
 NEXT_PUBLIC_BASE_PATH=              # 空值，本地开发
 NEXT_PRIVATE_STATIC_EXPORT=false
 
-# 生产环境 (.env)
+# 生产环境 (.env) - GitHub Pages 默认域名
 NODE_ENV=production
 NEXT_PUBLIC_GITHUB_REPO_NAME=你的仓库名
-NEXT_PUBLIC_BASE_PATH=/你的仓库名  # GitHub Pages路径
+NEXT_PUBLIC_BASE_PATH=/你的仓库名  # GitHub Pages路径前缀
+
+# 生产环境 (.env) - 自定义域名
+NODE_ENV=production
+NEXT_PUBLIC_GITHUB_REPO_NAME=你的仓库名
+NEXT_PUBLIC_BASE_PATH=             # 空值，自定义域名不需要仓库名前缀
 ```
 
 ### 核心命令
@@ -134,11 +139,17 @@ npm run dev          # 访问 http://localhost:3000/tools/markdown-editor
 ### 路径处理
 - **核心工具**: `src/utils/assetUtils.ts`
 - **开发环境**: 相对路径
-- **生产环境**: 自动添加GitHub Pages basePath
+- **生产环境**: 根据配置自动处理
+  - GitHub Pages默认域名: 自动添加仓库名前缀
+  - 自定义域名: 直接使用根路径
 - **关键函数**:
-  - `getAssetPath()` - 静态资源路径
-  - `getBasePath()` - 基础路径
-  - `formatAudioUrl()` - 音频路径
+  - `getAssetPath()` - 静态资源路径处理
+  - `getBasePath()` - 基础路径获取
+  - `formatAudioUrl()` - 音频路径格式化
+- **环境适配**:
+  - 自动检测当前环境（开发/生产/GitHub Pages/自定义域名）
+  - 支持自定义域名`blog.xinchengp.cn`的特殊处理
+  - 当`NEXT_PUBLIC_BASE_PATH`为空字符串时，不添加仓库名前缀
 
 ### 图片优化
 - **组件**: `OptimizedImage` - 统一图片加载
@@ -206,14 +217,52 @@ export default function Component({ title, className }: ComponentProps) {
 - **触发**: main分支推送
 
 ### Next.js配置
+
+#### GitHub Pages 默认域名配置
 ```typescript
 const nextConfig = {
   output: "export",                    // 静态导出
-  basePath: `/${repoName}`,           // 仓库路径
+  basePath: `/${repoName}`,           // 仓库路径前缀
   assetPrefix: `/${repoName}`,        // 资源前缀
   images: { unoptimized: true },      // 禁用优化
   trailingSlash: true,                 // URL一致性
   distDir: 'out',                      // 输出目录
+};
+```
+
+#### 自定义域名配置
+```typescript
+const nextConfig = {
+  output: "export",                    // 静态导出
+  basePath: '',                        // 空值，自定义域名不需要仓库名前缀
+  assetPrefix: '',                     // 空值，自定义域名不需要仓库名前缀
+  images: { unoptimized: true },      // 禁用优化
+  trailingSlash: true,                 // URL一致性
+  distDir: 'out',                      // 输出目录
+};
+```
+
+#### 智能配置（推荐）
+```typescript
+// 根据环境自动选择配置
+const nextConfig = {
+  output: "export",
+  distDir: 'out',
+  trailingSlash: true,
+  
+  // 根据环境变量自动设置basePath和assetPrefix
+  basePath: process.env.NEXT_PUBLIC_BASE_PATH || '',
+  assetPrefix: process.env.NEXT_PUBLIC_BASE_PATH || '',
+  
+  images: {
+    unoptimized: true,
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "**",
+      },
+    ],
+  },
 };
 ```
 

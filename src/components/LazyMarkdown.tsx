@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, lazy, useState, useEffect } from 'react';
+import { Suspense, lazy, useState, useEffect, memo } from 'react';
 import { motion } from 'motion/react';
 
 // 懒加载ReactMarkdown组件
@@ -75,7 +75,20 @@ function MarkdownSkeleton() {
   );
 }
 
-export default function LazyMarkdown({ content, components }: LazyMarkdownProps) {
+// 优化后的ReactMarkdown渲染组件
+const MarkdownRenderer = memo(({ content, components, plugins }: { content: string; components?: any; plugins: any }) => {
+  return (
+    <ReactMarkdown
+      remarkPlugins={plugins.remarkPlugins}
+      rehypePlugins={plugins.rehypePlugins}
+      components={components}
+    >
+      {content}
+    </ReactMarkdown>
+  );
+});
+
+export default memo(function LazyMarkdown({ content, components }: LazyMarkdownProps) {
   const [plugins, setPlugins] = useState<{
     remarkPlugins: any[];
     rehypePlugins: any[];
@@ -114,19 +127,11 @@ export default function LazyMarkdown({ content, components }: LazyMarkdownProps)
         <MarkdownSkeleton />
       </motion.div>
     }>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <ReactMarkdown
-          remarkPlugins={plugins.remarkPlugins}
-          rehypePlugins={plugins.rehypePlugins}
-          components={components}
-        >
-          {content}
-        </ReactMarkdown>
-      </motion.div>
+      <MarkdownRenderer
+        content={content}
+        components={components}
+        plugins={plugins}
+      />
     </Suspense>
   );
-}
+});
