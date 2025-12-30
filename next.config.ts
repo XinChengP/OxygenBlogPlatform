@@ -56,8 +56,9 @@ const nextConfig = {
     trailingSlash: true,
     
     // 使用环境变量设置basePath和assetPrefix，确保GitHub Pages部署正常
-    basePath: process.env.NEXT_PUBLIC_BASE_PATH || '',
-    assetPrefix: process.env.NEXT_PUBLIC_BASE_PATH || '',
+    // 对于静态导出模式，优先使用空字符串作为基础路径
+    basePath: (process.env.CUSTOM_DOMAIN === 'true' || process.env.NEXT_PUBLIC_SITE_URL === 'https://blog.xinchengp.cn') ? '' : (process.env.NEXT_PUBLIC_BASE_PATH || ''),
+    assetPrefix: (process.env.CUSTOM_DOMAIN === 'true' || process.env.NEXT_PUBLIC_SITE_URL === 'https://blog.xinchengp.cn') ? '' : (process.env.NEXT_PUBLIC_BASE_PATH || ''),
     
     // 图片配置（仅在静态导出模式下需要）
     images: {
