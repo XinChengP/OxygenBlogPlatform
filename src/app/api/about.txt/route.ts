@@ -14,7 +14,7 @@ export async function GET() {
     const redirectUrl = basePath ? `${basePath}/about` : '/about';
     
     // 返回重定向响应
-    return NextResponse.redirect(new URL(redirectUrl, process.env.NEXT_PUBLIC_URL || 'http://localhost:3000'));
+    return NextResponse.redirect(new URL(redirectUrl, process.env.NEXT_PUBLIC_URL || 'https://localhost:3000'));
   } catch (error) {
     console.error('Error redirecting to about page:', error);
     return new NextResponse('Redirect failed', { status: 500 });
