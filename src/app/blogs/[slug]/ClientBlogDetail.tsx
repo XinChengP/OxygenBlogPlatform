@@ -793,7 +793,6 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                             allowFullScreen={allowFullScreen}
                             {...props}
                             className="w-full h-64 md:h-96 border-0"
-                            loading="lazy"
                           />
                         </div>
                       );
