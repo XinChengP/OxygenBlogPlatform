@@ -38,8 +38,20 @@ export default function GiscusComments({ id, title }: GiscusCommentsProps) {
     script.setAttribute('data-repo-id', 'R_kgDOQQbz2g');
     script.setAttribute('data-category', 'General');
     script.setAttribute('data-category-id', 'DIC_kwDOQQbz2s4CxkZ6');
-    // 处理pathname映射，确保在不同域名下能正确关联讨论
-    script.setAttribute('data-mapping', 'url');
+    
+    // 根据当前环境选择合适的映射方式
+    // 本地开发环境使用pathname映射，避免PNA策略导致的CORS问题
+    // 自定义域名使用url映射，确保不同域名下的讨论关联正确
+    // GitHub Pages默认域名使用pathname映射，避免basePath导致的问题
+    const isLocalhost = typeof window !== 'undefined' && 
+      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    
+    const isGitHubPagesDefaultDomain = typeof window !== 'undefined' && 
+      (window.location.hostname.includes('github.io') || window.location.hostname.includes('pages.dev'));
+    
+    const mapping = isLocalhost || isGitHubPagesDefaultDomain ? 'pathname' : 'url';
+    script.setAttribute('data-mapping', mapping);
+    
     script.setAttribute('data-strict', '0');
     script.setAttribute('data-reactions-enabled', '1');
     script.setAttribute('data-emit-metadata', '0');
