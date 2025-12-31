@@ -7,7 +7,7 @@ import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 // 动态导入大型组件
 const BoxReveal = lazy(() => import('@/components/magicui/box-reveal'));
 const Meteors = lazy(() => import('@/components/magicui/meteors'));
-const Typewriter = lazy(() => import('../components/ui/typewriter'));
+const Typewriter = lazy(() => import('@/components/ui/typewriter'));
 
 export default function Home() {
   const router = useRouter();
