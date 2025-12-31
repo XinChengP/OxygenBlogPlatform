@@ -135,7 +135,7 @@ export async function safeMarkdownToHtml(markdown: string): Promise<string> {
     markdownCache.set(markdown, sanitizedHtml);
     
     return sanitizedHtml;
-  } catch (error) {
+  } catch {
     const result = fallbackMarkdownToHtml(markdown);
     markdownCache.set(markdown, result);
     return result;
