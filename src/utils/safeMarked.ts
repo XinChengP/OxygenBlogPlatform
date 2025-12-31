@@ -5,6 +5,9 @@
 
 import DOMPurify from 'dompurify';
 
+// 缓存机制：用于存储已处理的Markdown内容
+const markdownCache = new Map<string, string>();
+
 // 保存原始的String.repeat方法
 const originalRepeat = String.prototype.repeat;
 
@@ -12,7 +15,6 @@ const originalRepeat = String.prototype.repeat;
 function safeRepeat(this: string, count: number): string {
   // 确保count是非负整数
   if (count < 0 || !Number.isInteger(count)) {
-    console.warn(`String.repeat接收到无效参数: ${count}，返回空字符串`);
     return '';
   }
   // 如果count为0，返回空字符串
@@ -26,11 +28,26 @@ function safeRepeat(this: string, count: number): string {
 // 替换String.prototype.repeat
 String.prototype.repeat = safeRepeat;
 
-// 动态导入marked库
+// 动态导入marked库 - 使用Promise缓存
+let markedPromise: Promise<any> | null = null;
 let marked: any;
 
+/**
+ * 初始化marked库
+ * 使用Promise缓存，避免重复导入
+ */
 export async function initializeMarked() {
-  if (!marked) {
+  if (marked) {
+    return marked;
+  }
+  
+  // 如果Promise已经存在，直接返回
+  if (markedPromise) {
+    return markedPromise;
+  }
+  
+  // 创建新的Promise并缓存
+  markedPromise = (async () => {
     try {
       const markedModule = await import('marked');
       marked = markedModule.marked || markedModule;
@@ -44,34 +61,46 @@ export async function initializeMarked() {
         });
       }
       
-      console.log('Marked库初始化成功');
+      return marked;
     } catch (error) {
       console.error('Marked库初始化失败:', error);
       throw error;
     }
-  }
-  return marked;
+  })();
+  
+  return markedPromise;
 }
 
 /**
  * 安全的Markdown转HTML函数
+ * 添加缓存机制，提高性能
  */
 export async function safeMarkdownToHtml(markdown: string): Promise<string> {
+  // 检查缓存中是否已有处理结果
+  if (markdownCache.has(markdown)) {
+    return markdownCache.get(markdown)!;
+  }
+  
   try {
     const markedInstance = await initializeMarked();
     
     if (!markedInstance || typeof markedInstance.parse !== 'function') {
-      console.warn('Marked库不可用，使用备用方案');
-      return fallbackMarkdownToHtml(markdown);
+      const result = fallbackMarkdownToHtml(markdown);
+      markdownCache.set(markdown, result);
+      return result;
     }
     
     let html = markedInstance.parse(markdown);
     
     // 对marked的输出进行后处理，添加增强的代码块样式
     // 匹配带或不带class属性的pre>code结构
-    html = html.replace(/<pre(?:\s+class="[^"]*")?><code(?:\s+class="[^"]*")?>([\s\S]*?)<\/code><\/pre>/g, (match: string, code: string) => {
+    const codeBlockRegex = /<pre(?:\s+class="[^"]*")?><code(?:\s+class="[^"]*")?>([\s\S]*?)<\/code><\/pre>/g;
+    html = html.replace(codeBlockRegex, (match: string, code: string) => {
+      // 生成唯一的代码块ID，使用更高效的生成方式
+      const codeId = `code-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+      
       // 返回增强的HTML结构 - 更明显的代码块
-      return `<div class="my-8 rounded-xl border-2 border-gray-200 dark:border-gray-700 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden bg-white dark:bg-gray-900" data-code-id="code-${Date.now()}-${Math.random().toString(36).substr(2, 9)}">
+      return `<div class="my-8 rounded-xl border-2 border-gray-200 dark:border-gray-700 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden bg-white dark:bg-gray-900" data-code-id="${codeId}">
         <div class="flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 px-6 py-3 border-b-2 border-blue-200 dark:border-gray-600">
           <div class="flex items-center gap-3">
             <div class="flex items-center gap-2">
@@ -96,15 +125,20 @@ export async function safeMarkdownToHtml(markdown: string): Promise<string> {
     });
     
     // 处理行内代码样式 - 简洁的视觉样式
-    html = html.replace(/<code>(.*?)<\/code>/g, '<code class="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-md text-sm font-mono border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200">$1</code>');
+    const inlineCodeRegex = /<code>(.*?)<\/code>/g;
+    html = html.replace(inlineCodeRegex, '<code class="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-md text-sm font-mono border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200">$1</code>');
     
     // 使用DOMPurify清理HTML，防止XSS攻击
     const sanitizedHtml = DOMPurify.sanitize(html);
     
+    // 缓存结果
+    markdownCache.set(markdown, sanitizedHtml);
+    
     return sanitizedHtml;
   } catch (error) {
-    console.error('Marked解析失败，使用备用方案:', error);
-    return fallbackMarkdownToHtml(markdown);
+    const result = fallbackMarkdownToHtml(markdown);
+    markdownCache.set(markdown, result);
+    return result;
   }
 }
 
