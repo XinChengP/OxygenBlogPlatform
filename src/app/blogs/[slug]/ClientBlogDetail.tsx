@@ -718,7 +718,7 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                     // 段落
                     p({ children }: ComponentProps) {
                       return (
-                        <p className="mb-4 leading-relaxed text-base">
+                        <p className="mb-4 leading-relaxed text-base" style={{ textIndent: '2em' }}>
                           {children}
                         </p>
                       );
