@@ -305,7 +305,7 @@ initLive2dMessage();
     // 🚀 启动消息系统修复
     fixMessageSystem();
     
-    var text;
+    var text = '';
     if(document.referrer === ''){
         if (window.location.href == `${home_Path}`) { //主页URL判断，需要斜杠结尾
             var now = (new Date()).getHours();
@@ -331,6 +331,9 @@ initLive2dMessage();
         }else {
             text = '欢迎阅读<span style="color:#66ccff;">「 ' + document.title.split(' - ')[0] + ' 」</span>';
         }
+    } else {
+        // 有referrer时的默认消息
+        text = '欢迎来到我的博客~';
     }
     showMessage(text, 8000);
 })();
