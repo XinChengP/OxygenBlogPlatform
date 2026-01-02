@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useMemo, useEffect, lazy, Suspense } from 'react';
-import { AnimatePresence } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
 import { categories } from '@/setting/blogSetting';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 import Pagination from '@/components/Pagination';
@@ -701,9 +701,16 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
             {viewMode === 'grid' && (
               <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2">
                 {paginationData.currentPosts.map((post, index) => (
-                  <article
+                  <motion.article
                     key={post.slug}
-                    className={getGlassStyle("rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 cursor-pointer border group relative")}
+                    className={`${getGlassStyle("rounded-xl shadow-lg overflow-hidden cursor-pointer group relative")} border border-transparent`}
+                    initial={{ opacity: 1, y: 0 }}
+                    whileHover={{ 
+                      y: -5, 
+                      boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+                      borderColor: "rgba(59, 130, 246, 0.3)"
+                    }}
+                    transition={{ duration: 0.4 }}
                     onMouseEnter={() => handlePostHover(post)}
                     onMouseLeave={handlePostLeave}
                   >
@@ -711,15 +718,25 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                         {/* 封面图片 */}
                         {post.coverImage ? (
                           <div className="relative h-48 sm:h-56 overflow-hidden">
-                            <Image
-                              src={getAssetPath(post.coverImage)}
-                              alt={post.title}
-                              className="w-full h-full object-cover transition-all duration-500 ease-out group-hover:scale-110"
-                              fill
-                              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                              priority={index < 3}
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                            <motion.div
+                              className="absolute inset-0"
+                              whileHover={{ scale: 1.05 }}
+                              transition={{ duration: 0.4 }}
+                            >
+                              <Image
+                                src={getAssetPath(post.coverImage)}
+                                alt={post.title}
+                                className="w-full h-full object-cover"
+                                fill
+                                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                                priority={index < 3}
+                              />
+                            </motion.div>
+                            <motion.div 
+                              className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0"
+                              whileHover={{ opacity: 1 }}
+                              transition={{ duration: 0.4 }}
+                            ></motion.div>
                             <div className="absolute top-3 left-3">
                               <span className="bg-primary/95 text-primary-foreground px-2 py-1 rounded-full text-xs sm:text-sm font-medium backdrop-blur-sm shadow-lg">
                                 {post.category}
@@ -733,11 +750,19 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                             </div>
                             
                             {/* 悬停时的阅读按钮 */}
-                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                              <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium text-gray-800 dark:text-gray-200 shadow-lg">
+                            <motion.div 
+                              className="absolute inset-0 flex items-center justify-center opacity-0"
+                              whileHover={{ opacity: 1 }}
+                              transition={{ duration: 0.4 }}
+                            >
+                              <motion.div 
+                                className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium text-gray-800 dark:text-gray-200 shadow-lg"
+                                whileHover={{ scale: 1.05 }}
+                                transition={{ duration: 0.4 }}
+                              >
                                 阅读文章
-                              </div>
-                            </div>
+                              </motion.div>
+                            </motion.div>
                           </div>
                         ) : (
                           /* 无封面图片时的占位图 */
@@ -759,11 +784,19 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                             </div>
                             
                             {/* 悬停时的阅读按钮 */}
-                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/10 backdrop-blur-sm">
-                              <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium text-gray-800 dark:text-gray-200 shadow-lg">
+                            <motion.div 
+                              className="absolute inset-0 flex items-center justify-center opacity-0 bg-black/10 backdrop-blur-sm"
+                              whileHover={{ opacity: 1 }}
+                              transition={{ duration: 0.4 }}
+                            >
+                              <motion.div 
+                                className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium text-gray-800 dark:text-gray-200 shadow-lg"
+                                whileHover={{ scale: 1.05 }}
+                                transition={{ duration: 0.4 }}
+                              >
                                 阅读文章
-                              </div>
-                            </div>
+                              </motion.div>
+                            </motion.div>
                           </div>
                         )}
                         <div className="p-4 sm:p-6">
@@ -774,9 +807,13 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                             </span>
                           </div>
                           
-                          <h2 className="text-lg sm:text-xl font-bold text-foreground mb-2 sm:mb-3 line-clamp-2 group-hover:text-primary transition-colors duration-300">
+                          <motion.h2 
+                            className="text-lg sm:text-xl font-bold text-foreground mb-2 sm:mb-3 line-clamp-2"
+                            whileHover={{ color: "var(--primary)" }}
+                            transition={{ duration: 0.4 }}
+                          >
                             {post.title}
-                          </h2>
+                          </motion.h2>
                           
                           {post.excerpt && (
                             <p className="text-muted-foreground mb-3 sm:mb-4 text-sm sm:text-base line-clamp-3 leading-relaxed">
@@ -820,15 +857,24 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                               </div>
                               
                               <div>
-                                <div className="flex items-center gap-2 text-primary text-sm font-medium group-hover:gap-3 transition-all duration-300">
+                                <motion.div 
+                                  className="flex items-center gap-2 text-primary text-sm font-medium"
+                                  whileHover={{ gap: "0.75rem" }}
+                                  transition={{ duration: 0.4 }}
+                                >
                                   <span>阅读文章</span>
-                                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
-                                </div>
+                                  <motion.span
+                                    whileHover={{ x: 4 }}
+                                    transition={{ duration: 0.4 }}
+                                  >
+                                    <ArrowRight className="w-4 h-4" />
+                                  </motion.span>
+                                </motion.div>
                               </div>
                             </div>
                         </div>
                       </Link>
-                    </article>
+                    </motion.article>
                   ))}
               </div>
             )}
@@ -837,9 +883,16 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
             {viewMode === 'list' && (
               <div className="space-y-2">
                 {paginationData.currentPosts.map((post, index) => (
-                  <article
+                  <motion.article
                     key={post.id}
-                    className={getGlassStyle("rounded-md shadow-sm p-2.5 hover:shadow-md transition-all duration-150 cursor-pointer border group relative")}
+                    className={`${getGlassStyle("rounded-md shadow-sm p-2.5 cursor-pointer group relative")} border border-transparent`}
+                    initial={{ opacity: 1, y: 0 }}
+                    whileHover={{ 
+                      y: -2, 
+                      boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
+                      borderColor: "rgba(59, 130, 246, 0.3)"
+                    }}
+                    transition={{ duration: 0.4 }}
                     onMouseEnter={() => handlePostHover(post)}
                     onMouseLeave={handlePostLeave}
                   >
@@ -848,14 +901,20 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                           {/* 封面图片 */}
                           {post.coverImage && (
                             <div className="relative w-full sm:w-32 h-20 sm:h-24 flex-shrink-0 rounded-md overflow-hidden">
-                              <Image
-                                src={getAssetPath(post.coverImage)}
-                                alt={post.title}
-                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                                fill
-                                sizes="(max-width: 640px) 100vw, 128px"
-                                priority={index < 3}
-                              />
+                              <motion.div
+                                className="absolute inset-0"
+                                whileHover={{ scale: 1.05 }}
+                                transition={{ duration: 0.4 }}
+                              >
+                                <Image
+                                  src={getAssetPath(post.coverImage)}
+                                  alt={post.title}
+                                  className="w-full h-full object-cover"
+                                  fill
+                                  sizes="(max-width: 640px) 100vw, 128px"
+                                  priority={index < 3}
+                                />
+                              </motion.div>
                               <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent"></div>
                               <div className="absolute top-1 left-1">
                                 <span className="bg-primary/90 text-primary-foreground px-1.5 py-0.5 rounded text-xs font-medium backdrop-blur-sm leading-none">
@@ -866,9 +925,13 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                           )}
                           
                           <div className="flex-1 min-w-0">
-                            <h2 className="text-sm font-semibold text-foreground mb-1 line-clamp-2 group-hover:text-primary transition-colors duration-150">
+                            <motion.h2 
+                              className="text-sm font-semibold text-foreground mb-1 line-clamp-2"
+                              whileHover={{ color: "var(--primary)" }}
+                              transition={{ duration: 0.4 }}
+                            >
                               {post.title}
-                            </h2>
+                            </motion.h2>
                             
                             {post.excerpt && (
                               <p className="text-muted-foreground mb-1.5 text-sm line-clamp-2 leading-tight">
@@ -925,15 +988,24 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                                 </span>
                               </div>
                               
-                              <div className="flex items-center gap-0.5 text-primary text-xs font-medium">
+                              <motion.div 
+                                className="flex items-center gap-0.5 text-primary text-xs font-medium"
+                                whileHover={{ gap: "0.25rem" }}
+                                transition={{ duration: 0.4 }}
+                              >
                                 <span className="hidden sm:inline">阅读</span>
-                                <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform duration-150" />
-                              </div>
+                                <motion.span
+                                  whileHover={{ x: 2 }}
+                                  transition={{ duration: 0.4 }}
+                                >
+                                  <ArrowRight className="w-3 h-3" />
+                                </motion.span>
+                              </motion.div>
                             </div>
                           </div>
                         </div>
                       </Link>
-                    </article>
+                    </motion.article>
                   ))}
               </div>
             )}
