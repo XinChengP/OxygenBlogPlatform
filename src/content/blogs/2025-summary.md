@@ -2,7 +2,7 @@
 title: "2025年度总结"
 date: "2026-01-01"
 category: "生活"
-tags: ["年度总结" , "2025"]
+tags: ["年度总结"]
 excerpt: "回首2025，展望2026"
 coverImage: "/Blogabout/2025summary/图一.jpg"
 ---

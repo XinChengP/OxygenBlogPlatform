@@ -17,6 +17,8 @@ interface BlogPost {
   slug: string;
   readTime: number;
   year: number; // 添加年份字段用于归档
+  month: number; // 添加月份字段用于归档
+  day: number; // 添加日期字段用于归档
 }
 
 /**
@@ -72,11 +74,11 @@ function scanMarkdownFiles(dir: string, baseDir: string): Array<{filePath: strin
 }
 
 /**
- * 获取所有博客文章并按年份归档
+ * 获取所有博客文章并按年份->月份->日期归档
  * 
- * @returns 按年份归档的博客文章
+ * @returns 按年份->月份->日期层级归档的博客文章
  */
-function getArchivedBlogs(): { [year: number]: BlogPost[] } {
+function getArchivedBlogs(): { [year: number]: { [month: number]: { [day: number]: BlogPost[] } } } {
   try {
     const contentDir = path.join(process.cwd(), 'src/content/blogs');
     
@@ -98,10 +100,12 @@ function getArchivedBlogs(): { [year: number]: BlogPost[] } {
         const fileName = path.basename(filePath, '.md');
         const title = frontMatter.title || fileName;
         
-        // 解析日期，获取年份
+        // 解析日期，获取年份、月份、日期
         const dateStr = frontMatter.date || '';
         const date = dateStr ? new Date(dateStr) : new Date();
         const year = date.getFullYear();
+        const month = date.getMonth() + 1; // 月份从0开始，转为1-12
+        const day = date.getDate();
         
         blogPosts.push({
           id: slug,
@@ -112,7 +116,9 @@ function getArchivedBlogs(): { [year: number]: BlogPost[] } {
           tags: frontMatter.tags || [],
           slug: slug,
           readTime: frontMatter.readTime || 5,
-          year: year
+          year: year,
+          month: month,
+          day: day
         });
       } catch (error) {
         console.error(`Error reading blog file ${relativePath}:`, error);
@@ -122,14 +128,27 @@ function getArchivedBlogs(): { [year: number]: BlogPost[] } {
     // 按日期排序（最新的在前）
     const sortedPosts = blogPosts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     
-    // 按年份归档
-    const archivedPosts: { [year: number]: BlogPost[] } = {};
+    // 按年份->月份->日期归档
+    const archivedPosts: { [year: number]: { [month: number]: { [day: number]: BlogPost[] } } } = {};
     
     sortedPosts.forEach(post => {
+      // 初始化年份层级
       if (!archivedPosts[post.year]) {
-        archivedPosts[post.year] = [];
+        archivedPosts[post.year] = {};
       }
-      archivedPosts[post.year].push(post);
+      
+      // 初始化月份层级
+      if (!archivedPosts[post.year][post.month]) {
+        archivedPosts[post.year][post.month] = {};
+      }
+      
+      // 初始化日期层级
+      if (!archivedPosts[post.year][post.month][post.day]) {
+        archivedPosts[post.year][post.month][post.day] = [];
+      }
+      
+      // 添加文章到对应的日期层级
+      archivedPosts[post.year][post.month][post.day].push(post);
     });
     
     return archivedPosts;

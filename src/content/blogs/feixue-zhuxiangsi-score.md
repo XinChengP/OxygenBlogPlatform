@@ -2,7 +2,7 @@
 title: "沸雪煮相思 简谱"
 date: "2025-12-02"
 category: "洛天依"
-tags: ["洛天依", "星尘", "简谱", "沸雪煮相思"]
+tags: ["洛天依", "星尘", "VOCALOID", "简谱", "沸雪煮相思"]
 excerpt: "”尤笑年少时节 最是为情痴“"
 coverImage: "/Blogabout/Feixuezhuxiangsi/cover.png"
 ---
