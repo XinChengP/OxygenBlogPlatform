@@ -118,6 +118,14 @@ coverImage: "/Blogabout/2025summary/图一.jpg"
 为了三创赛找灵感又双叒去了趟天博，灵感没咋找到，倒是找到了个雪景周边并怒花30大洋。
 
 用v3调了《笨鸥》，一窍不通就上手还是太勉强了。
+<iframe 
+  src="https://player.bilibili.com/player.html?bvid=BV1q1q6BeExk&page=1&as_wide=1&high_quality=1&danmaku=0&autoplay=0"
+  scrolling="no"
+  frameborder="no"
+  framespacing="0"
+  allowfullscreen
+  style="width: 100%; height: 480px; border: 1px solid #ddd; border-radius: 8px;">
+</iframe>
 
 年末没啥事，就去玩了玩自己MC的存档，搞了好几个机器后发现不是最新存档，差点气到昏厥。
 

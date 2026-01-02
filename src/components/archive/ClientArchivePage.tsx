@@ -81,8 +81,10 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
   // 处理标签点击
   const handleTagClick = (tag: string, e: React.MouseEvent) => {
     e.preventDefault();
-    // 筛选同标签文章
-    const filteredPosts = allPosts.filter(post => post.tags.includes(tag));
+    // 筛选同标签文章并按日期倒序排序（最新的在前）
+    const filteredPosts = allPosts
+      .filter(post => post.tags.includes(tag))
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     setSelectedTag(tag);
     setTagPosts(filteredPosts);
     setShowTagModal(true);
