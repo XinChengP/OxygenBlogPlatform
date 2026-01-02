@@ -24,6 +24,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: webTitle,
   description: webDescription,
+  icons: {
+    icon: '/favicon.ico',
+  },
 };
 
 export default function RootLayout({

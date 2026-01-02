@@ -144,7 +144,11 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
 
   // 准备右侧内容区的时间轴数据
   const timelineData = useMemo(() => {
-    const result = [];
+    const result: Array<{
+      year: number;
+      month: number;
+      posts: BlogPost[];
+    }> = [];
     
     // 获取所有年份并排序（降序）
     const years = Object.keys(filteredPosts)

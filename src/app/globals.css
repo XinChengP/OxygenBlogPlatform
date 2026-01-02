@@ -483,3 +483,68 @@ pre code {
     transform: translateY(-10px);
   }
 }
+
+/* 自定义滚动条样式 */
+/* Chrome, Safari and Opera */
+::-webkit-scrollbar {
+  width: 0;
+  transition: width 0.3s ease;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+  transition: width 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 3px;
+  transition: background 0.3s ease;
+}
+
+/* 鼠标悬浮时显示滚动条 */
+:hover::-webkit-scrollbar {
+  width: 6px;
+}
+
+:hover::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+:hover::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+/* 暗色模式适配 */
+.dark:hover::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.dark:hover::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.3s ease;
+}
+
+*:hover {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.3) transparent;
+}
+
+.dark *:hover {
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
+
+/* IE and Edge */
+* {
+  -ms-overflow-style: none;
+}
+
+:hover {
+  -ms-overflow-style: auto;
+}

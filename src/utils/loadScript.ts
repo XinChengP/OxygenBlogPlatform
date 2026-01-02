@@ -108,7 +108,7 @@ export function isScriptLoaded(url: string): boolean {
 /**
  * 加载多个脚本，支持并行和顺序加载
  */
-export function loadScripts(
+export async function loadScripts(
   urls: string[],
   options: LoadScriptOptions & { sequential?: boolean } = {}
 ): Promise<void[]> {
@@ -116,9 +116,12 @@ export function loadScripts(
   
   if (sequential) {
     // 顺序加载
-    return urls.reduce((promise, url) => {
-      return promise.then(() => loadScript(url, loadOptions));
-    }, Promise.resolve());
+    const results: void[] = [];
+    for (const url of urls) {
+      await loadScript(url, loadOptions);
+      results.push(undefined);
+    }
+    return results;
   } else {
     // 并行加载
     return Promise.all(urls.map(url => loadScript(url, loadOptions)));
