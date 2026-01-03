@@ -1,7 +1,7 @@
 import { useMemo, useEffect, useState } from 'react';
 import { enableBackground, backgroundImage } from '../setting/WebSetting';
 
-type PageType = 'home' | 'blogs' | 'about' | 'blog-detail' | 'archive' | 'guestbook' | 'tools';
+type PageType = 'home' | 'blogs' | 'about' | 'blog-detail' | 'archive' | 'guestbook' | 'tools' | 'gallery';
 
 interface StyleConfig {
   className: string;
@@ -52,18 +52,23 @@ export function useBackgroundStyle(pageType: PageType) {
         style: {}
       };
       case 'tools':
-        return {
-          className: 'min-h-screen py-8 pt-20',
-          style: {}
-        };
-      case 'guestbook':
+          return {
+            className: 'min-h-screen py-8 pt-20',
+            style: {}
+          };
+        case 'guestbook':
+          return {
+            className: 'min-h-screen py-8 pt-20',
+            style: {}
+          };
+        case 'gallery':
           return {
             className: 'min-h-screen py-8 pt-20',
             style: {}
           };
         default:
           return {
-            className: 'min-h-screen bg-background py-8 pt-20',
+            className: 'min-h-screen py-8 pt-20',
             style: {}
           };
       }
