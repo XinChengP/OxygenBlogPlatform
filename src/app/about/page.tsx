@@ -410,13 +410,7 @@ export default function AboutPage() {
                 >
                   联系我
                 </h3>
-                <p className="text-gray-600 dark:text-gray-300 text-lg leading-relaxed max-w-2xl mx-auto">
-                  {mainContactMeDescription}
-                  <br />
-                  <span className="text-sm text-gray-500 dark:text-gray-400 mt-2 block">
-                    {subContactMeDescription} 
-                  </span>
-                </p>
+
               </div>
               
               {/* 修复：网格布局改为 md:grid-cols-4，容纳4张卡片 */}

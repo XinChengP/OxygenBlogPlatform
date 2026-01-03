@@ -717,8 +717,13 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                     },
                     // 段落
                     p({ children }: ComponentProps) {
+                      // 检查博客是否带有"简谱"标签，如果有则不添加首行缩进
+                      const hasSheetMusicTag = blog.tags && blog.tags.some(tag => tag === '简谱');
                       return (
-                        <p className="mb-4 leading-relaxed text-base" style={{ textIndent: '2em' }}>
+                        <p 
+                          className="mb-4 leading-relaxed text-base" 
+                          style={{ textIndent: hasSheetMusicTag ? '0' : '2em' }}
+                        >
                           {children}
                         </p>
                       );

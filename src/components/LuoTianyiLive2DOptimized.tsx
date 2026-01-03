@@ -787,6 +787,12 @@ export default function LuoTianyiLive2DOptimized({ className }: LuoTianyiLive2DO
         (window as any).showMessage = function(text: string, timeout?: number) {
             console.log('[LuoTianyiLive2D] 全局消息调用:', text);
             
+            // 🚀 修复：确保text是有效的字符串，避免undefined导致的错误
+            if (!text || typeof text !== 'string' || text.trim() === '') {
+                console.log('⚠️  无效的消息内容，跳过全局消息显示');
+                return;
+            }
+            
             // 🚀 暂时移除频率限制，确保消息能正常显示
         // 重要消息判断（保留用于后续可能的优化）
         const isImportantMessage = text.includes('复制') || 

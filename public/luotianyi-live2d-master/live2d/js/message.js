@@ -80,6 +80,12 @@ function enhanceShowMessage() {
     window.showMessage = function(text, timeout = 4000) {
         console.log('📢 showMessage调用:', text);
         
+        // 修复：确保text是有效的字符串，避免undefined导致的错误
+        if (!text || typeof text !== 'string' || text.trim() === '') {
+            console.log('⚠️  无效的消息内容，跳过显示');
+            return;
+        }
+        
         try {
             // 尝试多种消息系统
             let success = false;
@@ -117,6 +123,12 @@ function enhanceShowMessage() {
 
 // 手动显示消息
 function manualShowMessage(text, timeout) {
+    // 修复：确保text是有效的字符串，避免undefined导致的错误
+    if (!text || typeof text !== 'string' || text.trim() === '') {
+        console.log('⚠️  无效的消息内容，跳过手动显示');
+        return;
+    }
+    
     const messageEl = document.querySelector('.message');
     if (messageEl) {
         messageEl.textContent = text;
@@ -176,12 +188,15 @@ function renderTip(template, context) {
             currentObject = currentObject[variable];
             if (currentObject === undefined || currentObject === null) return '';
         }
-        return currentObject;
+        // 确保返回有效的字符串，避免undefined
+        return currentObject || '';
     });
 }
 
 String.prototype.renderTip = function (context) {
-    return renderTip(this, context);
+    // 确保返回有效的字符串，避免undefined
+    const result = renderTip(this, context);
+    return result || '';
 };
 
 var re = /x/;
@@ -281,7 +296,9 @@ function initTips(){
                 e.stopPropagation();
                 var text = tips.text;
                 if(Array.isArray(tips.text)) text = tips.text[Math.floor(Math.random() * tips.text.length)];
-                text = text.renderTip({text: $(this).text()});
+                // 修复：确保$(this).text()是有效的字符串
+                var elementText = $(this).text() || '';
+                text = text.renderTip({text: elementText});
                 showMessage(text, 3000);
             });
         });
@@ -292,7 +309,9 @@ function initTips(){
                 e.stopPropagation();
                 var text = tips.text;
                 if(Array.isArray(tips.text)) text = tips.text[Math.floor(Math.random() * tips.text.length)];
-                text = text.renderTip({text: $(this).text()});
+                // 修复：确保$(this).text()是有效的字符串
+                var elementText = $(this).text() || '';
+                text = text.renderTip({text: elementText});
                 showMessage(text, 3000);
             });
         });
@@ -329,12 +348,20 @@ initLive2dMessage();
                 text = '你好~我是洛天依！';
             }
         }else {
-            text = '欢迎阅读<span style="color:#66ccff;">「 ' + document.title.split(' - ')[0] + ' 」</span>';
+            // 修复：确保document.title.split(' - ')[0]是有效的字符串
+            const pageTitle = document.title.split(' - ')[0] || '当前页面';
+            text = '欢迎阅读<span style="color:#66ccff;">「 ' + pageTitle + ' 」</span>';
         }
     } else {
         // 有referrer时的默认消息
         text = '欢迎来到我的博客~';
     }
+    
+    // 最后检查一次text是否有效
+    if (!text || typeof text !== 'string' || text.trim() === '') {
+        text = '欢迎来到我的博客~';
+    }
+    
     showMessage(text, 8000);
 })();
 
@@ -347,7 +374,12 @@ function showHitokoto(){
         return;
     }
     $.getJSON('https://v1.hitokoto.cn/',function(result){
-        showMessage(result.hitokoto, 4000);
+        // 修复：确保result.hitokoto是有效的字符串
+        if (result && result.hitokoto && typeof result.hitokoto === 'string' && result.hitokoto.trim() !== '') {
+            showMessage(result.hitokoto, 4000);
+        } else {
+            console.log('⚠️  hitokoto API返回无效数据，跳过显示');
+        }
     });
 }
 
@@ -356,6 +388,12 @@ function showMessage(text, timeout){
     fixMessageSystem();
     
     console.log('📢 showMessage调用:', text);
+    
+    // 修复：确保text是有效的字符串，避免undefined导致的错误
+    if (!text || typeof text !== 'string' || text.trim() === '') {
+        console.log('⚠️  无效的消息内容，跳过显示');
+        return;
+    }
     
     if(Array.isArray(text)) text = text[Math.floor(Math.random() * text.length + 1)-1];
     
@@ -632,6 +670,12 @@ window.GlobalMessageManager = (function() {
   function showGlobalMessage(text, duration = 3000) {
     if (!messageContainer) {
       console.warn('消息容器未初始化');
+      return;
+    }
+
+    // 修复：确保text是有效的字符串，避免undefined导致的错误
+    if (!text || typeof text !== 'string' || text.trim() === '') {
+      console.log('⚠️  无效的消息内容，跳过全局消息显示');
       return;
     }
 

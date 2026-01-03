@@ -38,6 +38,11 @@ export default function LuoTianyiLive2D() {
 
     // 消息更新函数 - 必须在其他使用它的函数之前定义
     const updateMessage = useCallback((newMessage: string, type: 'normal' | 'interaction' = 'normal') => {
+        // 修复：确保newMessage是有效的字符串，避免undefined导致的错误
+        if (!newMessage || typeof newMessage !== 'string' || newMessage.trim() === '') {
+            return;
+        }
+        
         // 修复：改进消息过滤逻辑，只过滤特定的默认问候语，允许彩蛋消息显示
         const isDefaultMessage = newMessage.includes('你好') && newMessage.includes('洛天依') && newMessage.includes('！');
         const isGenericGreeting = newMessage === '你好～我是洛天依！' || 
@@ -932,7 +937,10 @@ export default function LuoTianyiLive2D() {
         // 修复：确保window.showMessage与live2dMessageManager状态同步
         (window as any).showMessage = (msg: string, timeout?: number) => {
             // 调用updateMessage显示消息
-            updateMessage(msg);
+            // 确保只传递有效的字符串，避免undefined
+            if (msg && typeof msg === 'string' && msg.trim() !== '') {
+                updateMessage(msg);
+            }
             
             // 重置live2dMessageManager的显示状态，确保后续消息能正常显示
             if (typeof window !== 'undefined' && (window as any).live2dMessageManager) {
@@ -983,12 +991,14 @@ export default function LuoTianyiLive2D() {
             const globalShowMessage = (window as any).showMessage;
             
             // 辅助函数：渲染消息模板
-            const renderTip = (text: string, data: any) => {
-                if (data && data.text) {
-                    return text.replace(/{text}/g, data.text);
-                }
-                return text;
-            };
+        const renderTip = (text: string, data: any) => {
+            if (data && data.text) {
+                // 确保只替换为有效的字符串，避免undefined
+                const replacementText = data.text || '';
+                return text.replace(/{text}/g, replacementText);
+            }
+            return text;
+        };
             
             // 为mouseover事件添加节流
             messageConfig.mouseover.forEach((tips: any) => {
@@ -1134,7 +1144,7 @@ export default function LuoTianyiLive2D() {
                         position: 'absolute',
                         top: '-20px',
                         left: '50px',
-                        display: message ? 'block' : 'none',
+                        display: (message && typeof message === 'string' && message.trim() !== '') ? 'block' : 'none',
                         transition: 'opacity 0.5s ease-in-out',
                         background: 'rgba(102, 204, 255, 0.2)',
                         padding: '7px',
@@ -1148,7 +1158,7 @@ export default function LuoTianyiLive2D() {
                         zIndex: 10001 // 统一使用最高层级，避免被其他动画元素覆盖
                     }}
                 >
-                    {message}
+                    {message || ''}
                 </div>
                 
                 <canvas 
