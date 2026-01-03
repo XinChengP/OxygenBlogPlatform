@@ -410,6 +410,7 @@ const useLocalStorage = <T,>(key: string, initialValue: T) => {
 ---
 title: "文章标题"
 date: "YYYY-MM-DD"
+updatedAt: "YYYY-MM-DD"  # 可选：文章更新时间，用于区别发布时间
 category: "分类"
 tags: ["标签1", "标签2"]
 excerpt: "文章摘要"
@@ -517,6 +518,6 @@ OxygenBlogPlatform/
 
 ---
 
-*最后更新: 2026年1月2日*  
+*最后更新: 2026年1月3日*  
 *维护者: 歆橙*  
-*版本: v3.1 - 简化版项目规范*
+*版本: v3.2 - 添加文章更新时间支持*

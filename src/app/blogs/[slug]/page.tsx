@@ -44,6 +44,7 @@ interface BlogDetailPageProps {
 interface BlogPost {
   title: string;
   date: string;
+  updatedAt?: string;
   category: string;
   tags: string[];
   readTime: number;
@@ -77,6 +78,7 @@ interface BlogPost {
 interface BlogFrontMatter {
   title?: string;
   date?: string;
+  updatedAt?: string;
   category?: string;
   tags?: string[];
   readTime?: number;
@@ -245,6 +247,7 @@ async function getBlogContent(slug: string): Promise<BlogPost | null> {
     return {
       title: title,
       date: formatBlogDate(frontMatter.date),
+      updatedAt: frontMatter.updatedAt ? formatBlogDate(frontMatter.updatedAt) : undefined,
       category: frontMatter.category || '其他',
       tags: frontMatter.tags || [],
       readTime: readTime,
@@ -310,6 +313,7 @@ export async function generateMetadata({ params }: BlogDetailPageProps): Promise
       description: seoDescription,
       type: 'article',
       publishedTime: blogData.date,
+      modifiedTime: blogData.updatedAt,
       authors: blogData.author ? [blogData.author] : undefined,
       tags: blogData.tags,
     },

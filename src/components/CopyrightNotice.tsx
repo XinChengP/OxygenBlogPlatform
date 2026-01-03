@@ -119,7 +119,7 @@ export default function CopyrightNotice({
             </div>
           </div>
           
-          <div className="mt-2 text-xs text-gray-500 dark:text-gray-500">
+          <div className="mt-2 text-xs text-gray-500 dark:text-gray-500 text-left">
             <span>本文链接：</span>
             <Link 
               href={articleUrl}

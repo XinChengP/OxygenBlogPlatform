@@ -2424,7 +2424,7 @@ seoDescription: "${blogMetadata.seoDescription}"
               <span>•</span>
               <span>{blogMetadata.date}</span>
               <span>•</span>
-              <span>{blogMetadata.readTime} 分钟阅读</span>
+              <span>预计阅读时间{blogMetadata.readTime}分钟</span>
               {blogMetadata.author && (
                 <>
                   <span>•</span>
@@ -3141,7 +3141,7 @@ seoDescription: "${blogMetadata.seoDescription}"
             </span>
             <span>{charCount} 字符</span>
             <span className="hidden sm:inline">
-              预计 {calculateReadingTime(content)} 分钟阅读
+              预计阅读时间{calculateReadingTime(content)}分钟
             </span>
             <span className="hidden sm:inline">{previewMode === 'edit' ? '编辑' : previewMode === 'preview' ? '预览' : '分屏'}</span>
           </div>

@@ -187,6 +187,7 @@ interface ComponentProps {
 interface BlogPost {
   title: string;
   date: string;
+  updatedAt?: string;
   category: string;
   tags: string[];
   readTime: number;
@@ -237,6 +238,47 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
   const [, setMarkdownComponents] = useState<any>(null);
   const isLoadedRef = useRef(false);
   const iframeRefs = useRef<Array<HTMLIFrameElement | null>>([]);
+  
+  // 计算文章时效性
+  const calculateArticleAge = () => {
+    const now = new Date();
+    const articleDateStr = blog.updatedAt || blog.date;
+    const articleDate = new Date(articleDateStr);
+    
+    // 计算年份差值
+    const nowYear = now.getFullYear();
+    const articleYear = articleDate.getFullYear();
+    const nowMonth = now.getMonth();
+    const articleMonth = articleDate.getMonth();
+    const nowDay = now.getDate();
+    const articleDay = articleDate.getDate();
+    
+    // 计算完整年份差值
+    let diffYears = nowYear - articleYear;
+    
+    // 如果当前月份小于文章月份，或者月份相同但当前日期小于文章日期，减去1年
+    if (nowMonth < articleMonth || (nowMonth === articleMonth && nowDay < articleDay)) {
+      diffYears--;
+    }
+    
+    // 确定日期类型文本
+    const dateTypeText = blog.updatedAt ? '更新' : '发布';
+    
+    if (diffYears >= 3) {
+      return {
+        message: `本文于 ${articleYear} 年${dateTypeText}，距今已超过 ${diffYears} 年，文中内容可能已过时`,
+        type: 'warning' as const
+      };
+    } else if (diffYears >= 1) {
+      return {
+        message: `本文于 ${articleYear} 年${dateTypeText}，距今已超过 ${diffYears} 年，部分内容可能已更新`,
+        type: 'info' as const
+      };
+    }
+    return null;
+  };
+  
+  const articleAgeInfo = calculateArticleAge();
 
 
 
@@ -514,15 +556,21 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
             >
               <div className="flex items-center gap-1">
                 <CalendarIcon className="h-4 w-4" />
-                <span>{blog.date}</span>
+                <span>发布于 {blog.date}</span>
               </div>
+              {blog.updatedAt && (
+                <div className="flex items-center gap-1">
+                  <CalendarIcon className="h-4 w-4" />
+                  <span>更新于 {blog.updatedAt}</span>
+                </div>
+              )}
               <div className="flex items-center gap-1">
                 <TagIcon className="h-4 w-4" />
                 <span>{blog.category}</span>
               </div>
               <div className="flex items-center gap-1">
                 <BookOpenIcon className="h-4 w-4" />
-                <span>{blog.readTime} 分钟阅读</span>
+                <span>预计阅读时间{blog.readTime}分钟</span>
               </div>
               {blog.author && (
                 <div className="flex items-center gap-1">
@@ -537,6 +585,21 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                 </div>
               )}
             </motion.div>
+            
+            {/* 文章时效性说明 - 仅技术分类显示 */}
+            {articleAgeInfo && blog.category === '技术' && (
+              <motion.div 
+                className={`mt-4 mb-8 p-4 bg-card/50 backdrop-blur-sm rounded-lg shadow-sm border-l-4 ${articleAgeInfo.type === 'warning' ? 'border-amber-400' : 'border-primary'}`}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.4 }}
+              >
+                <span className={`font-medium ${articleAgeInfo.type === 'warning' ? 'text-amber-600 dark:text-amber-400' : 'text-primary'}`}>
+                  {articleAgeInfo.type === 'warning' ? '时效性提示' : '时效性说明'}
+                </span>
+                <span className="ml-2 text-muted-foreground">{articleAgeInfo.message}</span>
+              </motion.div>
+            )}
 
             {/* 目录导航 */}
             <div className="mb-8">
@@ -869,9 +932,9 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
             </div>
 
             {/* 版权声明 */}
-            <Suspense fallback={<div className="h-24 bg-gray-200 dark:bg-gray-700 animate-pulse rounded-lg"></div>}>
-              <LazyCopyrightNotice title={blog.title} publishDate={blog.date} slug={blog.slug} reference={blog.reference} />
-            </Suspense>
+          <Suspense fallback={<div className="h-24 bg-gray-200 dark:bg-gray-700 animate-pulse rounded-lg"></div>}>
+            <LazyCopyrightNotice title={blog.title} publishDate={blog.date} slug={blog.slug} reference={blog.reference} />
+          </Suspense>
           </div>
 
           {/* 评论区 */}
