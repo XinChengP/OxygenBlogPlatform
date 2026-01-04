@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { GalleryImage } from '../../../types/gallery';
-import OptimizedImage from '../../../components/ui/OptimizedImage';
+
 
 // ImagePreview组件属性
 interface ImagePreviewProps {
@@ -102,11 +102,10 @@ const ImagePreview = ({ images, initialImage, onClose }: ImagePreviewProps) => {
       
       {/* 图片容器 */}
       <div className="relative max-w-[90vw] max-h-[90vh]">
-        <OptimizedImage
+        <img
           src={currentImage.src}
           alt={currentImage.alt}
           className="max-w-full max-h-[90vh] object-contain rounded-lg"
-          priority
         />
         
         {/* 图片信息 */}

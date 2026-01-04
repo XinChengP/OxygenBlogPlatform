@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { GalleryImage, ImageLoadStatus } from '../../../types/gallery';
-import OptimizedImage from '../../../components/ui/OptimizedImage';
+
 
 // ImageCard组件属性
 interface ImageCardProps {
@@ -83,11 +83,10 @@ const ImageCard = ({ image, onClick }: ImageCardProps) => {
         )}
         
         {/* 图片 */}
-        <OptimizedImage
+        <img
           src={image.src}
           alt={image.alt}
           className={`w-full h-full object-cover transition-opacity duration-300 ${loadStatus === 'loading' ? 'opacity-0' : 'opacity-100'}`}
-          loading="lazy"
           onLoad={handleImageLoad}
           onError={handleImageError}
         />

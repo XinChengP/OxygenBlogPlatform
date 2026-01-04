@@ -129,55 +129,29 @@ const nextConfig = {
   
   // 优化打包
   webpack: (config: any, { isServer }: { isServer: boolean }) => {
-    // 优化chunk分割
+    // 简化chunk分割配置，解决marked库ESM模块加载问题
     if (!isServer) {
+      // 使用Next.js默认的chunk分割策略
       config.optimization.splitChunks = {
         ...config.optimization.splitChunks,
-        chunks: 'all',
-        maxInitialRequests: 10,
-        minSize: 20000,
         cacheGroups: {
           default: false,
           vendors: false,
-          // vendor chunk
+          // 仅保留基础vendor chunk，不进行过度分割
           vendor: {
             name: 'vendor',
             chunks: 'all',
             test: /node_modules/,
-            priority: 20,
-            maxSize: 500000,
-          },
-          // common chunk
-          common: {
-            name: 'common',
-            minChunks: 2,
-            chunks: 'all',
             priority: 10,
-            reuseExistingChunk: true,
-            enforce: true,
-            maxSize: 300000,
+            // 禁用maxSize限制，避免marked库被分割到多个chunk
           },
-          // 第三方库单独打包
-          ...['react', 'react-dom', 'framer-motion', 'next'].reduce((acc, name) => {
-            acc[name] = {
-              name,
-              priority: 30,
-              test: new RegExp(`[\\/]node_modules[\\/]${name}[\\/]`),
-              chunks: 'all',
-              maxSize: 400000,
-            };
-            return acc;
-          }, {} as any),
         },
       };
       
-      // 优化运行时代码 (仅在非静态导出模式下启用)
+      // 开发环境禁用runtimeChunk，避免chunk加载问题
       if (!isStaticExport) {
-        config.optimization.runtimeChunk = 'single';
+        config.optimization.runtimeChunk = false;
       }
-      config.optimization.removeAvailableModules = true;
-      config.optimization.removeEmptyChunks = true;
-      config.optimization.mergeDuplicateChunks = true;
     }
     
     // 优化解析

@@ -4,6 +4,7 @@
  */
 
 import DOMPurify from 'dompurify';
+import { marked } from 'marked';
 
 // 缓存机制：用于存储已处理的Markdown内容
 const markdownCache = new Map<string, string>();
@@ -28,48 +29,12 @@ function safeRepeat(this: string, count: number): string {
 // 替换String.prototype.repeat
 String.prototype.repeat = safeRepeat;
 
-// 动态导入marked库 - 使用Promise缓存
-let markedPromise: Promise<any> | null = null;
-let marked: any;
-
-/**
- * 初始化marked库
- * 使用Promise缓存，避免重复导入
- */
-export async function initializeMarked() {
-  if (marked) {
-    return marked;
-  }
-  
-  // 如果Promise已经存在，直接返回
-  if (markedPromise) {
-    return markedPromise;
-  }
-  
-  // 创建新的Promise并缓存
-  markedPromise = (async () => {
-    try {
-      const markedModule = await import('marked');
-      marked = markedModule.marked || markedModule;
-      
-      // 配置marked选项
-      if (marked && typeof marked.setOptions === 'function') {
-        marked.setOptions({
-          breaks: true,
-          gfm: true,
-          silent: true, // 静默模式，减少错误抛出
-        });
-      }
-      
-      return marked;
-    } catch (error) {
-      console.error('Marked库初始化失败:', error);
-      throw error;
-    }
-  })();
-  
-  return markedPromise;
-}
+// 直接配置marked选项
+marked.setOptions({
+  breaks: true,
+  gfm: true,
+  silent: true, // 静默模式，减少错误抛出
+});
 
 /**
  * 安全的Markdown转HTML函数
@@ -82,15 +47,7 @@ export async function safeMarkdownToHtml(markdown: string): Promise<string> {
   }
   
   try {
-    const markedInstance = await initializeMarked();
-    
-    if (!markedInstance || typeof markedInstance.parse !== 'function') {
-      const result = fallbackMarkdownToHtml(markdown);
-      markdownCache.set(markdown, result);
-      return result;
-    }
-    
-    let html = markedInstance.parse(markdown);
+    let html = marked.parse(markdown);
     
     // 对marked的输出进行后处理，添加增强的代码块样式
     // 匹配带或不带class属性的pre>code结构
@@ -236,7 +193,6 @@ export function restoreOriginalRepeat(): void {
 
 const safeMarked = {
   safeMarkdownToHtml,
-  initializeMarked,
   restoreOriginalRepeat,
 };
 

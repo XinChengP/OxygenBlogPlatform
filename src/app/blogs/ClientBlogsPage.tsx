@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
+
 import { useState, useMemo, useEffect, lazy, Suspense } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { categories } from '@/setting/blogSetting';
@@ -723,13 +723,12 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                               whileHover={{ scale: 1.05 }}
                               transition={{ duration: 0.4 }}
                             >
-                              <Image
-                                src={getAssetPath(post.coverImage)}
+                              <img
+                                src={post.coverImage}
                                 alt={post.title}
                                 className="w-full h-full object-cover"
-                                fill
-                                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                                priority={index < 3}
+                                width={400}
+                                height={225}
                               />
                             </motion.div>
                             <motion.div 
@@ -840,13 +839,12 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                                 {post.author && (
                                   <div className="flex items-center gap-2 group/author">
                                     {post.author.avatar && (
-                                      <Image
+                                      <img
                                         src={getAssetPath(post.author.avatar)}
                                         alt={post.author.name}
                                         className="rounded-full object-cover ring-2 ring-background group-hover/author:ring-primary transition-all duration-300"
                                         width={28}
                                         height={28}
-                                        sizes="28px"
                                       />
                                     )}
                                     <span className="text-xs sm:text-sm text-muted-foreground group-hover/author:text-foreground transition-colors truncate font-medium">
@@ -906,13 +904,12 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                                 whileHover={{ scale: 1.05 }}
                                 transition={{ duration: 0.4 }}
                               >
-                                <Image
-                                  src={getAssetPath(post.coverImage)}
+                                <img
+                                  src={post.coverImage}
                                   alt={post.title}
                                   className="w-full h-full object-cover"
-                                  fill
-                                  sizes="(max-width: 640px) 100vw, 128px"
-                                  priority={index < 3}
+                                  width={128}
+                                  height={96}
                                 />
                               </motion.div>
                               <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent"></div>
@@ -965,13 +962,12 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                                     <div className="flex items-center gap-1 group/author">
                                       {post.author.avatar && (
                                         <div className="w-4 h-4 rounded-full overflow-hidden ring-1 ring-background group-hover/author:ring-primary transition-all duration-150">
-                                          <Image
+                                          <img
                                             src={getAssetPath(post.author.avatar)}
                                             alt={post.author.name}
                                             className="w-full h-full object-cover"
                                             width={16}
                                             height={16}
-                                            sizes="16px"
                                           />
                                         </div>
                                       )}

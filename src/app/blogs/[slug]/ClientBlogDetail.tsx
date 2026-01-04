@@ -13,7 +13,7 @@ import {
   GlobeAltIcon,
   BookOpenIcon
 } from '@heroicons/react/24/outline';
-import Image from 'next/image';
+
 
 import 'katex/dist/katex.min.css';
 import { EndWord } from '../../../setting/blogSetting';
@@ -514,13 +514,12 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
             {/* 封面图片 */}
             {blog.coverImage && (
               <div className="mb-6 rounded-xl overflow-hidden shadow-2xl">
-                <Image
-                  src={getAssetPath(blog.coverImage)}
+                <img
+                  src={blog.coverImage}
                   alt={blog.title}
                   width={800}
                   height={384}
                   className="w-full h-64 md:h-96 object-cover transform hover:scale-105 transition-transform duration-500"
-                  loading="lazy"
                 />
               </div>
             )}
