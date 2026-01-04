@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { GalleryImage, ImageLoadStatus } from '../../../types/gallery';
 import OptimizedImage from '../../../components/ui/OptimizedImage';
 
@@ -14,16 +14,54 @@ interface ImageCardProps {
 const ImageCard = ({ image, onClick }: ImageCardProps) => {
   // 图片加载状态
   const [loadStatus, setLoadStatus] = useState<ImageLoadStatus>('loading');
+  const [retryCount, setRetryCount] = useState(0);
+  const maxRetries = 3;
+  
+  // 重试计时器引用
+  const retryTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   // 图片加载成功处理
   const handleImageLoad = () => {
     setLoadStatus('loaded');
+    // 清除重试计时器
+    if (retryTimerRef.current) {
+      clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
   };
   
   // 图片加载失败处理
   const handleImageError = () => {
-    setLoadStatus('failed');
+    if (retryCount < maxRetries) {
+      // 重试加载图片
+      setLoadStatus('loading');
+      setRetryCount(prev => prev + 1);
+      
+      // 清除之前的计时器
+      if (retryTimerRef.current) {
+        clearTimeout(retryTimerRef.current);
+      }
+      
+      // 指数退避重试
+      const waitTime = 1000 * Math.pow(2, retryCount);
+      retryTimerRef.current = setTimeout(() => {
+        // 通过重新设置src触发重新加载
+        setLoadStatus('loading');
+      }, waitTime);
+    } else {
+      // 达到最大重试次数，显示加载失败
+      setLoadStatus('failed');
+    }
   };
+  
+  // 组件卸载时清除计时器
+  useEffect(() => {
+    return () => {
+      if (retryTimerRef.current) {
+        clearTimeout(retryTimerRef.current);
+      }
+    };
+  }, []);
   
   return (
     <div 
@@ -34,8 +72,13 @@ const ImageCard = ({ image, onClick }: ImageCardProps) => {
       <div className="aspect-square relative bg-gray-100 dark:bg-gray-800">
         {/* 加载中状态 */}
         {loadStatus === 'loading' && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-2"></div>
+            {retryCount > 0 && (
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                重试中... ({retryCount}/{maxRetries})
+              </p>
+            )}
           </div>
         )}
         
@@ -51,10 +94,21 @@ const ImageCard = ({ image, onClick }: ImageCardProps) => {
         
         {/* 加载失败状态 */}
         {loadStatus === 'failed' && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-200 dark:bg-gray-700">
-            <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-200 dark:bg-gray-700">
+            <svg className="w-12 h-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">图片加载失败</p>
+            <button 
+              className="text-xs text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300"
+              onClick={(e) => {
+                e.stopPropagation();
+                setLoadStatus('loading');
+                setRetryCount(0);
+              }}
+            >
+              点击重试
+            </button>
           </div>
         )}
         
