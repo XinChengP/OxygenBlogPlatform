@@ -47,7 +47,8 @@ export async function safeMarkdownToHtml(markdown: string): Promise<string> {
   }
   
   try {
-    let html = marked.parse(markdown);
+    // 使用await确保html是字符串类型
+    let html = await marked.parse(markdown);
     
     // 对marked的输出进行后处理，添加增强的代码块样式
     // 匹配带或不带class属性的pre>code结构

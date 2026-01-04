@@ -37,6 +37,8 @@ const eslintConfig = [
       "@typescript-eslint/no-explicit-any": "off",
       // 关闭强制 const 规则
       "prefer-const": "off",
+      // 允许使用 img 标签（禁用 Next.js 的 img 元素警告）
+      "@next/next/no-img-element": "off",
     },
   },
 ];

@@ -700,7 +700,7 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
             {/* 网格视图 */}
             {viewMode === 'grid' && (
               <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2">
-                {paginationData.currentPosts.map((post, index) => (
+                {paginationData.currentPosts.map((post) => (
                   <motion.article
                     key={post.slug}
                     className={`${getGlassStyle("rounded-xl shadow-lg overflow-hidden cursor-pointer group relative")} border border-transparent`}
@@ -880,7 +880,7 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
             {/* 列表视图 */}
             {viewMode === 'list' && (
               <div className="space-y-2">
-                {paginationData.currentPosts.map((post, index) => (
+                {paginationData.currentPosts.map((post) => (
                   <motion.article
                     key={post.id}
                     className={`${getGlassStyle("rounded-md shadow-sm p-2.5 cursor-pointer group relative")} border border-transparent`}

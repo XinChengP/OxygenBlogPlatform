@@ -11,7 +11,7 @@ import { Cover } from '@/components/ui/cover'
 import { EvervaultCard, Icon } from '@/components/ui/evervault-card';
 import OptimizedIcon from '@/components/core/OptimizedIcon';
 
-import {title, BeforeAnimationText, AnimationText, name, slogan, aboutMeP1, aboutMeP2, aboutMeP3, mainContactMeDescription, subContactMeDescription, mail, github, bilibili, isBorder, isRainbowGradient}
+import {title, BeforeAnimationText, AnimationText, name, slogan, aboutMeP1, aboutMeP2, aboutMeP3, mail, github, bilibili, isBorder, isRainbowGradient}
 from '@/setting/AboutSetting';
 import { useMemo } from 'react';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
