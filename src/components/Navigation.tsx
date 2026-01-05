@@ -27,6 +27,7 @@ const Navigation = () => {
     { href: '/', label: '首页' },
     { href: '/blogs', label: '博客' },
     { href: '/archive', label: '归档' },
+    { href: '/gallery', label: '画廊' },
     { href: '/guestbook', label: '留言板' },
     { href: '/tools', label: '小工具' },
     { href: '/about', label: '关于' },
