@@ -1,6 +1,28 @@
 'use client';
 
 import { useState, lazy, Suspense, useEffect, useRef } from 'react';
+
+// 添加自定义样式，实现精确的缩进控制
+const BlogDetailStyles = () => {
+  return (
+    <style jsx global>{`
+      /* 只对根级别的p标签添加缩进，特殊元素内的p标签不缩进 */
+      .blog-content > p {
+        margin-left: 1.5rem;
+      }
+      
+      /* 确保特殊元素内的p标签不被缩进 */
+      .blog-content blockquote p,
+      .blog-content ul p,
+      .blog-content ol p,
+      .blog-content table p,
+      .blog-content pre p,
+      .blog-content div p {
+        margin-left: 0;
+      }
+    `}</style>
+  );
+};
 import { motion } from 'motion/react';
 import LazyMarkdown from '../../../components/LazyMarkdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -610,6 +632,46 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
 
           {/* 文章内容 */}
           <article className="prose prose-lg dark:prose-invert max-w-none">
+            <style jsx>{`
+              /* 只对根级别的p标签添加缩进 */
+              .prose > p {
+                margin-left: 1.5rem;
+              }
+              
+              /* 确保特殊元素不被缩进 */
+              .prose > h1,
+              .prose > h2,
+              .prose > h3,
+              .prose > h4,
+              .prose > h5,
+              .prose > h6,
+              .prose > blockquote,
+              .prose > ul,
+              .prose > ol,
+              .prose > table,
+              .prose > pre,
+              .prose > div {
+                margin-left: 0;
+              }
+              
+              /* 确保特殊元素内的p标签不被缩进 - 覆盖内联样式 */
+              .prose blockquote p,
+              .prose ul p,
+              .prose ol p,
+              .prose table p,
+              .prose pre p,
+              .prose div p {
+                margin-left: 0 !important;
+                text-indent: 0 !important;
+              }
+              
+              /* 确保特殊元素内的所有内容都不被缩进 */
+              .prose blockquote *,
+              .prose div * {
+                margin-left: 0 !important;
+                text-indent: 0 !important;
+              }
+            `}</style>
             <div className="bg-card/50 backdrop-blur-sm rounded-xl shadow-lg p-6 md:p-8">
               <div className="prose prose-lg dark:prose-invert max-w-none">
                 <LazyMarkdown
