@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+// 不使用Google Fonts，改用系统字体栈
+// 系统字体加载更快，减少外部依赖
 import Script from "next/script";
 import "./globals.css";
 import Navigation from "@/components/Navigation";
@@ -11,15 +12,16 @@ import SmoothScrollProvider from "@/components/SmoothScrollProvider";
 import ClientRouterWrapper from "@/components/ClientRouterWrapper";
 import { webTitle, webDescription } from "@/setting/WebSetting";
 
-const geistSans = Geist({
+// 系统字体配置
+const geistSans = {
   variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+  className: ""
+};
 
-const geistMono = Geist_Mono({
+const geistMono = {
   variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+  className: ""
+};
 
 export const metadata: Metadata = {
   title: webTitle,

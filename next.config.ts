@@ -128,31 +128,77 @@ const nextConfig = {
   },
   
   // 优化打包
-  webpack: (config: any, { isServer }: { isServer: boolean }) => {
-    // 简化chunk分割配置，解决marked库ESM模块加载问题
-    if (!isServer) {
-      // 使用Next.js默认的chunk分割策略
-      config.optimization.splitChunks = {
-        ...config.optimization.splitChunks,
-        cacheGroups: {
-          default: false,
-          vendors: false,
-          // 仅保留基础vendor chunk，不进行过度分割
-          vendor: {
-            name: 'vendor',
-            chunks: 'all',
-            test: /node_modules/,
-            priority: 10,
-            // 禁用maxSize限制，避免marked库被分割到多个chunk
+    webpack: (config: any, { isServer }: { isServer: boolean }) => {
+      // 优化chunk分割策略，减少首屏加载资源
+      if (!isServer) {
+        // 配置更细粒度的chunk分割
+        config.optimization.splitChunks = {
+          ...config.optimization.splitChunks,
+          // 启用chunk分割
+          chunks: 'all',
+          // 最小chunk大小，太小的chunk会增加HTTP请求
+          minSize: 20000,
+          // 最大chunk大小，太大的chunk会影响加载速度
+          maxSize: 200000,
+          // 最小引用次数
+          minChunks: 1,
+          // 最大异步请求数
+          maxAsyncRequests: 30,
+          // 最大初始请求数
+          maxInitialRequests: 30,
+          // 使用更清晰的chunk名称
+          name: false,
+          cacheGroups: {
+            // 基础vendor chunk，包含react、react-dom等核心库
+            vendor: {
+              name: 'vendor-core',
+              chunks: 'initial',
+              test: /[\\/]node_modules[\\/](react|react-dom|next|next-themes|clsx|tailwind-merge)[\\/]/,
+              priority: 20,
+            },
+            // markdown相关库
+            markdown: {
+              name: 'vendor-markdown',
+              chunks: 'all',
+              test: /[\\/]node_modules[\\/](marked|react-markdown|rehype|remark|gray-matter)[\\/]/,
+              priority: 15,
+            },
+            // 动画相关库
+            animation: {
+              name: 'vendor-animation',
+              chunks: 'all',
+              test: /[\\/]node_modules[\\/](framer-motion|@tsparticles|motion)[\\/]/,
+              priority: 10,
+            },
+            // 代码高亮相关库
+            highlight: {
+              name: 'vendor-highlight',
+              chunks: 'all',
+              test: /[\\/]node_modules[\\/](highlight.js|react-syntax-highlighter)[\\/]/,
+              priority: 9,
+            },
+            // 其他node_modules库
+            defaultVendors: {
+              name: 'vendor-other',
+              chunks: 'all',
+              test: /[\\/]node_modules[\\/]/,
+              priority: 5,
+              reuseExistingChunk: true,
+            },
+            // 其他代码
+            default: {
+              minChunks: 2,
+              priority: 0,
+              reuseExistingChunk: true,
+            },
           },
-        },
-      };
-      
-      // 开发环境禁用runtimeChunk，避免chunk加载问题
-      if (!isStaticExport) {
-        config.optimization.runtimeChunk = false;
+        };
+        
+        // 开发环境禁用runtimeChunk，避免chunk加载问题
+        if (!isStaticExport) {
+          config.optimization.runtimeChunk = false;
+        }
       }
-    }
     
     // 优化解析
     config.resolve.fallback = {
