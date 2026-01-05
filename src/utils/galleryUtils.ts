@@ -212,9 +212,13 @@ export const getRemoteImages = async (config: {
           // 处理图片文件
           const category = path.basename(config.path);
           
+          // 构造jsDelivr加速URL
+          const jsdelivrUrl = `https://cdn.jsdelivr.net/gh/${config.owner}/${config.repo}@${config.branch}/${config.path}/${item.name}`;
+          
           images.push({
             id: generateImageId(`${config.path}/${item.name}`),
-            src: item.download_url, // 直接使用GitHub提供的下载URL
+            src: jsdelivrUrl, // 使用jsDelivr加速URL作为主URL
+            fallbackSrc: item.download_url, // 保存原始GitHub URL作为备用
             alt: item.name.replace(path.extname(item.name), ''),
             source: ImageSource.Remote,
             category: category || 'default',

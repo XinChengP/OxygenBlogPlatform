@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { GalleryImage, ImageLoadStatus } from '../../../types/gallery';
 
 
@@ -15,10 +15,20 @@ const ImageCard = ({ image, onClick }: ImageCardProps) => {
   // 图片加载状态
   const [loadStatus, setLoadStatus] = useState<ImageLoadStatus>('loading');
   const [retryCount, setRetryCount] = useState(0);
+  const [currentSrc, setCurrentSrc] = useState(image.src);
   const maxRetries = 3;
+  const hasFallback = !!image.fallbackSrc;
+  const hasSwitchedToFallback = currentSrc === image.fallbackSrc;
   
   // 重试计时器引用
   const retryTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // 重置图片状态 - 使用useCallback优化
+  const resetImageState = useCallback(() => {
+    setLoadStatus('loading');
+    setRetryCount(0);
+    setCurrentSrc(image.src); // 重置为原始URL
+  }, [image.src]);
   
   // 图片加载成功处理
   const handleImageLoad = () => {
@@ -48,8 +58,13 @@ const ImageCard = ({ image, onClick }: ImageCardProps) => {
         // 通过重新设置src触发重新加载
         setLoadStatus('loading');
       }, waitTime);
+    } else if (!hasSwitchedToFallback && hasFallback) {
+      // 达到最大重试次数，且有备用URL，切换到备用URL
+      setCurrentSrc(image.fallbackSrc!);
+      setRetryCount(0);
+      setLoadStatus('loading');
     } else {
-      // 达到最大重试次数，显示加载失败
+      // 达到最大重试次数，且没有备用URL或备用URL也失败了，显示加载失败
       setLoadStatus('failed');
     }
   };
@@ -62,6 +77,11 @@ const ImageCard = ({ image, onClick }: ImageCardProps) => {
       }
     };
   }, []);
+  
+  // 当image.src变化时重置状态
+  useEffect(() => {
+    resetImageState();
+  }, [image.src, resetImageState]);
   
   return (
     <div 
@@ -84,7 +104,7 @@ const ImageCard = ({ image, onClick }: ImageCardProps) => {
         
         {/* 图片 */}
         <img
-          src={image.src}
+          src={currentSrc}
           alt={image.alt}
           className={`w-full h-full object-cover transition-opacity duration-300 ${loadStatus === 'loading' ? 'opacity-0' : 'opacity-100'}`}
           onLoad={handleImageLoad}

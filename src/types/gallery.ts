@@ -9,7 +9,8 @@ export enum ImageSource {
 // 图片信息类型
 export interface GalleryImage {
   id: string; // 唯一标识符
-  src: string; // 图片URL
+  src: string; // 主图片URL（jsDelivr加速）
+  fallbackSrc?: string; // 备用图片URL（原始GitHub URL，用于保底）
   thumbnail?: string; // 缩略图URL（可选）
   alt: string; // 图片描述
   source: ImageSource; // 图片来源
