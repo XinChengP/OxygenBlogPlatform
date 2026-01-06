@@ -20,7 +20,8 @@ const isImageFile = (filename: string): boolean => {
  * 生成唯一图片ID
  * @param filePath - 文件路径
  * @returns 唯一ID
- */// 生成唯一图片ID
+ */
+// 生成唯一图片ID
 const generateImageId = (filePath: string): string => {
   return filePath
     .replace(/[\\/]/g, '-') // 统一替换所有路径分隔符
@@ -50,18 +51,24 @@ const scanImageFiles = (dir: string, baseDir: string): GalleryImage[] => {
       } else if (isImageFile(item)) {
         // 找到图片文件
         const relativePath = path.relative(baseDir, itemPath);
-        const category = path.dirname(relativePath) || 'default';
+        const fullPath = relativePath.replace(/\\/g, '/'); // 规范化路径分隔符
+        const directoryPath = path.dirname(fullPath); // 只使用目录路径进行分类映射
+        const normalizedDirPath = directoryPath.replace(/\\/g, '/'); // 确保目录路径分隔符一致
         const filename = path.basename(itemPath);
         
         // 生成图片URL（相对于public目录）
         const imageUrl = `/gallery/${relativePath}`;
+        
+        // 使用分类映射系统确定分类
+        const { mainCategory, subCategory } = mapPathToCategory(normalizedDirPath);
         
         results.push({
           id: generateImageId(relativePath),
           src: getAssetPath(imageUrl),
           alt: filename.replace(path.extname(filename), ''),
           source: ImageSource.Local,
-          category: category === '.' ? 'default' : category,
+          category: mainCategory, // 使用映射后的主分类
+          subCategory, // 使用映射后的子分类（可选）
         });
       }
     });
@@ -152,13 +159,13 @@ interface GalleryCategoryConfig {
 const GALLERY_PATH_MAPPINGS: GalleryCategoryConfig[] = [
   // ========== 表情包分类 ==========
   {
-    pathPattern: 'emoticon',
+    pathPattern: 'LTYpicture/emoticon',
     mainCategory: '表情包',
     sortOrder: 1,
     description: '洛天依表情包合集'
   },
   {
-    pathPattern: 'emoticon/Zi_Series',
+    pathPattern: 'LTYpicture/emoticon/Zi_Series',
     mainCategory: '表情包',
     subCategory: 'Zi系列',
     sortOrder: 2,
@@ -167,20 +174,20 @@ const GALLERY_PATH_MAPPINGS: GalleryCategoryConfig[] = [
   
   // ========== 美图分类 ==========
   {
-    pathPattern: 'wallpapers&illustration',
+    pathPattern: 'LTYpicture/wallpapers&illustration',
     mainCategory: '美图',
     sortOrder: 3,
     description: '佬の壁纸和曲绘'
   },
   {
-    pathPattern: 'wallpapers&illustration/heng',
+    pathPattern: 'LTYpicture/wallpapers&illustration/heng',
     mainCategory: '美图',
     subCategory: '横屏',
     sortOrder: 4,
     description: '横版壁纸'
   },
   {
-    pathPattern: 'wallpapers&illustration/shu',
+    pathPattern: 'LTYpicture/wallpapers&illustration/shu',
     mainCategory: '美图',
     subCategory: '竖屏',
     sortOrder: 5,
@@ -189,10 +196,17 @@ const GALLERY_PATH_MAPPINGS: GalleryCategoryConfig[] = [
   
   // ========== 其他分类 ==========
   {
-    pathPattern: 'temporary',
+    pathPattern: 'LTYpicture/temporary',
     mainCategory: '临时',
     sortOrder: 99,
     description: '临时存放的图片'
+  },
+  // 直接映射 LTYpicture 目录下的其他图片
+  {
+    pathPattern: 'LTYpicture',
+    mainCategory: '默认',
+    sortOrder: 100,
+    description: '洛天依图片合集'
   },
 ];
 /**
@@ -201,17 +215,6 @@ const GALLERY_PATH_MAPPINGS: GalleryCategoryConfig[] = [
  * @returns 包含主分类和子分类的对象
  */
 const mapPathToCategory = (relativePath: string): GalleryCategoryConfig => {
-  // 处理根目录或当前目录的情况
-  if (relativePath === '.' || relativePath === '') {
-    // 如果是根目录，返回默认分类或特殊处理
-    return {
-      mainCategory: '默认',
-      sortOrder: 100,
-      description: '来自根目录',
-      pathPattern: ''
-    };
-  }
-  
   // 按路径长度降序排序，确保更具体的路径优先匹配
   const sortedMappings = [...GALLERY_PATH_MAPPINGS].sort(
     (a, b) => b.pathPattern.length - a.pathPattern.length
@@ -221,6 +224,19 @@ const mapPathToCategory = (relativePath: string): GalleryCategoryConfig => {
   for (const config of sortedMappings) {
     const pathPattern = config.pathPattern;
     
+    // 处理相对路径为空的情况（根目录）
+    if (!relativePath && !pathPattern) {
+      return {
+        mainCategory: config.mainCategory,
+        subCategory: config.subCategory,
+        sortOrder: config.sortOrder,
+        icon: config.icon,
+        description: config.description,
+        pathPattern: config.pathPattern
+      };
+    }
+    
+    // 正常路径匹配
     if (relativePath.startsWith(pathPattern + '/') || relativePath === pathPattern) {
        return {
          mainCategory: config.mainCategory,
@@ -231,6 +247,16 @@ const mapPathToCategory = (relativePath: string): GalleryCategoryConfig => {
          pathPattern: config.pathPattern
        };
      }
+   }
+   
+   // 处理根目录情况
+   if (!relativePath) {
+     return {
+       mainCategory: '默认',
+       sortOrder: 100,
+       description: '来自根目录',
+       pathPattern: ''
+     };
    }
    
    // 默认返回路径的最后部分作为分类
@@ -405,17 +431,27 @@ export const getRemoteImages = async (config: {
           images.push(...subDirImages);
         } else if (isImageFile(item.name)) {
           // 处理图片文件
-          const fullPath = `${config.path}/${item.name}`.replace(/^\//, ''); // 确保路径不包含开头的斜杠
-          let relativePath = path.dirname(fullPath); // 只使用目录路径进行分类映射
+          // 构建完整路径，确保不包含开头的斜杠
+          let fullPath = config.path ? `${config.path}/${item.name}` : item.name;
+          fullPath = fullPath.replace(/^\//, '');
+          
+          // 获取相对于仓库根目录的目录路径
+          let relativePath = path.dirname(fullPath);
           
           // 规范化路径分隔符，将反斜杠转换为正斜杠，确保跨平台兼容性
           relativePath = relativePath.replace(/\\/g, '/');
+          
+          // 处理根目录情况
+          if (relativePath === '.') {
+            relativePath = '';
+          }
           
           // 使用路径映射函数确定分类
           const { mainCategory, subCategory } = mapPathToCategory(relativePath);
           
           // 构造jsDelivr加速URL
-          const jsdelivrUrl = `https://cdn.jsdelivr.net/gh/${config.owner}/${config.repo}@${config.branch}/${config.path}/${item.name}`;
+          const fullImagePath = config.path ? `${config.path}/${item.name}` : item.name;
+          const jsdelivrUrl = `https://cdn.jsdelivr.net/gh/${config.owner}/${config.repo}@${config.branch}/${fullImagePath}`;
           
           images.push({
             id: generateImageId(fullPath), // 使用完整路径生成唯一ID
