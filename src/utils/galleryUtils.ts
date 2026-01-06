@@ -394,7 +394,8 @@ export const getRemoteImages = async (config: {
           images.push(...subDirImages);
         } else if (isImageFile(item.name)) {
           // 处理图片文件
-          const relativePath = `${config.path}/${item.name}`.replace(/^\//, '');
+          const fullPath = `${config.path}/${item.name}`.replace(/^/, '');
+          const relativePath = path.dirname(fullPath); // 只使用目录路径进行分类映射
           
           // 使用路径映射函数确定分类
           const { mainCategory, subCategory } = mapPathToCategory(relativePath);
@@ -403,7 +404,7 @@ export const getRemoteImages = async (config: {
           const jsdelivrUrl = `https://cdn.jsdelivr.net/gh/${config.owner}/${config.repo}@${config.branch}/${config.path}/${item.name}`;
           
           images.push({
-            id: generateImageId(relativePath),
+            id: generateImageId(fullPath), // 使用完整路径生成唯一ID
             src: jsdelivrUrl, // 使用jsDelivr加速URL作为主URL
             fallbackSrc: item.download_url, // 保存原始GitHub URL作为备用
             alt: item.name.replace(path.extname(item.name), ''),
