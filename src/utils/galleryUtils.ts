@@ -126,6 +126,190 @@ export const getImageCategories = (images: GalleryImage[]): ImageCategory[] => {
 };
 
 /**
+ * 画廊分类配置类型
+ */
+interface GalleryCategoryConfig {
+  pathPattern: string;        // 路径匹配模式（用于匹配文件夹路径）
+  mainCategory: string;       // 主分类名称（显示在标签页上）
+  subCategory?: string;       // 子分类名称（可选，用于更细粒度的分类）
+  sortOrder?: number;         // 排序顺序（数字越小越靠前）
+  icon?: string;              // 图标（可选）
+  description?: string;       // 描述（可选）
+}
+
+/**
+ * 画廊分类映射配置
+ * 可扩展：只需在此处添加新的路径映射规则
+ * 
+ * 文件结构示例:
+ * LTYpicture/ 
+ *   ├── emoticon/ 
+ *   │   └── Zi_Series/ 
+ *   ├── temporary/ 
+ *   └── wallpapers&illustration/ 
+ *       ├── heng/ 
+ *       └── shu/ 
+ */
+const GALLERY_PATH_MAPPINGS: GalleryCategoryConfig[] = [
+  // ========== 表情包分类 ==========
+  {
+    pathPattern: 'emoticon',
+    mainCategory: '表情包',
+    sortOrder: 1,
+    description: '洛天依表情包合集'
+  },
+  {
+    pathPattern: 'emoticon/Zi_Series',
+    mainCategory: '表情包',
+    subCategory: 'Zi系列',
+    sortOrder: 2,
+    description: '活！字！乱！刷！ 来源：B站up主 Armillary_璇玑'
+  },
+  
+  // ========== 美图分类 ==========
+  {
+    pathPattern: 'wallpapers&illustration',
+    mainCategory: '美图',
+    sortOrder: 3,
+    description: '佬の壁纸和曲绘'
+  },
+  {
+    pathPattern: 'wallpapers&illustration/heng',
+    mainCategory: '美图',
+    subCategory: '横屏',
+    sortOrder: 4,
+    description: '横版壁纸'
+  },
+  {
+    pathPattern: 'wallpapers&illustration/shu',
+    mainCategory: '美图',
+    subCategory: '竖屏',
+    sortOrder: 5,
+    description: '竖版壁纸'
+  },
+  
+  // ========== 其他分类 ==========
+  {
+    pathPattern: 'temporary',
+    mainCategory: '临时',
+    sortOrder: 99,
+    description: '临时存放的图片'
+  },
+];
+/**
+ * 将GitHub仓库路径映射到分类名称
+ * @param relativePath - 相对于仓库根目录的路径
+ * @returns 包含主分类和子分类的对象
+ */
+const mapPathToCategory = (relativePath: string): GalleryCategoryConfig => {
+  // 按路径长度降序排序，确保更具体的路径优先匹配
+  const sortedMappings = [...GALLERY_PATH_MAPPINGS].sort(
+    (a, b) => b.pathPattern.length - a.pathPattern.length
+  );
+   
+   // 查找匹配的路径（支持精确匹配和前缀匹配）
+  for (const config of sortedMappings) {
+    const pathPattern = config.pathPattern;
+    if (relativePath.startsWith(pathPattern + '/') || relativePath === pathPattern) {
+       return {
+         mainCategory: config.mainCategory,
+         subCategory: config.subCategory,
+         sortOrder: config.sortOrder,
+         icon: config.icon,
+         description: config.description,
+         pathPattern: config.pathPattern
+       };
+     }
+   }
+   
+   // 默认返回路径的最后部分作为分类
+   const parts = relativePath.split('/').filter(Boolean);
+   const lastPart = parts[parts.length - 1] || '默认';
+   
+   return {
+     mainCategory: lastPart,
+     sortOrder: 100,
+     description: `来自 ${lastPart} 文件夹`,
+     pathPattern: ''
+   };
+};
+
+/**
+ * 获取所有已配置的主分类（按排序顺序）
+ * @returns 主分类名称数组
+ */
+export const getConfiguredMainCategories = (): string[] => {
+  const mainCategories = new Map<number, string>();
+  
+  for (const config of GALLERY_PATH_MAPPINGS) {
+    if (!mainCategories.has(config.sortOrder || 99)) {
+      mainCategories.set(config.sortOrder || 99, config.mainCategory);
+    }
+  }
+  
+  // 按排序顺序返回
+  return Array.from(mainCategories.entries())
+    .sort((a, b) => a[0] - b[0])
+    .map(([, name]) => name);
+};
+
+/**
+ * 获取所有分类配置
+ * @returns 分类配置数组
+ */
+export const getAllCategoryConfigs = (): Omit<GalleryCategoryConfig, 'pathPattern'>[] => {
+  const categoryMap = new Map<string, Omit<GalleryCategoryConfig, 'pathPattern'>>();
+  
+  for (const config of GALLERY_PATH_MAPPINGS) {
+    const key = config.mainCategory;
+    if (!categoryMap.has(key)) {
+      categoryMap.set(key, {
+        mainCategory: config.mainCategory,
+        sortOrder: config.sortOrder,
+        description: config.description
+      });
+    }
+  }
+  
+  return Array.from(categoryMap.values())
+    .sort((a, b) => (a.sortOrder || 99) - (b.sortOrder || 99));
+};
+
+/**
+ * 获取指定主分类下的所有子分类
+ * @param mainCategory - 主分类名称
+ * @returns 子分类配置数组
+ */
+export const getSubCategories = (mainCategory: string): GalleryCategoryConfig[] => {
+  return GALLERY_PATH_MAPPINGS
+    .filter(config => config.mainCategory === mainCategory && config.subCategory)
+    .sort((a, b) => (a.sortOrder || 99) - (b.sortOrder || 99));
+};
+
+/**
+ * 获取分类的显示顺序
+ * @param mainCategory - 主分类名称
+ * @param subCategory - 子分类名称（可选）
+ * @returns 排序顺序
+ */
+export const getCategorySortOrder = (
+  mainCategory: string, 
+  subCategory?: string
+): number => {
+  for (const config of GALLERY_PATH_MAPPINGS) {
+    if (config.mainCategory === mainCategory) {
+      if (!subCategory && !config.subCategory) {
+        return config.sortOrder || 99;
+      }
+      if (subCategory && config.subCategory === subCategory) {
+        return config.sortOrder || 99;
+      }
+    }
+  }
+  return 99;
+};
+
+/**
  * 从GitHub图床获取图片
  * @param config - GitHub图床配置
  * @returns 远程图片数组
@@ -210,18 +394,22 @@ export const getRemoteImages = async (config: {
           images.push(...subDirImages);
         } else if (isImageFile(item.name)) {
           // 处理图片文件
-          const category = path.basename(config.path);
+          const relativePath = `${config.path}/${item.name}`.replace(/^\//, '');
+          
+          // 使用路径映射函数确定分类
+          const { mainCategory, subCategory } = mapPathToCategory(relativePath);
           
           // 构造jsDelivr加速URL
           const jsdelivrUrl = `https://cdn.jsdelivr.net/gh/${config.owner}/${config.repo}@${config.branch}/${config.path}/${item.name}`;
           
           images.push({
-            id: generateImageId(`${config.path}/${item.name}`),
+            id: generateImageId(relativePath),
             src: jsdelivrUrl, // 使用jsDelivr加速URL作为主URL
             fallbackSrc: item.download_url, // 保存原始GitHub URL作为备用
             alt: item.name.replace(path.extname(item.name), ''),
             source: ImageSource.Remote,
-            category: category || 'default',
+            category: mainCategory, // 使用映射后的分类名称
+            subCategory, // 子分类（可选）
             createdAt: item.created_at,
             updatedAt: item.updated_at
           });

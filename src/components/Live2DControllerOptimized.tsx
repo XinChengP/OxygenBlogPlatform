@@ -22,6 +22,7 @@ const KNOWN_ROUTES = [
   '/about',
   '/archive',
   '/blogs',
+  '/gallery',
   '/guestbook',
   '/settings',
   '/tools/pinyin-converter',

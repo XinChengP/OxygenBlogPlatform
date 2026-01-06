@@ -5,7 +5,7 @@
  */
 
 export interface Live2DEvent {
-  type: 'theme-change' | 'music-play' | 'music-pause' | 'page-navigate' | 'custom-message' | 'live2d-init' | 'live2d-ready' | 'live2d-error' | 'live2d-message';
+  type: 'theme-change' | 'music-play' | 'music-pause' | 'page-navigate' | 'custom-message' | 'live2d-init' | 'live2d-ready' | 'live2d-error' | 'live2d-message' | 'gallery-category-change' | 'gallery-image-click' | 'gallery-preview-open' | 'gallery-preview-close' | 'gallery-scroll';
   data?: any;
   timestamp: number;
   id?: string;

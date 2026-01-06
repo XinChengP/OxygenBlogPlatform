@@ -14,7 +14,8 @@ export interface GalleryImage {
   thumbnail?: string; // 缩略图URL（可选）
   alt: string; // 图片描述
   source: ImageSource; // 图片来源
-  category: string; // 分类名称
+  category: string; // 主分类名称（用于显示在标签页上）
+  subCategory?: string; // 子分类名称（可选，用于更细粒度的分类）
   width?: number; // 图片宽度（可选，用于瀑布流布局）
   height?: number; // 图片高度（可选，用于瀑布流布局）
   createdAt?: string; // 创建时间（可选）

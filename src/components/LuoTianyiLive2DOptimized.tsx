@@ -548,6 +548,7 @@ export default function LuoTianyiLive2DOptimized({ className }: LuoTianyiLive2DO
                 '/': '欢迎来到首页！天依在这里等你～',
                 '/about': '关于页面！想了解更多关于天依吗？',
                 '/archive': '归档页面！这里有很多精彩内容～',
+                '/gallery': '画廊页面！这里有很多好看的洛天依图片～',
                 '/guestbook': '留言板！给天依留言吧～',
                 '/settings': '设置页面！可以调整天依的设置哦～',
                 '/tools/pinyin-converter': '拼音转换器！天依来帮你转换拼音～',
@@ -652,10 +653,62 @@ export default function LuoTianyiLive2DOptimized({ className }: LuoTianyiLive2DO
         // 监听主题切换
         live2dEventEmitter.on('themeChange', handleThemeChange);
         
+        // 监听画廊相关事件
+        const handleGalleryEvent = (event: any) => {
+            if (event.type === 'info') {
+                const data = event.data || {};
+                
+                switch (data.type) {
+                    case 'gallery-category-change':
+                        updateMessage(`你切换到了「${data.category}」分类！`, 'interaction');
+                        break;
+                    case 'gallery-image-click':
+                        updateMessage('这张图片看起来不错呢～', 'interaction');
+                        break;
+                    case 'gallery-preview-open':
+                        updateMessage('正在查看大图～', 'interaction');
+                        break;
+                    case 'gallery-preview-close':
+                        updateMessage('预览已关闭～', 'interaction');
+                        break;
+                }
+            }
+        };
+        
+        // 监听页面滚动事件
+        const handlePageScroll = (event: any) => {
+            if (event.data?.page === 'gallery') {
+                // 可以添加画廊滚动特定的交互逻辑
+                const scrollPercentage = event.data?.scrollPercentage || 0;
+                if (scrollPercentage > 70 && Math.random() > 0.8) {
+                    updateMessage('已经看了这么多图片啦～', 'interaction');
+                }
+            }
+        };
+        
+        // 监听Live2D消息事件，处理来自其他组件的请求
+        const handleLive2DMessage = (event: any) => {
+            if (event.data?.type === 'gallery-interaction') {
+                // 处理画廊特定的Live2D消息
+                const action = event.data?.action || '';
+                if (action === 'showCategoryInfo') {
+                    updateMessage('切换不同的分类可以看到不同类型的图片哦～', 'interaction');
+                }
+            }
+        };
+        
+        // 订阅事件
+        live2dEventEmitter.on('info', handleGalleryEvent);
+        live2dEventEmitter.on('page-scroll', handlePageScroll);
+        live2dEventEmitter.on('live2d-message', handleLive2DMessage);
+        
         return () => {
             live2dEventEmitter.off('themeChange', handleThemeChange);
+            live2dEventEmitter.off('info', handleGalleryEvent);
+            live2dEventEmitter.off('page-scroll', handlePageScroll);
+            live2dEventEmitter.off('live2d-message', handleLive2DMessage);
         };
-    }, [handleThemeChange]);
+    }, [handleThemeChange, updateMessage]);
 
     // 页面初始化完成后的处理 - 移除重复的欢迎消息
 

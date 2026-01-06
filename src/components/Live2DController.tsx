@@ -26,7 +26,8 @@ export default function Live2DController() {
       '/test',
       '/settings',
       '/guestbook',
-      '/tools'
+      '/tools',
+      '/gallery' // 添加画廊路由
     ];
     
     // 检查路径是否匹配已知路由或包含已知前缀
