@@ -2,27 +2,6 @@
 
 import { useState, lazy, Suspense, useEffect, useRef } from 'react';
 
-// 添加自定义样式，实现精确的缩进控制
-const BlogDetailStyles = () => {
-  return (
-    <style jsx global>{`
-      /* 只对根级别的p标签添加缩进，特殊元素内的p标签不缩进 */
-      .blog-content > p {
-        margin-left: 1.5rem;
-      }
-      
-      /* 确保特殊元素内的p标签不被缩进 */
-      .blog-content blockquote p,
-      .blog-content ul p,
-      .blog-content ol p,
-      .blog-content table p,
-      .blog-content pre p,
-      .blog-content div p {
-        margin-left: 0;
-      }
-    `}</style>
-  );
-};
 import { motion } from 'motion/react';
 import LazyMarkdown from '../../../components/LazyMarkdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
