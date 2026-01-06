@@ -109,6 +109,8 @@ const ImageCard = ({ image, onClick }: ImageCardProps) => {
           className={`w-full h-full object-cover transition-opacity duration-300 ${loadStatus === 'loading' ? 'opacity-0' : 'opacity-100'}`}
           onLoad={handleImageLoad}
           onError={handleImageError}
+          crossOrigin="anonymous"
+          referrerPolicy="no-referrer"
         />
         
         {/* 加载失败状态 */}

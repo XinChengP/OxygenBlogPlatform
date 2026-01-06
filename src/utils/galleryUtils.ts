@@ -450,8 +450,19 @@ export const getRemoteImages = async (config: {
           const { mainCategory, subCategory } = mapPathToCategory(relativePath);
           
           // 构造jsDelivr加速URL
-          const fullImagePath = config.path ? `${config.path}/${item.name}` : item.name;
-          const jsdelivrUrl = `https://cdn.jsdelivr.net/gh/${config.owner}/${config.repo}@${config.branch}/${fullImagePath}`;
+          let fullImagePath = config.path ? `${config.path}/${item.name}` : item.name;
+          // 确保路径不包含开头的斜杠
+          fullImagePath = fullImagePath.replace(/^\//, '');
+          // 编码URL中的特殊字符
+          const encodedImagePath = fullImagePath.split('/').map(encodeURIComponent).join('/');
+          const jsdelivrUrl = `https://cdn.jsdelivr.net/gh/${config.owner}/${config.repo}@${config.branch}/${encodedImagePath}`;
+          
+          // 调试：打印URL信息
+          console.log(`[Gallery] 构建图片URL:`);
+          console.log(`  原始路径: ${fullImagePath}`);
+          console.log(`  编码路径: ${encodedImagePath}`);
+          console.log(`  jsDelivr URL: ${jsdelivrUrl}`);
+          console.log(`  GitHub URL: ${item.download_url}`);
           
           images.push({
             id: generateImageId(fullPath), // 使用完整路径生成唯一ID
