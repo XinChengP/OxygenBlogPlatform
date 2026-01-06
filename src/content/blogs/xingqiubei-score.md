@@ -4,7 +4,7 @@ date: "2025-11-24"
 category: "洛天依"
 tags: ["洛天依", "简谱", "星球卑", "VOCALOID"]
 excerpt: "我们每个人都是漫天星辰中不突出但又最特别的那一颗小星星，不要自卑，只是其他人离你太远看不见你的闪光点"
-coverImage: "/Blogabout/Xingqiubei/cover.jpg"
+coverImage: "/Blogabout/Xingqiubei/cover.webp"
 ---
 
 # 星球卑 简谱
@@ -60,8 +60,8 @@ PS：小白第二次扒谱，还有很多地方需要完善，欢迎各位大佬
 ## 曲绘展示
 
 <div style="text-align: center; margin: 20px 0;">
-  <img src="/Blogabout/Xingqiubei/picture.jpg" alt="曲绘1" style="max-width: 100%; height: auto; border-radius: 8px;">
+  <img src="/Blogabout/Xingqiubei/picture.webp" alt="曲绘1" style="max-width: 100%; height: auto; border-radius: 8px;">
 </div>
 <div style="text-align: center; margin: 20px 0;">
-  <img src="/Blogabout/Xingqiubei/picture2.jpg" alt="曲绘2" style="max-width: 100%; height: auto; border-radius: 8px;">
+  <img src="/Blogabout/Xingqiubei/picture2.webp" alt="曲绘2" style="max-width: 100%; height: auto; border-radius: 8px;">
 </div> 

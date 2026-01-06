@@ -4,7 +4,7 @@ date: "2026-01-05"
 category: "技术"
 tags: ["游戏", "资源提取", "洛克王国"]
 excerpt: "洛克资源提取のxio教程"
-coverImage: "/Blogabout/rocokingdom-Resource/cover.jpg"
+coverImage: "/Blogabout/rocokingdom-Resource/cover.webp"
 ---
 
 # 洛克王国资源提取
@@ -28,7 +28,7 @@ coverImage: "/Blogabout/rocokingdom-Resource/cover.jpg"
 1. 想好你要找哪个宠物的资源，然后找到其编号，我们以无敌の凯老师（2585）为例子。
 2. 打开你的浏览器，输入文章末尾给的链接，把其中汉字“编号”换成具体你找到的数字编号。
 
-![输入资源链接](/Blogabout/rocokingdom-Resource/图一.png)
+![输入资源链接](/Blogabout/rocokingdom-Resource/图一.webp)
 
 3. 然后回车，直接下载！（不同浏览器可能不太一样，电脑自带的Microsoft Edge可以下载，不用管安全提示）
 
@@ -36,31 +36,31 @@ coverImage: "/Blogabout/rocokingdom-Resource/cover.jpg"
 
 1. 打开你的硕思闪客，然后把下载好的swf格式的文件拖进去。打开后你会看到一个非常鬼畜的凯老师。
 
-![正在做伸展运动の凯老师](/Blogabout/rocokingdom-Resource/图二.png)
+![正在做伸展运动の凯老师](/Blogabout/rocokingdom-Resource/图二.webp)
 
 2. 不用管，双击右侧的2585-.swf（或者单击左边的+也彳亍），双击Sprite文件夹，然后屏幕中间会有一大堆支离破碎的图片，不用管，直接下翻。
 
-![好好看好好学（bushi）](/Blogabout/rocokingdom-Resource/图三.png)
+![好好看好好学（bushi）](/Blogabout/rocokingdom-Resource/图三.webp)
 
 3. 找一个明显看上去完整的，接着一个一个点开看看，我这里选择了凯老师反复去世的动画（迫害凯老师），然后看动画上侧的编号，在右侧找到同一个编号然后选中，点击右上角的“Export Resources”。
 
-![凯老师——](/Blogabout/rocokingdom-Resource/图四.png)
+![凯老师——](/Blogabout/rocokingdom-Resource/图四.webp)
 
 4. 点完了会显示一个标题为Export Resources的窗口，选择FLA，点击Browse更改导出路径，然后直接OK！导出成功后又会跳出个窗口，直接点“Open the folder”（打开文件夹），然后就打开了导出路径
 
-![一通操作](/Blogabout/rocokingdom-Resource/图五.png)
+![一通操作](/Blogabout/rocokingdom-Resource/图五.webp)
 
 5. 把里面的sprite 459.fla用准备好的Adobe Animate（本文用Adobe Animate 2024演示，不同版本差距不大）打开（稍微等亿会），打开后弹出个什么不再支持乱七八糟的玩意，不用管，直接点确认，然后就成功打开了。
 6. 我们是要做封面的嘛，所以说在下面的时间轴（没有时间轴的快捷键Ctrl+Shift+T打开，不过可能和企鹅的闪传快捷键冲突，那就在上方的窗口-时间轴里打开）里选个美丽的一帧。然后 文件-导出-导出图像。
 
-![大快人心](/Blogabout/rocokingdom-Resource/图六.png)
+![大快人心](/Blogabout/rocokingdom-Resource/图六.webp)
 
 7. 弹出个导出图像窗口，可以更改格式、分辨率等等，然后点击保存。（就不放图片了）
 
 ## 四、制作封面
 
 打开Photoshop，自己搓封面去吧（逃）
-![冒充破晓的屑哈迹弥](/Blogabout/rocokingdom-Resource/cover.jpg)
+![冒充破晓的屑哈迹弥](/Blogabout/rocokingdom-Resource/cover.webp)
 
 ## 幺零零仈陆、资源链接
 
