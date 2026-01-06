@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 import { 
   getMusicPlayerVisibility, 
@@ -12,8 +12,7 @@ import {
 // import MusicConfig from '@/components/MusicConfig';
 // import { Playlist } from '@/components/MusicPlayer';
 
-// 动态导入大型组件
-const LazyScrollToTop = lazy(() => import('@/components/ScrollToTop'));
+
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
@@ -356,10 +355,7 @@ export default function SettingsPage() {
         </div>
       </div>
       
-      {/* 添加页面滚动导航组件 */}
-      <Suspense fallback={null}>
-        <LazyScrollToTop />
-      </Suspense>
+      
     </div>
   );
 }

@@ -19,7 +19,6 @@ import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 // 动态导入大型组件
 const LazyFriendsLink = lazy(() => import('@/components/FriendsLink'));
 const LazyRelatedLinks = lazy(() => import('@/components/RelatedLinks'));
-const LazyScrollToTop = lazy(() => import('@/components/ScrollToTop'));
 
 /**
  * 关于页面组件
@@ -605,10 +604,7 @@ export default function AboutPage() {
         </div>
       </div>
       
-      {/* 添加页面滚动导航组件 */}
-      <Suspense fallback={null}>
-        <LazyScrollToTop />
-      </Suspense>
+      
     </div>
   );
 }

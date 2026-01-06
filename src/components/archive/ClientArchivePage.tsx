@@ -5,8 +5,7 @@ import Link from 'next/link';
 import { motion } from 'motion/react';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 
-// 动态导入大型组件
-const LazyScrollToTop = lazy(() => import('@/components/ScrollToTop'));
+
 
 /**
  * 博客文章接口
@@ -343,10 +342,7 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
           </div>
       </div>
       
-      {/* 添加页面滚动导航组件 */}
-      <Suspense fallback={null}>
-        <LazyScrollToTop />
-      </Suspense>
+      
 
       {/* 标签筛选浮层 */}
       {showTagModal && (

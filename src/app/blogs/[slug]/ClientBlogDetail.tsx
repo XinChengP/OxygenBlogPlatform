@@ -45,7 +45,6 @@ import { getAssetPath } from '../../../utils/assetUtils';
 
 // 动态导入大型组件，优化初始加载性能
 const LazyTableOfContents = lazy(() => import('../../../components/TableOfContents'));
-const LazyScrollToTop = lazy(() => import('../../../components/ScrollToTop'));
 const LazyGiscusComments = lazy(() => import('../../../components/GiscusComments'));
 const LazyCopyrightNotice = lazy(() => import('../../../components/CopyrightNotice'));
 const BilibiliIframe = lazy(() => import('../../../components/BilibiliIframe'));
@@ -1008,10 +1007,7 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
 
       {/* 浮动互动按钮 - 已移除 */}
 
-      {/* 返回顶部按钮 */}
-      <Suspense fallback={null}>
-        <LazyScrollToTop />
-      </Suspense>
+
     </div>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { motion } from 'motion/react';
 import { useTheme } from 'next-themes';
 import Image from 'next/image';
 import { ChevronUpIcon, ChevronDownIcon, SunIcon, MoonIcon, AdjustmentsHorizontalIcon, MusicalNoteIcon } from '@heroicons/react/24/outline';
@@ -28,9 +29,22 @@ export default function ScrollToTop() {
   const [showThemeButton, setShowThemeButton] = useState(false);
   const [musicPlayerVisible, setMusicPlayerVisible] = useState(getMusicPlayerVisibility());
 
+  // 节流函数：限制事件触发频率
+  const throttle = (func: Function, delay: number) => {
+    let lastCall = 0;
+    return (...args: any[]) => {
+      const now = new Date().getTime();
+      if (now - lastCall < delay) {
+        return;
+      }
+      lastCall = now;
+      func(...args);
+    };
+  };
+
   // 监听滚动事件
   useEffect(() => {
-    const handleScroll = () => {
+    const handleScroll = throttle(() => {
       const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
       const windowHeight = window.innerHeight;
       const documentHeight = document.documentElement.scrollHeight;
@@ -48,7 +62,7 @@ export default function ScrollToTop() {
       if (scrollTop < 50) {
         setShowThemeButton(false);
       }
-    };
+    }, 100); // 100ms节流，减少事件触发频率
 
     window.addEventListener('scroll', handleScroll);
     handleScroll(); // 初始检查
@@ -101,7 +115,14 @@ export default function ScrollToTop() {
   };
 
   return (
-    <div className={`fixed bottom-6 z-50 transition-all duration-300 ${isAtTop ? 'right-[-80px]' : 'right-6'}`}>
+    <div 
+      className={`fixed bottom-6 right-6 z-50 transition-all duration-300 cubic-bezier(0.4, 0, 0.2, 1) transform ${isAtTop ? 'translate-x-[150%] opacity-0 scale-90' : 'translate-x-0 opacity-100 scale-100'}`}
+      style={{
+        transformStyle: 'preserve-3d',
+        willChange: 'transform, opacity'
+      }}
+    >
+      {/* 主容器 - 优化动画：使用translateX代替right，添加硬件加速提示 */}
       {/* 下一首按钮 - 已完全隐藏 */}
       {/* {showNextButton && (
         <div 
@@ -125,35 +146,37 @@ export default function ScrollToTop() {
       
       <div className="flex flex-col space-y-2">
         {/* 音乐播放器控制按钮 - 条件显示，在主题切换按钮上方 */}
-        {showThemeButton && (
-          <button
-            onClick={toggleMusicPlayer}
-            className={`p-3 ${musicPlayerVisible ? 'bg-primary text-primary-foreground hover:bg-primary/90' : theme === 'dark' ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'} rounded-lg shadow-lg transition-all duration-300 transform hover:scale-110 relative animate-[fadeIn_0.2s_ease-in-out]`}
-            aria-label={musicPlayerVisible ? "隐藏音乐播放器" : "显示音乐播放器"}
-            title={musicPlayerVisible ? "隐藏音乐播放器" : "显示音乐播放器"}
-            style={{ animation: 'fadeIn 0.2s ease-in-out' }}
-          >
-            <MusicalNoteIcon className={`h-5 w-5 ${!musicPlayerVisible ? 'opacity-50' : ''}`} />
-            {!musicPlayerVisible && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className={`w-6 h-0.5 ${theme === 'dark' ? 'bg-gray-400' : 'bg-gray-600'} transform rotate-45`}></div>
-              </div>
-            )}
-          </button>
-        )}
+        <button
+          onClick={toggleMusicPlayer}
+          className={`p-3 ${musicPlayerVisible ? 'bg-primary text-primary-foreground hover:bg-primary/90' : theme === 'dark' ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'} rounded-lg shadow-lg transition-all duration-300 transform hover:scale-110 ${showThemeButton ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-5 scale-95 pointer-events-none'}`}
+          style={{
+            transitionDelay: showThemeButton ? '0.1s' : '0s',
+            display: showThemeButton ? 'flex' : 'none'
+          }}
+          aria-label={musicPlayerVisible ? "隐藏音乐播放器" : "显示音乐播放器"}
+          title={musicPlayerVisible ? "隐藏音乐播放器" : "显示音乐播放器"}
+        >
+          <MusicalNoteIcon className={`h-5 w-5 ${!musicPlayerVisible ? 'opacity-50' : ''}`} />
+          {!musicPlayerVisible && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className={`w-6 h-0.5 ${theme === 'dark' ? 'bg-gray-400' : 'bg-gray-600'} transform rotate-45`}></div>
+            </div>
+          )}
+        </button>
 
         {/* 主题切换按钮 - 条件显示 */}
-        {showThemeButton && (
-          <button
-            onClick={toggleTheme}
-            className={`p-3 ${theme === 'dark' ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'} rounded-lg shadow-lg transition-all duration-300 transform hover:scale-110 animate-[fadeIn_0.2s_ease-in-out]`}
-            aria-label="切换主题"
-            title={theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
-            style={{ animation: 'fadeIn 0.2s ease-in-out' }}
-          >
-            {theme === 'dark' ? <MoonIcon className="h-5 w-5" /> : <SunIcon className="h-5 w-5" />}
-          </button>
-        )}
+        <button
+          onClick={toggleTheme}
+          className={`p-3 ${theme === 'dark' ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'} rounded-lg shadow-lg transition-all duration-300 transform hover:scale-110 ${showThemeButton ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-5 scale-95 pointer-events-none'}`}
+          style={{
+            transitionDelay: showThemeButton ? '0.15s' : '0s',
+            display: showThemeButton ? 'flex' : 'none'
+          }}
+          aria-label="切换主题"
+          title={theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
+        >
+          {theme === 'dark' ? <MoonIcon className="h-5 w-5" /> : <SunIcon className="h-5 w-5" />}
+        </button>
         
         {/* 设置按钮 - 方形风格 */}
         <button
@@ -166,19 +189,15 @@ export default function ScrollToTop() {
         </button>
         
         {/* 回到顶部按钮 - 方形风格 - 在页面顶部时禁用 */}
-        {showScrollTop && (
-          <button
-            onClick={scrollToTop}
-            className={`p-3 bg-primary text-primary-foreground rounded-lg shadow-lg hover:bg-primary/90 transition-all duration-300 transform hover:scale-110 ${
-              isAtTop ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
-            aria-label="回到顶部"
-            title="回到顶部"
-            disabled={isAtTop}
-          >
-            <ChevronUpIcon className="h-5 w-5" />
-          </button>
-        )}
+        <button
+          onClick={scrollToTop}
+          className={`p-3 bg-primary text-primary-foreground rounded-lg shadow-lg hover:bg-primary/90 transition-all duration-300 transform hover:scale-110 ${isAtTop ? 'opacity-50 cursor-not-allowed' : ''}`}
+          aria-label="回到顶部"
+          title="回到顶部"
+          disabled={isAtTop}
+        >
+          <ChevronUpIcon className="h-5 w-5" />
+        </button>
         
         {/* 转到页底按钮 - 方形风格 */}
         <button

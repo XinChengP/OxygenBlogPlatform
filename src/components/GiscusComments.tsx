@@ -6,9 +6,11 @@ import { useTheme } from 'next-themes';
 interface GiscusCommentsProps {
   id: string;
   title?: string;
+  // 新增：区分是博客文章还是留言板
+  type?: 'blog' | 'guestbook';
 }
 
-export default function GiscusComments({ id, title }: GiscusCommentsProps) {
+export default function GiscusComments({ id, title, type = 'blog' }: GiscusCommentsProps) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
   const ref = useRef<HTMLDivElement>(null);
@@ -19,12 +21,6 @@ export default function GiscusComments({ id, title }: GiscusCommentsProps) {
     // 使用更匹配博客风格的深色主题
     const giscusTheme = isDark ? 'dark_high_contrast' : 'light';
     setTheme(giscusTheme);
-
-    // 如果已经存在giscus脚本，先移除
-    const existingScript = document.querySelector('script[src*="giscus"]');
-    if (existingScript) {
-      existingScript.remove();
-    }
 
     // 清空容器
     if (ref.current) {
@@ -39,18 +35,22 @@ export default function GiscusComments({ id, title }: GiscusCommentsProps) {
     script.setAttribute('data-category', 'General');
     script.setAttribute('data-category-id', 'DIC_kwDOQQbz2s4CxkZ6');
     
-    // 根据当前环境选择合适的映射方式
-    // 本地开发环境使用pathname映射，避免PNA策略导致的CORS问题
-    // 自定义域名使用url映射，确保不同域名下的讨论关联正确
-    // GitHub Pages默认域名使用pathname映射，避免basePath导致的问题
-    const isLocalhost = typeof window !== 'undefined' && 
-      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-    
-    const isGitHubPagesDefaultDomain = typeof window !== 'undefined' && 
-      (window.location.hostname.includes('github.io') || window.location.hostname.includes('pages.dev'));
-    
-    const mapping = isLocalhost || isGitHubPagesDefaultDomain ? 'pathname' : 'url';
-    script.setAttribute('data-mapping', mapping);
+    // 根据类型设置不同的映射方式
+    if (type === 'guestbook') {
+      // 留言板：使用固定的term，确保讨论帖唯一性
+      script.setAttribute('data-term', 'guestbook');
+      script.setAttribute('data-mapping', 'term');
+    } else {
+      // 博客文章：根据环境选择映射方式
+      const isLocalhost = typeof window !== 'undefined' && 
+        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+      
+      const isGitHubPagesDefaultDomain = typeof window !== 'undefined' && 
+        (window.location.hostname.includes('github.io') || window.location.hostname.includes('pages.dev'));
+      
+      const mapping = isLocalhost || isGitHubPagesDefaultDomain ? 'pathname' : 'url';
+      script.setAttribute('data-mapping', mapping);
+    }
     
     script.setAttribute('data-strict', '0');
     script.setAttribute('data-reactions-enabled', '1');
@@ -78,14 +78,16 @@ export default function GiscusComments({ id, title }: GiscusCommentsProps) {
 
     return () => {
       // 清理函数
-      if (existingScript) {
-        existingScript.remove();
-      }
+      // 移除所有giscus脚本
+      const giscusScripts = document.querySelectorAll('script[src*="giscus"]');
+      giscusScripts.forEach(script => script.remove());
+      
+      // 移除添加的样式
       if (style && style.parentNode) {
         style.parentNode.removeChild(style);
       }
     };
-  }, [isDark]);
+  }, [isDark, type]);
 
   return (
     <div className={`giscus-container mt-8 transition-colors duration-300 ${isDark ? 'dark' : ''}`}>

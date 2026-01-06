@@ -29,6 +29,7 @@ export default function GiscusGuestbookBoard() {
             <GiscusComments 
               id={guestbookId}
               title="博客留言板"
+              type="guestbook"
             />
           </div>
         </div>

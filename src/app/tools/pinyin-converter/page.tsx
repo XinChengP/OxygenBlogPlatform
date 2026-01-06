@@ -1,14 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import BackgroundLayer from '@/components/BackgroundLayer';
 import { useTheme } from 'next-themes';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 import { getAssetPath } from '@/utils/assetUtils';
 
-// 动态导入ScrollToTop组件
-const LazyScrollToTop = lazy(() => import('@/components/ScrollToTop'));
+
 
 interface DetailedResult {
   origin: string;
@@ -1161,10 +1160,7 @@ export default function PinyinConverter() {
         )}
       </main>
 
-      {/* 右下角导航按钮 */}
-      <Suspense fallback={null}>
-        <LazyScrollToTop />
-      </Suspense>
+      
     </main>
   );
 }

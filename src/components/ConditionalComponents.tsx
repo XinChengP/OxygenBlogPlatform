@@ -4,6 +4,7 @@ import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 import MusicPlayer from './MusicPlayer';
 import Live2DController from './Live2DController';
+import ScrollToTop from './ScrollToTop';
 import { getMusicPlayerVisibility, onMusicPlayerVisibilityChange } from '@/utils/musicPlayerVisibility';
 
 // 使用React.memo减少不必要的渲染
@@ -43,6 +44,11 @@ export default React.memo(function ConditionalComponents() {
       : 'aplayer-container';
   }, [isClient, hideLive2DAndMusic, musicPlayerVisible]);
   
+  // 计算是否需要显示ScrollToTop组件
+  const showScrollToTop = useMemo(() => {
+    return pathname !== '/';
+  }, [pathname]);
+
   return (
     <>
       {/* 音乐播放器 - 在所有页面都渲染，但通过CSS控制可见性 */}
@@ -51,6 +57,8 @@ export default React.memo(function ConditionalComponents() {
       </div>
       {/* 使用Live2DController进行智能路径控制 */}
       <Live2DController />
+      {/* ScrollToTop组件 - 除首页外所有页面显示 */}
+      {showScrollToTop && <ScrollToTop />}
     </>
   );
 });

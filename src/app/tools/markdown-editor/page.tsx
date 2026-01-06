@@ -4,11 +4,10 @@ import dynamic from 'next/dynamic';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 import { motion } from 'motion/react';
 import { useTheme } from 'next-themes';
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect } from 'react';
 import BackgroundLayer from '@/components/BackgroundLayer';
 
-// 动态导入大型组件
-const LazyScrollToTop = lazy(() => import('@/components/ScrollToTop'));
+
 
 const MarkdownEditor = dynamic(() => import('@/components/tools/MarkdownEditor'), {
   ssr: false,
@@ -114,10 +113,7 @@ export default function MarkdownEditorPage() {
         </motion.div>
       </div>
       
-      {/* 右下角导航按钮 */}
-      <Suspense fallback={null}>
-        <LazyScrollToTop />
-      </Suspense>
+      
     </main>
   );
 }
