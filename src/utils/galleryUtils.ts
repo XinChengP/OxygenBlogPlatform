@@ -20,11 +20,10 @@ const isImageFile = (filename: string): boolean => {
  * 生成唯一图片ID
  * @param filePath - 文件路径
  * @returns 唯一ID
- */
+ */// 生成唯一图片ID
 const generateImageId = (filePath: string): string => {
   return filePath
-    .replace(/\//g, '-')
-    .replace(/\\/g, '-')
+    .replace(/[\\/]/g, '-') // 统一替换所有路径分隔符
     .replace(/\./g, '-')
     .toLowerCase();
 };
@@ -202,6 +201,17 @@ const GALLERY_PATH_MAPPINGS: GalleryCategoryConfig[] = [
  * @returns 包含主分类和子分类的对象
  */
 const mapPathToCategory = (relativePath: string): GalleryCategoryConfig => {
+  // 处理根目录或当前目录的情况
+  if (relativePath === '.' || relativePath === '') {
+    // 如果是根目录，返回默认分类或特殊处理
+    return {
+      mainCategory: '默认',
+      sortOrder: 100,
+      description: '来自根目录',
+      pathPattern: ''
+    };
+  }
+  
   // 按路径长度降序排序，确保更具体的路径优先匹配
   const sortedMappings = [...GALLERY_PATH_MAPPINGS].sort(
     (a, b) => b.pathPattern.length - a.pathPattern.length
@@ -210,6 +220,7 @@ const mapPathToCategory = (relativePath: string): GalleryCategoryConfig => {
    // 查找匹配的路径（支持精确匹配和前缀匹配）
   for (const config of sortedMappings) {
     const pathPattern = config.pathPattern;
+    
     if (relativePath.startsWith(pathPattern + '/') || relativePath === pathPattern) {
        return {
          mainCategory: config.mainCategory,
@@ -394,8 +405,11 @@ export const getRemoteImages = async (config: {
           images.push(...subDirImages);
         } else if (isImageFile(item.name)) {
           // 处理图片文件
-          const fullPath = `${config.path}/${item.name}`.replace(/^/, '');
-          const relativePath = path.dirname(fullPath); // 只使用目录路径进行分类映射
+          const fullPath = `${config.path}/${item.name}`.replace(/^\//, ''); // 确保路径不包含开头的斜杠
+          let relativePath = path.dirname(fullPath); // 只使用目录路径进行分类映射
+          
+          // 规范化路径分隔符，将反斜杠转换为正斜杠，确保跨平台兼容性
+          relativePath = relativePath.replace(/\\/g, '/');
           
           // 使用路径映射函数确定分类
           const { mainCategory, subCategory } = mapPathToCategory(relativePath);
