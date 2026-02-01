@@ -7,14 +7,24 @@ const Sparkles = lazy(() => import('@/components/ui/sparkles').then(module => ({
 const Timeline = lazy(() => import('@/components/ui/timeline').then(module => ({ default: module.Timeline })));
 const EvervaultCard = lazy(() => import('@/components/ui/evervault-card').then(module => ({ default: module.EvervaultCard })));
 
+// 基于Intersection Observer的懒加载包装器
 interface LazyLoadWrapperProps {
   children: React.ReactNode;
   fallback?: React.ReactNode;
   threshold?: number;
+  rootMargin?: string;
+  className?: string;
+  minHeight?: string;
 }
 
-// 基于Intersection Observer的懒加载包装器
-export function LazyLoadWrapper({ children, fallback = null, threshold = 0.1 }: LazyLoadWrapperProps) {
+export function LazyLoadWrapper({ 
+  children, 
+  fallback = null, 
+  threshold = 0.1, 
+  rootMargin = '100px 0px', 
+  className = '',
+  minHeight = '200px'
+}: LazyLoadWrapperProps) {
   const [isVisible, setIsVisible] = useState(false);
   const elementRef = useRef<HTMLDivElement>(null);
 
@@ -26,7 +36,7 @@ export function LazyLoadWrapper({ children, fallback = null, threshold = 0.1 }: 
           observer.disconnect();
         }
       },
-      { threshold }
+      { threshold, rootMargin }
     );
 
     if (elementRef.current) {
@@ -34,11 +44,14 @@ export function LazyLoadWrapper({ children, fallback = null, threshold = 0.1 }: 
     }
 
     return () => observer.disconnect();
-  }, [threshold]);
+  }, [threshold, rootMargin]);
 
   if (!isVisible) {
     return (
-      <div ref={elementRef} className="min-h-[200px]">
+      <div 
+        ref={elementRef} 
+        className={`min-h-[${minHeight}] ${className}`}
+      >
         {fallback}
       </div>
     );

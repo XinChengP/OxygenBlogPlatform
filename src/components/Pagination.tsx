@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 import { useState, useEffect } from 'react';

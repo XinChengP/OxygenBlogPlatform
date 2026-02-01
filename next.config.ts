@@ -137,15 +137,15 @@ const nextConfig = {
           // 启用chunk分割
           chunks: 'all',
           // 最小chunk大小，太小的chunk会增加HTTP请求
-          minSize: 20000,
+          minSize: 15000,
           // 最大chunk大小，太大的chunk会影响加载速度
-          maxSize: 200000,
+          maxSize: 180000,
           // 最小引用次数
           minChunks: 1,
           // 最大异步请求数
-          maxAsyncRequests: 30,
+          maxAsyncRequests: 35,
           // 最大初始请求数
-          maxInitialRequests: 30,
+          maxInitialRequests: 35,
           // 使用更清晰的chunk名称
           name: false,
           cacheGroups: {
@@ -154,6 +154,13 @@ const nextConfig = {
               name: 'vendor-core',
               chunks: 'initial',
               test: /[\\/]node_modules[\\/](react|react-dom|next|next-themes|clsx|tailwind-merge)[\\/]/,
+              priority: 25,
+            },
+            // 工具库chunk
+            utilities: {
+              name: 'vendor-utilities',
+              chunks: 'all',
+              test: /[\\/]node_modules[\\/](dompurify|katex)[\\/]/,
               priority: 20,
             },
             // markdown相关库
@@ -162,6 +169,13 @@ const nextConfig = {
               chunks: 'all',
               test: /[\\/]node_modules[\\/](marked|react-markdown|rehype|remark|gray-matter)[\\/]/,
               priority: 15,
+            },
+            // 图标库chunk
+            icons: {
+              name: 'vendor-icons',
+              chunks: 'all',
+              test: /[\\/]node_modules[\\/](lucide-react|@heroicons)[\\/]/,
+              priority: 12,
             },
             // 动画相关库
             animation: {
@@ -183,6 +197,15 @@ const nextConfig = {
               chunks: 'all',
               test: /[\\/]node_modules[\\/]/,
               priority: 5,
+              reuseExistingChunk: true,
+            },
+            // 应用代码chunk - 按功能模块分割
+            app: {
+              name: 'app',
+              chunks: 'all',
+              test: /[\\/]src[\\/](app|components)[\\/]/,
+              priority: 3,
+              minChunks: 2,
               reuseExistingChunk: true,
             },
             // 其他代码

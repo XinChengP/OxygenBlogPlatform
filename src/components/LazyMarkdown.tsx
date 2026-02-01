@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, lazy, useState, useEffect, memo } from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 
 // 懒加载ReactMarkdown组件
 const ReactMarkdown = lazy(() => import('react-markdown'));

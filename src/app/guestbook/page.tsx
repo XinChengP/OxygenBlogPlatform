@@ -2,7 +2,7 @@
 
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { useTheme } from 'next-themes';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 
 // 动态导入大型组件
 const LazyGiscusGuestbookBoard = lazy(() => import('@/components/GiscusGuestbookBoard'));

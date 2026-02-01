@@ -2,7 +2,7 @@
 
 import { useState, lazy, Suspense, useEffect, useRef } from 'react';
 
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import LazyMarkdown from '../../../components/LazyMarkdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';

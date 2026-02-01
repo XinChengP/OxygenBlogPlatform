@@ -5,7 +5,7 @@
 'use client';
 
 import React, { useState, useEffect, lazy, Suspense } from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { useTheme } from 'next-themes';
 import { Cover } from '@/components/ui/cover'
 import { EvervaultCard, Icon } from '@/components/ui/evervault-card';

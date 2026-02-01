@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { GalleryImage, ImageLoadStatus } from '../../../types/gallery';
+import { getAssetPath } from '@/utils/assetUtils';
 
 
 // ImageCard组件属性
@@ -23,12 +24,17 @@ const ImageCard = ({ image, onClick }: ImageCardProps) => {
   // 重试计时器引用
   const retryTimerRef = useRef<NodeJS.Timeout | null>(null);
   
+  // 处理图片路径 - 使用getAssetPath确保GitHub Pages兼容性
+  const processImagePath = useCallback((path: string) => {
+    return getAssetPath(path);
+  }, []);
+
   // 重置图片状态 - 使用useCallback优化
   const resetImageState = useCallback(() => {
     setLoadStatus('loading');
     setRetryCount(0);
-    setCurrentSrc(image.src); // 重置为原始URL
-  }, [image.src]);
+    setCurrentSrc(processImagePath(image.src)); // 重置为处理后的URL
+  }, [image.src, processImagePath]);
   
   // 图片加载成功处理
   const handleImageLoad = () => {
@@ -59,8 +65,8 @@ const ImageCard = ({ image, onClick }: ImageCardProps) => {
         setLoadStatus('loading');
       }, waitTime);
     } else if (!hasSwitchedToFallback && hasFallback) {
-      // 达到最大重试次数，且有备用URL，切换到备用URL
-      setCurrentSrc(image.fallbackSrc!);
+      // 达到最大重试次数，且有备用URL，切换到处理后的备用URL
+      setCurrentSrc(processImagePath(image.fallbackSrc!));
       setRetryCount(0);
       setLoadStatus('loading');
     } else {

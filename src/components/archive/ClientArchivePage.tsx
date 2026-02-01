@@ -2,7 +2,7 @@
 
 import React, { useMemo, lazy, Suspense, useState } from 'react';
 import Link from 'next/link';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 
 

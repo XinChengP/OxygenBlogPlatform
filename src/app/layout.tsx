@@ -12,7 +12,7 @@ import SmoothScrollProvider from "@/components/SmoothScrollProvider";
 import ClientRouterWrapper from "@/components/ClientRouterWrapper";
 import { webTitle, webDescription } from "@/setting/WebSetting";
 
-// 系统字体配置
+// 系统字体配置 - 添加完整的系统字体栈
 const geistSans = {
   variable: "--font-geist-sans",
   className: ""
@@ -39,6 +39,23 @@ export default function RootLayout({
   return (
     <html lang="zh-CN" suppressHydrationWarning>
       <head>
+        {/* 关键资源预加载 */}
+        {/* 预连接到关键域名 */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://giscus.app" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://api.github.com" crossOrigin="anonymous" />
+        
+        {/* 预加载关键CSS */}
+        <link rel="preload" href="/app/globals.css" as="style" />
+        
+        {/* 预加载关键JavaScript */}
+        <link rel="preload" href="/js/smooth-navigation.js" as="script" />
+        
+        {/* 预加载关键图片 */}
+        <link rel="preload" href="/favicon.ico" as="image" type="image/x-icon" />
+        
+        {/* 主题初始化脚本 */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
