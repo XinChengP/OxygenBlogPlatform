@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { animate, motion, useMotionValue, useTransform } from "motion/react"
+import { animate, motion, useMotionValue, useTransform } from "framer-motion"
 
 export interface ITypewriterProps {
   delay: number

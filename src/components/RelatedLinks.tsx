@@ -1,4 +1,4 @@
-import { motion } from "motion/react"
+import { motion } from "framer-motion"
 import { useEffect, useState } from "react"
 import { Link2, ExternalLink, Github, Mail, Globe, ChevronRight } from "lucide-react"
 import Link from 'next/link'

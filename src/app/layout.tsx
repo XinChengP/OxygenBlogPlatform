@@ -10,6 +10,7 @@ import ConditionalComponents from "@/components/ConditionalComponents";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import SmoothScrollProvider from "@/components/SmoothScrollProvider";
 import ClientRouterWrapper from "@/components/ClientRouterWrapper";
+import { NavigationVisibilityProvider } from "@/contexts/NavigationVisibilityContext";
 import { webTitle, webDescription } from "@/setting/WebSetting";
 
 // 系统字体配置 - 添加完整的系统字体栈
@@ -157,17 +158,19 @@ export default function RootLayout({
           disableTransitionOnChange={false}
           storageKey="theme"
         >
-          <ClientRouterWrapper>
-            <SmoothScrollProvider>
-              <BackgroundLayer />
-              <Navigation />
-              <main className="min-h-screen transition-colors duration-300 relative">
-                {children}
-              </main>
-              <Footer />
-              <ConditionalComponents />
-            </SmoothScrollProvider>
-          </ClientRouterWrapper>
+          <NavigationVisibilityProvider>
+            <ClientRouterWrapper>
+              <SmoothScrollProvider>
+                <BackgroundLayer />
+                <Navigation />
+                <main className="min-h-screen transition-colors duration-300 relative">
+                  {children}
+                </main>
+                <Footer />
+                <ConditionalComponents />
+              </SmoothScrollProvider>
+            </ClientRouterWrapper>
+          </NavigationVisibilityProvider>
         </ThemeProvider>
       </body>
     </html>

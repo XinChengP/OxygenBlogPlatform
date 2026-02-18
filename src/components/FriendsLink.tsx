@@ -1,4 +1,4 @@
-import { motion } from "motion/react"
+import { motion } from "framer-motion"
 import { useEffect, useState } from "react"
 import { Github, Mail, Globe } from "lucide-react"
 import Image from 'next/image'

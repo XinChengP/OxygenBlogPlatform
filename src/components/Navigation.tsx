@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { emojy, name } from '@/setting/NavigationSetting';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
+import { useNavigationVisibility } from '@/contexts/NavigationVisibilityContext';
 
 
 /**
@@ -15,17 +16,17 @@ import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isNearTop, setIsNearTop] = useState(false);
-  const [isAtTop, setIsAtTop] = useState(true);
   const pathname = usePathname();
   const { navigationStyle } = useBackgroundStyle('home');
+  const { isVisible, isAtTop, setVisibility, setAtTop } = useNavigationVisibility();
 
   // 导航项配置
   const navItems = useMemo(() => [
     { href: '/', label: '首页' },
     { href: '/blogs', label: '博客' },
+    { href: '/moments', label: '说说' },
     { href: '/archive', label: '归档' },
     { href: '/gallery', label: '画廊' },
     { href: '/guestbook', label: '留言板' },
@@ -94,23 +95,23 @@ const Navigation = () => {
       setIsScrolled(currentScrollY > 10);
       
       // 检查是否在页面顶部
-      setIsAtTop(currentScrollY <= 10);
+      setAtTop(currentScrollY <= 10);
       
       // 如果在首页，导航栏始终可见
       if (pathname === '/') {
-        setIsVisible(true);
+        setVisibility(true);
       } else {
         // 如果鼠标在页面顶部附近，始终显示导航栏
         if (isNearTop) {
-          setIsVisible(true);
+          setVisibility(true);
         } else {
           // 向下滚动超过100px时隐藏导航栏
           if (currentScrollY > lastScrollY && currentScrollY > 100) {
-            setIsVisible(false);
+            setVisibility(false);
           } 
           // 向上滚动时显示导航栏
           else if (currentScrollY < lastScrollY) {
-            setIsVisible(true);
+            setVisibility(true);
           }
         }
       }
