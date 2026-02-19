@@ -14,11 +14,7 @@ export const backgroundMode = "cover"; // 背景图片显示模式
  */
 export const backgroundFixed = true; // 是否固定背景（视差效果）
 
-//3D灯笼配置
-export const enable3DLanterns = true; // 是否启用3D灯笼效果
-export const lanternText = "新春快乐"; // 灯笼上显示的文字
-// 灯笼显示时间：每年农历正月初一（春节）到正月十五（元宵节）期间
-// 系统会自动根据农历日期判断，无需手动配置具体日期
+
 
 //预设的主题色方案，只保留蓝色主题
 const themePresets = {

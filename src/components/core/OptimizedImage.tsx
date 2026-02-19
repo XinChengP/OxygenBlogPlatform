@@ -11,6 +11,7 @@ interface OptimizedImageProps {
   loading?: 'lazy' | 'eager';
   placeholder?: string;
   quality?: number;
+  onClick?: () => void;
 }
 
 /**
@@ -31,7 +32,8 @@ export default function OptimizedImage({
   priority = false,
   loading = 'lazy',
   placeholder = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"%3E%3Crect width="400" height="300" fill="%23f3f4f6"/%3E%3C/svg%3E',
-  quality = 80
+  quality = 80,
+  onClick
 }: OptimizedImageProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isError, setIsError] = useState(false);
@@ -90,6 +92,7 @@ export default function OptimizedImage({
         loading={loading}
         onLoad={handleLoad}
         onError={handleError}
+        onClick={onClick}
         // 添加缓存控制
         crossOrigin="anonymous"
       />
