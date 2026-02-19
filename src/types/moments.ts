@@ -36,8 +36,11 @@ export interface Moment {
   mood?: MoodType; // 心情状态
   author: string; // 作者标识
   createdAt: string; // ISO时间戳
+  updatedAt?: string; // 更新时间戳
   likes: number; // 点赞数（仅显示）
-  comments: number; // 评论数（仅显示）
+  comments: Comment[]; // 评论数组
+  isLiked?: boolean; // 是否已点赞（客户端状态）
+  isOwner?: boolean; // 是否为当前用户发布（客户端状态）
 }
 
 // 评论数据结构 - 简化版本
@@ -46,6 +49,9 @@ export interface Comment {
   content: string; // 评论内容
   author: string; // 评论者
   createdAt: string; // ISO时间戳
+  likes?: number; // 点赞数
+  isLiked?: boolean; // 是否已点赞
+  momentId?: string; // 关联的说说ID
 }
 
 // 分页响应数据

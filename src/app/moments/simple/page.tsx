@@ -1,34 +1,33 @@
 /**
- * 说说功能 - 纯客户端实现
+ * 说说功能 - 纯客户端实现（简化版本）
  * 适用于GitHub Pages静态部署
- * 完全基于localStorage，无需API支持
+ * 仅展示功能，无发布编辑功能
  */
 
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PlusIcon, HeartIcon as HeartOutline, ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
+import { HeartIcon as HeartOutline, ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolid } from '@heroicons/react/24/solid';
 
-import { Moment } from '@/types/moments';
-import { MOMENTS_DEFAULTS, MOMENT_VALIDATION } from '@/setting/momentsSetting';
-import { getMoodConfig, MOOD_CONFIGS } from '@/setting/momentsSetting';
+import { Moment, MoodType } from '@/types/moments';
+import { MOMENTS_DEFAULTS } from '@/setting/momentsSetting';
+import { getMoodConfig } from '@/setting/momentsSetting';
 import { formatDistanceToNow } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
-import CreateMomentModal from '@/components/moments/CreateMomentModal';
 
-// 纯客户端说说服务
-class ClientSideMomentsService {
-  private static instance: ClientSideMomentsService;
-  private userId = 'default-user';
-  private username = '洛天依';
+// 纯客户端说说服务（简化版本）
+class SimpleMomentsService {
+  private static instance: SimpleMomentsService;
+  private readonly storageKey = 'moments-demo-data';
+  private readonly likedKey = 'moments-demo-liked';
 
-  static getInstance(): ClientSideMomentsService {
-    if (!ClientSideMomentsService.instance) {
-      ClientSideMomentsService.instance = new ClientSideMomentsService();
+  static getInstance(): SimpleMomentsService {
+    if (!SimpleMomentsService.instance) {
+      SimpleMomentsService.instance = new SimpleMomentsService();
     }
-    return ClientSideMomentsService.instance;
+    return SimpleMomentsService.instance;
   }
 
   // 生成唯一ID
@@ -41,17 +40,68 @@ class ClientSideMomentsService {
     if (typeof window === 'undefined') return [];
     
     try {
-      const stored = localStorage.getItem('moments-data');
-      if (!stored) return [];
+      const stored = localStorage.getItem(this.storageKey);
+      if (!stored) {
+        // 返回示例数据
+        return this.getDemoData();
+      }
       
       const moments = JSON.parse(stored) as Moment[];
-      return moments.sort((a, b) => 
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
+      const liked = this.getLikedMoments();
+      
+      // 添加用户相关状态
+      return moments.map(moment => ({
+        ...moment,
+        isLiked: liked.includes(moment.id),
+        isOwner: false // 简化版本，不允许删除
+      }));
     } catch (error) {
       console.error('获取说说失败:', error);
-      return [];
+      return this.getDemoData();
     }
+  }
+
+  // 获取示例数据
+  private getDemoData(): Moment[] {
+    const demoData: Moment[] = [
+      {
+        id: 'demo-1',
+        content: '今天天气真好，心情也跟着明朗起来～ ☀️',
+        mood: MoodType.HAPPY,
+        author: '洛天依',
+        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2小时前
+        likes: 5,
+        comments: []
+      },
+      {
+        id: 'demo-2', 
+        content: '刚刚完成了一个新的项目，感觉很有成就感！继续加油 💪',
+        images: [
+          'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMDAgMTAwTDEyMCA4MEwxNDAgMTAwTDEyMCAxMjBMMTAwIDEwMFoiIGZpbGw9IiM5Q0EzQUYiLz4KPC9zdmc+'
+        ],
+        mood: MoodType.MOTIVATED,
+        author: '洛天依',
+        createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 1天前
+        likes: 12,
+        comments: []
+      },
+      {
+        id: 'demo-3',
+        content: '有时候静静地坐着，听听音乐，也是很美好的时光 🎵',
+        mood: MoodType.CALM,
+        author: '洛天依', 
+        createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3天前
+        likes: 8,
+        comments: []
+      }
+    ];
+    
+    const liked = this.getLikedMoments();
+    return demoData.map(moment => ({
+      ...moment,
+      isLiked: liked.includes(moment.id),
+      isOwner: false
+    }));
   }
 
   // 保存说说
@@ -59,35 +109,10 @@ class ClientSideMomentsService {
     if (typeof window === 'undefined') return;
     
     try {
-      localStorage.setItem('moments-data', JSON.stringify(moments));
+      localStorage.setItem(this.storageKey, JSON.stringify(moments));
     } catch (error) {
       console.error('保存说说失败:', error);
     }
-  }
-
-  // 创建说说
-  createMoment(content: string, mood?: string, images?: string[]): Moment {
-    const now = new Date().toISOString();
-    
-    const newMoment: Moment = {
-      id: this.generateId(),
-      content: content.trim(),
-      images: images || [],
-      mood: mood as any,
-      author: this.username,
-      createdAt: now,
-      updatedAt: now,
-      likes: 0,
-      comments: [],
-      isOwner: true,
-      isLiked: false
-    };
-
-    const moments = this.getMoments();
-    moments.unshift(newMoment);
-    this.saveMoments(moments);
-
-    return newMoment;
   }
 
   // 点赞/取消点赞
@@ -119,7 +144,7 @@ class ClientSideMomentsService {
     if (typeof window === 'undefined') return [];
     
     try {
-      const stored = localStorage.getItem('liked-moments');
+      const stored = localStorage.getItem(this.likedKey);
       return stored ? JSON.parse(stored) : [];
     } catch {
       return [];
@@ -131,55 +156,20 @@ class ClientSideMomentsService {
     if (typeof window === 'undefined') return;
     
     try {
-      localStorage.setItem('liked-moments', JSON.stringify(momentIds));
+      localStorage.setItem(this.likedKey, JSON.stringify(momentIds));
     } catch (error) {
       console.error('保存点赞状态失败:', error);
     }
-  }
-
-  // 删除说说
-  deleteMoment(momentId: string): boolean {
-    const moments = this.getMoments();
-    const filtered = moments.filter(m => m.id !== momentId);
-    
-    if (filtered.length === moments.length) return false;
-    
-    this.saveMoments(filtered);
-    return true;
-  }
-
-  // 添加评论
-  addComment(momentId: string, content: string): boolean {
-    const moments = this.getMoments();
-    const moment = moments.find(m => m.id === momentId);
-    
-    if (!moment) return false;
-
-    const newComment = {
-      id: this.generateId(),
-      momentId,
-      content: content.trim(),
-      author: this.username,
-      createdAt: new Date().toISOString(),
-      likes: 0,
-      isLiked: false
-    };
-
-    moment.comments.push(newComment);
-    this.saveMoments(moments);
-    return true;
   }
 }
 
 // 说说卡片组件
 function MomentCard({ 
   moment, 
-  onLike, 
-  onDelete 
+  onLike
 }: { 
   moment: Moment;
   onLike: (momentId: string) => void;
-  onDelete: (momentId: string) => void;
 }) {
   const moodConfig = moment.mood ? getMoodConfig(moment.mood) : null;
   
@@ -215,24 +205,9 @@ function MomentCard({
                 addSuffix: true, 
                 locale: zhCN 
               })}
-              {moment.updatedAt && moment.updatedAt !== moment.createdAt && (
-                <span className="ml-1">(已编辑)</span>
-              )}
             </div>
           </div>
         </div>
-        
-        {moment.isOwner && (
-          <button
-            onClick={() => onDelete(moment.id)}
-            className="text-gray-400 hover:text-red-500 transition-colors p-1"
-            title="删除说说"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-          </button>
-        )}
       </div>
       
       {/* 内容 */}
@@ -294,7 +269,7 @@ function MomentCard({
 }
 
 // 空状态组件
-function EmptyState({ onCreate }: { onCreate: () => void }) {
+function EmptyState() {
   return (
     <div className="text-center py-16">
       <div className="w-24 h-24 mx-auto mb-4 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900 dark:to-purple-900 rounded-full flex items-center justify-center">
@@ -305,26 +280,18 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
       <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
         还没有说说
       </h3>
-      <p className="text-gray-500 dark:text-gray-400 mb-6">
-        分享你的生活点滴，记录每一份心情
+      <p className="text-gray-500 dark:text-gray-400">
+        这是一个演示版本，仅用于展示说说列表
       </p>
-      <button
-        onClick={onCreate}
-        className="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition-colors"
-      >
-        <PlusIcon className="w-5 h-5 mr-2" />
-        发布第一条说说
-      </button>
     </div>
   );
 }
 
-export default function MomentsPage() {
+export default function SimpleMomentsPage() {
   const [moments, setMoments] = useState<Moment[]>([]);
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const [loading, setLoading] = useState(true);
   
-  const momentsService = ClientSideMomentsService.getInstance();
+  const momentsService = SimpleMomentsService.getInstance();
 
   // 加载说说数据
   const loadMoments = useCallback(() => {
@@ -359,60 +326,6 @@ export default function MomentsPage() {
     }
   }, [momentsService]);
 
-  // 处理删除
-  const handleDelete = useCallback((momentId: string) => {
-    if (!confirm('确定要删除这条说说吗？')) return;
-    
-    try {
-      const success = momentsService.deleteMoment(momentId);
-      if (success) {
-        setMoments(prev => prev.filter(moment => moment.id !== momentId));
-      }
-    } catch (error) {
-      console.error('删除说说失败:', error);
-    }
-  }, [momentsService]);
-
-  // 处理创建提交
-  const handleCreateSubmit = useCallback((data: { content: string; images?: File[]; mood?: string }) => {
-    try {
-      // 处理图片上传（转换为base64）
-      if (data.images && data.images.length > 0) {
-        const processImages = async () => {
-          const imageUrls: string[] = [];
-          
-          for (const file of data.images!) {
-            const base64 = await fileToBase64(file);
-            imageUrls.push(base64);
-          }
-          
-          const newMoment = momentsService.createMoment(data.content, data.mood, imageUrls);
-          setMoments(prev => [newMoment, ...prev]);
-          setShowCreateModal(false);
-        };
-        
-        processImages();
-      } else {
-        const newMoment = momentsService.createMoment(data.content, data.mood);
-        setMoments(prev => [newMoment, ...prev]);
-        setShowCreateModal(false);
-      }
-    } catch (error) {
-      console.error('发布说说失败:', error);
-      alert('发布说说失败，请重试');
-    }
-  }, [momentsService]);
-
-  // 文件转base64
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  };
-
   // 初始化加载
   useEffect(() => {
     loadMoments();
@@ -423,22 +336,13 @@ export default function MomentsPage() {
       {/* 页面头部 */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-4xl mx-auto px-4 py-6 md:py-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-1 sm:mb-2">
-                {MOMENTS_DEFAULTS.pageTitle}
-              </h1>
-              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
-                {MOMENTS_DEFAULTS.pageDescription}
-              </p>
-            </div>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center px-4 sm:px-6 py-2 sm:py-3 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition-colors shadow-sm text-sm sm:text-base"
-            >
-              <PlusIcon className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
-              发布说说
-            </button>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-1 sm:mb-2">
+              {MOMENTS_DEFAULTS.pageTitle}
+            </h1>
+            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+              这是一个演示版本的说说列表，支持点赞功能
+            </p>
           </div>
         </div>
       </div>
@@ -446,7 +350,7 @@ export default function MomentsPage() {
       {/* 主要内容 */}
       <div className="max-w-4xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
         {moments.length === 0 && !loading ? (
-          <EmptyState onCreate={() => setShowCreateModal(true)} />
+          <EmptyState />
         ) : (
           <>
             {/* 统计信息 */}
@@ -465,7 +369,6 @@ export default function MomentsPage() {
                   key={moment.id}
                   moment={moment}
                   onLike={handleLike}
-                  onDelete={handleDelete}
                 />
               ))}
             </AnimatePresence>
@@ -485,14 +388,6 @@ export default function MomentsPage() {
           </>
         )}
       </div>
-      
-      {/* 发布弹窗 */}
-      <CreateMomentModal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onSubmit={handleCreateSubmit}
-        loading={false}
-      />
     </div>
   );
 }

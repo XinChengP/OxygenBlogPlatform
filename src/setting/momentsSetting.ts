@@ -122,3 +122,20 @@ export const MOMENTS_DEFAULTS = {
   // 说说页面的描述
   pageDescription: '记录生活中的点点滴滴，分享每一份心情'
 };
+
+// 说说内容验证规则
+export const MOMENT_VALIDATION = {
+  // 最大内容长度
+  maxContentLength: 500,
+  // 最大图片数量
+  maxImages: 9,
+  // 单张图片最大大小（MB）
+  maxImageSize: 5,
+  // 支持的图片格式
+  allowedImageTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+};
+
+// 获取所有心情配置
+export const getAllMoodConfigs = (): MoodConfig[] => {
+  return Object.values(MOOD_CONFIGS);
+};
