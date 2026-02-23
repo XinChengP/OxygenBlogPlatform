@@ -24,9 +24,9 @@ const SANITIZE_CONFIG = {
 };
 
 /**
- * 说说内容的安全过滤
+ * 评论内容的安全过滤
  */
-export function sanitizeMomentContent(content: string): string {
+export function sanitizeCommentContent(content: string): string {
   if (!content || typeof content !== 'string') {
     return '';
   }
@@ -49,13 +49,6 @@ export function sanitizeMomentContent(content: string): string {
     // 如果过滤失败，返回空字符串以确保安全
     return '';
   }
-}
-
-/**
- * 评论内容的安全过滤
- */
-export function sanitizeCommentContent(content: string): string {
-  return sanitizeMomentContent(content); // 使用相同的过滤逻辑
 }
 
 /**

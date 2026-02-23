@@ -1,4 +1,4 @@
-import { solarToLunar, lunarToSolar } from 'chinese-lunar-calendar';
+import { getLunar } from 'chinese-lunar-calendar';
 
 /**
  * 检查当前日期是否在农历北方小年到元宵节期间
@@ -13,9 +13,9 @@ export function isLanternDisplayPeriod(): boolean {
   const currentDay = now.getDate();
 
   // 转换为农历日期
-  const lunarDate = solarToLunar(currentYear, currentMonth, currentDay);
+  const lunarDate = getLunar(currentYear, currentMonth, currentDay);
   const lunarMonth = lunarDate.lunarMonth;
-  const lunarDay = lunarDate.lunarDay;
+  const lunarDay = lunarDate.lunarDate;
   const lunarYear = lunarDate.lunarYear;
 
   // 测试模式：强制返回true，以便验证功能
@@ -44,5 +44,5 @@ export function getCurrentLunarDate() {
   const currentMonth = now.getMonth() + 1;
   const currentDay = now.getDate();
   
-  return solarToLunar(currentYear, currentMonth, currentDay);
+  return getLunar(currentYear, currentMonth, currentDay);
 }
