@@ -48,10 +48,10 @@ export function useBackgroundStyle(pageType: PageType) {
           };
         case 'archive':
           return {
-        className: 'min-h-screen py-8 pt-20',
-        style: {}
-      };
-      case 'tools':
+            className: 'min-h-screen py-8 pt-20',
+            style: {}
+          };
+        case 'tools':
           return {
             className: 'min-h-screen py-8 pt-20',
             style: {}

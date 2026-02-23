@@ -660,44 +660,7 @@ export default function NotFound() {
         )}
       </div>
 
-      {/* 全局动画样式 */}
-      <style jsx>{`
-        @keyframes gradientShift {
-          0%, 100% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-        }
-        @keyframes shimmer {
-          0% { transform: translateX(-100%); }
-          100% { transform: translateX(100%); }
-        }
-      `}</style>
-
-      {/* 枫叶飘落动画样式 */}
-      <style>
-        {`
-          @keyframes float {
-            0% {
-              transform: translateY(-20px) rotate(0deg);
-              opacity: 0;
-            }
-            10% {
-              opacity: 0.6;
-            }
-            90% {
-              opacity: 0.6;
-            }
-            100% {
-              transform: translateY(calc(100vh + 20px)) rotate(360deg);
-              opacity: 0;
-            }
-          }
-          .animate-float {
-            animation-name: float;
-            animation-timing-function: linear;
-            animation-iteration-count: infinite;
-          }
-        `}
-      </style>
+      {/* 动画样式已移至globals.css */}
     </div>
   );
 }

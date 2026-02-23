@@ -6,17 +6,16 @@ export const revalidate = 31536000; // 1年缓存
 
 export async function GET() {
   try {
-    // 直接重定向到about页面，无论在开发模式还是生产模式
-    // 获取基础路径
-    const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
-    
-    // 构建重定向URL
-    const redirectUrl = basePath ? `${basePath}/about` : '/about';
-    
-    // 返回重定向响应
-    return NextResponse.redirect(new URL(redirectUrl, process.env.NEXT_PUBLIC_URL || 'https://localhost:3000'));
+    // 对于静态导出模式，返回简单的文本响应
+    return new NextResponse('About page redirect', {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/plain',
+        'Location': '/about'
+      }
+    });
   } catch (error) {
-    console.error('Error redirecting to about page:', error);
-    return new NextResponse('Redirect failed', { status: 500 });
+    console.error('Error handling about.txt request:', error);
+    return new NextResponse('Error', { status: 500 });
   }
 }
