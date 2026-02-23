@@ -148,7 +148,7 @@ const Navigation = () => {
 
   // 导航栏样式
   const navClassName = useMemo(() => {
-    return `fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+    return `fixed top-0 left-0 right-0 z-[100000] transition-all duration-300 ${
       isAtTop 
         ? 'bg-transparent dark:bg-transparent border-transparent' 
         : 'bg-white/70 dark:bg-gray-900/70 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-700/50'

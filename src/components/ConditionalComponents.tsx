@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import MusicPlayer from './MusicPlayer';
 import Live2DController from './Live2DController';
 import ScrollToTop from './ScrollToTop';
+import Lantern from './Lantern';
 import { getMusicPlayerVisibility, onMusicPlayerVisibilityChange } from '@/utils/musicPlayerVisibility';
 
 // 使用React.memo减少不必要的渲染
@@ -12,11 +13,15 @@ export default React.memo(function ConditionalComponents() {
   const pathname = usePathname();
   const [musicPlayerVisible, setMusicPlayerVisible] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const [showLanterns, setShowLanterns] = useState(false);
   
   // 确保客户端挂载完成
   useEffect(() => {
     setIsClient(true);
     setMusicPlayerVisible(getMusicPlayerVisibility());
+    
+    // 显示灯笼（可以根据需要添加节日逻辑）
+    setShowLanterns(true);
     
     // 监听音乐播放器显示状态变化
     const unsubscribe = onMusicPlayerVisibilityChange((visible) => {
@@ -47,6 +52,8 @@ export default React.memo(function ConditionalComponents() {
 
   return (
     <>
+      {/* 红灯笼组件 */}
+      {showLanterns && < Lantern text="恭喜发财" enabled={true} />}
       {/* 音乐播放器 - 在所有页面都渲染，但通过CSS控制可见性 */}
       <div className={containerClassName} suppressHydrationWarning>
         <MusicPlayer />
