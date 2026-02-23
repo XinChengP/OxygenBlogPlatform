@@ -7,6 +7,7 @@ import Live2DController from './Live2DController';
 import ScrollToTop from './ScrollToTop';
 import Lantern from './Lantern';
 import { getMusicPlayerVisibility, onMusicPlayerVisibilityChange } from '@/utils/musicPlayerVisibility';
+import { isLanternDisplayPeriod } from '@/utils/lunarDateUtils';
 
 // 使用React.memo减少不必要的渲染
 export default React.memo(function ConditionalComponents() {
@@ -20,8 +21,8 @@ export default React.memo(function ConditionalComponents() {
     setIsClient(true);
     setMusicPlayerVisible(getMusicPlayerVisibility());
     
-    // 显示灯笼（可以根据需要添加节日逻辑）
-    setShowLanterns(true);
+    // 显示灯笼（根据农历日期：北方小年到元宵节期间）
+    setShowLanterns(isLanternDisplayPeriod());
     
     // 监听音乐播放器显示状态变化
     const unsubscribe = onMusicPlayerVisibilityChange((visible) => {
@@ -53,7 +54,7 @@ export default React.memo(function ConditionalComponents() {
   return (
     <>
       {/* 红灯笼组件 */}
-      {showLanterns && < Lantern text="恭喜发财" enabled={true} />}
+      {showLanterns && < Lantern text="新春快乐" enabled={true} />}
       {/* 音乐播放器 - 在所有页面都渲染，但通过CSS控制可见性 */}
       <div className={containerClassName} suppressHydrationWarning>
         <MusicPlayer />

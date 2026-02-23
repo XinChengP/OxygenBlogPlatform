@@ -8,7 +8,7 @@ interface LanternProps {
   enabled?: boolean;
 }
 
-export default function Lantern({ text = '新年快乐', enabled = true }: LanternProps) {
+export default function Lantern({ text = '新春快乐', enabled = true }: LanternProps) {
   const { isVisible } = useNavigationVisibility();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const animationFrameRef = useRef<number | null>(null);

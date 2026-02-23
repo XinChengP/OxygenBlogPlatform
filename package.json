@@ -26,6 +26,7 @@
     "@tsparticles/react": "^3.0.0",
     "@tsparticles/slim": "^3.8.1",
     "aplayer": "^1.10.1",
+    "chinese-lunar-calendar": "^1.0.1",
     "clsx": "^2.1.1",
     "critters": "^0.0.23",
     "date-fns": "^4.1.0",
