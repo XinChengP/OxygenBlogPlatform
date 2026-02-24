@@ -143,6 +143,27 @@ export default function RootLayout({
         />
         {/* 平滑导航脚本 */}
         <Script src="/js/smooth-navigation.js" strategy="beforeInteractive" />
+        
+        {/* 动态标题脚本 */}
+        <Script
+          dangerouslySetInnerHTML={{
+            __html: `
+              // 动态标题
+              var OriginTitile = document.title, titleTime;
+              document.addEventListener("visibilitychange", function() {
+                if (document.hidden) {
+                  document.title = "请你留下，不要离开QAQ";
+                  clearTimeout(titleTime);
+                } else {
+                  document.title = "还有我，在你身边说我爱你啊awa";
+                  titleTime = setTimeout(function() {
+                    document.title = OriginTitile;
+                  }, 2000);
+                }
+              });
+            `,
+          }}
+        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased text-foreground transition-colors duration-300`}
