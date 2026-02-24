@@ -54,8 +54,7 @@ export async function getBilibiliUserInfo(mid: string | number) {
         'Referer': `https://space.bilibili.com/${mid}/`,
         'Accept': 'application/json, text/plain, */*'
       },
-      credentials: isDev ? 'include' : 'omit',
-      timeout: 15000
+      credentials: isDev ? 'include' : 'omit'
     });
 
     if (!response.ok) {
