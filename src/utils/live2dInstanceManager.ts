@@ -362,12 +362,35 @@ class Live2DInstanceManager {
         if (typeof instance.model.release === 'function') {
           instance.model.release();
         }
+        
+        // 清理模型相关的资源
+        if (instance.model.textures) {
+          instance.model.textures = [];
+        }
+        if (instance.model.motions) {
+          instance.model.motions = {};
+        }
       }
       
       // 清理创建的URL对象
       const urlsToRevoke = (instance as any).__createdUrls;
       if (urlsToRevoke && Array.isArray(urlsToRevoke)) {
-        urlsToRevoke.forEach((url: string) => URL.revokeObjectURL(url));
+        urlsToRevoke.forEach((url: string) => {
+          try {
+            URL.revokeObjectURL(url);
+          } catch {
+            // 忽略已被释放的URL
+          }
+        });
+        (instance as any).__createdUrls = [];
+      }
+      
+      // 清理画布
+      if (instance.canvas) {
+        const ctx = instance.canvas.getContext('2d');
+        if (ctx) {
+          ctx.clearRect(0, 0, instance.canvas.width, instance.canvas.height);
+        }
       }
       
     } catch (error) {

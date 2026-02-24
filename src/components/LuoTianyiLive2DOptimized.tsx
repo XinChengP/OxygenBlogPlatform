@@ -30,25 +30,32 @@ class Live2DResourcePreloader {
   async preloadLive2DResources(basePath: string = '') {
     if (this.isPreloading) return;
     
+    // 优化资源列表，添加更多关键资源
     const resources = [
-      `${basePath}/live2d/js/live2d.js`,
-      `${basePath}/live2d/js/message.js`,
-      `${basePath}/live2d/model/tianyi/model.json`,
-      `${basePath}/live2d/model/tianyi/textures/1.png`
+      { url: `${basePath}/live2d/js/live2d.js`, priority: 1, type: 'script' },
+      { url: `${basePath}/live2d/js/message.js`, priority: 2, type: 'script' },
+      { url: `${basePath}/live2d/model/tianyi/model.json`, priority: 3, type: 'json' },
+      { url: `${basePath}/live2d/model/tianyi/textures/1.png`, priority: 4, type: 'image' },
+      { url: `${basePath}/live2d/model/tianyi/textures/2.png`, priority: 5, type: 'image' },
+      { url: `${basePath}/live2d/model/tianyi/motions/breath.json`, priority: 6, type: 'json' }
     ];
 
     this.isPreloading = true;
     
     try {
+      // 按优先级排序
+      const sortedResources = resources.sort((a, b) => a.priority - b.priority);
+      
       // 分批加载，避免阻塞
-      const batchSize = 2;
-      for (let i = 0; i < resources.length; i += batchSize) {
-        const batch = resources.slice(i, i + batchSize);
-        await Promise.all(batch.map(url => this.preloadResource(url)));
+      const batchSize = 3; // 增加批次大小以提高加载速度
+      for (let i = 0; i < sortedResources.length; i += batchSize) {
+        const batch = sortedResources.slice(i, i + batchSize);
+        await Promise.all(batch.map(resource => this.preloadResource(resource.url, resource.type)));
         
-        // 小延迟，给浏览器喘息时间
-        if (i + batchSize < resources.length) {
-          await new Promise(resolve => setTimeout(resolve, 100));
+        // 动态延迟，根据资源类型调整
+        if (i + batchSize < sortedResources.length) {
+          const delay = batch.some(r => r.type === 'image') ? 100 : 50;
+          await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
       
@@ -57,14 +64,14 @@ class Live2DResourcePreloader {
     }
   }
 
-  private async preloadResource(url: string): Promise<void> {
+  private async preloadResource(url: string, type?: string): Promise<void> {
     if (this.preloadedResources.has(url)) return;
     
     if (this.preloadPromises.has(url)) {
       return this.preloadPromises.get(url);
     }
 
-    const promise = this.loadResource(url);
+    const promise = this.loadResource(url, type);
     this.preloadPromises.set(url, promise);
     
     try {
@@ -75,13 +82,25 @@ class Live2DResourcePreloader {
     }
   }
 
-  private loadResource(url: string): Promise<void> {
+  private loadResource(url: string, type?: string): Promise<void> {
     return new Promise((resolve) => {
       const link = document.createElement('link');
       link.rel = 'preload';
-      link.as = url.endsWith('.js') ? 'script' : 
-                url.endsWith('.json') ? 'fetch' : 'image';
+      
+      // 优先使用传入的type，否则根据URL推断
+      if (type === 'script') {
+        link.as = 'script';
+      } else if (type === 'json') {
+        link.as = 'fetch';
+      } else if (type === 'image') {
+        link.as = 'image';
+      } else {
+        link.as = url.endsWith('.js') ? 'script' : 
+                  url.endsWith('.json') ? 'fetch' : 'image';
+      }
+      
       link.href = url;
+      link.crossOrigin = 'anonymous'; // 启用跨域资源共享
       
       link.onload = () => resolve();
       link.onerror = () => resolve(); // 即使失败也resolve，不影响主流程
@@ -107,12 +126,15 @@ class Live2DResourcePreloader {
 
 // 消息队列管理器 - 增强版
 class MessageQueueManager {
-  private queue: Array<{message: string, type: string, priority: number}> = [];
+  private queue: Array<{message: string, type: string, priority: number, timestamp: number}> = [];
   private isProcessing: boolean = false;
   private currentMessage: string = '';
   private messageCallback: ((message: string) => void) | null = null;
   private instanceManager: typeof live2dInstanceManager;
   private lastMessageTime: number = 0;
+  private messageHistory: Set<string> = new Set();
+  private readonly COOLDOWN_PERIOD = 1000; // 消息冷却期
+  private readonly MAX_QUEUE_SIZE = 10; // 最大队列大小
 
   constructor() {
     this.instanceManager = live2dInstanceManager;
@@ -125,19 +147,48 @@ class MessageQueueManager {
   addMessage(message: string, type: string = 'normal', priority: number = 1) {
     // 防抖处理
     const now = Date.now();
-    if (now - this.lastMessageTime < 500) return;
+    if (now - this.lastMessageTime < this.COOLDOWN_PERIOD) {
+      // 高优先级消息可以突破冷却期
+      if (priority < 5) return;
+    }
     this.lastMessageTime = now;
     
     // 消息过滤
-    const isDefaultMessage = message.includes('你好') && message.includes('洛天依') && message.includes('！');
-    const isGenericGreeting = message === '你好～我是洛天依！' || 
-                             message === '你好~我是洛天依！' ||
-                             (message.includes('你好') && message.length < 15);
+    const cleanedMessage = message.trim();
+    if (!cleanedMessage) return;
     
-    if (isDefaultMessage || isGenericGreeting) return;
+    // 避免重复消息
+    if (this.messageHistory.has(cleanedMessage)) {
+      // 高优先级消息可以重复
+      if (priority < 3) return;
+    }
     
-    this.queue.push({ message, type, priority });
-    this.queue.sort((a, b) => b.priority - a.priority); // 高优先级优先
+    // 消息长度限制
+    if (cleanedMessage.length > 50) {
+      message = cleanedMessage.substring(0, 47) + '...';
+    }
+    
+    // 添加到队列
+    this.queue.push({ message, type, priority, timestamp: now });
+    
+    // 按优先级和时间排序
+    this.queue.sort((a, b) => {
+      if (a.priority !== b.priority) {
+        return b.priority - a.priority;
+      }
+      return a.timestamp - b.timestamp;
+    });
+    
+    // 限制队列大小
+    if (this.queue.length > this.MAX_QUEUE_SIZE) {
+      // 移除低优先级的旧消息
+      this.queue = this.queue.slice(-this.MAX_QUEUE_SIZE);
+    }
+    
+    // 记录消息历史
+    this.messageHistory.add(cleanedMessage);
+    
+    // 启动队列处理
     this.processQueue();
   }
 
@@ -149,14 +200,20 @@ class MessageQueueManager {
     while (this.queue.length > 0) {
       const item = this.queue.shift()!;
       
+      // 检查消息是否过期（超过30秒）
+      if (Date.now() - item.timestamp > 30000) {
+        continue;
+      }
+      
       // 消息状态将在实例状态保存时一并处理
       
       if (this.messageCallback) {
         this.messageCallback(item.message);
       }
       
-      // 等待消息显示完成（假设3秒）
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      // 根据消息类型调整显示时间
+      const displayTime = item.type === 'interaction' ? 4000 : 3000;
+      await new Promise(resolve => setTimeout(resolve, displayTime));
     }
     
     this.isProcessing = false;
@@ -166,6 +223,19 @@ class MessageQueueManager {
     this.queue = [];
     this.isProcessing = false;
     this.lastMessageTime = 0;
+    // 保留最近的消息历史，避免刚清理就重复显示相同消息
+    const recentMessages = Array.from(this.messageHistory).slice(-10);
+    this.messageHistory.clear();
+    recentMessages.forEach(msg => this.messageHistory.add(msg));
+  }
+
+  // 获取队列状态
+  getStatus() {
+    return {
+      queueLength: this.queue.length,
+      isProcessing: this.isProcessing,
+      lastMessageTime: this.lastMessageTime
+    };
   }
 }
 
@@ -290,7 +360,7 @@ export default function LuoTianyiLive2DOptimized({ className }: LuoTianyiLive2DO
         performanceMonitorRef.current.recordMessage();
     }, [message]);
 
-    // 拖拽处理函数
+    // 拖拽处理函数 - 优化版
     const handleMouseDown = useCallback((e: React.MouseEvent) => {
         if (isMinimized) return;
         
@@ -298,7 +368,15 @@ export default function LuoTianyiLive2DOptimized({ className }: LuoTianyiLive2DO
         const startX = e.clientX - position.x;
         const startY = e.clientY - position.y;
         
+        // 节流处理，减少频繁更新
+        let lastMoveTime = 0;
+        const THROTTLE_DELAY = 16; // 约60fps
+        
         const handleMouseMove = (e: MouseEvent) => {
+            const now = Date.now();
+            if (now - lastMoveTime < THROTTLE_DELAY) return;
+            lastMoveTime = now;
+            
             setPosition({
                 x: e.clientX - startX,
                 y: e.clientY - startY
@@ -311,7 +389,8 @@ export default function LuoTianyiLive2DOptimized({ className }: LuoTianyiLive2DO
             document.removeEventListener('mouseup', handleMouseUp);
         };
         
-        document.addEventListener('mousemove', handleMouseMove);
+        // 使用passive事件监听器提高性能
+        document.addEventListener('mousemove', handleMouseMove, { passive: true });
         document.addEventListener('mouseup', handleMouseUp);
     }, [isMinimized, position]);
 
@@ -323,7 +402,15 @@ export default function LuoTianyiLive2DOptimized({ className }: LuoTianyiLive2DO
         const startX = touch.clientX - position.x;
         const startY = touch.clientY - position.y;
         
+        // 节流处理，减少频繁更新
+        let lastMoveTime = 0;
+        const THROTTLE_DELAY = 16; // 约60fps
+        
         const handleTouchMove = (e: TouchEvent) => {
+            const now = Date.now();
+            if (now - lastMoveTime < THROTTLE_DELAY) return;
+            lastMoveTime = now;
+            
             const touch = e.touches[0];
             setPosition({
                 x: touch.clientX - startX,
@@ -337,7 +424,8 @@ export default function LuoTianyiLive2DOptimized({ className }: LuoTianyiLive2DO
             document.removeEventListener('touchend', handleTouchEnd);
         };
         
-        document.addEventListener('touchmove', handleTouchMove);
+        // 使用passive事件监听器提高性能
+        document.addEventListener('touchmove', handleTouchMove, { passive: true });
         document.addEventListener('touchend', handleTouchEnd);
     }, [isMinimized, position]);
 
@@ -486,35 +574,69 @@ export default function LuoTianyiLive2DOptimized({ className }: LuoTianyiLive2DO
                 
                 // 初始化Live2D
                 const basePath = getAssetPath('/luotianyi-live2d-master');
+                const modelPath = `${basePath}/live2d/model/tianyi/model.json`;
                 
-                // 加载模型配置
-                fetch(`${basePath}/live2d/model/tianyi/model.json`)
-                    .then(response => response.json())
-                    .then(modelConfig => {
-                        console.log('[LuoTianyiLive2D] 模型配置加载成功');
+                // 优化：使用缓存的模型配置
+                let modelConfig;
+                try {
+                    // 尝试从缓存加载
+                    const cachedConfig = sessionStorage.getItem('live2d_model_config');
+                    if (cachedConfig) {
+                        modelConfig = JSON.parse(cachedConfig);
+                        console.log('[LuoTianyiLive2D] 从缓存加载模型配置');
+                    } else {
+                        // 从网络加载
+                        const response = await fetch(modelPath);
+                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                        modelConfig = await response.json();
                         
-                        // 设置canvas尺寸
-                        const canvas = canvasRef.current!;
-                        canvas.width = 280;
-                        canvas.height = 250;
-                        
-                        // 初始化Live2D模型
-                        if ((window as any).live2d) {
+                        // 缓存模型配置
+                        try {
+                            sessionStorage.setItem('live2d_model_config', JSON.stringify(modelConfig));
+                            console.log('[LuoTianyiLive2D] 缓存模型配置');
+                        } catch {
+                            // 缓存失败不影响主流程
+                        }
+                    }
+                } catch (error) {
+                    console.error('[LuoTianyiLive2D] 模型配置加载失败:', error);
+                    performanceMonitorRef.current.recordError();
+                    setIsLoading(false);
+                    return;
+                }
+                
+                console.log('[LuoTianyiLive2D] 模型配置加载成功');
+                
+                // 设置canvas尺寸
+                const canvas = canvasRef.current!;
+                canvas.width = 280;
+                canvas.height = 250;
+                
+                // 初始化Live2D模型
+                if ((window as any).live2d) {
+                    // 优化：使用requestAnimationFrame确保在浏览器渲染周期内执行
+                    requestAnimationFrame(() => {
+                        try {
                             (window as any).live2d.initialize(canvas, modelConfig);
+                            console.log('[LuoTianyiLive2D] 模型初始化成功');
                             
-                            // 使用 requestAnimationFrame 优化渲染时机
-                            requestAnimationFrame(() => {
+                            // 延迟隐藏加载状态，确保模型完全渲染
+                            setTimeout(() => {
                                 setIsLoading(false);
                                 performanceMonitorRef.current.recordInitializationComplete();
-                            });
+                            }, 300);
+                        } catch (error) {
+                            console.error('[LuoTianyiLive2D] 模型初始化失败:', error);
+                            performanceMonitorRef.current.recordError();
+                            setIsLoading(false);
                         }
-                    })
-                    .catch(error => {
-                        console.error('[LuoTianyiLive2D] 模型配置加载失败:', error);
-                        performanceMonitorRef.current.recordError();
-                        setIsLoading(false);
                     });
-                    
+                } else {
+                    console.error('[LuoTianyiLive2D] Live2D库未加载');
+                    performanceMonitorRef.current.recordError();
+                    setIsLoading(false);
+                }
+                
             } catch (error) {
                 console.error('[LuoTianyiLive2D] Live2D设置失败:', error);
                 performanceMonitorRef.current.recordError();
@@ -790,20 +912,58 @@ export default function LuoTianyiLive2DOptimized({ className }: LuoTianyiLive2DO
                 clearTimeout(scrollTimeoutRef.current);
                 scrollTimeoutRef.current = null;
             }
+            if (initializationTimeoutRef.current) {
+                clearTimeout(initializationTimeoutRef.current);
+                initializationTimeoutRef.current = null;
+            }
             
             // 清理消息队列
             messageQueueRef.current.clear();
             
-            // 保存当前状态到实例管理器
-            // 这里可以添加内存清理逻辑，但目前先记录警告
+            // 清理Live2D模型资源
+            if ((window as any).live2d) {
+                try {
+                    // 清理模型实例
+                    if (canvasRef.current) {
+                        const canvasId = canvasRef.current.id;
+                        if ((window as any).live2d.instances) {
+                            delete (window as any).live2d.instances[canvasId];
+                        }
+                    }
+                } catch (error) {
+                    console.warn('[LuoTianyiLive2D] 清理Live2D模型资源失败:', error);
+                }
+            }
             
             // 清理预加载器缓存（保留实例管理器的缓存）
             preloaderRef.current.clearCache();
             
             // 清理DOM引用
             if (canvasRef.current) {
+                // 清理画布内容
+                const ctx = canvasRef.current.getContext('2d');
+                if (ctx) {
+                    ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+                }
                 canvasRef.current = null;
             }
+            if (containerRef.current) {
+                containerRef.current = null;
+            }
+            
+            // 清理全局引用
+            if ((window as any).live2dOptimized) {
+                delete (window as any).live2dOptimized;
+            }
+            if ((window as any).showMessage) {
+                delete (window as any).showMessage;
+            }
+            if ((window as any).messageSystemInitialized) {
+                delete (window as any).messageSystemInitialized;
+            }
+            
+            // 清理事件监听器
+            // 注意：其他useEffect中的事件监听器会通过各自的清理函数处理
             
             // 强制清理内存（如果可用）
             if ((window as any).gc) {
@@ -814,6 +974,17 @@ export default function LuoTianyiLive2DOptimized({ className }: LuoTianyiLive2DO
                     console.warn('[LuoTianyiLive2D] 垃圾回收执行失败:', error);
                 }
             }
+            
+            // 延迟垃圾回收，确保所有资源都已释放
+            setTimeout(() => {
+                if ((window as any).gc) {
+                    try {
+                        (window as any).gc();
+                    } catch {
+                        // 忽略二次回收错误
+                    }
+                }
+            }, 100);
             
             console.log('[LuoTianyiLive2D] 清理工作完成');
         };
@@ -1019,11 +1190,20 @@ export default function LuoTianyiLive2DOptimized({ className }: LuoTianyiLive2DO
                     </button>
                 </div>
                 
-                {/* 消息气泡 */}
+                {/* 消息气泡 - 优化版 */}
                 {message && (
-                    <div className="absolute left-1/2 transform -translate-x-1/2 bg-white dark:bg-gray-800 rounded-lg p-3 shadow-lg max-w-xs z-10 border border-gray-200 dark:border-gray-700" style={{top: '-80px'}}>
+                    <div 
+                        className="absolute left-1/2 transform -translate-x-1/2 bg-white dark:bg-gray-800 rounded-lg p-3 shadow-lg max-w-xs z-10 border border-gray-200 dark:border-gray-700 transition-all duration-300 animate-in fade-in slide-in-from-bottom-2"
+                        style={{ 
+                            top: '-80px',
+                            opacity: messageOpacity,
+                            transform: `translateX(-50%) scale(${messageOpacity > 0.5 ? 1 : 0.9})`
+                        }}
+                    >
                         <p className="text-sm text-gray-800 dark:text-gray-200">{message}</p>
                         <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-white dark:bg-gray-800 rotate-45 border-r border-b border-gray-200 dark:border-gray-700"></div>
+                        {/* 装饰性光晕 */}
+                        <div className="absolute inset-0 rounded-lg opacity-10 bg-gradient-to-r from-blue-400 to-purple-400 blur-sm"></div>
                     </div>
                 )}
                 

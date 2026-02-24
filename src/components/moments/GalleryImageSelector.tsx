@@ -17,7 +17,7 @@ export default function GalleryImageSelector({
   isOpen,
   onClose,
   onSelect,
-  maxImages = 9,
+  maxImages = 100,
   selectedImages = []
 }: GalleryImageSelectorProps) {
   const [images, setImages] = useState<GalleryImage[]>([]);

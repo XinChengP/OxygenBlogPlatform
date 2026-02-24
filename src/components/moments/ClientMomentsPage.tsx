@@ -5,7 +5,6 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkEmoji from 'remark-emoji';
 import rehypeHighlight from 'rehype-highlight';
-import 'highlight.js/styles/github.css';
 import ImageGrid from './ImageGrid';
 import { getAvatarPath, name } from '@/setting/AboutSetting';
 import { getBilibiliVideoCount } from '@/utils/bilibiliUtils';
@@ -191,6 +190,30 @@ function ClientMomentsPage({ moments, blogCount, blogs, categoryCount, tagCount 
                     <div className="text-lg font-semibold">{tagCount}</div>
                     <div className="text-xs text-muted-foreground">标签</div>
                   </a>
+                </div>
+              </div>
+            </div>
+
+            {/* 公告板 */}
+            <div className="p-6 rounded-lg border transition-all duration-300 backdrop-blur-md bg-card/90 border-border shadow-lg supports-[backdrop-filter]:bg-card/75">
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <span className="w-2 h-6 bg-primary rounded-full"></span>
+                  公告板
+                </h3>
+              </div>
+              <div className="space-y-3 text-sm">
+                <div className="p-3 rounded-md bg-primary/5 border-l-2 border-primary">
+                  <p className="font-medium mb-1">🎉 网站更新通知</p>
+                  <p className="text-muted-foreground">2026年2月24日，网站成功添加公告板功能！</p>
+                </div>
+                <div className="p-3 rounded-md bg-muted">
+                  <p className="font-medium mb-1">📢 重要提醒</p>
+                  <p className="text-muted-foreground">请定期查看个人动态，获取最新信息。</p>
+                </div>
+                <div className="p-3 rounded-md bg-muted">
+                  <p className="font-medium mb-1">🌟 功能预告</p>
+                  <p className="text-muted-foreground">即将推出更多有趣的功能，敬请期待！</p>
                 </div>
               </div>
             </div>

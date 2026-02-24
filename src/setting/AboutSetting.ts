@@ -126,5 +126,11 @@ export const relatedLinks = [
     url: "https://blog.ybyq.wang/archives/1681.html",
     description: "为博客添加春节灯笼效果的教程",
     icon: "globe"
+  },
+  {
+    name: "烟花效果",
+    url: "https://www.bilibili.com/video/BV1Qq4y1d76b",
+    description: "基于html5的烟花效果",
+    icon: "globe"
   }
 ];

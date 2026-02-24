@@ -249,7 +249,13 @@ class Live2DResourceManager {
       throw new Error(`无法确定资源类型: ${JSON.stringify(config)}`);
     }
     
-    const response = await fetch(url);
+    // 优化：添加请求头，启用HTTP缓存
+    const response = await fetch(url, {
+      headers: {
+        'Cache-Control': 'max-age=86400', // 24小时缓存
+        'Pragma': 'cache'
+      }
+    });
     
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);

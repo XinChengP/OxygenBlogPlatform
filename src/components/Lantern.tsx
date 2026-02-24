@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useNavigationVisibility } from '@/contexts/NavigationVisibilityContext';
+import live2dMessageManager from '@/utils/live2dMessageManager';
 
 interface LanternProps {
   text?: string;
@@ -52,6 +53,9 @@ export default function Lantern({ text = '新春快乐', enabled = true }: Lante
   useEffect(() => {
     if (!enabled) return;
 
+    // 存储清理函数的数组（在使用前初始化）
+    const cleanupFunctions: Array<() => void> = [];
+
     // 创建灯笼容器
     const container = document.createElement('div');
     container.className = 'deng-container';
@@ -70,13 +74,6 @@ export default function Lantern({ text = '新春快乐', enabled = true }: Lante
       
       // 存储灯笼引用
       lanternRefs.current.set(index, box);
-      
-      // 初始化位置
-      const initialPosition = {
-        x: parseInt(getComputedStyle(box).left) || 0,
-        y: parseInt(getComputedStyle(box).top) || 0
-      };
-      positionRefs.current.set(index, initialPosition);
 
       // 3D 容器 (负责摆动)
       const lantern3D = document.createElement('div');
@@ -385,6 +382,7 @@ export default function Lantern({ text = '新春快乐', enabled = true }: Lante
         .deng-box3 { right: 80px; }
         .deng-box4 { right: 10px; }
       }
+      
     `;
 
     // 拖拽相关函数
@@ -395,12 +393,26 @@ export default function Lantern({ text = '新春快乐', enabled = true }: Lante
       const lantern = lanternRefs.current.get(index);
       if (!lantern) return;
       
-      const position = positionRefs.current.get(index) || { x: 0, y: 0 };
+      // 移除拖拽样式，确保getBoundingClientRect()返回的是原始大小的位置
+      lantern.classList.remove('dragging');
       
-      // 计算偏移量：鼠标指针位置减去灯笼的当前位置
-      // 这样可以确保灯笼精确跟随鼠标指针，不受transform变换的影响
-      const offsetX = e.clientX - position.x;
-      const offsetY = e.clientY - position.y;
+      // 使用getBoundingClientRect()获取灯笼的原始位置
+      const rect = lantern.getBoundingClientRect();
+      
+      // 重新添加拖拽样式
+      lantern.classList.add('dragging');
+      
+      // 计算偏移量：鼠标指针位置减去灯笼的左上角位置
+      // 注意：这里使用的是原始大小的位置，所以偏移量是准确的
+      const offsetX = e.clientX - rect.left;
+      const offsetY = e.clientY - rect.top;
+      
+      // 更新positionRefs中的位置为当前真实位置（原始大小的位置）
+      const currentPosition = {
+        x: rect.left,
+        y: rect.top
+      };
+      positionRefs.current.set(index, currentPosition);
       
       draggingRef.current = {
         isDragging: true,
@@ -416,8 +428,7 @@ export default function Lantern({ text = '新春快乐', enabled = true }: Lante
         lastTime: performance.now(),
       };
       
-      // 添加拖拽样式
-      lantern.classList.add('dragging');
+      // 添加拖拽样式（已在前面添加，这里不需要重复）
       
       // 清除点击超时
       if (clickTimeoutRef.current) {
@@ -444,24 +455,38 @@ export default function Lantern({ text = '新春快乐', enabled = true }: Lante
       const lantern = lanternRefs.current.get(draggingRef.current.lanternIndex);
       if (!lantern) return;
       
-      // 计算新位置
+      // 获取灯笼的原始大小（不考虑缩放）
+      const lanternWidth = lantern.offsetWidth;
+      const lanternHeight = lantern.offsetHeight;
+      
+      // 计算新位置（基于原始大小）
       let newX = e.clientX - draggingRef.current.offsetX;
       let newY = e.clientY - draggingRef.current.offsetY;
       
       // 边界检测
       const windowWidth = window.innerWidth;
       const windowHeight = window.innerHeight;
-      const lanternWidth = lantern.offsetWidth;
-      const lanternHeight = lantern.offsetHeight;
       
-      newX = Math.max(0, Math.min(newX, windowWidth - lanternWidth));
-      newY = Math.max(0, Math.min(newY, windowHeight - lanternHeight));
+      // 考虑缩放的影响：当灯笼被缩放时，它的视觉大小会变大，所以边界也需要相应调整
+      const scaledWidth = lanternWidth * 1.1;
+      const scaledHeight = lanternHeight * 1.1;
+      
+      // 调整新位置，确保缩放后的灯笼不会超出边界
+      newX = Math.max(0, Math.min(newX, windowWidth - scaledWidth));
+      newY = Math.max(0, Math.min(newY, windowHeight - scaledHeight));
+      
+      // 调整新位置，补偿缩放导致的视觉偏移
+      // 因为缩放的原点是中心点，所以需要将位置向左上方偏移 (scaledWidth - lanternWidth) / 2
+      const offsetX = (scaledWidth - lanternWidth) / 2;
+      const offsetY = (scaledHeight - lanternHeight) / 2;
+      const adjustedX = newX - offsetX;
+      const adjustedY = newY - offsetY;
       
       // 更新位置
-      lantern.style.left = `${newX}px`;
-      lantern.style.top = `${newY}px`;
+      lantern.style.left = `${adjustedX}px`;
+      lantern.style.top = `${adjustedY}px`;
       
-      // 更新存储的位置
+      // 更新存储的位置（存储原始大小的位置，而不是调整后的位置）
       positionRefs.current.set(draggingRef.current.lanternIndex, { x: newX, y: newY });
     };
     
@@ -503,10 +528,10 @@ export default function Lantern({ text = '新春快乐', enabled = true }: Lante
           const windowWidth = window.innerWidth;
           const windowHeight = window.innerHeight;
           const lanternWidth = lantern.offsetWidth;
-          const lanternHeight = lantern.offsetHeight;
           
+          // 调整新位置，确保灯笼不会超出边界
           currentX = Math.max(0, Math.min(currentX, windowWidth - lanternWidth));
-          currentY = Math.max(0, Math.min(currentY, windowHeight - lanternHeight));
+          currentY = Math.max(0, Math.min(currentY, windowHeight - lantern.offsetHeight));
           
           // 更新灯笼位置
           lantern.style.left = `${currentX}px`;
@@ -553,10 +578,10 @@ export default function Lantern({ text = '新春快乐', enabled = true }: Lante
       const windowWidth = window.innerWidth;
       const windowHeight = window.innerHeight;
       const lanternWidth = lantern.offsetWidth;
-      const lanternHeight = lantern.offsetHeight;
       
+      // 调整新位置，确保灯笼不会超出边界
       const finalX = Math.max(0, Math.min(snappedX, windowWidth - lanternWidth));
-      const finalY = Math.max(0, Math.min(snappedY, windowHeight - lanternHeight));
+      const finalY = Math.max(0, Math.min(snappedY, windowHeight - lantern.offsetHeight));
       
       // 应用吸附动画
       lantern.style.transition = 'all 0.3s ease-out';
@@ -591,12 +616,49 @@ export default function Lantern({ text = '新春快乐', enabled = true }: Lante
       }, 100);
     };
     
+    // 触发Live2D消息的函数（添加节流机制和随机消息）
+    const triggerLanternMessage = (() => {
+      let lastTriggerTime = 0;
+      const COOLDOWN = 5000; // 5秒冷却时间，与消息显示时长一致
+      let isMessageQueued = false;
+      
+      // 灯笼相关的消息数组
+      const lanternMessages = [
+        '新年快洛，灯笼好像糖葫芦呀！不知道是什么味道的呢',
+        '红红的灯笼，好有过年的气氛呀～',
+        '好想把灯笼摘下来看一看里面是什么样子～',
+        '如果能把灯笼带回家就好了～',
+        '要是能在灯笼上写下愿望就好了～',
+      ];
+      
+      return () => {
+        const now = Date.now();
+        if (now - lastTriggerTime < COOLDOWN || isMessageQueued) {
+          return; // 冷却时间内不重复触发，或消息已在队列中
+        }
+        
+        // 随机选择一个消息
+        const randomIndex = Math.floor(Math.random() * lanternMessages.length);
+        const message = lanternMessages[randomIndex];
+        
+        live2dMessageManager.showMessage(message, 5000, 5); // 提高优先级，确保及时显示
+        lastTriggerTime = now;
+        isMessageQueued = true;
+        
+        // 消息显示完成后重置标志
+        setTimeout(() => {
+          isMessageQueued = false;
+        }, 5000);
+      };
+    })();
+    
     // 为每个灯笼添加事件监听器
     texts.forEach((_, index) => {
       const lantern = lanternRefs.current.get(index);
       if (lantern) {
         lantern.addEventListener('mousedown', (e) => handleMouseDown(e, index));
         lantern.addEventListener('click', (e) => handleClick(e, index));
+        lantern.addEventListener('mouseenter', triggerLanternMessage);
       }
     });
     
@@ -604,6 +666,105 @@ export default function Lantern({ text = '新春快乐', enabled = true }: Lante
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
     window.addEventListener('resize', handleResize);
+    
+    // 初始化碰撞检测
+    const collisionInterval = setInterval(() => {
+      checkCollision();
+    }, 100);
+    
+    // 检查灯笼与Live2D角色的碰撞
+    function checkCollision() {
+      // 检查Live2D角色是否存在
+      const live2dElement = document.getElementById('landlord');
+      if (!live2dElement) return;
+      
+      // 检查每个灯笼是否与Live2D角色碰撞
+      lanternRefs.current.forEach((lantern, index) => {
+        // 检查灯笼是否已经隐藏
+        if (hiddenLanterns.has(index)) return;
+        
+        if (checkElementCollision(lantern, live2dElement)) {
+          handleCollision(index);
+        }
+      });
+    }
+    
+    // 检查两个元素是否碰撞
+    function checkElementCollision(element1: HTMLElement, element2: HTMLElement) {
+      const rect1 = element1.getBoundingClientRect();
+      const rect2 = element2.getBoundingClientRect();
+      
+      return !(
+        rect1.right < rect2.left ||
+        rect1.left > rect2.right ||
+        rect1.bottom < rect2.top ||
+        rect1.top > rect2.bottom
+      );
+    }
+    
+    // 碰撞处理函数
+    function handleCollision(index: number) {
+      // 检查灯笼是否已经隐藏
+      if (hiddenLanterns.has(index)) return;
+      
+      // 标记灯笼为已隐藏
+      hiddenLanterns.add(index);
+      
+      // 更新计数器值
+      lanternCounter++;
+      console.log('Lantern counter:', lanternCounter);
+      
+      // 平滑隐藏碰撞的灯笼
+      const lantern = lanternRefs.current.get(index);
+      if (lantern) {
+        lantern.style.transition = 'all 0.5s ease-out';
+        lantern.style.opacity = '0';
+        lantern.style.transform = 'scale(0.5)';
+        lantern.style.pointerEvents = 'none';
+      }
+      
+      // 检查是否达到彩蛋触发条件
+      if (lanternCounter === 4 && !isEasterEggTriggered) {
+        // 触发彩蛋消息
+        live2dMessageManager.showMessage('谢谢你的灯笼！天依都收到啦，请你看烟花！', 5000, 10);
+        // 触发烟花效果
+        startFireworks();
+        // 标记彩蛋消息已触发
+        isEasterEggTriggered = true;
+        console.log('Easter egg triggered!');
+      } else if (lanternCounter < 4) {
+        // 触发预设消息序列（每个灯笼碰撞都触发）
+        triggerMessageSequence();
+      }
+      // 当计数器达到4后，不再触发任何消息
+    }
+    
+    // 触发预设消息序列
+    function triggerMessageSequence() {
+      const messages = [
+        '谢谢你送我的灯笼！好漂亮呀～',
+        '哇，收到了一个漂亮的灯笼！好开心～',
+        '哇哦，这是给我的灯笼吗？太漂亮了～',
+        '收到灯笼的感觉真好，谢谢你～',
+        '这个灯笼好可爱，谢谢你送给我～',
+        '谢谢你的灯笼，我好喜欢！',
+      ];
+      
+      // 随机选择一条消息立即触发
+      if (messages.length > 0) {
+        const randomIndex = Math.floor(Math.random() * messages.length);
+        live2dMessageManager.showMessage(messages[randomIndex], 3000, 10); // 最高优先级
+      }
+    }
+    
+    // 存储已隐藏的灯笼索引
+    const hiddenLanterns = new Set<number>();
+    
+    // 灯笼隐藏计数器
+    let lanternCounter = 0;
+    
+    // 彩蛋消息触发标志
+    let isEasterEggTriggered = false;
     
     // 窗口大小变化处理函数
     function handleResize() {
@@ -630,9 +791,487 @@ export default function Lantern({ text = '新春快乐', enabled = true }: Lante
       });
     }
     
+    // 烟花效果实现
+    let canvas: HTMLCanvasElement | null = null;
+    let ctx: CanvasRenderingContext2D | null = null;
+    let fireworks: any[] = [];
+    let particles: any[] = [];
+    let hue = 120;
+    let timerTotal = 40;
+    let timerTick = 0;
+    let animationId: number | null = null;
+    let isFireworksRunning = false;
+    let volleyCount = 0;
+    let maxVolleys = 5 + Math.floor(Math.random() * 3); // 5~7轮齐射
+    
+    // 获取随机数
+    function random(min: number, max: number) {
+      return Math.random() * (max - min) + min;
+    }
+    
+    // 计算两点之间的距离
+    function calculateDistance(p1x: number, p1y: number, p2x: number, p2y: number) {
+      const xDistance = p1x - p2x;
+      const yDistance = p1y - p2y;
+      return Math.sqrt(Math.pow(xDistance, 2) + Math.pow(yDistance, 2));
+    }
+    
+    // 烟花类
+    class Firework {
+      x: number;
+      y: number;
+      sx: number;
+      sy: number;
+      tx: number;
+      ty: number;
+      distanceToTarget: number;
+      distanceTraveled: number;
+      coordinates: number[][];
+      coordinateCount: number;
+      angle: number;
+    speed: number;
+    acceleration: number;
+    brightness: number;
+    targetRadius: number;
+    size: number;
+      
+      constructor(sx: number, sy: number, tx: number, ty: number) {
+        this.x = sx;
+        this.y = sy;
+        this.sx = sx;
+        this.sy = sy;
+        this.tx = tx;
+        this.ty = ty;
+        this.distanceToTarget = calculateDistance(sx, sy, tx, ty);
+        this.distanceTraveled = 0;
+        this.coordinates = [];
+        this.coordinateCount = 3;
+        
+        while (this.coordinateCount--) {
+          this.coordinates.push([this.x, this.y]);
+        }
+        
+        this.angle = Math.atan2(ty - sy, tx - sx);
+        this.speed = 1;
+        this.acceleration = 1.01;
+        this.brightness = random(50, 70);
+        this.targetRadius = 2;
+        this.size = random(0.7, 2); // 大小随机为70%~200%
+      }
+      
+      update(index: number) {
+        this.coordinates.pop();
+        this.coordinates.unshift([this.x, this.y]);
+        
+        if (this.targetRadius < 8) {
+          this.targetRadius += 0.3;
+        } else {
+          this.targetRadius = 1;
+        }
+        
+        this.speed *= this.acceleration;
+        
+        const vx = Math.cos(this.angle) * this.speed;
+        const vy = Math.sin(this.angle) * this.speed;
+        this.distanceTraveled = calculateDistance(this.sx, this.sy, this.x + vx, this.y + vy);
+        
+        if (this.distanceTraveled >= this.distanceToTarget) {
+          createParticles(this.tx, this.ty, this.size);
+          fireworks.splice(index, 1);
+        } else {
+          this.x += vx;
+          this.y += vy;
+        }
+      }
+      
+      draw() {
+      if (!ctx) return;
+
+      ctx.save();
+      ctx.scale(this.size, this.size);
+      
+      ctx.beginPath();
+      ctx.moveTo(this.coordinates[this.coordinates.length - 1][0] / this.size, this.coordinates[this.coordinates.length - 1][1] / this.size);
+      ctx.lineTo(this.x / this.size, this.y / this.size);
+      ctx.strokeStyle = `hsl(${hue}, 100%, ${this.brightness}%)`;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(this.tx / this.size, this.ty / this.size, this.targetRadius, 0, Math.PI * 2);
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      
+      ctx.restore();
+    }
+    }
+    
+    // 粒子类
+    class Particle {
+      x: number;
+      y: number;
+      coordinates: number[][];
+      coordinateCount: number;
+      angle: number;
+      speed: number;
+      friction: number;
+      gravity: number;
+      hue: number;
+      brightness: number;
+      alpha: number;
+      decay: number;
+      size: number;
+      
+      constructor(x: number, y: number, size: number = 1) {
+        this.x = x;
+        this.y = y;
+        this.coordinates = [];
+        this.coordinateCount = 5;
+        
+        while (this.coordinateCount--) {
+          this.coordinates.push([this.x, this.y]);
+        }
+        
+        this.angle = random(0, Math.PI * 2);
+        this.speed = random(1, 7) * size;
+        this.friction = 0.95;
+        this.gravity = 0.6;
+        this.hue = random(hue - 20, hue + 20);
+        this.brightness = random(50, 80);
+        this.alpha = 1;
+        this.decay = random(0.008, 0.015); // 放缓消失速度
+        this.size = size;
+      }
+      
+      update(index: number) {
+        this.coordinates.pop();
+        this.coordinates.unshift([this.x, this.y]);
+        this.speed *= this.friction;
+        this.x += Math.cos(this.angle) * this.speed;
+        this.y += Math.sin(this.angle) * this.speed + this.gravity;
+        this.alpha -= this.decay;
+        
+        if (this.alpha <= this.decay) {
+          particles.splice(index, 1);
+        }
+      }
+      
+      draw() {
+        if (!ctx) return;
+        
+        ctx.save();
+        ctx.scale(this.size, this.size);
+        
+        ctx.beginPath();
+        ctx.moveTo(this.coordinates[this.coordinates.length - 1][0] / this.size, this.coordinates[this.coordinates.length - 1][1] / this.size);
+        ctx.lineTo(this.x / this.size, this.y / this.size);
+        ctx.strokeStyle = `hsla(${this.hue}, 100%, ${this.brightness}%, ${this.alpha})`;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        
+        ctx.restore();
+      }
+    }
+    
+    // 创建粒子
+    function createParticles(x: number, y: number, size: number = 1) {
+      let particleCount = 80;
+      while (particleCount--) {
+        particles.push(new Particle(x, y, size));
+      }
+    }
+    
+    // 动画循环
+    function loop() {
+      if (!isFireworksRunning) return;
+      
+      animationId = requestAnimationFrame(loop);
+      hue += 0.5;
+      
+      if (!ctx || !canvas) return;
+      
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.globalCompositeOperation = 'lighter';
+      
+      let i = fireworks.length;
+      while (i--) {
+        fireworks[i].draw();
+        fireworks[i].update(i);
+      }
+      
+      i = particles.length;
+      while (i--) {
+        particles[i].draw();
+        particles[i].update(i);
+      }
+      
+      // 检查是否所有烟花和粒子都已结束
+      if (fireworks.length === 0 && particles.length === 0) {
+        stopFireworks();
+      }
+    }
+    
+    // 初始化画布
+    function initCanvas() {
+      const oldCanvas = document.getElementById('fireworks-canvas');
+      if (oldCanvas) {
+        oldCanvas.remove();
+      }
+      
+      canvas = document.createElement('canvas');
+      canvas.id = 'fireworks-canvas';
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      canvas.style.position = 'fixed';
+      canvas.style.top = '0';
+      canvas.style.left = '0';
+      canvas.style.zIndex = '9999';
+      canvas.style.pointerEvents = 'none';
+      
+      document.body.appendChild(canvas);
+      ctx = canvas.getContext('2d');
+      
+      // 检查是否为浅色模式
+      const isLightMode = window.matchMedia('(prefers-color-scheme: light)').matches;
+      if (isLightMode) {
+        const filter = document.createElement('div');
+        filter.id = 'fireworks-dark-filter';
+        filter.style.position = 'fixed';
+        filter.style.top = '0';
+        filter.style.left = '0';
+        filter.style.width = '100%';
+        filter.style.height = '100%';
+        filter.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+        filter.style.zIndex = '9998';
+        filter.style.pointerEvents = 'none';
+        filter.style.opacity = '0';
+        filter.style.transition = 'opacity 1s ease-in-out';
+        document.body.appendChild(filter);
+        
+        setTimeout(() => {
+          filter.style.opacity = '1';
+        }, 100);
+      }
+    }
+    
+    // 启动烟花
+    function startFireworks() {
+      if (isFireworksRunning) return;
+      
+      initCanvas();
+      isFireworksRunning = true;
+      
+      // 重置齐射计数
+      volleyCount = 0;
+      maxVolleys = 5 + Math.floor(Math.random() * 3); // 5~7轮齐射
+      
+      // 开始第一轮齐射
+      launchVolley();
+      
+      loop();
+    }
+    
+    // 发射一轮烟花
+    function launchVolley() {
+      if (!isFireworksRunning || volleyCount >= maxVolleys) return;
+      
+      const cw = window.innerWidth;
+      const ch = window.innerHeight;
+      
+      // 获取live2d看板娘的位置
+      const live2dElement = document.getElementById('landlord');
+      let launchX1 = cw / 2;
+      let launchY = ch;
+      
+      if (live2dElement) {
+        const rect = live2dElement.getBoundingClientRect();
+        launchX1 = rect.left - 50; // 看板娘左边
+        launchY = rect.bottom;
+      }
+      
+      // 计算对称的发射中心位置（沿中间竖直线对称）
+      const centerLine = cw / 2;
+      const distanceFromCenter = centerLine - launchX1;
+      const launchX2 = centerLine + distanceFromCenter; // 对称位置
+      
+      // 新增三个发射中心
+      const launchX3 = cw / 2; // 正下方中间
+      const launchY3 = ch - 50;
+      const launchX4 = 50; // 左下角
+      const launchY4 = ch - 50;
+      const launchX5 = cw - 50; // 右下角
+      const launchY5 = ch - 50;
+      
+      // 根据屏幕大小调整初始速度
+      const baseSpeed = Math.min(cw, ch) / 1000;
+      
+      // 每个发射点每轮发射5~8个烟花
+      const fireworkCount = 5 + Math.floor(Math.random() * 4);
+      
+      for (let i = 0; i < fireworkCount; i++) {
+        // 为第一个发射中心计算目标位置
+        let targetX1;
+        let randomValue1 = Math.random();
+        
+        if (randomValue1 < 0.5) {
+          // 50%的概率在中间30%区域
+          const centerStart = cw * 0.35;
+          const centerWidth = cw * 0.3;
+          targetX1 = random(centerStart, centerStart + centerWidth);
+        } else if (randomValue1 < 0.8) {
+          // 30%的概率在中间50%区域
+          const centerStart = cw * 0.25;
+          const centerWidth = cw * 0.5;
+          targetX1 = random(centerStart, centerStart + centerWidth);
+        } else {
+          // 20%的概率在中间70%区域
+          const margin = 0.15;
+          targetX1 = random(cw * margin, cw * (1 - margin));
+        }
+        
+        // Y坐标也集中在中间区域
+        const margin = 0.15;
+        const targetY1 = random(ch * margin, ch * (1 - margin));
+        
+        // 为第二个发射中心计算不同的目标位置，确保爆点不在一起
+        let targetX2;
+        let targetY2;
+        
+        // 确保两个发射中心的目标位置有足够的距离
+        do {
+          let randomValue2 = Math.random();
+          if (randomValue2 < 0.5) {
+            // 50%的概率在中间30%区域
+            const centerStart = cw * 0.35;
+            const centerWidth = cw * 0.3;
+            targetX2 = random(centerStart, centerStart + centerWidth);
+          } else if (randomValue2 < 0.8) {
+            // 30%的概率在中间50%区域
+            const centerStart = cw * 0.25;
+            const centerWidth = cw * 0.5;
+            targetX2 = random(centerStart, centerStart + centerWidth);
+          } else {
+            // 20%的概率在中间70%区域
+            const margin = 0.15;
+            targetX2 = random(cw * margin, cw * (1 - margin));
+          }
+          targetY2 = random(ch * margin, ch * (1 - margin));
+        } while (Math.sqrt(Math.pow(targetX2 - targetX1, 2) + Math.pow(targetY2 - targetY1, 2)) < cw * 0.1); // 确保距离至少为屏幕宽度的10%
+        
+        // 为新增的三个发射中心计算目标位置（集中在除上方15%区域之外）
+        let targetX3, targetY3, targetX4, targetY4, targetX5, targetY5;
+        
+        // 正下方中间发射中心的目标位置
+        do {
+          targetX3 = random(cw * 0.2, cw * 0.8);
+          targetY3 = random(ch * 0.2, ch * 0.9); // 避开上方15%区域
+        } while (Math.sqrt(Math.pow(targetX3 - targetX1, 2) + Math.pow(targetY3 - targetY1, 2)) < cw * 0.1 || 
+                 Math.sqrt(Math.pow(targetX3 - targetX2, 2) + Math.pow(targetY3 - targetY2, 2)) < cw * 0.1);
+        
+        // 左下角发射中心的目标位置
+        do {
+          targetX4 = random(cw * 0.1, cw * 0.6);
+          targetY4 = random(ch * 0.2, ch * 0.9); // 避开上方15%区域
+        } while (Math.sqrt(Math.pow(targetX4 - targetX1, 2) + Math.pow(targetY4 - targetY1, 2)) < cw * 0.1 || 
+                 Math.sqrt(Math.pow(targetX4 - targetX2, 2) + Math.pow(targetY4 - targetY2, 2)) < cw * 0.1 || 
+                 Math.sqrt(Math.pow(targetX4 - targetX3, 2) + Math.pow(targetY4 - targetY3, 2)) < cw * 0.1);
+        
+        // 右下角发射中心的目标位置
+        do {
+          targetX5 = random(cw * 0.4, cw * 0.9);
+          targetY5 = random(ch * 0.2, ch * 0.9); // 避开上方15%区域
+        } while (Math.sqrt(Math.pow(targetX5 - targetX1, 2) + Math.pow(targetY5 - targetY1, 2)) < cw * 0.1 || 
+                 Math.sqrt(Math.pow(targetX5 - targetX2, 2) + Math.pow(targetY5 - targetY2, 2)) < cw * 0.1 || 
+                 Math.sqrt(Math.pow(targetX5 - targetX3, 2) + Math.pow(targetY5 - targetY3, 2)) < cw * 0.1 || 
+                 Math.sqrt(Math.pow(targetX5 - targetX4, 2) + Math.pow(targetY5 - targetY4, 2)) < cw * 0.1);
+        
+        // 从第一个发射中心发射
+        const firework1 = new Firework(launchX1, launchY, targetX1, targetY1);
+        firework1.speed = baseSpeed; // 设置基于屏幕大小的速度
+        fireworks.push(firework1);
+        
+        // 从第二个发射中心（对称位置）发射
+        const firework2 = new Firework(launchX2, launchY, targetX2, targetY2);
+        firework2.speed = baseSpeed; // 设置基于屏幕大小的速度
+        fireworks.push(firework2);
+        
+        // 延迟0.75秒后从第三个发射中心（正下方中间）发射
+        setTimeout(() => {
+          const firework3 = new Firework(launchX3, launchY3, targetX3, targetY3);
+          firework3.speed = baseSpeed; // 设置基于屏幕大小的速度
+          fireworks.push(firework3);
+        }, 750);
+        
+        // 延迟0.75秒后从第四个发射中心（左下角）发射
+        setTimeout(() => {
+          const firework4 = new Firework(launchX4, launchY4, targetX4, targetY4);
+          firework4.speed = baseSpeed; // 设置基于屏幕大小的速度
+          fireworks.push(firework4);
+        }, 750);
+        
+        // 延迟0.75秒后从第五个发射中心（右下角）发射
+        setTimeout(() => {
+          const firework5 = new Firework(launchX5, launchY5, targetX5, targetY5);
+          firework5.speed = baseSpeed; // 设置基于屏幕大小的速度
+          fireworks.push(firework5);
+        }, 750);
+      }
+      
+      volleyCount++;
+      
+      // 如果还有齐射轮次，延迟1.5秒后发射下一轮
+      if (volleyCount < maxVolleys) {
+        setTimeout(launchVolley, 1500);
+      }
+    }
+    
+    // 停止烟花
+    function stopFireworks() {
+      isFireworksRunning = false;
+      
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+      }
+      
+      if (canvas && canvas.parentNode) {
+        canvas.parentNode.removeChild(canvas);
+      }
+      
+      const filter = document.getElementById('fireworks-dark-filter');
+      if (filter) {
+        filter.style.opacity = '0';
+        setTimeout(() => {
+          if (filter.parentNode) {
+            filter.parentNode.removeChild(filter);
+          }
+        }, 1000);
+      }
+      
+      canvas = null;
+      ctx = null;
+      fireworks = [];
+      particles = [];
+    }
+    
     // 添加到文档
     document.head.appendChild(style);
     document.body.appendChild(container);
+    
+    // 初始化灯笼位置（必须在添加到DOM后执行，否则getComputedStyle会返回错误值）
+    texts.forEach((_, index) => {
+      const lantern = lanternRefs.current.get(index);
+      if (lantern) {
+        const rect = lantern.getBoundingClientRect();
+        const initialPosition = {
+          x: rect.left,
+          y: rect.top
+        };
+        positionRefs.current.set(index, initialPosition);
+      }
+    });
 
     // 清理函数
     return () => {
@@ -647,8 +1286,17 @@ export default function Lantern({ text = '新春快乐', enabled = true }: Lante
         if (lantern) {
           lantern.removeEventListener('mousedown', (e) => handleMouseDown(e, index));
           lantern.removeEventListener('click', (e) => handleClick(e, index));
+          lantern.removeEventListener('mouseenter', triggerLanternMessage);
         }
       });
+      
+      // 清除碰撞检测定时器
+      clearInterval(collisionInterval);
+      
+      // 停止烟花特效
+      if (isFireworksRunning) {
+        stopFireworks();
+      }
       
       if (containerRef.current) {
         containerRef.current.remove();
@@ -658,6 +1306,9 @@ export default function Lantern({ text = '新春快乐', enabled = true }: Lante
       }
       if (clickTimeoutRef.current) {
         clearTimeout(clickTimeoutRef.current);
+      }
+      if (style.parentNode) {
+        document.head.removeChild(style);
       }
     };
   }, [text, enabled]);

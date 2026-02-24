@@ -15,7 +15,7 @@ interface ImageUploaderProps {
 export default function ImageUploader({ 
   images = [], 
   onImagesChange, 
-  maxImages = 9, 
+  maxImages = 100, 
   className = '' 
 }: ImageUploaderProps) {
   const [isUploading, setIsUploading] = useState(false);
@@ -182,7 +182,7 @@ export default function ImageUploader({
       </div>
 
       <p className="text-xs text-muted-foreground mt-2">
-        支持上传最多{maxImages}张图片，每张不超过5MB
+        支持上传多张图片，每张不超过5MB
       </p>
 
       {/* 画廊图片选择器 */}

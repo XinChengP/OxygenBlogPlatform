@@ -159,30 +159,30 @@ export class Live2DBrowserCompatibility {
     
     switch (browserInfo.browser) {
       case 'Chrome':
-        if (version < 60) {
+        if (version < 90) {
           issues.push('Chrome 版本过低');
-          recommendations.push('请升级到 Chrome 60 或更高版本');
+          recommendations.push('请升级到 Chrome 90 或更高版本');
         }
         break;
         
       case 'Firefox':
-        if (version < 55) {
+        if (version < 88) {
           issues.push('Firefox 版本过低');
-          recommendations.push('请升级到 Firefox 55 或更高版本');
+          recommendations.push('请升级到 Firefox 88 或更高版本');
         }
         break;
         
       case 'Safari':
-        if (version < 11) {
+        if (version < 14) {
           issues.push('Safari 版本过低');
-          recommendations.push('请升级到 Safari 11 或更高版本');
+          recommendations.push('请升级到 Safari 14 或更高版本');
         }
         break;
         
       case 'Edge':
-        if (version < 79) {
+        if (version < 90) {
           issues.push('Edge 版本过低');
-          recommendations.push('请升级到 Edge 79 或更高版本');
+          recommendations.push('请升级到 Edge 90 或更高版本');
         }
         break;
         

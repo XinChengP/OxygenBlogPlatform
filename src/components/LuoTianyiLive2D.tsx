@@ -580,30 +580,33 @@ export default function LuoTianyiLive2D() {
                 '6': ['周六快乐！周末要好好放松～', '周末时光，天依陪你一起度过～']
             };
 
+            // 通用基础问候
+            const basicGreetings: string[] = [
+                '你好～我是洛天依！',
+                '天依在这里等你哦～',
+                '今天天气真好呢～',
+                '天依今天也很开心！',
+                '有什么想聊的吗？'
+            ];
+
+            // 收集所有可能的问候
+            const availableGreetings: string[] = [];
+
             // 检查节日
             const holidayKey = `${month}-${date}`;
             if (holidayMessages[holidayKey]) {
-                const messages = holidayMessages[holidayKey];
-                const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-                updateMessage(randomMessage);
-                return;
+                availableGreetings.push(...holidayMessages[holidayKey]);
             }
 
             // 检查特殊日期（天依相关）
             const specialKey = `${month}-${date}`;
             if (specialDates[specialKey]) {
-                const messages = specialDates[specialKey];
-                const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-                updateMessage(randomMessage);
-                return;
+                availableGreetings.push(...specialDates[specialKey]);
             }
 
             // 检查星期
             if (weekGreetings[dayOfWeek.toString()]) {
-                const messages = weekGreetings[dayOfWeek.toString()];
-                const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-                updateMessage(randomMessage);
-                return;
+                availableGreetings.push(...weekGreetings[dayOfWeek.toString()]);
             }
 
             // 检查时间问候
@@ -621,8 +624,16 @@ export default function LuoTianyiLive2D() {
             }
 
             if (timeGreetings[timeKey]) {
-                const messages = timeGreetings[timeKey];
-                const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+                availableGreetings.push(...timeGreetings[timeKey]);
+            }
+
+            // 添加通用基础问候
+            availableGreetings.push(...basicGreetings);
+
+            // 随机选择一个问候显示
+            if (availableGreetings.length > 0) {
+                const randomIndex = Math.floor(Math.random() * availableGreetings.length);
+                const randomMessage = availableGreetings[randomIndex];
                 updateMessage(randomMessage);
             }
         };

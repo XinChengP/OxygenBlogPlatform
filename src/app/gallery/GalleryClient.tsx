@@ -136,7 +136,7 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
     
     // 发送欢迎消息
     emitLive2DEvent(Live2DEvents.LIVE2D_MESSAGE, {
-      message: '欢迎来到洛天依画廊！这里有很多好看的图片~',
+      message: '欢迎来到画廊！这里有很多好看的图片~',
       type: 'gallery',
       priority: 1
     });
@@ -253,48 +253,53 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
 
   return (
     <div className={containerStyle.className} style={containerStyle.style}>
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8 text-center">洛天依画廊</h1>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h1 className="text-3xl font-bold mb-8 text-center">画廊</h1>
       
-      <div className="flex flex-col space-y-8">
-        {/* 分类过滤 */}
-        <CategoryFilter
-          categories={state.categories}
-          selectedCategory={state.selectedCategory}
-          onCategoryChange={handleCategoryChange}
-        />
-        
-        {/* 图片统计 */}
-        <div className="text-center text-sm text-gray-500 dark:text-gray-400">
-          共找到 {filteredImages.length} 张图片
+      <div className="flex flex-col md:flex-row gap-8">
+        {/* 左侧分类导航区域 - 占20%宽度 */}
+        <div className="w-full md:w-1/5">
+          <CategoryFilter
+            categories={state.categories}
+            selectedCategory={state.selectedCategory}
+            onCategoryChange={handleCategoryChange}
+          />
         </div>
         
-        {/* 图片展示区域 - 瀑布流布局 */}
-        <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4">
-          {filteredImages.length > 0 ? (
-            filteredImages.map(image => (
-              <div key={image.id} className="mb-4 break-inside-avoid">
-                <ImageCard
-                  image={image}
-                  onClick={() => handleImageClick(image)}
-                />
+        {/* 右侧图片展示区域 - 占80%宽度 */}
+        <div className="w-full md:w-4/5">
+          {/* 图片统计 */}
+          <div className="text-center text-sm text-gray-500 dark:text-gray-400 mb-4">
+            共找到 {filteredImages.length} 张图片
+          </div>
+          
+          {/* 图片展示区域 - 瀑布流布局 */}
+          <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 space-y-4">
+            {filteredImages.length > 0 ? (
+              filteredImages.map(image => (
+                <div key={image.id} className="mb-4 break-inside-avoid">
+                  <ImageCard
+                    image={image}
+                    onClick={() => handleImageClick(image)}
+                  />
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-16 col-span-full">
+                <p className="text-gray-500 dark:text-gray-400">
+                  该分类下暂无图片
+                </p>
               </div>
-            ))
-          ) : (
-            <div className="text-center py-16 col-span-full">
-              <p className="text-gray-500 dark:text-gray-400">
-                该分类下暂无图片
-              </p>
+            )}
+          </div>
+          
+          {/* 加载更多按钮（后续实现分批加载） */}
+          {state.isLoading && (
+            <div className="flex justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
             </div>
           )}
         </div>
-        
-        {/* 加载更多按钮（后续实现分批加载） */}
-        {state.isLoading && (
-          <div className="flex justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-          </div>
-        )}
       </div>
       
       {/* 图片预览 */}
