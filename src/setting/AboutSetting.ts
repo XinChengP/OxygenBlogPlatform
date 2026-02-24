@@ -120,5 +120,11 @@ export const relatedLinks = [
     url: "https://github.com/XinChengP/Pinyin-converter",
     description: "本站使用的拼音转换工具",
     icon: "pinyin"
+  },
+  {
+    name: "3d红灯笼",
+    url: "https://blog.ybyq.wang/archives/1681.html",
+    description: "为博客添加春节灯笼效果的教程",
+    icon: "globe"
   }
 ];

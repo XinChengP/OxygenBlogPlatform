@@ -13,12 +13,19 @@ import { getBilibiliVideoCount } from '@/utils/bilibiliUtils';
 interface ClientMomentsPageProps {
   moments: Array<{ id: string; time: string; content: string; tags: string[]; images?: string[]; pinned?: boolean; filePath: string }>;
   blogCount: number;
-  blogs: Array<{ id: string; title: string; date: string; updatedAt?: string }>;
+  blogs: Array<{ id: string; title: string; date: string; updatedAt?: string; category?: string; tags?: string[] }>;
+  categoryCount: number;
+  tagCount: number;
 }
 
-function ClientMomentsPage({ moments, blogCount, blogs }: ClientMomentsPageProps) {
+function ClientMomentsPage({ moments, blogCount, blogs, categoryCount, tagCount }: ClientMomentsPageProps) {
   const [bilibiliVideos, setBilibiliVideos] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  console.log('Received stats from server:', {
+    categoryCount,
+    tagCount
+  });
 
   // 获取B站视频数量
   useEffect(() => {
@@ -163,21 +170,26 @@ function ClientMomentsPage({ moments, blogCount, blogs }: ClientMomentsPageProps
                     className="w-full h-full object-cover"
                   />
                 </a>
-                <h3 className="text-xl font-bold"><a href={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/about`} className="hover:text-primary transition-colors">{name}</a></h3>
-                <div className="flex justify-center space-x-4 mt-3">
-                  <a href={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/moments`} className="text-center hover:text-primary transition-colors">
+                <h3 className="text-xl font-bold mb-3"><a href={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/about`} className="hover:text-primary transition-colors">{name}</a></h3>
+                <div className="flex justify-center space-x-1.5">
+                  <a href={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/moments`} className="text-center hover:text-primary transition-colors min-w-[45px]">
                     <div className="text-lg font-semibold">{moments.length}</div>
                     <div className="text-xs text-muted-foreground">动态</div>
                   </a>
-                  <div className="w-px h-8 bg-border/50"></div>
-                  <a href={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/blogs`} className="text-center hover:text-primary transition-colors">
+                  <div className="w-px h-6 bg-border/50"></div>
+                  <a href={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/blogs`} className="text-center hover:text-primary transition-colors min-w-[45px]">
                     <div className="text-lg font-semibold">{blogCount}</div>
                     <div className="text-xs text-muted-foreground">博客</div>
                   </a>
-                  <div className="w-px h-8 bg-border/50"></div>
-                  <a href="https://space.bilibili.com/522845412" target="_blank" rel="noopener noreferrer" className="text-center hover:text-primary transition-colors">
-                    <div className="text-lg font-semibold">{isLoading ? '...' : bilibiliVideos}</div>
-                    <div className="text-xs text-muted-foreground">B站</div>
+                  <div className="w-px h-6 bg-border/50"></div>
+                  <a href={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/blogs`} className="text-center hover:text-primary transition-colors min-w-[45px]">
+                    <div className="text-lg font-semibold">{categoryCount}</div>
+                    <div className="text-xs text-muted-foreground">分类</div>
+                  </a>
+                  <div className="w-px h-6 bg-border/50"></div>
+                  <a href={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/archive`} className="text-center hover:text-primary transition-colors min-w-[45px]">
+                    <div className="text-lg font-semibold">{tagCount}</div>
+                    <div className="text-xs text-muted-foreground">标签</div>
                   </a>
                 </div>
               </div>
@@ -185,11 +197,9 @@ function ClientMomentsPage({ moments, blogCount, blogs }: ClientMomentsPageProps
 
             {/* 日历小组件 */}
             <div className="p-6 rounded-lg border transition-all duration-300 backdrop-blur-md bg-card/90 border-border shadow-lg supports-[backdrop-filter]:bg-card/75">
-              <h3 className="text-lg font-semibold mb-4">日历</h3>
               <div className="calendar">
                 <div className="text-center mb-4">
-                  <div id="current-month" className="text-lg font-medium">{new Date().toLocaleString('zh-CN', { month: 'long' })}</div>
-                  <div id="current-year" className="text-sm text-muted-foreground">{new Date().getFullYear()}</div>
+                  <div className="text-lg font-medium">{new Date().getFullYear()}年 {new Date().toLocaleString('zh-CN', { month: 'long' })}</div>
                 </div>
                 <div className="grid grid-cols-7 gap-1 text-center text-xs mb-2">
                   {['一', '二', '三', '四', '五', '六', '日'].map(day => (

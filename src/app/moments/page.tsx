@@ -7,7 +7,41 @@ const moments = getServerMoments();
 const blogCount = getBlogCount();
 const blogs = getServerBlogs();
 
+// 计算分类和标签数量
+const calculateStats = () => {
+  const categories = new Set<string>();
+  const tags = new Set<string>();
+
+  blogs.forEach(blog => {
+    // 计算分类
+    if (blog.category) {
+      categories.add(blog.category);
+    }
+    
+    // 计算标签
+    if (blog.tags && Array.isArray(blog.tags)) {
+      blog.tags.forEach(tag => {
+        tags.add(tag);
+      });
+    }
+  });
+
+  return {
+    categoryCount: categories.size,
+    tagCount: tags.size
+  };
+};
+
+const { categoryCount, tagCount } = calculateStats();
+console.log('Server-side stats:', { categoryCount, tagCount });
+
 // 服务器端组件导出
 export default function MomentsPage() {
-  return <ClientMomentsPage moments={moments} blogCount={blogCount} blogs={blogs} />;
+  return <ClientMomentsPage 
+    moments={moments} 
+    blogCount={blogCount} 
+    blogs={blogs} 
+    categoryCount={categoryCount} 
+    tagCount={tagCount} 
+  />;
 }

@@ -76,9 +76,30 @@ export function parseFrontMatter(content: string): { metadata: any; content: str
       } else if (value.startsWith('[') && value.endsWith(']')) {
         // 单行数组
         try {
+          // 尝试直接解析JSON
           metadata[key] = JSON.parse(value);
         } catch {
-          metadata[key] = value;
+          try {
+            // 尝试解析YAML格式的数组
+            // 移除首尾的方括号，分割元素
+            const arrayContent = value.substring(1, value.length - 1).trim();
+            if (arrayContent) {
+              // 分割元素，处理可能的引号和空格
+              const elements = arrayContent.split(',').map(item => {
+                const trimmed = item.trim();
+                // 移除引号
+                if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith('\'') && trimmed.endsWith('\''))) {
+                  return trimmed.slice(1, -1);
+                }
+                return trimmed;
+              });
+              metadata[key] = elements;
+            } else {
+              metadata[key] = [];
+            }
+          } catch {
+            metadata[key] = value;
+          }
         }
       } else if (value === 'true') {
         metadata[key] = true;

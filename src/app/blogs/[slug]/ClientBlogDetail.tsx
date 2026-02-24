@@ -235,8 +235,6 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
   const { theme } = useTheme();
   const { containerStyle } = useBackgroundStyle('blog-detail');
   const [copiedCode, setCopiedCode] = useState<string>('');
-  const [, setMarkdownComponents] = useState<any>(null);
-  const isLoadedRef = useRef(false);
   const iframeRefs = useRef<Array<HTMLIFrameElement | null>>([]);
   
   // 计算文章时效性
@@ -472,34 +470,6 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
       }
     };
   }, []);
-
-  // 延迟加载 Markdown 组件和插件，提升初始加载性能
-  // 使用 useRef 防止路由切换时重复加载
-  useEffect(() => {
-    if (isLoadedRef.current) return; // 防止重复加载
-    
-    const loadPlugins = async () => {
-      try {
-        // 动态导入 Markdown 渲染组件
-        const ReactMarkdown = (await import('react-markdown')).default;
-        const remarkGfm = (await import('remark-gfm')).default;
-        const remarkMath = (await import('remark-math')).default;
-        const rehypeKatex = (await import('rehype-katex')).default;
-        const rehypeHighlight = (await import('rehype-highlight')).default;
-        
-        setMarkdownComponents({
-          ReactMarkdown,
-          remarkPlugins: [remarkGfm, remarkMath],
-          rehypePlugins: [rehypeKatex, rehypeHighlight]
-        });
-        isLoadedRef.current = true;
-      } catch (error) {
-        console.error('Failed to load markdown components:', error);
-      }
-    };
-
-    loadPlugins();
-  }, [blog.content]);
 
 
 
