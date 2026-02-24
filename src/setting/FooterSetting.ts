@@ -3,7 +3,7 @@
 // 备案号
 //export const policeBeian = "京公网安备6666666号";
 //export const ICP = "京ICP备12345678号-1"; // ICP备案号 (示例)
-export const year = "2025"; // 年份
+export const year = "2025 - 2026"; // 年份
 export const name = "歆橙"; // 名字
 export const aWord = "Like a fish that out of water."; // 自定义一句话
 

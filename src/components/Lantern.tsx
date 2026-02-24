@@ -395,16 +395,20 @@ export default function Lantern({ text = '新春快乐', enabled = true }: Lante
       const lantern = lanternRefs.current.get(index);
       if (!lantern) return;
       
-      const rect = lantern.getBoundingClientRect();
       const position = positionRefs.current.get(index) || { x: 0, y: 0 };
+      
+      // 计算偏移量：鼠标指针位置减去灯笼的当前位置
+      // 这样可以确保灯笼精确跟随鼠标指针，不受transform变换的影响
+      const offsetX = e.clientX - position.x;
+      const offsetY = e.clientY - position.y;
       
       draggingRef.current = {
         isDragging: true,
         lanternIndex: index,
         startX: e.clientX,
         startY: e.clientY,
-        offsetX: e.clientX - rect.left,
-        offsetY: e.clientY - rect.top,
+        offsetX: offsetX,
+        offsetY: offsetY,
         lastX: e.clientX,
         lastY: e.clientY,
         velocityX: 0,
