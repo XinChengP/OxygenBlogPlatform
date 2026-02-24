@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigationVisibility } from '@/contexts/NavigationVisibilityContext';
 
 interface LanternProps {
@@ -12,6 +12,42 @@ export default function Lantern({ text = '新春快乐', enabled = true }: Lante
   const { isVisible } = useNavigationVisibility();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  
+  // 存储灯笼元素引用
+  const lanternRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+  
+  // 拖拽状态管理
+  const draggingRef = useRef<{
+    isDragging: boolean;
+    lanternIndex: number;
+    startX: number;
+    startY: number;
+    offsetX: number;
+    offsetY: number;
+    lastX: number;
+    lastY: number;
+    velocityX: number;
+    velocityY: number;
+    lastTime: number;
+  }>({
+    isDragging: false,
+    lanternIndex: -1,
+    startX: 0,
+    startY: 0,
+    offsetX: 0,
+    offsetY: 0,
+    lastX: 0,
+    lastY: 0,
+    velocityX: 0,
+    velocityY: 0,
+    lastTime: 0,
+  });
+  
+  // 存储灯笼位置
+  const positionRefs = useRef<Map<number, { x: number; y: number }>>(new Map());
+  
+  // 点击超时引用，用于区分点击和拖拽
+  const clickTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!enabled) return;
@@ -29,6 +65,18 @@ export default function Lantern({ text = '新春快乐', enabled = true }: Lante
     texts.forEach((char, index) => {
       const box = document.createElement('div');
       box.className = `deng-box deng-box${index + 1}`;
+      box.style.cursor = 'move';
+      box.style.pointerEvents = 'auto';
+      
+      // 存储灯笼引用
+      lanternRefs.current.set(index, box);
+      
+      // 初始化位置
+      const initialPosition = {
+        x: parseInt(getComputedStyle(box).left) || 0,
+        y: parseInt(getComputedStyle(box).top) || 0
+      };
+      positionRefs.current.set(index, initialPosition);
 
       // 3D 容器 (负责摆动)
       const lantern3D = document.createElement('div');
@@ -102,11 +150,29 @@ export default function Lantern({ text = '新春快乐', enabled = true }: Lante
         width: 100%;
         height: 0;
         z-index: 40; /* 导航栏z-index是50，所以灯笼放在40 */
-        pointer-events: none;
+        pointer-events: auto;
         perspective: 800px;
         /* 关键：使用CSS变量和transition实现平滑动画，与导航栏完全同步 */
         transform: translateY(var(--lantern-y, 0px));
         transition: transform 0.3s ease-in-out;
+      }
+      
+      /* 拖拽时的样式 */
+      .deng-box.dragging {
+        z-index: 55 !important;
+        transform: scale(1.1);
+        transition: all 0.2s ease;
+      }
+      
+      /* 点击时的动画 */
+      .deng-box.clicked {
+        animation: clickAnimation 0.5s ease-in-out;
+      }
+      
+      @keyframes clickAnimation {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.2); }
+        100% { transform: scale(1); }
       }
       .deng-box {
         position: fixed;
@@ -321,17 +387,273 @@ export default function Lantern({ text = '新春快乐', enabled = true }: Lante
       }
     `;
 
+    // 拖拽相关函数
+    const handleMouseDown = (e: MouseEvent, index: number) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const lantern = lanternRefs.current.get(index);
+      if (!lantern) return;
+      
+      const rect = lantern.getBoundingClientRect();
+      const position = positionRefs.current.get(index) || { x: 0, y: 0 };
+      
+      draggingRef.current = {
+        isDragging: true,
+        lanternIndex: index,
+        startX: e.clientX,
+        startY: e.clientY,
+        offsetX: e.clientX - rect.left,
+        offsetY: e.clientY - rect.top,
+        lastX: e.clientX,
+        lastY: e.clientY,
+        velocityX: 0,
+        velocityY: 0,
+        lastTime: performance.now(),
+      };
+      
+      // 添加拖拽样式
+      lantern.classList.add('dragging');
+      
+      // 清除点击超时
+      if (clickTimeoutRef.current) {
+        clearTimeout(clickTimeoutRef.current);
+        clickTimeoutRef.current = null;
+      }
+    };
+    
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!draggingRef.current.isDragging) return;
+      
+      const currentTime = performance.now();
+      const deltaTime = currentTime - draggingRef.current.lastTime;
+      const deltaX = e.clientX - draggingRef.current.lastX;
+      const deltaY = e.clientY - draggingRef.current.lastY;
+      
+      // 计算速度
+      draggingRef.current.velocityX = deltaX / deltaTime;
+      draggingRef.current.velocityY = deltaY / deltaTime;
+      draggingRef.current.lastX = e.clientX;
+      draggingRef.current.lastY = e.clientY;
+      draggingRef.current.lastTime = currentTime;
+      
+      const lantern = lanternRefs.current.get(draggingRef.current.lanternIndex);
+      if (!lantern) return;
+      
+      // 计算新位置
+      let newX = e.clientX - draggingRef.current.offsetX;
+      let newY = e.clientY - draggingRef.current.offsetY;
+      
+      // 边界检测
+      const windowWidth = window.innerWidth;
+      const windowHeight = window.innerHeight;
+      const lanternWidth = lantern.offsetWidth;
+      const lanternHeight = lantern.offsetHeight;
+      
+      newX = Math.max(0, Math.min(newX, windowWidth - lanternWidth));
+      newY = Math.max(0, Math.min(newY, windowHeight - lanternHeight));
+      
+      // 更新位置
+      lantern.style.left = `${newX}px`;
+      lantern.style.top = `${newY}px`;
+      
+      // 更新存储的位置
+      positionRefs.current.set(draggingRef.current.lanternIndex, { x: newX, y: newY });
+    };
+    
+    const handleMouseUp = (e: MouseEvent) => {
+      if (!draggingRef.current.isDragging) return;
+      
+      const lantern = lanternRefs.current.get(draggingRef.current.lanternIndex);
+      if (!lantern) return;
+      
+      // 移除拖拽样式
+      lantern.classList.remove('dragging');
+      
+      // 实现惯性效果
+      const velocityX = draggingRef.current.velocityX * 10;
+      const velocityY = draggingRef.current.velocityY * 10;
+      
+      if (Math.abs(velocityX) > 1 || Math.abs(velocityY) > 1) {
+        let currentX = positionRefs.current.get(draggingRef.current.lanternIndex)?.x || 0;
+        let currentY = positionRefs.current.get(draggingRef.current.lanternIndex)?.y || 0;
+        let currentVelocityX = velocityX;
+        let currentVelocityY = velocityY;
+        const friction = 0.9;
+        const minVelocity = 0.1;
+        
+        // 惯性运动动画
+        function animateInertia() {
+          // 检查灯笼是否存在
+          if (!lantern) return;
+          
+          // 应用摩擦力
+          currentVelocityX *= friction;
+          currentVelocityY *= friction;
+          
+          // 更新位置
+          currentX += currentVelocityX;
+          currentY += currentVelocityY;
+          
+          // 边界检测
+          const windowWidth = window.innerWidth;
+          const windowHeight = window.innerHeight;
+          const lanternWidth = lantern.offsetWidth;
+          const lanternHeight = lantern.offsetHeight;
+          
+          currentX = Math.max(0, Math.min(currentX, windowWidth - lanternWidth));
+          currentY = Math.max(0, Math.min(currentY, windowHeight - lanternHeight));
+          
+          // 更新灯笼位置
+          lantern.style.left = `${currentX}px`;
+          lantern.style.top = `${currentY}px`;
+          
+          // 更新存储的位置
+          positionRefs.current.set(draggingRef.current.lanternIndex, { x: currentX, y: currentY });
+          
+          // 检查是否需要继续动画
+          if (Math.abs(currentVelocityX) > minVelocity || Math.abs(currentVelocityY) > minVelocity) {
+            animationFrameRef.current = requestAnimationFrame(animateInertia);
+          } else {
+            // 惯性结束后应用吸附效果
+            applySnapEffect(draggingRef.current.lanternIndex);
+          }
+        }
+        
+        // 开始惯性动画
+        animationFrameRef.current = requestAnimationFrame(animateInertia);
+      } else {
+        // 没有明显速度时直接应用吸附效果
+        applySnapEffect(draggingRef.current.lanternIndex);
+      }
+      
+      // 重置拖拽状态
+      draggingRef.current.isDragging = false;
+      draggingRef.current.lanternIndex = -1;
+    };
+    
+    // 吸附效果函数
+    function applySnapEffect(index: number) {
+      const lantern = lanternRefs.current.get(index);
+      if (!lantern) return;
+      
+      const position = positionRefs.current.get(index);
+      if (!position) return;
+      
+      // 网格吸附：吸附到20px网格
+      const gridSize = 20;
+      const snappedX = Math.round(position.x / gridSize) * gridSize;
+      const snappedY = Math.round(position.y / gridSize) * gridSize;
+      
+      // 边界检测
+      const windowWidth = window.innerWidth;
+      const windowHeight = window.innerHeight;
+      const lanternWidth = lantern.offsetWidth;
+      const lanternHeight = lantern.offsetHeight;
+      
+      const finalX = Math.max(0, Math.min(snappedX, windowWidth - lanternWidth));
+      const finalY = Math.max(0, Math.min(snappedY, windowHeight - lanternHeight));
+      
+      // 应用吸附动画
+      lantern.style.transition = 'all 0.3s ease-out';
+      lantern.style.left = `${finalX}px`;
+      lantern.style.top = `${finalY}px`;
+      
+      // 更新存储的位置
+      positionRefs.current.set(index, { x: finalX, y: finalY });
+      
+      // 清除过渡效果
+      setTimeout(() => {
+        lantern.style.transition = '';
+      }, 300);
+    }
+    
+    const handleClick = (e: MouseEvent, index: number) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // 检查是否是拖拽后的松���
+      if (draggingRef.current.isDragging) return;
+      
+      // 设置点击超时，区分点击和拖拽
+      clickTimeoutRef.current = window.setTimeout(() => {
+        const lantern = lanternRefs.current.get(index);
+        if (lantern) {
+          lantern.classList.add('clicked');
+          setTimeout(() => {
+            lantern.classList.remove('clicked');
+          }, 500);
+        }
+      }, 100);
+    };
+    
+    // 为每个灯笼添加事件监听器
+    texts.forEach((_, index) => {
+      const lantern = lanternRefs.current.get(index);
+      if (lantern) {
+        lantern.addEventListener('mousedown', (e) => handleMouseDown(e, index));
+        lantern.addEventListener('click', (e) => handleClick(e, index));
+      }
+    });
+    
+    // 添加全局事件监听器
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('resize', handleResize);
+    
+    // 窗口大小变化处理函数
+    function handleResize() {
+      // 检查每个灯笼的位置是否在新的窗口边界内
+      positionRefs.current.forEach((position, index) => {
+        const lantern = lanternRefs.current.get(index);
+        if (lantern) {
+          const windowWidth = window.innerWidth;
+          const windowHeight = window.innerHeight;
+          const lanternWidth = lantern.offsetWidth;
+          const lanternHeight = lantern.offsetHeight;
+          
+          // 调整位置以保持在边界内
+          let newX = Math.max(0, Math.min(position.x, windowWidth - lanternWidth));
+          let newY = Math.max(0, Math.min(position.y, windowHeight - lanternHeight));
+          
+          // 如果位置发生变化，更新灯笼位置
+          if (newX !== position.x || newY !== position.y) {
+            lantern.style.left = `${newX}px`;
+            lantern.style.top = `${newY}px`;
+            positionRefs.current.set(index, { x: newX, y: newY });
+          }
+        }
+      });
+    }
+    
     // 添加到文档
     document.head.appendChild(style);
     document.body.appendChild(container);
 
     // 清理函数
     return () => {
+      // 移除事件监听器
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('resize', handleResize);
+      
+      // 清理每个灯笼的事件监听器
+      texts.forEach((_, index) => {
+        const lantern = lanternRefs.current.get(index);
+        if (lantern) {
+          lantern.removeEventListener('mousedown', (e) => handleMouseDown(e, index));
+          lantern.removeEventListener('click', (e) => handleClick(e, index));
+        }
+      });
+      
       if (containerRef.current) {
         containerRef.current.remove();
       }
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
+      }
+      if (clickTimeoutRef.current) {
+        clearTimeout(clickTimeoutRef.current);
       }
     };
   }, [text, enabled]);
