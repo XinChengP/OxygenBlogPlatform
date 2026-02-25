@@ -1,10 +1,11 @@
 import React from 'react';
-import { getServerMoments, getBlogCount, getServerBlogs } from '@/utils/momentsUtils';
+import { getServerMoments, getBlogCount, getServerBlogs, getBlogTotalWordCount } from '@/utils/momentsUtils';
 import ClientMomentsPage from '@/components/moments/ClientMomentsPage';
 
 // 服务器端组件读取动态数据
 const moments = getServerMoments();
 const blogCount = getBlogCount();
+const blogTotalWordCount = getBlogTotalWordCount();
 const blogs = getServerBlogs();
 
 // 计算分类和标签数量
@@ -40,6 +41,7 @@ export default function MomentsPage() {
   return <ClientMomentsPage 
     moments={moments} 
     blogCount={blogCount} 
+    blogTotalWordCount={blogTotalWordCount}
     blogs={blogs} 
     categoryCount={categoryCount} 
     tagCount={tagCount} 

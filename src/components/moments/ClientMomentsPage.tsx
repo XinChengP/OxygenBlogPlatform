@@ -12,12 +12,13 @@ import { getBilibiliVideoCount } from '@/utils/bilibiliUtils';
 interface ClientMomentsPageProps {
   moments: Array<{ id: string; time: string; content: string; tags: string[]; images?: string[]; pinned?: boolean; filePath: string }>;
   blogCount: number;
+  blogTotalWordCount: number;
   blogs: Array<{ id: string; title: string; date: string; updatedAt?: string; category?: string; tags?: string[] }>;
   categoryCount: number;
   tagCount: number;
 }
 
-function ClientMomentsPage({ moments, blogCount, blogs, categoryCount, tagCount }: ClientMomentsPageProps) {
+function ClientMomentsPage({ moments, blogCount, blogTotalWordCount, blogs, categoryCount, tagCount }: ClientMomentsPageProps) {
   const [bilibiliVideos, setBilibiliVideos] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -169,7 +170,8 @@ function ClientMomentsPage({ moments, blogCount, blogs, categoryCount, tagCount 
                     className="w-full h-full object-cover"
                   />
                 </a>
-                <h3 className="text-xl font-bold mb-3"><a href={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/about`} className="hover:text-primary transition-colors">{name}</a></h3>
+                <h3 className="text-xl font-bold mb-1"><a href={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/about`} className="hover:text-primary transition-colors">{name.split('').join(' ')}</a></h3>
+                <div className="text-sm text-muted-foreground mb-3">佬啊，佬啊，怎么是纸片啊</div>
                 <div className="flex justify-center space-x-1.5">
                   <a href={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/moments`} className="text-center hover:text-primary transition-colors min-w-[45px]">
                     <div className="text-lg font-semibold">{moments.length}</div>
@@ -191,30 +193,33 @@ function ClientMomentsPage({ moments, blogCount, blogs, categoryCount, tagCount 
                     <div className="text-xs text-muted-foreground">标签</div>
                   </a>
                 </div>
+                
+                <div className="mt-2 pt-2 border-t border-border/50">
+                  <div className="flex justify-center space-x-4">
+                    <div className="text-center min-w-[80px]">
+                      <div className="text-lg font-semibold">{blogTotalWordCount.toLocaleString()}</div>
+                      <div className="text-xs text-muted-foreground">博客总字数</div>
+                    </div>
+                    <div className="w-px h-6 bg-border/50"></div>
+                    <div className="text-center min-w-[80px]">
+                      <div className="text-lg font-semibold">{moments.reduce((total, moment) => total + moment.content.length, 0).toLocaleString()}</div>
+                      <div className="text-xs text-muted-foreground">动态总字数</div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
+
+
             {/* 公告板 */}
-            <div className="p-6 rounded-lg border transition-all duration-300 backdrop-blur-md bg-card/90 border-border shadow-lg supports-[backdrop-filter]:bg-card/75">
-              <div className="mb-4">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <span className="w-2 h-6 bg-primary rounded-full"></span>
-                  公告板
-                </h3>
-              </div>
-              <div className="space-y-3 text-sm">
-                <div className="p-3 rounded-md bg-primary/5 border-l-2 border-primary">
-                  <p className="font-medium mb-1">🎉 网站更新通知</p>
-                  <p className="text-muted-foreground">2026年2月24日，网站成功添加公告板功能！</p>
-                </div>
-                <div className="p-3 rounded-md bg-muted">
-                  <p className="font-medium mb-1">📢 重要提醒</p>
-                  <p className="text-muted-foreground">请定期查看个人动态，获取最新信息。</p>
-                </div>
-                <div className="p-3 rounded-md bg-muted">
-                  <p className="font-medium mb-1">🌟 功能预告</p>
-                  <p className="text-muted-foreground">即将推出更多有趣的功能，敬请期待！</p>
-                </div>
+            <div className="p-4 rounded-lg border transition-all duration-300 backdrop-blur-md bg-card/90 border-border shadow-lg supports-[backdrop-filter]:bg-card/75">
+              <h3 className="text-lg font-semibold flex items-center gap-2 mb-3">
+                <span className="w-2 h-6 bg-primary rounded-full"></span>
+                公告板
+              </h3>
+              <div className="p-3 rounded-md bg-primary/5 border-l-2 border-primary">
+                <div className="text-muted-foreground text-sm">总想干点什么。。。</div>
               </div>
             </div>
 

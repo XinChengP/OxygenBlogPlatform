@@ -1,3 +1,5 @@
+import { advancedWordCount } from './wordCountUtils';
+
 interface Moment {
   id: string;
   time: string;
@@ -328,5 +330,47 @@ export function getServerBlogs(): BlogPost[] {
   } catch (error) {
     console.error('读取博客文件失败:', error);
     return [];
+  }
+}
+
+/**
+ * 服务器端：计算所有博客文章的总字数
+ * @returns 博客总字数
+ */
+export function getBlogTotalWordCount(): number {
+  try {
+    // 动态导入fs和path模块
+    const fs = require('fs');
+    const path = require('path');
+    
+    const blogsDir = path.join(process.cwd(), 'src', 'content', 'blogs');
+    
+    // 检查目录是否存在
+    if (!fs.existsSync(blogsDir) || !fs.statSync(blogsDir).isDirectory()) {
+      return 0;
+    }
+    
+    // 读取目录中的所有文件
+    const files = fs.readdirSync(blogsDir);
+    
+    // 过滤出markdown文件
+    const mdFiles = files.filter((file: string) => file.endsWith('.md'));
+    
+    let totalWords = 0;
+    
+    // 读取和解析每个文件，计算字数
+    mdFiles.forEach((file: string) => {
+      const filePath = path.join(blogsDir, file);
+      const content = fs.readFileSync(filePath, 'utf8');
+      const { content: body } = parseFrontMatter(content);
+      
+      const wordCount = advancedWordCount(body);
+      totalWords += wordCount.totalWords;
+    });
+    
+    return totalWords;
+  } catch (error) {
+    console.error('计算博客字数失败:', error);
+    return 0;
   }
 }
