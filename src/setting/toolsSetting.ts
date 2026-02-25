@@ -84,15 +84,16 @@ export const availableTools: ToolItem[] = [
   }
 ];
 
-// 根据分类筛选工具
+// 根据分类筛选工具（仅返回已激活的工具）
 export const getToolsByCategory = (category: string): ToolItem[] => {
+  const activeTools = availableTools.filter(tool => tool.isActive);
   if (category === 'all') {
-    return availableTools;
+    return activeTools;
   }
-  return availableTools.filter(tool => tool.category === category);
+  return activeTools.filter(tool => tool.category === category);
 };
 
-// 获取特色工具
+// 获取特色工具（仅返回已激活的特色工具）
 export const getFeaturedTools = (): ToolItem[] => {
-  return availableTools.filter(tool => tool.featured);
+  return availableTools.filter(tool => tool.featured && tool.isActive);
 };

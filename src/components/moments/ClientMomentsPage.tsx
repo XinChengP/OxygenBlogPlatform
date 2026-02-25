@@ -6,6 +6,7 @@ import remarkGfm from 'remark-gfm';
 import remarkEmoji from 'remark-emoji';
 import rehypeHighlight from 'rehype-highlight';
 import ImageGrid from './ImageGrid';
+import TimeProgressWidget from './TimeProgressWidget';
 import { getAvatarPath, name } from '@/setting/AboutSetting';
 import { getBilibiliVideoCount } from '@/utils/bilibiliUtils';
 
@@ -261,6 +262,9 @@ function ClientMomentsPage({ moments, blogCount, blogTotalWordCount, blogs, cate
                 </div>
               </div>
             </div>
+
+            {/* 时光轴/进度条小组件 */}
+            <TimeProgressWidget />
           </div>
         </div>
       </div>

@@ -7,14 +7,35 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from 'next-themes';
-import { Cover } from '@/components/ui/cover'
+import { Cover } from '@/components/ui/cover';
 import { EvervaultCard, Icon } from '@/components/ui/evervault-card';
 import OptimizedIcon from '@/components/core/OptimizedIcon';
-
-import {title, BeforeAnimationText, AnimationText, name, slogan, aboutMeP1, aboutMeP2, aboutMeP3, mail, github, bilibili, isBorder, isRainbowGradient}
-from '@/setting/AboutSetting';
 import { useMemo } from 'react';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
+
+// 导入配置
+import {
+  title,
+  BeforeAnimationText,
+  AnimationText,
+  name,
+  slogan,
+  aboutMeP1,
+  aboutMeP2,
+  aboutMeP3,
+  mail,
+  github,
+  bilibili,
+  isBorder,
+  isRainbowGradient
+} from '@/setting/AboutSetting';
+
+// 导入自定义工具函数
+import {
+  useGradientStyles,
+  getTagStyle,
+  getHeaderBackgroundStyle
+} from '@/utils/aboutPageUtils';
 
 // 动态导入大型组件
 const LazyFriendsLink = lazy(() => import('@/components/FriendsLink'));
@@ -37,192 +58,43 @@ export default function AboutPage() {
   const isDark = resolvedTheme === 'dark';
 
   // 主题颜色 - 与留言板页面保持一致
-  const [primaryColor] = useState('#66ccff');
-  const [secondaryColor] = useState('#1e40af');
-  const [accentColor] = useState('#06b6d4');
+  const primaryColor = '#66ccff';
+  const secondaryColor = '#1e40af';
+  const accentColor = '#06b6d4';
 
-  /**
-   * 生成简化的背景样式
-   */
-  const backgroundStyle = useMemo(() => {
-    // 如果启用了背景图片，返回透明背景
+  // 使用自定义Hook获取所有渐变样式
+  const {
+    beforeTextGradientStyle,
+    cardGradientStyle,
+    accentIconGradientStyle,
+    titleGradientStyle,
+    secondaryIconGradientStyle,
+    backgroundStyle: computedBackgroundStyle
+  } = useGradientStyles(
+    primaryColor,
+    secondaryColor,
+    accentColor,
+    isDark,
+    isRainbowGradient
+  );
+
+  // 生成最终的背景样式（考虑背景图片启用情况）
+  const finalBackgroundStyle = useMemo(() => {
     if (isBackgroundEnabled) {
       return {};
     }
-    
-    // 否则使用原有的渐变背景
-    const baseGradient = isDark 
-      ? 'linear-gradient(135deg, rgb(17, 24, 39), rgb(31, 41, 55))'
-      : 'linear-gradient(135deg, rgb(249, 250, 251), rgb(229, 231, 235))';
+    return computedBackgroundStyle;
+  }, [isBackgroundEnabled, computedBackgroundStyle]);
 
-    const themeOverlay = `radial-gradient(ellipse at top left, ${primaryColor}1a, transparent 60%), radial-gradient(ellipse at bottom right, ${secondaryColor}1a, transparent 60%)`;
+  // 获取头部背景样式
+  const headerBackgroundStyle = getHeaderBackgroundStyle(
+    primaryColor,
+    secondaryColor,
+    accentColor
+  );
 
-    return {
-      background: `${themeOverlay}, ${baseGradient}`
-    };
-  }, [primaryColor, secondaryColor, isDark, isBackgroundEnabled]);
-//个人介绍
-
-  // BeforeAnimationText 样式 - 根据配置选择彩虹渐变或主题色渐变
-  const beforeTextGradientStyle = useMemo(() => {
-    if (isRainbowGradient) {
-      // 优化的彩虹渐变色 - 更好的颜色搭配和动态效果
-      return {
-        backgroundImage: `
-          linear-gradient(135deg, 
-            #ff3366 0%,   /* 鲜红 */
-            #ff6b35 12%,  /* 橙红 */
-            #f7931e 24%,  /* 橙色 */
-            #ffcc02 36%,  /* 金黄 */
-            #9acd32 48%,  /* 黄绿 */
-            #00d4aa 60%,  /* 青绿 */
-            #00bfff 72%,  /* 天蓝 */
-            #6a5acd 84%,  /* 紫罗兰 */
-            #ff69b4 100%  /* 热粉 */
-          )`,
-        backgroundSize: '300% 300%',
-        animation: 'gradientShift 4s ease-in-out infinite',
-        filter: 'brightness(1.1) saturate(1.3)',
-      };
-    } else {
-      // 主题色渐变
-      return {
-        backgroundImage: `
-          linear-gradient(135deg, 
-            ${primaryColor} 0%, 
-            ${accentColor} 30%, 
-            ${secondaryColor} 60%, 
-            ${primaryColor} 100%
-          )`,
-        backgroundSize: '200% 200%',
-        animation: 'gradientShift 6s ease-in-out infinite',
-      };
-    }
-  }, [primaryColor, secondaryColor, accentColor]);
-
-  // 关于我卡片样式 - 简洁背景
-  const aboutMeCardStyle = useMemo(() => ({
-    background: `linear-gradient(135deg, ${accentColor}1a, ${accentColor}0d)`,
-    borderColor: `${accentColor}4d`
-  }), [accentColor]);
-
-  // 关于我图标背景样式 - 增强渐变效果
-  const aboutIconStyle = useMemo(() => ({
-    background: `
-      linear-gradient(135deg, 
-        ${accentColor} 0%, 
-        ${primaryColor} 50%, 
-        ${accentColor} 100%
-      )`,
-    backgroundSize: '200% 200%',
-    animation: 'gradientShift 4s ease-in-out infinite',
-    color: 'white'
-  }), [accentColor, primaryColor]);
-
-  // 标签卡片样式 - 简洁背景
-  const tagsCardStyle = useMemo(() => ({
-    background: `linear-gradient(135deg, ${accentColor}1a, ${accentColor}0d)`,
-    borderColor: `${accentColor}4d`
-  }), [accentColor]);
-
-  // 标签图标背景样式 - 增强渐变效果
-  const tagsIconStyle = useMemo(() => ({
-    background: `
-      linear-gradient(135deg, 
-        ${accentColor} 0%, 
-        ${primaryColor} 50%, 
-        ${accentColor} 100%
-      )`,
-    backgroundSize: '200% 200%',
-    animation: 'gradientShift 4s ease-in-out infinite',
-    color: 'white'
-  }), [accentColor, primaryColor]);
-
-  // 联系方式区域样式 - 简洁背景
-  const contactSectionStyle = useMemo(() => ({
-    background: `linear-gradient(135deg, ${accentColor}1a, ${accentColor}0d)`,
-    borderColor: `${accentColor}4d`
-  }), [accentColor]);
-
-  // 联系我标题渐变样式 - 增强效果
-  const contactTitleGradientStyle = useMemo(() => ({
-    backgroundImage: `
-      linear-gradient(135deg, 
-        ${primaryColor} 0%, 
-        ${accentColor} 40%, 
-        ${secondaryColor} 70%, 
-        ${primaryColor} 100%
-      )`,
-    backgroundSize: '200% 200%',
-    animation: 'gradientShift 8s ease-in-out infinite',
-  }), [primaryColor, secondaryColor, accentColor]);
-
-  // 联系图标背景样式 - 增强渐变效果
-  const contactIconStyle = useMemo(() => ({
-    background: `
-      linear-gradient(135deg, 
-        ${accentColor} 0%, 
-        ${primaryColor} 50%, 
-        ${accentColor} 100%
-      )`,
-    backgroundSize: '200% 200%',
-    animation: 'gradientShift 6s ease-in-out infinite',
-    color: 'white'
-  }), [primaryColor, accentColor]);
-
-  // Email 图标背景样式 - 统一配色方案
-  const emailIconStyle = useMemo(() => ({
-    background: `
-      linear-gradient(135deg, 
-        ${secondaryColor} 0%, 
-        ${accentColor} 50%, 
-        ${secondaryColor} 100%
-      )`,
-    backgroundSize: '200% 200%',
-    animation: 'gradientShift 5s ease-in-out infinite',
-    color: 'white'
-  }), [secondaryColor, accentColor]);
-
-  // GitHub 图标背景样式 - 增强渐变效果
-  const githubIconStyle = useMemo(() => ({
-    background: `
-      linear-gradient(135deg, 
-        ${secondaryColor} 0%, 
-        ${accentColor} 50%, 
-        ${secondaryColor} 100%
-      )`,
-    backgroundSize: '200% 200%',
-    animation: 'gradientShift 5s ease-in-out infinite',
-    color: 'white'
-  }), [secondaryColor, accentColor]);
-
-    // B站 图标背景样式 - 增强渐变效果
-  const BilibiliIconStyle = useMemo(() => ({
-    background: `
-      linear-gradient(135deg, 
-        ${secondaryColor} 0%, 
-        ${accentColor} 50%, 
-        ${secondaryColor} 100%
-      )`,
-    backgroundSize: '200% 200%',
-    animation: 'gradientShift 5s ease-in-out infinite',
-    color: 'white'
-  }), [secondaryColor, accentColor]);
-
-  // VSQX 图标背景样式 - 使用与GitHub/B站相同的主题色渐变
-  const vsqxIconStyle = useMemo(() => ({
-    background: `
-      linear-gradient(135deg, 
-        ${secondaryColor} 0%, 
-        ${accentColor} 50%, 
-        ${secondaryColor} 100%
-      )`,
-    backgroundSize: '200% 200%',
-    animation: 'gradientShift 5s ease-in-out infinite',
-    color: 'white'
-  }), [secondaryColor, accentColor]);
-
-
+  // 获取标签样式
+  const tagStyle = getTagStyle(accentColor);
 
   // 如果还没有挂载，显示默认样式避免闪烁
   if (!mounted) {
@@ -247,7 +119,7 @@ export default function AboutPage() {
     <div 
       key={`about-${primaryColor}-${isDark}`}
       className={containerStyle.className}
-      style={{...containerStyle.style, ...backgroundStyle}}
+      style={{...containerStyle.style, ...finalBackgroundStyle}}
     >
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* 主要内容卡片 */}
@@ -255,13 +127,7 @@ export default function AboutPage() {
           {/* 头部区域 - 使用与留言板相同的半透明主题色背景 */}
           <div 
             className="relative p-8 text-white transition-all duration-500 overflow-hidden"
-            style={{
-              background: `
-                linear-gradient(135deg, ${primaryColor}cc 0%, ${accentColor}cc 50%, ${secondaryColor}cc 100%),
-                radial-gradient(circle at top left, ${primaryColor}80 0%, transparent 50%),
-                radial-gradient(circle at bottom right, ${secondaryColor}80 0%, transparent 50%)
-              `,
-            }}
+            style={headerBackgroundStyle}
           >
             {/* 动态光效背景 */}
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-pulse"></div>
@@ -282,7 +148,7 @@ export default function AboutPage() {
           <div className="p-8 md:p-10 md:pt-8">
             {/* 标语区域 */}
             <div className="text-center mb-12">
-              <div className="text-3xl md:text-4xl lg:text-5xl font-semibold max-w-4xl mx-auto relative z-20 py-3">
+              <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold max-w-4xl mx-auto relative z-20 py-2 md:py-3">
                 <span 
                   className="bg-clip-text text-transparent transition-all duration-500"
                   style={beforeTextGradientStyle}
@@ -291,7 +157,7 @@ export default function AboutPage() {
                 </span>
                 <Cover>{AnimationText}</Cover>
               </div>
-              <div className={`${isBorder ? 'border border-black/[0.2] dark:border-white/[0.2]' : ''} flex flex-col items-start max-w-sm mx-auto p-4 relative h-[30rem]`}>
+              <div className={`${isBorder ? 'border border-black/[0.2] dark:border-white/[0.2]' : ''} flex flex-col items-start max-w-sm mx-auto p-4 relative h-[28rem] md:h-[30rem]`}>
                 {isBorder && <Icon className="absolute h-6 w-6 -top-3 -left-3 dark:text-white text-black" />}
                 {isBorder && <Icon className="absolute h-6 w-6 -bottom-3 -left-3 dark:text-white text-black" />}
                 {isBorder && <Icon className="absolute h-6 w-6 -top-3 -right-3 dark:text-white text-black" />}
@@ -309,14 +175,14 @@ export default function AboutPage() {
             </div>
 
             {/* 个人介绍卡片网格 */}
-            <div className="grid md:grid-cols-2 gap-8 mb-12">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-10">
               {/* 关于我卡片 - 使用与联系我一致的样式 */}
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.2 }}
                 className="rounded-2xl p-8 border shadow-lg transition-all duration-500"
-                style={aboutMeCardStyle}
+                style={cardGradientStyle}
               >
                 <div className="flex items-center justify-center mb-4">
                   <motion.div 
@@ -324,7 +190,7 @@ export default function AboutPage() {
                     animate={{ scale: 1 }}
                     transition={{ duration: 0.5, delay: 0.3 }}
                     className="w-10 h-10 rounded-lg flex items-center justify-center mr-3 transition-all duration-300"
-                    style={aboutIconStyle}
+                    style={accentIconGradientStyle}
                   >
                     <span className="font-bold text-lg">🎯</span>
                   </motion.div>
@@ -349,7 +215,7 @@ export default function AboutPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.2 }}
                 className="rounded-2xl p-8 border shadow-lg transition-all duration-500"
-                style={tagsCardStyle}
+                style={cardGradientStyle}
               >
                 <div className="flex items-center justify-center mb-4">
                   <motion.div 
@@ -357,7 +223,7 @@ export default function AboutPage() {
                     animate={{ scale: 1 }}
                     transition={{ duration: 0.5, delay: 0.3 }}
                     className="w-10 h-10 rounded-lg flex items-center justify-center mr-3 transition-all duration-300"
-                    style={tagsIconStyle}
+                    style={accentIconGradientStyle}
                   >
                     <span className="font-bold text-lg">🏷️</span>
                   </motion.div>
@@ -371,11 +237,7 @@ export default function AboutPage() {
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ duration: 0.3, delay: 0.5 + index * 0.05 }}
                       className="px-3 py-1 text-sm rounded-full border transition-all duration-300 hover:scale-105 cursor-default"
-                      style={{
-                        borderColor: `${accentColor}66`,
-                        backgroundColor: `${accentColor}11`,
-                        color: accentColor
-                      }}
+                      style={tagStyle}
                     >
                       {tag}
                     </motion.span>
@@ -390,7 +252,7 @@ export default function AboutPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.4 }}
               className="rounded-2xl p-8 border shadow-lg transition-all duration-500"
-              style={contactSectionStyle}
+              style={cardGradientStyle}
             >
               {/* 联系我标题和描述（不变） */}
               <div className="text-center mb-8">
@@ -399,22 +261,21 @@ export default function AboutPage() {
                   animate={{ scale: 1 }}
                   transition={{ duration: 0.5, delay: 0.6 }}
                   className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 shadow-lg transition-all duration-300"
-                  style={contactIconStyle}
+                  style={accentIconGradientStyle}
                 >
                   <span className="text-2xl">💬</span>
                 </motion.div>
                 <h3 
                   className="text-2xl font-bold bg-clip-text text-transparent mb-3 transition-all duration-500"
-                  style={contactTitleGradientStyle}
+                  style={titleGradientStyle}
                 >
                   联系我
                 </h3>
-
               </div>
               
-              {/* 修复：网格布局改为 md:grid-cols-4，容纳4张卡片 */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 max-w-5xl mx-auto">
-                {/* Email 卡片（补全内部内容，之前省略了） */}
+              {/* 响应式网格布局 - 移动端2列，平板3列，桌面4列 */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-w-5xl mx-auto">
+                {/* Email 卡片 */}
                 <motion.a
                   href={`mailto:${mail}`}
                   whileHover={{ scale: 1.05, y: -5 }}
@@ -422,12 +283,12 @@ export default function AboutPage() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 0.7 }}
-                  className="group relative bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md hover:shadow-xl border border-gray-200 dark:border-gray-700 transition-all duration-300 cursor-pointer overflow-hidden"
+                  className="group relative bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md hover:shadow-2xl border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-300 cursor-pointer overflow-hidden"
                 >
                   <div className="relative z-10">
                     <div 
                       className="flex items-center justify-center w-12 h-12 rounded-lg mb-4 mx-auto group-hover:scale-110 transition-transform duration-300"
-                      style={emailIconStyle}
+                      style={secondaryIconGradientStyle}
                     >
                       <OptimizedIcon 
                         src="/assets/mail.svg" 
@@ -451,7 +312,7 @@ export default function AboutPage() {
                   </div>
                 </motion.a>
                 
-                {/* GitHub 卡片（补全内部内容） */}
+                {/* GitHub 卡片 */}
                 <motion.a
                   href={github}
                   target="_blank"
@@ -461,12 +322,12 @@ export default function AboutPage() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 0.8 }}
-                  className="group relative bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md hover:shadow-xl border border-gray-200 dark:border-gray-700 transition-all duration-300 cursor-pointer overflow-hidden"
+                  className="group relative bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md hover:shadow-2xl border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-300 cursor-pointer overflow-hidden"
                 >
                   <div className="relative z-10">
                     <div 
                       className="flex items-center justify-center w-12 h-12 rounded-lg mb-4 mx-auto group-hover:scale-110 transition-transform duration-300"
-                      style={githubIconStyle}
+                      style={secondaryIconGradientStyle}
                     >
                       <OptimizedIcon 
                         src="/assets/github.svg" 
@@ -490,7 +351,7 @@ export default function AboutPage() {
                   </div>
                 </motion.a>
             
-                {/* 哔哩哔哩卡片（完整内容） */}
+                {/* 哔哩哔哩卡片 */}
                 <motion.a
                   href={bilibili}
                   target="_blank"
@@ -500,12 +361,12 @@ export default function AboutPage() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 0.9 }}
-                  className="group relative bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md hover:shadow-xl border border-gray-200 dark:border-gray-700 transition-all duration-300 cursor-pointer overflow-hidden"
+                  className="group relative bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md hover:shadow-2xl border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-300 cursor-pointer overflow-hidden"
                 >
                   <div className="relative z-10">
                     <div 
                       className="flex items-center justify-center w-12 h-12 rounded-lg mb-4 mx-auto group-hover:scale-110 transition-transform duration-300"
-                      style={BilibiliIconStyle}
+                      style={secondaryIconGradientStyle}
                     >
                       <OptimizedIcon 
                         src="/assets/bilibili.png" 
@@ -529,7 +390,7 @@ export default function AboutPage() {
                   </div>
                 </motion.a>
 
-                {/* VSQX 卡片（新增） */}
+                {/* VSQX 卡片 */}
                 <motion.a
                   href="https://www.vsqx.top/space/16984"
                   target="_blank"
@@ -539,12 +400,12 @@ export default function AboutPage() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 1.0 }}
-                  className="group relative bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md hover:shadow-xl border border-gray-200 dark:border-gray-700 transition-all duration-300 cursor-pointer overflow-hidden"
+                  className="group relative bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md hover:shadow-2xl border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-300 cursor-pointer overflow-hidden"
                 >
                   <div className="relative z-10">
                     <div 
                       className="flex items-center justify-center w-12 h-12 rounded-lg mb-4 mx-auto group-hover:scale-110 transition-transform duration-300"
-                      style={vsqxIconStyle}
+                      style={secondaryIconGradientStyle}
                     >
                       <OptimizedIcon 
                         src="/assets/vsqx.ico" 
@@ -567,9 +428,9 @@ export default function AboutPage() {
                     </div>
                   </div>
                 </motion.a>
-              </div> {/* 网格容器闭合 */}
+              </div>
             
-              {/* 底部装饰性文字（只保留1个，删除重复的） */}
+              {/* 底部装饰性文字 */}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -580,31 +441,29 @@ export default function AboutPage() {
                   🌟 期待与你的交流 · 让我们一起在技术的道路上前行
                 </p>
               </motion.div>
-            </motion.div> {/* 联系方式区域 motion.div 闭合（删除之前多余的闭合标签） */}
-          </div> {/* 主要内容区域闭合 */}
-        </div> {/* 主要内容卡片闭合 */}
+            </motion.div>
+          </div>
+        </div>
 
         {/* 友情链接模块 */}
         <Suspense fallback={<div className="h-32 bg-gray-200 dark:bg-gray-700 animate-pulse rounded-lg"></div>}>
           <LazyFriendsLink />
         </Suspense>
 
-        {/* 相关链接模块 - 更紧凑的间距 */}
+        {/* 相关链接模块 */}
         <div className="mt-4">
           <Suspense fallback={<div className="h-24 bg-gray-200 dark:bg-gray-700 animate-pulse rounded-lg"></div>}>
             <LazyRelatedLinks />
           </Suspense>
         </div>
 
-        {/* 底部装饰 - 减少间距 */}
+        {/* 底部装饰 */}
         <div className="text-center mt-4">
           <p className="text-gray-500 dark:text-gray-400 text-sm">
             &ldquo;这世界的浪漫有很多，孤独的人永远没有错&rdquo;
           </p>
         </div>
       </div>
-      
-      
     </div>
   );
 }

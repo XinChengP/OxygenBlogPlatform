@@ -19,6 +19,8 @@ interface BlogPost {
   year: number; // 添加年份字段用于归档
   month: number; // 添加月份字段用于归档
   day: number; // 添加日期字段用于归档
+  pinned?: boolean;
+  pinnedAt?: string;
 }
 
 /**
@@ -31,6 +33,8 @@ interface BlogFrontMatter {
   category?: string;
   tags?: string[];
   readTime?: number;
+  pinned?: boolean;
+  pinnedAt?: string;
 }
 
 /**
@@ -118,7 +122,9 @@ function getArchivedBlogs(): { [year: number]: { [month: number]: { [day: number
           readTime: frontMatter.readTime || 5,
           year: year,
           month: month,
-          day: day
+          day: day,
+          pinned: frontMatter.pinned || false,
+          pinnedAt: frontMatter.pinnedAt ? formatBlogDate(frontMatter.pinnedAt) : undefined
         });
       } catch (error) {
         console.error(`Error reading blog file ${relativePath}:`, error);

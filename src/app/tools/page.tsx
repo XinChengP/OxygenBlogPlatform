@@ -30,39 +30,6 @@ function ToolCard({ tool, index, isDark }: ToolCardProps) {
     return `${baseStyle} backdrop-blur-md bg-card/90 border-border shadow-lg supports-[backdrop-filter]:bg-card/75`;
   };
 
-  if (!tool.isActive) {
-    return (
-      <motion.div
-        key={tool.id}
-        className={getGlassStyle("rounded-lg shadow-md p-6 border opacity-60")}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: index * 0.1 }}
-      >
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">{tool.icon}</span>
-            <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              {tool.name}
-            </h3>
-          </div>
-          <span className="px-2 py-1 text-xs bg-gray-500 text-white rounded-full">
-            开发中
-          </span>
-        </div>
-        <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'} mb-4`}>
-          {tool.description}
-        </p>
-        <button
-          disabled
-          className="w-full px-4 py-2 bg-gray-400 text-white rounded-md cursor-not-allowed opacity-50"
-        >
-          即将上线
-        </button>
-      </motion.div>
-    );
-  }
-
   return (
     <motion.div
       key={tool.id}

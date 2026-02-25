@@ -8,7 +8,7 @@ import { categories } from '@/setting/blogSetting';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 import Pagination from '@/components/Pagination';
 import { getAssetPath } from '@/utils/assetUtils';
-import { Search, Calendar, Clock, Tag, ArrowRight, LayoutGrid, LayoutList, X, Filter, BookOpen } from 'lucide-react';
+import { Search, Calendar, Clock, Tag, ArrowRight, LayoutGrid, LayoutList, X, Filter, BookOpen, Pin } from 'lucide-react';
 import live2dMessageManager from '@/utils/live2dMessageManager';
 
 
@@ -26,6 +26,8 @@ interface BlogPost {
   slug: string;
   readTime: number;
   coverImage?: string;
+  pinned?: boolean;
+  pinnedAt?: string;
   author?: {
     name: string;
     avatar?: string;
@@ -34,13 +36,15 @@ interface BlogPost {
 
 interface ClientBlogsPageProps {
   initialPosts: BlogPost[];
+  blogTotalWordCount: number;
+  tagCount: number;
 }
 
 /**
  * 客户端博客列表页面
  * 处理交互和动画效果
  */
-export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) {
+export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagCount }: ClientBlogsPageProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState<number>(1);
   // 搜索和筛选状态
@@ -242,8 +246,20 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
       post.readTime >= minReadTime && post.readTime <= maxReadTime
     );
     
-    // 排序
+    // 排序：置顶文章优先，然后按选定规则排序
     return filtered.sort((a, b) => {
+      // 置顶文章优先
+      if (a.pinned && !b.pinned) return -1;
+      if (!a.pinned && b.pinned) return 1;
+      
+      // 都是置顶文章，按置顶时间倒序
+      if (a.pinned && b.pinned) {
+        const aPinnedTime = a.pinnedAt || a.date;
+        const bPinnedTime = b.pinnedAt || b.date;
+        return new Date(bPinnedTime).getTime() - new Date(aPinnedTime).getTime();
+      }
+      
+      // 都是普通文章，按选定规则排序
       switch (sortBy) {
         case 'date':
           return new Date(b.date).getTime() - new Date(a.date).getTime();
@@ -659,6 +675,21 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                     </span>
                     <span className="font-medium">{initialPosts.length}</span>
                   </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <Tag className="w-3 h-3" />
+                      总标签数
+                    </span>
+                    <span className="font-medium">{tagCount}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      {/* 这里可以添加一个字数统计的图标，暂时用一个通用的 */}
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-type w-3 h-3" aria-hidden="true"><path d="M9 7V5h6v2"></path><path d="M12 18h.01"></path><path d="M4 12V7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v5"></path><path d="M4 12s-2 2-2 5v2h20v-2s-2-3-2-5"></path><path d="M4 12h16"></path></svg>
+                      博客总字数
+                    </span>
+                    <span className="font-medium">{blogTotalWordCount.toLocaleString()}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -735,7 +766,13 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                               whileHover={{ opacity: 1 }}
                               transition={{ duration: 0.4 }}
                             ></motion.div>
-                            <div className="absolute top-3 left-3">
+                            <div className="absolute top-3 left-3 flex items-center gap-2">
+                              {post.pinned && (
+                                <span className="bg-cyan-500 text-white px-2 py-1 rounded-full text-xs sm:text-sm font-medium backdrop-blur-sm shadow-lg flex items-center gap-1">
+                                  <Pin className="w-3 h-3" />
+                                  置顶
+                                </span>
+                              )}
                               <span className="bg-primary/95 text-primary-foreground px-2 py-1 rounded-full text-xs sm:text-sm font-medium backdrop-blur-sm shadow-lg">
                                 {post.category}
                               </span>
@@ -774,6 +811,14 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                                   {post.category}
                                 </div>
                               </div>
+                            </div>
+                            <div className="absolute top-3 left-3">
+                              {post.pinned && (
+                                <span className="bg-cyan-500 text-white px-2 py-1 rounded-full text-xs sm:text-sm font-medium backdrop-blur-sm shadow-lg flex items-center gap-1">
+                                  <Pin className="w-3 h-3" />
+                                  置顶
+                                </span>
+                              )}
                             </div>
                             <div className="absolute top-3 right-3">
                               <span className="bg-black/60 text-white px-2 py-1 rounded-full text-xs backdrop-blur-sm">
@@ -912,7 +957,13 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                                 />
                               </motion.div>
                               <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent"></div>
-                              <div className="absolute top-1 left-1">
+                              <div className="absolute top-1 left-1 flex items-center gap-1">
+                                {post.pinned && (
+                                  <span className="bg-cyan-500 text-white px-1.5 py-0.5 rounded text-xs font-medium backdrop-blur-sm leading-none flex items-center gap-0.5">
+                                    <Pin className="w-2.5 h-2.5" />
+                                    置顶
+                                  </span>
+                                )}
                                 <span className="bg-primary/90 text-primary-foreground px-1.5 py-0.5 rounded text-xs font-medium backdrop-blur-sm leading-none">
                                   {post.category}
                                 </span>
@@ -921,13 +972,21 @@ export default function ClientBlogsPage({ initialPosts }: ClientBlogsPageProps) 
                           )}
                           
                           <div className="flex-1 min-w-0">
-                            <motion.h2 
-                              className="text-sm font-semibold text-foreground mb-1 line-clamp-2"
-                              whileHover={{ color: "var(--primary)" }}
-                              transition={{ duration: 0.4 }}
-                            >
-                              {post.title}
-                            </motion.h2>
+                            <div className="flex items-center gap-2 mb-1">
+                              {!post.coverImage && post.pinned && (
+                                <span className="bg-cyan-500 text-white px-1.5 py-0.5 rounded text-xs font-medium backdrop-blur-sm leading-none flex items-center gap-0.5">
+                                  <Pin className="w-2.5 h-2.5" />
+                                  置顶
+                                </span>
+                              )}
+                              <motion.h2 
+                                className="text-sm font-semibold text-foreground line-clamp-2"
+                                whileHover={{ color: "var(--primary)" }}
+                                transition={{ duration: 0.4 }}
+                              >
+                                {post.title}
+                              </motion.h2>
+                            </div>
                             
                             {post.excerpt && (
                               <p className="text-muted-foreground mb-1.5 text-sm line-clamp-2 leading-tight">

@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
 import { formatBlogDate, calculateReadingTime } from '@/lib/utils';
+import { getBlogTotalWordCount } from '@/utils/momentsUtils';
 import ClientBlogsPage from './ClientBlogsPage';
 
 /**
@@ -17,6 +18,8 @@ interface BlogPost {
   slug: string;
   readTime: number;
   coverImage?: string;
+  pinned?: boolean;
+  pinnedAt?: string;
 }
 
 /**
@@ -30,6 +33,8 @@ interface BlogFrontMatter {
   tags?: string[];
   readTime?: number;
   coverImage?: string;
+  pinned?: boolean;
+  pinnedAt?: string;
 }
 
 /**
@@ -122,19 +127,54 @@ function getAllBlogs(): BlogPost[] {
           tags: frontMatter.tags || [],
           slug: slug,
           readTime: readTime,
-          coverImage: frontMatter.coverImage
+          coverImage: frontMatter.coverImage,
+          pinned: frontMatter.pinned || false,
+          pinnedAt: frontMatter.pinnedAt ? formatBlogDate(frontMatter.pinnedAt) : undefined
         });
       } catch (error) {
         console.error(`Error reading blog file ${relativePath}:`, error);
       }
     });
     
-    // 按日期排序（最新的在前）
-    return blogPosts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    // 排序：置顶文章优先，然后按日期排序（最新的在前）
+    return blogPosts.sort((a, b) => {
+      // 置顶文章优先
+      if (a.pinned && !b.pinned) return -1;
+      if (!a.pinned && b.pinned) return 1;
+      
+      // 都是置顶文章，按置顶时间倒序
+      if (a.pinned && b.pinned) {
+        const aPinnedTime = a.pinnedAt || a.date;
+        const bPinnedTime = b.pinnedAt || b.date;
+        return new Date(bPinnedTime).getTime() - new Date(aPinnedTime).getTime();
+      }
+      
+      // 都是普通文章，按日期排序
+      return new Date(b.date).getTime() - new Date(a.date).getTime();
+    });
   } catch (error) {
     console.error('Error getting all blogs:', error);
     return [];
   }
+}
+
+/**
+ * 计算标签统计
+ * @param blogPosts 博客文章列表
+ * @returns 标签总数
+ */
+function calculateTagCount(blogPosts: BlogPost[]): number {
+  const tags = new Set<string>();
+  
+  blogPosts.forEach(blog => {
+    if (blog.tags && Array.isArray(blog.tags)) {
+      blog.tags.forEach(tag => {
+        tags.add(tag);
+      });
+    }
+  });
+  
+  return tags.size;
 }
 
 /**
@@ -144,6 +184,14 @@ function getAllBlogs(): BlogPost[] {
 export default async function BlogsPage() {
   // 获取博客数据
   const blogPosts = getAllBlogs();
+  // 获取博客总字数
+  const blogTotalWordCount = getBlogTotalWordCount();
+  // 计算标签总数
+  const tagCount = calculateTagCount(blogPosts);
   
-  return <ClientBlogsPage initialPosts={blogPosts} />;
+  return <ClientBlogsPage 
+    initialPosts={blogPosts} 
+    blogTotalWordCount={blogTotalWordCount}
+    tagCount={tagCount}
+  />;
 }

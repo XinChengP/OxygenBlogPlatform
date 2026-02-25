@@ -6,6 +6,8 @@ category: "生活"
 tags: ["总结"]
 excerpt: "回首2025，展望2026"
 coverImage: "/Blogabout/2025summary/图一.webp"
+pinned: true
+pinnedAt: "2026-02-26"
 ---
 
 # 2025年度总结

@@ -2,8 +2,9 @@
 
 import React, { useMemo, lazy, Suspense, useState } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
+import { Pin, Calendar, ChevronDown, ChevronRight, Filter } from 'lucide-react';
 
 
 
@@ -22,6 +23,8 @@ interface BlogPost {
   year: number;
   month: number;
   day: number;
+  pinned?: boolean;
+  pinnedAt?: string;
 }
 
 /**
@@ -40,8 +43,9 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
   const [showTagModal, setShowTagModal] = useState(false);
   const [selectedTag, setSelectedTag] = useState<string>('');
   const [tagPosts, setTagPosts] = useState<BlogPost[]>([]);
-  const [activeYear, setActiveYear] = useState<number | null>(null);
+  const [expandedYears, setExpandedYears] = useState<number[]>([]);
   const [activeMonth, setActiveMonth] = useState<number | null>(null);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(true);
 
   // 毛玻璃样式函数
   const getGlassStyle = (baseStyle: string) => {
@@ -96,16 +100,23 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
     setTagPosts([]);
   };
 
-  // 处理年份点击
+  // 处理年份点击 - 切换展开/收起状态
   const handleYearClick = (year: number) => {
-    setActiveYear(year === activeYear ? null : year);
-    setActiveMonth(null); // 重置月份选择
+    setExpandedYears(prev => 
+      prev.includes(year) 
+        ? prev.filter(y => y !== year)
+        : [...prev, year]
+    );
+    setActiveMonth(null);
   };
 
   // 处理月份点击
   const handleMonthClick = (month: number) => {
     setActiveMonth(month === activeMonth ? null : month);
   };
+
+  // 检查年份是否展开
+  const isYearExpanded = (year: number) => expandedYears.includes(year);
 
   // 获取所有年份并排序（降序）
   const years = useMemo(() => {
@@ -114,14 +125,38 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
       .sort((a, b) => b - a);
   }, [archivedPosts]);
 
+  // 计算每年的文章数量
+  const getYearPostCount = (year: number): number => {
+    let count = 0;
+    const yearData = archivedPosts[year];
+    if (yearData) {
+      for (const month in yearData) {
+        for (const day in yearData[month]) {
+          count += yearData[month][day].length;
+        }
+      }
+    }
+    return count;
+  };
+
+  // 计算每月的文章数量
+  const getMonthPostCount = (year: number, month: number): number => {
+    let count = 0;
+    const monthData = archivedPosts[year]?.[month];
+    if (monthData) {
+      for (const day in monthData) {
+        count += monthData[day].length;
+      }
+    }
+    return count;
+  };
+
   // 准备筛选后的文章数据
   const filteredPosts = useMemo(() => {
     let result: { [year: number]: { [month: number]: { [day: number]: BlogPost[] } } } = {};
     
-    // 如果没有选择年份，显示所有年份
-    const targetYears = activeYear ? [activeYear] : years;
-    
-    targetYears.forEach(year => {
+    // 显示所有年份
+    years.forEach(year => {
       result[year] = {};
       const yearData = archivedPosts[year];
       
@@ -141,7 +176,7 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
     });
     
     return result;
-  }, [archivedPosts, activeYear, activeMonth, years]);
+  }, [archivedPosts, activeMonth, years]);
 
   // 准备右侧内容区的时间轴数据
   const timelineData = useMemo(() => {
@@ -201,44 +236,110 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
           </motion.div>
 
           <div className="flex gap-6">
-            {/* 左侧侧边栏 */}
+            {/* 移动端折叠按钮 */}
             <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6 }}
-              className={getGlassStyle("w-64 rounded-lg border p-4 h-fit sticky top-6")}
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              className="lg:hidden mb-4"
             >
-              <h2 className="text-lg font-semibold text-foreground mb-4">年份列表</h2>
-              <div className="space-y-2">
-                {years.map(year => (
-                  <div key={year} className="space-y-1">
-                    <button
-                      className={`w-full text-left px-3 py-2 rounded-lg transition-all duration-300 ${activeYear === year ? 'bg-primary/20 text-primary font-medium' : 'hover:bg-muted text-foreground'}`}
-                      onClick={() => handleYearClick(year)}
-                    >
-                      {year} 年
-                    </button>
-                    {/* 月份列表 - 只有当点击年份时才显示 */}
-                    {activeYear === year && (
-                      <div className="pl-4 space-y-1">
-                        {Object.keys(archivedPosts[year])
-                          .map(month => parseInt(month))
-                          .sort((a, b) => b - a)
-                          .map(month => (
-                            <button
-                              key={month}
-                              className={`w-full text-left px-3 py-1.5 text-sm rounded-lg transition-all duration-300 ${activeMonth === month ? 'bg-primary/15 text-primary font-medium' : 'hover:bg-muted text-muted-foreground'}`}
-                              onClick={() => handleMonthClick(month)}
-                            >
-                              {month} 月
-                            </button>
-                          ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+              <button
+                onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                className={getGlassStyle("w-full px-4 py-3 rounded-lg border flex items-center justify-between")}
+              >
+                <span className="flex items-center gap-2">
+                  <Filter className="w-4 h-4" />
+                  <span className="font-medium">年份筛选</span>
+                </span>
+                <motion.span
+                  animate={{ rotate: isSidebarCollapsed ? 0 : 180 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <ChevronDown className="w-4 h-4" />
+                </motion.span>
+              </button>
             </motion.div>
+
+            {/* 左侧侧边栏 */}
+            <AnimatePresence>
+              {(!isSidebarCollapsed || (typeof window !== 'undefined' && window.innerWidth >= 1024)) && (
+                <motion.aside
+                  initial={{ opacity: 0, x: -20, height: 0 }}
+                  animate={{ opacity: 1, x: 0, height: 'auto' }}
+                  exit={{ opacity: 0, x: -20, height: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="lg:block w-full lg:w-64 lg:sticky lg:top-6 lg:h-fit"
+                >
+                  <div className={getGlassStyle("rounded-lg border p-4")}>
+                    <div className="flex items-center gap-2 mb-4">
+                      <Calendar className="w-5 h-5 text-primary" />
+                      <h2 className="text-lg font-semibold text-foreground">年份列表</h2>
+                    </div>
+                    <div className="space-y-1">
+                      {years.map((year, index) => (
+                        <motion.div
+                          key={year}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.3, delay: index * 0.05 }}
+                        >
+                          <button
+                            className={`w-full text-left px-3 py-2.5 rounded-lg transition-all duration-300 flex items-center justify-between group ${isYearExpanded(year) ? 'bg-primary/20 text-primary font-medium' : 'hover:bg-muted text-foreground'}`}
+                            onClick={() => handleYearClick(year)}
+                          >
+                            <span className="flex items-center gap-2">
+                              <motion.span
+                                animate={{ rotate: isYearExpanded(year) ? 90 : 0 }}
+                                transition={{ duration: 0.2 }}
+                              >
+                                <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                              </motion.span>
+                              <span>{year} 年</span>
+                            </span>
+                            <span className={`text-xs px-2 py-0.5 rounded-full transition-colors ${isYearExpanded(year) ? 'bg-primary/30 text-primary' : 'bg-muted text-muted-foreground'}`}>
+                              {getYearPostCount(year)}
+                            </span>
+                          </button>
+                          {/* 月份列表 - 带动画 */}
+                          <AnimatePresence>
+                            {isYearExpanded(year) && (
+                              <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                transition={{ duration: 0.2 }}
+                                className="overflow-hidden"
+                              >
+                                <div className="pl-6 py-1 space-y-0.5 border-l-2 border-primary/20 ml-4">
+                                  {Object.keys(archivedPosts[year])
+                                    .map(month => parseInt(month))
+                                    .sort((a, b) => b - a)
+                                    .map((month, monthIndex) => (
+                                      <motion.button
+                                        key={month}
+                                        initial={{ opacity: 0, x: -10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ duration: 0.2, delay: monthIndex * 0.05 }}
+                                        className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-all duration-300 flex items-center justify-between ${activeMonth === month ? 'bg-primary/15 text-primary font-medium' : 'hover:bg-muted text-muted-foreground hover:text-foreground'}`}
+                                        onClick={() => handleMonthClick(month)}
+                                      >
+                                        <span>{month} 月</span>
+                                        <span className={`text-xs px-1.5 py-0.5 rounded ${activeMonth === month ? 'bg-primary/20 text-primary' : 'bg-muted/50 text-muted-foreground'}`}>
+                                          {getMonthPostCount(year, month)}
+                                        </span>
+                                      </motion.button>
+                                    ))}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+                </motion.aside>
+              )}
+            </AnimatePresence>
 
             {/* 右侧内容区 */}
             <motion.div
@@ -280,9 +381,17 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
                                 href={`/blogs/${post.slug}`}
                                 className="block group"
                               >
-                                <h5 className="text-lg font-medium text-foreground group-hover:text-primary transition-colors duration-300">
-                                  {post.title}
-                                </h5>
+                                <div className="flex items-center gap-2">
+                                  {post.pinned && (
+                                    <span className="bg-cyan-500 text-white px-2 py-0.5 rounded text-xs font-medium flex items-center gap-0.5">
+                                      <Pin className="w-3 h-3" />
+                                      置顶
+                                    </span>
+                                  )}
+                                  <h5 className="text-lg font-medium text-foreground group-hover:text-primary transition-colors duration-300">
+                                    {post.title}
+                                  </h5>
+                                </div>
                                 <div className="flex items-center text-sm text-muted-foreground mt-1 space-x-2">
                                   <span>{post.date}</span>
                                   <span>•</span>
@@ -385,9 +494,17 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
                         className="block group"
                         onClick={closeTagModal}
                       >
-                        <h3 className="text-lg font-medium text-foreground group-hover:text-primary transition-colors">
-                          {post.title}
-                        </h3>
+                        <div className="flex items-center gap-2">
+                          {post.pinned && (
+                            <span className="bg-cyan-500 text-white px-2 py-0.5 rounded text-xs font-medium flex items-center gap-0.5">
+                              <Pin className="w-3 h-3" />
+                              置顶
+                            </span>
+                          )}
+                          <h3 className="text-lg font-medium text-foreground group-hover:text-primary transition-colors">
+                            {post.title}
+                          </h3>
+                        </div>
                         <div className="flex items-center text-sm text-muted-foreground mt-1 space-x-2">
                           <span>{post.date}</span>
                           <span>•</span>

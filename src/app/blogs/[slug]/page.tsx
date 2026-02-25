@@ -60,6 +60,8 @@ interface BlogPost {
   seoTitle?: string;
   seoDescription?: string;
   reference?: Array<{description: string; link: string}>;
+  pinned?: boolean;
+  pinnedAt?: string;
 }
 
 /**
@@ -84,6 +86,8 @@ interface BlogFrontMatter {
   readTime?: number;
   excerpt?: string;
   reference?: Array<{description: string; link: string}>;
+  pinned?: boolean;
+  pinnedAt?: string;
   [key: string]: any; // 允许其他未知属性
 }
 
@@ -262,7 +266,9 @@ async function getBlogContent(slug: string): Promise<BlogPost | null> {
       canonicalUrl: frontMatter.canonicalUrl,
       seoTitle: frontMatter.seoTitle,
       seoDescription: frontMatter.seoDescription,
-      reference: frontMatter.reference
+      reference: frontMatter.reference,
+      pinned: frontMatter.pinned || false,
+      pinnedAt: frontMatter.pinnedAt ? formatBlogDate(frontMatter.pinnedAt) : undefined
     };
   } catch (error) {
     console.error('Error reading blog content:', error);

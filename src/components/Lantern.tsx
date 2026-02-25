@@ -154,11 +154,11 @@ export default function Lantern({ text = '新春快乐', enabled = true }: Lante
         transition: transform 0.3s ease-in-out;
       }
       
-      /* 拖拽时的样式 */
+      /* 拖拽时的样式（简化缩放效果，避免复杂的位置计算） */
       .deng-box.dragging {
         z-index: 55 !important;
-        transform: scale(1.1);
-        transition: all 0.2s ease;
+        /* 移除缩放效果，简化拖拽逻辑 */
+        transition: none;
       }
       
       /* 点击时的动画 */
@@ -174,6 +174,8 @@ export default function Lantern({ text = '新春快乐', enabled = true }: Lante
       .deng-box {
         position: fixed;
         z-index: 45; /* 导航栏z-index是50，灯笼盒子放在45 */
+        width: 120px; /* 明确设置宽度，与.lantern-3d一致 */
+        height: 200px; /* 明确设置高度，包含灯笼主体和流苏 */
       }
       .deng-box1 {
         left: 40px;
@@ -393,27 +395,28 @@ export default function Lantern({ text = '新春快乐', enabled = true }: Lante
       const lantern = lanternRefs.current.get(index);
       if (!lantern) return;
       
-      // 移除拖拽样式，确保getBoundingClientRect()返回的是原始大小的位置
-      lantern.classList.remove('dragging');
-      
-      // 使用getBoundingClientRect()获取灯笼的原始位置
-      const rect = lantern.getBoundingClientRect();
-      
-      // 重新添加拖拽样式
+      // 添加拖拽样式
       lantern.classList.add('dragging');
       
-      // 计算偏移量：鼠标指针位置减去灯笼的左上角位置
-      // 注意：这里使用的是原始大小的位置，所以偏移量是准确的
-      const offsetX = e.clientX - rect.left;
-      const offsetY = e.clientY - rect.top;
+      // 获取灯笼当前位置
+      // 优先使用positionRefs中存储的位置（如果有），避免被隐藏的灯笼影响计算
+      let currentPosition = positionRefs.current.get(index);
+      if (!currentPosition) {
+        const rect = lantern.getBoundingClientRect();
+        currentPosition = {
+          x: rect.left,
+          y: rect.top
+        };
+      }
       
-      // 更新positionRefs中的位置为当前真实位置（原始大小的位置）
-      const currentPosition = {
-        x: rect.left,
-        y: rect.top
-      };
+      // 计算偏移量：鼠标指针位置相对于灯笼左上角的偏移
+      const offsetX = e.clientX - currentPosition.x;
+      const offsetY = e.clientY - currentPosition.y;
+      
+      // 更新positionRefs中的位置
       positionRefs.current.set(index, currentPosition);
       
+      // 初始化拖拽状态
       draggingRef.current = {
         isDragging: true,
         lanternIndex: index,
@@ -427,8 +430,6 @@ export default function Lantern({ text = '新春快乐', enabled = true }: Lante
         velocityY: 0,
         lastTime: performance.now(),
       };
-      
-      // 添加拖拽样式（已在前面添加，这里不需要重复）
       
       // 清除点击超时
       if (clickTimeoutRef.current) {
@@ -445,9 +446,10 @@ export default function Lantern({ text = '新春快乐', enabled = true }: Lante
       const deltaX = e.clientX - draggingRef.current.lastX;
       const deltaY = e.clientY - draggingRef.current.lastY;
       
-      // 计算速度
-      draggingRef.current.velocityX = deltaX / deltaTime;
-      draggingRef.current.velocityY = deltaY / deltaTime;
+      // 计算速度（增加阻尼系数，使速度计算更平滑）
+      const damping = 0.8;
+      draggingRef.current.velocityX = draggingRef.current.velocityX * damping + (deltaX / deltaTime) * (1 - damping);
+      draggingRef.current.velocityY = draggingRef.current.velocityY * damping + (deltaY / deltaTime) * (1 - damping);
       draggingRef.current.lastX = e.clientX;
       draggingRef.current.lastY = e.clientY;
       draggingRef.current.lastTime = currentTime;
@@ -455,38 +457,25 @@ export default function Lantern({ text = '新春快乐', enabled = true }: Lante
       const lantern = lanternRefs.current.get(draggingRef.current.lanternIndex);
       if (!lantern) return;
       
-      // 获取灯笼的原始大小（不考虑缩放）
-      const lanternWidth = lantern.offsetWidth;
-      const lanternHeight = lantern.offsetHeight;
-      
-      // 计算新位置（基于原始大小）
+      // 计算新位置
       let newX = e.clientX - draggingRef.current.offsetX;
       let newY = e.clientY - draggingRef.current.offsetY;
       
       // 边界检测
       const windowWidth = window.innerWidth;
       const windowHeight = window.innerHeight;
+      const lanternWidth = lantern.offsetWidth;
+      const lanternHeight = lantern.offsetHeight;
       
-      // 考虑缩放的影响：当灯笼被缩放时，它的视觉大小会变大，所以边界也需要相应调整
-      const scaledWidth = lanternWidth * 1.1;
-      const scaledHeight = lanternHeight * 1.1;
+      // 确保灯笼不会超出边界
+      newX = Math.max(0, Math.min(newX, windowWidth - lanternWidth));
+      newY = Math.max(0, Math.min(newY, windowHeight - lanternHeight));
       
-      // 调整新位置，确保缩放后的灯笼不会超出边界
-      newX = Math.max(0, Math.min(newX, windowWidth - scaledWidth));
-      newY = Math.max(0, Math.min(newY, windowHeight - scaledHeight));
+      // 直接更新位置（不考虑缩放偏移，简化计算）
+      lantern.style.left = `${newX}px`;
+      lantern.style.top = `${newY}px`;
       
-      // 调整新位置，补偿缩放导致的视觉偏移
-      // 因为缩放的原点是中心点，所以需要将位置向左上方偏移 (scaledWidth - lanternWidth) / 2
-      const offsetX = (scaledWidth - lanternWidth) / 2;
-      const offsetY = (scaledHeight - lanternHeight) / 2;
-      const adjustedX = newX - offsetX;
-      const adjustedY = newY - offsetY;
-      
-      // 更新位置
-      lantern.style.left = `${adjustedX}px`;
-      lantern.style.top = `${adjustedY}px`;
-      
-      // 更新存储的位置（存储原始大小的位置，而不是调整后的位置）
+      // 更新存储的位置
       positionRefs.current.set(draggingRef.current.lanternIndex, { x: newX, y: newY });
     };
     
@@ -499,17 +488,17 @@ export default function Lantern({ text = '新春快乐', enabled = true }: Lante
       // 移除拖拽样式
       lantern.classList.remove('dragging');
       
-      // 实现惯性效果
-      const velocityX = draggingRef.current.velocityX * 10;
-      const velocityY = draggingRef.current.velocityY * 10;
+      // 实现惯性效果（调整参数，使惯性更自然）
+      const velocityX = draggingRef.current.velocityX * 15; // 增加速度倍数，使惯性更明显
+      const velocityY = draggingRef.current.velocityY * 15;
       
-      if (Math.abs(velocityX) > 1 || Math.abs(velocityY) > 1) {
+      if (Math.abs(velocityX) > 0.5 || Math.abs(velocityY) > 0.5) { // 降低阈值，使惯性更容易触发
         let currentX = positionRefs.current.get(draggingRef.current.lanternIndex)?.x || 0;
         let currentY = positionRefs.current.get(draggingRef.current.lanternIndex)?.y || 0;
         let currentVelocityX = velocityX;
         let currentVelocityY = velocityY;
-        const friction = 0.9;
-        const minVelocity = 0.1;
+        const friction = 0.95; // 减小摩擦力，使惯性持续更久
+        const minVelocity = 0.05; // 降低最小速度，使惯性停止更平滑
         
         // 惯性运动动画
         function animateInertia() {
@@ -528,10 +517,11 @@ export default function Lantern({ text = '新春快乐', enabled = true }: Lante
           const windowWidth = window.innerWidth;
           const windowHeight = window.innerHeight;
           const lanternWidth = lantern.offsetWidth;
+          const lanternHeight = lantern.offsetHeight;
           
           // 调整新位置，确保灯笼不会超出边界
           currentX = Math.max(0, Math.min(currentX, windowWidth - lanternWidth));
-          currentY = Math.max(0, Math.min(currentY, windowHeight - lantern.offsetHeight));
+          currentY = Math.max(0, Math.min(currentY, windowHeight - lanternHeight));
           
           // 更新灯笼位置
           lantern.style.left = `${currentX}px`;
@@ -714,13 +704,13 @@ export default function Lantern({ text = '新春快乐', enabled = true }: Lante
       lanternCounter++;
       console.log('Lantern counter:', lanternCounter);
       
-      // 平滑隐藏碰撞的灯笼
+      // 平滑隐藏碰撞的灯笼（不使用transform，避免影响位置计算）
       const lantern = lanternRefs.current.get(index);
       if (lantern) {
-        lantern.style.transition = 'all 0.5s ease-out';
+        lantern.style.transition = 'opacity 0.5s ease-out';
         lantern.style.opacity = '0';
-        lantern.style.transform = 'scale(0.5)';
         lantern.style.pointerEvents = 'none';
+        // 注意：不使用transform，避免影响getBoundingClientRect的位置计算
       }
       
       // 检查是否达到彩蛋触发条件
