@@ -1,7 +1,12 @@
-import fs from 'fs';
 import path from 'path';
 import { GalleryImage, ImageSource, ImageCategory } from '../types/gallery';
 import { getAssetPath } from './assetUtils';
+
+// 只在服务器端环境中导入 fs 模块
+let fs: any;
+if (typeof window === 'undefined') {
+  fs = require('fs');
+}
 
 // 支持的图片扩展名
 const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif'];
@@ -39,6 +44,10 @@ const scanImageFiles = (dir: string, baseDir: string): GalleryImage[] => {
   const results: GalleryImage[] = [];
   
   try {
+    if (!fs) {
+      return results;
+    }
+    
     const items = fs.readdirSync(dir);
     
     items.forEach(item => {
@@ -85,6 +94,10 @@ const scanImageFiles = (dir: string, baseDir: string): GalleryImage[] => {
  */
 export const getAllLocalImages = (): GalleryImage[] => {
   try {
+    if (!fs) {
+      return [];
+    }
+    
     const galleryDir = path.join(process.cwd(), 'public', 'gallery');
     
     if (!fs.existsSync(galleryDir)) {

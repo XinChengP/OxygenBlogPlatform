@@ -7,7 +7,7 @@
 
 ### 核心框架
 - **Next.js 16.1.6** - App Router + Turbopack（默认启用），静态导出模式
-- **React 19.0.0** - 函数组件 + Hooks
+- **React 19.2.x** - 函数组件 + Hooks
 - **TypeScript 5.x** - 严格模式，类型安全
 
 ### 样式系统
