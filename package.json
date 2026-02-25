@@ -5,16 +5,17 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/username/blog-platform.git"
+    "url": "https://github.com/XinChengP/OxygenBlogPlatform.git"
   },
   "scripts": {
     "dev": "next dev",
-    "build": "npm run sync-theme && next build",
-    "build:pages": "npm run sync-theme && next build",
+    "build": "npm run sync-theme && npm run generate-gallery && next build",
+    "build:pages": "npm run sync-theme && npm run generate-gallery && next build",
     "start": "next start",
     "serve": "node scripts/serve-static.js",
     "lint": "next lint",
     "sync-theme": "node scripts/sync-theme-colors.js",
+    "generate-gallery": "npx tsx scripts/generate-gallery-data.ts",
     "export": "next build"
   },
   "dependencies": {
@@ -36,10 +37,10 @@
     "gray-matter": "^4.0.3",
     "highlight.js": "^11.11.1",
     "katex": "^0.16.22",
-    "lucide-react": "^0.523.0",
-    "marked": "^12.0.2",
+    "lucide-react": "^0.575.0",
+    "marked": "^17.0.3",
     "motion": "^12.19.1",
-    "next": "15.5.9",
+    "next": "^16.1.6",
     "next-themes": "^0.4.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
@@ -60,17 +61,18 @@
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4.1.18",
     "@types/dompurify": "^3.0.5",
-    "@types/node": "^20",
+    "@types/node": "^20.19.33",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/react-syntax-highlighter": "^15.5.13",
     "@typescript-eslint/eslint-plugin": "^8.35.0",
     "@typescript-eslint/parser": "^8.35.0",
     "compression": "^1.8.1",
-    "eslint": "^9",
+    "eslint": "^9.39.3",
     "express": "^5.2.1",
     "sharp": "^0.34.5",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }

@@ -1,12 +1,12 @@
 # 个人博客 - 洛天依主题 开发规范
 
 ## 项目概述
-以洛天依为主题的个人博客，基于 Next.js 15.5.9 构建，支持 GitHub Pages 静态部署，集成 Live2D 看板娘、音乐播放器、主题切换等特色功能，用于记录技术学习与生活感悟。
+以洛天依为主题的个人博客，基于 Next.js 16.1.6 构建，支持 GitHub Pages 静态部署，集成 Live2D 看板娘、音乐播放器、主题切换等特色功能，用于记录技术学习与生活感悟。
 
 ## 核心技术栈
 
 ### 核心框架
-- **Next.js 15.5.9** - App Router + Turbopack，静态导出模式
+- **Next.js 16.1.6** - App Router + Turbopack（默认启用），静态导出模式
 - **React 19.0.0** - 函数组件 + Hooks
 - **TypeScript 5.x** - 严格模式，类型安全
 
@@ -124,13 +124,14 @@ npm run build        # 生产环境构建
 npm run build:pages  # GitHub Pages构建
 npm run lint         # 代码检查
 npm run sync-theme   # 主题同步
+npm run generate-gallery  # 生成画廊数据
 npm run export       # 静态导出（实际执行 next build）
 npm run serve        # 本地预览构建结果
 ```
 
 ### 构建流程
 1. **开发**: `npm run dev` - 热更新，Turbopack加速
-2. **构建**: `npm run build` 或 `npm run build:pages` - 自动同步主题后执行构建，静态导出，GitHub Pages优化
+2. **构建**: `npm run build` 或 `npm run build:pages` - 自动同步主题、生成画廊数据后执行构建，静态导出，GitHub Pages优化
 3. **预览**: `npm run serve` - 本地预览构建结果
 
 ## 资源管理
@@ -204,6 +205,10 @@ export default function Component({ title, className }: ComponentProps) {
 ### Next.js配置
 ```typescript
 const nextConfig = {
+  reactStrictMode: true,
+  turbopack: {},  // Next.js 16 默认启用 Turbopack
+  
+  // 静态导出配置
   output: "export",
   distDir: 'out',
   trailingSlash: true,
@@ -487,6 +492,7 @@ npm run build            # 生产环境构建
 npm run build:pages      # GitHub Pages 构建
 npm run lint             # 代码质量检查
 npm run sync-theme       # 同步主题配置
+npm run generate-gallery # 生成画廊数据
 
 # 部署
 npm run export           # 静态导出（实际执行 next build）
@@ -514,7 +520,7 @@ OxygenBlogPlatform/
 ```
 
 ### 开发环境要求
-- **Node.js**: 18.x 或更高版本
+- **Node.js**: 20.9+ 或更高版本（Next.js 16 要求）
 - **npm**: 9.x 或更高版本
 - **Git**: 2.x 或更高版本
 
@@ -527,6 +533,6 @@ OxygenBlogPlatform/
 
 ---
 
-*最后更新: 2026年2月25日*  
+*最后更新: 2026年2月26日*  
 *维护者: 歆橙*  
-*版本: v3.4 *
+*版本: v3.5 *
