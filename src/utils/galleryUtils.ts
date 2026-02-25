@@ -50,7 +50,7 @@ const scanImageFiles = (dir: string, baseDir: string): GalleryImage[] => {
     
     const items = fs.readdirSync(dir);
     
-    items.forEach(item => {
+    items.forEach((item: string) => {
       const itemPath = path.join(dir, item);
       const stat = fs.statSync(itemPath);
       

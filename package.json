@@ -9,8 +9,8 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "npm run sync-theme && npm run generate-gallery && next build",
-    "build:pages": "npm run sync-theme && npm run generate-gallery && next build",
+    "build": "npm run sync-theme && next build",
+    "build:pages": "npm run sync-theme && next build",
     "start": "next start",
     "serve": "node scripts/serve-static.js",
     "lint": "next lint",
