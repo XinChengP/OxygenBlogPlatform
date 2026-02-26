@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-// 不使用Google Fonts，改用系统字体栈
-// 系统字体加载更快，减少外部依赖
 import Script from "next/script";
 import "./globals.css";
 import Navigation from "@/components/Navigation";
@@ -12,17 +10,6 @@ import SmoothScrollProvider from "@/components/SmoothScrollProvider";
 import ClientRouterWrapper from "@/components/ClientRouterWrapper";
 import { NavigationVisibilityProvider } from "@/contexts/NavigationVisibilityContext";
 import { webTitle, webDescription } from "@/setting/WebSetting";
-
-// 系统字体配置 - 添加完整的系统字体栈
-const geistSans = {
-  variable: "--font-geist-sans",
-  className: ""
-};
-
-const geistMono = {
-  variable: "--font-geist-mono",
-  className: ""
-};
 
 export const metadata: Metadata = {
   title: webTitle,
@@ -166,7 +153,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased text-foreground transition-colors duration-300`}
+        className="antialiased text-foreground transition-colors duration-300"
         style={{
           colorScheme: 'light dark',
         }}

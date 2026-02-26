@@ -14,9 +14,6 @@ const compat = new FlatCompat({
 const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
-    ignores: ["**/src/components/**/*"],
-  },
-  {
     files: ["**/*.ts", "**/*.tsx"],
     languageOptions: {
       parser: typescriptParser,
@@ -39,6 +36,8 @@ const eslintConfig = [
       "prefer-const": "off",
       // 允许使用 img 标签（禁用 Next.js 的 img 元素警告）
       "@next/next/no-img-element": "off",
+      // 关闭未使用变量警告（暂时保持宽松）
+      "@typescript-eslint/no-unused-vars": "off",
     },
   },
 ];
