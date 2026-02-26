@@ -1,7 +1,30 @@
 /**
  * Live2D消息管理器
  * 用于向洛天依Live2D看板娘发送消息提示
+ * 重构版本：支持配置化消息、优化的显示逻辑和优先级机制
  */
+
+import { 
+  MessageConfig, 
+  getRandomMessage, 
+  MessagePriority, 
+  MessageDuration,
+  WelcomeMessages,
+  InteractionMessages,
+  PageMessages,
+  TimeMessages,
+  ReadingMessages,
+  ThemeMessages,
+  MusicMessages,
+  CopyMessages,
+  MarkdownMessages,
+  GeneralMessages,
+  HolidayMessages,
+  getTimeGreetingConfig,
+  getPageMessageConfig,
+  getHolidayMessageConfig,
+  renderMessageTemplate
+} from '../setting/live2dMessages';
 
 class Live2DMessageManager {
   private static instance: Live2DMessageManager;
@@ -12,7 +35,15 @@ class Live2DMessageManager {
   private lastMessage = '';
   private lastMessageTime = 0;
   private readonly MESSAGE_COOLDOWN = 500; // 消息冷却时间（毫秒）
+  private readonly MIN_MESSAGE_INTERVAL = 800; // 消息间最小间隔（毫秒）
   private currentPriority = 0; // 当前显示消息的优先级
+  
+  // 彩蛋模式状态
+  private isEasterEggMode = false;
+  // 彩蛋消息优先级阈值
+  private readonly EASTER_EGG_PRIORITY = 10;
+  // 烟花模式状态（独立于彩蛋模式，优先级更高）
+  private isFireworksMode = false;
 
   private constructor() {}
 
@@ -31,6 +62,27 @@ class Live2DMessageManager {
    */
   showMessage(message: string, duration: number = 3000, priority: number = 1): void {
     if (typeof window === 'undefined') return;
+
+    // 烟花模式下阻塞所有消息（包括彩蛋消息）
+    if (this.isFireworksMode) {
+      console.log('[Live2D] 烟花模式中，阻塞消息:', message);
+      return;
+    }
+
+    // 彩蛋消息处理（优先级 >= 10）
+    if (priority >= this.EASTER_EGG_PRIORITY) {
+      // 进入彩蛋模式：清除队列、中断当前消息、设置标志
+      this.enterEasterEggMode();
+      // 显示彩蛋消息
+      this.displayMessage(message, duration, priority);
+      return;
+    }
+
+    // 彩蛋模式下屏蔽普通消息
+    if (this.isEasterEggMode) {
+      console.log('[Live2D] 彩蛋模式中，屏蔽普通消息:', message);
+      return;
+    }
 
     // 防止重复消息和消息洪水 - 增强防重复机制
     const now = Date.now();
@@ -141,8 +193,10 @@ class Live2DMessageManager {
       this.currentTimeout = null;
     }
     
-    // 不再直接操作DOM，让React组件自己处理隐藏动画
-    // this.fadeOutMessage();
+    // 如果当前是彩蛋消息，退出彩蛋模式
+    if (this.currentPriority >= this.EASTER_EGG_PRIORITY) {
+      this.exitEasterEggMode();
+    }
     
     // 重置状态
     this.isDisplayingMessage = false;
@@ -150,14 +204,92 @@ class Live2DMessageManager {
   }
 
   /**
+   * 进入彩蛋模式
+   * 1. 清除消息队列
+   * 2. 中断当前消息
+   * 3. 设置彩蛋模式标志
+   */
+  private enterEasterEggMode(): void {
+    // 清除消息队列
+    this.clearMessageQueue();
+    
+    // 中断当前消息
+    this.interruptCurrentMessage();
+    
+    // 进入彩蛋模式
+    this.isEasterEggMode = true;
+    
+    console.log('[Live2D] 进入彩蛋模式');
+  }
+
+  /**
+   * 退出彩蛋模式
+   * 恢复正常的消息处理流程
+   */
+  private exitEasterEggMode(): void {
+    this.isEasterEggMode = false;
+    console.log('[Live2D] 退出彩蛋模式，恢复正常消息处理');
+  }
+
+  /**
+   * 进入烟花模式
+   * 阻塞所有消息（包括彩蛋消息）
+   */
+  enterFireworksMode(): void {
+    // 清除消息队列
+    this.clearMessageQueue();
+    // 中断当前消息
+    this.interruptCurrentMessage();
+    // 进入烟花模式
+    this.isFireworksMode = true;
+    console.log('[Live2D] 进入烟花模式，阻塞所有消息');
+  }
+
+  /**
+   * 退出烟花模式
+   * 恢复正常的消息处理流程
+   */
+  exitFireworksMode(): void {
+    this.isFireworksMode = false;
+    console.log('[Live2D] 退出烟花模式，恢复消息处理');
+  }
+
+  /**
+   * 检查是否处于烟花模式
+   */
+  isInFireworksMode(): boolean {
+    return this.isFireworksMode;
+  }
+
+  /**
+   * 显示烟花消息（仅在烟花模式下使用）
+   * 此方法绕过烟花模式的阻塞，用于显示烟花相关的消息
+   */
+  showFireworksMessage(message: string, duration: number = 5000): void {
+    // 直接显示消息，不经过正常的阻塞检查
+    this.displayMessage(message, duration, 10);
+  }
+
+  /**
    * 消息显示完成后的处理
    */
   private onMessageComplete(): void {
+    // 如果是彩蛋消息结束，退出彩蛋模式
+    if (this.currentPriority >= this.EASTER_EGG_PRIORITY) {
+      this.exitEasterEggMode();
+    }
+
     this.isDisplayingMessage = false;
     this.currentPriority = 0;
     
     // 不再直接操作DOM，让React组件自己处理隐藏动画
     // this.fadeOutMessage();
+    
+    // 烟花模式下不处理队列中的消息
+    if (this.isFireworksMode) {
+      console.log('[Live2D] 烟花模式中，跳过队列消息处理');
+      return;
+    }
     
     // 检查队列中是否有待显示的消息
     if (this.messageQueue.length > 0) {
@@ -248,7 +380,13 @@ class Live2DMessageManager {
       this.currentTimeout = null;
     }
 
+    // 如果当前是彩蛋消息，退出彩蛋模式
+    if (this.currentPriority >= this.EASTER_EGG_PRIORITY) {
+      this.exitEasterEggMode();
+    }
+
     this.isDisplayingMessage = false;
+    this.currentPriority = 0;
 
     // 不再直接操作DOM，让React组件自己处理隐藏动画
     // this.fadeOutMessage();
@@ -277,6 +415,32 @@ class Live2DMessageManager {
   clearMessageQueue(): void {
     this.messageQueue = [];
     console.log('消息队列已清空');
+  }
+
+  /**
+   * 强制重置消息管理器状态
+   * 用于处理异常情况或组件卸载时清理状态
+   */
+  forceReset(): void {
+    // 清除所有定时器
+    if (this.currentTimeout) {
+      clearTimeout(this.currentTimeout);
+      this.currentTimeout = null;
+    }
+    
+    // 退出彩蛋模式
+    if (this.isEasterEggMode) {
+      this.exitEasterEggMode();
+    }
+    
+    // 重置所有状态
+    this.isDisplayingMessage = false;
+    this.currentPriority = 0;
+    this.messageQueue = [];
+    this.lastMessage = '';
+    this.lastMessageTime = 0;
+    
+    console.log('[Live2D] 消息管理器状态已强制重置');
   }
 
   /**
@@ -319,11 +483,13 @@ class Live2DMessageManager {
   /**
    * 获取当前状态信息
    */
-  getStatus(): { isDisplaying: boolean; queueLength: number; lastMessage: string } {
+  getStatus(): { isDisplaying: boolean; queueLength: number; lastMessage: string; isEasterEggMode: boolean; isFireworksMode: boolean } {
     return {
       isDisplaying: this.isDisplayingMessage,
       queueLength: this.messageQueue.length,
-      lastMessage: this.lastMessage
+      lastMessage: this.lastMessage,
+      isEasterEggMode: this.isEasterEggMode,
+      isFireworksMode: this.isFireworksMode
     };
   }
 
@@ -370,7 +536,8 @@ const live2dMessageManager = Live2DMessageManager.getInstance();
 export default live2dMessageManager;
 
 /**
- * 预设的Live2D消息提示
+ * 预设的Live2D消息提示 - 保持向后兼容
+ * 新代码请使用 src/setting/live2dMessages.ts 中的配置
  */
 export const Live2DMessages = {
   // Markdown编辑器相关消息
@@ -406,3 +573,212 @@ export const Live2DMessages = {
     INFO: '天依来告诉你一个小秘密～'
   }
 } as const;
+
+/**
+ * 便捷方法：显示配置化消息
+ */
+export class Live2DMessageHelper {
+  /**
+   * 显示欢迎消息
+   */
+  static showWelcomeMessage(type: 'PAGE_LOAD' | 'WELCOME_BACK' = 'PAGE_LOAD'): void {
+    const config = WelcomeMessages[type];
+    live2dMessageManager.showMessage(
+      getRandomMessage(config),
+      config.duration,
+      config.priority
+    );
+  }
+
+  /**
+   * 显示互动消息
+   */
+  static showInteractionMessage(
+    type: 'TITLE_HOVER' | 'SEARCH_HOVER' | 'NAVIGATION_HOVER' | 'LIVE2D_CLICK',
+    data?: { text?: string }
+  ): void {
+    const config = InteractionMessages[type];
+    const message = getRandomMessage(config);
+    const renderedMessage = renderMessageTemplate(message, data);
+    live2dMessageManager.showMessage(
+      renderedMessage,
+      config.duration,
+      config.priority
+    );
+  }
+
+  /**
+   * 显示页面消息
+   */
+  static showPageMessage(pageType: string): void {
+    const config = getPageMessageConfig(pageType);
+    live2dMessageManager.showMessage(
+      getRandomMessage(config),
+      config.duration,
+      config.priority
+    );
+  }
+
+  /**
+   * 显示时间问候
+   */
+  static showTimeGreeting(hour?: number): void {
+    const h = hour ?? new Date().getHours();
+    const config = getTimeGreetingConfig(h);
+    live2dMessageManager.showMessage(
+      getRandomMessage(config),
+      config.duration,
+      config.priority
+    );
+  }
+
+  /**
+   * 显示阅读进度消息
+   */
+  static showReadingProgress(progress: number): void {
+    let config;
+    if (progress >= 75) {
+      config = ReadingMessages.THREE_QUARTERS;
+    } else if (progress >= 50) {
+      config = ReadingMessages.HALF;
+    } else if (progress >= 25) {
+      config = ReadingMessages.QUARTER;
+    } else {
+      return;
+    }
+    live2dMessageManager.showMessage(
+      getRandomMessage(config),
+      config.duration,
+      config.priority
+    );
+  }
+
+  /**
+   * 显示主题切换消息
+   */
+  static showThemeMessage(theme: 'light' | 'dark' | 'system'): void {
+    const config = ThemeMessages[theme.toUpperCase() as keyof typeof ThemeMessages];
+    if (config) {
+      live2dMessageManager.showMessage(
+        getRandomMessage(config),
+        config.duration,
+        config.priority
+      );
+    }
+  }
+
+  /**
+   * 显示音乐消息
+   */
+  static showMusicMessage(action: 'PLAY' | 'PAUSE'): void {
+    const config = MusicMessages[action];
+    live2dMessageManager.showMessage(
+      getRandomMessage(config),
+      config.duration,
+      config.priority
+    );
+  }
+
+  /**
+   * 显示复制消息
+   */
+  static showCopyMessage(): void {
+    const config = CopyMessages.COPY;
+    live2dMessageManager.showMessage(
+      getRandomMessage(config),
+      config.duration,
+      config.priority
+    );
+  }
+
+  /**
+   * 显示Markdown编辑器消息
+   */
+  static showMarkdownMessage(
+    action: keyof typeof MarkdownMessages
+  ): void {
+    const config = MarkdownMessages[action];
+    if (config) {
+      live2dMessageManager.showMessage(
+        getRandomMessage(config),
+        config.duration,
+        config.priority
+      );
+    }
+  }
+
+  /**
+   * 显示通用消息
+   */
+  static showGeneralMessage(
+    type: 'SUCCESS' | 'ERROR' | 'WARNING' | 'INFO'
+  ): void {
+    const config = GeneralMessages[type];
+    live2dMessageManager.showMessage(
+      getRandomMessage(config),
+      config.duration,
+      config.priority
+    );
+  }
+
+  /**
+   * 显示节日或特殊日期消息
+   * 返回是否显示了节日消息
+   */
+  static showHolidayMessage(month?: number, date?: number): boolean {
+    const now = new Date();
+    const m = month ?? (now.getMonth() + 1);
+    const d = date ?? now.getDate();
+    const config = getHolidayMessageConfig(m, d);
+    
+    if (config) {
+      live2dMessageManager.showMessage(
+        getRandomMessage(config),
+        config.duration,
+        config.priority
+      );
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * 显示页面停留时间消息
+   */
+  static showStayTimeMessage(minutes: number): void {
+    let config;
+    if (minutes >= 30) {
+      config = TimeMessages.STAY_TIME.THIRTY_MINUTES;
+    } else if (minutes >= 15) {
+      config = TimeMessages.STAY_TIME.FIFTEEN_MINUTES;
+    } else if (minutes >= 10) {
+      config = TimeMessages.STAY_TIME.TEN_MINUTES;
+    } else if (minutes >= 5) {
+      config = TimeMessages.STAY_TIME.FIVE_MINUTES;
+    } else {
+      return;
+    }
+    live2dMessageManager.showMessage(
+      getRandomMessage(config),
+      config.duration,
+      config.priority
+    );
+  }
+
+  /**
+   * 智能页面消息：优先显示节日消息，然后是页面消息，最后是时间问候
+   */
+  static showSmartPageMessage(pageType: string): void {
+    // 先尝试显示节日消息
+    if (this.showHolidayMessage()) {
+      return;
+    }
+    
+    // 30%概率显示时间问候，70%概率显示页面消息
+    if (Math.random() < 0.3) {
+      this.showTimeGreeting();
+    } else {
+      this.showPageMessage(pageType);
+    }
+  }
+}

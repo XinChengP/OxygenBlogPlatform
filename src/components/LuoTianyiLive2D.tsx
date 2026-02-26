@@ -3,6 +3,21 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { getAssetPath, getBasePath } from '../utils/assetUtils';
 import { live2dEventEmitter } from '../utils/live2dEventEmitter';
+import live2dMessageManager, { Live2DMessageHelper } from '../utils/live2dMessageManager';
+import { 
+  InteractionMessages, 
+  WelcomeMessages, 
+  getRandomMessage, 
+  renderMessageTemplate 
+} from '../setting/live2dMessages';
+import { 
+  loadScriptWithRetry, 
+  loadWithRetry, 
+  preloadCriticalResources,
+  createProgressTracker,
+  getLoaderStats,
+  checkResourceExists 
+} from '../utils/live2dLoader';
 
 /**
  * 洛天依Live2D看板娘组件
@@ -37,9 +52,15 @@ export default function LuoTianyiLive2D() {
     }, []);
 
     // 消息更新函数 - 必须在其他使用它的函数之前定义
-    const updateMessage = useCallback((newMessage: string, type: 'normal' | 'interaction' = 'normal') => {
+    const updateMessage = useCallback((newMessage: string, type: 'normal' | 'interaction' | 'fireworks' = 'normal') => {
         // 修复：确保newMessage是有效的字符串，避免undefined导致的错误
         if (!newMessage || typeof newMessage !== 'string' || newMessage.trim() === '') {
+            return;
+        }
+        
+        // 烟花模式下不显示消息（除非是烟花消息）
+        if (type !== 'fireworks' && live2dMessageManager.isInFireworksMode()) {
+            console.log('[LuoTianyiLive2D] 烟花模式中，跳过消息显示:', newMessage);
             return;
         }
         
@@ -104,57 +125,66 @@ export default function LuoTianyiLive2D() {
         };
     }, []);
 
-    // 资源预加载函数 - 优化为只加载核心资源
+    // 资源预加载函数 - 使用增强加载器
     const preloadLive2DResources = useCallback(async () => {
         const basePath = getAssetPath('/luotianyi-live2d-master');
-        const resources = [
-            `${basePath}/live2d/js/live2d.js`,
-            `${basePath}/live2d/js/message.js`,
-            `${basePath}/live2d/model/tianyi/model.json`,
-            `${basePath}/live2d/model/tianyi/textures/1.png`
+        
+        // 定义关键资源
+        const criticalResources = [
+            { url: `${basePath}/live2d/js/live2d.js`, type: 'script' as const },
+            { url: `${basePath}/live2d/js/message.js`, type: 'script' as const },
+            { url: `${basePath}/live2d/model/tianyi/model.json`, type: 'json' as const },
         ];
 
-        let loadedCount = 0;
-        
-        const loadResource = (url: string): Promise<void> => {
-            return new Promise((resolve, reject) => {
-                const link = document.createElement('link');
-                link.rel = 'preload';
-                link.as = url.endsWith('.js') ? 'script' : 
-                          url.endsWith('.json') ? 'fetch' : 'image';
-                link.href = url;
-                link.onload = () => {
-                    loadedCount++;
-                    setLoadProgress(Math.round((loadedCount / resources.length) * 100));
-                    resolve();
-                };
-                link.onerror = () => {
-                    console.warn(`[Live2D] 资源预加载失败: ${url}`);
-                    loadedCount++;
-                    setLoadProgress(Math.round((loadedCount / resources.length) * 100));
-                    resolve(); // 继续加载其他资源
-                };
-                document.head.appendChild(link);
-                
-                // 设置超时
-                setTimeout(() => resolve(), 5000);
-            });
-        };
-
-        // 分批加载资源，避免同时加载过多资源
-        const batchSize = 2; // 减少批次大小为2，优化加载体验
-        for (let i = 0; i < resources.length; i += batchSize) {
-            const batch = resources.slice(i, i + batchSize);
-            console.log(`[Live2D] 加载资源批次 ${Math.floor(i/batchSize) + 1}/${Math.ceil(resources.length/batchSize)}`);
-            await Promise.allSettled(batch.map(url => loadResource(url)));
-            
-            // 小延迟，给浏览器喘息时间
-            if (i + batchSize < resources.length) {
-                await new Promise(resolve => setTimeout(resolve, 150)); // 增加延迟到150ms
+        // 创建进度追踪器
+        const progressTracker = createProgressTracker(
+            criticalResources.length,
+            (progress, loaded, failed) => {
+                setLoadProgress(Math.round(progress));
+                console.log(`[Live2D] 加载进度: ${progress.toFixed(1)}% (${loaded}/${criticalResources.length})`);
             }
+        );
+
+        // 并行加载关键资源
+        const loadPromises = criticalResources.map(async ({ url, type }) => {
+            try {
+                if (type === 'script') {
+                    const result = await loadScriptWithRetry(url, { 
+                        retryCount: 3, 
+                        timeout: 30000,
+                        retryDelay: 1000 
+                    });
+                    progressTracker.onItemLoaded(result.success);
+                    return result.success;
+                } else {
+                    const result = await loadWithRetry(url, { 
+                        retryCount: 3, 
+                        cache: true,
+                        timeout: 20000 
+                    });
+                    progressTracker.onItemLoaded(result.success);
+                    return result.success;
+                }
+            } catch {
+                progressTracker.onItemLoaded(false);
+                return false;
+            }
+        });
+
+        const results = await Promise.all(loadPromises);
+        const successCount = results.filter(r => r).length;
+        
+        console.log(`[Live2D] 资源预加载完成: ${successCount}/${criticalResources.length}`);
+        
+        // 如果关键资源加载失败，记录错误
+        if (successCount < criticalResources.length) {
+            const failedResources = criticalResources
+                .filter((_, index) => !results[index])
+                .map(r => r.url);
+            console.error('[Live2D] 以下资源加载失败:', failedResources);
         }
         
-        console.log(`[Live2D] 资源预加载完成: ${loadedCount}/${resources.length}`);
+        return successCount === criticalResources.length;
     }, []);
 
     // 自动淡出功能 - 已移至前面定义，避免循环依赖
@@ -190,108 +220,21 @@ export default function LuoTianyiLive2D() {
         return { page: pageType, path };
     }, []);
 
-    // 智能页面感知提示
+    // 智能页面感知提示（使用新的消息配置系统）
     const showSmartPageMessage = useCallback(() => {
-        const { page, path } = getCurrentPageInfo();
-        const now = new Date();
-        const hour = now.getHours();
-        
-        const pageMessages = {
-            '关于页面': [
-                '想了解博主更多信息吗？这里有很多有趣的故事哦～',
-                '关于页面能让我们更好地了解博主的背景和兴趣～',
-                '每个博主的关于页面都很有特色呢！'
-            ],
-            '归档页面': [
-                '这里记录了博主的所有创作历程呢～',
-                '归档页面就像时间胶囊，记录着点点滴滴～',
-                '可以按时间顺序回顾博主的成长轨迹哦！'
-            ],
-            '留言板': [
-                '留言板是和大家交流的好地方，有什么想说的吗？',
-                '这里可以留下你的想法和建议，博主会很开心的～',
-                '天依也喜欢热闹的留言板呢！'
-            ],
-            '博客文章': [
-                '开始阅读新文章了呢，天依陪你一起～',
-                '这篇文章看起来很有意思，期待你的感想～',
-                '博主的文笔真不错，天依也学到了很多呢～'
-            ],
-            '工具页面': [
-                '工具页面有很多实用的功能哦，试试看吧～',
-                '这里的小工具会让你的体验更加便利呢！',
-                '天依也觉得这些工具很实用呢～'
-            ],
-            '设置页面': [
-                '想要个性化你的浏览体验吗？这里可以调整各种设置哦～',
-                '设置页面让你可以按照自己的喜好来定制界面～',
-                '天依也喜欢个性化的设置呢！'
-            ],
-            '其他页面': [
-                '欢迎来到这个页面！天依在这里等你哦～',
-                '这是一个特别的页面呢，有什么新发现吗？',
-                '天依会在这里陪伴你浏览每一个页面～'
-            ]
-        };
-        
-        // 时间相关的问候
-        let timeGreeting = '';
-        if (hour < 6) {
-            timeGreeting = '夜深了，注意休息哦～';
-        } else if (hour < 12) {
-            timeGreeting = '早上好！今天也要充满活力哦～';
-        } else if (hour < 18) {
-            timeGreeting = '下午好！午后的阳光很适合阅读呢～';
-        } else {
-            timeGreeting = '晚上好！天依陪你度过美好的夜晚～';
-        }
-        
-        const messages = pageMessages[page as keyof typeof pageMessages] || pageMessages['其他页面'];
-        const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-        
-        // 30%概率显示时间问候，70%概率显示页面相关消息
-        const finalMessage = Math.random() < 0.3 ? timeGreeting : randomMessage;
-        
-        updateMessage(finalMessage);
-    }, [getCurrentPageInfo, updateMessage]);
+        const { page } = getCurrentPageInfo();
+        // 使用新的智能消息助手
+        Live2DMessageHelper.showSmartPageMessage(page);
+    }, [getCurrentPageInfo]);
 
-    // 页面停留时间提示
+    // 页面停留时间提示（使用新的消息系统）
     const checkPageStayTime = useCallback(() => {
         const stayTime = Date.now() - pageStartTime;
         const stayMinutes = Math.floor(stayTime / 60000);
-        
-        if (stayMinutes >= 5 && stayMinutes < 6) {
-            const message = '你已经在这里停留了5分钟呢，天依很开心能陪伴你～';
-            if (typeof window !== 'undefined' && (window as any).live2dMessageManager) {
-                (window as any).live2dMessageManager.showMessage(message, 3000, 1);
-            } else {
-                updateMessage(message);
-            }
-        } else if (stayMinutes >= 10 && stayMinutes < 11) {
-            const message = '10分钟了！看来你对这个内容很感兴趣呢～';
-            if (typeof window !== 'undefined' && (window as any).live2dMessageManager) {
-                (window as any).live2dMessageManager.showMessage(message, 3000, 1);
-            } else {
-                updateMessage(message);
-            }
-        } else if (stayMinutes >= 15 && stayMinutes < 16) {
-            const message = '15分钟了！天依很享受这段共处的时光～';
-            if (typeof window !== 'undefined' && (window as any).live2dMessageManager) {
-                (window as any).live2dMessageManager.showMessage(message, 3000, 1);
-            } else {
-                updateMessage(message);
-            }
-        } else if (stayMinutes >= 30 && stayMinutes < 31) {
-            const message = '半小时了！长时间阅读要注意休息眼睛哦～';
-            if (typeof window !== 'undefined' && (window as any).live2dMessageManager) {
-                (window as any).live2dMessageManager.showMessage(message, 3000, 1);
-            } else {
-                updateMessage(message);
-            }
-        }
-    }, [pageStartTime, updateMessage]);
+        Live2DMessageHelper.showStayTimeMessage(stayMinutes);
+    }, [pageStartTime]);
 
-    // 阅读进度检测
+    // 阅读进度检测（使用新的消息系统）
     const detectReadingProgress = useCallback(() => {
         if (typeof window === 'undefined') return;
         
@@ -300,16 +243,8 @@ export default function LuoTianyiLive2D() {
         const progress = Math.min((scrollTop / scrollHeight) * 100, 100);
         
         setReadingProgress(progress);
-        
-        // 根据阅读进度给出提示
-        if (progress >= 25 && progress < 30) {
-            updateMessage('已经阅读了四分之一了呢，继续加油哦～');
-        } else if (progress >= 50 && progress < 55) {
-            updateMessage('一半了！这篇文章很吸引人吧？');
-        } else if (progress >= 75 && progress < 80) {
-            updateMessage('快要读完了呢，有什么感想吗？');
-        }
-    }, [updateMessage]);
+        Live2DMessageHelper.showReadingProgress(progress);
+    }, []);
 
     // 组件加载确认
     useEffect(() => {
@@ -322,19 +257,6 @@ export default function LuoTianyiLive2D() {
             setTimeout(() => {
                 showSmartPageMessage();
             }, 3000); // 从1.5秒增加到3秒
-            
-            // 延迟显示功能提示 - 进一步延迟，减少初始消息数量
-            setTimeout(() => {
-                // 只在没有显示过其他消息的情况下才显示
-                if (typeof window !== 'undefined' && (window as any).live2dMessageManager) {
-                    const status = (window as any).live2dMessageManager.getStatus();
-                    if (status.queueLength === 0 && !status.isDisplaying) {
-                        (window as any).live2dMessageManager.showMessage('今天也是元气满满的一天呢！', 3000, 1);
-                    }
-                } else {
-                    updateMessage('今天也是元气满满的一天呢！');
-                }
-            }, 8000); // 从3秒增加到8秒
         }
     }, [updateMessage, showSmartPageMessage]);
 
@@ -343,7 +265,7 @@ export default function LuoTianyiLive2D() {
         setMessage(prev => prev);
     }, []);
 
-    // 处理主题切换事件
+    // 处理主题切换事件（使用新的消息系统）
     const handleThemeChange = useCallback((event: any) => {
         console.log(`[LuoTianyiLive2D] 收到主题切换事件:`, event);
         console.log(`[LuoTianyiLive2D] 事件数据:`, event.data);
@@ -353,12 +275,12 @@ export default function LuoTianyiLive2D() {
             return;
         }
         
-        const { newTheme, previousTheme, isDark, isLight } = event.data;
+        const { newTheme, previousTheme } = event.data;
         
         // 添加防抖机制，避免短时间内重复触发
         const now = Date.now();
         const lastThemeChangeTime = (window as any).__lastThemeChangeTime || 0;
-        if (now - lastThemeChangeTime < 1000) { // 1秒内不重复处理
+        if (now - lastThemeChangeTime < 1000) {
             console.log(`[LuoTianyiLive2D] 主题切换被防抖过滤: ${previousTheme} -> ${newTheme}`);
             return;
         }
@@ -366,43 +288,13 @@ export default function LuoTianyiLive2D() {
         
         console.log(`[LuoTianyiLive2D] 新主题: ${newTheme}, 旧主题: ${previousTheme}`);
         
-        const themeMessages = {
-            light: [
-                '切换到亮色模式了！眼睛会舒服一些～',
-                '哇，好明亮啊！像阳光一样温暖☀️',
-                '亮色模式开启！今天也是元气满满的一天！',
-                '切换到亮色主题了，很适合白天使用呢～'
-            ],
-            dark: [
-                '切换到深色模式了！夜晚模式启动🌙',
-                '哇，好酷的黑色！像夜空一样神秘✨',
-                '深色模式开启！保护眼睛，从我做起～',
-                '切换到深色主题了，很适合夜晚浏览哦～'
-            ],
-            system: [
-                 '跟随系统主题了！智能切换，贴心～',
-                '系统主题模式！让设备来决定吧～',
-                '跟随系统设置，这样最自然了！'
-            ]
-        };
-
-        const messages = themeMessages[newTheme as keyof typeof themeMessages] || themeMessages.system;
-        const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-        
-        console.log(`[LuoTianyiLive2D] 选择消息: ${randomMessage}`);
-        console.log(`[LuoTianyiLive2D] 当前消息状态:`, { message, messageOpacity });
-        
-        // 强制显示主题消息，绕过所有过滤
-        console.log(`[LuoTianyiLive2D] 强制显示主题消息`);
-        setMessage(randomMessage);
-        setMessageOpacity(1);
-        lastMessageTimeRef.current = Date.now();
-        triggerFadeOut();
+        // 使用新的消息系统显示主题消息
+        Live2DMessageHelper.showThemeMessage(newTheme as 'light' | 'dark' | 'system');
         
         forceUpdate();
         
         console.log(`[LuoTianyiLive2D] 主题切换完成: ${previousTheme} -> ${newTheme}`);
-    }, [updateMessage, forceUpdate, triggerFadeOut, message, messageOpacity]);
+    }, [forceUpdate]);
 
     // 清理定时器
     useEffect(() => {
@@ -452,7 +344,7 @@ export default function LuoTianyiLive2D() {
         return () => window.removeEventListener('scroll', handleScroll);
     }, [detectReadingProgress]);
 
-    // 页面可见性变化检测
+    // 页面可见性变化检测（使用新的消息系统）
     useEffect(() => {
         const handleVisibilityChange = () => {
             if (document.hidden) {
@@ -464,15 +356,7 @@ export default function LuoTianyiLive2D() {
                 const hiddenTime = (window as any).__pageHiddenTime;
                 if (hiddenTime && (Date.now() - hiddenTime) > 30000) {
                     // 如果隐藏时间超过30秒，显示欢迎回来消息
-                    const welcomeBackMessages = [
-                        '你回来啦！天依一直在这里等你～',
-                        '欢迎回来！继续刚才的阅读吧～',
-                        '天依没有离开过哦～',
-                        '页面重新可见了呢，太好了！',
-                        '天依想念你了～'
-                    ];
-                    const randomMessage = welcomeBackMessages[Math.floor(Math.random() * welcomeBackMessages.length)];
-                    updateMessage(randomMessage);
+                    Live2DMessageHelper.showWelcomeMessage('WELCOME_BACK');
                 }
             }
         };
@@ -481,9 +365,9 @@ export default function LuoTianyiLive2D() {
             document.addEventListener('visibilitychange', handleVisibilityChange);
             return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
         }
-    }, [updateMessage]);
+    }, []);
 
-    // 复制内容检测 - 优化版本
+    // 复制内容检测（使用新的消息系统）
     useEffect(() => {
         const handleCopy = (event: ClipboardEvent) => {
             // 添加处理标记，避免与原生 message.js 冲突
@@ -506,17 +390,9 @@ export default function LuoTianyiLive2D() {
                 });
                 
                 if (copiedContent.length > 10) {
-                    const copyMessages = [
-                        '复制了什么有趣的内容呢？',
-                        '天依看到你在复制内容哦～',
-                        '记得注明出处哦，尊重原创很重要！',
-                        '复制的知识要好好利用呢～',
-                        '天依也学到了新知识！'
-                    ];
-                    const randomMessage = copyMessages[Math.floor(Math.random() * copyMessages.length)];
-                    // 使用较高优先级(5)确保复制消息能正常显示，并标记为交互类型
-                    updateMessage(randomMessage, 'interaction');
-                    console.log('React显示复制消息:', randomMessage);
+                    // 使用新的消息系统显示复制消息
+                    Live2DMessageHelper.showCopyMessage();
+                    console.log('React显示复制消息');
                 }
                 
                 // 清理标记
@@ -533,139 +409,29 @@ export default function LuoTianyiLive2D() {
             document.addEventListener('copy', handleCopy, true);
             return () => document.removeEventListener('copy', handleCopy, true);
         }
-    }, [updateMessage]);
-
-    // 节日和特殊日期检测
-    useEffect(() => {
-        const checkSpecialDate = () => {
-            const now = new Date();
-            const month = now.getMonth() + 1;
-            const date = now.getDate();
-            const dayOfWeek = now.getDay();
-            const hours = now.getHours();
-
-            // 节日消息
-            const holidayMessages: { [key: string]: string[] } = {
-                '1-1': ['新年快乐！天依祝你新的一年顺顺利利～', '新年的第一天，要开心哦！'],
-                '2-14': ['情人节快乐！天依给你送爱心～', '今天是个充满爱的日子呢～'],
-                '4-1': ['愚人节快乐！天依才不会骗你呢～', '今天要小心恶作剧哦～'],
-                '5-1': ['劳动节快乐！天依也要努力唱歌～', '辛苦了，今天好好休息吧～'],
-                '6-1': ['儿童节快乐！天依也要过儿童节～', '今天要做个快乐的小朋友～'],
-                '7-7': ['七夕节快乐！牛郎织女今天相会呢～', '中国的情人节，真浪漫～'],
-                '8-15': ['中秋节快乐！天依想吃月饼～', '月圆人团圆，真美好呢～'],
-                '10-1': ['国庆节快乐！天依为祖国歌唱～', '祖国生日快乐！'],
-                '12-25': ['圣诞节快乐！天依给你送礼物～', '圣诞老人有没有给你送礼物呢？'],
-                '12-31': ['一年又要结束了呢～', '跨年夜，天依陪你一起度过～']
-            };
-
-            // 特殊日期
-            const specialDates: { [key: string]: string[] } = {
-                '7-12': ['天依的生日！今天是我的生日～', '今天天依生日，要开心哦～'],
-            };
-
-            // 时间相关的问候
-            const timeGreetings: { [key: string]: string[] } = {
-                'morning': ['早上好！新的一天要加油哦～', '早安！今天也要元气满满～'],
-                'noon': ['中午好！记得吃午饭哦～', '中午了，休息一下眼睛吧～'],
-                'afternoon': ['下午好！天依陪你度过午后时光～', '下午茶时间，来杯咖啡吧～'],
-                'evening': ['晚上好！天依陪你度过美好夜晚～', '夜晚降临，天依的歌声陪伴你～'],
-                'night': ['夜深了，早点休息哦～', '晚安！做个好梦，天依在梦里等你～']
-            };
-
-            // 星期相关的问候
-            const weekGreetings: { [key: string]: string[] } = {
-                '0': ['周日快乐！明天又是新的一周～', '周末的最后一天，好好休息吧～'],
-                '1': ['周一快乐！新的一周要加油哦～', '星期一，新的开始～'],
-                '5': ['周五快乐！明天就是周末了～', '辛苦一周了，明天可以好好休息～'],
-                '6': ['周六快乐！周末要好好放松～', '周末时光，天依陪你一起度过～']
-            };
-
-            // 通用基础问候
-            const basicGreetings: string[] = [
-                '你好～我是洛天依！',
-                '天依在这里等你哦～',
-                '今天天气真好呢～',
-                '天依今天也很开心！',
-                '有什么想聊的吗？'
-            ];
-
-            // 收集所有可能的问候
-            const availableGreetings: string[] = [];
-
-            // 检查节日
-            const holidayKey = `${month}-${date}`;
-            if (holidayMessages[holidayKey]) {
-                availableGreetings.push(...holidayMessages[holidayKey]);
-            }
-
-            // 检查特殊日期（天依相关）
-            const specialKey = `${month}-${date}`;
-            if (specialDates[specialKey]) {
-                availableGreetings.push(...specialDates[specialKey]);
-            }
-
-            // 检查星期
-            if (weekGreetings[dayOfWeek.toString()]) {
-                availableGreetings.push(...weekGreetings[dayOfWeek.toString()]);
-            }
-
-            // 检查时间问候
-            let timeKey = '';
-            if (hours >= 6 && hours < 12) {
-                timeKey = 'morning';
-            } else if (hours >= 12 && hours < 14) {
-                timeKey = 'noon';
-            } else if (hours >= 14 && hours < 18) {
-                timeKey = 'afternoon';
-            } else if (hours >= 18 && hours < 22) {
-                timeKey = 'evening';
-            } else {
-                timeKey = 'night';
-            }
-
-            if (timeGreetings[timeKey]) {
-                availableGreetings.push(...timeGreetings[timeKey]);
-            }
-
-            // 添加通用基础问候
-            availableGreetings.push(...basicGreetings);
-
-            // 随机选择一个问候显示
-            if (availableGreetings.length > 0) {
-                const randomIndex = Math.floor(Math.random() * availableGreetings.length);
-                const randomMessage = availableGreetings[randomIndex];
-                updateMessage(randomMessage);
-            }
-        };
-
-        // 恢复节日问候，但添加延迟，避免与其他初始消息冲突
-        setTimeout(() => {
-            checkSpecialDate();
-        }, 10000); // 10秒后检查，确保在其他初始消息之后显示
-
-        // 每小时检查一次（用于时间问候）
-        const interval = setInterval(checkSpecialDate, 3600000);
-
-        return () => clearInterval(interval);
-    }, [updateMessage]);
+    }, []);
 
     const loadLive2D = useCallback(async () => {
         console.log('[LuoTianyiLive2D] 开始加载Live2D资源...');
+        const startTime = performance.now();
+        
         try {
             // 第一步：预加载资源
             console.log('[LuoTianyiLive2D] 📦 开始预加载资源...');
-            await preloadLive2DResources();
+            const preloadSuccess = await preloadLive2DResources();
+            
+            if (!preloadSuccess) {
+                console.warn('[LuoTianyiLive2D] 部分资源预加载失败，尝试继续加载...');
+            }
 
             // 使用工具函数获取基础路径，确保在GitHub Pages环境下正确加载
             const basePath = getBasePath();
             
             // 设置全局变量供message.js使用 - 必须在脚本加载之前设置
             if (typeof window !== 'undefined') {
-                // 使用assetUtils中的getAssetPath函数处理路径
                 (window as any).message_Path = getAssetPath('/luotianyi-live2d-master/live2d/');
                 (window as any).home_Path = window.location.origin;
                 
-                // 调试路径信息
                 console.log('[LuoTianyiLive2D] 路径调试信息:', {
                     basePath: basePath,
                     message_Path: getAssetPath('/luotianyi-live2d-master/live2d/'),
@@ -674,11 +440,9 @@ export default function LuoTianyiLive2D() {
                 });
             }
             
-            // 移除jQuery依赖，使用原生JavaScript实现所有功能
-
             // 使用assetUtils中的getAssetPath函数处理路径
             const live2dPath = getAssetPath('/luotianyi-live2d-master/live2d');
-            const messagePath = live2dPath; // 消息文件与live2d核心文件在同一目录
+            const messagePath = live2dPath;
             
             console.log('[LuoTianyiLive2D] 构建的脚本路径:', {
                 live2dPath: live2dPath,
@@ -687,66 +451,136 @@ export default function LuoTianyiLive2D() {
                 expectedMessageJs: `${messagePath}/js/message.js`
             });
             
+            // 检查关键资源是否存在
+            const live2dJsUrl = `${live2dPath}/js/live2d.js`;
+            const messageJsUrl = `${messagePath}/js/message.js`;
+            
+            const [live2dExists, messageExists] = await Promise.all([
+                checkResourceExists(live2dJsUrl),
+                checkResourceExists(messageJsUrl)
+            ]);
+            
+            if (!live2dExists) {
+                throw new Error(`核心脚本不存在: ${live2dJsUrl}`);
+            }
+            
             console.log('[LuoTianyiLive2D] 开始加载Live2D脚本...');
             
-            // 串行加载核心脚本，确保依赖顺序
-            const loadCoreScripts = async () => {
-                const scripts = [
-                    `${live2dPath}/js/live2d.js`,
-                    `${messagePath}/js/message.js`
-                ];
-                
-                console.log('[LuoTianyiLive2D] 串行加载核心脚本...');
-                // 先加载live2d.js，再加载message.js，确保依赖正确
-                for (const script of scripts) {
-                    try {
-                        await loadScript(script);
-                        console.log(`[LuoTianyiLive2D] 脚本加载完成: ${script}`);
-                    } catch (error) {
-                        console.error(`[LuoTianyiLive2D] 脚本加载失败: ${script}`, error);
-                        throw error;
-                    }
-                }
-                console.log('[LuoTianyiLive2D] 核心脚本加载完成');
-            };
+            // 并行加载核心脚本（因为它们之间没有依赖关系）
+            const [live2dResult, messageResult] = await Promise.all([
+                loadScriptWithRetry(live2dJsUrl, { 
+                    retryCount: 3, 
+                    timeout: 30000,
+                    retryDelay: 1000 
+                }),
+                loadScriptWithRetry(messageJsUrl, { 
+                    retryCount: 3, 
+                    timeout: 30000,
+                    retryDelay: 1000 
+                })
+            ]);
             
-            await loadCoreScripts();
+            if (!live2dResult.success) {
+                throw new Error(`Live2D核心脚本加载失败: ${live2dResult.error?.message}`);
+            }
+            
+            if (!messageResult.success) {
+                console.warn('[LuoTianyiLive2D] 消息脚本加载失败，继续加载模型...');
+            }
+            
+            console.log('[LuoTianyiLive2D] 核心脚本加载完成');
 
-            // 等待DOM准备，使用更短的延迟
-            setTimeout(() => {
-                if (canvasRef.current && window.loadlive2d) {
-                    // 使用assetUtils中的getAssetPath函数处理模型文件路径
-                    const modelPath = getAssetPath('/luotianyi-live2d-master/live2d/model/tianyi/model.json');
-                    console.log('[LuoTianyiLive2D] 开始加载模型:', modelPath);
+            // 等待DOM准备
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            if (!canvasRef.current) {
+                throw new Error('Canvas元素未找到');
+            }
+            
+            if (!window.loadlive2d) {
+                throw new Error('Live2D库未正确加载');
+            }
+            
+            // 加载模型
+            const modelPath = getAssetPath('/luotianyi-live2d-master/live2d/model/tianyi/model.json');
+            console.log('[LuoTianyiLive2D] 开始加载模型:', modelPath);
+            
+            // 先检查模型文件是否存在
+            const modelExists = await checkResourceExists(modelPath);
+            if (!modelExists) {
+                throw new Error(`模型文件不存在: ${modelPath}`);
+            }
+            
+            // 加载模型（带超时）
+            const modelLoadPromise = new Promise<void>((resolve, reject) => {
+                const timeoutId = setTimeout(() => {
+                    reject(new Error('模型加载超时'));
+                }, 30000);
+                
+                try {
+                    (window as any).loadlive2d("live2d", modelPath);
                     
-                    try {
-                        (window as any).loadlive2d("live2d", modelPath);
-                        console.log('[LuoTianyiLive2D] 模型加载成功');
-                        
-                        // 设置消息显示
-                        setupMessageSystem(basePath);
-                        
-                        // 延迟隐藏加载状态，确保模型完全渲染
-                        setTimeout(() => {
-                            setIsLoading(false);
-                            console.log('[LuoTianyiLive2D] Live2D加载完成');
-                        }, 800);
-                    } catch (error) {
-                        console.error('[LuoTianyiLive2D] 模型加载失败:', error);
-                        setIsLoading(false);
-                    }
-                } else {
-                    console.warn('[LuoTianyiLive2D] 模型加载条件不满足:', { 
-                        hasCanvas: !!canvasRef.current, 
-                        hasLoadLive2d: !!window.loadlive2d 
-                    });
-                    setIsLoading(false);
+                    // 检查模型是否成功加载
+                    const checkInterval = setInterval(() => {
+                        // 如果Live2D对象存在，说明加载成功
+                        if ((window as any).Live2D) {
+                            clearInterval(checkInterval);
+                            clearTimeout(timeoutId);
+                            resolve();
+                        }
+                    }, 100);
+                    
+                    // 5秒后如果还没检测到，也认为是成功的
+                    setTimeout(() => {
+                        clearInterval(checkInterval);
+                        clearTimeout(timeoutId);
+                        resolve();
+                    }, 5000);
+                    
+                } catch (error) {
+                    clearTimeout(timeoutId);
+                    reject(error);
                 }
-            }, 300); // 进一步减少等待时间到300ms
+            });
+            
+            await modelLoadPromise;
+            
+            console.log('[LuoTianyiLive2D] 模型加载成功');
+            
+            // 设置消息显示
+            setupMessageSystem(basePath);
+            
+            // 延迟隐藏加载状态，确保模型完全渲染
+            setTimeout(() => {
+                setIsLoading(false);
+                const totalTime = performance.now() - startTime;
+                console.log(`[LuoTianyiLive2D] Live2D加载完成，总耗时: ${totalTime.toFixed(2)}ms`);
+                
+                // 输出加载统计
+                const stats = getLoaderStats();
+                console.log('[LuoTianyiLive2D] 加载统计:', stats);
+            }, 800);
 
         } catch (error) {
             console.error('[LuoTianyiLive2D] 加载Live2D失败:', error);
-            setIsLoading(false);
+            
+            // 显示友好的错误消息
+            setMessage('天依加载失败了，刷新页面试试～');
+            setMessageOpacity(1);
+            
+            // 延迟隐藏加载状态
+            setTimeout(() => {
+                setIsLoading(false);
+            }, 2000);
+            
+            // 输出详细的错误信息
+            if (error instanceof Error) {
+                console.error('[LuoTianyiLive2D] 错误详情:', {
+                    message: error.message,
+                    stack: error.stack,
+                    name: error.name
+                });
+            }
         }
     }, [preloadLive2DResources]);
 
@@ -847,32 +681,16 @@ export default function LuoTianyiLive2D() {
         });
         console.log(`[LuoTianyiLive2D] 自定义消息事件订阅成功`);
 
-        // 监听音乐播放事件
+        // 监听音乐播放事件（使用新的消息系统）
         console.log(`[LuoTianyiLive2D] 订阅音乐播放事件`);
         const unsubscribeMusicPlay = live2dEventEmitter.on('music-play', (event: any) => {
             console.log(`[LuoTianyiLive2D] 收到音乐播放事件:`, event);
-            const musicMessages = [
-                '天依给你唱首歌~',
-                '要听天依唱歌吗？',
-                '天依来为你唱首歌！',
-                '听歌时间到了~',
-                '让天依为你唱首歌吧！',
-                '天依要唱歌给你听~'
-            ];
-            const randomMessage = musicMessages[Math.floor(Math.random() * musicMessages.length)];
-            updateMessage(randomMessage);
+            Live2DMessageHelper.showMusicMessage('PLAY');
         });
 
         const unsubscribeMusicPause = live2dEventEmitter.on('music-pause', (event: any) => {
             console.log(`[LuoTianyiLive2D] 收到音乐暂停事件:`, event);
-            const pauseMessages = [
-                '歌曲暂停了~',
-                '休息一下吧！',
-                '天依也休息一下~',
-                '暂停一会儿~'
-            ];
-            const randomMessage = pauseMessages[Math.floor(Math.random() * pauseMessages.length)];
-            updateMessage(randomMessage);
+            Live2DMessageHelper.showMusicMessage('PAUSE');
         });
         console.log(`[LuoTianyiLive2D] 音乐播放事件订阅成功`);
         
@@ -950,7 +768,10 @@ export default function LuoTianyiLive2D() {
             // 调用updateMessage显示消息
             // 确保只传递有效的字符串，避免undefined
             if (msg && typeof msg === 'string' && msg.trim() !== '') {
-                updateMessage(msg);
+                // 检查是否在烟花模式下，如果是，传递'fireworks'类型
+                const isFireworksMode = live2dMessageManager.isInFireworksMode();
+                const messageType = isFireworksMode ? 'fireworks' : 'normal';
+                updateMessage(msg, messageType);
             }
             
             // 重置live2dMessageManager的显示状态，确保后续消息能正常显示
@@ -963,35 +784,26 @@ export default function LuoTianyiLive2D() {
             }
         };
 
+        // 使用新的消息配置系统
         const messageConfig = {
             mouseover: [
                 {
                     selector: ".title a, h1, h2, h3",
-                    text: ["要看看 {text} 么？", "这是什么呢？好有趣的样子～", "想要了解更多吗？"]
+                    text: InteractionMessages.TITLE_HOVER.messages
                 },
                 {
                     selector: ".searchbox, input[type='search']",
-                    text: ["在找什么东西呢，需要帮忙吗？", "搜索很重要哦，我来帮你～", "找不到想要的内容吗？"]
+                    text: InteractionMessages.SEARCH_HOVER.messages
                 },
                 {
                     selector: "nav a, .nav-link, .navigation a, header a, .navbar a, .menu-item a",
-                    text: ["这里好像有很好玩的内容！", "要去看其他地方吗？", "导航很重要呢～"]
+                    text: InteractionMessages.NAVIGATION_HOVER.messages
                 }
             ],
             click: [
                 {
                     selector: "#landlord #live2d",
-                    text: [
-                        "想听我唱歌吗？", 
-                        "不要动手动脚的！快把手拿开~~", 
-                        "真…真的是不知羞耻！", 
-                        "再摸的话我可要报警了！⌇●﹏●⌇", 
-                        "110吗，这里有个变态一直在摸我(ó﹏ò｡)",
-                        "呀！你摸到我了！",
-                        "害羞ing...",
-                        "天依很萌的！",
-                        "你要请我吃小笼包吗qwq"
-                    ]
+                    text: InteractionMessages.LIVE2D_CLICK.messages
                 }
             ]
         };
@@ -1015,6 +827,11 @@ export default function LuoTianyiLive2D() {
             messageConfig.mouseover.forEach((tips: any) => {
                 // 使用事件委托实现
                 document.addEventListener('mouseover', (e: Event) => {
+                    // 检查是否处于烟花模式，如果是则跳过
+                    if (live2dMessageManager.isInFireworksMode()) {
+                        return;
+                    }
+                    
                     const target = e.target as HTMLElement;
                     if (target.matches(tips.selector)) {
                         e.stopPropagation();
@@ -1048,6 +865,11 @@ export default function LuoTianyiLive2D() {
             messageConfig.click.forEach((tips: any) => {
                 // 使用事件委托实现
                 document.addEventListener('click', (e: Event) => {
+                    // 检查是否处于烟花模式，如果是则跳过
+                    if (live2dMessageManager.isInFireworksMode()) {
+                        return;
+                    }
+                    
                     const target = e.target as HTMLElement;
                     if (target.matches(tips.selector)) {
                         e.stopPropagation();

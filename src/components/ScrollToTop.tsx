@@ -389,6 +389,9 @@ export default function ScrollToTop() {
   const startFireworks = () => {
     if (isFireworksRunning) return;
 
+    // 进入烟花模式（阻塞所有消息）
+    live2dMessageManager.enterFireworksMode();
+
     initCanvas();
     isFireworksRunning = true;
 
@@ -398,10 +401,9 @@ export default function ScrollToTop() {
       '好美的烟花啊！',
     ];
 
-    // 随机选择一条消息
+    // 随机选择一条消息（使用 showFireworksMessage 绕过阻塞）
     const randomMessage = fireworkMessages[Math.floor(Math.random() * fireworkMessages.length)];
-    // 触发live2d消息
-    live2dMessageManager.showMessage(randomMessage, 5000, 10);
+    live2dMessageManager.showFireworksMessage(randomMessage, 5000);
 
     // 重置齐射计数
     volleyCount = 0;
@@ -514,6 +516,9 @@ export default function ScrollToTop() {
   // 停止烟花
   const stopFireworks = () => {
     isFireworksRunning = false;
+
+    // 退出烟花模式（恢复消息处理）
+    live2dMessageManager.exitFireworksMode();
 
     if (animationId) {
       cancelAnimationFrame(animationId);

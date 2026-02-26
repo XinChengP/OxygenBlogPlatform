@@ -89,27 +89,32 @@ export default function TimeProgressWidget() {
     icon: string; 
     color: string; 
   }) => (
-    <div className="mb-4">
+    <div className="mb-6 group">
       {/* 标签和百分比显示 */}
-      <div className="flex justify-between items-center mb-1.5">
-        <div className="flex items-center gap-2">
-          <span className="text-lg">{icon}</span>
-          <span className="text-sm font-medium text-foreground">{label}</span>
+      <div className="flex justify-between items-center mb-2">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-full flex items-center justify-center bg-muted text-foreground group-hover:bg-primary/20 transition-all duration-300">
+            <span className="text-lg">{icon}</span>
+          </div>
+          <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors duration-300">{label}</span>
         </div>
-        <span className="text-sm font-semibold text-primary">{progress.toFixed(2)}%</span>
+        <span className="text-sm font-semibold text-primary group-hover:scale-105 transition-transform duration-300">{progress.toFixed(2)}%</span>
       </div>
       
       {/* 进度条背景 */}
-      <div className="h-2.5 w-full bg-muted rounded-full overflow-hidden">
+      <div className="h-3 w-full bg-muted/60 rounded-full overflow-hidden shadow-inner">
         {/* 进度条填充 */}
         <motion.div
-          className="h-full rounded-full"
-          style={{ backgroundColor: color }}
-          initial={isInitialLoaded ? false : { width: 0 }}
-          animate={{ width: `${progress}%` }}
+          className="h-full rounded-full shadow-sm"
+          style={{ 
+            backgroundColor: color,
+            boxShadow: `0 0 8px ${color}33`
+          }}
+          initial={isInitialLoaded ? false : { width: 0, opacity: 0 }}
+          animate={{ width: `${progress}%`, opacity: 1 }}
           transition={isInitialLoaded ? 
             { duration: 0.3, ease: 'linear' } : // 后续更新时使用平滑过渡
-            { duration: 0.8, ease: 'easeOut' }  // 第一次加载时的入场动画
+            { duration: 1, ease: 'easeOut' }  // 第一次加载时的入场动画
           }
         />
       </div>
@@ -117,7 +122,7 @@ export default function TimeProgressWidget() {
   );
 
   return (
-    <div className="p-6 rounded-lg border transition-all duration-300 backdrop-blur-md bg-card/90 border-border shadow-lg supports-[backdrop-filter]:bg-card/75">
+    <div className="p-6 rounded-xl border transition-all duration-300 backdrop-blur-md bg-card/90 border-border/60 shadow-lg hover:shadow-xl supports-[backdrop-filter]:bg-card/75">
       {/* 进度条列表 */}
       <div className="space-y-1">
         <ProgressBar
@@ -147,8 +152,8 @@ export default function TimeProgressWidget() {
       </div>
 
       {/* 底部提示 */}
-      <div className="mt-4 pt-4 border-t border-border/30">
-        <p className="text-xs text-muted-foreground text-center">
+      <div className="mt-6 pt-4 border-t border-border/30">
+        <p className="text-xs text-muted-foreground text-center leading-relaxed tracking-wide">
           生活一圈圈日子一年年，也想听你为我唱起一遍遍
         </p>
       </div>

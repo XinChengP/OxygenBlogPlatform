@@ -399,21 +399,17 @@ export default function Lantern({ text = '新春快乐', enabled = true }: Lante
       lantern.classList.add('dragging');
       
       // 获取灯笼当前位置
-      // 优先使用positionRefs中存储的位置（如果有），避免被隐藏的灯笼影响计算
-      let currentPosition = positionRefs.current.get(index);
-      if (!currentPosition) {
-        const rect = lantern.getBoundingClientRect();
-        currentPosition = {
-          x: rect.left,
-          y: rect.top
-        };
-      }
+      const rect = lantern.getBoundingClientRect();
       
       // 计算偏移量：鼠标指针位置相对于灯笼左上角的偏移
-      const offsetX = e.clientX - currentPosition.x;
-      const offsetY = e.clientY - currentPosition.y;
+      const offsetX = e.clientX - rect.left;
+      const offsetY = e.clientY - rect.top;
       
       // 更新positionRefs中的位置
+      const currentPosition = {
+        x: rect.left,
+        y: rect.top
+      };
       positionRefs.current.set(index, currentPosition);
       
       // 初始化拖拽状态
@@ -627,6 +623,12 @@ export default function Lantern({ text = '新春快乐', enabled = true }: Lante
           return; // 冷却时间内不重复触发，或消息已在队列中
         }
         
+        // 烟花模式下不触发消息
+        if (live2dMessageManager.isInFireworksMode()) {
+          console.log('[Lantern] 烟花模式中，跳过悬停消息触发');
+          return;
+        }
+        
         // 随机选择一个消息
         const randomIndex = Math.floor(Math.random() * lanternMessages.length);
         const message = lanternMessages[randomIndex];
@@ -704,19 +706,21 @@ export default function Lantern({ text = '新春快乐', enabled = true }: Lante
       lanternCounter++;
       console.log('Lantern counter:', lanternCounter);
       
-      // 平滑隐藏碰撞的灯笼（不使用transform，避免影响位置计算）
+      // 平滑隐藏碰撞的灯笼
       const lantern = lanternRefs.current.get(index);
       if (lantern) {
-        lantern.style.transition = 'opacity 0.5s ease-out';
+        lantern.style.transition = 'all 0.5s ease-out';
         lantern.style.opacity = '0';
+        lantern.style.transform = 'scale(0.5)';
         lantern.style.pointerEvents = 'none';
-        // 注意：不使用transform，避免影响getBoundingClientRect的位置计算
       }
       
       // 检查是否达到彩蛋触发条件
       if (lanternCounter === 4 && !isEasterEggTriggered) {
-        // 触发彩蛋消息
-        live2dMessageManager.showMessage('谢谢你的灯笼！天依都收到啦，请你看烟花！', 5000, 10);
+        // 先进入烟花模式（阻塞所有消息）
+        live2dMessageManager.enterFireworksMode();
+        // 触发彩蛋消息（使用 showFireworksMessage 绕过阻塞）
+        live2dMessageManager.showFireworksMessage('谢谢你的灯笼！天依都收到啦，请你看烟花！', 5000);
         // 触发烟花效果
         startFireworks();
         // 标记彩蛋消息已触发
@@ -731,6 +735,12 @@ export default function Lantern({ text = '新春快乐', enabled = true }: Lante
     
     // 触发预设消息序列
     function triggerMessageSequence() {
+      // 烟花模式下不触发消息
+      if (live2dMessageManager.isInFireworksMode()) {
+        console.log('[Lantern] 烟花模式中，跳过消息触发');
+        return;
+      }
+      
       const messages = [
         '谢谢你送我的灯笼！好漂亮呀～',
         '哇，收到了一个漂亮的灯笼！好开心～',
@@ -1220,16 +1230,19 @@ export default function Lantern({ text = '新春快乐', enabled = true }: Lante
     // 停止烟花
     function stopFireworks() {
       isFireworksRunning = false;
-      
+
+      // 退出烟花模式（恢复消息处理）
+      live2dMessageManager.exitFireworksMode();
+
       if (animationId) {
         cancelAnimationFrame(animationId);
         animationId = null;
       }
-      
+
       if (canvas && canvas.parentNode) {
         canvas.parentNode.removeChild(canvas);
       }
-      
+
       const filter = document.getElementById('fireworks-dark-filter');
       if (filter) {
         filter.style.opacity = '0';
@@ -1239,7 +1252,7 @@ export default function Lantern({ text = '新春快乐', enabled = true }: Lante
           }
         }, 1000);
       }
-      
+
       canvas = null;
       ctx = null;
       fireworks = [];

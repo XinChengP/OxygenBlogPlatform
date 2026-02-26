@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { getAssetPath, getBasePath } from '../utils/assetUtils';
 import { live2dEventEmitter } from '../utils/live2dEventEmitter';
 import { cn } from '../utils/cn';
+import live2dMessageManager from '../utils/live2dMessageManager';
 
 // 导入实例管理器
 import { live2dInstanceManager } from '../utils/live2dInstanceManager';
@@ -330,8 +331,14 @@ export default function LuoTianyiLive2DOptimized({ className }: LuoTianyiLive2DO
     const pageStartTime = useMemo(() => Date.now(), []);
 
     // 优化的消息更新函数
-    const updateMessage = useCallback((newMessage: string, type: 'normal' | 'interaction' = 'normal') => {
+    const updateMessage = useCallback((newMessage: string, type: 'normal' | 'interaction' | 'fireworks' = 'normal') => {
         if (!newMessage || newMessage.trim() === '') return;
+        
+        // 烟花模式下只允许显示烟花消息
+        if (live2dMessageManager.isInFireworksMode() && type !== 'fireworks') {
+            console.log('[LuoTianyiLive2DOptimized] 烟花模式中，跳过消息显示:', newMessage);
+            return;
+        }
         
         // 防止重复消息
         if (message === newMessage) return;
@@ -1039,8 +1046,11 @@ export default function LuoTianyiLive2DOptimized({ className }: LuoTianyiLive2DO
         // 
         // sessionStorage.setItem(messageKey, now.toString());
             
+            // 检查是否在烟花模式下，如果是，传递'fireworks'类型
+            const isFireworksMode = live2dMessageManager.isInFireworksMode();
+            const messageType = isFireworksMode ? 'fireworks' : 'interaction';
             // 使用内部消息系统显示
-            updateMessage(text, 'interaction');
+            updateMessage(text, messageType);
             
             // 自动淡出逻辑
             if (fadeTimeoutRef.current) {
