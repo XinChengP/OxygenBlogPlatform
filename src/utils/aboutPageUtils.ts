@@ -3,7 +3,7 @@
  * 提供共享的样式生成逻辑，减少代码重复
  */
 
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 
 /**
  * 生成渐变背景样式
@@ -20,7 +20,14 @@ export function useGradientStyles(
   accentColor: string,
   isDark: boolean,
   isRainbowGradient: boolean = false
-) {
+): {
+  beforeTextGradientStyle: React.CSSProperties;
+  cardGradientStyle: React.CSSProperties;
+  accentIconGradientStyle: React.CSSProperties;
+  titleGradientStyle: React.CSSProperties;
+  secondaryIconGradientStyle: React.CSSProperties;
+  backgroundStyle: React.CSSProperties;
+} {
   // 动画文字渐变样式
   const beforeTextGradientStyle = useMemo(() => {
     if (isRainbowGradient) {

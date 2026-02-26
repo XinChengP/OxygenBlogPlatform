@@ -22,12 +22,31 @@ export interface GalleryImage {
   updatedAt?: string; // 更新时间（可选）
 }
 
+// 树形分类结构
+export interface ImageCategoryTree {
+  name: string;           // 分类名称
+  slug: string;           // 分类标识
+  count: number;          // 图片数量（包含子分类）
+  source: ImageSource;    // 分类来源
+  subCategories?: ImageCategoryTree[];  // 子分类列表
+  parentCategory?: string; // 父分类名称（可选）
+  description?: string;    // 分类描述
+  icon?: string;           // 分类图标
+  sortOrder?: number;      // 排序顺序
+}
+
 // 图片分类类型
 export interface ImageCategory {
   name: string; // 分类名称
   slug: string; // 分类标识
   count: number; // 图片数量
   source: ImageSource; // 分类来源
+  // 新增字段
+  subCategories?: ImageCategoryTree[];
+  parentCategory?: string;
+  description?: string;
+  icon?: string;
+  sortOrder?: number;
 }
 
 // 图片加载状态类型
@@ -36,8 +55,9 @@ export type ImageLoadStatus = 'loading' | 'loaded' | 'failed';
 // 画廊状态类型
 export interface GalleryState {
   images: GalleryImage[]; // 所有图片
-  categories: ImageCategory[]; // 所有分类
+  categories: ImageCategoryTree[]; // 所有分类（树形结构）
   selectedCategory: string | null; // 当前选中分类
+  selectedSubCategory: string | null; // 当前选中子分类
   selectedImage: GalleryImage | null; // 当前选中图片
   isPreviewOpen: boolean; // 预览模态框是否打开
   isLoading: boolean; // 是否正在加载图片

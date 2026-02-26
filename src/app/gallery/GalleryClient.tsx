@@ -1,30 +1,38 @@
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { GalleryImage, ImageCategory, GalleryState } from '../../types/gallery';
+import { motion, AnimatePresence } from 'framer-motion';
+import { GalleryImage, ImageCategory, ImageCategoryTree, GalleryState } from '../../types/gallery';
 import { filterImagesByCategory } from '../../utils/galleryUtils';
 import ImageCard from './components/ImageCard';
 import ImagePreview from './components/ImagePreview';
 import CategoryFilter from './components/CategoryFilter';
 import { useBackgroundStyle } from '../../hooks/useBackgroundStyle';
 import { live2dEventEmitter, Live2DEvents, emitLive2DEvent } from '../../utils/live2dEventEmitter';
+import { Image, Grid3X3, ChevronDown, Filter } from 'lucide-react';
 
 // GalleryClient组件属性
 interface GalleryClientProps {
   initialImages: GalleryImage[];
-  initialCategories: ImageCategory[];
+  initialCategories: ImageCategoryTree[];
 }
 
 // GalleryClient组件
 const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps) => {
   // 获取背景样式和容器样式
-  const { containerStyle } = useBackgroundStyle('gallery');
+  const { containerStyle, isBackgroundEnabled } = useBackgroundStyle('gallery');
+  
+  // 移动端侧边栏折叠状态 - 默认展开以避免 hydration mismatch
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
+  // 客户端挂载状态
+  const [isMounted, setIsMounted] = useState<boolean>(false);
   
   // 初始化画廊状态
   const [state, setState] = useState<GalleryState>({
     images: initialImages,
-    categories: initialCategories,
+    categories: initialCategories as ImageCategoryTree[],
     selectedCategory: null,
+    selectedSubCategory: null,
     selectedImage: null,
     isPreviewOpen: false,
     isLoading: false,
@@ -34,27 +42,52 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
   // 滚动节流定时器引用
   const scrollThrottleRef = useRef<number>(0);
 
-  // 根据选中的分类过滤图片
+  // 客户端挂载后设置状态
+  useEffect(() => {
+    setIsMounted(true);
+    // 移动端默认折叠侧边栏
+    if (window.innerWidth < 1024) {
+      setIsSidebarCollapsed(true);
+    }
+  }, []);
+
+  // 毛玻璃样式函数 - 与归档页面保持一致
+  const getGlassStyle = (baseStyle: string) => {
+    if (isBackgroundEnabled) {
+      return `${baseStyle} backdrop-blur-md bg-card/90 border-border shadow-lg supports-[backdrop-filter]:bg-card/75`;
+    }
+    return `bg-card ${baseStyle} border-border`;
+  };
+
+  // 根据选中的分类和子分类过滤图片
   const filteredImages = useMemo(() => {
-    return filterImagesByCategory(state.images, state.selectedCategory);
-  }, [state.images, state.selectedCategory]);
+    return filterImagesByCategory(state.images, state.selectedCategory, state.selectedSubCategory);
+  }, [state.images, state.selectedCategory, state.selectedSubCategory]);
 
   // 处理分类选择
-  const handleCategoryChange = (category: string | null) => {
+  const handleCategoryChange = (category: string | null, subCategory?: string | null) => {
     setState(prev => ({
       ...prev,
-      selectedCategory: category
+      selectedCategory: category,
+      selectedSubCategory: subCategory || null
     }));
     
     // 发送分类切换事件给Live2D
     emitLive2DEvent(Live2DEvents.INFO, {
       type: 'gallery-category-change',
       category: category || '全部',
+      subCategory: subCategory || null,
       timestamp: Date.now()
     });
     
-    // 根据分类发送不同的Live2D消息
-    if (category) {
+    // 根据分类和子分类发送不同的Live2D消息
+    if (category && subCategory) {
+      emitLive2DEvent(Live2DEvents.LIVE2D_MESSAGE, {
+        message: `现在正在查看${category}分类的${subCategory}子分类图片~`,
+        type: 'gallery',
+        priority: 2
+      });
+    } else if (category) {
       emitLive2DEvent(Live2DEvents.LIVE2D_MESSAGE, {
         message: `现在正在查看${category}分类的图片~`,
         type: 'gallery',
@@ -253,52 +286,172 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
 
   return (
     <div className={containerStyle.className} style={containerStyle.style}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-3xl font-bold mb-8 text-center">画廊</h1>
-      
-      <div className="flex flex-col md:flex-row gap-8">
-        {/* 左侧分类导航区域 - 占20%宽度 */}
-        <div className="w-full md:w-1/5">
-          <CategoryFilter
-            categories={state.categories}
-            selectedCategory={state.selectedCategory}
-            onCategoryChange={handleCategoryChange}
-          />
-        </div>
-        
-        {/* 右侧图片展示区域 - 占80%宽度 */}
-        <div className="w-full md:w-4/5">
-          {/* 图片统计 */}
-          <div className="text-center text-sm text-gray-500 dark:text-gray-400 mb-4">
-            共找到 {filteredImages.length} 张图片
-          </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* 页面头部 - 添加入场动画 */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-8"
+        >
+          <motion.div 
+            className="flex items-center justify-center gap-3 mb-4"
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+          >
+            <Image className="w-10 h-10 text-primary" />
+            <h1 className="text-4xl font-bold text-foreground">画廊</h1>
+          </motion.div>
+          <motion.p 
+            className="text-muted-foreground text-lg"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            精选图片集，记录美好瞬间
+          </motion.p>
+        </motion.div>
+
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* 移动端折叠按钮 */}
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="lg:hidden mb-2"
+          >
+            <button
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              className={getGlassStyle("w-full px-4 py-3 rounded-lg border flex items-center justify-between")}
+            >
+              <span className="flex items-center gap-2">
+                <Filter className="w-4 h-4 text-primary" />
+                <span className="font-medium text-foreground">分类筛选</span>
+              </span>
+              <motion.span
+                animate={{ rotate: isSidebarCollapsed ? 0 : 180 }}
+                transition={{ duration: 0.2 }}
+              >
+                <ChevronDown className="w-4 h-4 text-muted-foreground" />
+              </motion.span>
+            </button>
+          </motion.div>
+
+          {/* 左侧分类导航区域 - 使用CSS控制显示/隐藏，避免hydration问题 */}
+          <motion.aside
+            initial={false}
+            animate={{ 
+              opacity: isMounted && !isSidebarCollapsed ? 1 : 0,
+              height: isMounted && !isSidebarCollapsed ? 'auto' : 0
+            }}
+            transition={{ duration: 0.3 }}
+            className={`w-full lg:w-64 lg:sticky lg:top-24 lg:h-fit overflow-hidden lg:overflow-visible lg:opacity-100 lg:h-auto`}
+          >
+            <div className={`${isSidebarCollapsed ? 'hidden lg:block' : 'block'}`}>
+              <CategoryFilter
+                categories={state.categories}
+                selectedCategory={state.selectedCategory}
+                selectedSubCategory={state.selectedSubCategory}
+                onCategoryChange={handleCategoryChange}
+                getGlassStyle={getGlassStyle}
+              />
+            </div>
+          </motion.aside>
           
-          {/* 图片展示区域 - 瀑布流布局 */}
-          <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 space-y-4">
+          {/* 右侧图片展示区域 */}
+          <motion.div 
+            className="flex-1"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            {/* 图片统计 - 优化样式 */}
+            <motion.div 
+              className={getGlassStyle("mb-6 px-4 py-3 rounded-lg border flex items-center justify-between")}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.3 }}
+            >
+              <div className="flex items-center gap-2">
+                <Grid3X3 className="w-4 h-4 text-primary" />
+                <span className="text-muted-foreground">
+                  共找到 <span className="text-primary font-semibold">
+                    {filteredImages.length}
+                  </span> 张图片
+                </span>
+              </div>
+              {(state.selectedCategory || state.selectedSubCategory) && (
+                <span className="text-sm px-3 py-1 rounded-full bg-primary/20 text-primary font-medium">
+                  {state.selectedCategory}{state.selectedSubCategory ? ` - ${state.selectedSubCategory}` : ''}
+                </span>
+              )}
+            </motion.div>
+            
+            {/* 图片展示区域 - 瀑布流布局 */}
             {filteredImages.length > 0 ? (
-              filteredImages.map(image => (
-                <div key={image.id} className="mb-4 break-inside-avoid">
-                  <ImageCard
-                    image={image}
-                    onClick={() => handleImageClick(image)}
-                  />
-                </div>
-              ))
+              <motion.div 
+                className="columns-1 sm:columns-2 md:columns-3 lg:columns-3 xl:columns-4 space-y-4"
+                initial="hidden"
+                animate="visible"
+                variants={{
+                  hidden: { opacity: 0 },
+                  visible: {
+                    opacity: 1,
+                    transition: {
+                      staggerChildren: 0.05
+                    }
+                  }
+                }}
+              >
+                {filteredImages.map((image, index) => (
+                  <motion.div 
+                    key={image.id} 
+                    className="mb-4 break-inside-avoid"
+                    variants={{
+                      hidden: { opacity: 0, y: 20 },
+                      visible: { opacity: 1, y: 0 }
+                    }}
+                  >
+                    <ImageCard
+                      image={image}
+                      onClick={() => handleImageClick(image)}
+                      index={index}
+                    />
+                  </motion.div>
+                ))}
+              </motion.div>
             ) : (
-              <div className="text-center py-16 col-span-full">
-                <p className="text-gray-500 dark:text-gray-400">
+              /* 空状态设计 */
+              <motion.div 
+                className={getGlassStyle("text-center py-20 rounded-lg border")}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5 }}
+              >
+                <div className="text-6xl mb-6">🖼️</div>
+                <h3 className="text-xl font-semibold text-foreground mb-2">
                   该分类下暂无图片
+                </h3>
+                <p className="text-muted-foreground mb-6">
+                  试试切换其他分类，或者稍后再来看看
                 </p>
+                <button
+                  onClick={() => handleCategoryChange(null)}
+                  className="px-6 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-lg transition-colors"
+                >
+                  查看全部图片
+                </button>
+              </motion.div>
+            )}
+            
+            {/* 加载更多按钮（后续实现分批加载） */}
+            {state.isLoading && (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
             )}
-          </div>
-          
-          {/* 加载更多按钮（后续实现分批加载） */}
-          {state.isLoading && (
-            <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-            </div>
-          )}
+          </motion.div>
         </div>
       </div>
       
@@ -310,7 +463,6 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
           onClose={handleClosePreview}
         />
       )}
-      </div>
     </div>
   );
 };

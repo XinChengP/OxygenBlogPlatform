@@ -1,18 +1,20 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import { GalleryImage, ImageLoadStatus } from '../../../types/gallery';
 import { getAssetPath } from '@/utils/assetUtils';
-
+import { RefreshCw, ImageOff, Tag } from 'lucide-react';
 
 // ImageCard组件属性
 interface ImageCardProps {
   image: GalleryImage;
   onClick: () => void;
+  index: number;
 }
 
 // ImageCard组件
-const ImageCard = ({ image, onClick }: ImageCardProps) => {
+const ImageCard = ({ image, onClick, index }: ImageCardProps) => {
   // 图片加载状态
   const [loadStatus, setLoadStatus] = useState<ImageLoadStatus>('loading');
   const [retryCount, setRetryCount] = useState(0);
@@ -33,13 +35,12 @@ const ImageCard = ({ image, onClick }: ImageCardProps) => {
   const resetImageState = useCallback(() => {
     setLoadStatus('loading');
     setRetryCount(0);
-    setCurrentSrc(processImagePath(image.src)); // 重置为处理后的URL
+    setCurrentSrc(processImagePath(image.src));
   }, [image.src, processImagePath]);
   
   // 图片加载成功处理
   const handleImageLoad = () => {
     setLoadStatus('loaded');
-    // 清除重试计时器
     if (retryTimerRef.current) {
       clearTimeout(retryTimerRef.current);
       retryTimerRef.current = null;
@@ -49,28 +50,22 @@ const ImageCard = ({ image, onClick }: ImageCardProps) => {
   // 图片加载失败处理
   const handleImageError = () => {
     if (retryCount < maxRetries) {
-      // 重试加载图片
       setLoadStatus('loading');
       setRetryCount(prev => prev + 1);
       
-      // 清除之前的计时器
       if (retryTimerRef.current) {
         clearTimeout(retryTimerRef.current);
       }
       
-      // 指数退避重试
       const waitTime = 1000 * Math.pow(2, retryCount);
       retryTimerRef.current = setTimeout(() => {
-        // 通过重新设置src触发重新加载
         setLoadStatus('loading');
       }, waitTime);
     } else if (!hasSwitchedToFallback && hasFallback) {
-      // 达到最大重试次数，且有备用URL，切换到处理后的备用URL
       setCurrentSrc(processImagePath(image.fallbackSrc!));
       setRetryCount(0);
       setLoadStatus('loading');
     } else {
-      // 达到最大重试次数，且没有备用URL或备用URL也失败了，显示加载失败
       setLoadStatus('failed');
     }
   };
@@ -90,64 +85,105 @@ const ImageCard = ({ image, onClick }: ImageCardProps) => {
   }, [image.src, resetImageState]);
   
   return (
-    <div 
-      className="group relative cursor-pointer overflow-hidden rounded-lg shadow-md transition-all duration-300 hover:shadow-xl dark:hover:shadow-blue-900/30"
+    <motion.div 
+      className="group relative cursor-pointer overflow-hidden rounded-lg shadow-md transition-all duration-300"
       onClick={onClick}
+      whileHover={{ 
+        y: -4, 
+        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+      }}
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.4, delay: index * 0.02 }}
     >
       {/* 图片容器 */}
-      <div className="aspect-square relative bg-gray-100 dark:bg-gray-800">
-        {/* 加载中状态 */}
+      <div className="aspect-square relative bg-gray-100 dark:bg-gray-800 overflow-hidden">
+        {/* 加载中状态 - 骨架屏效果 */}
         {loadStatus === 'loading' && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-2"></div>
-            {retryCount > 0 && (
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                重试中... ({retryCount}/{maxRetries})
-              </p>
-            )}
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-800">
+            <div className="relative w-full h-full">
+              {/* 骨架屏动画 */}
+              <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-gray-700 dark:via-gray-600 dark:to-gray-700 animate-pulse"></div>
+              {/* 加载指示器 */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <div className="relative">
+                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 dark:border-gray-600"></div>
+                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-primary absolute top-0 left-0"></div>
+                </div>
+                {retryCount > 0 && (
+                  <motion.p 
+                    className="text-xs text-muted-foreground mt-2"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    重试中... ({retryCount}/{maxRetries})
+                  </motion.p>
+                )}
+              </div>
+            </div>
           </div>
         )}
         
         {/* 图片 */}
-        <img
+        <motion.img
           src={currentSrc}
           alt={image.alt}
-          className={`w-full h-full object-cover transition-opacity duration-300 ${loadStatus === 'loading' ? 'opacity-0' : 'opacity-100'}`}
+          className={`w-full h-full object-cover transition-all duration-500 ${loadStatus === 'loading' ? 'opacity-0' : 'opacity-100'}`}
           onLoad={handleImageLoad}
           onError={handleImageError}
           crossOrigin="anonymous"
           referrerPolicy="no-referrer"
+          whileHover={{ scale: 1.05 }}
+          transition={{ duration: 0.3 }}
         />
         
         {/* 加载失败状态 */}
         {loadStatus === 'failed' && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-200 dark:bg-gray-700">
-            <svg className="w-12 h-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">图片加载失败</p>
-            <button 
-              className="text-xs text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300"
+            <ImageOff className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-2" />
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">图片加载失败</p>
+            <motion.button 
+              className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors px-3 py-1.5 rounded-full bg-primary/10 hover:bg-primary/20"
               onClick={(e) => {
                 e.stopPropagation();
                 setLoadStatus('loading');
                 setRetryCount(0);
               }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
+              <RefreshCw className="w-3 h-3" />
               点击重试
-            </button>
+            </motion.button>
           </div>
         )}
         
         {/* 悬停效果：渐变色叠加层 */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end">
-          <div className="p-3 w-full">
-            <p className="text-white text-sm truncate">{image.alt}</p>
-            <p className="text-white/80 text-xs">{image.category}</p>
+        <motion.div 
+          className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end"
+          initial={false}
+        >
+          <div className="p-4">
+            <p className="text-white text-sm font-medium truncate mb-1">{image.alt}</p>
+            <div className="flex items-center gap-1">
+              <Tag className="w-3 h-3 text-primary" />
+              <span className="text-white/80 text-xs">{image.category}</span>
+            </div>
           </div>
-        </div>
+        </motion.div>
+
+        {/* 分类标签 - 左上角 */}
+        <motion.div 
+          className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+          initial={{ y: -10, opacity: 0 }}
+          whileHover={{ y: 0, opacity: 1 }}
+        >
+          <span className="text-xs px-2 py-1 rounded-full bg-primary/80 text-white backdrop-blur-sm">
+            {image.category}
+          </span>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

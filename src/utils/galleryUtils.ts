@@ -1,12 +1,64 @@
 import path from 'path';
-import { GalleryImage, ImageSource, ImageCategory } from '../types/gallery';
+import { GalleryImage, ImageSource, ImageCategory, ImageCategoryTree } from '../types/gallery';
 import { getAssetPath } from './assetUtils';
 
-// 只在服务器端环境中导入 fs 模块
+// 只在服务器端环境中导入 fs 和 https 模块
 let fs: any;
+let https: any;
 if (typeof window === 'undefined') {
   fs = require('fs');
+  https = require('https');
 }
+
+/**
+ * 服务端 HTTPS 请求函数（禁用 SSL 证书验证）
+ * @param url - 请求 URL
+ * @param headers - 请求头
+ * @returns 响应数据
+ */
+const serverHttpsFetch = (url: string, headers: Record<string, string>): Promise<any> => {
+  return new Promise((resolve, reject) => {
+    const parsedUrl = new URL(url);
+    const options = {
+      hostname: parsedUrl.hostname,
+      port: 443,
+      path: parsedUrl.pathname + parsedUrl.search,
+      method: 'GET',
+      headers: headers,
+      rejectUnauthorized: false, // 禁用 SSL 证书验证
+      agent: false
+    };
+    
+    const req = https.request(options, (res: any) => {
+      let data = '';
+      res.on('data', (chunk: any) => {
+        data += chunk;
+      });
+      res.on('end', () => {
+        if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+          try {
+            resolve(JSON.parse(data));
+          } catch (e) {
+            reject(new Error(`Failed to parse JSON: ${data.substring(0, 100)}`));
+          }
+        } else {
+          reject(new Error(`HTTP ${res.statusCode}: ${res.statusMessage}`));
+        }
+      });
+    });
+    
+    req.on('error', (e: any) => {
+      reject(e);
+    });
+    
+    req.setTimeout(30000, () => {
+      req.destroy();
+      reject(new Error('Request timeout'));
+    });
+    
+    req.end();
+  });
+};
 
 // 支持的图片扩展名
 const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif'];
@@ -113,6 +165,83 @@ export const getAllLocalImages = (): GalleryImage[] => {
     console.error('Error getting all local images:', error);
     return [];
   }
+};
+
+/**
+ * 构建树形分类结构
+ * @param images - 图片数组
+ * @returns 树形分类数组
+ */
+export const buildCategoryTree = (images: GalleryImage[]): ImageCategoryTree[] => {
+  // 1. 按主分类分组
+  const mainCategoryMap = new Map<string, GalleryImage[]>();
+  
+  images.forEach(image => {
+    if (!mainCategoryMap.has(image.category)) {
+      mainCategoryMap.set(image.category, []);
+    }
+    mainCategoryMap.get(image.category)?.push(image);
+  });
+  
+  // 2. 构建树形结构
+  const categoryTrees: ImageCategoryTree[] = [];
+  
+  mainCategoryMap.forEach((categoryImages, mainCategoryName) => {
+    // 统计主分类图片数量（包含子分类）
+    const mainCategoryCount = categoryImages.length;
+    
+    // 按子分类分组
+    const subCategoryMap = new Map<string, GalleryImage[]>();
+    
+    categoryImages.forEach(image => {
+      if (image.subCategory) {
+        if (!subCategoryMap.has(image.subCategory)) {
+          subCategoryMap.set(image.subCategory, []);
+        }
+        subCategoryMap.get(image.subCategory)?.push(image);
+      }
+    });
+    
+    // 构建子分类数组
+    const subCategories: ImageCategoryTree[] = [];
+    
+    subCategoryMap.forEach((subCategoryImages, subCategoryName) => {
+      subCategories.push({
+        name: subCategoryName,
+        slug: `${mainCategoryName.toLowerCase().replace(/\s+/g, '-')}-${subCategoryName.toLowerCase().replace(/\s+/g, '-')}`,
+        count: subCategoryImages.length,
+        source: ImageSource.Remote, // 暂时默认为远程，实际应该根据图片来源判断
+        parentCategory: mainCategoryName
+      });
+    });
+    
+    // 按排序顺序排序子分类
+    subCategories.sort((a, b) => {
+      const orderA = getCategorySortOrder(mainCategoryName, a.name);
+      const orderB = getCategorySortOrder(mainCategoryName, b.name);
+      return orderA - orderB;
+    });
+    
+    // 创建主分类节点
+    const mainCategoryTree: ImageCategoryTree = {
+      name: mainCategoryName,
+      slug: mainCategoryName.toLowerCase().replace(/\s+/g, '-'),
+      count: mainCategoryCount,
+      source: ImageSource.Remote, // 暂时默认为远程，实际应该根据图片来源判断
+      subCategories: subCategories.length > 0 ? subCategories : undefined
+    };
+    
+    categoryTrees.push(mainCategoryTree);
+  });
+  
+  // 3. 按排序顺序排序主分类
+  categoryTrees.sort((a, b) => {
+    const orderA = getCategorySortOrder(a.name);
+    const orderB = getCategorySortOrder(b.name);
+    return orderA - orderB;
+  });
+  
+  return categoryTrees;
 };
 
 /**
@@ -370,29 +499,52 @@ export const getRemoteImages = async (config: {
   branch: string;
   path: string;
 }): Promise<GalleryImage[]> => {
-  // 在开发环境中，跳过远程图片加载以避免SSL证书问题
-  if (process.env.NODE_ENV === 'development') {
-    console.log('Skipping remote image loading in development environment');
-    return [];
-  }
+  // 检测是否在浏览器环境
+  const isBrowser = typeof window !== 'undefined';
   
   // 缓存键，用于存储API响应
   const cacheKey = `gallery_remote_images_${config.owner}_${config.repo}_${config.branch}_${config.path}`;
   
-  // 尝试从localStorage获取缓存
-  if (typeof window !== 'undefined') {
-    const cached = localStorage.getItem(cacheKey);
-    if (cached) {
-      try {
+  // 服务端文件缓存路径
+  const serverCachePath = path.join(process.cwd(), '.next', 'cache', 'gallery');
+  const serverCacheFile = path.join(serverCachePath, `${cacheKey}.json`);
+  
+  // 尝试从服务端文件缓存获取（仅服务端环境）
+  if (!isBrowser && fs) {
+    try {
+      // 确保缓存目录存在
+      if (!fs.existsSync(serverCachePath)) {
+        fs.mkdirSync(serverCachePath, { recursive: true });
+      }
+      
+      // 检查缓存文件是否存在
+      if (fs.existsSync(serverCacheFile)) {
+        const cachedData = JSON.parse(fs.readFileSync(serverCacheFile, 'utf-8'));
+        // 检查缓存是否在1小时内有效（更长的缓存时间）
+        if (cachedData.timestamp && Date.now() - cachedData.timestamp < 60 * 60 * 1000) {
+          console.log('[Gallery] Using server file cache for remote images');
+          return cachedData.images;
+        }
+      }
+    } catch (error) {
+      console.warn('[Gallery] Failed to read server cache:', error);
+    }
+  }
+  
+  // 尝试从localStorage获取缓存（仅浏览器环境）
+  if (isBrowser) {
+    try {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
         const cacheData = JSON.parse(cached);
         // 检查缓存是否在24小时内有效
         if (cacheData.timestamp && Date.now() - cacheData.timestamp < 24 * 60 * 60 * 1000) {
           console.log('Using cached remote images');
           return cacheData.images;
         }
-      } catch (error) {
-        console.warn('Failed to parse cached remote images:', error);
       }
+    } catch (error) {
+      console.warn('Failed to parse cached remote images:', error);
     }
   }
   
@@ -402,96 +554,114 @@ export const getRemoteImages = async (config: {
   
   while (retryCount < maxRetries) {
     try {
-      // GitHub API URL
-      const apiUrl = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${config.path}?ref=${config.branch}`;
+      // 使用 GitHub Trees API 一次性获取整个目录树，减少 API 调用次数
+      // Trees API 可以递归获取所有文件，避免多次调用 Contents API
+      const treesApiUrl = `https://api.github.com/repos/${config.owner}/${config.repo}/git/trees/${config.branch}?recursive=1`;
       
-      // 调用GitHub API获取目录内容
-      const response = await fetch(apiUrl, {
-        // 添加请求头，提高GitHub API请求成功率
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-          'Accept': 'application/vnd.github.v3+json',
-          'X-GitHub-Api-Version': '2022-11-28' // 使用最新的GitHub API版本
-        },
-        // 使用cors模式确保跨域请求正常工作
-        mode: 'cors',
-        cache: 'force-cache' // 允许浏览器缓存响应
-      });
+      // 请求头 - 添加 GitHub Token 认证以提高 API 限制
+      const headers: Record<string, string> = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept': 'application/vnd.github.v3+json',
+        'X-GitHub-Api-Version': '2022-11-28'
+      };
       
-      if (!response.ok) {
-        // 如果是403（速率限制），等待一段时间后重试
-        if (response.status === 403 && retryCount < maxRetries - 1) {
-          retryCount++;
-          const waitTime = 1000 * Math.pow(2, retryCount); // 指数退避
-          console.log(`Rate limited, retrying in ${waitTime}ms...`);
-          await new Promise(resolve => setTimeout(resolve, waitTime));
-          continue;
-        }
-        throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
+      // 如果有 GitHub Token，添加到请求头（仅服务端环境）
+      if (!isBrowser && process.env.GITHUB_TOKEN) {
+        headers['Authorization'] = `Bearer ${process.env.GITHUB_TOKEN}`;
+        console.log('[Gallery] Using GitHub Token for authentication');
       }
       
-      const contents = await response.json();
+      let treeData: any;
+      
+      // 服务端使用自定义 HTTPS 请求（禁用 SSL 证书验证）
+      // 浏览器端使用 fetch
+      if (!isBrowser && https) {
+        console.log('[Gallery] Using server-side HTTPS request (Trees API)');
+        treeData = await serverHttpsFetch(treesApiUrl, headers);
+      } else {
+        // 浏览器端使用 fetch
+        const fetchOptions: RequestInit = {
+          headers,
+          mode: 'cors',
+          cache: 'force-cache'
+        };
+        
+        const response = await fetch(treesApiUrl, fetchOptions);
+        
+        if (!response.ok) {
+          if (response.status === 403 && retryCount < maxRetries - 1) {
+            retryCount++;
+            const waitTime = 1000 * Math.pow(2, retryCount);
+            console.log(`Rate limited, retrying in ${waitTime}ms...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+            continue;
+          }
+          throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
+        }
+        
+        treeData = await response.json();
+      }
+      
       const images: GalleryImage[] = [];
       
-      // 处理目录内容
-      for (const item of contents) {
-        if (item.type === 'dir') {
-          // 递归处理子目录
-          const subDirImages = await getRemoteImages({
-            ...config,
-            path: `${config.path}/${item.name}`
-          });
-          images.push(...subDirImages);
-        } else if (isImageFile(item.name)) {
-          // 处理图片文件
-          // 构建完整路径，确保不包含开头的斜杠
-          let fullPath = config.path ? `${config.path}/${item.name}` : item.name;
-          fullPath = fullPath.replace(/^\//, '');
-          
-          // 获取相对于仓库根目录的目录路径
-          let relativePath = path.dirname(fullPath);
-          
-          // 规范化路径分隔符，将反斜杠转换为正斜杠，确保跨平台兼容性
-          relativePath = relativePath.replace(/\\/g, '/');
-          
-          // 处理根目录情况
-          if (relativePath === '.') {
-            relativePath = '';
-          }
-          
-          // 使用路径映射函数确定分类
-          const { mainCategory, subCategory } = mapPathToCategory(relativePath);
-          
-          // 构造jsDelivr加速URL
-          let fullImagePath = config.path ? `${config.path}/${item.name}` : item.name;
-          // 确保路径不包含开头的斜杠
-          fullImagePath = fullImagePath.replace(/^\//, '');
-          // 编码URL中的特殊字符
-          const encodedImagePath = fullImagePath.split('/').map(encodeURIComponent).join('/');
-          const jsdelivrUrl = `https://cdn.jsdelivr.net/gh/${config.owner}/${config.repo}@${config.branch}/${encodedImagePath}`;
-          
-          // 调试：打印URL信息
-          console.log(`[Gallery] 构建图片URL:`);
-          console.log(`  原始路径: ${fullImagePath}`);
-          console.log(`  编码路径: ${encodedImagePath}`);
-          console.log(`  jsDelivr URL: ${jsdelivrUrl}`);
-          console.log(`  GitHub URL: ${item.download_url}`);
-          
-          images.push({
-            id: generateImageId(fullPath), // 使用完整路径生成唯一ID
-            src: jsdelivrUrl, // 使用jsDelivr加速URL作为主URL
-            fallbackSrc: item.download_url, // 保存原始GitHub URL作为备用
-            alt: item.name.replace(path.extname(item.name), ''),
-            source: ImageSource.Remote,
-            category: mainCategory, // 使用映射后的分类名称
-            subCategory, // 子分类（可选）
-            createdAt: item.created_at,
-            updatedAt: item.updated_at
-          });
+      // 处理目录树中的所有文件
+      // Trees API 返回的是扁平化的文件列表，需要过滤出图片文件
+      const basePath = config.path ? config.path.replace(/^\//, '') : '';
+      
+      for (const item of treeData.tree || []) {
+        // 只处理文件（type === 'blob'）
+        if (item.type !== 'blob') continue;
+        
+        // 检查是否在指定路径下
+        if (basePath && !item.path.startsWith(basePath + '/') && item.path !== basePath) {
+          continue;
         }
+        
+        // 检查是否为图片文件
+        if (!isImageFile(item.path)) continue;
+        
+        // 处理图片文件
+        // Trees API 返回的 item.path 是相对于仓库根目录的完整路径
+        const fullPath = item.path.replace(/^\//, '');
+        
+        // 获取相对于仓库根目录的目录路径
+        let relativePath = path.dirname(fullPath);
+        
+        // 规范化路径分隔符，将反斜杠转换为正斜杠，确保跨平台兼容性
+        relativePath = relativePath.replace(/\\/g, '/');
+        
+        // 处理根目录情况
+        if (relativePath === '.') {
+          relativePath = '';
+        }
+        
+        // 使用路径映射函数确定分类
+        const { mainCategory, subCategory } = mapPathToCategory(relativePath);
+        
+        // 构造jsDelivr加速URL
+        const encodedImagePath = fullPath.split('/').map(encodeURIComponent).join('/');
+        const jsdelivrUrl = `https://cdn.jsdelivr.net/gh/${config.owner}/${config.repo}@${config.branch}/${encodedImagePath}`;
+        
+        // 构造 GitHub raw URL 作为备用
+        const githubRawUrl = `https://raw.githubusercontent.com/${config.owner}/${config.repo}/${config.branch}/${encodedImagePath}`;
+        
+        // 从路径中提取文件名
+        const fileName = path.basename(fullPath);
+        
+        images.push({
+          id: generateImageId(fullPath), // 使用完整路径生成唯一ID
+          src: jsdelivrUrl, // 使用jsDelivr加速URL作为主URL
+          fallbackSrc: githubRawUrl, // 使用 GitHub raw URL 作为备用
+          alt: fileName.replace(path.extname(fileName), ''),
+          source: ImageSource.Remote,
+          category: mainCategory, // 使用映射后的分类名称
+          subCategory, // 子分类（可选）
+          createdAt: undefined, // Trees API 不提供创建时间
+          updatedAt: undefined // Trees API 不提供更新时间
+        });
       }
       
-      // 将结果缓存到localStorage
+      // 将结果缓存到localStorage（浏览器环境）
       if (typeof window !== 'undefined') {
         try {
           localStorage.setItem(cacheKey, JSON.stringify({
@@ -503,11 +673,34 @@ export const getRemoteImages = async (config: {
         }
       }
       
+      // 将结果缓存到服务端文件（服务端环境）
+      if (!isBrowser && fs) {
+        try {
+          // 确保缓存目录存在
+          if (!fs.existsSync(serverCachePath)) {
+            fs.mkdirSync(serverCachePath, { recursive: true });
+          }
+          fs.writeFileSync(serverCacheFile, JSON.stringify({
+            images,
+            timestamp: Date.now()
+          }, null, 2));
+          console.log('[Gallery] Saved remote images to server file cache');
+        } catch (error) {
+          console.warn('[Gallery] Failed to save server cache:', error);
+        }
+      }
+      
       return images;
     } catch (error) {
       retryCount++;
+      // 输出详细错误信息
+      console.error('[Gallery] Fetch error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        name: error instanceof Error ? error.name : 'Unknown',
+        cause: error instanceof Error ? (error as any).cause : 'Unknown',
+        stack: error instanceof Error ? error.stack : 'No stack trace'
+      });
       if (retryCount >= maxRetries) {
-        // 所有重试都失败，返回友好错误
         console.warn(
           'Failed to load remote images from GitHub after multiple attempts:',
           error instanceof Error ? error.message : 'Unknown error'
@@ -515,7 +708,6 @@ export const getRemoteImages = async (config: {
         return [];
       }
       
-      // 等待一段时间后重试
       const waitTime = 1000 * Math.pow(2, retryCount);
       console.log(`Retrying remote image loading in ${waitTime}ms...`);
       await new Promise(resolve => setTimeout(resolve, waitTime));
@@ -552,14 +744,28 @@ export const getAllImages = async (): Promise<GalleryImage[]> => {
 };
 
 /**
+ * 获取所有分类（树形结构）
+ * @param images - 图片数组
+ * @returns 树形分类数组
+ */
+export const getAllCategories = (images: GalleryImage[]): ImageCategoryTree[] => {
+  return buildCategoryTree(images);
+};
+
+/**
  * 按分类过滤图片
  * @param images - 图片数组
  * @param category - 分类名称（null表示所有分类）
+ * @param subCategory - 子分类名称（可选，null表示不筛选子分类）
  * @returns 过滤后的图片数组
  */
-export const filterImagesByCategory = (images: GalleryImage[], category: string | null): GalleryImage[] => {
+export const filterImagesByCategory = (images: GalleryImage[], category: string | null, subCategory?: string | null): GalleryImage[] => {
   if (!category) {
     return images;
+  }
+  
+  if (subCategory) {
+    return images.filter(image => image.category === category && image.subCategory === subCategory);
   }
   
   return images.filter(image => image.category === category);
