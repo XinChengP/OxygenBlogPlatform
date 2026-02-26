@@ -39,3 +39,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# 后台管理系统配置（敏感信息，绝对不要提交！）
+/admin-config.json
+/admin-config.*.json
+/.admin/
+/admin-data/
+*.admin.json
+

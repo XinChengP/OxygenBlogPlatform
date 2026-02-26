@@ -19,6 +19,12 @@ const Navigation = () => {
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isNearTop, setIsNearTop] = useState(false);
   const pathname = usePathname();
+  
+  // 后台页面不显示导航栏
+  if (pathname.startsWith('/admin')) {
+    return null;
+  }
+  
   const { navigationStyle } = useBackgroundStyle('home');
   const { isVisible, isAtTop, setVisibility, setAtTop } = useNavigationVisibility();
 

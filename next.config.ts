@@ -1,6 +1,12 @@
 const isStaticExport = process.env.NODE_ENV === 'production' || process.env.NEXT_PRIVATE_STATIC_EXPORT === 'true';
 const repoName = process.env.NEXT_PUBLIC_GITHUB_REPO_NAME || 'OxygenBlogPlatform';
 
+// 后台管理系统相关的路由（在静态导出时排除）
+const adminRoutes = [
+  '/admin',
+  '/api/admin',
+];
+
 const nextConfig = {
   reactStrictMode: true,
   
@@ -36,6 +42,11 @@ const nextConfig = {
     output: "export",
     distDir: 'out',
     trailingSlash: true,
+    
+    // 排除后台管理系统相关路由（这些需要服务器端支持）
+    excludeFiles: (filename: string) => {
+      return adminRoutes.some(route => filename.includes(route));
+    },
     
     // 使用环境变量设置basePath和assetPrefix，确保GitHub Pages部署正常
     // 对于静态导出模式，优先使用空字符串作为基础路径

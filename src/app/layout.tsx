@@ -25,7 +25,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh-CN" suppressHydrationWarning>
+    <html lang="zh-CN" data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
         {/* 关键资源预加载 */}
         {/* 预连接到关键域名 */}
@@ -34,8 +34,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://giscus.app" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://api.github.com" crossOrigin="anonymous" />
         
-        {/* 预加载关键CSS */}
-        <link rel="preload" href="/app/globals.css" as="style" />
+
         
         {/* 预加载关键JavaScript */}
         <link rel="preload" href="/js/smooth-navigation.js" as="script" />

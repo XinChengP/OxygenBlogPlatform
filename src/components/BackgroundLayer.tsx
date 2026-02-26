@@ -9,6 +9,7 @@ import {
 } from '@/setting/WebSetting';
 import { useTheme } from 'next-themes';
 import { getAssetPath } from '@/utils/assetUtils';
+import { usePathname } from 'next/navigation';
 
 /**
  * 网站背景组件
@@ -16,6 +17,13 @@ import { getAssetPath } from '@/utils/assetUtils';
  * 在暗黑模式下添加黑色滤镜效果
  */
 const BackgroundLayer = () => {
+  const pathname = usePathname();
+  
+  // 后台页面不显示背景
+  if (pathname?.startsWith('/admin')) {
+    return null;
+  }
+  
   const { resolvedTheme } = useTheme();
   const [isClient, setIsClient] = useState(false);
 

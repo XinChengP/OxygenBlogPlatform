@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { year, name, aWord } from '@/setting/FooterSetting';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 /**
  * 格式化时间差为天时分秒
@@ -23,6 +24,13 @@ function formatTime(milliseconds: number): string {
  * 页脚组件 - 简化版
  */
 function Footer() {
+  const pathname = usePathname();
+  
+  // 后台页面不显示页脚
+  if (pathname.startsWith('/admin')) {
+    return null;
+  }
+  
   // 网站上线时间
   const launchDate = new Date('2025-11-06T20:00:00');
   const [runTime, setRunTime] = useState('');

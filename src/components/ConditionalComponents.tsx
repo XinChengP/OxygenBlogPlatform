@@ -36,7 +36,7 @@ export default React.memo(function ConditionalComponents() {
   
   // 计算是否需要隐藏Live2D和音乐播放器
   const hideLive2DAndMusic = useMemo(() => {
-    return pathname === '/' || pathname === '/404' || pathname.startsWith('/_not-found');
+    return pathname === '/' || pathname === '/404' || pathname.startsWith('/_not-found') || pathname.startsWith('/admin');
   }, [pathname]);
   
   // 使用suppressHydrationWarning避免水合警告
@@ -53,16 +53,18 @@ export default React.memo(function ConditionalComponents() {
 
   return (
     <>
-      {/* 红灯笼组件 */}
-      {showLanterns && <Lantern text="新春快乐" enabled={true} />}
-      {/* 音乐播放器 - 在所有页面都渲染，但通过CSS控制可见性 */}
-      <div className={containerClassName} suppressHydrationWarning>
-        <MusicPlayer />
-      </div>
-      {/* 使用Live2DController进行智能路径控制 */}
-      <Live2DController />
-      {/* ScrollToTop组件 - 除首页外所有页面显示 */}
-      {showScrollToTop && <ScrollToTop />}
+      {/* 红灯笼组件 - 后台页面不显示 */}
+      {showLanterns && !pathname.startsWith('/admin') && <Lantern text="新春快乐" enabled={true} />}
+      {/* 音乐播放器 - 在所有页面都渲染，但通过CSS控制可见性 - 后台页面不显示 */}
+      {!pathname.startsWith('/admin') && (
+        <div className={containerClassName} suppressHydrationWarning>
+          <MusicPlayer />
+        </div>
+      )}
+      {/* 使用Live2DController进行智能路径控制 - 后台页面不显示 */}
+      {!pathname.startsWith('/admin') && <Live2DController />}
+      {/* ScrollToTop组件 - 除首页外所有页面显示 - 后台页面不显示 */}
+      {showScrollToTop && !pathname.startsWith('/admin') && <ScrollToTop />}
     </>
   );
 });

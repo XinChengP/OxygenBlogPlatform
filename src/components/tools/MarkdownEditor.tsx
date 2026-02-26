@@ -17,6 +17,7 @@ const CodeBlock = dynamic(() => import('./CodeBlock'), {
 interface MarkdownEditorProps {
   initialContent?: string;
   onSave?: (content: string) => void;
+  onContentChange?: (content: string) => void;
   height?: string;
   blogMode?: boolean;
   onBlogMetadataChange?: (metadata: BlogMetadata) => void;
@@ -269,6 +270,7 @@ function example() {
 export default function MarkdownEditor({ 
   initialContent = '', 
   onSave,
+  onContentChange,
   height = '600px',
   blogMode = false,
   onBlogMetadataChange
@@ -277,6 +279,13 @@ export default function MarkdownEditor({
   const [content, setContent] = useState(initialContent);
   const [previewMode, setPreviewMode] = useState<'edit' | 'preview' | 'split' | 'blog'>('edit');
   const [copiedCode, setCopiedCode] = useState<string>('');
+
+  // 监听内容变化，调用回调函数
+  useEffect(() => {
+    if (onContentChange) {
+      onContentChange(content);
+    }
+  }, [content, onContentChange]);
 
   // 切换预览模式
   const togglePreview = () => {
