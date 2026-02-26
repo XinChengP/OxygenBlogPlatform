@@ -54,7 +54,7 @@ export default React.memo(function ConditionalComponents() {
   return (
     <>
       {/* 红灯笼组件 */}
-      {showLanterns && < Lantern text="新春快乐" enabled={true} />}
+      {showLanterns && <Lantern text="新春快乐" enabled={true} />}
       {/* 音乐播放器 - 在所有页面都渲染，但通过CSS控制可见性 */}
       <div className={containerClassName} suppressHydrationWarning>
         <MusicPlayer />
