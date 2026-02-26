@@ -53,34 +53,6 @@ export default function AboutPage() {
   // 确保组件已挂载
   useEffect(() => {
     setMounted(true);
-
-    // 加载统计脚本
-    const script = document.createElement('script');
-    script.src = 'https://scripts.simpleanalyticscdn.com/latest.js';
-    script.async = true;
-    document.body.appendChild(script);
-
-    // 处理鼠标悬停效果
-    const mapIframe = document.getElementById('visitor-map');
-    if (mapIframe) {
-      const handleMouseOver = () => {
-        mapIframe.style.cursor = 'url("https://cdn-icons-png.flaticon.com/16/10681/10681126.png"), auto';
-      };
-
-      const handleMouseOut = () => {
-        mapIframe.style.cursor = 'default';
-      };
-
-      mapIframe.addEventListener('mouseover', handleMouseOver);
-      mapIframe.addEventListener('mouseout', handleMouseOut);
-
-      // 清理函数
-      return () => {
-        document.body.removeChild(script);
-        mapIframe.removeEventListener('mouseover', handleMouseOver);
-        mapIframe.removeEventListener('mouseout', handleMouseOut);
-      };
-    }
   }, []);
 
   const isDark = resolvedTheme === 'dark';
@@ -471,36 +443,6 @@ export default function AboutPage() {
               </motion.div>
             </motion.div>
           </div>
-        </div>
-
-        {/* 友情链接模块 */}
-        <Suspense fallback={<div className="h-32 bg-gray-200 dark:bg-gray-700 animate-pulse rounded-lg"></div>}>
-          <LazyFriendsLink />
-        </Suspense>
-
-        {/* 相关链接模块 */}
-        <div className="mt-4">
-          <Suspense fallback={<div className="h-24 bg-gray-200 dark:bg-gray-700 animate-pulse rounded-lg"></div>}>
-            <LazyRelatedLinks />
-          </Suspense>
-        </div>
-
-        {/* 访客小地图模块 */}
-        <div className="visitor-map-container mt-8">
-          <h3 className="map-title">✨ 博客访客足迹 ✨</h3>
-          <iframe 
-            id="visitor-map"
-            src="https://simpleanalytics.com/embed/blog.xinchengp.cn?mode=visitor-map&color=66ccff&dark=0" 
-            className="w-full h-[400px] rounded-lg border-none"
-          ></iframe>
-          {/* noscript 标签，用于在禁用 JavaScript 的情况下统计数据 */}
-          <noscript>
-            <img 
-              src="https://queue.simpleanalyticscdn.com/noscript.gif" 
-              alt="" 
-              referrerPolicy="no-referrer-when-downgrade" 
-            />
-          </noscript>
         </div>
 
         {/* 友情链接模块 */}
