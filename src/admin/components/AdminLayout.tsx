@@ -19,7 +19,7 @@ interface AdminLayoutProps {
 
 const navItems = [
   { name: '仪表板', href: '/admin/dashboard', icon: Home },
-  { name: '博文管理', href: '/admin/blogs', icon: FileText },
+  { name: '文章管理', href: '/admin/blogs', icon: FileText },
   { name: '动态管理', href: '/admin/moments', icon: MessageSquare },
   { name: '图床管理', href: '/admin/gallery', icon: Image },
   { name: '系统设置', href: '/admin/settings', icon: Settings },

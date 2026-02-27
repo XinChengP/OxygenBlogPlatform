@@ -57,7 +57,7 @@ export interface AdminLogEntry {
   ip?: string;
 }
 
-// 博文管理相关类型
+// 文章管理相关类型
 export interface BlogPostForAdmin {
   slug: string;
   title: string;
