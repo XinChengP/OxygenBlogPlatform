@@ -1,18 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { 
-  Home, 
-  FileText, 
-  MessageSquare, 
-  Image, 
-  Settings, 
-  LogOut,
+import {
+  Home,
+  FileText,
+  MessageSquare,
+  Image,
+  Settings,
   Menu,
-  X,
-  User
+  X
 } from 'lucide-react';
 
 interface AdminLayoutProps {
@@ -28,22 +26,11 @@ const navItems = [
 ];
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
-  const router = useRouter();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   useEffect(() => {
-    const session = localStorage.getItem('adminSession');
-    if (!session) {
-      router.push('/admin/login');
-    } else {
-      setIsAuthenticated(true);
-    }
-    setLoading(false);
-    
     // 从localStorage中获取后台主题设置，默认为浅色模式
     const adminTheme = localStorage.getItem('adminTheme');
     if (adminTheme === 'dark') {
@@ -54,27 +41,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       // 默认使用浅色模式
       setIsDarkMode(false);
     }
-  }, [router]);
-
-  const handleLogout = () => {
-    localStorage.removeItem('adminSession');
-    router.push('/admin/login');
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
-        <div className="text-center">
-          <div className="inline-block w-16 h-16 border-4 border-blue-300 border-t-blue-500 rounded-full animate-spin mb-4"></div>
-          <div className="text-lg font-medium text-gray-600 dark:text-gray-300">正在加载...</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return null;
-  }
+  }, []);
 
   return (
     <div className={`min-h-screen ${isDarkMode ? 'dark bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900'}`}>
@@ -141,15 +108,15 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           })}
         </nav>
 
-        {/* 底部退出按钮 */}
+        {/* 底部返回首页按钮 */}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-[#66ccff]/30 dark:border-[#66ccff]/20">
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center justify-center space-x-2 px-4 py-3 text-red-100 hover:bg-red-500/20 rounded-lg transition-all duration-300 transform hover:scale-105"
+          <Link
+            href="/"
+            className="w-full flex items-center justify-center space-x-2 px-4 py-3 text-white/80 hover:bg-white/10 rounded-lg transition-all duration-300 transform hover:scale-105"
           >
-            <LogOut size={20} />
-            <span className="font-medium">退出登录</span>
-          </button>
+            <Home size={20} />
+            <span className="font-medium">返回首页</span>
+          </Link>
         </div>
       </aside>
 

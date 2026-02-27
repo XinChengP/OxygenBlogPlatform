@@ -103,52 +103,53 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(0.98 0.005 220);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(0.98 0.005 220);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(0.98 0.005 220);
-  --popover-foreground: oklch(0.145 0 0);
+  /* 将 oklch 颜色转换为 hex 格式，以兼容 Framer Motion 动画 */
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: #f8fafc;
+  --card-foreground: #0f172a;
+  --popover: #f8fafc;
+  --popover-foreground: #0f172a;
   
   /* 系统字体栈 */
   --font-geist-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
   --font-geist-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
   
-  /* 主题色变量 - 默认使用blue主题 */
-  --color-primary: oklch(0.600 0.400 200.0);
-  --color-primary-foreground: oklch(0.98 0.02 250);
-  --color-secondary: oklch(0.302 0.400 225.9);
-  --color-accent: oklch(0.327 0.400 188.7);
-  --color-accent-foreground: oklch(0.3 0.1 250);
+  /* 主题色变量 - 默认使用blue主题 (转换为hex以支持Framer Motion动画) */
+  --color-primary: #66ccff;
+  --color-primary-foreground: #f0f9ff;
+  --color-secondary: #0066cc;
+  --color-accent: #0099cc;
+  --color-accent-foreground: #e0f2fe;
   
   /* 保持原有的变量用于兼容 */
   --primary: var(--color-primary);
   --primary-foreground: var(--color-primary-foreground);
   --secondary: var(--color-secondary);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.96 0.005 220);
-  --muted-foreground: oklch(0.556 0 0);
+  --secondary-foreground: #1e293b;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
   --accent: var(--color-accent);
   --accent-foreground: var(--color-accent-foreground);
   
-  /* 其他颜色变量 */
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.92 0.005 220);
-  --input: oklch(0.92 0.005 220);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.975 0.005 220);
-  --sidebar-foreground: oklch(0.145 0 0);
+  /* 其他颜色变量 (转换为hex格式) */
+  --destructive: #dc2626;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #94a3b8;
+  --chart-1: #f97316;
+  --chart-2: #06b6d4;
+  --chart-3: #8b5cf6;
+  --chart-4: #eab308;
+  --chart-5: #ec4899;
+  --sidebar: #f8fafc;
+  --sidebar-foreground: #0f172a;
   --sidebar-primary: var(--color-primary);
   --sidebar-primary-foreground: var(--color-primary-foreground);
-  --sidebar-accent: oklch(0.96 0.005 220);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.92 0.005 220);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar-accent: #f1f5f9;
+  --sidebar-accent-foreground: #1e293b;
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: #94a3b8;
   
   /* 代码块主题变量 */
   --code-bg: #f8fafc; /* slate-50 */
@@ -160,47 +161,47 @@
 
 .dark {
   --background: #1f2735;
-  --foreground: oklch(0.985 0 0);
+  --foreground: #f8fafc;
   --card: #2a3441;
-  --card-foreground: oklch(0.985 0 0);
+  --card-foreground: #f8fafc;
   --popover: #2a3441;
-  --popover-foreground: oklch(0.985 0 0);
+  --popover-foreground: #f8fafc;
   
-  /* 主题色变量 - 深色模式默认使用blue主题 */
-  --color-primary: oklch(0.800 0.400 200.0);
-  --color-primary-foreground: oklch(0.1 0.02 250);
-  --color-secondary: oklch(0.602 0.400 225.9);
-  --color-accent: oklch(0.627 0.400 188.7);
-  --color-accent-foreground: oklch(0.8 0.1 250);
+  /* 主题色变量 - 深色模式默认使用blue主题 (转换为hex以支持Framer Motion动画) */
+  --color-primary: #99ddff;
+  --color-primary-foreground: #0f172a;
+  --color-secondary: #3388dd;
+  --color-accent: #33aadd;
+  --color-accent-foreground: #f0f9ff;
   
   /* 保持原有的变量用于兼容 */
   --primary: var(--color-primary);
   --primary-foreground: var(--color-primary-foreground);
   --secondary: var(--color-secondary);
-  --secondary-foreground: oklch(0.985 0 0);
+  --secondary-foreground: #f8fafc;
   --muted: #2a3441;
-  --muted-foreground: oklch(0.708 0 0);
+  --muted-foreground: #94a3b8;
   --accent: var(--color-accent);
   --accent-foreground: var(--color-accent-foreground);
   
-  /* 其他颜色变量 */
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
+  /* 其他颜色变量 (转换为hex格式) */
+  --destructive: #ef4444;
+  --border: rgba(255, 255, 255, 0.1);
+  --input: rgba(255, 255, 255, 0.15);
+  --ring: #64748b;
+  --chart-1: #60a5fa;
+  --chart-2: #22d3ee;
+  --chart-3: #fbbf24;
+  --chart-4: #a78bfa;
+  --chart-5: #f472b6;
   --sidebar: #2a3441;
-  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-foreground: #f8fafc;
   --sidebar-primary: var(--color-primary);
   --sidebar-primary-foreground: var(--color-primary-foreground);
   --sidebar-accent: #2a3441;
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar-accent-foreground: #f8fafc;
+  --sidebar-border: rgba(255, 255, 255, 0.1);
+  --sidebar-ring: #64748b;
   
   /* 代码块主题变量 - 深色模式 */
   --code-bg: #1e293b; /* slate-800 */
@@ -550,5 +551,18 @@ pre code {
 
 :hover {
   -ms-overflow-style: auto;
+}
+
+/* Dashboard 统计卡片背景色 - 确保 Tailwind 任意值类名能正常工作 */
+.bg-tianyi-blue {
+  background-color: #66ccff;
+}
+
+.bg-tianyi-cyan {
+  background-color: #06b6d4;
+}
+
+.bg-tianyi-dark {
+  background-color: #1e40af;
 }
 

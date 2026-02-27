@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 import "./globals.css";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
@@ -9,11 +8,13 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import SmoothScrollProvider from "@/components/SmoothScrollProvider";
 import ClientRouterWrapper from "@/components/ClientRouterWrapper";
 import { NavigationVisibilityProvider } from "@/contexts/NavigationVisibilityContext";
-import { webTitle, webDescription } from "@/setting/WebSetting";
 
+// 使用Unicode转义序列避免服务端渲染时的编码问题
+// "心想事成 的 Blog" -> \\u5fc3\\u60f3\\u4e8b\\u6210 \\u7684 Blog
+// "个人博客" -> \\u4e2a\\u4eba\\u535a\\u5ba2
 export const metadata: Metadata = {
-  title: webTitle,
-  description: webDescription,
+  title: "\u5fc3\u60f3\u4e8b\u6210 \u7684 Blog",
+  description: "\u4e2a\u4eba\u535a\u5ba2",
   icons: {
     icon: '/favicon.ico',
   },
@@ -34,13 +35,10 @@ export default function RootLayout({
         <link rel="preconnect" href="https://giscus.app" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://api.github.com" crossOrigin="anonymous" />
         
-
-        
-        {/* 预加载关键JavaScript */}
-        <link rel="preload" href="/js/smooth-navigation.js" as="script" />
-        
-        {/* 预加载关键图片 */}
-        <link rel="preload" href="/favicon.ico" as="image" type="image/x-icon" />
+        {/* 注意：移除不必要的预加载以避免浏览器警告
+            - favicon.ico 不需要预加载，浏览器会自动请求
+            - smooth-navigation.js 通过Script组件加载，不需要预加载
+        */}
         
         {/* 主题初始化脚本 */}
         <script
@@ -127,29 +125,25 @@ export default function RootLayout({
             `,
           }}
         />
-        {/* 平滑导航脚本 */}
-        <Script src="/js/smooth-navigation.js" strategy="afterInteractive" />
+        {/* 注意：Script组件不能在head中使用，已移动到body中 */}
         
-        {/* 动态标题脚本 */}
-        <Script
-          dangerouslySetInnerHTML={{
-            __html: `
-              // 动态标题
-              var OriginTitile = document.title, titleTime;
-              document.addEventListener("visibilitychange", function() {
-                if (document.hidden) {
-                  document.title = "请你留下，不要离开QAQ";
-                  clearTimeout(titleTime);
-                } else {
-                  document.title = "还有我，在你身边说我爱你啊awa";
-                  titleTime = setTimeout(function() {
-                    document.title = OriginTitile;
-                  }, 2000);
-                }
-              });
-            `,
-          }}
-        />
+        {/* 动态标题脚本 - 使用普通script标签 */}
+        <script dangerouslySetInnerHTML={{__html:`
+          (function(){
+            var OriginTitile=document.title,titleTime;
+            var titleLeave="\\u8bf7\\u4f60\\u7559\\u4e0b\\uff0c\\u4e0d\\u8981\\u79bb\\u5f00QAQ";
+            var titleBack="\\u8fd8\\u6709\\u6211\\uff0c\\u5728\\u4f60\\u8eab\\u8fb9\\u8bf4\\u6211\\u7231\\u4f60\\u554awawa";
+            document.addEventListener("visibilitychange",function(){
+              if(document.hidden){
+                document.title=titleLeave;
+                clearTimeout(titleTime);
+              }else{
+                document.title=titleBack;
+                titleTime=setTimeout(function(){document.title=OriginTitile},2000);
+              }
+            });
+          })();
+        `}} />
       </head>
       <body
         className="antialiased text-foreground transition-colors duration-300"
@@ -158,6 +152,8 @@ export default function RootLayout({
         }}
         suppressHydrationWarning
       >
+        {/* 平滑导航脚本 - 使用普通script标签 */}
+        <script src="/js/smooth-navigation.js" defer />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
