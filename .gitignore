@@ -47,3 +47,7 @@ next-env.d.ts
 /admin-data/
 *.admin.json
 
+# 后台管理系统目录（仅本地开发使用，不要提交到GitHub）
+/src/app/admin/
+/src/app/api/admin/
+
