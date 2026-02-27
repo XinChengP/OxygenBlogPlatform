@@ -150,7 +150,7 @@ function ClientMomentsPage({ moments, blogCount, blogTotalWordCount, blogs, cate
                       className="p-4 rounded-lg border transition-all duration-300 backdrop-blur-md bg-card/90 border-border shadow-md supports-[backdrop-filter]:bg-card/75"
                     >
                       <div className="text-foreground text-sm">
-                        <p>在【{blog.updatedAt || blog.date}】发布了<a href={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/blogs/${blog.id}`} className="text-primary hover:underline">《{blog.title}》</a></p>
+                        <p>在【{blog.updatedAt || blog.date}】发布了<a href={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/blogs/${encodeURIComponent(blog.id)}`} className="text-primary hover:underline">《{blog.title}》</a></p>
                       </div>
                     </div>
                   );

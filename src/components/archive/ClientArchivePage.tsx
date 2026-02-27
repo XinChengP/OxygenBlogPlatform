@@ -377,8 +377,8 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
                               transition={{ duration: 0.4 }}
                               className={getGlassStyle("p-4 rounded-lg border transition-all duration-300")}
                             >
-                              <Link 
-                                href={`/blogs/${post.slug}`}
+                              <Link
+                                href={`/blogs/${encodeURIComponent(post.slug)}`}
                                 className="block group"
                               >
                                 <div className="flex items-center gap-2">
@@ -489,8 +489,8 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
                       transition={{ duration: 0.4, delay: Math.random() * 0.1 }}
                       className="p-4 rounded-lg border border-border/50 hover:border-primary/30 transition-all duration-300"
                     >
-                      <Link 
-                        href={`/blogs/${post.slug}`}
+                      <Link
+                        href={`/blogs/${encodeURIComponent(post.slug)}`}
                         className="block group"
                         onClick={closeTagModal}
                       >

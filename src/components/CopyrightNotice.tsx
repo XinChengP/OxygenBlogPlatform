@@ -40,7 +40,7 @@ export default function CopyrightNotice({
   }
   
   const licenseInfo = getCCLicenseInfo(licenseType);
-  const articleUrl = `${copyrightConfig.siteUrl}/blogs/${slug}`;
+  const articleUrl = `${copyrightConfig.siteUrl}/blogs/${encodeURIComponent(slug)}`;
   const publishYear = new Date(publishDate).getFullYear();
   
   // 判断是否需要折叠（超过3个引用）
