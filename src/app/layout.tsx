@@ -128,7 +128,7 @@ export default function RootLayout({
           }}
         />
         {/* 平滑导航脚本 */}
-        <Script src="/js/smooth-navigation.js" strategy="beforeInteractive" />
+        <Script src="/js/smooth-navigation.js" strategy="afterInteractive" />
         
         {/* 动态标题脚本 */}
         <Script
