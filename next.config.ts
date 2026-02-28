@@ -1,23 +1,17 @@
 const isStaticExport = process.env.NODE_ENV === 'production' || process.env.NEXT_PRIVATE_STATIC_EXPORT === 'true';
 const repoName = process.env.NEXT_PUBLIC_GITHUB_REPO_NAME || 'OxygenBlogPlatform';
 
-// 后台管理系统相关的路由（在静态导出时排除）
-const adminRoutes = [
-  '/admin',
-  '/api/admin',
-];
-
 const nextConfig = {
   reactStrictMode: true,
-  
+
   turbopack: {},
-  
+
   compiler: {
     reactRemoveProperties: isStaticExport,
     removeConsole: isStaticExport ? { exclude: ['error'] } : false,
     emotion: true,
   },
-  
+
   // 性能优化配置
   // 启用HTTP压缩
   compress: true,
@@ -35,24 +29,19 @@ const nextConfig = {
     // 静态导出时必须禁用图片优化
     unoptimized: isStaticExport,
   },
-  
+
   // 静态导出配置
   ...(isStaticExport && {
     // 静态导出配置
     output: "export",
     distDir: 'out',
     trailingSlash: true,
-    
-    // 排除后台管理系统相关路由（这些需要服务器端支持）
-    excludeFiles: (filename: string) => {
-      return adminRoutes.some(route => filename.includes(route));
-    },
-    
+
     // 使用环境变量设置basePath和assetPrefix，确保GitHub Pages部署正常
     // 对于静态导出模式，优先使用空字符串作为基础路径
     basePath: (process.env.CUSTOM_DOMAIN === 'true' || process.env.NEXT_PUBLIC_SITE_URL === 'https://blog.xinchengp.cn') ? '' : (process.env.NEXT_PUBLIC_BASE_PATH || ''),
     assetPrefix: (process.env.CUSTOM_DOMAIN === 'true' || process.env.NEXT_PUBLIC_SITE_URL === 'https://blog.xinchengp.cn') ? '' : (process.env.NEXT_PUBLIC_BASE_PATH || ''),
-    
+
     // 图片配置（仅在静态导出模式下需要）
     images: {
       // 静态导出时必须禁用图片优化
@@ -64,7 +53,7 @@ const nextConfig = {
         },
       ],
     },
-    
+
     // 确保环境变量正确注入
     env: {
       NEXT_PUBLIC_BASE_PATH: process.env.NEXT_PUBLIC_BASE_PATH || '',
@@ -73,7 +62,7 @@ const nextConfig = {
       CUSTOM_DOMAIN: process.env.CUSTOM_DOMAIN || 'false',
     },
   }),
-  
+
   // 开发环境配置（非静态导出）
   ...(!isStaticExport && {
     // 开发环境禁用静态导出
@@ -82,7 +71,7 @@ const nextConfig = {
     basePath: '',
     assetPrefix: '',
   }),
-  
+
   // 环境变量配置
   env: {
     // 静态导出标识
@@ -90,20 +79,20 @@ const nextConfig = {
     // GitHub仓库名
     NEXT_PUBLIC_GITHUB_REPO_NAME: repoName,
   },
-  
+
   // 确保正确处理Unicode字符
   pageExtensions: ["tsx", "ts", "jsx", "js"],
-  
+
   // 缓存配置
   generateBuildId: async () => {
     return new Date().getTime().toString();
   },
-  
+
   poweredByHeader: false,
-  
+
   // 生成源映射（仅在开发环境）
   productionBrowserSourceMaps: !isStaticExport,
-  
+
   // 优化HTTP头 (仅在非静态导出模式下启用)
   ...(isStaticExport ? {} : {
     headers: async () => {
