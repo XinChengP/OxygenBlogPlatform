@@ -171,3 +171,171 @@ export function generateBlogFileName(title: string): string {
   // 添加.md扩展名
   return `${fileName}.md`;
 }
+
+/**
+ * 获取 GitHub 仓库中的所有图片文件（递归遍历子目录）
+ */
+export async function getImagesFromRepo(config: GitHubConfig, path: string = ''): Promise<any[]> {
+  try {
+    const url = path
+      ? `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${path}?ref=${config.branch}`
+      : `https://api.github.com/repos/${config.owner}/${config.repo}/contents?ref=${config.branch}`;
+    
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `token ${config.token}`,
+        'Accept': 'application/vnd.github.v3+json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`获取图片列表失败：${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    // 支持的图片格式
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.avif'];
+    
+    // 收集所有图片
+    const images: any[] = [];
+    
+    // 遍历目录内容
+    for (const item of data) {
+      if (item.type === 'file') {
+        // 检查是否是图片文件
+        const ext = item.name.toLowerCase().substring(item.name.lastIndexOf('.'));
+        if (imageExtensions.includes(ext)) {
+          images.push(item);
+        }
+      } else if (item.type === 'dir') {
+        // 递归获取子目录中的图片
+        const subImages = await getImagesFromRepo(config, item.path);
+        images.push(...subImages);
+      }
+    }
+    
+    return images;
+  } catch (error) {
+    console.error('获取 GitHub 图片列表失败:', error);
+    throw error;
+  }
+}
+
+/**
+ * 上传图片到 GitHub 仓库
+ */
+export async function uploadImageToGitHub(
+  config: GitHubConfig,
+  file: File,
+  uploadPath: string = ''
+): Promise<any> {
+  try {
+    // 读取文件并转换为 base64
+    const arrayBuffer = await file.arrayBuffer();
+    const base64Content = Buffer.from(arrayBuffer).toString('base64');
+    
+    // 生成唯一的文件名
+    const timestamp = Date.now();
+    const extension = file.name.substring(file.name.lastIndexOf('.'));
+    const sanitizedName = file.name
+      .substring(0, file.name.lastIndexOf('.'))
+      .replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '-');
+    const filename = `${sanitizedName}-${timestamp}${extension}`;
+    
+    const fullPath = uploadPath ? `${uploadPath}/${filename}` : filename;
+    
+    // 调用 GitHub API 上传
+    const response = await fetch(
+      `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${fullPath}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Authorization': `token ${config.token}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: `上传图片：${filename}`,
+          content: base64Content,
+          branch: config.branch,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(`上传失败：${errorData.message}`);
+    }
+
+    const result = await response.json();
+    
+    return {
+      success: true,
+      url: result.content.download_url,
+      path: result.content.path,
+      sha: result.content.sha,
+      name: filename,
+      size: file.size,
+    };
+  } catch (error) {
+    console.error('上传到 GitHub 失败:', error);
+    throw error;
+  }
+}
+
+/**
+ * 从 GitHub 仓库删除图片
+ */
+export async function deleteImageFromGitHub(
+  config: GitHubConfig,
+  path: string,
+  sha?: string
+): Promise<boolean> {
+  try {
+    // 如果没有提供 SHA，先获取
+    let fileSha = sha;
+    if (!fileSha) {
+      const fileData = await getFile(config, path);
+      if (!fileData) {
+        throw new Error('文件不存在');
+      }
+      fileSha = fileData.sha;
+    }
+    
+    // 调用 GitHub API 删除
+    const response = await fetch(
+      `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${path}`,
+      {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `token ${config.token}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: `删除图片：${path}`,
+          sha: fileSha,
+          branch: config.branch,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(`删除失败：${errorData.message}`);
+    }
+
+    return true;
+  } catch (error) {
+    console.error('从 GitHub 删除失败:', error);
+    throw error;
+  }
+}
+
+/**
+ * 获取图片的下载 URL
+ */
+export function getImageDownloadUrl(config: GitHubConfig, path: string): string {
+  return `https://raw.githubusercontent.com/${config.owner}/${config.repo}/${config.branch}/${path}`;
+}
