@@ -19,6 +19,19 @@ interface GalleryClientProps {
 
 // GalleryClient组件
 const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps) => {
+  // 调试日志：输出接收到的初始数据
+  console.log('[GalleryClient] 接收到的初始数据:', {
+    imagesCount: initialImages.length,
+    categoriesCount: initialCategories.length,
+    categories: initialCategories.map(c => ({
+      name: c.name,
+      count: c.count,
+      slug: c.slug,
+      hasSubCategories: !!c.subCategories,
+      subCategoriesCount: c.subCategories?.length || 0
+    }))
+  });
+  
   // 获取背景样式和容器样式
   const { containerStyle, isBackgroundEnabled } = useBackgroundStyle('gallery');
   

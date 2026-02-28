@@ -145,12 +145,24 @@ const CategoryFilter = ({
   onCategoryChange, 
   getGlassStyle 
 }: CategoryFilterProps) => {
+  // 调试日志：输出接收到的分类数据
+  console.log('[CategoryFilter] 接收到的分类:', categories.map(c => ({
+    name: c.name,
+    count: c.count,
+    hasSubCategories: !!c.subCategories,
+    subCategoriesCount: c.subCategories?.length || 0
+  })));
+  
   // 计算总图片数
   const totalImages = categories.reduce((sum, cat) => sum + cat.count, 0);
   
-  // 展开状态管理
+  // 展开状态管理 - 默认展开所有有子分类的分类
+  const defaultExpanded = categories
+    .filter(c => c.subCategories && c.subCategories.length > 0)
+    .map(c => c.name);
+  
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set([
-    '表情包', '美图'  // 默认展开的分类
+    '表情包', '美图', ...defaultExpanded  // 默认展开的分类
   ]));
   
   // 切换展开状态

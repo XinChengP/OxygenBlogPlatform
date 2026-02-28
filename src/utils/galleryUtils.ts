@@ -206,9 +206,16 @@ export const buildCategoryTree = (images: GalleryImage[]): ImageCategoryTree[] =
     const subCategories: ImageCategoryTree[] = [];
     
     subCategoryMap.forEach((subCategoryImages, subCategoryName) => {
+      // 生成子分类 slug
+      const subCategorySlug = `${mainCategorySlug}-${subCategoryName
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9\u4e00-\u9fa5_-]/g, '')}`
+        || `subcategory-${Math.random().toString(36).substr(2, 9)}`;
+      
       subCategories.push({
         name: subCategoryName,
-        slug: `${mainCategoryName.toLowerCase().replace(/\s+/g, '-')}-${subCategoryName.toLowerCase().replace(/\s+/g, '-')}`,
+        slug: subCategorySlug,
         count: subCategoryImages.length,
         source: ImageSource.Remote, // 暂时默认为远程，实际应该根据图片来源判断
         parentCategory: mainCategoryName
@@ -223,9 +230,16 @@ export const buildCategoryTree = (images: GalleryImage[]): ImageCategoryTree[] =
     });
     
     // 创建主分类节点
+    // 生成 slug：将中文转换为拼音或保留原样，并确保是有效的 URL 片段
+    const mainCategorySlug = mainCategoryName
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9\u4e00-\u9fa5_-]/g, '') // 保留中文、字母、数字、下划线和连字符
+      || 'category-' + Math.random().toString(36).substr(2, 9); // 如果为空则生成随机 slug
+    
     const mainCategoryTree: ImageCategoryTree = {
       name: mainCategoryName,
-      slug: mainCategoryName.toLowerCase().replace(/\s+/g, '-'),
+      slug: mainCategorySlug,
       count: mainCategoryCount,
       source: ImageSource.Remote, // 暂时默认为远程，实际应该根据图片来源判断
       subCategories: subCategories.length > 0 ? subCategories : undefined
