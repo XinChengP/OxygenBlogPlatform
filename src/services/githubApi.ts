@@ -43,12 +43,23 @@ export async function createOrUpdateFile(
 }
 
 /**
+ * 编码路径中的特殊字符（包括中文）
+ * @param path - 原始路径
+ * @returns 编码后的路径
+ */
+function encodePath(path: string): string {
+  // 将路径按斜杠分割，对每一部分进行编码，然后重新组合
+  return path.split('/').map(encodeURIComponent).join('/');
+}
+
+/**
  * 获取GitHub文件
  */
 async function getFile(config: GitHubConfig, path: string): Promise<any> {
   try {
+    const encodedPath = encodePath(path);
     const response = await fetch(
-      `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${path}?ref=${config.branch}`,
+      `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${encodedPath}?ref=${config.branch}`,
       {
         headers: {
           'Authorization': `token ${config.token}`,
@@ -78,8 +89,9 @@ async function getFile(config: GitHubConfig, path: string): Promise<any> {
  * 创建新文件
  */
 async function createFile(config: GitHubConfig, path: string, content: GitHubFileContent): Promise<any> {
+  const encodedPath = encodePath(path);
   const response = await fetch(
-    `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${path}`,
+    `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${encodedPath}`,
     {
       method: 'PUT',
       headers: {
@@ -107,8 +119,9 @@ async function createFile(config: GitHubConfig, path: string, content: GitHubFil
  * 更新现有文件
  */
 async function updateFile(config: GitHubConfig, path: string, content: GitHubFileContent): Promise<any> {
+  const encodedPath = encodePath(path);
   const response = await fetch(
-    `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${path}`,
+    `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${encodedPath}`,
     {
       method: 'PUT',
       headers: {
@@ -177,8 +190,9 @@ export function generateBlogFileName(title: string): string {
  */
 export async function getImagesFromRepo(config: GitHubConfig, path: string = ''): Promise<any[]> {
   try {
-    const url = path
-      ? `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${path}?ref=${config.branch}`
+    const encodedPath = path ? encodePath(path) : '';
+    const url = encodedPath
+      ? `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${encodedPath}?ref=${config.branch}`
       : `https://api.github.com/repos/${config.owner}/${config.repo}/contents?ref=${config.branch}`;
     
     const response = await fetch(url, {
@@ -210,6 +224,7 @@ export async function getImagesFromRepo(config: GitHubConfig, path: string = '')
         }
       } else if (item.type === 'dir') {
         // 递归获取子目录中的图片
+        // 注意：GitHub API 返回的 path 已经是解码后的中文路径
         const subImages = await getImagesFromRepo(config, item.path);
         images.push(...subImages);
       }
@@ -244,10 +259,11 @@ export async function uploadImageToGitHub(
     const filename = `${sanitizedName}-${timestamp}${extension}`;
     
     const fullPath = uploadPath ? `${uploadPath}/${filename}` : filename;
+    const encodedFullPath = encodePath(fullPath);
     
     // 调用 GitHub API 上传
     const response = await fetch(
-      `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${fullPath}`,
+      `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${encodedFullPath}`,
       {
         method: 'PUT',
         headers: {
@@ -304,8 +320,9 @@ export async function deleteImageFromGitHub(
     }
     
     // 调用 GitHub API 删除
+    const encodedPath = encodePath(path);
     const response = await fetch(
-      `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${path}`,
+      `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${encodedPath}`,
       {
         method: 'DELETE',
         headers: {
