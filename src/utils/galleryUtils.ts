@@ -202,6 +202,13 @@ export const buildCategoryTree = (images: GalleryImage[]): ImageCategoryTree[] =
       }
     });
     
+    // 生成主分类 slug
+    const mainCategorySlug = mainCategoryName
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9\u4e00-\u9fa5_-]/g, '') // 保留中文、字母、数字、下划线和连字符
+      || 'category-' + Math.random().toString(36).substr(2, 9); // 如果为空则生成随机 slug
+    
     // 构建子分类数组
     const subCategories: ImageCategoryTree[] = [];
     
@@ -230,13 +237,6 @@ export const buildCategoryTree = (images: GalleryImage[]): ImageCategoryTree[] =
     });
     
     // 创建主分类节点
-    // 生成 slug：将中文转换为拼音或保留原样，并确保是有效的 URL 片段
-    const mainCategorySlug = mainCategoryName
-      .toLowerCase()
-      .replace(/\s+/g, '-')
-      .replace(/[^a-z0-9\u4e00-\u9fa5_-]/g, '') // 保留中文、字母、数字、下划线和连字符
-      || 'category-' + Math.random().toString(36).substr(2, 9); // 如果为空则生成随机 slug
-    
     const mainCategoryTree: ImageCategoryTree = {
       name: mainCategoryName,
       slug: mainCategorySlug,
