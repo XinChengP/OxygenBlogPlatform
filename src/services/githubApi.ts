@@ -64,6 +64,24 @@ function encodePath(path: string): string {
 }
 
 /**
+ * 构建 GitHub API 请求头
+ * 只有在 token 存在时才添加 Authorization 头
+ * @param token - GitHub Token
+ * @returns 请求头对象
+ */
+function buildHeaders(token: string): Record<string, string> {
+  const headers: Record<string, string> = {
+    'Accept': 'application/vnd.github.v3+json',
+  };
+  
+  if (token && token.trim() !== '') {
+    headers['Authorization'] = `token ${token}`;
+  }
+  
+  return headers;
+}
+
+/**
  * 获取GitHub文件
  */
 async function getFile(config: GitHubConfig, path: string): Promise<any> {
@@ -72,10 +90,7 @@ async function getFile(config: GitHubConfig, path: string): Promise<any> {
     const response = await fetch(
       `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${encodedPath}?ref=${config.branch}`,
       {
-        headers: {
-          'Authorization': `token ${config.token}`,
-          'Accept': 'application/vnd.github.v3+json',
-        },
+        headers: buildHeaders(config.token),
       }
     );
 
@@ -106,8 +121,7 @@ async function createFile(config: GitHubConfig, path: string, content: GitHubFil
     {
       method: 'PUT',
       headers: {
-        'Authorization': `token ${config.token}`,
-        'Accept': 'application/vnd.github.v3+json',
+        ...buildHeaders(config.token),
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -136,8 +150,7 @@ async function updateFile(config: GitHubConfig, path: string, content: GitHubFil
     {
       method: 'PUT',
       headers: {
-        'Authorization': `token ${config.token}`,
-        'Accept': 'application/vnd.github.v3+json',
+        ...buildHeaders(config.token),
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -206,12 +219,16 @@ export async function getImagesFromRepo(config: GitHubConfig, path: string = '')
       ? `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${encodedPath}?ref=${config.branch}`
       : `https://api.github.com/repos/${config.owner}/${config.repo}/contents?ref=${config.branch}`;
     
-    const response = await fetch(url, {
-      headers: {
-        'Authorization': `token ${config.token}`,
-        'Accept': 'application/vnd.github.v3+json',
-      },
-    });
+    // 构建请求头，只有存在 token 时才添加 Authorization
+    const headers: Record<string, string> = {
+      'Accept': 'application/vnd.github.v3+json',
+    };
+    
+    if (config.token && config.token.trim() !== '') {
+      headers['Authorization'] = `token ${config.token}`;
+    }
+    
+    const response = await fetch(url, { headers });
 
     if (!response.ok) {
       throw new Error(`获取图片列表失败：${response.status}`);

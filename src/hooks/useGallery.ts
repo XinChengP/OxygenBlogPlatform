@@ -1,5 +1,10 @@
 'use client';
 
+/**
+ * 图床管理 Hook
+ * 用于管理本地和远程图床的图片资源
+ */
+
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { GalleryImage, ImageSource } from '@/types/gallery';
 import {
@@ -24,6 +29,12 @@ import {
   handleGitHubError,
   GitHubConfig,
 } from '@/services/githubApi';
+import {
+  getLocalGalleryImages,
+  deleteLocalImage,
+  getLocalGalleryStats,
+  uploadLocalImage,
+} from '@/actions/galleryActions';
 
 /**
  * 图床配置接口
@@ -246,19 +257,9 @@ export function useGallery(options: UseGalleryOptions): UseGalleryReturn {
           setImages(galleryImages);
         }
       } else {
-        // 本地图片通过 API 获取
-        try {
-          const response = await fetch('/api/gallery/local');
-          if (response.ok) {
-            const data = await response.json();
-            setImages(data.images || []);
-          } else {
-            setImages([]);
-          }
-        } catch {
-          // 如果 API 不存在，使用空数组
-          setImages([]);
-        }
+        // 本地图片通过 Server Action 获取
+        const localImages = await getLocalGalleryImages(path);
+        setImages(localImages);
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '加载图片失败';
@@ -282,17 +283,6 @@ export function useGallery(options: UseGalleryOptions): UseGalleryReturn {
    * 上传单个图片
    */
   const uploadImage = useCallback(async (file: File, uploadPath?: string): Promise<boolean> => {
-    if (source === 'local') {
-      setError('本地图床暂不支持上传，请使用远程图床');
-      return false;
-    }
-
-    const githubConfig = getGitHubConfig();
-    if (!githubConfig) {
-      setError('请先配置 GitHub Token');
-      return false;
-    }
-
     // 验证文件
     const validation = validateImageFile(file);
     if (!validation.valid) {
@@ -301,7 +291,6 @@ export function useGallery(options: UseGalleryOptions): UseGalleryReturn {
     }
 
     // 添加上传进度
-    const progressId = `${file.name}-${Date.now()}`;
     setUploadProgress(prev => [...prev, {
       fileName: file.name,
       progress: 0,
@@ -309,52 +298,89 @@ export function useGallery(options: UseGalleryOptions): UseGalleryReturn {
     }]);
 
     try {
-      // 压缩图片
-      const compressedBlob = await compressImage(file, {
-        maxWidth: 1920,
-        maxHeight: 1920,
-        quality: 0.85,
-        format: 'image/webp',
-      });
+      if (source === 'local') {
+        // 本地上传
+        const formData = new FormData();
+        formData.append('file', file);
 
-      // 更新进度
-      setUploadProgress(prev => prev.map(p => 
-        p.fileName === file.name ? { ...p, progress: 50 } : p
-      ));
+        const targetPath = uploadPath || config?.defaultPath || 'LTY_Picture';
+        const result = await uploadLocalImage(formData, targetPath);
 
-      // 生成文件名
-      const fileName = generateImageFileName(file.name);
-      const targetPath = uploadPath || config?.defaultPath || '';
-      const fullPath = targetPath ? `${targetPath}/${fileName}` : fileName;
+        if (result.success && result.image) {
+          // 更新进度为成功
+          setUploadProgress(prev => prev.map(p => 
+            p.fileName === file.name ? { ...p, progress: 100, status: 'success' } : p
+          ));
 
-      // 上传到 GitHub
-      const result = await uploadImageToGitHub(githubConfig, file, fullPath);
+          // 添加到图片列表
+          setImages(prev => [result.image!, ...prev]);
 
-      // 更新进度为成功
-      setUploadProgress(prev => prev.map(p => 
-        p.fileName === file.name ? { ...p, progress: 100, status: 'success' } : p
-      ));
+          // 3秒后移除进度项
+          setTimeout(() => {
+            setUploadProgress(prev => prev.filter(p => p.fileName !== file.name));
+          }, 3000);
 
-      // 添加到图片列表
-      const newImage: GalleryImage = {
-        id: result.sha,
-        src: result.url,
-        alt: fileName,
-        source: ImageSource.Remote,
-        category: targetPath.split('/')[0] || '默认',
-        createdAt: new Date().toISOString(),
-      };
+          return true;
+        } else {
+          throw new Error(result.message);
+        }
+      } else {
+        // 远程上传（GitHub）
+        const githubConfig = getGitHubConfig();
+        if (!githubConfig) {
+          setError('请先配置 GitHub Token');
+          return false;
+        }
 
-      setImages(prev => [newImage, ...prev]);
+        // 压缩图片
+        const compressedBlob = await compressImage(file, {
+          maxWidth: 1920,
+          maxHeight: 1920,
+          quality: 0.85,
+          format: 'image/webp',
+        });
 
-      // 3秒后移除进度项
-      setTimeout(() => {
-        setUploadProgress(prev => prev.filter(p => p.fileName !== file.name));
-      }, 3000);
+        // 更新进度
+        setUploadProgress(prev => prev.map(p => 
+          p.fileName === file.name ? { ...p, progress: 50 } : p
+        ));
 
-      return true;
+        // 生成文件名
+        const fileName = generateImageFileName(file.name);
+        const targetPath = uploadPath || config?.defaultPath || '';
+        const fullPath = targetPath ? `${targetPath}/${fileName}` : fileName;
+
+        // 上传到 GitHub
+        const result = await uploadImageToGitHub(githubConfig, file, fullPath);
+
+        // 更新进度为成功
+        setUploadProgress(prev => prev.map(p => 
+          p.fileName === file.name ? { ...p, progress: 100, status: 'success' } : p
+        ));
+
+        // 添加到图片列表
+        const newImage: GalleryImage = {
+          id: result.sha,
+          src: result.url,
+          alt: fileName,
+          source: ImageSource.Remote,
+          category: targetPath.split('/')[0] || '默认',
+          createdAt: new Date().toISOString(),
+        };
+
+        setImages(prev => [newImage, ...prev]);
+
+        // 3秒后移除进度项
+        setTimeout(() => {
+          setUploadProgress(prev => prev.filter(p => p.fileName !== file.name));
+        }, 3000);
+
+        return true;
+      }
     } catch (err) {
-      const errorMessage = handleGitHubError(err) || '上传失败';
+      const errorMessage = source === 'local' 
+        ? (err instanceof Error ? err.message : '上传失败')
+        : (handleGitHubError(err) || '上传失败');
       setError(errorMessage);
       
       // 更新进度为失败
@@ -385,8 +411,21 @@ export function useGallery(options: UseGalleryOptions): UseGalleryReturn {
    */
   const deleteImage = useCallback(async (imagePath: string, sha?: string): Promise<boolean> => {
     if (source === 'local') {
-      setError('本地图床暂不支持删除，请手动删除文件');
-      return false;
+      // 本地图片使用 Server Action 删除
+      try {
+        const result = await deleteLocalImage(imagePath);
+        if (result.success) {
+          // 从列表中移除
+          setImages(prev => prev.filter(img => img.src !== imagePath));
+          return true;
+        } else {
+          setError(result.message);
+          return false;
+        }
+      } catch (err) {
+        setError('删除本地图片失败');
+        return false;
+      }
     }
 
     const githubConfig = getGitHubConfig();

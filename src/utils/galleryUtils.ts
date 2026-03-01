@@ -130,6 +130,7 @@ const scanImageFiles = (dir: string, baseDir: string): GalleryImage[] => {
           source: ImageSource.Local,
           category: mainCategory, // 使用映射后的主分类
           subCategory, // 使用映射后的子分类（可选）
+          createdAt: new Date().toISOString(), // 添加创建时间
         });
       }
     });
@@ -837,8 +838,8 @@ export const getRemoteImages = async (config: {
           source: ImageSource.Remote,
           category: mainCategory, // 使用映射后的分类名称
           subCategory, // 子分类（可选）
-          createdAt: undefined, // Trees API 不提供创建时间
-          updatedAt: undefined // Trees API 不提供更新时间
+          createdAt: new Date().toISOString(), // Trees API 不提供创建时间，使用当前时间
+          updatedAt: new Date().toISOString() // Trees API 不提供更新时间，使用当前时间
         });
       }
       

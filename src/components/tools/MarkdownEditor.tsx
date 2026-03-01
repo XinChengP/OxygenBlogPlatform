@@ -5,10 +5,11 @@ import { useTheme } from 'next-themes';
 import { motion } from 'framer-motion';
 import { categories } from '@/setting/blogSetting';
 import { ClipboardIcon } from '@heroicons/react/24/outline';
-import { Palette, Search, FileText, Download, Upload, Maximize2, Type, Eye, SpellCheck, BarChart3 } from 'lucide-react';
+import { Palette, Search, FileText, Download, Upload, Maximize2, Type, Eye, SpellCheck, BarChart3, Image as ImageIcon } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { safeMarkdownToHtml } from '@/utils/safeMarked';
 import live2dMessageManager, { Live2DMessages } from '@/utils/live2dMessageManager';
+import { uploadEditorImage, uploadBase64Image } from '@/utils/editorImageUpload';
 
 const CodeBlock = dynamic(() => import('./CodeBlock'), {
   ssr: false
@@ -403,6 +404,15 @@ export default function MarkdownEditor({
   const [showSpellCheck, setShowSpellCheck] = useState(false);
   const [fontSize, setFontSize] = useState(14);
   const [showWordCountDetails, setShowWordCountDetails] = useState(false);
+  
+  // 图片上传状态
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState('');
+  
+  // 判断是博客模式还是动态模式
+  const getTargetDir = (): 'Blogabout' | 'Momentsabout' => {
+    return blogMode ? 'Blogabout' : 'Momentsabout';
+  };
 
   // 智能阅读时间计算函数
   const calculateReadingTime = useCallback((text: string): number => {
@@ -1592,7 +1602,121 @@ seoDescription: "${blogMetadata.seoDescription}"
       }
     }
   };
-  
+
+  // 处理粘贴图片上传
+  const handlePasteImage = useCallback(async (event: React.ClipboardEvent) => {
+    const items = event.clipboardData?.items;
+    if (!items) return;
+
+    for (const item of Array.from(items)) {
+      if (item.type.startsWith('image/')) {
+        event.preventDefault();
+
+        const file = item.getAsFile();
+        if (!file) continue;
+
+        setIsUploadingImage(true);
+        setUploadProgress('正在上传图片...');
+
+        try {
+          const formData = new FormData();
+          formData.append('image', file);
+
+          const targetDir = getTargetDir();
+          const result = await uploadEditorImage(formData, targetDir);
+
+          if (result.success) {
+            // 在光标位置插入图片 Markdown
+            const textarea = document.querySelector('textarea[name="markdown-content"]') as HTMLTextAreaElement;
+            if (textarea) {
+              const start = textarea.selectionStart;
+              const end = textarea.selectionEnd;
+              const imageMarkdown = `\n![${file.name}](${result.url})\n`;
+
+              const newContent = content.substring(0, start) + imageMarkdown + content.substring(end);
+              handleContentChange(newContent);
+
+              // 设置新的光标位置
+              setTimeout(() => {
+                textarea.focus();
+                const newCursorPos = start + imageMarkdown.length;
+                textarea.setSelectionRange(newCursorPos, newCursorPos);
+              }, 0);
+            }
+
+            setUploadProgress('上传成功！');
+            setTimeout(() => setUploadProgress(''), 2000);
+          } else {
+            setUploadProgress(`上传失败: ${result.message}`);
+            setTimeout(() => setUploadProgress(''), 3000);
+          }
+        } catch (error) {
+          console.error('图片上传失败:', error);
+          setUploadProgress('上传失败，请重试');
+          setTimeout(() => setUploadProgress(''), 3000);
+        } finally {
+          setIsUploadingImage(false);
+        }
+        break; // 只处理第一个图片
+      }
+    }
+  }, [content, handleContentChange]);
+
+  // 处理拖拽图片上传
+  const handleDropImage = useCallback(async (event: React.DragEvent) => {
+    event.preventDefault();
+
+    const files = event.dataTransfer.files;
+    if (!files.length) return;
+
+    for (const file of Array.from(files)) {
+      if (file.type.startsWith('image/')) {
+        setIsUploadingImage(true);
+        setUploadProgress('正在上传图片...');
+
+        try {
+          const formData = new FormData();
+          formData.append('image', file);
+
+          const targetDir = getTargetDir();
+          const result = await uploadEditorImage(formData, targetDir);
+
+          if (result.success) {
+            // 在光标位置插入图片 Markdown
+            const textarea = document.querySelector('textarea[name="markdown-content"]') as HTMLTextAreaElement;
+            if (textarea) {
+              const start = textarea.selectionStart;
+              const end = textarea.selectionEnd;
+              const imageMarkdown = `\n![${file.name}](${result.url})\n`;
+
+              const newContent = content.substring(0, start) + imageMarkdown + content.substring(end);
+              handleContentChange(newContent);
+
+              setTimeout(() => {
+                textarea.focus();
+                const newCursorPos = start + imageMarkdown.length;
+                textarea.setSelectionRange(newCursorPos, newCursorPos);
+              }, 0);
+            }
+
+            setUploadProgress('上传成功！');
+            setTimeout(() => setUploadProgress(''), 2000);
+          } else {
+            setUploadProgress(`上传失败: ${result.message}`);
+            setTimeout(() => setUploadProgress(''), 3000);
+          }
+        } catch (error) {
+          console.error('图片上传失败:', error);
+          setUploadProgress('上传失败，请重试');
+          setTimeout(() => setUploadProgress(''), 3000);
+        } finally {
+          setIsUploadingImage(false);
+        }
+        break; // 只处理第一个图片
+      }
+    }
+  }, [content, handleContentChange]);
+
   // 解析Frontmatter并更新元数据
   const parseFrontmatterAndUpdateMetadata = (content: string) => {
     // 检查内容是否包含Frontmatter
@@ -3087,18 +3211,40 @@ seoDescription: "${blogMetadata.seoDescription}"
                   handleContentChange(e.target.value);
                 }}
                 onSelect={handleTextSelection}
+                onPaste={handlePasteImage}
+                onDrop={handleDropImage}
+                onDragOver={(e) => e.preventDefault()}
                 className={`w-full h-full p-3 resize-none focus:outline-none transition-all duration-200 ${
                   isDark 
                     ? 'bg-gray-800/50 text-gray-100 placeholder-gray-400' 
                     : 'bg-white/50 text-gray-900 placeholder-gray-500'
-                }`}
+                } ${isUploadingImage ? 'opacity-50' : ''}`}
                 style={{ 
                   fontSize: `${fontSize}px`,
                   lineHeight: '1.5'
                 }}
-                placeholder="请输入文本... 祝您使用愉快！"
+                placeholder="请输入文本... 祝您使用愉快！支持粘贴或拖拽图片上传"
                 spellCheck={showSpellCheck}
+                disabled={isUploadingImage}
               />
+              
+              {/* 上传进度提示 */}
+              {uploadProgress && (
+                <div className={`absolute bottom-4 left-4 right-4 px-4 py-2 rounded-lg text-sm font-medium text-center ${
+                  uploadProgress.includes('成功') 
+                    ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300' 
+                    : uploadProgress.includes('失败')
+                      ? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'
+                      : 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
+                }`}>
+                  <div className="flex items-center justify-center space-x-2">
+                    {isUploadingImage && (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current" />
+                    )}
+                    <span>{uploadProgress}</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

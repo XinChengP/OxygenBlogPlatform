@@ -35,6 +35,7 @@ const Navigation = () => {
     { href: '/archive', label: '归档' },
     { href: '/gallery', label: '画廊' },
     { href: '/moments', label: '动态' },
+    { href: '/changelogs', label: '日志' },
     { href: '/guestbook', label: '留言板' },
     { href: '/tools', label: '小工具' },
     { href: '/about', label: '关于' },

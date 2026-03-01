@@ -1,7 +1,28 @@
 'use client';
 
+/**
+ * 管理后台博客管理 Hook
+ * 提供博客数据的筛选和分页功能
+ */
+
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { BlogPost } from '@/utils/momentsUtils';
+
+/**
+ * 博客文章接口
+ * 与 blogActions.ts 中的 BlogPost 保持一致
+ */
+export interface BlogPost {
+  id: string;
+  title: string;
+  date: string;
+  updatedAt?: string;
+  category: string;
+  tags: string[];
+  excerpt: string;
+  coverImage?: string;
+  content: string;
+  filePath: string;
+}
 
 /**
  * 筛选选项接口

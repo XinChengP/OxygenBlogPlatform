@@ -1,31 +1,22 @@
 'use client';
 
+/**
+ * 管理后台动态管理 Hook
+ * 提供动态数据的获取、筛选、创建、更新、删除等功能
+ * 使用 Server Actions 进行本地文件操作
+ */
+
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  getMoments,
+  getMomentList,
   getMomentDetail,
-  createOrUpdateMoment,
+  createMoment,
+  updateMoment,
   deleteMoment,
-  GitHubConfig,
-  MomentMetadata,
-  handleGitHubError,
-} from '@/services/githubApi';
-import { getDecryptedToken, getAdminConfig, generateMomentId } from '@/utils/adminUtils';
-
-/**
- * 动态数据接口
- */
-export interface Moment {
-  id: string;
-  time: string;
-  content: string;
-  tags: string[];
-  images?: string[];
-  pinned?: boolean;
-  sha?: string;
-  name?: string;
-  path?: string;
-}
+  generateNewMomentId,
+  Moment,
+  MomentData,
+} from '@/actions/momentActions';
 
 /**
  * Hook 选项接口
@@ -52,20 +43,19 @@ export interface UseAdminMomentsReturn {
   /** 刷新数据 */
   refresh: () => Promise<void>;
   /** 生成新的动态 ID */
-  generateNewId: () => string;
+  generateNewId: () => Promise<string>;
   /** 获取单个动态详情 */
   getMoment: (id: string) => Promise<Moment | null>;
-  /** 保存动态 */
-  saveMoment: (id: string, content: string, metadata: MomentMetadata) => Promise<boolean>;
+  /** 保存动态（创建或更新） */
+  saveMoment: (id: string, data: MomentData) => Promise<boolean>;
   /** 删除动态 */
-  removeMoment: (id: string, sha: string) => Promise<boolean>;
+  removeMoment: (id: string) => Promise<boolean>;
   /** 所有标签列表 */
   allTags: string[];
 }
 
 /**
  * 管理后台动态管理 Hook
- * 提供动态数据的获取、筛选、创建、更新、删除等功能
  * 
  * @param options - 筛选选项
  * @returns 动态数据和操作方法
@@ -81,89 +71,37 @@ export function useAdminMoments(options: UseAdminMomentsOptions = {}): UseAdminM
   const [allTags, setAllTags] = useState<string[]>([]);
 
   /**
-   * 获取 GitHub 配置
-   * 从本地存储获取 Token 和仓库配置
-   */
-  const getGitHubConfig = useCallback((): GitHubConfig | null => {
-    const token = getDecryptedToken();
-    const config = getAdminConfig();
-
-    if (!token || !config) {
-      return null;
-    }
-
-    return {
-      owner: config.githubOwner,
-      repo: config.githubRepo,
-      branch: config.githubBranch,
-      token,
-    };
-  }, []);
-
-  /**
-   * 从 GitHub 获取动态列表
+   * 从本地获取动态列表
    */
   const fetchMoments = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const config = getGitHubConfig();
-      if (!config) {
-        setError('请先配置 GitHub Token 和仓库信息');
-        setLoading(false);
-        return;
-      }
-
-      // 获取动态文件列表
-      const momentFiles = await getMoments(config);
+      // 获取动态列表
+      const result = await getMomentList();
       
-      // 解析每个动态文件的内容
-      const parsedMoments: Moment[] = [];
-      const tagsSet = new Set<string>();
-
-      for (const file of momentFiles) {
-        try {
-          // 获取动态详情
-          const detail = await getMomentDetail(config, file.name.replace('.md', ''));
-          if (detail) {
-            parsedMoments.push({
-              id: detail.id,
-              time: detail.metadata.time,
-              content: detail.content,
-              tags: detail.metadata.tags || [],
-              images: detail.metadata.images || [],
-              pinned: detail.metadata.pinned || false,
-              sha: detail.sha,
-              name: file.name,
-              path: file.path,
-            });
-
-            // 收集所有标签
-            detail.metadata.tags?.forEach(tag => tagsSet.add(tag));
-          }
-        } catch (err) {
-          console.error(`解析动态文件 ${file.name} 失败:`, err);
-        }
+      if (result.success && result.data) {
+        const momentList = Array.isArray(result.data) ? result.data : [result.data];
+        setMoments(momentList);
+        
+        // 收集所有标签
+        const tagsSet = new Set<string>();
+        momentList.forEach(moment => {
+          moment.tags?.forEach(tag => tagsSet.add(tag));
+        });
+        setAllTags(Array.from(tagsSet));
+      } else {
+        setError(result.message);
       }
-
-      // 按置顶状态和时间倒序排序
-      parsedMoments.sort((a, b) => {
-        if (a.pinned && !b.pinned) return -1;
-        if (!a.pinned && b.pinned) return 1;
-        return new Date(b.time).getTime() - new Date(a.time).getTime();
-      });
-
-      setMoments(parsedMoments);
-      setAllTags(Array.from(tagsSet));
     } catch (err) {
-      const errorMessage = handleGitHubError(err);
+      const errorMessage = err instanceof Error ? err.message : '获取动态列表失败';
       setError(errorMessage);
       console.error('获取动态列表失败:', err);
     } finally {
       setLoading(false);
     }
-  }, [getGitHubConfig]);
+  }, []);
 
   /**
    * 筛选后的动态列表
@@ -173,7 +111,7 @@ export function useAdminMoments(options: UseAdminMomentsOptions = {}): UseAdminM
 
     // 按标签筛选
     if (options.tag) {
-      result = result.filter(moment => moment.tags.includes(options.tag!));
+      result = result.filter(moment => moment.tags?.includes(options.tag!));
     }
 
     // 按置顶状态筛选
@@ -185,9 +123,9 @@ export function useAdminMoments(options: UseAdminMomentsOptions = {}): UseAdminM
     if (options.search) {
       const searchLower = options.search.toLowerCase();
       result = result.filter(moment =>
-        moment.content.toLowerCase().includes(searchLower) ||
-        moment.id.toLowerCase().includes(searchLower) ||
-        moment.tags.some(tag => tag.toLowerCase().includes(searchLower))
+        moment.content?.toLowerCase().includes(searchLower) ||
+        moment.id?.toLowerCase().includes(searchLower) ||
+        moment.tags?.some(tag => tag.toLowerCase().includes(searchLower))
       );
     }
 
@@ -197,92 +135,86 @@ export function useAdminMoments(options: UseAdminMomentsOptions = {}): UseAdminM
   /**
    * 生成新的动态 ID
    */
-  const generateNewId = useCallback((): string => {
-    const existingIds = moments.map(m => m.id);
-    return generateMomentId(existingIds);
-  }, [moments]);
+  const generateNewId = useCallback(async (): Promise<string> => {
+    return await generateNewMomentId();
+  }, []);
 
   /**
    * 获取单个动态详情
    */
   const getMoment = useCallback(async (id: string): Promise<Moment | null> => {
-    const config = getGitHubConfig();
-    if (!config) {
-      setError('请先配置 GitHub Token 和仓库信息');
-      return null;
-    }
-
     try {
-      const detail = await getMomentDetail(config, id);
-      if (detail) {
-        return {
-          id: detail.id,
-          time: detail.metadata.time,
-          content: detail.content,
-          tags: detail.metadata.tags || [],
-          images: detail.metadata.images || [],
-          pinned: detail.metadata.pinned || false,
-          sha: detail.sha,
-        };
+      const result = await getMomentDetail(id);
+      if (result.success && result.data && !Array.isArray(result.data)) {
+        return result.data;
       }
       return null;
     } catch (err) {
-      const errorMessage = handleGitHubError(err);
+      const errorMessage = err instanceof Error ? err.message : '获取动态详情失败';
       setError(errorMessage);
       console.error('获取动态详情失败:', err);
       return null;
     }
-  }, [getGitHubConfig]);
+  }, []);
 
   /**
    * 保存动态（创建或更新）
    */
   const saveMoment = useCallback(async (
     id: string,
-    content: string,
-    metadata: MomentMetadata
+    data: MomentData
   ): Promise<boolean> => {
-    const config = getGitHubConfig();
-    if (!config) {
-      setError('请先配置 GitHub Token 和仓库信息');
-      return false;
-    }
-
     try {
-      await createOrUpdateMoment(config, id, content, metadata);
+      // 检查动态是否存在
+      const existingResult = await getMomentDetail(id);
+      let result;
+      
+      if (existingResult.success) {
+        // 更新现有动态
+        result = await updateMoment(id, data);
+      } else {
+        // 创建新动态
+        result = await createMoment(data);
+      }
+      
       // 刷新列表
-      await fetchMoments();
-      return true;
+      if (result.success) {
+        await fetchMoments();
+        return true;
+      } else {
+        setError(result.message);
+        return false;
+      }
     } catch (err) {
-      const errorMessage = handleGitHubError(err);
+      const errorMessage = err instanceof Error ? err.message : '保存动态失败';
       setError(errorMessage);
       console.error('保存动态失败:', err);
       return false;
     }
-  }, [getGitHubConfig, fetchMoments]);
+  }, [fetchMoments]);
 
   /**
    * 删除动态
    */
-  const removeMoment = useCallback(async (id: string, sha: string): Promise<boolean> => {
-    const config = getGitHubConfig();
-    if (!config) {
-      setError('请先配置 GitHub Token 和仓库信息');
-      return false;
-    }
-
+  const removeMoment = useCallback(async (id: string): Promise<boolean> => {
     try {
-      await deleteMoment(config, id, sha);
-      // 刷新列表
-      await fetchMoments();
-      return true;
+      const result = await deleteMoment(id);
+      
+      if (result.success) {
+        // 刷新列表
+        await fetchMoments();
+        return true;
+      } else {
+        setError(result.message);
+        return false;
+      }
     } catch (err) {
-      const errorMessage = handleGitHubError(err);
+      const errorMessage = err instanceof Error ? err.message : '删除动态失败';
       setError(errorMessage);
       console.error('删除动态失败:', err);
       return false;
     }
-  }, [getGitHubConfig, fetchMoments]);
+  }, [fetchMoments]);
 
   /**
    * 刷新数据

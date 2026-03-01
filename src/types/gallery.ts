@@ -18,8 +18,9 @@ export interface GalleryImage {
   subCategory?: string; // 子分类名称（可选，用于更细粒度的分类）
   width?: number; // 图片宽度（可选，用于瀑布流布局）
   height?: number; // 图片高度（可选，用于瀑布流布局）
-  createdAt?: string; // 创建时间（可选）
+  createdAt: string; // 创建时间
   updatedAt?: string; // 更新时间（可选）
+  size?: number; // 文件大小（字节，可选）
 }
 
 // 树形分类结构
