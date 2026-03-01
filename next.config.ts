@@ -60,6 +60,7 @@ const nextConfig = {
 
   env: {
     IS_STATIC_EXPORT: isStaticExport.toString(),
+    NEXT_PUBLIC_IS_STATIC_EXPORT: isStaticExport.toString(),
     NEXT_PUBLIC_GITHUB_REPO_NAME: repoName,
   },
 

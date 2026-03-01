@@ -11,9 +11,8 @@ import {
 } from '@/types/changelogTypes';
 
 // 重新导出类型和纯函数，方便其他模块使用
+export type { Changelog, ChangelogType } from '@/types/changelogTypes';
 export {
-  Changelog,
-  ChangelogType,
   parseFrontMatter,
   getChangelogTypeColor,
   getChangelogTypeLabel,
