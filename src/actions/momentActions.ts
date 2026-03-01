@@ -201,7 +201,11 @@ export async function updateMoment(id: string, data: Partial<MomentData>): Promi
     
     const moment: Moment = {
       id,
-      ...updatedData,
+      time: updatedData.time || '',
+      content: updatedData.content || '',
+      tags: updatedData.tags || [],
+      images: updatedData.images || [],
+      pinned: updatedData.pinned || false,
     };
     
     return { success: true, message: '更新成功', data: moment };

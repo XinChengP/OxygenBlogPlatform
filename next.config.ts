@@ -16,6 +16,13 @@ const nextConfig = {
   // 性能优化配置
   compress: true,
   
+  // Server Actions 配置
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '10mb',
+    },
+  },
+  
   images: {
     formats: ['image/avif', 'image/webp'],
     remotePatterns: [

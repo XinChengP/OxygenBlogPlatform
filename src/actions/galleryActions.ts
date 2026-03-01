@@ -156,8 +156,23 @@ export async function uploadLocalImage(formData: FormData, targetPath?: string):
 
     // 生成文件名
     const timestamp = Date.now();
-    const ext = path.extname(file.name) || '.png';
-    const fileName = `image-${timestamp}${ext}`;
+    const random = Math.random().toString(36).substring(2, 8);
+    
+    // 根据文件类型确定扩展名
+    let ext = path.extname(file.name);
+    if (!ext) {
+      // 如果文件名没有扩展名，根据 MIME 类型确定
+      const mimeToExt: Record<string, string> = {
+        'image/jpeg': '.jpg',
+        'image/png': '.png',
+        'image/gif': '.gif',
+        'image/webp': '.webp',
+        'image/svg+xml': '.svg',
+      };
+      ext = mimeToExt[file.type] || '.png';
+    }
+    
+    const fileName = `image-${timestamp}-${random}${ext}`;
     const filePath = path.join(targetDir, fileName);
 
     // 写入文件
