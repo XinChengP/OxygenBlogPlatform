@@ -17,6 +17,7 @@ import {
   FolderOpen,
   Cloud,
   Wrench,
+  Sparkles,
 } from 'lucide-react';
 
 /**
@@ -87,41 +88,44 @@ const NavItemComponent: React.FC<NavItemProps> = ({
   // 折叠状态下只显示图标
   if (collapsed) {
     return (
-      <Link
-        href={item.href}
-        onClick={handleClick}
-        className={`relative flex items-center justify-center w-full h-12 rounded-lg transition-all duration-200 group ${
-          isActive || isChildActive
-            ? 'bg-[#66ccff]/20 text-[#66ccff]'
-            : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-        }`}
-        title={item.label}
-      >
-        <Icon className="w-5 h-5" />
-        
-        {/* 激活指示器 */}
-        {(isActive || isChildActive) && (
-          <motion.div
-            layoutId="activeIndicator"
-            className="absolute left-0 w-1 h-8 bg-[#66ccff] rounded-r-full"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.2 }}
-          />
-        )}
+      <div className="relative group">
+        <Link
+          href={item.href}
+          onClick={handleClick}
+          className={`relative flex items-center justify-center w-full h-11 rounded-xl transition-all duration-300 ${
+            isActive || isChildActive
+              ? 'bg-gradient-to-r from-[#66ccff]/20 to-[#66ccff]/5 text-[#66ccff] shadow-lg shadow-[#66ccff]/10'
+              : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/50 hover:text-gray-700 dark:hover:text-gray-200'
+          }`}
+          title={item.label}
+        >
+          <Icon className="w-5 h-5" />
+          
+          {/* 激活指示器 */}
+          {(isActive || isChildActive) && (
+            <motion.div
+              layoutId="activeIndicator"
+              className="absolute left-0 w-1 h-6 bg-gradient-to-b from-[#66ccff] to-[#4aa8e8] rounded-r-full"
+              initial={{ opacity: 0, scaleY: 0 }}
+              animate={{ opacity: 1, scaleY: 1 }}
+              transition={{ duration: 0.2 }}
+            />
+          )}
 
-        {/* 徽章 */}
-        {item.badge && (
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-            {item.badge}
-          </span>
-        )}
+          {/* 徽章 */}
+          {item.badge && (
+            <span className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-br from-red-400 to-red-600 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg shadow-red-500/30">
+              {item.badge}
+            </span>
+          )}
+        </Link>
 
         {/* 悬浮提示 */}
-        <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 dark:bg-gray-700 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+        <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 dark:bg-gray-800 text-white text-sm font-medium rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none whitespace-nowrap z-50 shadow-xl shadow-black/20">
+          <div className="absolute left-0 top-1/2 -translate-x-1 -translate-y-1/2 w-2 h-2 bg-gray-900 dark:bg-gray-800 rotate-45" />
           {item.label}
         </div>
-      </Link>
+      </div>
     );
   }
 
@@ -132,21 +136,27 @@ const NavItemComponent: React.FC<NavItemProps> = ({
       <Link
         href={item.href}
         onClick={handleClick}
-        className={`flex items-center justify-between w-full px-3 py-2.5 rounded-lg transition-all duration-200 group ${
+        className={`flex items-center justify-between w-full px-3 py-2.5 rounded-xl transition-all duration-300 group ${
           isActive || isChildActive
-            ? 'bg-[#66ccff]/20 text-[#66ccff]'
-            : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+            ? 'bg-gradient-to-r from-[#66ccff]/20 to-[#66ccff]/5 text-[#66ccff] shadow-lg shadow-[#66ccff]/10'
+            : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-white'
         }`}
       >
         <div className="flex items-center space-x-3">
-          <Icon className="w-5 h-5 flex-shrink-0" />
+          <div className={`p-1.5 rounded-lg transition-all duration-300 ${
+            isActive || isChildActive
+              ? 'bg-[#66ccff]/20'
+              : 'bg-gray-100 dark:bg-gray-800 group-hover:bg-white dark:group-hover:bg-gray-700'
+          }`}>
+            <Icon className="w-4 h-4" />
+          </div>
           <span className="font-medium">{item.label}</span>
         </div>
         
         <div className="flex items-center space-x-2">
           {/* 徽章 */}
           {item.badge && (
-            <span className="px-2 py-0.5 bg-red-500 text-white text-xs rounded-full">
+            <span className="px-2 py-0.5 bg-gradient-to-br from-red-400 to-red-600 text-white text-xs font-bold rounded-full shadow-lg shadow-red-500/30">
               {item.badge}
             </span>
           )}
@@ -156,6 +166,9 @@ const NavItemComponent: React.FC<NavItemProps> = ({
             <motion.div
               animate={{ rotate: isExpanded ? 180 : 0 }}
               transition={{ duration: 0.2 }}
+              className={`p-0.5 rounded transition-colors ${
+                isActive || isChildActive ? 'text-[#66ccff]' : 'text-gray-400'
+              }`}
             >
               <ChevronDown className="w-4 h-4" />
             </motion.div>
@@ -170,29 +183,41 @@ const NavItemComponent: React.FC<NavItemProps> = ({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
             className="overflow-hidden"
           >
-            <div className="pl-8 space-y-1 mt-1">
-              {item.children!.map((child) => {
-                const childIsActive = item.href === '/admin/gallery' 
-                  ? usePathname() === child.href 
-                  : false;
+            <div className="relative pl-8 space-y-1 mt-1">
+              {/* 连接线 */}
+              <div className="absolute left-4 top-0 bottom-0 w-px bg-gradient-to-b from-gray-200 dark:from-gray-700 to-transparent" />
+              
+              {item.children!.map((child, index) => {
+                const childPathname = usePathname();
+                const childIsActive = childPathname === child.href;
                 
                 return (
-                  <Link
+                  <motion.div
                     key={child.id}
-                    href={child.href}
-                    onClick={onMobileClose}
-                    className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-200 ${
-                      childIsActive
-                        ? 'bg-[#66ccff]/20 text-[#66ccff]'
-                        : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-200'
-                    }`}
+                    initial={{ x: -10, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: index * 0.05 }}
                   >
-                    <ChevronRight className="w-3 h-3" />
-                    <span className="text-sm">{child.label}</span>
-                  </Link>
+                    <Link
+                      href={child.href}
+                      onClick={onMobileClose}
+                      className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-200 group ${
+                        childIsActive
+                          ? 'bg-[#66ccff]/10 text-[#66ccff]'
+                          : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/50 hover:text-gray-700 dark:hover:text-gray-200'
+                      }`}
+                    >
+                      <div className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${
+                        childIsActive
+                          ? 'bg-[#66ccff] scale-125'
+                          : 'bg-gray-300 dark:bg-gray-600 group-hover:bg-gray-400 dark:group-hover:bg-gray-500'
+                      }`} />
+                      <span className="text-sm font-medium">{child.label}</span>
+                    </Link>
+                  </motion.div>
                 );
               })}
             </div>
@@ -325,7 +350,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     if (item.href === '/admin') {
       return pathname === '/admin';
     }
-    return pathname === item.href;
+    return pathname === item.href || pathname.startsWith(item.href + '/');
   };
 
   /**
@@ -342,19 +367,23 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       {/* Logo 区域 */}
       <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} h-16 px-4 border-b border-gray-200/50 dark:border-gray-700/50`}>
         {!collapsed && (
-          <Link href="/admin" className="flex items-center space-x-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#66ccff] to-[#1e40af] flex items-center justify-center">
-              <Server className="w-5 h-5 text-white" />
+          <Link href="/admin" className="flex items-center space-x-3 group">
+            <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-[#66ccff] to-[#4aa8e8] flex items-center justify-center shadow-lg shadow-[#66ccff]/30 group-hover:shadow-[#66ccff]/50 transition-shadow duration-300">
+              <Sparkles className="w-5 h-5 text-white" />
+              <div className="absolute inset-0 rounded-xl bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </div>
-            <span className="text-lg font-bold text-gray-900 dark:text-white">
-              管理后台
-            </span>
+            <div className="flex flex-col">
+              <span className="text-lg font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+                管理后台
+              </span>
+              <span className="text-xs text-gray-400 dark:text-gray-500">洛天依主题博客</span>
+            </div>
           </Link>
         )}
         
         {collapsed && (
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#66ccff] to-[#1e40af] flex items-center justify-center">
-            <Server className="w-5 h-5 text-white" />
+          <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-[#66ccff] to-[#4aa8e8] flex items-center justify-center shadow-lg shadow-[#66ccff]/30">
+            <Sparkles className="w-5 h-5 text-white" />
           </div>
         )}
       </div>
@@ -381,12 +410,14 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
         <Link
           href="/"
           onClick={onMobileClose}
-          className={`flex items-center ${collapsed ? 'justify-center' : 'space-x-3'} w-full px-3 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors`}
+          className={`flex items-center ${collapsed ? 'justify-center' : 'space-x-3'} w-full px-3 py-2.5 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-gray-100 hover:to-transparent dark:hover:from-gray-800/50 dark:hover:to-transparent transition-all duration-300 group`}
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
-          {!collapsed && <span className="text-sm">返回前台</span>}
+          <div className="p-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 group-hover:bg-white dark:group-hover:bg-gray-700 transition-colors">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+          </div>
+          {!collapsed && <span className="text-sm font-medium">返回前台</span>}
         </Link>
       </div>
     </div>
@@ -396,7 +427,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     <>
       {/* 桌面端侧边栏 */}
       <aside
-        className={`hidden lg:flex fixed left-0 top-0 z-40 h-screen flex-col bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-r border-gray-200/50 dark:border-gray-700/50 transition-all duration-300 ${
+        className={`hidden lg:flex fixed left-0 top-0 z-40 h-screen flex-col bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border-r border-gray-200/50 dark:border-gray-700/50 transition-all duration-300 ease-out shadow-2xl shadow-black/5 ${
           collapsed ? 'w-20' : 'w-64'
         }`}
       >
@@ -407,11 +438,11 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       <AnimatePresence>
         {mobileOpen && (
           <motion.aside
-            initial={{ x: '-100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '-100%' }}
+            initial={{ x: '-100%', opacity: 0.5 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: '-100%', opacity: 0.5 }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="lg:hidden fixed left-0 top-0 z-50 h-screen w-64 bg-white dark:bg-gray-900 border-r border-gray-200/50 dark:border-gray-700/50 shadow-xl"
+            className="lg:hidden fixed left-0 top-0 z-50 h-screen w-72 bg-white dark:bg-gray-900 border-r border-gray-200/50 dark:border-gray-700/50 shadow-2xl"
           >
             {sidebarContent}
           </motion.aside>
