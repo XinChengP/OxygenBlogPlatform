@@ -1,5 +1,5 @@
-const isStaticExport = process.env.NODE_ENV === 'production' && process.env.NEXT_PRIVATE_STATIC_EXPORT !== 'false';
-const isDev = process.env.NODE_ENV === 'development';
+const isStaticExport = process.env.STATIC_EXPORT === 'true' || (process.env.NODE_ENV === 'production' && process.env.NEXT_PRIVATE_STATIC_EXPORT !== 'false');
+const isDev = process.env.NODE_ENV === 'development' && process.env.STATIC_EXPORT !== 'true';
 const repoName = process.env.NEXT_PUBLIC_GITHUB_REPO_NAME || 'OxygenBlogPlatform';
 
 const nextConfig = {
