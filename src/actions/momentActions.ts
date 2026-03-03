@@ -3,6 +3,7 @@
 /**
  * 动态管理相关的 Server Actions
  * 提供动态的增删改查功能
+ * 动态文件使用 Markdown 格式存储（带 frontmatter）
  */
 
 import { revalidatePath } from 'next/cache';
@@ -57,29 +58,107 @@ async function ensureMomentsDir(): Promise<void> {
 }
 
 /**
+ * 解析 Markdown frontmatter
+ */
+function parseFrontmatter(content: string): { frontmatter: Record<string, any>; body: string } {
+  const frontmatterRegex = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/;
+  const match = content.match(frontmatterRegex);
+  
+  if (!match) {
+    return { frontmatter: {}, body: content };
+  }
+  
+  const frontmatterStr = match[1];
+  const body = match[2];
+  const frontmatter: Record<string, any> = {};
+  
+  // 简单的 YAML 解析
+  const lines = frontmatterStr.split('\n');
+  let currentKey = '';
+  let currentArray: string[] | null = null;
+  
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    
+    // 检查是否是数组项
+    if (trimmed.startsWith('- ')) {
+      if (currentArray !== null) {
+        currentArray.push(trimmed.substring(2).replace(/"/g, ''));
+      }
+      continue;
+    }
+    
+    // 检查是否是键值对
+    const colonIndex = trimmed.indexOf(':');
+    if (colonIndex > 0) {
+      const key = trimmed.substring(0, colonIndex).trim();
+      const value = trimmed.substring(colonIndex + 1).trim();
+      
+      // 检查是否是数组开始
+      if (value === '') {
+        currentKey = key;
+        currentArray = [];
+        frontmatter[key] = currentArray;
+      } else {
+        currentKey = key;
+        currentArray = null;
+        // 移除引号
+        frontmatter[key] = value.replace(/^["']|["']$/g, '');
+      }
+    }
+  }
+  
+  return { frontmatter, body };
+}
+
+/**
+ * 生成 frontmatter 字符串
+ */
+function generateFrontmatter(data: Record<string, any>): string {
+  let result = '---\n';
+  
+  for (const [key, value] of Object.entries(data)) {
+    if (Array.isArray(value)) {
+      if (value.length > 0) {
+        result += `${key}:\n`;
+        for (const item of value) {
+          result += `  - "${item}"\n`;
+        }
+      }
+    } else if (value !== undefined && value !== null && value !== '') {
+      result += `${key}: "${value}"\n`;
+    }
+  }
+  
+  result += '---\n';
+  return result;
+}
+
+/**
  * 获取所有动态列表
  */
 export async function getMomentList(): Promise<ActionResult<Moment[]>> {
   try {
     await ensureMomentsDir();
     const files = await fs.readdir(MOMENTS_DIR);
-    const jsonFiles = files.filter(f => f.endsWith('.json'));
+    const mdFiles = files.filter(f => f.endsWith('.md'));
     
     const moments: Moment[] = [];
     
-    for (const file of jsonFiles) {
+    for (const file of mdFiles) {
       try {
         const filePath = path.join(MOMENTS_DIR, file);
         const content = await fs.readFile(filePath, 'utf-8');
-        const data = JSON.parse(content);
+        const { frontmatter, body } = parseFrontmatter(content);
         
         moments.push({
-          id: file.replace('.json', ''),
-          time: data.time || '',
-          content: data.content || '',
-          tags: data.tags || [],
-          images: data.images || [],
-          pinned: data.pinned || false,
+          id: frontmatter.id || file.replace('.md', ''),
+          time: frontmatter.time || '',
+          content: body.trim(),
+          tags: frontmatter.tags || [],
+          images: frontmatter.images || [],
+          pinned: frontmatter.pinned === true || frontmatter.pinned === 'true',
         });
       } catch (e) {
         console.error(`读取动态文件失败: ${file}`, e);
@@ -106,17 +185,47 @@ export async function getMomentList(): Promise<ActionResult<Moment[]>> {
  */
 export async function getMomentDetail(id: string): Promise<ActionResult<Moment>> {
   try {
-    const filePath = path.join(MOMENTS_DIR, `${id}.json`);
-    const content = await fs.readFile(filePath, 'utf-8');
-    const data = JSON.parse(content);
+    // 尝试多种文件名格式
+    const possibleFiles = [
+      path.join(MOMENTS_DIR, `${id}.md`),
+      path.join(MOMENTS_DIR, `${id}.json`),
+    ];
+    
+    let filePath = '';
+    let content = '';
+    
+    for (const fp of possibleFiles) {
+      try {
+        content = await fs.readFile(fp, 'utf-8');
+        filePath = fp;
+        break;
+      } catch {
+        continue;
+      }
+    }
+    
+    if (!content) {
+      return { success: false, message: '动态不存在' };
+    }
+    
+    // 根据文件扩展名解析
+    const ext = path.extname(filePath);
+    let data: any = {};
+    
+    if (ext === '.md') {
+      const { frontmatter, body } = parseFrontmatter(content);
+      data = { ...frontmatter, content: body.trim() };
+    } else {
+      data = JSON.parse(content);
+    }
     
     const moment: Moment = {
-      id,
+      id: data.id || id,
       time: data.time || '',
       content: data.content || '',
       tags: data.tags || [],
       images: data.images || [],
-      pinned: data.pinned || false,
+      pinned: data.pinned === true || data.pinned === 'true',
     };
     
     return { success: true, message: '获取成功', data: moment };
@@ -133,26 +242,42 @@ export async function createMoment(data: MomentData): Promise<ActionResult<Momen
   try {
     await ensureMomentsDir();
     
-    // 生成 ID
-    const id = `moment-${Date.now()}`;
-    const filePath = path.join(MOMENTS_DIR, `${id}.json`);
+    // 生成 ID（6位数字）
+    const existingFiles = await fs.readdir(MOMENTS_DIR);
+    const existingIds = existingFiles
+      .filter(f => f.endsWith('.md'))
+      .map(f => f.replace('.md', ''))
+      .filter(id => /^\d+$/.test(id))
+      .map(id => parseInt(id, 10));
     
-    const momentData = {
-      time: data.time || new Date().toISOString(),
-      content: data.content,
+    const maxId = existingIds.length > 0 ? Math.max(...existingIds) : 0;
+    const newId = String(maxId + 1).padStart(6, '0');
+    
+    const filePath = path.join(MOMENTS_DIR, `${newId}.md`);
+    
+    // 生成 Markdown 内容
+    const frontmatter = generateFrontmatter({
+      id: newId,
+      time: data.time || new Date().toISOString().replace('T', ' ').substring(0, 19),
       tags: data.tags || [],
       images: data.images || [],
       pinned: data.pinned || false,
-    };
+    });
     
-    await fs.writeFile(filePath, JSON.stringify(momentData, null, 2), 'utf-8');
+    const markdownContent = frontmatter + '\n' + (data.content || '');
+    
+    await fs.writeFile(filePath, markdownContent, 'utf-8');
     
     revalidatePath('/admin/moments');
     revalidatePath('/moments');
     
     const moment: Moment = {
-      id,
-      ...momentData,
+      id: newId,
+      time: data.time || '',
+      content: data.content || '',
+      tags: data.tags || [],
+      images: data.images || [],
+      pinned: data.pinned || false,
     };
     
     return { success: true, message: '发布成功', data: moment, filePath };
@@ -167,7 +292,7 @@ export async function createMoment(data: MomentData): Promise<ActionResult<Momen
  */
 export async function updateMoment(id: string, data: Partial<MomentData>): Promise<ActionResult<Moment>> {
   try {
-    const filePath = path.join(MOMENTS_DIR, `${id}.json`);
+    const filePath = path.join(MOMENTS_DIR, `${id}.md`);
     
     // 读取现有数据
     let existingData: MomentData = {
@@ -180,7 +305,14 @@ export async function updateMoment(id: string, data: Partial<MomentData>): Promi
     
     try {
       const content = await fs.readFile(filePath, 'utf-8');
-      existingData = JSON.parse(content);
+      const { frontmatter, body } = parseFrontmatter(content);
+      existingData = {
+        time: frontmatter.time || '',
+        content: body.trim(),
+        tags: frontmatter.tags || [],
+        images: frontmatter.images || [],
+        pinned: frontmatter.pinned === true || frontmatter.pinned === 'true',
+      };
     } catch {
       // 文件不存在，使用默认值
     }
@@ -194,7 +326,18 @@ export async function updateMoment(id: string, data: Partial<MomentData>): Promi
       pinned: data.pinned ?? existingData.pinned,
     };
     
-    await fs.writeFile(filePath, JSON.stringify(updatedData, null, 2), 'utf-8');
+    // 生成 Markdown 内容
+    const frontmatter = generateFrontmatter({
+      id,
+      time: updatedData.time,
+      tags: updatedData.tags,
+      images: updatedData.images,
+      pinned: updatedData.pinned,
+    });
+    
+    const markdownContent = frontmatter + '\n' + (updatedData.content || '');
+    
+    await fs.writeFile(filePath, markdownContent, 'utf-8');
     
     revalidatePath('/admin/moments');
     revalidatePath('/moments');
@@ -220,8 +363,19 @@ export async function updateMoment(id: string, data: Partial<MomentData>): Promi
  */
 export async function deleteMoment(id: string): Promise<ActionResult> {
   try {
-    const filePath = path.join(MOMENTS_DIR, `${id}.json`);
-    await fs.unlink(filePath);
+    // 尝试删除 .md 文件
+    const mdPath = path.join(MOMENTS_DIR, `${id}.md`);
+    try {
+      await fs.unlink(mdPath);
+    } catch {
+      // 尝试删除 .json 文件
+      const jsonPath = path.join(MOMENTS_DIR, `${id}.json`);
+      try {
+        await fs.unlink(jsonPath);
+      } catch {
+        // 文件不存在
+      }
+    }
     
     revalidatePath('/admin/moments');
     revalidatePath('/moments');
@@ -239,16 +393,8 @@ export async function deleteMoment(id: string): Promise<ActionResult> {
 export async function batchDeleteMoments(ids: string[]): Promise<ActionResult> {
   try {
     for (const id of ids) {
-      const filePath = path.join(MOMENTS_DIR, `${id}.json`);
-      try {
-        await fs.unlink(filePath);
-      } catch {
-        // 忽略不存在的文件
-      }
+      await deleteMoment(id);
     }
-    
-    revalidatePath('/admin/moments');
-    revalidatePath('/moments');
     
     return { success: true, message: `成功删除 ${ids.length} 条动态` };
   } catch (error) {
@@ -262,27 +408,37 @@ export async function batchDeleteMoments(ids: string[]): Promise<ActionResult> {
  */
 export async function toggleMomentPinned(id: string): Promise<ActionResult<Moment>> {
   try {
-    const filePath = path.join(MOMENTS_DIR, `${id}.json`);
+    const filePath = path.join(MOMENTS_DIR, `${id}.md`);
     const content = await fs.readFile(filePath, 'utf-8');
-    const data = JSON.parse(content);
+    const { frontmatter, body } = parseFrontmatter(content);
     
-    data.pinned = !data.pinned;
+    const newPinned = !(frontmatter.pinned === true || frontmatter.pinned === 'true');
     
-    await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf-8');
+    const newFrontmatter = generateFrontmatter({
+      id,
+      time: frontmatter.time,
+      tags: frontmatter.tags || [],
+      images: frontmatter.images || [],
+      pinned: newPinned,
+    });
+    
+    const markdownContent = newFrontmatter + '\n' + body;
+    
+    await fs.writeFile(filePath, markdownContent, 'utf-8');
     
     revalidatePath('/admin/moments');
     revalidatePath('/moments');
     
     const moment: Moment = {
       id,
-      time: data.time || '',
-      content: data.content || '',
-      tags: data.tags || [],
-      images: data.images || [],
-      pinned: data.pinned,
+      time: frontmatter.time || '',
+      content: body.trim(),
+      tags: frontmatter.tags || [],
+      images: frontmatter.images || [],
+      pinned: newPinned,
     };
     
-    return { success: true, message: data.pinned ? '已置顶' : '已取消置顶', data: moment };
+    return { success: true, message: newPinned ? '已置顶' : '已取消置顶', data: moment };
   } catch (error) {
     console.error('切换置顶状态失败:', error);
     return { success: false, message: '操作失败' };
@@ -295,12 +451,21 @@ export async function toggleMomentPinned(id: string): Promise<ActionResult<Momen
 export async function batchToggleMomentPinned(ids: string[], pinned: boolean): Promise<ActionResult> {
   try {
     for (const id of ids) {
-      const filePath = path.join(MOMENTS_DIR, `${id}.json`);
+      const filePath = path.join(MOMENTS_DIR, `${id}.md`);
       try {
         const content = await fs.readFile(filePath, 'utf-8');
-        const data = JSON.parse(content);
-        data.pinned = pinned;
-        await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf-8');
+        const { frontmatter, body } = parseFrontmatter(content);
+        
+        const newFrontmatter = generateFrontmatter({
+          id,
+          time: frontmatter.time,
+          tags: frontmatter.tags || [],
+          images: frontmatter.images || [],
+          pinned,
+        });
+        
+        const markdownContent = newFrontmatter + '\n' + body;
+        await fs.writeFile(filePath, markdownContent, 'utf-8');
       } catch {
         // 忽略不存在的文件
       }
@@ -320,7 +485,20 @@ export async function batchToggleMomentPinned(ids: string[], pinned: boolean): P
  * 生成新的动态 ID
  */
 export async function generateNewMomentId(): Promise<string> {
-  return `moment-${Date.now()}`;
+  try {
+    await ensureMomentsDir();
+    const existingFiles = await fs.readdir(MOMENTS_DIR);
+    const existingIds = existingFiles
+      .filter(f => f.endsWith('.md'))
+      .map(f => f.replace('.md', ''))
+      .filter(id => /^\d+$/.test(id))
+      .map(id => parseInt(id, 10));
+    
+    const maxId = existingIds.length > 0 ? Math.max(...existingIds) : 0;
+    return String(maxId + 1).padStart(6, '0');
+  } catch {
+    return '000001';
+  }
 }
 
 /**

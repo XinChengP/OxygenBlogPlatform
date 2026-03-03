@@ -18,6 +18,7 @@ import {
   Cloud,
   Wrench,
   Sparkles,
+  CheckSquare,
 } from 'lucide-react';
 
 /**
@@ -308,6 +309,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
           icon: PenLine,
         },
       ],
+    },
+    {
+      id: 'todo',
+      label: '待办管理',
+      href: '/admin/todo',
+      icon: CheckSquare,
     },
     {
       id: 'gallery',

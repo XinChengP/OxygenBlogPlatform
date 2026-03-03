@@ -7,8 +7,10 @@ import remarkEmoji from 'remark-emoji';
 import rehypeHighlight from 'rehype-highlight';
 import ImageGrid from './ImageGrid';
 import TimeProgressWidget from './TimeProgressWidget';
+import TodoWidget from './TodoWidget';
 import { getAvatarPath, name } from '@/setting/AboutSetting';
 import { getBilibiliVideoCount } from '@/utils/bilibiliUtils';
+import type { TodoConfig } from '@/types/todo';
 
 interface ClientMomentsPageProps {
   moments: Array<{ id: string; time: string; content: string; tags: string[]; images?: string[]; pinned?: boolean; filePath: string }>;
@@ -17,9 +19,10 @@ interface ClientMomentsPageProps {
   blogs: Array<{ id: string; title: string; date: string; updatedAt?: string; category?: string; tags?: string[] }>;
   categoryCount: number;
   tagCount: number;
+  todoConfig: TodoConfig;
 }
 
-function ClientMomentsPage({ moments, blogCount, blogTotalWordCount, blogs, categoryCount, tagCount }: ClientMomentsPageProps) {
+function ClientMomentsPage({ moments, blogCount, blogTotalWordCount, blogs, categoryCount, tagCount, todoConfig }: ClientMomentsPageProps) {
   const [bilibiliVideos, setBilibiliVideos] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -265,6 +268,9 @@ function ClientMomentsPage({ moments, blogCount, blogTotalWordCount, blogs, cate
 
             {/* 时光轴/进度条小组件 */}
             <TimeProgressWidget />
+
+            {/* 待办事件小组件 */}
+            <TodoWidget config={todoConfig} />
           </div>
         </div>
       </div>
