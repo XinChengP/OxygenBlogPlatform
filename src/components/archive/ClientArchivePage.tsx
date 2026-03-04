@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 import { Pin, Calendar, ChevronDown, ChevronRight, Filter } from 'lucide-react';
+import PageHeader from '@/components/ui/PageHeader';
 
 
 
@@ -223,17 +224,13 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
   return (
     <div className={containerStyle.className} style={containerStyle.style}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="bg-transparent rounded-lg p-6 mb-8 text-center"
-          >
-            <h1 className="text-4xl font-bold text-foreground mb-4">博客归档</h1>
-            <p className="text-muted-foreground">
-              共 {totalPosts} 篇文章，按年份、月份和日期归档
-            </p>
-          </motion.div>
+          <PageHeader
+            title="博客归档"
+            description={`共 ${totalPosts} 篇文章，按年份、月份和日期归档`}
+            icon="📚"
+            size="lg"
+            className="mb-8"
+          />
 
           <div className="flex gap-6">
             {/* 移动端折叠按钮 */}

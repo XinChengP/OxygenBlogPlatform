@@ -14,6 +14,7 @@ description: "管理画廊图片资源。Invoke when user wants to add images to
 ### 图片存储位置
 
 - **画廊图片**: `public/LTY_Picture/`
+- **动态图片**: `public/Momentsabout/`
 - **博客文章图片**: `public/Blogabout/文章名/`
 
 ### 画廊页面
@@ -99,7 +100,7 @@ const categories = [
 
 ## 注意事项
 
-- 图片路径使用绝对路径，如 `/LTY_Picture/image.webp`
+- 图片路径使用绝对路径，如 `/LTY_Picture/image.webp` 或 `/Momentsabout/image.jpg`
 - 确保图片文件存在，避免 404 错误
 - 定期清理未使用的图片
 - 建议使用 WebP 格式优化加载速度

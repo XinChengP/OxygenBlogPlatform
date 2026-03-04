@@ -10,6 +10,7 @@ import CategoryFilter from './components/CategoryFilter';
 import { useBackgroundStyle } from '../../hooks/useBackgroundStyle';
 import { live2dEventEmitter, Live2DEvents, emitLive2DEvent } from '../../utils/live2dEventEmitter';
 import { Image, Grid3X3, ChevronDown, Filter } from 'lucide-react';
+import PageHeader from '@/components/ui/PageHeader';
 
 // GalleryClient组件属性
 interface GalleryClientProps {
@@ -301,30 +302,13 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
     <div className={containerStyle.className} style={containerStyle.style}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* 页面头部 - 添加入场动画 */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-8"
-        >
-          <motion.div 
-            className="flex items-center justify-center gap-3 mb-4"
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-          >
-            <Image className="w-10 h-10 text-primary" />
-            <h1 className="text-4xl font-bold text-foreground">画廊</h1>
-          </motion.div>
-          <motion.p 
-            className="text-muted-foreground text-lg"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            精选图片集，记录美好瞬间
-          </motion.p>
-        </motion.div>
+        <PageHeader
+          title="画廊"
+          description="精选图片集，记录美好瞬间"
+          icon={<Image className="w-8 h-8" />}
+          size="lg"
+          className="mb-8"
+        />
 
         <div className="flex flex-col lg:flex-row gap-6">
           {/* 移动端折叠按钮 */}

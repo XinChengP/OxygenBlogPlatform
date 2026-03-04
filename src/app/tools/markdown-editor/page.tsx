@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { useTheme } from 'next-themes';
 import { useState, useEffect } from 'react';
 import BackgroundLayer from '@/components/BackgroundLayer';
+import PageHeader from '@/components/ui/PageHeader';
 
 
 
@@ -47,20 +48,14 @@ export default function MarkdownEditorPage() {
       
       {/* 主要内容 */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        {/* 页面标题 - 与其他工具页面一致 */}
-        <motion.div 
-          className="text-center mb-12"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <h1 className={`text-4xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            📝 Markdown 编辑器
-          </h1>
-          <p className={`text-lg ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-            功能强大的 Markdown 编辑器，支持实时预览和代码高亮
-          </p>
-        </motion.div>
+        {/* 页面标题 */}
+        <PageHeader
+          title="Markdown 编辑器"
+          description="功能强大的 Markdown 编辑器，支持实时预览和代码高亮"
+          icon="📝"
+          size="lg"
+          className="mb-12"
+        />
         
         {/* 编辑器主体 - 毛玻璃效果 */}
         <motion.div 

@@ -45,17 +45,17 @@ export default function FriendsLink() {
           transition={{ duration: 0.5, delay: 0.6 }}
           className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 shadow-lg transition-all duration-300"
           style={{
-            background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #3b82f6 100%)',
+            background: 'linear-gradient(135deg, #66ccff 0%, #06b6d4 50%, #66ccff 100%)',
             backgroundSize: '200% 200%',
             color: 'white'
           }}
         >
           <Globe className="w-8 h-8" />
         </motion.div>
-        <h3 
+        <h3
           className="text-2xl font-bold bg-clip-text text-transparent mb-3 transition-all duration-500"
           style={{
-            backgroundImage: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 40%, #ec4899 70%, #3b82f6 100%)',
+            backgroundImage: 'linear-gradient(135deg, #66ccff 0%, #06b6d4 50%, #1e40af 100%)',
             backgroundSize: '200% 200%',
           }}
         >
@@ -99,7 +99,7 @@ export default function FriendsLink() {
                           // 创建默认头像容器
                           const fallback = document.createElement('div');
                           fallback.className = 'w-12 h-12 rounded-full mr-3 flex items-center justify-center flex-shrink-0';
-                          fallback.style.background = 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #3b82f6 100%)';
+                          fallback.style.background = 'linear-gradient(135deg, #66ccff 0%, #06b6d4 50%, #66ccff 100%)';
                           fallback.style.backgroundSize = '200% 200%';
                           fallback.style.color = 'white';
                           fallback.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>';
@@ -124,10 +124,10 @@ export default function FriendsLink() {
                       }}
                     />
                   ) : (
-                    <div 
+                    <div
                       className="w-12 h-12 rounded-full mr-3 flex items-center justify-center"
                       style={{
-                        background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #3b82f6 100%)',
+                        background: 'linear-gradient(135deg, #66ccff 0%, #06b6d4 50%, #66ccff 100%)',
                         backgroundSize: '200% 200%',
                         color: 'white'
                       }}

@@ -26,6 +26,7 @@
 - **GitHub发布** - 支持直接从编辑器发布到GitHub仓库
 - **个人动态** - 记录生活点滴，支持置顶功能
 - **画廊系统** - 图片管理和展示，支持分类筛选和预览
+- **待办事项** - 待办管理和展示，支持优先级和完成状态
 
 ## 项目架构
 
@@ -54,7 +55,9 @@ src/
 │   └── widgets/          # 功能组件
 ├── content/               # 内容文件
 │   ├── blogs/            # Markdown博客文章
-│   └── moments/           # Markdown个人动态
+│   ├── moments/          # Markdown个人动态
+│   ├── changelogs/       # 更新日志
+│   └── todo.json         # 待办事项数据
 ├── utils/                 # 工具函数
 ├── setting/               # 配置文件
 ├── types/                 # TypeScript类型
@@ -71,6 +74,7 @@ public/
 ├── assets/               # 静态资源
 ├── LTY_Picture/          # 洛天依图片资源
 ├── Blogabout/            # 博客文章图片
+├── Momentsabout/         # 个人动态图片
 ├── friendlink/           # 友链相关
 ├── js/                   # JavaScript文件
 ├── api/                  # API相关
@@ -272,6 +276,7 @@ const useLocalStorage = <T,>(key: string, initialValue: T) => {
 - **拼音转换器**: 汉字转拼音、多音字识别、拼音首字母提取、声调转换
 - **Markdown编辑器**: 实时预览、语法高亮、工具栏、导出功能、GitHub发布
 - **画廊系统**: 图片管理、分类筛选、图片预览、高级放大控制
+- **待办事项**: 待办管理、优先级设置、完成状态、后台CRUD操作
 
 ## 博客内容管理规范
 
@@ -317,19 +322,59 @@ coverImage: "/path/to/image.png"  # 可选：封面图片路径
 ```markdown
 ---
 id: "1"
-time: "YYYY-MM-DD HH:MM"
+time: "YYYY-MM-DD HH:MM:SS"
 pinned: false  # 可选，设置为true可置顶动态
 tags: ["标签1", "标签2"]
-images: ["图片URL1", "图片URL2"]  # 可选，支持多张图片
+images: ["/Momentsabout/图片1.jpg", "/LTY_Picture/图片2.png"]  # 可选，支持多张图片
 ---
 
 动态内容使用 Markdown 格式编写
 ```
 
 ### 时间格式规范
-- **时间格式**: `YYYY-MM-DD HH:MM`，精确到分钟
+- **时间格式**: `YYYY-MM-DD HH:MM:SS`，精确到秒
 - **时区设置**: 使用北京时间（UTC+8）
 - **排序依据**: 按时间倒序排序，置顶动态优先
+
+## 待办事项管理规范
+
+### 待办数据结构
+待办数据存储在 `src/content/todo.json` 文件中：
+
+```json
+{
+  "title": "待办事项",
+  "showStats": true,
+  "items": [
+    {
+      "id": "唯一标识符",
+      "content": "待办内容",
+      "completed": false,
+      "priority": "medium",
+      "dueDate": "YYYY-MM-DD",
+      "createdAt": "YYYY-MM-DDTHH:MM:SS",
+      "updatedAt": "YYYY-MM-DDTHH:MM:SS"
+    }
+  ]
+}
+```
+
+### 字段说明
+| 字段 | 必填 | 说明 |
+|------|------|------|
+| id | 是 | 唯一标识符，自动生成 |
+| content | 是 | 待办内容 |
+| completed | 是 | 完成状态，true/false |
+| priority | 否 | 优先级：high/medium/low |
+| dueDate | 否 | 截止日期，格式 YYYY-MM-DD |
+| createdAt | 是 | 创建时间，ISO 8601格式 |
+| updatedAt | 否 | 更新时间，ISO 8601格式 |
+
+### 功能特性
+- **前台展示**: 在动态页面侧边栏静态展示，支持完成进度统计
+- **后台管理**: 本地开发环境访问 `/admin/todo` 进行管理
+- **Server Actions**: 使用 `todoActions.ts` 处理数据操作
+- **静态部署**: 修改后需重新构建部署
 
 ## 响应式设计规范
 - **断点设置**: 移动端(< 640px)、平板端(640px - 1024px)、桌面端(> 1024px)、大屏(> 1280px 可选)
@@ -363,6 +408,6 @@ npm run serve            # 本地预览构建结果
 
 ---
 
-*最后更新: 2026年2月27日*  
+*最后更新: 2026年3月4日*  
 *维护者: 歆橙*  
-*版本: v3.5 *
+*版本: v3.7 *

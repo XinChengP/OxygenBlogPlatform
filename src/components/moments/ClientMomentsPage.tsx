@@ -11,6 +11,7 @@ import TodoWidget from './TodoWidget';
 import { getAvatarPath, name } from '@/setting/AboutSetting';
 import { getBilibiliVideoCount } from '@/utils/bilibiliUtils';
 import type { TodoConfig } from '@/types/todo';
+import PageHeader from '@/components/ui/PageHeader';
 
 interface ClientMomentsPageProps {
   moments: Array<{ id: string; time: string; content: string; tags: string[]; images?: string[]; pinned?: boolean; filePath: string }>;
@@ -50,10 +51,13 @@ function ClientMomentsPage({ moments, blogCount, blogTotalWordCount, blogs, cate
   return (
     <div className="min-h-screen">
       <div className="container mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 pt-24 pb-16">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-4">个人动态</h1>
-          <p className="text-muted-foreground">记录生活点滴，分享日常思考</p>
-        </div>
+        <PageHeader
+          title="个人动态"
+          description="记录生活点滴，分享日常思考"
+          icon="💫"
+          size="lg"
+          className="mb-12"
+        />
 
         <div className="flex flex-col lg:flex-row gap-8 justify-center">
           {/* 左边：动态内容（70%宽度） */}

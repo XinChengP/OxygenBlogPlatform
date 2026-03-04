@@ -15,6 +15,7 @@ import {
 } from '@/setting/toolsSetting';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 import Link from 'next/link';
+import PageHeader from '@/components/ui/PageHeader';
 
 
 
@@ -98,19 +99,13 @@ export default function ToolsPage() {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         {/* 页面标题 */}
-        <motion.div 
-          className="text-center mb-12"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <h1 className={`text-4xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            🧩 小工具
-          </h1>
-          <p className={`text-lg ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-            提供各种实用的小工具，提高您的工作效率
-          </p>
-        </motion.div>
+        <PageHeader
+          title="小工具"
+          description="提供各种实用的小工具，提高您的工作效率"
+          icon="🧩"
+          size="lg"
+          className="mb-12"
+        />
         
         {/* 移动端分类筛选折叠按钮 */}
         <motion.div 

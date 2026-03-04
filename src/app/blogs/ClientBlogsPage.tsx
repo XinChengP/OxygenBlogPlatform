@@ -10,6 +10,7 @@ import Pagination from '@/components/Pagination';
 import { getAssetPath } from '@/utils/assetUtils';
 import { Search, Calendar, Clock, Tag, ArrowRight, LayoutGrid, LayoutList, X, Filter, BookOpen, Pin } from 'lucide-react';
 import live2dMessageManager from '@/utils/live2dMessageManager';
+import PageHeader from '@/components/ui/PageHeader';
 
 
 
@@ -341,13 +342,13 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
       <div className={containerStyle.className} style={containerStyle.style}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* 页面标题 */}
-          <div 
-            className="text-center mb-12"
-          >
-            <h1 className="text-4xl font-bold text-foreground mb-4">
-              📝 博客文章
-            </h1>
-          </div>
+          <PageHeader
+            title="博客文章"
+            description="分享技术心得、生活感悟与创作灵感"
+            icon="📝"
+            size="lg"
+            className="mb-12"
+          />
           
           {/* 空页面提示 */}
           <div 
@@ -375,17 +376,16 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
   }
 
   return (
-    <div className={containerStyle.className} style={containerStyle.style}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* 页面标题 */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-foreground mb-4 title">
-            📝 博客文章
-          </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            分享技术心得、生活感悟与创作灵感
-          </p>
-        </div>
+      <div className={containerStyle.className} style={containerStyle.style}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* 页面标题 */}
+          <PageHeader
+            title="博客文章"
+            description="分享技术心得、生活感悟与创作灵感"
+            icon="📝"
+            size="lg"
+            className="mb-12"
+          />
         
         {/* 搜索和控制栏 */}
         <div className="flex flex-col sm:flex-row gap-4 mb-6">

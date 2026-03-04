@@ -18,7 +18,6 @@ function getRelatedLinkIconPath(icon: string): string {
  */
 export default function RelatedLinks() {
   const [mounted, setMounted] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false); // 控制展开/收起状态
 
   // 确保组件已挂载
   useEffect(() => {
@@ -30,16 +29,15 @@ export default function RelatedLinks() {
   }
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: 0.7 }}
       className="relative z-10 mt-8 rounded-2xl p-8 border transition-all duration-500 backdrop-blur-md bg-card/90 border-border shadow-lg supports-[backdrop-filter]:bg-card/75"
     >
-      {/* 标题区域 - 改为可点击，控制展开/收起 */}
-      <div 
-        className="text-center mb-4 cursor-pointer"
-        onClick={() => setIsExpanded(!isExpanded)}
+      {/* 标题区域 */}
+      <div
+        className="text-center mb-4"
       >
         <motion.div
           initial={{ scale: 0 }}
@@ -70,15 +68,11 @@ export default function RelatedLinks() {
         </p>
       </div>
 
-      {/* 相关链接列表 - 默认收起，点击标题展开 */}
+      {/* 相关链接列表 */}
       <motion.div
-        initial={{ opacity: 0, height: 0 }}
-        animate={{ 
-          opacity: isExpanded ? 1 : 0,
-          height: isExpanded ? 'auto' : 0,
-          overflow: isExpanded ? 'visible' : 'hidden'
-        }}
-        transition={{ duration: 0.3 }}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.8 }}
       >
         {relatedLinks && relatedLinks.length > 0 ? (
           <div className="space-y-3 mt-4">
@@ -91,7 +85,7 @@ export default function RelatedLinks() {
                 whileHover={{ x: 4 }}
                 whileTap={{ scale: 0.98 }}
                 initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: isExpanded ? 1 : 0, x: isExpanded ? 0 : -20 }}
+                animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.4, delay: 0.9 + index * 0.1 }}
                 className="group relative flex items-center justify-between bg-card/80 dark:bg-card/80 rounded-lg p-4 hover:bg-card/90 dark:hover:bg-card/90 border border-border transition-all duration-300 cursor-pointer"
               >
@@ -188,7 +182,7 @@ export default function RelatedLinks() {
         {/* 底部装饰性文字 */}
         <motion.div
           initial={{ opacity: 0 }}
-          animate={{ opacity: isExpanded ? 1 : 0 }}
+          animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 1.2 }}
           className="text-center mt-8 pt-6 border-t border-gray-200/50 dark:border-gray-700/50"
         >

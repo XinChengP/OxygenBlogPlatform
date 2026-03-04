@@ -55,7 +55,7 @@ images:
 
 ### 图片存储
 
-- 图片存储在 `public/LTY_Picture/` 目录
+- 图片存储在 `public/LTY_Picture/` 或 `public/Momentsabout/` 目录
 - 支持本地上传和画廊选择两种方式
 
 ### 图片显示
@@ -69,9 +69,9 @@ images:
 
 ```yaml
 images:
-  - "/LTY_Picture/1.jpeg"
+  - "/Momentsabout/1.jpeg"
   - "/LTY_Picture/2.png"
-  - "/LTY_Picture/图片名称.jpg"
+  - "/Momentsabout/图片名称.jpg"
 ```
 
 ## 创建新动态步骤
@@ -80,7 +80,7 @@ images:
 2. 创建文件在 `src/content/moments/` 目录，建议命名格式：`{序号}-{id}.md`，如 `00002-new-moment.md`
 3. 编写前置元数据
 4. 编写 Markdown 内容
-5. 如有图片，放入 `public/LTY_Picture/` 目录
+5. 如有图片，放入 `public/LTY_Picture/` 或 `public/Momentsabout/` 目录
 
 ## 示例动态结构
 
@@ -93,7 +93,7 @@ tags:
   - "旅行"
   - "洛天依"
 images:
-  - "/LTY_Picture/travel1.webp"
+  - "/Momentsabout/travel1.webp"
   - "/LTY_Picture/travel2.webp"
 ---
 

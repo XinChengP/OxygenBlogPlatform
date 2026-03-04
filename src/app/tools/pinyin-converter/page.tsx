@@ -6,6 +6,7 @@ import BackgroundLayer from '@/components/BackgroundLayer';
 import { useTheme } from 'next-themes';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 import { getAssetPath } from '@/utils/assetUtils';
+import PageHeader from '@/components/ui/PageHeader';
 
 
 
@@ -747,15 +748,13 @@ export default function PinyinConverter() {
 
       {/* 主内容区域 */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <motion.div 
-          className="text-center mb-12"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <h1 className="text-4xl font-bold text-foreground mb-4">拼音转换器</h1>
-          <p className="text-lg text-muted-foreground">智能中文转拼音工具，支持多音字识别和多种输出格式</p>
-        </motion.div>
+        <PageHeader
+          title="拼音转换器"
+          description="智能中文转拼音工具，支持多音字识别和多种输出格式"
+          icon="🔤"
+          size="lg"
+          className="mb-12"
+        />
 
         {/* 转换配置选项 */}
         <motion.div 

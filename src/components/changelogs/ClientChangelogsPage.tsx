@@ -6,6 +6,7 @@ import remarkGfm from 'remark-gfm';
 import remarkEmoji from 'remark-emoji';
 import rehypeHighlight from 'rehype-highlight';
 import { Changelog, getChangelogTypeColor, getChangelogTypeLabel } from '@/types/changelogTypes';
+import PageHeader from '@/components/ui/PageHeader';
 
 /**
  * 客户端开发日志页面组件的Props接口
@@ -39,10 +40,13 @@ function ClientChangelogsPage({ changelogs }: ClientChangelogsPageProps) {
     <div className="min-h-screen">
       <div className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 pt-24 pb-16">
         {/* 页面标题区域 */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-4">开发日志</h1>
-          <p className="text-muted-foreground">记录项目成长，见证每一次进步</p>
-        </div>
+        <PageHeader
+          title="开发日志"
+          description="记录项目成长，见证每一次进步"
+          icon="📋"
+          size="lg"
+          className="mb-12"
+        />
 
         {/* 日志列表区域 */}
         <div className="space-y-6">
