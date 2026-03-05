@@ -305,7 +305,6 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
         <PageHeader
           title="画廊"
           description="精选图片集，记录美好瞬间"
-          icon={<Image className="w-8 h-8" />}
           size="lg"
           className="mb-8"
         />

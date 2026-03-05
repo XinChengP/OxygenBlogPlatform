@@ -227,7 +227,6 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
           <PageHeader
             title="博客归档"
             description={`共 ${totalPosts} 篇文章，按年份、月份和日期归档`}
-            icon="📚"
             size="lg"
             className="mb-8"
           />

@@ -52,7 +52,6 @@ export default function MarkdownEditorPage() {
         <PageHeader
           title="Markdown 编辑器"
           description="功能强大的 Markdown 编辑器，支持实时预览和代码高亮"
-          icon="📝"
           size="lg"
           className="mb-12"
         />

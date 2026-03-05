@@ -43,7 +43,6 @@ function ClientChangelogsPage({ changelogs }: ClientChangelogsPageProps) {
         <PageHeader
           title="开发日志"
           description="记录项目成长，见证每一次进步"
-          icon="📋"
           size="lg"
           className="mb-12"
         />

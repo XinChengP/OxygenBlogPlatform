@@ -345,7 +345,6 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
           <PageHeader
             title="博客文章"
             description="分享技术心得、生活感悟与创作灵感"
-            icon="📝"
             size="lg"
             className="mb-12"
           />
@@ -382,7 +381,6 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
           <PageHeader
             title="博客文章"
             description="分享技术心得、生活感悟与创作灵感"
-            icon="📝"
             size="lg"
             className="mb-12"
           />

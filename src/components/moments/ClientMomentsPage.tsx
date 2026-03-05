@@ -54,7 +54,6 @@ function ClientMomentsPage({ moments, blogCount, blogTotalWordCount, blogs, cate
         <PageHeader
           title="个人动态"
           description="记录生活点滴，分享日常思考"
-          icon="💫"
           size="lg"
           className="mb-12"
         />

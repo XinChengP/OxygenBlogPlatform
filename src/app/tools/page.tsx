@@ -102,7 +102,6 @@ export default function ToolsPage() {
         <PageHeader
           title="小工具"
           description="提供各种实用的小工具，提高您的工作效率"
-          icon="🧩"
           size="lg"
           className="mb-12"
         />

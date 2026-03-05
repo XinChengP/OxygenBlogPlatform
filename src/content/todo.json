@@ -3,6 +3,14 @@
   "showStats": true,
   "items": [
     {
+      "id": "mmctiyuma06gu",
+      "content": "学习通大物安全考试",
+      "completed": false,
+      "priority": "high",
+      "dueDate": "2026-03-06",
+      "createdAt": "2026-03-05T02:00:09.454Z"
+    },
+    {
       "id": "mma4jywppbzqd",
       "content": "学高数",
       "completed": false,
@@ -22,11 +30,11 @@
     {
       "id": "mma4ikfzx3uv3",
       "content": "成图大赛のhomework",
-      "completed": false,
+      "completed": true,
       "priority": "medium",
       "dueDate": "2026-03-07",
       "createdAt": "2026-03-03T04:44:28.031Z",
-      "updatedAt": "2026-03-03T04:44:39.317Z"
+      "updatedAt": "2026-03-04T04:19:42.130Z"
     },
     {
       "id": "mma4i2rctfdp3",

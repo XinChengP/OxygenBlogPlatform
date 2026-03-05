@@ -42,12 +42,12 @@ interface PageHeaderProps {
  * <PageHeader title="博客文章" description="分享技术心得" />
  * 
  * @example
- * // 带图标
- * <PageHeader title="博客文章" description="分享技术心得" icon="📝" />
+ * // 大尺寸标题
+ * <PageHeader title="博客文章" description="分享技术心得" size="lg" />
  * 
  * @example
- * // 使用Lucide图标
- * <PageHeader title="画廊" icon={<Image className="w-8 h-8" />} />
+ * // 带分隔线
+ * <PageHeader title="画廊" description="精选图片集" showDivider />
  */
 export default function PageHeader({
   title,

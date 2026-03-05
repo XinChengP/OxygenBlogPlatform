@@ -331,6 +331,13 @@ const GALLERY_PATH_MAPPINGS: GalleryCategoryConfig[] = [
     sortOrder: 2,
     description: '活！字！乱！刷！ 来源：B站up主 Armillary_璇玑'
   },
+  {
+    pathPattern: 'LTYpicture/emoticon/辟浪',
+    mainCategory: '表情包',
+    subCategory: '辟浪',
+    sortOrder: 3,
+    description: '辟浪系列表情包'
+  },
   // 中文路径支持
   {
     pathPattern: 'LTYpicture/表情包',
@@ -344,6 +351,13 @@ const GALLERY_PATH_MAPPINGS: GalleryCategoryConfig[] = [
     subCategory: 'Zi系列',
     sortOrder: 2,
     description: '活！字！乱！刷！ 来源：B站up主 Armillary_璇玑'
+  },
+  {
+    pathPattern: 'LTYpicture/表情包/辟浪',
+    mainCategory: '表情包',
+    subCategory: '辟浪',
+    sortOrder: 3,
+    description: '辟浪系列表情包'
   },
   
   // ========== 美图分类 ==========

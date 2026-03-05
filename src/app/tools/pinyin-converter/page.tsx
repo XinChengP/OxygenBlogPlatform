@@ -751,7 +751,6 @@ export default function PinyinConverter() {
         <PageHeader
           title="拼音转换器"
           description="智能中文转拼音工具，支持多音字识别和多种输出格式"
-          icon="🔤"
           size="lg"
           className="mb-12"
         />
