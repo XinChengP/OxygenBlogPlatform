@@ -12,6 +12,8 @@ import { useNavigationVisibility } from '@/contexts/NavigationVisibilityContext'
 /**
  * 导航栏组件
  * 支持响应式设计和主题切换
+ * 
+ * 注意：所有 hooks 必须在条件返回之前调用，遵循 React Hooks 规则
  */
 const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -20,11 +22,7 @@ const Navigation = () => {
   const [isNearTop, setIsNearTop] = useState(false);
   const pathname = usePathname();
   
-  // 后台页面不显示导航栏
-  if (pathname.startsWith('/admin')) {
-    return null;
-  }
-  
+  // 所有 hooks 必须在条件返回之前调用
   const { navigationStyle } = useBackgroundStyle('home');
   const { isVisible, isAtTop, setVisibility, setAtTop } = useNavigationVisibility();
 
@@ -128,7 +126,7 @@ const Navigation = () => {
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastScrollY, isNearTop, pathname]);
+  }, [lastScrollY, isNearTop, pathname, setVisibility, setAtTop]);
 
   /**
    * 监听鼠标移动，检测是否在页面顶部区域
@@ -161,6 +159,11 @@ const Navigation = () => {
         : 'bg-white/70 dark:bg-gray-900/70 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-700/50'
     }`;
   }, [isAtTop]);
+
+  // 后台页面不显示导航栏 - 在所有 hooks 调用之后再条件返回
+  if (pathname.startsWith('/admin')) {
+    return null;
+  }
   
   return (
     <motion.nav 

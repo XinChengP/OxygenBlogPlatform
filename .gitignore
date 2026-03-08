@@ -51,3 +51,6 @@ next-env.d.ts
 /src/app/admin/
 /src/app/api/admin/
 
+# 本地开发脚本（不要提交到GitHub）
+/start-dev.bat
+

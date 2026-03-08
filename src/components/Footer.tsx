@@ -22,14 +22,11 @@ function formatTime(milliseconds: number): string {
 
 /**
  * 页脚组件 - 简化版
+ * 
+ * 注意：所有 hooks 必须在条件返回之前调用，遵循 React Hooks 规则
  */
 function Footer() {
   const pathname = usePathname();
-  
-  // 后台页面不显示页脚
-  if (pathname.startsWith('/admin')) {
-    return null;
-  }
   
   // 网站上线时间
   const launchDate = new Date('2025-11-06T20:00:00');
@@ -51,6 +48,11 @@ function Footer() {
     const timer = setInterval(updateRunTime, 1000);
     return () => clearInterval(timer);
   }, [launchDate]);
+
+  // 后台页面不显示页脚 - 在所有 hooks 调用之后再条件返回
+  if (pathname.startsWith('/admin')) {
+    return null;
+  }
 
   return (
     <footer className="backdrop-blur-md bg-background/60 border-t border-border/30 py-3 supports-[backdrop-filter]:bg-background/40">

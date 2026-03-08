@@ -15,15 +15,11 @@ import { usePathname } from 'next/navigation';
  * 网站背景组件
  * 使用 CSS background-image 在最底层显示背景图片
  * 在暗黑模式下添加黑色滤镜效果
+ * 
+ * 注意：所有 hooks 必须在条件返回之前调用，遵循 React Hooks 规则
  */
 const BackgroundLayer = () => {
   const pathname = usePathname();
-  
-  // 后台页面不显示背景
-  if (pathname?.startsWith('/admin')) {
-    return null;
-  }
-  
   const { resolvedTheme } = useTheme();
   const [isClient, setIsClient] = useState(false);
 
@@ -32,13 +28,19 @@ const BackgroundLayer = () => {
     setIsClient(true);
   }, []);
 
-  // 使用useMemo优化计算结果，避免不必要的重新计算
+  // 使用 useMemo 优化计算结果，避免不必要的重新计算
+  // 注意：必须在条件返回之前调用所有 hooks
   const backgroundStyle = useMemo(() => {
+    // 后台页面不显示背景，返回 null
+    if (pathname?.startsWith('/admin')) {
+      return null;
+    }
+
     if (!isClient || !enableBackground || !backgroundImage) {
       return null;
     }
 
-    // 使用工具函数处理背景图片路径，确保GitHub Pages兼容性
+    // 使用工具函数处理背景图片路径，确保 GitHub Pages 兼容性
     const fullImagePath = getAssetPath(backgroundImage);
 
     // 判断是否为暗黑模式
@@ -60,8 +62,9 @@ const BackgroundLayer = () => {
       backgroundAttachment: backgroundFixed ? 'fixed' : 'scroll',
       pointerEvents: 'none' as const,
     };
-  }, [isClient, resolvedTheme, enableBackground, backgroundImage, backgroundMode, backgroundFixed]);
+  }, [isClient, resolvedTheme, enableBackground, backgroundImage, backgroundMode, backgroundFixed, pathname]);
 
+  // 在所有 hooks 调用之后再进行条件返回
   if (!backgroundStyle) {
     return null;
   }
@@ -74,5 +77,5 @@ const BackgroundLayer = () => {
   );
 };
 
-// 使用React.memo减少不必要的渲染
+// 使用 React.memo 减少不必要的渲染
 export default React.memo(BackgroundLayer);
