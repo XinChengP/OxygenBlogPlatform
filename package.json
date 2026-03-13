@@ -2,6 +2,7 @@
   "name": "blog-platform",
   "version": "0.1.0",
   "private": true,
+  "main": "electron/main.js",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -19,7 +20,9 @@
     "generate-gallery": "npx tsx scripts/generate-gallery-data.ts",
     "export": "next build",
     "prepare-static": "node scripts/prepare-static-export.js",
-    "restore-actions": "node scripts/restore-actions.js"
+    "restore-actions": "node scripts/restore-actions.js",
+    "electron": "electron .",
+    "electron:dev": "electron ."
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -74,6 +77,7 @@
     "@typescript-eslint/eslint-plugin": "^8.35.0",
     "@typescript-eslint/parser": "^8.35.0",
     "compression": "^1.8.1",
+    "electron": "^33.0.0",
     "eslint": "^9.39.3",
     "express": "^5.2.1",
     "sharp": "^0.34.5",
