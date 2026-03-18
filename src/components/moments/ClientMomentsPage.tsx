@@ -9,7 +9,7 @@ import ImageGrid from './ImageGrid';
 import TimeProgressWidget from './TimeProgressWidget';
 import TodoWidget from './TodoWidget';
 import { getAvatarPath, name } from '@/setting/AboutSetting';
-import { getBilibiliVideoCount } from '@/utils/bilibiliUtils';
+import { getBilibiliVideoCount, checkBilibiliAvailable } from '@/utils/bilibiliUtils';
 import type { TodoConfig } from '@/types/todo';
 import PageHeader from '@/components/ui/PageHeader';
 
