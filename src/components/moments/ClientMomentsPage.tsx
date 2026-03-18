@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkEmoji from 'remark-emoji';
@@ -9,7 +9,6 @@ import ImageGrid from './ImageGrid';
 import TimeProgressWidget from './TimeProgressWidget';
 import TodoWidget from './TodoWidget';
 import { getAvatarPath, name } from '@/setting/AboutSetting';
-import { getBilibiliVideoCount, checkBilibiliAvailable } from '@/utils/bilibiliUtils';
 import type { TodoConfig } from '@/types/todo';
 import PageHeader from '@/components/ui/PageHeader';
 
@@ -24,29 +23,10 @@ interface ClientMomentsPageProps {
 }
 
 function ClientMomentsPage({ moments, blogCount, blogTotalWordCount, blogs, categoryCount, tagCount, todoConfig }: ClientMomentsPageProps) {
-  const [bilibiliVideos, setBilibiliVideos] = useState<number>(0);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-
   console.log('Received stats from server:', {
     categoryCount,
     tagCount
   });
-
-  // 获取B站视频数量
-  useEffect(() => {
-    const fetchBilibiliVideos = async () => {
-      try {
-        const count = await getBilibiliVideoCount('522845412');
-        setBilibiliVideos(count);
-      } catch (error) {
-        console.error('获取B站视频数量失败:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchBilibiliVideos();
-  }, []);
 
   return (
     <div className="min-h-screen">
