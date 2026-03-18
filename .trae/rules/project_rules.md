@@ -27,6 +27,11 @@
 - **个人动态** - 记录生活点滴，支持置顶功能
 - **画廊系统** - 图片管理和展示，支持分类筛选和预览
 - **待办事项** - 待办管理和展示，支持优先级和完成状态
+- **更新日志** - 开发日志记录，时间线展示
+- **后台管理** - 本地开发环境后台管理系统
+- **浏览器检测** - 自动检测浏览器兼容性并提示
+- **时间进度** - 年度进度和节日倒计时展示
+- **桌面应用** - 支持 Electron 打包为桌面应用
 
 ## 项目架构
 
@@ -37,6 +42,7 @@ src/
 │   ├── about/             # 关于页面
 │   ├── archive/           # 文章归档
 │   ├── blogs/             # 博客文章动态路由
+│   ├── changelogs/        # 更新日志页面
 │   ├── gallery/           # 画廊页面
 │   ├── guestbook/         # 留言板
 │   ├── moments/           # 个人动态
@@ -51,6 +57,8 @@ src/
 │   ├── archive/          # 归档专用组件
 │   ├── tools/            # 工具专用组件
 │   ├── moments/          # 个人动态组件
+│   ├── admin/            # 后台管理组件
+│   ├── changelogs/       # 更新日志组件
 │   ├── core/             # 核心组件
 │   └── widgets/          # 功能组件
 ├── content/               # 内容文件
@@ -131,6 +139,7 @@ npm run sync-theme   # 主题同步
 npm run generate-gallery  # 生成画廊数据
 npm run export       # 静态导出（实际执行 next build）
 npm run serve        # 本地预览构建结果
+npm run electron     # 运行桌面应用
 ```
 
 ## 资源管理
@@ -190,17 +199,27 @@ const nextConfig = {
   reactStrictMode: true,
   turbopack: {},  // Next.js 16 默认启用 Turbopack
   
-  // 静态导出配置
-  output: "export",
-  distDir: 'out',
-  trailingSlash: true,
+  // Server Actions 配置
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '10mb',
+    },
+  },
   
-  // 根据环境变量自动设置basePath和assetPrefix
-  basePath: process.env.NEXT_PUBLIC_BASE_PATH || '',
-  assetPrefix: process.env.NEXT_PUBLIC_BASE_PATH || '',
+  // 静态导出配置（仅在构建时启用）
+  ...(isStaticExport && !isDev && {
+    output: "export",
+    distDir: 'out',
+    trailingSlash: true,
+    basePath: process.env.NEXT_PUBLIC_BASE_PATH || '',
+    assetPrefix: process.env.NEXT_PUBLIC_BASE_PATH || '',
+    images: {
+      unoptimized: true,
+    },
+  }),
   
   images: {
-    unoptimized: true,
+    formats: ['image/avif', 'image/webp'],
     remotePatterns: [
       {
         protocol: "https",
@@ -217,6 +236,7 @@ const nextConfig = {
 - **图片格式**: WebP/AVIF优先
 - **加载优化**: 懒加载 + 渐进式占位符
 - **缓存策略**: 合理设置Cache-Control，关键资源preload
+- **编译优化**: 生产环境移除console日志和React属性
 
 ## 安全规范
 - **前端安全**: TypeScript严格检查，输入验证，XSS防护，CSRF保护，CSP策略
@@ -376,6 +396,91 @@ images: ["/Momentsabout/图片1.jpg", "/LTY_Picture/图片2.png"]  # 可选，�
 - **Server Actions**: 使用 `todoActions.ts` 处理数据操作
 - **静态部署**: 修改后需重新构建部署
 
+## 更新日志管理规范
+
+### 日志文件结构
+更新日志存储在 `src/content/changelogs/` 目录中：
+
+```markdown
+---
+date: "YYYY-MM-DD"
+type: "feature|optimize|fix|docs|style"
+---
+
+更新内容描述
+```
+
+### 类型说明
+| 类型 | 说明 |
+|------|------|
+| feature | 新功能添加 |
+| optimize | 性能优化或代码重构 |
+| fix | Bug修复 |
+| docs | 文档更新 |
+| style | 样式调整 |
+
+### 展示规则
+- **时间线展示**: 按日期倒序排列
+- **分类标记**: 不同类型使用不同颜色标记
+- **自动归档**: 按月份自动分组
+
+## 后台管理规范
+
+### 组件库
+后台管理使用统一的UI组件库，位于 `src/components/admin/`：
+
+- **AdminLayout**: 后台布局组件
+- **AdminCard**: 卡片容器组件
+- **AdminButton**: 按钮组件
+- **AdminInput**: 输入框组件
+- **AdminForm**: 表单组件
+- **AdminTable**: 表格组件
+- **AdminModal**: 模态框组件
+- **AdminConfirm**: 确认对话框组件
+- **AdminLoading**: 加载状态组件
+- **AdminToast**: 消息提示组件
+- **AdminSearchBar**: 搜索栏组件
+- **AdminSidebar**: 侧边栏导航组件
+
+### 访问方式
+- **开发环境**: 访问 `/admin` 进入后台管理
+- **功能模块**: 待办管理、内容管理等
+
+## 浏览器兼容性规范
+
+### 检测功能
+- **自动检测**: 页面加载时自动检测浏览器类型和版本
+- **兼容性提示**: 对不支持的浏览器显示警告信息
+- **推荐浏览器**: Chrome、Firefox、Safari、Edge 最新版本
+
+### 实现方式
+- **检测组件**: `BrowserCompatibilityWarning` 组件
+- **横幅提示**: `BrowserCompatibilityBanner` 组件
+- **用户可关闭**: 提示可被用户手动关闭
+
+## 时间进度组件规范
+
+### 功能特性
+- **年度进度**: 显示当前年份已过百分比
+- **节日倒计时**: 重要节日倒计时显示
+- **可视化展示**: 进度条和数字结合展示
+
+### 组件位置
+- **组件**: `src/components/moments/TimeProgressWidget.tsx`
+- **展示位置**: 动态页面侧边栏
+
+## 桌面应用支持
+
+### Electron配置
+- **入口文件**: `electron/main.js`
+- **运行命令**: `npm run electron`
+- **开发命令**: `npm run electron:dev`
+
+### 注意事项
+- 桌面应用为可选功能，不影响Web版本使用
+- 需要单独安装Electron依赖
+- 支持Windows、macOS、Linux平台
+
 ## 响应式设计规范
 - **断点设置**: 移动端(< 640px)、平板端(640px - 1024px)、桌面端(> 1024px)、大屏(> 1280px 可选)
 - **适配原则**: 移动优先，弹性布局，图片响应，字体大小使用rem单位
@@ -399,6 +504,9 @@ npm run generate-gallery # 生成画廊数据
 # 部署
 npm run export           # 静态导出（实际执行 next build）
 npm run serve            # 本地预览构建结果
+
+# 桌面应用
+npm run electron         # 运行桌面应用
 ```
 
 ### 开发环境要求
@@ -408,6 +516,6 @@ npm run serve            # 本地预览构建结果
 
 ---
 
-*最后更新: 2026年3月4日*  
+*最后更新: 2026年3月19日*  
 *维护者: 歆橙*  
-*版本: v3.7 *
+*版本: v3.8 *
