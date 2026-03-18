@@ -291,7 +291,16 @@ pre code {
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
+  }
+  /* 移除点击时的蓝框，但保留键盘导航时的焦点指示器 */
+  *:focus {
+    outline: none;
+  }
+  /* 仅在键盘导航时显示焦点指示器 */
+  *:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
   }
   body {
     @apply text-foreground bg-background;

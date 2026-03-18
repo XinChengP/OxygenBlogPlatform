@@ -1,4 +1,9 @@
 /* APlayer 主题样式 - 支持亮色/暗色模式 */
+/* 洛天依主题播放器样式优化版 */
+
+/* ============================================
+   第一部分：CSS 变量定义
+   ============================================ */
 
 /* 浅色模式（默认） */
 .aplayer:not(.dark) {
@@ -10,6 +15,20 @@
   --aplayer-info-fg: #666666;
   --aplayer-button-fg: #666666;
   --aplayer-button-bg-hover: #f0f0f0;
+  /* 新增：播放模式相关变量 */
+  --aplayer-mode-icon-fg: #999999;
+  --aplayer-mode-active-fg: #66ccff;
+  --aplayer-mode-bg: rgba(102, 204, 255, 0.1);
+  /* 新增：加载状态相关变量 */
+  --aplayer-loading-bg: rgba(102, 204, 255, 0.15);
+  --aplayer-loading-spinner: #66ccff;
+  /* 新增：错误状态相关变量 */
+  --aplayer-error-border: #ef4444;
+  --aplayer-error-bg: rgba(239, 68, 68, 0.1);
+  --aplayer-error-fg: #dc2626;
+  /* 新增：过渡动画变量 */
+  --aplayer-transition-speed: 0.3s;
+  --aplayer-transition-timing: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* 深色模式 */
@@ -24,7 +43,22 @@
   --aplayer-button-bg-hover: #1e293b;
   --aplayer-disabled: #475569;
   --aplayer-muted-bg: #1e293b;
+  /* 深色模式：播放模式相关变量 */
+  --aplayer-mode-icon-fg: #64748b;
+  --aplayer-mode-active-fg: #60a5fa;
+  --aplayer-mode-bg: rgba(96, 165, 250, 0.15);
+  /* 深色模式：加载状态相关变量 */
+  --aplayer-loading-bg: rgba(96, 165, 250, 0.2);
+  --aplayer-loading-spinner: #60a5fa;
+  /* 深色模式：错误状态相关变量 */
+  --aplayer-error-border: #f87171;
+  --aplayer-error-bg: rgba(248, 113, 113, 0.15);
+  --aplayer-error-fg: #fca5a5;
 }
+
+/* ============================================
+   第二部分：APlayer 基础样式
+   ============================================ */
 
 /* APlayer 基础样式 */
 .aplayer {
@@ -36,6 +70,11 @@
   font-size: 14px;
   /* 确保播放器在所有情况下都能显示 */
   z-index: 1000 !important;
+  /* 添加平滑过渡效果 */
+  transition: 
+    background-color var(--aplayer-transition-speed) var(--aplayer-transition-timing),
+    color var(--aplayer-transition-speed) var(--aplayer-transition-timing),
+    box-shadow var(--aplayer-transition-speed) var(--aplayer-transition-timing);
 }
 
 /* 吸底模式样式 */
@@ -66,6 +105,372 @@
   margin: 0 !important;
 }
 
+/* ============================================
+   第三部分：播放模式指示器样式
+   ============================================ */
+
+/* 播放模式容器样式 */
+.aplayer .aplayer-mode-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  background: var(--aplayer-mode-bg);
+  transition: all var(--aplayer-transition-speed) var(--aplayer-transition-timing);
+  cursor: pointer;
+  user-select: none;
+}
+
+/* 播放模式图标基础样式 */
+.aplayer .aplayer-mode-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  color: var(--aplayer-mode-icon-fg);
+  transition: all var(--aplayer-transition-speed) var(--aplayer-transition-timing);
+  opacity: 0.6;
+}
+
+/* 播放模式图标悬停效果 */
+.aplayer .aplayer-mode-icon:hover {
+  opacity: 0.8;
+  transform: scale(1.1);
+}
+
+/* 当前激活的播放模式图标样式 */
+.aplayer .aplayer-mode-icon.active {
+  color: var(--aplayer-mode-active-fg);
+  opacity: 1;
+  background: rgba(102, 204, 255, 0.2);
+  box-shadow: 0 0 8px rgba(102, 204, 255, 0.4);
+}
+
+/* 深色模式下激活的播放模式图标 */
+.dark .aplayer .aplayer-mode-icon.active {
+  background: rgba(96, 165, 250, 0.25);
+  box-shadow: 0 0 8px rgba(96, 165, 250, 0.5);
+}
+
+/* 播放模式切换动画 - 淡入淡出 */
+.aplayer .aplayer-mode-icon.fade-enter {
+  opacity: 0;
+  transform: scale(0.8);
+}
+
+.aplayer .aplayer-mode-icon.fade-enter-active {
+  opacity: 1;
+  transform: scale(1);
+  transition: all var(--aplayer-transition-speed) var(--aplayer-transition-timing);
+}
+
+.aplayer .aplayer-mode-icon.fade-exit {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.aplayer .aplayer-mode-icon.fade-exit-active {
+  opacity: 0;
+  transform: scale(0.8);
+  transition: all var(--aplayer-transition-speed) var(--aplayer-transition-timing);
+}
+
+/* 播放模式图标旋转动画（用于随机模式） */
+.aplayer .aplayer-mode-icon.shuffling {
+  animation: mode-shuffle-rotate 2s linear infinite;
+}
+
+@keyframes mode-shuffle-rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* 播放模式图标脉冲动画（用于单曲循环） */
+.aplayer .aplayer-mode-icon.looping {
+  animation: mode-loop-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes mode-loop-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 8px rgba(102, 204, 255, 0.4);
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow: 0 0 16px rgba(102, 204, 255, 0.6);
+  }
+}
+
+/* 深色模式下的脉冲动画 */
+.dark .aplayer .aplayer-mode-icon.looping {
+  animation: mode-loop-pulse-dark 1.5s ease-in-out infinite;
+}
+
+@keyframes mode-loop-pulse-dark {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 8px rgba(96, 165, 250, 0.5);
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow: 0 0 16px rgba(96, 165, 250, 0.7);
+  }
+}
+
+/* 播放模式文字提示样式 */
+.aplayer .aplayer-mode-text {
+  font-size: 11px;
+  color: var(--aplayer-mode-active-fg);
+  font-weight: 500;
+  margin-left: 4px;
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: all var(--aplayer-transition-speed) var(--aplayer-transition-timing);
+}
+
+/* 悬停时显示播放模式文字 */
+.aplayer .aplayer-mode-indicator:hover .aplayer-mode-text {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* ============================================
+   第四部分：加载状态样式
+   ============================================ */
+
+/* 加载状态容器 */
+.aplayer .aplayer-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--aplayer-loading-bg);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  opacity: 0;
+  visibility: hidden;
+  transition: all var(--aplayer-transition-speed) var(--aplayer-transition-timing);
+}
+
+/* 加载状态激活时显示 */
+.aplayer .aplayer-loading.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* 加载旋转动画容器 */
+.aplayer .aplayer-loading-spinner {
+  width: 40px;
+  height: 40px;
+  position: relative;
+}
+
+/* 加载旋转动画 - 外圈 */
+.aplayer .aplayer-loading-spinner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 3px solid transparent;
+  border-top-color: var(--aplayer-loading-spinner);
+  border-radius: 50%;
+  animation: loading-spin 1s linear infinite;
+}
+
+/* 加载旋转动画 - 内圈 */
+.aplayer .aplayer-loading-spinner::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  right: 6px;
+  bottom: 6px;
+  border: 3px solid transparent;
+  border-top-color: var(--aplayer-highlight);
+  border-radius: 50%;
+  animation: loading-spin 0.6s linear infinite reverse;
+}
+
+@keyframes loading-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* 加载进度条样式 */
+.aplayer .aplayer-loading-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--aplayer-highlight), var(--aploader-loading-spinner));
+  width: 0%;
+  transition: width 0.1s linear;
+  animation: loading-progress 2s ease-in-out infinite;
+}
+
+@keyframes loading-progress {
+  0% {
+    width: 0%;
+    left: 0;
+  }
+  50% {
+    width: 70%;
+    left: 15%;
+  }
+  100% {
+    width: 0%;
+    left: 100%;
+  }
+}
+
+/* 加载状态下的播放按钮动画 */
+.aplayer .aplayer-icon.aplayer-icon-loading {
+  animation: button-loading-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes button-loading-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(0.95);
+  }
+}
+
+/* 加载提示文字 */
+.aplayer .aplayer-loading-text {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  color: var(--aplayer-info-fg);
+  white-space: nowrap;
+}
+
+/* ============================================
+   第五部分：错误状态样式
+   ============================================ */
+
+/* 错误状态容器 */
+.aplayer .aplayer-error {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--aplayer-error-bg);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  opacity: 0;
+  visibility: hidden;
+  transition: all var(--aplayer-transition-speed) var(--aplayer-transition-timing);
+}
+
+/* 错误状态激活时显示 */
+.aplayer .aplayer-error.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* 错误状态边框 */
+.aplayer.aplayer-has-error {
+  border: 2px solid var(--aplayer-error-border);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+}
+
+/* 错误图标样式 */
+.aplayer .aplayer-error-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--aplayer-error-fg);
+  margin-bottom: 12px;
+  animation: error-shake 0.5s ease-in-out;
+}
+
+@keyframes error-shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-4px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(4px);
+  }
+}
+
+/* 错误提示文字 */
+.aplayer .aplayer-error-text {
+  font-size: 13px;
+  color: var(--aplayer-error-fg);
+  text-align: center;
+  padding: 0 16px;
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+
+/* 错误重试按钮 */
+.aplayer .aplayer-error-retry {
+  padding: 8px 16px;
+  border-radius: 16px;
+  background: var(--aplayer-error-border);
+  color: white;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all var(--aplayer-transition-speed) var(--aplayer-transition-timing);
+}
+
+.aplayer .aplayer-error-retry:hover {
+  background: #dc2626;
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+.aplayer .aplayer-error-retry:active {
+  transform: scale(0.98);
+}
+
+/* 深色模式下的错误状态 */
+.dark .aplayer.aplayer-has-error {
+  box-shadow: 0 0 20px rgba(248, 113, 113, 0.4);
+}
+
+/* ============================================
+   第六部分：歌单列表样式增强
+   ============================================ */
+
 /* 歌单列表样式增强 */
 .aplayer .aplayer-list {
   background: var(--aplayer-bg);
@@ -89,6 +494,11 @@
   /* 强制显示滚动条 */
   scrollbar-width: auto !important;
   scrollbar-color: #9ca3af #f3f4f6;
+  /* 添加过渡效果 */
+  transition: 
+    background-color var(--aplayer-transition-speed) var(--aplayer-transition-timing),
+    border-color var(--aplayer-transition-speed) var(--aplayer-transition-timing),
+    box-shadow var(--aplayer-transition-speed) var(--aplayer-transition-timing);
 }
 
 /* Webkit浏览器的滚动条样式 */
@@ -153,7 +563,7 @@
 
 .aplayer .aplayer-list .aplayer-list-light {
   background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(0, 212, 255, 0.1));
-  transition: all 0.3s ease;
+  transition: all var(--aplayer-transition-speed) var(--aplayer-transition-timing);
 }
 
 .aplayer .aplayer-list .aplayer-list-item {
@@ -191,7 +601,7 @@
   font-weight: 500;
   min-width: 24px;
   text-align: center;
-  transition: all 0.3s ease;
+  transition: all var(--aplayer-transition-speed) var(--aplayer-transition-timing);
 }
 
 .aplayer .aplayer-list .aplayer-list-light .aplayer-list-index {
@@ -202,7 +612,7 @@
 /* 歌曲信息样式增强 */
 .aplayer .aplayer-list .aplayer-list-item-content {
   color: var(--aplayer-fg);
-  transition: all 0.3s ease;
+  transition: all var(--aplayer-transition-speed) var(--aplayer-transition-timing);
   /* 确保内容区域有足够空间 */
   width: 100%;
   overflow: hidden;
@@ -256,6 +666,10 @@
   background: linear-gradient(135deg, rgba(96, 165, 250, 0.2), rgba(59, 130, 246, 0.1));
 }
 
+/* ============================================
+   第七部分：进度条样式增强
+   ============================================ */
+
 /* 进度条样式增强 */
 .aplayer .aplayer-bar {
   background: rgba(30, 41, 59, 0.4);
@@ -263,13 +677,19 @@
   border-radius: 2px;
   position: relative;
   overflow: hidden;
+  transition: all var(--aplayer-transition-speed) var(--aplayer-transition-timing);
+}
+
+/* 进度条悬停效果 */
+.aplayer .aplayer-bar:hover {
+  height: 6px;
 }
 
 .aplayer .aplayer-bar .aplayer-bar-loaded {
   background: linear-gradient(90deg, rgba(96, 165, 250, 0.3), rgba(59, 130, 246, 0.1));
   height: 100%;
   border-radius: 2px;
-  transition: all 0.3s ease;
+  transition: all var(--aplayer-transition-speed) var(--aplayer-transition-timing);
 }
 
 .aplayer .aplayer-bar .aplayer-bar-played {
@@ -303,9 +723,14 @@
   transform: translate(-50%, -50%) scale(0.9);
 }
 
+/* ============================================
+   第八部分：音量控制样式
+   ============================================ */
+
 /* 音量控制样式 */
 .aplayer .aplayer-volume-wrap .aplayer-volume-bar-wrap {
   background: rgba(102, 204, 255, 0.1);
+  transition: all var(--aplayer-transition-speed) var(--aplayer-transition-timing);
 }
 
 .aplayer .aplayer-volume-wrap .aplayer-volume-bar {
@@ -316,10 +741,14 @@
   background: var(--aplayer-highlight);
 }
 
+/* ============================================
+   第九部分：按钮样式增强
+   ============================================ */
+
 /* 按钮样式增强 */
 .aplayer .aplayer-icon {
   fill: var(--aplayer-button-fg);
-  transition: all 0.3s ease;
+  transition: all var(--aplayer-transition-speed) var(--aplayer-transition-timing);
 }
 
 .aplayer .aplayer-icon:hover {
@@ -358,28 +787,320 @@
   box-shadow: 0 4px 16px rgba(96, 165, 250, 0.6);
 }
 
-/* 响应式设计 - 确保播放器在移动设备上也能正常展开 */
-@media (max-width: 768px) {
+/* ============================================
+   第十部分：响应式布局优化
+   ============================================ */
+
+/* 大屏设备（大于 1024px）- 保持默认样式 */
+
+/* 平板端显示优化（640px - 1024px） */
+@media (min-width: 640px) and (max-width: 1024px) {
+  /* 播放器宽度适配 */
+  .aplayer.aplayer-fixed {
+    max-width: 350px !important;
+    width: 350px !important;
+  }
+
+  /* 列表宽度适配 */
+  .aplayer .aplayer-list {
+    max-width: 350px !important;
+    width: 350px !important;
+    max-height: 400px !important;
+  }
+
+  /* 播放器主体适配 */
+  .aplayer-fixed .aplayer-body {
+    max-width: 350px !important;
+  }
+
+  /* 字体大小微调 */
+  .aplayer {
+    font-size: 13px;
+  }
+
+  /* 按钮大小微调 */
+  .aplayer .aplayer-icon {
+    transform: scale(0.95);
+  }
+
+  .aplayer .aplayer-icon:hover {
+    transform: scale(1.05);
+  }
+
+  /* 播放模式指示器适配 */
+  .aplayer .aplayer-mode-indicator {
+    padding: 3px 6px;
+  }
+
+  .aplayer .aplayer-mode-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  /* 加载动画适配 */
+  .aplayer .aplayer-loading-spinner {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+/* 移动端显示优化（小于 640px） */
+@media (max-width: 640px) {
+  /* 播放器宽度适配 */
+  .aplayer.aplayer-fixed {
+    max-width: 280px !important;
+    width: 280px !important;
+    /* 确保不遮挡底部内容 */
+    bottom: 0 !important;
+    left: 0 !important;
+  }
+
+  /* 列表宽度适配 */
+  .aplayer .aplayer-list {
+    max-width: 280px !important;
+    width: 280px !important;
+    max-height: 250px !important;
+    bottom: 45px !important;
+  }
+
+  /* 播放器主体适配 */
+  .aplayer-fixed .aplayer-body {
+    max-width: 280px !important;
+  }
+
+  /* 字体大小调整 */
   .aplayer {
     font-size: 12px;
   }
-  
-  .aplayer.aplayer-fixed {
-    border-radius: 0;
-  }
-  
+
+  /* 信息区域内边距调整 */
   .aplayer .aplayer-info {
-    padding: 8px 10px;
+    padding: 6px 8px;
   }
-  
+
+  /* 控制器内边距调整 */
   .aplayer .aplayer-controller {
-    padding: 8px 10px;
+    padding: 6px 8px;
   }
-  
-  .aplayer-list {
-    max-height: 300px !important; /* 在移动设备上稍微减小高度 */
+
+  /* 列表项样式调整 */
+  .aplayer .aplayer-list .aplayer-list-item {
+    min-height: 40px;
+    padding: 8px 10px;
+    margin: 2px 6px;
+  }
+
+  /* 歌曲标题字体调整 */
+  .aplayer .aplayer-list .aplayer-list-item-content .aplayer-list-title {
+    font-size: 13px;
+  }
+
+  /* 歌手名字体调整 */
+  .aplayer .aplayer-list .aplayer-list-item-content .aplayer-list-author {
+    font-size: 11px;
+  }
+
+  /* 按钮大小调整 */
+  .aplayer .aplayer-icon {
+    transform: scale(0.9);
+  }
+
+  .aplayer .aplayer-icon:hover {
+    transform: scale(1);
+  }
+
+  /* 进度条高度调整 */
+  .aplayer .aplayer-bar {
+    height: 3px;
+  }
+
+  .aplayer .aplayer-bar:hover {
+    height: 5px;
+  }
+
+  /* 进度条手柄调整 */
+  .aplayer .aplayer-bar .aplayer-bar-handle {
+    width: 10px;
+    height: 10px;
+  }
+
+  /* 播放模式指示器适配 */
+  .aplayer .aplayer-mode-indicator {
+    padding: 2px 4px;
+    gap: 2px;
+  }
+
+  .aplayer .aplayer-mode-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .aplayer .aplayer-mode-text {
+    font-size: 10px;
+  }
+
+  /* 加载动画适配 */
+  .aplayer .aplayer-loading-spinner {
+    width: 32px;
+    height: 32px;
+  }
+
+  .aplayer .aplayer-loading-text {
+    font-size: 11px;
+    bottom: 16px;
+  }
+
+  /* 错误状态适配 */
+  .aplayer .aplayer-error-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .aplayer .aplayer-error-text {
+    font-size: 12px;
+    padding: 0 12px;
+  }
+
+  .aplayer .aplayer-error-retry {
+    padding: 6px 12px;
+    font-size: 11px;
+  }
+
+  /* 边框圆角调整 */
+  .aplayer {
+    border-radius: 8px 8px 0 0;
+  }
+
+  .aplayer .aplayer-list {
+    border-radius: 0 0 8px 8px;
+  }
+
+  /* 滚动条宽度调整 */
+  .aplayer-list::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  /* 确保播放器不会超出屏幕 */
+  .aplayer.aplayer-fixed {
+    left: 0 !important;
+    transform: none !important;
   }
 }
+
+/* 超小屏幕适配（小于 320px） */
+@media (max-width: 320px) {
+  /* 播放器宽度进一步缩小 */
+  .aplayer.aplayer-fixed {
+    max-width: 240px !important;
+    width: 240px !important;
+  }
+
+  /* 列表宽度适配 */
+  .aplayer .aplayer-list {
+    max-width: 240px !important;
+    width: 240px !important;
+    max-height: 200px !important;
+  }
+
+  /* 播放器主体适配 */
+  .aplayer-fixed .aplayer-body {
+    max-width: 240px !important;
+  }
+
+  /* 字体大小进一步调整 */
+  .aplayer {
+    font-size: 11px;
+  }
+
+  /* 隐藏播放模式文字提示 */
+  .aplayer .aplayer-mode-text {
+    display: none;
+  }
+}
+
+/* ============================================
+   第十一部分：深色/浅色模式过渡优化
+   ============================================ */
+
+/* 全局过渡效果 - 确保所有元素平滑过渡 */
+.aplayer,
+.aplayer *,
+.aplayer *::before,
+.aplayer *::after {
+  transition: 
+    background-color var(--aplayer-transition-speed) var(--aplayer-transition-timing),
+    border-color var(--aplayer-transition-speed) var(--aplayer-transition-timing),
+    color var(--aplayer-transition-speed) var(--aplayer-transition-timing),
+    box-shadow var(--aplayer-transition-speed) var(--aplayer-transition-timing),
+    opacity var(--aplayer-transition-speed) var(--aplayer-transition-timing);
+}
+
+/* 主题切换时的闪烁防护 */
+.aplayer.theme-transitioning {
+  /* 禁用过渡动画，防止闪烁 */
+  transition: none !important;
+}
+
+.aplayer.theme-transitioning * {
+  transition: none !important;
+}
+
+/* 主题切换完成后的平滑过渡恢复 */
+.aplayer.theme-transitioned {
+  animation: theme-fade-in 0.3s ease-out;
+}
+
+@keyframes theme-fade-in {
+  0% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* 深色模式切换时的特殊处理 */
+.dark .aplayer {
+  /* 确保背景色平滑过渡 */
+  background-color: var(--aplayer-bg);
+}
+
+/* 列表项在主题切换时的优化 */
+.aplayer .aplayer-list .aplayer-list-item {
+  /* 添加额外的过渡属性 */
+  transition: 
+    background-color var(--aplayer-transition-speed) var(--aplayer-transition-timing),
+    border-color var(--aplayer-transition-speed) var(--aplayer-transition-timing),
+    color var(--aplayer-transition-speed) var(--aplayer-transition-timing),
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+/* 进度条在主题切换时的优化 */
+.aplayer .aplayer-bar,
+.aplayer .aplayer-bar-loaded,
+.aplayer .aplayer-bar-played,
+.aplayer .aplayer-bar-handle {
+  transition: 
+    background-color var(--aplayer-transition-speed) var(--aplayer-transition-timing),
+    border-color var(--aplayer-transition-speed) var(--aplayer-transition-timing),
+    box-shadow var(--aplayer-transition-speed) var(--aplayer-transition-timing),
+    height 0.2s ease,
+    transform 0.2s ease;
+}
+
+/* 按钮在主题切换时的优化 */
+.aplayer .aplayer-icon {
+  transition: 
+    fill var(--aplayer-transition-speed) var(--aplayer-transition-timing),
+    background-color var(--aplayer-transition-speed) var(--aplayer-transition-timing),
+    box-shadow var(--aplayer-transition-speed) var(--aplayer-transition-timing),
+    transform 0.3s ease;
+}
+
+/* ============================================
+   第十二部分：其他辅助样式
+   ============================================ */
 
 /* 修复列表展开可能被截断的问题 */
 .aplayer.aplayer-fixed .aplayer-list {
@@ -443,4 +1164,62 @@
 .dark .aplayer-list-author span[style*="color: #ffff00"] {
   color: #ffff00 !important;
   opacity: 1 !important;
+}
+
+/* ============================================
+   第十三部分：无障碍访问优化
+   ============================================ */
+
+/* 移除点击时的焦点框 */
+.aplayer .aplayer-icon:focus,
+.aplayer .aplayer-bar-handle:focus,
+.aplayer .aplayer-mode-indicator:focus,
+.aplayer .aplayer-error-retry:focus,
+.aplayer .aplayer-list-item:focus {
+  outline: none;
+}
+
+/* 仅在键盘导航时显示焦点指示器 */
+.aplayer .aplayer-icon:focus-visible,
+.aplayer .aplayer-bar-handle:focus-visible,
+.aplayer .aplayer-mode-indicator:focus-visible,
+.aplayer .aplayer-error-retry:focus-visible {
+  outline: 2px solid var(--aplayer-highlight);
+  outline-offset: 2px;
+}
+
+/* 深色模式下的焦点指示器 */
+.dark .aplayer .aplayer-icon:focus-visible,
+.dark .aplayer .aplayer-bar-handle:focus-visible,
+.dark .aplayer .aplayer-mode-indicator:focus-visible,
+.dark .aplayer .aplayer-error-retry:focus-visible {
+  outline-color: var(--aplayer-mode-active-fg);
+}
+
+/* 减少动画模式支持 */
+@media (prefers-reduced-motion: reduce) {
+  /* 禁用所有动画 */
+  .aplayer,
+  .aplayer *,
+  .aplayer *::before,
+  .aplayer *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* 高对比度模式支持 */
+@media (prefers-contrast: high) {
+  .aplayer {
+    border: 2px solid currentColor;
+  }
+
+  .aplayer .aplayer-list .aplayer-list-item {
+    border: 1px solid var(--aplayer-border);
+  }
+
+  .aplayer .aplayer-bar {
+    border: 1px solid var(--aplayer-border);
+  }
 }

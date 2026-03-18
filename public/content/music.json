@@ -1,0 +1,87 @@
+{
+  "version": "1.0",
+  "lastUpdated": "2026-03-18",
+  "description": "洛天依主题博客音乐播放列表配置文件",
+  "songs": [
+    {
+      "id": "yiban-yiban",
+      "name": "一半一半",
+      "artist": "洛天依",
+      "url": "/music/一半一半 - 洛天依.mp3",
+      "cover": "/music/covers/一半一半 - 洛天依.jpg",
+      "lrc": "/music/lyrics/一半一半 - 洛天依.lrc"
+    },
+    {
+      "id": "sanyue-yu",
+      "name": "三月雨",
+      "artist": "洛天依",
+      "url": "/music/三月雨 - 洛天依.mp3",
+      "cover": "/music/covers/三月雨 - 洛天依.png",
+      "lrc": "/music/lyrics/三月雨 - 洛天依.lrc"
+    },
+    {
+      "id": "xiachong",
+      "name": "夏虫",
+      "artist": "洛天依",
+      "url": "/music/夏虫 - 洛天依.mp3",
+      "cover": "/music/covers/夏虫 - 洛天依.jpg",
+      "lrc": "/music/lyrics/夏虫 - 洛天依.lrc"
+    },
+    {
+      "id": "tianxing-wen",
+      "name": "天星问",
+      "artist": "洛天依",
+      "url": "/music/天星问 - 洛天依.mp3",
+      "cover": "/music/covers/天星问 - 洛天依.jpg",
+      "lrc": "/music/lyrics/天星问 - 洛天依.lrc"
+    },
+    {
+      "id": "liuguang",
+      "name": "流光 (Light Me Up)",
+      "artist": "洛天依",
+      "url": "/music/流光 (Light Me Up) - 洛天依.mp3",
+      "cover": "/music/covers/流光 (Light Me Up) - 洛天依.jpg",
+      "lrc": "/music/lyrics/流光 (Light Me Up) - 洛天依.lrc"
+    },
+    {
+      "id": "sha-a",
+      "name": "啥啊",
+      "artist": "洛天依",
+      "url": "/music/啥啊 - 洛天依.mp3",
+      "cover": "/music/covers/啥啊 - 洛天依.jpg",
+      "lrc": "/music/lyrics/啥啊 - 洛天依.lrc"
+    },
+    {
+      "id": "yiyang-defengbao-zhongxin",
+      "name": "异样的风暴中心",
+      "artist": "洛天依",
+      "url": "/music/异样的风暴中心 - 洛天依.mp3",
+      "cover": "/music/covers/异样的风暴中心 - 洛天依.jpg",
+      "lrc": "/music/lyrics/异样的风暴中心 - 洛天依.lrc"
+    },
+    {
+      "id": "gehang-sifang",
+      "name": "歌行四方",
+      "artist": "洛天依",
+      "url": "/music/歌行四方 - 洛天依.mp3",
+      "cover": "/music/covers/歌行四方 - 洛天依.jpg",
+      "lrc": "/music/lyrics/歌行四方 - 洛天依.lrc"
+    },
+    {
+      "id": "hudie",
+      "name": "蝴蝶",
+      "artist": "洛天依",
+      "url": "/music/蝴蝶 - 洛天依.mp3",
+      "cover": "/music/covers/蝴蝶 - 洛天依.jpg",
+      "lrc": "/music/lyrics/蝴蝶 - 洛天依.lrc"
+    },
+    {
+      "id": "baishixi",
+      "name": "白石溪",
+      "artist": "洛天依、乐正绫",
+      "url": "/music/白石溪 - 洛天依、乐正绫.mp3",
+      "cover": "/music/covers/白石溪 - 洛天依、乐正绫.png",
+      "lrc": "/music/lyrics/白石溪 - 洛天依、乐正绫.lrc"
+    }
+  ]
+}

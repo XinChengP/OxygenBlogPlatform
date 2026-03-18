@@ -56,22 +56,6 @@ const CategoryItem = ({
         transition={{ duration: 0.3, delay: index * 0.05 }}
       >
         <div className="flex items-center gap-2 flex-1">
-          {/* 展开/折叠按钮 */}
-          {category.subCategories && category.subCategories.length > 0 && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggleExpand(category.name);
-              }}
-              className="flex-shrink-0 w-4 h-4 flex items-center justify-center"
-            >
-              {isExpanded ? (
-                <ChevronDown className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-              ) : (
-                <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-              )}
-            </button>
-          )}
           {/* 分类图标 */}
           <FolderOpen className={`w-4 h-4 ${
             isSelected 
@@ -90,6 +74,24 @@ const CategoryItem = ({
           {category.count}
         </span>
       </motion.button>
+      
+      {/* 展开/折叠按钮 - 独立于主按钮之外 */}
+      {category.subCategories && category.subCategories.length > 0 && (
+        <motion.button
+          onClick={() => onToggleExpand(category.name)}
+          className="w-full px-4 py-1 text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"
+          style={{ paddingLeft: `${level * 12 + 28}px` }}
+          whileHover={{ x: 2 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          {isExpanded ? (
+            <ChevronDown className="w-4 h-4" />
+          ) : (
+            <ChevronRight className="w-4 h-4" />
+          )}
+          <span className="text-xs">{isExpanded ? '收起子分类' : `展开 ${category.subCategories.length} 个子分类`}</span>
+        </motion.button>
+      )}
       
       {/* 子分类列表 */}
       {category.subCategories && category.subCategories.length > 0 && isExpanded && (
