@@ -265,14 +265,14 @@ function AdminTable<T extends Record<string, any>>({
                 <th
                   key={String(column.key)}
                   className={cn(
-                    'px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300',
+                    'px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap',
                     column.sortable && 'cursor-pointer select-none hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors',
                     column.width && `w-[${column.width}]`
                   )}
                   onClick={() => column.sortable && handleSort(String(column.key))}
                 >
                   <div className="flex items-center space-x-1">
-                    <span>{column.title}</span>
+                    <span className="whitespace-nowrap">{column.title}</span>
                     {/* 排序图标 */}
                     {column.sortable && (
                       <span className="flex flex-col">
@@ -360,11 +360,11 @@ function AdminTable<T extends Record<string, any>>({
                     {columns.map(column => (
                       <td
                         key={String(column.key)}
-                        className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300"
+                        className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap"
                       >
                         {column.render
                           ? column.render(getCellValue(record, column.key), record, index)
-                          : getCellValue(record, column.key)}
+                          : <span className="inline-block max-w-xs truncate">{getCellValue(record, column.key)}</span>}
                       </td>
                     ))}
                   </tr>

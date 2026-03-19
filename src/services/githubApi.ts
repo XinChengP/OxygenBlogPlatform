@@ -172,19 +172,36 @@ async function updateFile(config: GitHubConfig, path: string, content: GitHubFil
 
 /**
  * 获取GitHub仓库信息
+ * 支持公开仓库（无需 Token）和私有仓库（需要 Token）
  */
 export async function getRepositoryInfo(config: GitHubConfig): Promise<any> {
+  // 构建请求头，只有存在 token 时才添加 Authorization
+  const headers: Record<string, string> = {
+    'Accept': 'application/vnd.github.v3+json',
+  };
+  
+  if (config.token && config.token.trim() !== '') {
+    headers['Authorization'] = `token ${config.token}`;
+  }
+  
   const response = await fetch(
     `https://api.github.com/repos/${config.owner}/${config.repo}`,
     {
-      headers: {
-        'Authorization': `token ${config.token}`,
-        'Accept': 'application/vnd.github.v3+json',
-      },
+      headers,
     }
   );
 
   if (!response.ok) {
+    // 提供更详细的错误信息
+    if (response.status === 404) {
+      throw new Error(`仓库不存在或无权访问: ${config.owner}/${config.repo}`);
+    }
+    if (response.status === 401) {
+      throw new Error('GitHub Token 无效或已过期');
+    }
+    if (response.status === 403) {
+      throw new Error('API 请求次数已达上限或没有权限');
+    }
     throw new Error(`获取仓库信息失败: ${response.status}`);
   }
 

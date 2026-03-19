@@ -96,6 +96,8 @@ export interface UseGalleryReturn {
   deleteImages: (images: Array<{ path: string; sha?: string }>) => Promise<boolean>;
   /** 刷新图片列表 */
   refresh: () => void;
+  /** 刷新配置状态 */
+  refreshConfig: () => void;
   /** 复制图片链接 */
   copyImageLink: (image: GalleryImage) => Promise<boolean>;
   /** 上传进度列表 */
@@ -150,6 +152,37 @@ export function useGallery(options: UseGalleryOptions): UseGalleryReturn {
   const [isConfigured, setIsConfigured] = useState(false);
 
   /**
+ * 刷新配置状态
+ * 当用户在设置页面保存配置后调用此方法
+ */
+  const refreshConfig = useCallback(() => {
+    try {
+      // 重新加载配置
+      const adminConfig = getAdminConfig();
+      
+      if (adminConfig && adminConfig.imageRepo) {
+        const [owner, repo] = adminConfig.imageRepo.split('/');
+        setConfig({
+          owner: owner || DEFAULT_GALLERY_CONFIG.owner,
+          repo: repo || DEFAULT_GALLERY_CONFIG.repo,
+          branch: adminConfig.githubBranch || DEFAULT_GALLERY_CONFIG.branch,
+          defaultPath: DEFAULT_GALLERY_CONFIG.defaultPath,
+        });
+      } else {
+        setConfig(DEFAULT_GALLERY_CONFIG);
+      }
+      
+      // 重新检查 Token
+      const token = getDecryptedToken();
+      setIsConfigured(!!token);
+    } catch (err) {
+        console.error('刷新图床配置失败:', err);
+        setConfig(DEFAULT_GALLERY_CONFIG);
+        setIsConfigured(false);
+      }
+    }, []);
+
+  /**
    * 初始化配置
    * 从本地存储加载图床配置
    */
@@ -184,6 +217,19 @@ export function useGallery(options: UseGalleryOptions): UseGalleryReturn {
     };
 
     loadConfig();
+    
+    // 监听 storage 事件，当配置在其他页面更新时刷新
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'admin_token' || e.key === 'admin_config') {
+        loadConfig();
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
   /**
@@ -503,6 +549,7 @@ export function useGallery(options: UseGalleryOptions): UseGalleryReturn {
     deleteImage,
     deleteImages,
     refresh,
+    refreshConfig,
     copyImageLink,
     uploadProgress,
     isConfigured,
@@ -524,31 +571,87 @@ export function useGallerySettings() {
   const [error, setError] = useState<string | null>(null);
 
   /**
-   * 加载已保存的配置
+   * 加载已保存的配置并验证连接状态
    */
   useEffect(() => {
-    const savedToken = getDecryptedToken();
-    if (savedToken) {
-      setToken(savedToken);
-    }
+    const loadSavedConfig = async () => {
+      const savedToken = getDecryptedToken();
+      if (savedToken) {
+        setToken(savedToken);
+        
+        // 加载配置
+        const adminConfig = getAdminConfig();
+        const loadedConfig: GalleryConfig = {
+          owner: adminConfig?.githubOwner || DEFAULT_GALLERY_CONFIG.owner,
+          repo: adminConfig?.githubRepo?.split('/')[1] || DEFAULT_GALLERY_CONFIG.repo,
+          branch: adminConfig?.githubBranch || DEFAULT_GALLERY_CONFIG.branch,
+          defaultPath: DEFAULT_GALLERY_CONFIG.defaultPath,
+        };
+        
+        setConfig(loadedConfig);
+        
+        // 自动验证已保存的 Token 是否有效
+        try {
+          const githubConfig: GitHubConfig = {
+            owner: loadedConfig.owner,
+            repo: loadedConfig.repo,
+            branch: loadedConfig.branch,
+            token: savedToken,
+          };
+          
+          const info = await getRepositoryInfo(githubConfig);
+          setRepoInfo(info);
+          setIsConnected(true);
+        } catch (err) {
+          // Token 可能已过期或无效，但不显示错误，让用户手动测试
+          console.warn('已保存的 Token 验证失败:', err);
+          setIsConnected(false);
+        }
+      } else {
+        // 没有 Token，加载默认配置
+        const adminConfig = getAdminConfig();
+        if (adminConfig) {
+          setConfig(prev => ({
+            ...prev,
+            owner: adminConfig.githubOwner || prev.owner,
+            repo: adminConfig.githubRepo?.split('/')[1] || prev.repo,
+            branch: adminConfig.githubBranch || prev.branch,
+          }));
+        }
+      }
+    };
 
-    const adminConfig = getAdminConfig();
-    if (adminConfig) {
-      setConfig(prev => ({
-        ...prev,
-        owner: adminConfig.githubOwner || prev.owner,
-        repo: adminConfig.githubRepo?.split('/')[1] || prev.repo,
-        branch: adminConfig.githubBranch || prev.branch,
-      }));
-    }
+    loadSavedConfig();
   }, []);
 
   /**
    * 测试 GitHub 连接
+   * 会验证 Token 格式并尝试获取仓库信息
    */
   const testConnection = useCallback(async (): Promise<boolean> => {
     if (!token) {
       setError('请输入 GitHub Token');
+      return false;
+    }
+
+    // 验证 Token 格式
+    const trimmedToken = token.trim();
+    const validPrefixes = ['ghp_', 'github_pat_', 'gho_', 'ghu_', 'ghs_', 'ghr_'];
+    const hasValidPrefix = validPrefixes.some(prefix => trimmedToken.startsWith(prefix));
+    
+    if (!hasValidPrefix) {
+      setError('Token 格式无效。请确保使用以 ghp_ 或 github_pat_ 开头的 GitHub Token');
+      return false;
+    }
+
+    // 验证 Token 长度
+    if (trimmedToken.startsWith('ghp_') && trimmedToken.length < 40) {
+      setError('经典 Token 长度不足。请确保完整复制了 Token');
+      return false;
+    }
+    
+    if (trimmedToken.startsWith('github_pat_') && trimmedToken.length < 50) {
+      setError('Fine-grained Token 长度不足。请确保完整复制了 Token');
       return false;
     }
 
@@ -560,7 +663,7 @@ export function useGallerySettings() {
         owner: config.owner,
         repo: config.repo,
         branch: config.branch,
-        token,
+        token: trimmedToken,
       };
 
       const info = await getRepositoryInfo(githubConfig);
@@ -568,7 +671,8 @@ export function useGallerySettings() {
       setIsConnected(true);
       return true;
     } catch (err) {
-      setError(handleGitHubError(err) || '连接失败');
+      const errorMessage = handleGitHubError(err) || '连接失败';
+      setError(errorMessage);
       setIsConnected(false);
       return false;
     } finally {
