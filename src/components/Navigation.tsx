@@ -182,14 +182,14 @@ const Navigation = () => {
           </Link>
           
           {/* Navigation Links */}
-          <div className="hidden md:flex items-center space-x-8">
-            <div className="flex space-x-8">
+          <div className="hidden lg:flex items-center">
+            <div className="flex items-center space-x-1 xl:space-x-4">
               {navItems.map((item) => (
                   <Link
                     key={item.href}
                     href={item.href}
                     onClick={(e) => handleLinkClick(e, item.href)}
-                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300 nav-link ${
+                    className={`px-2 xl:px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300 nav-link whitespace-nowrap ${
                       pathname === item.href
                         ? isAtTop ? 'text-white' : 'text-primary dark:text-primary'
                         : isAtTop ? 'text-white hover:text-gray-200' : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary'
@@ -202,7 +202,7 @@ const Navigation = () => {
           </div>
           
           {/* Mobile menu button */}
-          <div className="md:hidden flex items-center space-x-2">
+          <div className="lg:hidden flex items-center space-x-2">
             <button 
               onClick={toggleMobileMenu}
               className={`transition-colors duration-300 ${
@@ -231,8 +231,8 @@ const Navigation = () => {
         {/* Mobile menu */}
         <AnimatePresence>
           {isMenuOpen && (
-            <motion.div 
-              className="md:hidden overflow-hidden"
+            <motion.div
+              className="lg:hidden overflow-hidden"
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
