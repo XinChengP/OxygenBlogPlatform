@@ -160,6 +160,7 @@ export default function PageHeader({
       className={`
         ${centered ? 'text-center' : 'text-left'}
         ${showBackground ? 'relative' : ''}
+        dark:bg-transparent
         ${className}
       `}
       variants={containerVariants}
@@ -168,17 +169,17 @@ export default function PageHeader({
     >
       {/* 装饰性背景 */}
       {showBackground && (
-        <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
-          {/* 渐变光晕效果 */}
+        <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none dark:bg-transparent">
+          {/* 渐变光晕效果 - 深色模式下降低透明度 */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[200%]">
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 rounded-full blur-3xl" />
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 dark:from-transparent dark:to-transparent rounded-full blur-3xl" />
           </div>
-          {/* 装饰性圆点 */}
-          <div className="absolute top-0 left-1/4 w-2 h-2 bg-primary/20 rounded-full animate-pulse" />
-          <div className="absolute bottom-0 right-1/4 w-3 h-3 bg-primary/10 rounded-full animate-pulse" />
-          {/* 额外的装饰光点 */}
-          <div className="absolute top-1/3 right-1/3 w-1 h-1 bg-primary/30 rounded-full" />
-          <div className="absolute bottom-1/3 left-1/3 w-1.5 h-1.5 bg-primary/20 rounded-full" />
+          {/* 装饰性圆点 - 深色模式下降低透明度 */}
+          <div className="absolute top-0 left-1/4 w-2 h-2 bg-primary/20 dark:bg-primary/10 rounded-full animate-pulse" />
+          <div className="absolute bottom-0 right-1/4 w-3 h-3 bg-primary/10 dark:bg-primary/5 rounded-full animate-pulse" />
+          {/* 额外的装饰光点 - 深色模式下降低透明度 */}
+          <div className="absolute top-1/3 right-1/3 w-1 h-1 bg-primary/30 dark:bg-primary/15 rounded-full" />
+          <div className="absolute bottom-1/3 left-1/3 w-1.5 h-1.5 bg-primary/20 dark:bg-primary/10 rounded-full" />
         </div>
       )}
 

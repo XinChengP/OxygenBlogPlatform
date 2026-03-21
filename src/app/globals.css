@@ -575,3 +575,286 @@ pre code {
   background-color: #1e40af;
 }
 
+/* ============================================
+   深色模式透明背景支持
+   ============================================ */
+
+/**
+ * 深色模式下支持透明背景的div
+ * 使用此类可以让div在深色模式下保持透明
+ */
+.dark .dark-bg-transparent,
+.dark .bg-transparent-dark {
+  background-color: transparent !important;
+  background: transparent !important;
+}
+
+/**
+ * 深色模式下渐变背景透明支持
+ * 用于需要透明渐变效果的元素
+ */
+.dark .dark-gradient-transparent {
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(31, 39, 53, 0.5),
+    transparent
+  ) !important;
+}
+
+/**
+ * 深色模式下毛玻璃效果优化
+ * 确保毛玻璃背景在深色模式下正确显示
+ */
+.dark .dark-glass {
+  background: rgba(42, 52, 65, 0.6) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/**
+ * 深色模式下完全透明
+ * 用于需要完全透明背景的场景
+ */
+.dark .dark-bg-clear {
+  background: none !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/**
+ * 修复深色模式下渐变文字容器的背景
+ * 确保渐变文字效果正常显示
+ */
+.dark .bg-clip-text {
+  background-color: transparent !important;
+}
+
+/**
+ * 深色模式下pointer-events-none元素的背景处理
+ * 确保不影响下层元素
+ */
+.dark .pointer-events-none {
+  background-color: transparent;
+}
+
+/* ============================================
+   暗黑模式增强样式 - Dark Mode Enhancements
+   ============================================ */
+
+/**
+ * 主题过渡动画
+ * 当切换主题时，所有元素都会平滑过渡
+ */
+.theme-transitioning,
+.theme-transitioning *,
+.theme-transitioning *::before,
+.theme-transitioning *::after {
+  transition: background-color 0.5s ease,
+              border-color 0.5s ease,
+              color 0.5s ease,
+              fill 0.5s ease,
+              stroke 0.5s ease,
+              opacity 0.5s ease,
+              box-shadow 0.5s ease,
+              filter 0.5s ease !important;
+}
+
+/**
+ * 全局暗黑模式过渡
+ * 为所有元素添加平滑的主题切换过渡效果
+ */
+html,
+html *,
+html *::before,
+html *::after {
+  transition: background-color 0.3s ease,
+              border-color 0.3s ease,
+              color 0.3s ease;
+}
+
+/* 排除某些不需要过渡的元素 */
+html .no-transition,
+html .no-transition *,
+html .no-transition *::before,
+html .no-transition *::after {
+  transition: none !important;
+}
+
+/**
+ * 图片暗黑模式滤镜
+ * 在暗黑模式下自动降低图片亮度，减少刺眼感
+ */
+.dark .dark-mode-image-filter img,
+.dark img.dark-mode-filter {
+  filter: brightness(0.85) contrast(1.05);
+  transition: filter 0.5s ease;
+}
+
+.dark .dark-mode-image-filter img:hover,
+.dark img.dark-mode-filter:hover {
+  filter: brightness(0.95) contrast(1.05);
+}
+
+/**
+ * 内容区域暗黑模式滤镜
+ * 用于文章正文等内容区域
+ */
+.dark .dark-mode-content-filter {
+  filter: brightness(0.95);
+  transition: filter 0.5s ease;
+}
+
+/**
+ * 背景图片暗黑模式处理
+ * 为背景图片添加暗色遮罩
+ */
+.dark .dark-mode-bg-image::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  transition: background 0.5s ease;
+}
+
+/**
+ * 卡片和图片容器暗黑模式优化
+ */
+.dark .dark-mode-card {
+  background: linear-gradient(
+    145deg,
+    rgba(42, 52, 65, 0.9) 0%,
+    rgba(31, 39, 53, 0.95) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+/**
+ * 代码块暗黑模式优化
+ * 增强代码可读性
+ */
+.dark pre,
+.dark code {
+  filter: brightness(1.1);
+}
+
+/**
+ * 链接和交互元素暗黑模式优化
+ */
+.dark a:not(.no-dark-filter) {
+  transition: color 0.3s ease, opacity 0.3s ease;
+}
+
+.dark a:not(.no-dark-filter):hover {
+  filter: brightness(1.2);
+}
+
+/**
+ * 按钮暗黑模式优化
+ */
+.dark button:not(.no-dark-filter):not(.aplayer-button) {
+  transition: all 0.3s ease;
+}
+
+.dark button:not(.no-dark-filter):not(.aplayer-button):hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+/**
+ * 表单元素暗黑模式优化
+ */
+.dark input,
+.dark textarea,
+.dark select {
+  background-color: rgba(42, 52, 65, 0.8);
+  border-color: rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.dark input:focus,
+.dark textarea:focus,
+.dark select:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(102, 204, 255, 0.1);
+}
+
+/**
+ * 滚动条暗黑模式优化
+ */
+.dark ::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/**
+ * 图片懒加载占位符暗黑模式
+ */
+.dark .image-placeholder {
+  background: linear-gradient(
+    90deg,
+    rgba(55, 65, 81, 0.8) 0%,
+    rgba(75, 85, 99, 0.8) 50%,
+    rgba(55, 65, 81, 0.8) 100%
+  );
+  background-size: 200% 100%;
+}
+
+/**
+ * 系统主题适配
+ * 根据系统偏好自动调整
+ */
+@media (prefers-color-scheme: dark) {
+  html:not(.light) .system-dark-image {
+    filter: brightness(0.85) contrast(1.05);
+  }
+}
+
+/**
+ * 减少动画偏好支持
+ * 尊重用户的减少动画设置
+ */
+@media (prefers-reduced-motion: reduce) {
+  .theme-transitioning,
+  .theme-transitioning *,
+  html,
+  html *,
+  html *::before,
+  html *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+  
+  .dark .dark-mode-image-filter img,
+  .dark img.dark-mode-filter,
+  .dark .dark-mode-content-filter {
+    transition: none !important;
+  }
+}
+
+/**
+ * 打印样式优化
+ * 打印时移除暗黑模式滤镜
+ */
+@media print {
+  .dark .dark-mode-image-filter img,
+  .dark img.dark-mode-filter,
+  .dark .dark-mode-content-filter {
+    filter: none !important;
+  }
+  
+  .dark .dark-mode-bg-image::before {
+    display: none !important;
+  }
+}
+
