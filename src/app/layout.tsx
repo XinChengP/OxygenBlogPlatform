@@ -28,12 +28,51 @@ export default function RootLayout({
   return (
     <html lang="zh-CN" data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
-        {/* 关键资源预加载 */}
-        {/* 预连接到关键域名 */}
+        {/* ============================================
+            关键资源预加载 - 性能优化
+            ============================================ */}
+        
+        {/* 预连接到关键域名 - 提前建立连接减少延迟 */}
         <link rel="preconnect" href="https://fonts.googleapis.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://giscus.app" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://api.github.com" crossOrigin="anonymous" />
+        
+        {/* DNS预解析 - 加速第三方资源加载 */}
+        <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+        <link rel="dns-prefetch" href="https://giscus.app" />
+        
+        {/* 预加载关键背景图片 - 首页背景图 */}
+        <link 
+          rel="preload" 
+          href="/LTY_Picture/光与影.png" 
+          as="image" 
+          type="image/png"
+          fetchPriority="high"
+        />
+        
+        {/* 预加载关键CSS - 避免渲染阻塞 */}
+        <link 
+          rel="preload" 
+          href="/css/aplayer-theme.css" 
+          as="style"
+        />
+        
+        {/* 字体预加载 - 使用font-display: swap避免FOIT */}
+        <style dangerouslySetInnerHTML={{__html:`
+          /* 系统字体栈 - 确保快速渲染 */
+          @font-face {
+            font-family: 'System UI';
+            src: local('-apple-system'), local('BlinkMacSystemFont'), local('Segoe UI'), local('Roboto');
+            font-display: swap;
+          }
+          
+          /* 关键CSS内联 - 避免额外请求 */
+          :root {
+            --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+          }
+        `}} />
         
         {/* 注意：移除不必要的预加载以避免浏览器警告
             - favicon.ico 不需要预加载，浏览器会自动请求

@@ -858,3 +858,175 @@ html .no-transition *::after {
   }
 }
 
+/* ============================================
+   性能优化样式 - Performance Optimizations
+   ============================================ */
+
+/**
+ * GPU加速动画元素
+ * 使用 will-change 和 transform 优化动画性能
+ */
+.gpu-accelerated {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/**
+ * 动画性能优化类
+ * 用于频繁动画的元素
+ */
+.animate-optimized {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/**
+ * 内容可见性优化
+ * 用于首屏外的内容，延迟渲染
+ */
+.content-visibility-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 500px;
+}
+
+/**
+ * 包含性布局优化
+ * 限制样式计算范围，提升性能
+ */
+.contain-layout {
+  contain: layout style paint;
+}
+
+.contain-strict {
+  contain: strict;
+}
+
+/**
+ * 减少重绘区域
+ * 用于频繁更新的元素
+ */
+.repaint-optimized {
+  contain: paint;
+}
+
+/**
+ * 图片加载优化
+ * 防止图片加载导致的布局抖动
+ */
+.img-stable {
+  aspect-ratio: attr(width) / attr(height);
+  object-fit: cover;
+}
+
+/**
+ * 字体显示优化
+ * 防止字体加载时的闪烁
+ */
+.font-optimized {
+  font-display: swap;
+}
+
+/**
+ * 懒加载占位符
+ * 用于图片懒加载时的占位
+ */
+.lazy-placeholder {
+  background: linear-gradient(
+    90deg,
+    rgba(226, 232, 240, 0.8) 0%,
+    rgba(241, 245, 249, 0.8) 50%,
+    rgba(226, 232, 240, 0.8) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/**
+ * 暗色模式下的懒加载占位符
+ */
+.dark .lazy-placeholder {
+  background: linear-gradient(
+    90deg,
+    rgba(55, 65, 81, 0.8) 0%,
+    rgba(75, 85, 99, 0.8) 50%,
+    rgba(55, 65, 81, 0.8) 100%
+  );
+  background-size: 200% 100%;
+}
+
+/**
+ * 首页特定优化
+ * 针对首页 Hero 区域的性能优化
+ */
+.hero-optimized {
+  will-change: transform;
+  transform: translateZ(0);
+  contain: layout style;
+}
+
+/**
+ * 按钮悬停动画优化
+ * 使用 CSS 动画替代 JS 动画
+ */
+.btn-hover-lift {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  will-change: transform;
+}
+
+.btn-hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 204, 255, 0.3);
+}
+
+/**
+ * 文字渐变动画优化
+ * 使用 GPU 加速
+ */
+.text-gradient-animate {
+  will-change: background-position;
+  background-size: 300% 300%;
+  transform: translateZ(0);
+}
+
+/**
+ * 流星动画优化
+ * 减少重绘
+ */
+.meteor-optimized {
+  will-change: transform, opacity;
+  contain: layout style;
+}
+
+/**
+ * 预加载关键资源提示
+ * 用于字体和关键图片
+ */
+@font-face {
+  font-display: swap;
+}
+
+/**
+ * 打字机光标闪烁动画
+ * 使用CSS动画替代JS动画以提升性能
+ */
+@keyframes blink {
+  0%, 50% {
+    opacity: 0;
+  }
+  51%, 100% {
+    opacity: 1;
+  }
+}
+

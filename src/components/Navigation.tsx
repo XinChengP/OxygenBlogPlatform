@@ -151,11 +151,11 @@ const Navigation = () => {
     };
   }, []);
 
-  // 导航栏样式
+  // 导航栏样式 - 应用性能优化
   const navClassName = useMemo(() => {
-    return `fixed top-0 left-0 right-0 z-[100000] transition-all duration-300 ${
-      isAtTop 
-        ? 'bg-transparent dark:bg-transparent border-transparent' 
+    return `fixed top-0 left-0 right-0 z-[100000] transition-all duration-300 gpu-accelerated ${
+      isAtTop
+        ? 'bg-transparent dark:bg-transparent border-transparent'
         : 'bg-white/70 dark:bg-gray-900/70 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-700/50'
     }`;
   }, [isAtTop]);
@@ -166,12 +166,21 @@ const Navigation = () => {
   }
   
   return (
-    <motion.nav 
+    <motion.nav
       className={navClassName}
-      style={navigationStyle.style}
+      style={{
+        ...navigationStyle.style,
+        willChange: 'transform',
+        transform: 'translateZ(0)',
+      }}
       initial={{ y: 0 }}
       animate={{ y: isVisible ? 0 : -100 }}
-      transition={{ duration: 0.3, ease: "easeInOut" }}
+      transition={{
+        duration: 0.3,
+        ease: "easeInOut",
+        // 使用 will-change 优化动画性能
+        type: "tween"
+      }}
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
