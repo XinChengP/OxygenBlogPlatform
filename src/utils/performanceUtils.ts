@@ -1,154 +1,193 @@
 /**
- * 性能优化工具
- * 提供图片懒加载、缓存、防抖等功能
+ * 性能优化工具函数
+ * 提供防抖、节流、懒加载等常用性能优化功能
  */
-
-import { useState, useEffect, useRef, useCallback } from 'react';
 
 /**
- * 图片懒加载Hook
+ * 防抖函数
+ * 延迟执行，如果在延迟期间再次调用则重新计时
+ * 适用于：搜索输入、窗口调整等高频触发事件
+ * 
+ * @param fn 要执行的函数
+ * @param delay 延迟时间（毫秒）
+ * @returns 防抖后的函数
  */
-export function useLazyImage(src: string, options?: IntersectionObserverInit) {
-  const [imageSrc, setImageSrc] = useState<string>('');
-  const [imageRef, setImageRef] = useState<HTMLImageElement | null>(null);
-  const observerRef = useRef<IntersectionObserver | null>(null);
-  
-  useEffect(() => {
-    if (!imageRef) return;
-    
-    // 清理之前的观察者
-    if (observerRef.current) {
-      observerRef.current.disconnect();
-    }
-    
-    // 创建新的观察者
-    observerRef.current = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setImageSrc(src);
-            if (observerRef.current) {
-              observerRef.current.disconnect();
-            }
-          }
-        });
-      },
-      {
-        rootMargin: '50px', // 提前50px开始加载
-        threshold: 0.1,
-        ...options
-      }
-    );
-    
-    observerRef.current.observe(imageRef);
-    
-    return () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect();
-      }
-    };
-  }, [src, imageRef, options]);
-  
-  return { imageSrc, setImageRef };
-}
-
-/**
- * 防抖Hook
- */
-export function useDebounce<T extends (...args: any[]) => any>(
-  callback: T,
+export function debounce<T extends (...args: unknown[]) => unknown>(
+  fn: T,
   delay: number
-): T {
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+): (...args: Parameters<T>) => void {
+  let timer: NodeJS.Timeout | null = null;
   
-  const debouncedCallback = useCallback((...args: Parameters<T>) => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
+  return function (...args: Parameters<T>) {
+    if (timer) {
+      clearTimeout(timer);
     }
-    
-    timeoutRef.current = setTimeout(() => {
-      callback(...args);
+    timer = setTimeout(() => {
+      fn(...args);
     }, delay);
-  }, [callback, delay]);
-  
-  // 清理函数
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, []);
-  
-  return debouncedCallback as T;
+  };
 }
 
 /**
- * 节流Hook
+ * 节流函数
+ * 在指定时间间隔内只执行一次
+ * 适用于：滚动事件、鼠标移动等连续触发事件
+ * 
+ * @param fn 要执行的函数
+ * @param interval 时间间隔（毫秒）
+ * @returns 节流后的函数
  */
-export function useThrottle<T extends (...args: any[]) => any>(
-  callback: T,
-  delay: number
-): T {
-  const lastCallRef = useRef<number>(0);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+export function throttle<T extends (...args: unknown[]) => unknown>(
+  fn: T,
+  interval: number
+): (...args: Parameters<T>) => void {
+  let lastTime = 0;
   
-  const throttledCallback = useCallback((...args: Parameters<T>) => {
+  return function (...args: Parameters<T>) {
     const now = Date.now();
-    const timeSinceLastCall = now - lastCallRef.current;
-    
-    if (timeSinceLastCall >= delay) {
-      // 立即执行
-      lastCallRef.current = now;
-      callback(...args);
-    } else {
-      // 延迟执行
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-      
-      timeoutRef.current = setTimeout(() => {
-        lastCallRef.current = Date.now();
-        callback(...args);
-      }, delay - timeSinceLastCall);
+    if (now - lastTime >= interval) {
+      lastTime = now;
+      fn(...args);
     }
-  }, [callback, delay]);
-  
-  // 清理函数
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, []);
-  
-  return throttledCallback as T;
+  };
 }
 
 /**
- * 内存缓存管理器
+ * 使用 requestIdleCallback 在浏览器空闲时执行任务
+ * 适用于：非关键任务的延迟执行
+ * 
+ * @param callback 要执行的回调函数
+ * @param timeout 超时时间（毫秒）
+ */
+export function runWhenIdle(callback: () => void, timeout?: number): void {
+  if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+    window.requestIdleCallback(callback, { timeout });
+  } else {
+    // 降级方案：使用 setTimeout
+    setTimeout(callback, 1);
+  }
+}
+
+/**
+ * 使用 Intersection Observer 实现元素可见性检测
+ * 适用于：懒加载、无限滚动等场景
+ * 
+ * @param element 要观察的元素
+ * @param callback 可见性变化时的回调
+ * @param options 观察选项
+ * @returns 清理函数
+ */
+export function observeVisibility(
+  element: Element,
+  callback: (isVisible: boolean) => void,
+  options?: IntersectionObserverInit
+): () => void {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      callback(entry.isIntersecting);
+    });
+  }, options);
+  
+  observer.observe(element);
+  
+  return () => {
+    observer.disconnect();
+  };
+}
+
+/**
+ * 性能监控工具
+ * 用于测量代码执行时间
+ */
+export const performanceMonitor = {
+  /**
+   * 开始计时
+   */
+  start(label: string): void {
+    if (typeof performance !== 'undefined') {
+      performance.mark(`${label}-start`);
+    }
+  },
+  
+  /**
+   * 结束计时并输出结果
+   */
+  end(label: string): void {
+    if (typeof performance !== 'undefined') {
+      performance.mark(`${label}-end`);
+      performance.measure(label, `${label}-start`, `${label}-end`);
+      
+      const measure = performance.getEntriesByName(label)[0];
+      if (measure) {
+        console.log(`[Performance] ${label}: ${measure.duration.toFixed(2)}ms`);
+      }
+    }
+  },
+  
+  /**
+   * 清除所有测量数据
+   */
+  clear(): void {
+    if (typeof performance !== 'undefined') {
+      performance.clearMarks();
+      performance.clearMeasures();
+    }
+  }
+};
+
+/**
+ * 批量处理函数
+ * 将大量数据分批处理，避免阻塞主线程
+ * 
+ * @param items 要处理的数据数组
+ * @param processor 处理函数
+ * @param batchSize 每批处理的数量
+ * @param onProgress 进度回调
+ */
+export async function batchProcess<T, R>(
+  items: T[],
+  processor: (item: T) => R,
+  batchSize: number = 10,
+  onProgress?: (completed: number, total: number) => void
+): Promise<R[]> {
+  const results: R[] = [];
+  
+  for (let i = 0; i < items.length; i += batchSize) {
+    const batch = items.slice(i, i + batchSize);
+    const batchResults = batch.map(processor);
+    results.push(...batchResults);
+    
+    if (onProgress) {
+      onProgress(Math.min(i + batchSize, items.length), items.length);
+    }
+    
+    // 让出主线程
+    if (i + batchSize < items.length) {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    }
+  }
+  
+  return results;
+}
+
+/**
+ * 内存缓存工具
+ * 简单的键值对缓存，支持过期时间
  */
 export class MemoryCache<T> {
-  private cache = new Map<string, { value: T; expires: number }>();
-  private cleanupInterval: NodeJS.Timeout;
+  private cache = new Map<string, { value: T; expiry: number }>();
+  private defaultTTL: number;
   
-  constructor(
-    private defaultTTL: number = 5 * 60 * 1000, // 默认5分钟
-    private cleanupIntervalMs: number = 60 * 1000 // 每分钟清理一次
-  ) {
-    // 启动定时清理
-    this.cleanupInterval = setInterval(() => {
-      this.cleanup();
-    }, this.cleanupIntervalMs);
+  constructor(defaultTTL: number = 5 * 60 * 1000) { // 默认5分钟
+    this.defaultTTL = defaultTTL;
   }
   
   /**
    * 设置缓存
    */
   set(key: string, value: T, ttl?: number): void {
-    const expires = Date.now() + (ttl || this.defaultTTL);
-    this.cache.set(key, { value, expires });
+    const expiry = Date.now() + (ttl ?? this.defaultTTL);
+    this.cache.set(key, { value, expiry });
   }
   
   /**
@@ -156,13 +195,9 @@ export class MemoryCache<T> {
    */
   get(key: string): T | undefined {
     const item = this.cache.get(key);
+    if (!item) return undefined;
     
-    if (!item) {
-      return undefined;
-    }
-    
-    // 检查是否过期
-    if (Date.now() > item.expires) {
+    if (Date.now() > item.expiry) {
       this.cache.delete(key);
       return undefined;
     }
@@ -171,10 +206,17 @@ export class MemoryCache<T> {
   }
   
   /**
+   * 检查是否存在
+   */
+  has(key: string): boolean {
+    return this.get(key) !== undefined;
+  }
+  
+  /**
    * 删除缓存
    */
-  delete(key: string): boolean {
-    return this.cache.delete(key);
+  delete(key: string): void {
+    this.cache.delete(key);
   }
   
   /**
@@ -182,251 +224,110 @@ export class MemoryCache<T> {
    */
   clear(): void {
     this.cache.clear();
-  }
-  
-  /**
-   * 获取缓存大小
-   */
-  size(): number {
-    return this.cache.size;
   }
   
   /**
    * 清理过期项
    */
-  private cleanup(): void {
+  cleanup(): void {
     const now = Date.now();
     for (const [key, item] of this.cache.entries()) {
-      if (now > item.expires) {
+      if (now > item.expiry) {
         this.cache.delete(key);
       }
     }
   }
-  
-  /**
-   * 销毁缓存管理器
-   */
-  destroy(): void {
-    if (this.cleanupInterval) {
-      clearInterval(this.cleanupInterval);
-    }
-    this.clear();
-  }
 }
 
 /**
- * 图片预加载器
+ * 创建全局缓存实例
  */
-export class ImagePreloader {
-  private cache = new Map<string, HTMLImageElement>();
-  
-  /**
-   * 预加载图片
-   */
-  async preload(url: string): Promise<HTMLImageElement> {
-    // 检查缓存
-    if (this.cache.has(url)) {
-      return this.cache.get(url)!;
-    }
+export const globalCache = new MemoryCache<unknown>();
+
+/**
+ * 使用 Web Worker 执行耗时任务
+ * 适用于：复杂计算、大数据处理等
+ * 
+ * @param workerScript Worker 脚本代码
+ * @param data 传递给 Worker 的数据
+ * @returns Promise 返回结果
+ */
+export function runInWorker<T, R>(
+  workerScript: string,
+  data: T
+): Promise<R> {
+  return new Promise((resolve, reject) => {
+    const blob = new Blob([workerScript], { type: 'application/javascript' });
+    const worker = new Worker(URL.createObjectURL(blob));
     
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      
-      img.onload = () => {
-        this.cache.set(url, img);
-        resolve(img);
-      };
-      
-      img.onerror = () => {
-        reject(new Error(`Failed to load image: ${url}`));
-      };
-      
-      img.src = url;
-    });
-  }
-  
-  /**
-   * 批量预加载图片
-   */
-  async preloadBatch(urls: string[]): Promise<HTMLImageElement[]> {
-    const promises = urls.map(url => this.preload(url));
-    return Promise.all(promises);
-  }
-  
-  /**
-   * 清空缓存
-   */
-  clear(): void {
-    this.cache.clear();
-  }
-  
-  /**
-   * 获取缓存大小
-   */
-  size(): number {
-    return this.cache.size;
-  }
+    worker.onmessage = (e) => {
+      resolve(e.data);
+      worker.terminate();
+    };
+    
+    worker.onerror = (error) => {
+      reject(error);
+      worker.terminate();
+    };
+    
+    worker.postMessage(data);
+  });
 }
 
 /**
- * 虚拟滚动Hook（用于长列表）
+ * 图片懒加载辅助函数
+ * 用于判断图片是否应该加载
  */
-export function useVirtualScroll<T>(
-  items: T[],
-  itemHeight: number,
-  containerHeight: number
-) {
-  const [visibleRange, setVisibleRange] = useState({ start: 0, end: 0 });
-  const scrollTopRef = useRef(0);
-  
-  const totalHeight = items.length * itemHeight;
-  const visibleCount = Math.ceil(containerHeight / itemHeight) + 2; // 多渲染2个作为缓冲
-  
-  const handleScroll = useCallback((scrollTop: number) => {
-    scrollTopRef.current = scrollTop;
-    
-    const start = Math.floor(scrollTop / itemHeight);
-    const end = Math.min(start + visibleCount, items.length);
-    
-    setVisibleRange({ start, end });
-  }, [itemHeight, visibleCount, items.length]);
-  
-  const visibleItems = items.slice(visibleRange.start, visibleRange.end);
-  const offsetTop = visibleRange.start * itemHeight;
-  
-  return {
-    visibleItems,
-    offsetTop,
-    totalHeight,
-    handleScroll
-  };
-}
-
-/**
- * 全局性能监控
- */
-export class PerformanceMonitor {
-  private metrics: Map<string, number[]> = new Map();
-  private enabled = process.env.NODE_ENV === 'development';
-  
-  /**
-   * 记录性能指标
-   */
-  record(name: string, value: number): void {
-    if (!this.enabled) return;
-    
-    if (!this.metrics.has(name)) {
-      this.metrics.set(name, []);
-    }
-    
-    this.metrics.get(name)!.push(value);
-    
-    // 限制记录数量
-    const values = this.metrics.get(name)!;
-    if (values.length > 100) {
-      values.shift();
-    }
-  }
-  
-  /**
-   * 获取平均性能
-   */
-  getAverage(name: string): number {
-    const values = this.metrics.get(name);
-    if (!values || values.length === 0) return 0;
-    
-    return values.reduce((sum, val) => sum + val, 0) / values.length;
-  }
-  
-  /**
-   * 获取性能报告
-   */
-  getReport(): Record<string, { average: number; count: number; min: number; max: number }> {
-    const report: Record<string, { average: number; count: number; min: number; max: number }> = {};
-    
-    for (const [name, values] of this.metrics.entries()) {
-      if (values.length === 0) continue;
-      
-      const average = this.getAverage(name);
-      const min = Math.min(...values);
-      const max = Math.max(...values);
-      
-      report[name] = {
-        average: Math.round(average * 100) / 100,
-        count: values.length,
-        min: Math.round(min * 100) / 100,
-        max: Math.round(max * 100) / 100
-      };
-    }
-    
-    return report;
-  }
-  
-  /**
-   * 清空所有指标
-   */
-  clear(): void {
-    this.metrics.clear();
-  }
-  
-  /**
-   * 打印性能报告
-   */
-  printReport(): void {
-    if (!this.enabled) return;
-    
-    const report = this.getReport();
-    console.group('📊 性能监控报告');
-    
-    for (const [name, stats] of Object.entries(report)) {
-      console.log(
-        `%c${name}: %c平均 ${stats.average}ms (最小: ${stats.min}ms, 最大: ${stats.max}ms, 次数: ${stats.count})`,
-        'font-weight: bold; color: #3b82f6',
-        'color: #6b7280'
-      );
-    }
-    
-    if (Object.keys(report).length === 0) {
-      console.log('暂无性能数据');
-    }
-    
-    console.groupEnd();
-  }
-}
-
-// 创建全局性能监控实例
-export const performanceMonitor = new PerformanceMonitor();
-
-/**
- * 测量函数执行时间
- */
-export function measurePerformance<T extends (...args: any[]) => any>(
-  fn: T,
-  name?: string
-): T {
-  const functionName = name || fn.name || 'anonymous';
-  
-  return ((...args: Parameters<T>) => {
-    const start = performance.now();
-    
-    try {
-      const result = fn(...args);
-      
-      // 如果返回的是Promise，等待其完成
-      if (result instanceof Promise) {
-        return result.finally(() => {
-          const end = performance.now();
-          performanceMonitor.record(functionName, end - start);
+export function shouldLoadImage(
+  imgElement: HTMLImageElement,
+  rootMargin: string = '200px'
+): Promise<boolean> {
+  return new Promise((resolve) => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            resolve(true);
+            observer.disconnect();
+          }
         });
-      }
-      
-      const end = performance.now();
-      performanceMonitor.record(functionName, end - start);
-      return result;
-    } catch (error) {
-      const end = performance.now();
-      performanceMonitor.record(functionName, end - start);
-      throw error;
+      },
+      { rootMargin }
+    );
+    
+    observer.observe(imgElement);
+  });
+}
+
+/**
+ * 预加载图片
+ * 在需要显示前提前加载图片资源
+ * 
+ * @param src 图片地址
+ * @returns Promise
+ */
+export function preloadImage(src: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve();
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+/**
+ * 预加载关键资源
+ * 用于首屏关键资源的预加载
+ * 
+ * @param resources 资源地址数组
+ */
+export async function preloadCriticalResources(resources: string[]): Promise<void> {
+  const promises = resources.map(async (src) => {
+    if (src.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i)) {
+      await preloadImage(src);
     }
-  }) as T;
+    // 可以扩展支持其他资源类型
+  });
+  
+  await Promise.all(promises);
 }

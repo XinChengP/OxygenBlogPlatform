@@ -1,18 +1,22 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTheme } from 'next-themes';
-import Image from 'next/image';
 import { ChevronUpIcon, ChevronDownIcon, SunIcon, MoonIcon, AdjustmentsHorizontalIcon, MusicalNoteIcon, SparklesIcon } from '@heroicons/react/24/outline';
 
-import { getAssetPath } from '../utils/assetUtils';
 import { getMusicPlayerVisibility, setMusicPlayerVisibility, onMusicPlayerVisibilityChange } from '@/utils/musicPlayerVisibility';
 import live2dMessageManager from '@/utils/live2dMessageManager';
+import { throttle } from '@/utils/performanceUtils';
 
 /**
- * 页面导航组件
- * 
+ * 页面导航组件 - 性能优化版
+ *
+ * 优化点：
+ * 1. 使用 useCallback 缓存事件处理函数
+ * 2. 使用 useMemo 缓存计算结果
+ * 3. 使用节流函数优化滚动事件
+ * 4. 使用 requestAnimationFrame 优化动画
+ *
  * 提供转到页首、页底和主题切换的功能
  * - 支持深色/浅色主题
  * - 平滑滚动效果
@@ -29,50 +33,37 @@ export default function ScrollToTop() {
   const [isAtTop, setIsAtTop] = useState(true);
   const [showThemeButton, setShowThemeButton] = useState(false);
   const [musicPlayerVisible, setMusicPlayerVisible] = useState(false);
-  
+
   // 初始化音乐播放器可见性状态
   useEffect(() => {
     setMusicPlayerVisible(getMusicPlayerVisibility());
   }, []);
 
-  // 节流函数：限制事件触发频率
-  const throttle = (func: Function, delay: number) => {
-    let lastCall = 0;
-    return (...args: any[]) => {
-      const now = new Date().getTime();
-      if (now - lastCall < delay) {
-        return;
-      }
-      lastCall = now;
-      func(...args);
-    };
-  };
-
-  // 监听滚动事件
+  // 监听滚动事件 - 使用节流优化
   useEffect(() => {
     const handleScroll = throttle(() => {
       const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
       const windowHeight = window.innerHeight;
       const documentHeight = document.documentElement.scrollHeight;
-      
+
       // 判断是否在页面顶部
       setIsAtTop(scrollTop < 50);
-      
+
       // 判断是否显示"回到顶部"按钮 - 现在始终显示
       setShowScrollTop(true);
-      
+
       // 判断是否在页面底部
       setIsAtBottom(scrollTop + windowHeight >= documentHeight - 50);
-      
+
       // 如果在页面顶部，自动收起设置（隐藏主题切换按钮）
       if (scrollTop < 50) {
         setShowThemeButton(false);
       }
     }, 100); // 100ms节流，减少事件触发频率
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll(); // 初始检查
-    
+
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -87,38 +78,38 @@ export default function ScrollToTop() {
     };
   }, []);
 
-  // 滚动到顶部
-  const scrollToTop = () => {
+  // 滚动到顶部 - 使用 useCallback 优化
+  const scrollToTop = useCallback(() => {
     window.scrollTo({
       top: 0,
       behavior: 'smooth'
     });
-  };
+  }, []);
 
-  // 滚动到底部
-  const scrollToBottom = () => {
+  // 滚动到底部 - 使用 useCallback 优化
+  const scrollToBottom = useCallback(() => {
     window.scrollTo({
       top: document.documentElement.scrollHeight,
       behavior: 'smooth'
     });
-  };
+  }, []);
 
-  // 切换主题
-  const toggleTheme = () => {
+  // 切换主题 - 使用 useCallback 优化
+  const toggleTheme = useCallback(() => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
-  };
+  }, [theme, setTheme]);
 
-  // 切换主题按钮显示
-  const toggleThemeButton = () => {
-    setShowThemeButton(!showThemeButton);
-  };
+  // 切换主题按钮显示 - 使用 useCallback 优化
+  const toggleThemeButton = useCallback(() => {
+    setShowThemeButton(prev => !prev);
+  }, []);
 
-  // 切换音乐播放器显示状态
-  const toggleMusicPlayer = () => {
+  // 切换音乐播放器显示状态 - 使用 useCallback 优化
+  const toggleMusicPlayer = useCallback(() => {
     const newVisibility = !musicPlayerVisible;
     setMusicPlayerVisibility(newVisibility);
     setMusicPlayerVisible(newVisibility);
-  };
+  }, [musicPlayerVisible]);
 
   // 烟花效果相关变量
   let canvas: HTMLCanvasElement | null = null;

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { categories } from '@/setting/blogSetting';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
@@ -11,6 +11,7 @@ import { getAssetPath } from '@/utils/assetUtils';
 import { Search, Calendar, Clock, Tag, ArrowRight, LayoutGrid, LayoutList, X, Filter, BookOpen, Pin } from 'lucide-react';
 import live2dMessageManager from '@/utils/live2dMessageManager';
 import PageHeader from '@/components/ui/PageHeader';
+import { debounce, throttle } from '@/utils/performanceUtils';
 
 
 
@@ -68,55 +69,59 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
     return Array.from(tags).sort();
   }, [initialPosts]);
 
-  // 生成搜索建议
+  // 生成搜索建议 - 使用防抖优化性能
   useEffect(() => {
-    if (searchTerm.length > 0) {
-      const suggestions = [
-        ...initialPosts.map(post => post.title),
-        ...allTags,
-        ...initialPosts.map(post => post.category)
-      ]
-        .filter(item => item.toLowerCase().includes(searchTerm.toLowerCase()))
-        .slice(0, 5);
-      
-      setSearchSuggestions([...new Set(suggestions)]);
-      setShowSuggestions(true);
-    } else {
-      setShowSuggestions(false);
-    }
+    const debouncedSearch = debounce(() => {
+      if (searchTerm.length > 0) {
+        const suggestions = [
+          ...initialPosts.map(post => post.title),
+          ...allTags,
+          ...initialPosts.map(post => post.category)
+        ]
+          .filter(item => item.toLowerCase().includes(searchTerm.toLowerCase()))
+          .slice(0, 5);
+        
+        setSearchSuggestions([...new Set(suggestions)]);
+        setShowSuggestions(true);
+      } else {
+        setShowSuggestions(false);
+      }
+    }, 300); // 300ms防抖延迟
+    
+    debouncedSearch();
   }, [searchTerm, initialPosts, allTags]);
 
-  // 处理搜索建议选择
-  const handleSuggestionSelect = (suggestion: string) => {
+  // 处理搜索建议选择 - 使用useCallback优化
+  const handleSuggestionSelect = useCallback((suggestion: string) => {
     setSearchTerm(suggestion);
     setShowSuggestions(false);
-  };
+  }, []);
 
-  // 处理标签选择
-  const handleTagToggle = (tag: string) => {
+  // 处理标签选择 - 使用useCallback优化
+  const handleTagToggle = useCallback((tag: string) => {
     setSelectedTags(prev => 
       prev.includes(tag) 
         ? prev.filter(t => t !== tag)
         : [...prev, tag]
     );
     setCurrentPage(1);
-  };
+  }, []);
 
-  // 处理日期范围变化
-  const handleDateRangeChange = (type: 'start' | 'end', value: string) => {
+  // 处理日期范围变化 - 使用useCallback优化
+  const handleDateRangeChange = useCallback((type: 'start' | 'end', value: string) => {
     setDateRange(prev => ({...prev, [type]: value}));
     setCurrentPage(1);
-  };
+  }, []);
 
-  // 处理阅读时间变化
-  const handleReadTimeChange = (type: 'min' | 'max', value: number) => {
+  // 处理阅读时间变化 - 使用useCallback优化
+  const handleReadTimeChange = useCallback((type: 'min' | 'max', value: number) => {
     if (type === 'min') {
       setMinReadTime(value);
     } else {
       setMaxReadTime(value);
     }
     setCurrentPage(1);
-  };
+  }, []);
 
   // 重置所有筛选条件
   const resetFilters = () => {

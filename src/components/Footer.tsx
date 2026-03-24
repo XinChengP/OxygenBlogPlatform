@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { year, name, aWord } from '@/setting/FooterSetting';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -16,37 +16,56 @@ function formatTime(milliseconds: number): string {
   const hours = Math.floor((totalSeconds % (60 * 60 * 24)) / (60 * 60));
   const minutes = Math.floor((totalSeconds % (60 * 60)) / 60);
   const seconds = totalSeconds % 60;
-  
+
   return `${days}天${hours}时${minutes}分${seconds}秒`;
 }
 
 /**
- * 页脚组件 - 简化版
- * 
+ * 页脚组件 - 性能优化版
+ *
+ * 优化点：
+ * 1. 使用 useMemo 缓存计算结果
+ * 2. 优化定时器性能
+ * 3. 使用 React.memo 减少不必要的渲染
+ *
  * 注意：所有 hooks 必须在条件返回之前调用，遵循 React Hooks 规则
  */
 function Footer() {
   const pathname = usePathname();
-  
-  // 网站上线时间
-  const launchDate = new Date('2025-11-06T20:00:00');
+
+  // 网站上线时间 - 使用 useMemo 缓存
+  const launchDate = useMemo(() => new Date('2025-11-06T20:00:00'), []);
   const [runTime, setRunTime] = useState('');
 
-  // 实时更新运行时间
+  // 实时更新运行时间 - 使用 requestAnimationFrame 优化性能
   useEffect(() => {
-    const updateRunTime = () => {
-      const now = new Date();
-      const diff = now.getTime() - launchDate.getTime();
-      if (diff < 0) {
-        setRunTime(`距离上线还有 ${formatTime(-diff)}`);
-      } else {
-        setRunTime(`已稳定运行: ${formatTime(diff)}`);
+    let animationFrameId: number;
+    let lastUpdateTime = 0;
+    const UPDATE_INTERVAL = 1000; // 每秒更新一次
+
+    const updateRunTime = (currentTime: number) => {
+      // 控制更新频率，避免过度渲染
+      if (currentTime - lastUpdateTime >= UPDATE_INTERVAL) {
+        const now = new Date();
+        const diff = now.getTime() - launchDate.getTime();
+        if (diff < 0) {
+          setRunTime(`距离上线还有 ${formatTime(-diff)}`);
+        } else {
+          setRunTime(`已稳定运行: ${formatTime(diff)}`);
+        }
+        lastUpdateTime = currentTime;
       }
+      animationFrameId = requestAnimationFrame(updateRunTime);
     };
 
-    updateRunTime();
-    const timer = setInterval(updateRunTime, 1000);
-    return () => clearInterval(timer);
+    // 立即执行一次
+    updateRunTime(performance.now());
+
+    return () => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+    };
   }, [launchDate]);
 
   // 后台页面不显示页脚 - 在所有 hooks 调用之后再条件返回
@@ -60,7 +79,7 @@ function Footer() {
         <p className="flex flex-wrap items-center justify-center gap-1 text-xs text-muted-foreground/70">
           {/* 版权信息 */}
           <span>&copy; {year} {name}</span>
-          
+
           {/* 自定义文案 */}
           {aWord && (
             <>
@@ -68,7 +87,7 @@ function Footer() {
               <span>{aWord}</span>
             </>
           )}
-          
+
           {/* 洛天依B站主页链接 */}
           <span className="mx-1">·</span>
           <span>由</span>
@@ -81,7 +100,7 @@ function Footer() {
             世界第一吃货殿下
           </Link>
           <span>提供动力（确信）</span>
-          
+
           {/* 网站运行时间 */}
           <span className="mx-1">·</span>
           <span>{runTime}</span>
@@ -91,4 +110,5 @@ function Footer() {
   );
 }
 
-export default Footer;
+// 使用 React.memo 减少不必要的渲染
+export default React.memo(Footer);
