@@ -129,7 +129,8 @@ function ClientMomentsPage({ moments, blogCount, blogTotalWordCount, blogs, cate
                               </a>
                             ),
                             img: ({ src, alt, ...props }) => {
-                              const processedSrc = src ? getAssetPath(src) : src;
+                              // 处理 src 可能是 Blob 类型的情况
+                              const processedSrc = typeof src === 'string' ? (src ? getAssetPath(src) : src) : src;
                               return (
                                 <img 
                                   src={processedSrc} 
