@@ -7,6 +7,7 @@ interface Moment {
   tags: string[];
   images?: string[];
   pinned?: boolean;
+  hidden?: boolean;  // 是否隐藏该动态，用于前台过滤
   filePath: string;
 }
 
@@ -163,9 +164,15 @@ export function getServerMoments(): Moment[] {
                     tags: metadata.tags || [],
                     images: metadata.images || [],
                     pinned: metadata.pinned === 'true' || metadata.pinned === true,
+                    // 解析 hidden 属性：支持字符串 'true' 或布尔值 true
+                    hidden: metadata.hidden === 'true' || metadata.hidden === true,
                     filePath: file
                   };
     });
+    
+    // 过滤隐藏的动态：只返回 hidden 为 false 或未设置的动态
+    // 这样可以确保 GitHub Pages 静态部署时不会显示隐藏的内容
+    moments = moments.filter(moment => !moment.hidden);
     
     // 按置顶状态和时间倒序排序
     moments.sort((a, b) => {
@@ -242,6 +249,7 @@ export interface BlogPost {
   tags: string[];
   excerpt: string;
   coverImage?: string;
+  hidden?: boolean;  // 是否隐藏该博客，用于前台过滤
   content: string;
   filePath: string;
 }
@@ -314,19 +322,25 @@ export function getServerBlogs(): BlogPost[] {
         tags: metadata.tags || [],
         excerpt: metadata.excerpt || '',
         coverImage: metadata.coverImage,
+        // 解析 hidden 属性：支持字符串 'true' 或布尔值 true
+        hidden: metadata.hidden === 'true' || metadata.hidden === true,
         content: body,
         filePath: file
       };
     });
     
+    // 过滤隐藏的博客：只返回 hidden 为 false 或未设置的博客
+    // 这样可以确保 GitHub Pages 静态部署时不会显示隐藏的内容
+    const filteredBlogs = blogs.filter((blog: BlogPost) => !blog.hidden);
+    
     // 按时间倒序排序
-    blogs.sort((a: BlogPost, b: BlogPost) => {
+    filteredBlogs.sort((a: BlogPost, b: BlogPost) => {
       const dateA = new Date(a.updatedAt || a.date).getTime();
       const dateB = new Date(b.updatedAt || b.date).getTime();
       return dateB - dateA;
     });
     
-    return blogs;
+    return filteredBlogs;
   } catch (error) {
     console.error('读取博客文件失败:', error);
     return [];

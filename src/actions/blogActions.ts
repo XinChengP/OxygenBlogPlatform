@@ -29,6 +29,8 @@ export interface BlogPost {
   readingTime?: number;
   wordCount?: number;
   updatedAt?: string;
+  hidden?: boolean;
+  filePath: string;
 }
 
 /**
@@ -43,6 +45,7 @@ export interface BlogPostData {
   excerpt?: string;
   coverImage?: string;
   slug?: string;
+  hidden?: boolean;
 }
 
 /**
@@ -114,7 +117,14 @@ function parseFrontmatter(content: string): { frontmatter: Record<string, any>; 
         currentKey = key;
         currentArray = null;
         // 移除引号
-        frontmatter[key] = value.replace(/^["']|["']$/g, '');
+        const cleanValue = value.replace(/^["']|["']$/g, '');
+        
+        // 特殊处理 hidden 字段：支持字符串 'true' 和布尔值 true
+        if (key === 'hidden') {
+          frontmatter[key] = cleanValue === 'true';
+        } else {
+          frontmatter[key] = cleanValue;
+        }
       }
     }
   }
@@ -131,13 +141,20 @@ function generateFrontmatter(data: Record<string, any>): string {
   
   for (const [key, value] of Object.entries(data)) {
     if (Array.isArray(value)) {
+      // 处理数组类型（如 tags）
       if (value.length > 0) {
         result += `${key}:\n`;
         for (const item of value) {
           result += `  - "${item}"\n`;
         }
       }
+    } else if (key === 'hidden') {
+      // 特殊处理 hidden 字段：只有值为 true 时才生成
+      if (value === true) {
+        result += `${key}: true\n`;
+      }
     } else if (value !== undefined && value !== null && value !== '') {
+      // 处理其他非空值
       result += `${key}: "${value}"\n`;
     }
   }
@@ -184,6 +201,7 @@ function calculateReadingTime(content: string): number {
 
 /**
  * 获取所有博客文章列表
+ * 返回所有文章，包括隐藏的文章（后台管理需要显示所有文章）
  */
 export async function getBlogList(): Promise<BlogPost[]> {
   try {
@@ -212,6 +230,8 @@ export async function getBlogList(): Promise<BlogPost[]> {
           readingTime: calculateReadingTime(body),
           wordCount: body.replace(/\s/g, '').length,
           updatedAt: frontmatter.updatedAt || '',
+          hidden: frontmatter.hidden || false,
+          filePath: filePath,
         });
       } catch (e) {
         console.error(`读取博客文件失败: ${file}`, e);
@@ -302,6 +322,8 @@ export async function getBlogDetail(id: string): Promise<ActionResult<BlogPost>>
       readingTime: calculateReadingTime(body),
       wordCount: body.replace(/\s/g, '').length,
       updatedAt: frontmatter.updatedAt || '',
+      hidden: frontmatter.hidden || false,
+      filePath: filePath,
     };
     
     return { success: true, message: '获取成功', data: blog };
@@ -313,6 +335,7 @@ export async function getBlogDetail(id: string): Promise<ActionResult<BlogPost>>
 
 /**
  * 创建新博客文章
+ * 支持设置 hidden 属性来控制文章是否隐藏
  */
 export async function createBlog(data: BlogPostData): Promise<ActionResult<BlogPost>> {
   try {
@@ -336,7 +359,7 @@ export async function createBlog(data: BlogPostData): Promise<ActionResult<BlogP
     // 生成摘要（如果没有提供）
     const excerpt = data.excerpt || data.content.substring(0, 150);
     
-    // 生成 Markdown 内容
+    // 生成 Markdown 内容（包含 hidden 字段）
     const frontmatter = generateFrontmatter({
       title: data.title,
       date: date,
@@ -344,6 +367,7 @@ export async function createBlog(data: BlogPostData): Promise<ActionResult<BlogP
       tags: data.tags || [],
       excerpt: excerpt,
       coverImage: data.coverImage || '',
+      hidden: data.hidden || false,
     });
     
     const markdownContent = frontmatter + '\n' + (data.content || '');
@@ -366,6 +390,8 @@ export async function createBlog(data: BlogPostData): Promise<ActionResult<BlogP
       coverImage: data.coverImage,
       readingTime: calculateReadingTime(data.content || ''),
       wordCount: (data.content || '').replace(/\s/g, '').length,
+      hidden: data.hidden || false,
+      filePath: filePath,
     };
     
     return { success: true, message: '文章创建成功', data: blog, filePath };
@@ -377,6 +403,7 @@ export async function createBlog(data: BlogPostData): Promise<ActionResult<BlogP
 
 /**
  * 更新博客文章
+ * 支持更新 hidden 属性来控制文章是否隐藏
  * @param id 文章 ID（文件名，不含 .md 扩展名）
  */
 export async function updateBlog(id: string, data: Partial<BlogPostData>): Promise<ActionResult<BlogPost>> {
@@ -392,7 +419,7 @@ export async function updateBlog(id: string, data: Partial<BlogPostData>): Promi
     // 确定文件路径
     const oldFilePath = path.join(BLOGS_DIR, `${id}.md`);
     
-    // 合并数据
+    // 合并数据（包含 hidden 属性）
     const updatedData: BlogPostData = {
       title: data.title ?? existingBlog.title,
       content: data.content ?? existingBlog.content,
@@ -402,12 +429,13 @@ export async function updateBlog(id: string, data: Partial<BlogPostData>): Promi
       excerpt: data.excerpt ?? existingBlog.excerpt,
       coverImage: data.coverImage ?? existingBlog.coverImage,
       slug: data.slug ?? existingBlog.slug,
+      hidden: data.hidden ?? existingBlog.hidden,
     };
     
     // 生成更新时间
     const updatedAt = new Date().toISOString().split('T')[0];
     
-    // 生成 Markdown 内容
+    // 生成 Markdown 内容（包含 hidden 字段）
     const frontmatter = generateFrontmatter({
       title: updatedData.title,
       date: updatedData.date,
@@ -416,6 +444,7 @@ export async function updateBlog(id: string, data: Partial<BlogPostData>): Promi
       tags: updatedData.tags || [],
       excerpt: updatedData.excerpt || updatedData.content?.substring(0, 150) || '',
       coverImage: updatedData.coverImage || '',
+      hidden: updatedData.hidden || false,
     });
     
     const markdownContent = frontmatter + '\n' + (updatedData.content || '');
@@ -466,6 +495,8 @@ export async function updateBlog(id: string, data: Partial<BlogPostData>): Promi
       readingTime: calculateReadingTime(updatedData.content || ''),
       wordCount: (updatedData.content || '').replace(/\s/g, '').length,
       updatedAt: updatedAt,
+      hidden: updatedData.hidden || false,
+      filePath: newFilePath,
     };
     
     return { success: true, message: '文章更新成功', data: blog };
@@ -598,5 +629,86 @@ export async function saveBlogMarkdown(slug: string, content: string): Promise<A
   } catch (error) {
     console.error('保存 Markdown 失败:', error);
     return { success: false, message: '保存失败' };
+  }
+}
+
+/**
+ * 切换单篇文章的隐藏状态
+ * 将文章的 hidden 属性在 true/false 之间切换
+ * @param id 文章 ID（文件名，不含 .md 扩展名）
+ * @returns 返回更新后的文章数据
+ */
+export async function toggleBlogHidden(id: string): Promise<ActionResult<BlogPost>> {
+  try {
+    // 获取当前文章详情
+    const existingResult = await getBlogDetail(id);
+    if (!existingResult.success || !existingResult.data) {
+      return { success: false, message: '文章不存在' };
+    }
+    
+    const existingBlog = existingResult.data;
+    
+    // 切换隐藏状态
+    const newHiddenStatus = !existingBlog.hidden;
+    
+    // 更新文章
+    const updateResult = await updateBlog(id, { hidden: newHiddenStatus });
+    
+    if (!updateResult.success) {
+      return { success: false, message: '切换隐藏状态失败' };
+    }
+    
+    return {
+      success: true,
+      message: newHiddenStatus ? '文章已隐藏' : '文章已显示',
+      data: updateResult.data,
+    };
+  } catch (error) {
+    console.error('切换文章隐藏状态失败:', error);
+    return { success: false, message: '切换隐藏状态失败' };
+  }
+}
+
+/**
+ * 批量切换多篇文章的隐藏状态
+ * 将指定文章的 hidden 属性统一设置为指定状态
+ * @param ids 文章 ID 数组（文件名，不含 .md 扩展名）
+ * @param hidden 目标隐藏状态，true 为隐藏，false 为显示
+ * @returns 返回操作结果，包含成功和失败的数量
+ */
+export async function batchToggleBlogHidden(ids: string[], hidden: boolean): Promise<ActionResult> {
+  try {
+    let successCount = 0;
+    let failedCount = 0;
+    
+    // 遍历所有文章 ID，逐个更新隐藏状态
+    for (const id of ids) {
+      const result = await updateBlog(id, { hidden });
+      if (result.success) {
+        successCount++;
+      } else {
+        failedCount++;
+      }
+    }
+    
+    // 根据操作结果返回相应的消息
+    if (failedCount > 0) {
+      return {
+        success: true,
+        message: hidden
+          ? `成功隐藏 ${successCount} 篇文章，${failedCount} 篇操作失败`
+          : `成功显示 ${successCount} 篇文章，${failedCount} 篇操作失败`,
+      };
+    }
+    
+    return {
+      success: true,
+      message: hidden
+        ? `成功隐藏 ${successCount} 篇文章`
+        : `成功显示 ${successCount} 篇文章`,
+    };
+  } catch (error) {
+    console.error('批量切换隐藏状态失败:', error);
+    return { success: false, message: '批量操作失败' };
   }
 }

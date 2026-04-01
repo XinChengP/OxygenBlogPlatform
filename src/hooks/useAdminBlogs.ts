@@ -22,6 +22,8 @@ export interface BlogPost {
   coverImage?: string;
   content: string;
   filePath: string;
+  /** 文章隐藏状态，true 为隐藏，false 或 undefined 为可见 */
+  hidden?: boolean;
 }
 
 /**

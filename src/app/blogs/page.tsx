@@ -20,6 +20,7 @@ interface BlogPost {
   coverImage?: string;
   pinned?: boolean;
   pinnedAt?: string;
+  hidden?: boolean;  // 是否隐藏该文章，用于前台过滤
 }
 
 /**
@@ -35,6 +36,7 @@ interface BlogFrontMatter {
   coverImage?: string;
   pinned?: boolean;
   pinnedAt?: string;
+  hidden?: boolean | string;  // 是否隐藏该文章，支持布尔值或字符串，用于前台过滤
 }
 
 /**
@@ -129,15 +131,21 @@ function getAllBlogs(): BlogPost[] {
           readTime: readTime,
           coverImage: frontMatter.coverImage,
           pinned: frontMatter.pinned || false,
-          pinnedAt: frontMatter.pinnedAt ? formatBlogDate(frontMatter.pinnedAt) : undefined
+          pinnedAt: frontMatter.pinnedAt ? formatBlogDate(frontMatter.pinnedAt) : undefined,
+          // 解析 hidden 属性：支持布尔值或字符串 'true'
+          hidden: frontMatter.hidden === true || frontMatter.hidden === 'true'
         });
       } catch (error) {
         console.error(`Error reading blog file ${relativePath}:`, error);
       }
     });
     
+    // 过滤隐藏的文章：只返回 hidden 为 false 或未设置的文章
+    // 这样可以确保 GitHub Pages 静态部署时不会显示隐藏的内容
+    const filteredPosts = blogPosts.filter(post => !post.hidden);
+    
     // 排序：置顶文章优先，然后按日期排序（最新的在前）
-    return blogPosts.sort((a, b) => {
+    return filteredPosts.sort((a, b) => {
       // 置顶文章优先
       if (a.pinned && !b.pinned) return -1;
       if (!a.pinned && b.pinned) return 1;
