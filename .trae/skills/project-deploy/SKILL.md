@@ -86,11 +86,11 @@ const nextConfig = {
   output: "export",
   distDir: 'out',
   trailingSlash: true,
-  
+
   // 根据环境变量自动设置 basePath 和 assetPrefix
   basePath: process.env.NEXT_PUBLIC_BASE_PATH || '',
   assetPrefix: process.env.NEXT_PUBLIC_BASE_PATH || '',
-  
+
   // 图片配置（静态导出时必须禁用优化）
   images: {
     unoptimized: true,
@@ -206,7 +206,7 @@ const nextConfig = {
 
 ### 构建失败
 
-1. 检查 Node.js 版本（需 18+）
+1. 检查 Node.js 版本（需 20.9+）
 2. 删除 `node_modules` 和 `package-lock.json` 重新安装
 3. 检查是否有语法错误：`npm run lint`
 

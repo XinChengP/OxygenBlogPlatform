@@ -20,10 +20,10 @@ src/
 ├── utils/
 │   ├── live2dInstanceManager.ts      # 实例管理器
 │   ├── live2dResourceManager.ts      # 资源管理器
-│   ├── live2dEventEmitter.ts         # 事件发射器
-│   └── live2dMessageManager.ts       # 消息管理器
+│   ├── live2dEventEmitter.ts          # 事件发射器
+│   └── live2dMessageManager.ts        # 消息管理器
 public/
-└── luotianyi-live2d-master/          # Live2D 资源文件
+└── luotianyi-live2d-master/           # Live2D 资源文件
 ```
 
 ## 显示控制
@@ -92,7 +92,7 @@ live2dMessageManager.showMessage(Live2DMessages.GENERAL.SUCCESS);
 ```typescript
 export const Live2DMessages = {
   // ... 现有消息
-  
+
   // 自定义分类
   CUSTOM: {
     WELCOME: '欢迎来到我的博客～',
@@ -139,7 +139,7 @@ useEffect(() => {
     '/moments': '这是我的个人动态～',
     '/about': '想了解更多关于我的事情吗？',
   };
-  
+
   const message = pageMessages[pathname];
   if (message) {
     live2dMessageManager.showMessage(message, 3000, 1);

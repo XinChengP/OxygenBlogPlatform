@@ -140,7 +140,7 @@ export const applyThemeColors = (isDark: boolean = false) => {
   --theme-primary: #66ccff;
   --theme-secondary: #1e40af;
   --theme-accent: #06b6d4;
-  
+
   /* Tailwind 兼容变量 */
   --color-primary: #66ccff;
   --color-secondary: #1e40af;
@@ -236,7 +236,7 @@ xl: 1280px  /* 大屏 */
 ## 配置步骤
 
 1. **修改网站标题/描述**: 编辑 `webTitle` 和 `webDescription`
-2. **更换背景图片**: 
+2. **更换背景图片**:
    - 将图片放入 `public/LTY_Picture/` 目录
    - 修改 `backgroundImage` 路径
 3. **调整背景显示**: 修改 `backgroundMode` 和 `backgroundFixed`
