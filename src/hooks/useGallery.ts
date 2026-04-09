@@ -34,6 +34,9 @@ import {
   deleteLocalImage,
   getLocalGalleryStats,
   uploadLocalImage,
+  getLocalGalleryDirectoryTree,
+  getLocalGallerySubDirectories,
+  DirectoryTree,
 } from '@/actions/galleryActions';
 
 /**
