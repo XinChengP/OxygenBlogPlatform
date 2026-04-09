@@ -86,6 +86,39 @@ export function useGitHubPush(): UseGitHubPushReturn {
    */
   const [hasPushable, setHasPushable] = useState(false);
 
+  /** 定时器 ID，用于清除上一次的提示信息 */
+  const [resultTimer, setResultTimer] = useState<NodeJS.Timeout | null>(null);
+
+  /**
+   * 清除提示信息
+   * 在提示信息显示 5 秒后自动调用，防止提示信息一直显示
+   */
+  const clearResult = useCallback(() => {
+    setLastResult(null);
+  }, []);
+
+  /**
+   * 显示结果并设置 5 秒后自动清除
+   * @param result - 要显示的操作结果
+   */
+  const showResultWithAutoClear = useCallback((result: GitPushResult) => {
+    // 清除之前的定时器（如果存在）
+    if (resultTimer) {
+      clearTimeout(resultTimer);
+    }
+
+    // 设置新的结果
+    setLastResult(result);
+
+    // 设置 5 秒后自动清除结果
+    const timer = setTimeout(() => {
+      clearResult();
+      setResultTimer(null);
+    }, 5000);
+
+    setResultTimer(timer);
+  }, [clearResult, resultTimer]);
+
   /**
    * 刷新 Git 状态
    *
@@ -112,11 +145,18 @@ export function useGitHubPush(): UseGitHubPushReturn {
    */
   const push = useCallback(async (message?: string): Promise<GitPushResult> => {
     setPushing(true);
+
+    // 清除之前的定时器和结果
+    if (resultTimer) {
+      clearTimeout(resultTimer);
+      setResultTimer(null);
+    }
     setLastResult(null);
 
     try {
       const result = await pushToGitHub(message);
-      setLastResult(result);
+      // 使用带自动清除的结果显示
+      showResultWithAutoClear(result);
 
       // 推送成功后，等待一段时间后刷新 Git 状态
       // 这样可以更新 hasPushable 等状态，防止重复推送
@@ -131,7 +171,7 @@ export function useGitHubPush(): UseGitHubPushReturn {
     } finally {
       setPushing(false);
     }
-  }, [refreshStatus]);
+  }, [refreshStatus, showResultWithAutoClear, resultTimer]);
 
   /**
    * 构建并推送
@@ -148,11 +188,18 @@ export function useGitHubPush(): UseGitHubPushReturn {
     async (buildMessage?: string, pushMessage?: string): Promise<GitPushResult> => {
       setBuilding(true);
       setPushing(true);
+
+      // 清除之前的定时器和结果
+      if (resultTimer) {
+        clearTimeout(resultTimer);
+        setResultTimer(null);
+      }
       setLastResult(null);
 
       try {
         const result = await buildAndPush(buildMessage, pushMessage);
-        setLastResult(result);
+        // 使用带自动清除的结果显示
+        showResultWithAutoClear(result);
 
         // 构建并推送成功后，等待一段时间后刷新 Git 状态
         if (result.success) {
@@ -167,7 +214,7 @@ export function useGitHubPush(): UseGitHubPushReturn {
         setPushing(false);
       }
     },
-    [refreshStatus]
+    [refreshStatus, showResultWithAutoClear, resultTimer]
   );
 
   return {
