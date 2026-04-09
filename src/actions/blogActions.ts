@@ -70,23 +70,59 @@ async function ensureBlogsDir(): Promise<void> {
 }
 
 /**
+ * 解析 YAML 格式的键值
+ * 支持字符串、数字、布尔值以及内联数组格式
+ */
+function parseYamlValue(value: string): string | string[] | boolean {
+  const trimmed = value.trim();
+  
+  // 检查是否是内联数组格式 [...]
+  if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+    const arrayContent = trimmed.slice(1, -1).trim();
+    if (!arrayContent) return [];
+    
+    // 分割数组元素并清理引号
+    const items = arrayContent.split(',').map(item => {
+      const cleaned = item.trim().replace(/^["']|["']$/g, '');
+      return cleaned;
+    }).filter(item => item.length > 0);
+    
+    return items;
+  }
+  
+  // 检查布尔值
+  if (trimmed === 'true') return true;
+  if (trimmed === 'false') return false;
+  
+  // 返回字符串，移除首尾引号
+  return trimmed.replace(/^["']|["']$/g, '');
+}
+
+/**
  * 解析 Markdown frontmatter
  * 从 Markdown 内容中提取 YAML 格式的 frontmatter 和正文内容
+ * 支持 LF (\n) 和 CRLF (\r\n) 两种换行符格式
  */
 function parseFrontmatter(content: string): { frontmatter: Record<string, any>; body: string } {
-  const frontmatterRegex = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/;
+  // 使用 \r?\n 支持 Windows (CRLF) 和 Unix (LF) 换行符
+  // 正则表达式匹配:
+  // 1. ^---\r?\n 开头分隔符
+  // 2. ([\s\S]*?) 捕获 frontmatter 内容（非贪婪模式）
+  // 3. \r?\n---\r?\n 结尾分隔符
+  // 4. ([\s\S]*$) 捕获 body 内容
+  const frontmatterRegex = /^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/;
   const match = content.match(frontmatterRegex);
-  
+
   if (!match) {
     return { frontmatter: {}, body: content };
   }
-  
+
   const frontmatterStr = match[1];
   const body = match[2];
   const frontmatter: Record<string, any> = {};
-  
+
   // 简单的 YAML 解析
-  const lines = frontmatterStr.split('\n');
+  const lines = frontmatterStr.split(/\r?\n/);
   let currentKey = '';
   let currentArray: string[] | null = null;
   
@@ -116,15 +152,8 @@ function parseFrontmatter(content: string): { frontmatter: Record<string, any>; 
       } else {
         currentKey = key;
         currentArray = null;
-        // 移除引号
-        const cleanValue = value.replace(/^["']|["']$/g, '');
-        
-        // 特殊处理 hidden 字段：支持字符串 'true' 和布尔值 true
-        if (key === 'hidden') {
-          frontmatter[key] = cleanValue === 'true';
-        } else {
-          frontmatter[key] = cleanValue;
-        }
+        // 解析值：支持字符串、内联数组、布尔值
+        frontmatter[key] = parseYamlValue(value);
       }
     }
   }
