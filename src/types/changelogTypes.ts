@@ -247,9 +247,10 @@ export function getQuarterStats(changelogs: Changelog[]): { label: string; count
     } else if (month >= 9 && month <= 11) {
       season = '秋';
     } else {
-      // 12月、1月、2月
+      // 12月、1月、2月都属于冬季
       season = '冬';
-      // 12月属于今年的冬，1月、2月属于去年的冬
+      // 12月、1月、2月同属于12月那一年的冬季
+      // 例如：2025年12月、2026年1月、2026年2月都属于2025年冬
       if (month === 1 || month === 2) {
         seasonYear = year - 1;
       }
