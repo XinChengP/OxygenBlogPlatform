@@ -16,6 +16,11 @@ export {
   parseFrontMatter,
   getChangelogTypeColor,
   getChangelogTypeLabel,
+  getMonthStats,
+  getQuarterStats,
+  getYearStats,
+  getDayPartStats,
+  getTypeStats,
 } from '@/types/changelogTypes';
 
 /**
@@ -24,39 +29,39 @@ export {
  */
 export function getServerChangelogs(): Changelog[] {
   let changelogs: Changelog[] = [];
-  
+
   try {
     // 动态导入fs和path模块（仅在服务器端可用）
     const fs = require('fs');
     const path = require('path');
-    
+
     // 构建changelogs目录路径
     const changelogsDir = path.join(process.cwd(), 'src', 'content', 'changelogs');
-    
+
     // 检查目录是否存在
     if (!fs.existsSync(changelogsDir) || !fs.statSync(changelogsDir).isDirectory()) {
       return [];
     }
-    
+
     // 读取目录中的所有文件
     const files = fs.readdirSync(changelogsDir);
-    
+
     // 过滤出markdown文件
     const mdFiles = files.filter((file: string) => file.endsWith('.md'));
-    
+
     // 读取和解析每个文件
     changelogs = mdFiles.map((file: string) => {
       const filePath = path.join(changelogsDir, file);
       const content = fs.readFileSync(filePath, 'utf8');
       const { metadata, content: body } = parseFrontMatter(content);
-      
+
       // 验证并获取日志类型，默认为 'chore'
       const typeValue = metadata.type as string;
       const validTypes: ChangelogType[] = ['feature', 'fix', 'refactor', 'docs', 'style', 'chore'];
-      const type: ChangelogType = validTypes.includes(typeValue as ChangelogType) 
-        ? (typeValue as ChangelogType) 
+      const type: ChangelogType = validTypes.includes(typeValue as ChangelogType)
+        ? (typeValue as ChangelogType)
         : 'chore';
-      
+
       return {
         id: file.replace('.md', ''),
         date: (metadata.date as string) || '',
@@ -67,7 +72,7 @@ export function getServerChangelogs(): Changelog[] {
         filePath: file
       };
     });
-    
+
     // 按日期倒序排序
     changelogs.sort((a, b) => {
       const dateA = new Date(a.date).getTime();
@@ -77,7 +82,7 @@ export function getServerChangelogs(): Changelog[] {
   } catch (error) {
     console.error('读取开发日志文件失败:', error);
   }
-  
+
   return changelogs;
 }
 
@@ -120,7 +125,7 @@ export function changelogsDirExists(): boolean {
   if (typeof window !== 'undefined') {
     return false;
   }
-  
+
   try {
     const fs = require('fs');
     const path = require('path');
