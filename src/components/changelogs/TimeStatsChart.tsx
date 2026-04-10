@@ -235,8 +235,6 @@ export default function TimeStatsChart({ changelogs }: TimeStatsChartProps) {
                     stroke: 'hsl(var(--background))', 
                     strokeWidth: 4,
                     fill: themeColors.primary,
-                    shadowBlur: 15,
-                    shadowColor: themeColors.primary,
                   }}
                 />
               </AreaChart>
@@ -309,8 +307,6 @@ export default function TimeStatsChart({ changelogs }: TimeStatsChartProps) {
                     stroke: 'hsl(var(--background))', 
                     strokeWidth: 4,
                     fill: themeColors.primary,
-                    shadowBlur: 15,
-                    shadowColor: themeColors.primary,
                   }}
                 />
               </LineChart>

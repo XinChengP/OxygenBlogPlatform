@@ -223,8 +223,6 @@ export default function TypeStatsChart({ changelogs }: TypeStatsChartProps) {
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
-                activeIndex={activeIndex !== null ? activeIndex : undefined}
-                activeShape={renderActiveShape}
                 data={dataWithTotal}
                 cx="50%"
                 cy="50%"

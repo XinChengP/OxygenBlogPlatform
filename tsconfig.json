@@ -38,6 +38,8 @@
   "exclude": [
     "node_modules",
     "**/*.test.ts",
-    "**/*.test.tsx"
+    "**/*.test.tsx",
+    "admin-backup",
+    "**/admin-backup/**"
   ]
 }
