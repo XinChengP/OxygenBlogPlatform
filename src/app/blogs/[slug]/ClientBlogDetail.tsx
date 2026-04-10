@@ -21,6 +21,7 @@ import { EndWord } from '../../../setting/blogSetting';
 import { useBackgroundStyle } from '../../../hooks/useBackgroundStyle';
 import { useTheme } from 'next-themes';
 import { getAssetPath } from '../../../utils/assetUtils';
+import { Live2DMessageHelper } from '../../../utils/live2dMessageManager';
 
 // 动态导入大型组件，优化初始加载性能
 const LazyTableOfContents = lazy(() => import('../../../components/TableOfContents'));
@@ -203,6 +204,7 @@ interface BlogPost {
   seoTitle?: string;
   seoDescription?: string;
   reference?: Array<{description: string; link: string}>;
+  hidden?: boolean;
 }
 
 interface ClientBlogDetailProps {
@@ -437,28 +439,41 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
   // 语法高亮主题
   const syntaxTheme = theme === 'dark' ? oneDark : oneLight;
 
-  // 清理iframe资源 - 防止页面切换时的脚本错误
+  // 检测隐藏标签博客并触发彩蛋消息
+  useEffect(() => {
+    // 如果博客带有 hidden 标签，触发 Live2D 彩蛋消息
+    if (blog.hidden) {
+      // 延迟触发，避免与其他初始化消息冲突
+      const timer = setTimeout(() => {
+        Live2DMessageHelper.showHiddenTagEasterEgg();
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [blog.hidden]);
+
+  // 清理 iframe 资源 - 防止页面切换时的脚本错误
   useEffect(() => {
     return () => {
-      // 清理所有iframe引用
+      // 清理所有 iframe 引用
       iframeRefs.current.forEach(iframe => {
         if (iframe && iframe.src) {
           try {
-            // 清空iframe的src，停止加载外部脚本
+            // 清空 iframe 的 src，停止加载外部脚本
             iframe.src = 'about:blank';
-            // 尝试清理iframe内容
+            // 尝试清理 iframe 内容
             iframe.contentWindow?.location?.replace('about:blank');
           } catch (e) {
             // 忽略跨域错误
-            console.debug('清理iframe时出错:', e);
+            console.debug('清理 iframe 时出错:', e);
           }
         }
       });
       iframeRefs.current = [];
       
-      // 清理B站相关的全局脚本
+      // 清理 B 站相关的全局脚本
       if (typeof window !== 'undefined') {
-        // 移除可能存在的B站脚本创建的DOM元素
+        // 移除可能存在的 B 站脚本创建的 DOM 元素
         const bilibiliScripts = document.querySelectorAll('script[src*="bilibili"]');
         bilibiliScripts.forEach(script => {
           try {

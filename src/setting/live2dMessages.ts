@@ -629,3 +629,37 @@ export function renderMessageTemplate(template: string, data: { text?: string } 
   }
   return template;
 }
+
+/**
+ * 隐藏标签博客彩蛋消息配置
+ * 用于触发 Live2D 看板娘的特殊彩蛋消息
+ */
+export const HiddenTagEasterEggMessages = {
+  // 发现隐藏博客的惊喜消息
+  DISCOVERY: {
+    messages: [
+      '哇！你发现了隐藏博客！天依好惊喜～',
+      '居然找到了这篇隐藏文章，太厉害了！',
+      '隐藏内容解锁成功！天依为你骄傲～',
+      '发现了不得了的东西呢，你真是有心人～',
+      '隐藏博客被发现啦！看来是天意让你看到～',
+      '咦？这篇博客明明藏起来了，你是怎么找到的？',
+      '天依的小秘密被你发现了，要帮人家保密哦～'
+    ],
+    duration: MessageDuration.LONG,
+    priority: 10 // 彩蛋消息优先级
+  },
+  // 隐藏博客的特殊提示
+  SPECIAL_NOTE: {
+    messages: [
+      '这篇隐藏博客可是特别的哦，要好好珍惜～',
+      '隐藏内容通常都有特别的意义呢～',
+      '天依的秘密基地被你发现啦～',
+      '这可是限定版内容哦，只有有缘人才能看到～',
+      '能在这里相遇，一定是特别的缘分呢～',
+      '天依会把这份回忆好好珍藏起来的～'
+    ],
+    duration: MessageDuration.NORMAL,
+    priority: 10 // 彩蛋消息优先级
+  }
+} as const;

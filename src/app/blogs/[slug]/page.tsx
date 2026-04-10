@@ -62,6 +62,7 @@ interface BlogPost {
   reference?: Array<{description: string; link: string}>;
   pinned?: boolean;
   pinnedAt?: string;
+  hidden?: boolean;
 }
 
 /**
@@ -88,6 +89,7 @@ interface BlogFrontMatter {
   reference?: Array<{description: string; link: string}>;
   pinned?: boolean;
   pinnedAt?: string;
+  hidden?: boolean;
   [key: string]: any; // 允许其他未知属性
 }
 
@@ -268,7 +270,8 @@ async function getBlogContent(slug: string): Promise<BlogPost | null> {
       seoDescription: frontMatter.seoDescription,
       reference: frontMatter.reference,
       pinned: frontMatter.pinned || false,
-      pinnedAt: frontMatter.pinnedAt ? formatBlogDate(frontMatter.pinnedAt) : undefined
+      pinnedAt: frontMatter.pinnedAt ? formatBlogDate(frontMatter.pinnedAt) : undefined,
+      hidden: frontMatter.hidden || false
     };
   } catch (error) {
     console.error('Error reading blog content:', error);

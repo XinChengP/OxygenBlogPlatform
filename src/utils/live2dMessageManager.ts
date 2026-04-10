@@ -20,6 +20,7 @@ import {
   MarkdownMessages,
   GeneralMessages,
   HolidayMessages,
+  HiddenTagEasterEggMessages,
   getTimeGreetingConfig,
   getPageMessageConfig,
   getHolidayMessageConfig,
@@ -65,7 +66,6 @@ class Live2DMessageManager {
 
     // 烟花模式下阻塞所有消息（包括彩蛋消息）
     if (this.isFireworksMode) {
-      console.log('[Live2D] 烟花模式中，阻塞消息:', message);
       return;
     }
 
@@ -80,7 +80,6 @@ class Live2DMessageManager {
 
     // 彩蛋模式下屏蔽普通消息
     if (this.isEasterEggMode) {
-      console.log('[Live2D] 彩蛋模式中，屏蔽普通消息:', message);
       return;
     }
 
@@ -774,11 +773,36 @@ export class Live2DMessageHelper {
       return;
     }
     
-    // 30%概率显示时间问候，70%概率显示页面消息
+    // 30% 概率显示时间问候，70% 概率显示页面消息
     if (Math.random() < 0.3) {
       this.showTimeGreeting();
     } else {
       this.showPageMessage(pageType);
+    }
+  }
+
+  /**
+   * 显示隐藏标签博客的彩蛋消息
+   * 当用户打开带有 hidden 标签的博客时触发
+   */
+  static showHiddenTagEasterEgg(): void {
+    // 随机选择发现消息或特别提示
+    const useDiscovery = Math.random() < 0.6; // 60% 概率显示发现消息
+    
+    if (useDiscovery) {
+      const config = HiddenTagEasterEggMessages.DISCOVERY;
+      live2dMessageManager.showMessage(
+        getRandomMessage(config),
+        config.duration,
+        config.priority
+      );
+    } else {
+      const config = HiddenTagEasterEggMessages.SPECIAL_NOTE;
+      live2dMessageManager.showMessage(
+        getRandomMessage(config),
+        config.duration,
+        config.priority
+      );
     }
   }
 }
