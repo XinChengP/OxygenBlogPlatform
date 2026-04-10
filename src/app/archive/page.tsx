@@ -35,6 +35,7 @@ interface BlogFrontMatter {
   readTime?: number;
   pinned?: boolean;
   pinnedAt?: string;
+  hidden?: boolean;
 }
 
 /**
@@ -99,7 +100,12 @@ function getArchivedBlogs(): { [year: number]: { [month: number]: { [day: number
         const fileContent = fs.readFileSync(filePath, 'utf8');
         const { data } = matter(fileContent);
         const frontMatter = data as BlogFrontMatter;
-        
+
+        // 跳过隐藏的博客文章
+        if (frontMatter.hidden === true) {
+          return;
+        }
+
         // 标题处理：优先使用元数据中的 title，否则使用文件名
         const fileName = path.basename(filePath, '.md');
         const title = frontMatter.title || fileName;
