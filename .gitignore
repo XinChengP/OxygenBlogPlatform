@@ -54,3 +54,9 @@ next-env.d.ts
 # 本地开发脚本（不要提交到GitHub）
 /start-dev.bat
 
+# 本地Admin备份仓库（独立git仓库，不要提交到主项目）
+/admin-backup/
+/admin-backup.ps1
+/admin-backup.sh
+/admin-restore.ps1
+

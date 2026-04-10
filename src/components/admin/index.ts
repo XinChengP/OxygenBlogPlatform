@@ -54,6 +54,9 @@ export { default as AdminSidebar } from './AdminSidebar';
 // 仪表盘组件
 export { default as DashboardClient } from './DashboardClient';
 
+// 备份管理组件
+export { default as BackupManager } from './BackupManager';
+
 // 类型导出
 export type { default as AdminCardProps } from './AdminCard';
 export type { default as AdminButtonProps } from './AdminButton';

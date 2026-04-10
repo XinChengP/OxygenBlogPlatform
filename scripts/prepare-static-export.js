@@ -282,6 +282,56 @@ export async function saveSettings(settings: Partial<SystemSettings>): Promise<A
 export async function resetSettings(): Promise<ActionResult> {
   return { success: false, message: '静态导出模式不支持此功能' };
 }
+`,
+
+  'backupActions.ts': `// 静态导出模式 - Server Actions 被替换为静态兼容版本
+// 注意：此文件在构建时自动生成，请勿手动修改
+
+// 类型定义
+export interface BackupResult {
+  success: boolean;
+  message: string;
+  backupPath?: string;
+  commitHash?: string;
+  filesCount?: number;
+  timestamp?: string;
+}
+
+export interface BackupHistory {
+  commitHash: string;
+  message: string;
+  timestamp: string;
+  filesCount: number;
+}
+
+// 空实现函数 - 在静态导出模式下返回默认值
+export async function getBackupPath(): Promise<string> {
+  return '';
+}
+
+export async function backupDirExists(): Promise<boolean> {
+  return false;
+}
+
+export async function initBackupRepo(): Promise<BackupResult> {
+  return { success: false, message: '静态导出模式不支持此功能' };
+}
+
+export async function performBackup(): Promise<BackupResult> {
+  return { success: false, message: '静态导出模式不支持此功能' };
+}
+
+export async function getBackupHistory(limit: number = 10): Promise<BackupResult & { history?: BackupHistory[] }> {
+  return { success: false, message: '静态导出模式不支持此功能', history: [] };
+}
+
+export async function restoreBackup(commitHash?: string): Promise<BackupResult> {
+  return { success: false, message: '静态导出模式不支持此功能' };
+}
+
+export async function getBackupStatus(): Promise<BackupResult & { totalCommits?: number; lastBackup?: string; trackedFiles?: number }> {
+  return { success: false, message: '静态导出模式不支持此功能', totalCommits: 0, lastBackup: '', trackedFiles: 0 };
+}
 `
 };
 

@@ -1,0 +1,452 @@
+'use server';
+
+/**
+ * Admin代码本地备份相关的Server Actions
+ * 提供备份、恢复、查看历史等功能
+ */
+
+import { promises as fs } from 'fs';
+import path from 'path';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
+
+const BACKUP_DIR = path.join(process.cwd(), 'admin-backup');
+
+export interface BackupResult {
+  success: boolean;
+  message: string;
+  backupPath?: string;
+  commitHash?: string;
+  filesCount?: number;
+  timestamp?: string;
+}
+
+export interface BackupHistory {
+  commitHash: string;
+  message: string;
+  timestamp: string;
+  filesCount: number;
+}
+
+/**
+ * 获取备份目录路径
+ */
+export async function getBackupPath(): Promise<string> {
+  return BACKUP_DIR;
+}
+
+/**
+ * 检查备份目录是否存在
+ */
+export async function backupDirExists(): Promise<boolean> {
+  try {
+    await fs.access(BACKUP_DIR);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * 初始化备份目录的Git仓库
+ */
+export async function initBackupRepo(): Promise<BackupResult> {
+  try {
+    if (!(await backupDirExists())) {
+      return {
+        success: false,
+        message: '备份目录不存在，请先运行备份脚本'
+      };
+    }
+
+    const gitDir = path.join(BACKUP_DIR, '.git');
+
+    try {
+      await fs.access(gitDir);
+    } catch {
+      await execAsync('git init', { cwd: BACKUP_DIR });
+      await execAsync('git config user.email "admin@local.backup"', { cwd: BACKUP_DIR });
+      await execAsync('git config user.name "Admin Local Backup"', { cwd: BACKUP_DIR });
+    }
+
+    return {
+      success: true,
+      message: 'Git仓库已初始化',
+      backupPath: BACKUP_DIR
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: `初始化失败: ${error instanceof Error ? error.message : '未知错误'}`
+    };
+  }
+}
+
+/**
+ * 执行备份操作
+ * 将admin相关代码复制到备份目录并提交
+ */
+export async function performBackup(): Promise<BackupResult> {
+  try {
+    const projectRoot = process.cwd();
+    const timestamp = new Date().toISOString();
+
+    // 确保备份目录存在
+    if (!(await backupDirExists())) {
+      await fs.mkdir(BACKUP_DIR, { recursive: true });
+    }
+
+    const copyDir = async (src: string, dest: string) => {
+      try {
+        await fs.access(src);
+        await fs.mkdir(dest, { recursive: true });
+        const entries = await fs.readdir(src, { withFileTypes: true });
+
+        for (const entry of entries) {
+          const srcPath = path.join(src, entry.name);
+          const destPath = path.join(dest, entry.name);
+
+          if (entry.isDirectory()) {
+            await copyDir(srcPath, destPath);
+          } else {
+            await fs.copyFile(srcPath, destPath);
+          }
+        }
+      } catch {
+        // 目录不存在，跳过
+      }
+    };
+
+    // 复制admin相关代码
+    const dirsToBackup = [
+      { src: path.join(projectRoot, 'src', 'app', 'admin'), dest: path.join(BACKUP_DIR, 'src', 'app', 'admin') },
+      { src: path.join(projectRoot, 'src', 'components', 'admin'), dest: path.join(BACKUP_DIR, 'src', 'components', 'admin') },
+      { src: path.join(projectRoot, 'src', 'actions'), dest: path.join(BACKUP_DIR, 'src', 'actions') },
+    ];
+
+    // 复制types中的相关文件
+    const typesDir = path.join(projectRoot, 'src', 'types');
+    const typesBackupDir = path.join(BACKUP_DIR, 'src', 'types');
+    await fs.mkdir(typesBackupDir, { recursive: true });
+
+    try {
+      const typeFiles = await fs.readdir(typesDir);
+      for (const file of typeFiles) {
+        if (file.startsWith('admin') || file.startsWith('todo')) {
+          await fs.copyFile(
+            path.join(typesDir, file),
+            path.join(typesBackupDir, file)
+          );
+        }
+      }
+    } catch {
+      // 忽略
+    }
+
+    // 复制目录
+    for (const dir of dirsToBackup) {
+      await copyDir(dir.src, dir.dest);
+    }
+
+    // 创建.gitignore
+    const gitignore = `node_modules/
+.next/
+out/
+build/
+.env*
+*.local
+.idea/
+.vscode/
+*.swp
+.DS_Store
+*.log
+*secret*
+*password*
+*.pem
+`;
+    await fs.writeFile(path.join(BACKUP_DIR, '.gitignore'), gitignore, 'utf-8');
+
+    // 初始化git仓库（如果不存在）
+    const gitDir = path.join(BACKUP_DIR, '.git');
+    let isNewRepo = false;
+
+    try {
+      await fs.access(gitDir);
+    } catch {
+      await execAsync('git init', { cwd: BACKUP_DIR });
+      await execAsync('git config user.email "admin@local.backup"', { cwd: BACKUP_DIR });
+      await execAsync('git config user.name "Admin Local Backup"', { cwd: BACKUP_DIR });
+      isNewRepo = true;
+    }
+
+    // 添加所有文件并提交
+    await execAsync('git add .', { cwd: BACKUP_DIR });
+
+    try {
+      await execAsync('git diff --cached --quiet', { cwd: BACKUP_DIR });
+      // 如果没有变化
+      return {
+        success: true,
+        message: '没有新的更改需要备份',
+        backupPath: BACKUP_DIR,
+        timestamp
+      };
+    } catch {
+      // 有变化，继续提交
+    }
+
+    const commitMessage = `Admin代码备份 - ${new Date().toLocaleString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    })}`;
+
+    await execAsync(`git commit -m "${commitMessage}"`, { cwd: BACKUP_DIR });
+
+    // 获取提交hash
+    let commitHash = '';
+    try {
+      const { stdout } = await execAsync('git rev-parse HEAD', { cwd: BACKUP_DIR });
+      commitHash = stdout.trim();
+    } catch {
+      // 忽略
+    }
+
+    // 统计文件数量
+    let filesCount = 0;
+    try {
+      const { stdout } = await execAsync('git ls-files', { cwd: BACKUP_DIR });
+      filesCount = stdout.trim().split('\n').filter(Boolean).length;
+    } catch {
+      // 忽略
+    }
+
+    return {
+      success: true,
+      message: isNewRepo ? '首次备份完成' : '备份已更新',
+      backupPath: BACKUP_DIR,
+      commitHash,
+      filesCount,
+      timestamp
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: `备份失败: ${error instanceof Error ? error.message : '未知错误'}`
+    };
+  }
+}
+
+/**
+ * 获取备份历史记录
+ */
+export async function getBackupHistory(limit: number = 10): Promise<BackupResult & { history?: BackupHistory[] }> {
+  try {
+    if (!(await backupDirExists())) {
+      return {
+        success: false,
+        message: '备份目录不存在'
+      };
+    }
+
+    const gitDir = path.join(BACKUP_DIR, '.git');
+    try {
+      await fs.access(gitDir);
+    } catch {
+      return {
+        success: false,
+        message: '备份目录不是Git仓库'
+      };
+    }
+
+    const { stdout } = await execAsync(
+      `git log --oneline -${limit} --format="%H|%s|%ad|%s" --date=iso`,
+      { cwd: BACKUP_DIR }
+    );
+
+    const lines = stdout.trim().split('\n').filter(Boolean);
+    const history: BackupHistory[] = [];
+
+    for (const line of lines) {
+      const [commitHash, ...rest] = line.split('|');
+      const message = rest.join('|');
+
+      // 使用异步方式获取文件数量
+      let filesCount = 0;
+      try {
+        const { stdout: filesStdout } = await execAsync('git ls-files', { cwd: BACKUP_DIR });
+        filesCount = filesStdout.trim().split('\n').filter(Boolean).length;
+      } catch {
+        // 忽略
+      }
+
+      history.push({
+        commitHash: commitHash.substring(0, 7),
+        message,
+        timestamp: new Date().toISOString(),
+        filesCount
+      });
+    }
+
+    return {
+      success: true,
+      message: '获取成功',
+      history
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: `获取历史失败: ${error instanceof Error ? error.message : '未知错误'}`
+    };
+  }
+}
+
+/**
+ * 从指定提交恢复备份
+ */
+export async function restoreBackup(commitHash?: string): Promise<BackupResult> {
+  try {
+    if (!(await backupDirExists())) {
+      return {
+        success: false,
+        message: '备份目录不存在'
+      };
+    }
+
+    const gitDir = path.join(BACKUP_DIR, '.git');
+    try {
+      await fs.access(gitDir);
+    } catch {
+      return {
+        success: false,
+        message: '备份目录不是Git仓库'
+      };
+    }
+
+    // 如果没有指定commit，使用最新的
+    if (!commitHash) {
+      const { stdout } = await execAsync('git log --oneline -1', { cwd: BACKUP_DIR });
+      commitHash = stdout.trim().split(' ')[0];
+    }
+
+    // 获取该提交的文件列表
+    const { stdout: files } = await execAsync(
+      `git ls-tree -r --name-only ${commitHash}`,
+      { cwd: BACKUP_DIR }
+    );
+
+    const filesList = files.trim().split('\n').filter(Boolean);
+
+    // 恢复到项目目录
+    const projectRoot = process.cwd();
+
+    for (const file of filesList) {
+      const backupFilePath = path.join(BACKUP_DIR, file);
+      const projectFilePath = path.join(projectRoot, file);
+
+      // 确保目录存在
+      const fileDir = path.dirname(projectFilePath);
+      await fs.mkdir(fileDir, { recursive: true });
+
+      try {
+        const content = await fs.readFile(backupFilePath);
+        await fs.writeFile(projectFilePath, content);
+      } catch {
+        // 文件可能不存在
+      }
+    }
+
+    return {
+      success: true,
+      message: `已恢复到提交 ${commitHash?.substring(0, 7)}`,
+      backupPath: BACKUP_DIR
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: `恢复失败: ${error instanceof Error ? error.message : '未知错误'}`
+    };
+  }
+}
+
+/**
+ * 获取备份目录状态
+ */
+export async function getBackupStatus(): Promise<BackupResult & {
+  totalCommits?: number;
+  lastBackup?: string;
+  trackedFiles?: number;
+}> {
+  try {
+    if (!(await backupDirExists())) {
+      return {
+        success: false,
+        message: '备份目录不存在'
+      };
+    }
+
+    const gitDir = path.join(BACKUP_DIR, '.git');
+    let isGitRepo = false;
+
+    try {
+      await fs.access(gitDir);
+      isGitRepo = true;
+    } catch {
+      // 不是git仓库
+    }
+
+    if (!isGitRepo) {
+      return {
+        success: true,
+        message: 'Git仓库未初始化',
+        trackedFiles: 0,
+        totalCommits: 0
+      };
+    }
+
+    // 获取提交数量
+    let totalCommits = 0;
+    try {
+      const { stdout } = await execAsync('git rev-list --count HEAD', { cwd: BACKUP_DIR });
+      totalCommits = parseInt(stdout.trim(), 10);
+    } catch {
+      // 忽略
+    }
+
+    // 获取最后提交时间
+    let lastBackup = '';
+    try {
+      const { stdout } = await execAsync('git log -1 --format="%ai"', { cwd: BACKUP_DIR });
+      lastBackup = stdout.trim();
+    } catch {
+      // 忽略
+    }
+
+    // 获取追踪文件数量
+    let trackedFiles = 0;
+    try {
+      const { stdout } = await execAsync('git ls-files', { cwd: BACKUP_DIR });
+      trackedFiles = stdout.trim().split('\n').filter(Boolean).length;
+    } catch {
+      // 忽略
+    }
+
+    return {
+      success: true,
+      message: '状态获取成功',
+      totalCommits,
+      lastBackup,
+      trackedFiles
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: `获取状态失败: ${error instanceof Error ? error.message : '未知错误'}`
+    };
+  }
+}

@@ -20,9 +20,10 @@ if (!fs.existsSync(backupDir)) {
 // 恢复备份文件
 const actionFiles = [
   'blogActions.ts',
-  'momentActions.ts', 
+  'momentActions.ts',
   'galleryActions.ts',
-  'settingsActions.ts'
+  'settingsActions.ts',
+  'backupActions.ts'
 ];
 
 let restoredCount = 0;

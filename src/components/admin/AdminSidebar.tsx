@@ -19,6 +19,7 @@ import {
   Wrench,
   Sparkles,
   CheckSquare,
+  Database,
 } from 'lucide-react';
 
 /**
@@ -341,6 +342,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
           icon: Wrench,
         },
       ],
+    },
+    {
+      id: 'backup',
+      label: '本地备份',
+      href: '/admin/backup',
+      icon: Database,
     },
     {
       id: 'settings',
