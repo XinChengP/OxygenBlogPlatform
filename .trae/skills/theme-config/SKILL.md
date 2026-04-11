@@ -9,6 +9,13 @@ description: "配置博客主题系统和样式。Invoke when user wants to cust
 
 本技能用于帮助用户配置和管理博客的主题系统，包括主题色、背景图片、显示模式等视觉样式。
 
+## 目录结构规范
+
+```
+src/setting/                # 配置文件
+src/app/globals.css         # 全局样式
+```
+
 ## 主题配置文件
 
 主题配置位于 `src/setting/WebSetting.ts`：

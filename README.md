@@ -6,6 +6,38 @@
 
 **Live站点**: [https://blog.xinchengp.cn](https://blog.xinchengp.cn)
 
+## 🛠️ 技术栈
+
+### 核心框架
+- **Next.js 16.1.6** - App Router + Turbopack，静态导出模式
+- **React 19.2.x** - 函数组件 + Hooks
+- **TypeScript 5.x** - 严格模式，类型安全
+
+### 样式系统
+- **Tailwind CSS 4** - 原子化CSS，深色模式支持
+- **CSS Variables** - 10种预设主题色系统
+- **Framer Motion** - 动画和过渡效果
+
+### 主要依赖
+- **next-themes** - 主题切换
+- **marked / react-markdown** - Markdown渲染
+- **gray-matter** - Frontmatter解析
+- **highlight.js** - 代码语法高亮
+- **recharts** - 数据可视化图表
+- **@tsparticles/react** - 粒子动画背景
+- **aplayer** - 音乐播放器
+- **octokit** - GitHub API集成
+- **simple-git** - Git操作
+- **bcryptjs** - 密码加密
+- **date-fns** - 日期处理
+- **lucide-react / @heroicons/react** - 图标库
+
+### 开发工具
+- **ESLint 9.x** - 代码检查
+- **TypeScript 5.x** - 类型检查
+- **tsx** - TypeScript执行器
+- **sharp** - 图片处理
+
 ## ✨ 主要功能
 
 ### ✨ 洛天依特色

@@ -9,6 +9,29 @@ description: "部署博客到GitHub Pages或本地预览。Invoke when user want
 
 本技能用于帮助用户将洛天依主题博客部署到 GitHub Pages 或本地预览构建结果。
 
+## 目录结构规范
+
+```
+.github/workflows/          # GitHub Actions工作流
+next.config.ts              # Next.js配置文件
+.env                        # 生产环境变量
+.env.local                  # 本地环境变量
+```
+
+## 核心命令
+
+```bash
+npm run dev          # 开发服务器 (Turbopack)
+npm run build        # 生产环境构建
+npm run build:pages  # GitHub Pages构建
+npm run lint         # 代码检查
+npm run sync-theme   # 主题同步
+npm run generate-gallery  # 生成画廊数据
+npm run export       # 静态导出（实际执行 next build）
+npm run serve        # 本地预览构建结果
+npm run electron     # 运行桌面应用
+```
+
 ## 部署方式
 
 ### 1. GitHub Pages 自动部署（推荐）

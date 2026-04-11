@@ -468,6 +468,56 @@ export function formatDateTime(date: Date | string): string {
 }
 
 /**
+ * 格式化相对时间
+ * @param date 日期对象或字符串
+ * @returns 相对时间字符串（如：3分钟前、2小时前、昨天等）
+ */
+export function formatRelativeTime(date: Date | string): string {
+  if (!date) {
+    return ''
+  }
+
+  let dateObj: Date
+
+  if (typeof date === 'string') {
+    dateObj = new Date(date)
+  } else if (date instanceof Date) {
+    dateObj = date
+  } else {
+    return ''
+  }
+
+  if (isNaN(dateObj.getTime())) {
+    return ''
+  }
+
+  const now = new Date()
+  const diff = now.getTime() - dateObj.getTime()
+  const seconds = Math.floor(diff / 1000)
+  const minutes = Math.floor(seconds / 60)
+  const hours = Math.floor(minutes / 60)
+  const days = Math.floor(hours / 24)
+
+  if (seconds < 60) {
+    return '刚刚'
+  } else if (minutes < 60) {
+    return `${minutes}分钟前`
+  } else if (hours < 24) {
+    return `${hours}小时前`
+  } else if (days === 1) {
+    return '昨天'
+  } else if (days < 7) {
+    return `${days}天前`
+  } else if (days < 30) {
+    return `${Math.floor(days / 7)}周前`
+  } else if (days < 365) {
+    return `${Math.floor(days / 30)}个月前`
+  } else {
+    return `${Math.floor(days / 365)}年前`
+  }
+}
+
+/**
  * 验证 GitHub Token 格式
  * GitHub Token 格式：
  * - 经典 Token: 以 'ghp_' 开头，后跟 36 个字符
@@ -576,6 +626,16 @@ export interface DashboardStats {
   imageCount: number
   /** 本月新增文章数 */
   monthlyBlogCount: number
+  /** 更新日志总数 */
+  changelogCount: number
+  /** 待办事项总数 */
+  todoCount: number
+  /** 待办事项完成数 */
+  todoCompletedCount: number
+  /** 分类统计 */
+  categoryStats: { name: string; count: number }[]
+  /** 标签统计 */
+  tagStats: { name: string; count: number }[]
 }
 
 /**
@@ -587,7 +647,7 @@ export interface ActivityRecord {
   /** 操作类型 */
   action: 'create' | 'update' | 'delete'
   /** 操作对象类型 */
-  resource: 'blog' | 'moment' | 'image'
+  resource: 'blog' | 'moment' | 'image' | 'changelog' | 'todo'
   /** 操作对象名称 */
   resourceName: string
   /** 操作时间 */
@@ -621,6 +681,11 @@ export function getDashboardStats(): DashboardStats {
     momentCount: 0,
     imageCount: 0,
     monthlyBlogCount: 0,
+    changelogCount: 0,
+    todoCount: 0,
+    todoCompletedCount: 0,
+    categoryStats: [],
+    tagStats: [],
   }
 
   // 检查是否在服务器端
@@ -632,22 +697,25 @@ export function getDashboardStats(): DashboardStats {
     const fs = require('fs')
     const path = require('path')
 
-    // 获取文章总数
+    // 获取文章总数和分类统计
     const blogsDir = path.join(process.cwd(), 'src', 'content', 'blogs')
     let blogCount = 0
     let monthlyBlogCount = 0
+    const categoryMap = new Map<string, number>()
+    const tagMap = new Map<string, number>()
 
     if (fs.existsSync(blogsDir) && fs.statSync(blogsDir).isDirectory()) {
       const blogFiles = fs.readdirSync(blogsDir).filter((file: string) => file.endsWith('.md'))
       blogCount = blogFiles.length
 
-      // 计算本月新增文章数
+      // 计算本月新增文章数和分类统计
       const currentMonth = new Date().getMonth()
       const currentYear = new Date().getFullYear()
 
       blogFiles.forEach((file: string) => {
         const filePath = path.join(blogsDir, file)
         const content = fs.readFileSync(filePath, 'utf8')
+        
         // 简单提取日期字段
         const dateMatch = content.match(/date:\s*["']?(\d{4}-\d{2}-\d{2})/)
         if (dateMatch) {
@@ -655,6 +723,25 @@ export function getDashboardStats(): DashboardStats {
           if (date.getMonth() === currentMonth && date.getFullYear() === currentYear) {
             monthlyBlogCount++
           }
+        }
+
+        // 提取分类
+        const categoryMatch = content.match(/category:\s*["']?([^"'\n]+)/)
+        if (categoryMatch) {
+          const category = categoryMatch[1].trim()
+          categoryMap.set(category, (categoryMap.get(category) || 0) + 1)
+        }
+
+        // 提取标签
+        const tagsMatch = content.match(/tags:\s*\[([^\]]+)\]/)
+        if (tagsMatch) {
+          const tagsStr = tagsMatch[1]
+          const tags = tagsStr.split(',').map((t: string) => t.trim().replace(/["']/g, ''))
+          tags.forEach((tag: string) => {
+            if (tag) {
+              tagMap.set(tag, (tagMap.get(tag) || 0) + 1)
+            }
+          })
         }
       })
     }
@@ -665,6 +752,32 @@ export function getDashboardStats(): DashboardStats {
 
     if (fs.existsSync(momentsDir) && fs.statSync(momentsDir).isDirectory()) {
       momentCount = fs.readdirSync(momentsDir).filter((file: string) => file.endsWith('.md')).length
+    }
+
+    // 获取更新日志总数
+    const changelogsDir = path.join(process.cwd(), 'src', 'content', 'changelogs')
+    let changelogCount = 0
+
+    if (fs.existsSync(changelogsDir) && fs.statSync(changelogsDir).isDirectory()) {
+      changelogCount = fs.readdirSync(changelogsDir).filter((file: string) => file.endsWith('.md')).length
+    }
+
+    // 获取待办事项统计
+    const todoPath = path.join(process.cwd(), 'src', 'content', 'todo.json')
+    let todoCount = 0
+    let todoCompletedCount = 0
+
+    if (fs.existsSync(todoPath)) {
+      try {
+        const todoContent = fs.readFileSync(todoPath, 'utf8')
+        const todoData = JSON.parse(todoContent)
+        if (todoData.items && Array.isArray(todoData.items)) {
+          todoCount = todoData.items.length
+          todoCompletedCount = todoData.items.filter((item: { completed?: boolean }) => item.completed).length
+        }
+      } catch (e) {
+        console.error('解析待办事项数据失败:', e)
+      }
     }
 
     // 获取图片总数（从 public 目录统计）
@@ -678,21 +791,25 @@ export function getDashboardStats(): DashboardStats {
       // 递归统计图片数量
       const countImages = (dir: string): number => {
         let count = 0
-        const items = fs.readdirSync(dir)
-        
-        items.forEach((item: string) => {
-          const itemPath = path.join(dir, item)
-          const stat = fs.statSync(itemPath)
+        try {
+          const items = fs.readdirSync(dir)
           
-          if (stat.isDirectory()) {
-            count += countImages(itemPath)
-          } else if (stat.isFile()) {
-            const ext = path.extname(item).toLowerCase()
-            if (imageExtensions.includes(ext)) {
-              count++
+          items.forEach((item: string) => {
+            const itemPath = path.join(dir, item)
+            const stat = fs.statSync(itemPath)
+            
+            if (stat.isDirectory()) {
+              count += countImages(itemPath)
+            } else if (stat.isFile()) {
+              const ext = path.extname(item).toLowerCase()
+              if (imageExtensions.includes(ext)) {
+                count++
+              }
             }
-          }
-        })
+          })
+        } catch (e) {
+          // 忽略无法访问的目录
+        }
         
         return count
       }
@@ -700,11 +817,28 @@ export function getDashboardStats(): DashboardStats {
       imageCount = countImages(publicDir)
     }
 
+    // 转换分类统计为数组并排序
+    const categoryStats = Array.from(categoryMap.entries())
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5) // 只取前5个
+
+    // 转换标签统计为数组并排序
+    const tagStats = Array.from(tagMap.entries())
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10) // 只取前10个
+
     return {
       blogCount,
       momentCount,
       imageCount,
       monthlyBlogCount,
+      changelogCount,
+      todoCount,
+      todoCompletedCount,
+      categoryStats,
+      tagStats,
     }
   } catch (error) {
     console.error('获取仪表盘统计数据失败:', error)

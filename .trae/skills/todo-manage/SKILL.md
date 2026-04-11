@@ -9,6 +9,12 @@ description: "管理待办事项。Invoke when user wants to add, edit, delete, 
 
 本技能用于帮助用户管理待办事项，包括添加、编辑、删除和查看待办。
 
+## 目录结构规范
+
+```
+src/content/todo.json       # 待办事项数据
+```
+
 ## 待办数据结构
 
 待办数据存储在 `src/content/todo.json` 文件中。
@@ -39,11 +45,18 @@ description: "管理待办事项。Invoke when user wants to add, edit, delete, 
 |------|------|------|
 | id | 是 | 唯一标识符，自动生成 |
 | content | 是 | 待办内容 |
-| completed | 是 | 是否完成，`true` 或 `false` |
+| completed | 是 | 完成状态，`true` 或 `false` |
 | priority | 否 | 优先级：`high`（高）、`medium`（中）、`low`（低） |
 | dueDate | 否 | 截止日期，格式 `YYYY-MM-DD` |
-| createdAt | 是 | 创建时间，ISO 格式 |
-| updatedAt | 否 | 更新时间，ISO 格式 |
+| createdAt | 是 | 创建时间，ISO 8601格式 |
+| updatedAt | 否 | 更新时间，ISO 8601格式 |
+
+### 功能特性
+
+- **前台展示**: 在动态页面侧边栏静态展示，支持完成进度统计
+- **后台管理**: 本地开发环境访问 `/admin/todo` 进行管理
+- **Server Actions**: 使用 `todoActions.ts` 处理数据操作
+- **静态部署**: 修改后需重新构建部署
 
 ### 优先级说明
 

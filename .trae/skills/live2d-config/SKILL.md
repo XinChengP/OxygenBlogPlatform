@@ -9,6 +9,15 @@ description: "配置和管理Live2D洛天依看板娘。Invoke when user wants t
 
 本技能用于帮助用户配置和管理洛天依 Live2D 看板娘的交互行为、消息提示和联动功能。
 
+## 目录结构规范
+
+```
+public/luotianyi-live2d-master/   # Live2D资源
+src/components/                   # Live2D组件
+src/utils/                        # Live2D工具函数
+src/setting/live2dMessages.ts     # 彩蛋消息配置
+```
+
 ## Live2D 文件结构
 
 ```

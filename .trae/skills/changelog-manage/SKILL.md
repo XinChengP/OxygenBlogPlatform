@@ -9,6 +9,12 @@ description: "管理和发布更新日志。Invoke when user wants to add a new 
 
 本技能用于帮助用户管理和发布项目的更新日志，记录开发过程和功能更新。
 
+## 目录结构规范
+
+```
+src/content/changelogs/     # 更新日志
+```
+
 ## 更新日志文件结构
 
 更新日志存储在 `src/content/changelogs/` 目录中，使用 Markdown 格式。

@@ -9,6 +9,14 @@ description: "管理画廊图片资源。Invoke when user wants to add images to
 
 本技能用于帮助用户管理博客画廊系统的图片资源，包括图片上传、分类管理和展示配置。
 
+## 目录结构规范
+
+```
+public/LTY_Picture/         # 洛天依图片资源
+public/Blogabout/           # 博客文章图片
+public/Momentsabout/        # 个人动态图片
+```
+
 ## 画廊文件结构
 
 ### 图片存储位置
