@@ -24,6 +24,10 @@ export interface BlogPost {
   filePath: string;
   /** 文章隐藏状态，true 为隐藏，false 或 undefined 为可见 */
   hidden?: boolean;
+  /** 文章置顶状态，true 为置顶 */
+  pinned?: boolean;
+  /** 置顶时间 */
+  pinnedAt?: string;
 }
 
 /**

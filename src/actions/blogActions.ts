@@ -30,6 +30,10 @@ export interface BlogPost {
   wordCount?: number;
   updatedAt?: string;
   hidden?: boolean;
+  /** 文章置顶状态，true 为置顶 */
+  pinned?: boolean;
+  /** 置顶时间 */
+  pinnedAt?: string;
   filePath: string;
 }
 
@@ -260,6 +264,8 @@ export async function getBlogList(): Promise<BlogPost[]> {
           wordCount: body.replace(/\s/g, '').length,
           updatedAt: frontmatter.updatedAt || '',
           hidden: frontmatter.hidden || false,
+          pinned: frontmatter.pinned || false,
+          pinnedAt: frontmatter.pinnedAt || '',
           filePath: filePath,
         });
       } catch (e) {
