@@ -2,7 +2,7 @@
 
 /**
  * Admin代码本地备份相关的Server Actions
- * 提供备份、恢复、查看历史等功能
+ * 提供备份、恢复、查看历史、推送到远程仓库等功能
  */
 
 import { promises as fs } from 'fs';
@@ -28,6 +28,15 @@ export interface BackupHistory {
   message: string;
   timestamp: string;
   filesCount: number;
+}
+
+/**
+ * 推送配置接口
+ */
+export interface PushConfig {
+  remoteUrl: string;      // 远程仓库地址
+  branch?: string;        // 分支名，默认为 main
+  token?: string;         // GitHub/GitLab Token（可选）
 }
 
 /**
@@ -381,6 +390,8 @@ export async function getBackupStatus(): Promise<BackupResult & {
   totalCommits?: number;
   lastBackup?: string;
   trackedFiles?: number;
+  hasRemote?: boolean;
+  remoteUrl?: string;
 }> {
   try {
     if (!(await backupDirExists())) {
@@ -405,7 +416,8 @@ export async function getBackupStatus(): Promise<BackupResult & {
         success: true,
         message: 'Git仓库未初始化',
         trackedFiles: 0,
-        totalCommits: 0
+        totalCommits: 0,
+        hasRemote: false
       };
     }
 
@@ -436,17 +448,328 @@ export async function getBackupStatus(): Promise<BackupResult & {
       // 忽略
     }
 
+    // 检查是否有远程仓库
+    let hasRemote = false;
+    let remoteUrl = '';
+    try {
+      const { stdout } = await execAsync('git remote get-url origin', { cwd: BACKUP_DIR });
+      remoteUrl = stdout.trim();
+      hasRemote = true;
+    } catch {
+      // 没有远程仓库
+    }
+
     return {
       success: true,
       message: '状态获取成功',
       totalCommits,
       lastBackup,
-      trackedFiles
+      trackedFiles,
+      hasRemote,
+      remoteUrl
     };
   } catch (error) {
     return {
       success: false,
       message: `获取状态失败: ${error instanceof Error ? error.message : '未知错误'}`
+    };
+  }
+}
+
+/**
+ * 配置远程仓库
+ * @param config 推送配置
+ */
+export async function configureRemote(config: PushConfig): Promise<BackupResult> {
+  try {
+    if (!(await backupDirExists())) {
+      return {
+        success: false,
+        message: '备份目录不存在，请先执行备份'
+      };
+    }
+
+    const gitDir = path.join(BACKUP_DIR, '.git');
+    try {
+      await fs.access(gitDir);
+    } catch {
+      return {
+        success: false,
+        message: '备份目录不是Git仓库，请先执行备份'
+      };
+    }
+
+    const branch = config.branch || 'main';
+    let remoteUrl = config.remoteUrl;
+
+    // 如果提供了token，将token嵌入到URL中（用于HTTPS推送）
+    if (config.token && remoteUrl.includes('github.com')) {
+      // 转换URL格式： https://github.com/user/repo.git -> https://token@github.com/user/repo.git
+      remoteUrl = remoteUrl.replace('https://', `https://${config.token}@`);
+    }
+
+    // 检查是否已有origin远程仓库
+    let hasOrigin = false;
+    try {
+      await execAsync('git remote get-url origin', { cwd: BACKUP_DIR });
+      hasOrigin = true;
+    } catch {
+      hasOrigin = false;
+    }
+
+    // 添加或更新远程仓库
+    if (hasOrigin) {
+      await execAsync(`git remote set-url origin "${remoteUrl}"`, { cwd: BACKUP_DIR });
+    } else {
+      await execAsync(`git remote add origin "${remoteUrl}"`, { cwd: BACKUP_DIR });
+    }
+
+    // 设置当前分支的上游分支
+    try {
+      await execAsync(`git branch -M ${branch}`, { cwd: BACKUP_DIR });
+    } catch {
+      // 忽略错误，分支可能已存在
+    }
+
+    return {
+      success: true,
+      message: `远程仓库配置成功: ${config.remoteUrl}`,
+      backupPath: BACKUP_DIR
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: `配置远程仓库失败: ${error instanceof Error ? error.message : '未知错误'}`
+    };
+  }
+}
+
+/**
+ * 推送到远程仓库
+ * @param config 推送配置（可选，如果已配置过远程仓库）
+ */
+export async function pushToRemote(config?: PushConfig): Promise<BackupResult> {
+  try {
+    if (!(await backupDirExists())) {
+      return {
+        success: false,
+        message: '备份目录不存在，请先执行备份'
+      };
+    }
+
+    const gitDir = path.join(BACKUP_DIR, '.git');
+    try {
+      await fs.access(gitDir);
+    } catch {
+      return {
+        success: false,
+        message: '备份目录不是Git仓库，请先执行备份'
+      };
+    }
+
+    // 如果提供了配置，先配置远程仓库
+    if (config && config.remoteUrl) {
+      const configResult = await configureRemote(config);
+      if (!configResult.success) {
+        return configResult;
+      }
+    }
+
+    // 检查是否有远程仓库
+    try {
+      await execAsync('git remote get-url origin', { cwd: BACKUP_DIR });
+    } catch {
+      return {
+        success: false,
+        message: '未配置远程仓库，请先配置远程仓库地址'
+      };
+    }
+
+    const branch = config?.branch || 'main';
+
+    // 获取当前提交hash（用于返回信息）
+    let commitHash = '';
+    try {
+      const { stdout } = await execAsync('git rev-parse HEAD', { cwd: BACKUP_DIR });
+      commitHash = stdout.trim().substring(0, 7);
+    } catch {
+      // 忽略
+    }
+
+    // 执行推送
+    try {
+      // 先尝试普通推送
+      await execAsync(`git push -u origin ${branch}`, { cwd: BACKUP_DIR });
+    } catch (pushError) {
+      // 如果推送失败，尝试强制推送（仅当远程仓库为空时）
+      try {
+        await execAsync(`git push -u origin ${branch} --force`, { cwd: BACKUP_DIR });
+      } catch (forceError) {
+        throw pushError; // 抛出原始错误
+      }
+    }
+
+    return {
+      success: true,
+      message: `推送成功: ${commitHash} -> origin/${branch}`,
+      commitHash,
+      backupPath: BACKUP_DIR
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : '未知错误';
+    
+    // 提供更友好的错误提示
+    if (errorMessage.includes('Authentication failed')) {
+      return {
+        success: false,
+        message: '认证失败，请检查Token是否正确'
+      };
+    } else if (errorMessage.includes('Could not resolve host')) {
+      return {
+        success: false,
+        message: '无法连接到远程仓库，请检查网络或URL'
+      };
+    } else if (errorMessage.includes('rejected')) {
+      return {
+        success: false,
+        message: '推送被拒绝，远程仓库可能有冲突，请尝试先拉取更新'
+      };
+    }
+
+    return {
+      success: false,
+      message: `推送失败: ${errorMessage}`
+    };
+  }
+}
+
+/**
+ * 获取远程仓库信息
+ */
+export async function getRemoteInfo(): Promise<BackupResult & {
+  remoteUrl?: string;
+  branch?: string;
+  ahead?: number;
+}> {
+  try {
+    if (!(await backupDirExists())) {
+      return {
+        success: false,
+        message: '备份目录不存在'
+      };
+    }
+
+    const gitDir = path.join(BACKUP_DIR, '.git');
+    try {
+      await fs.access(gitDir);
+    } catch {
+      return {
+        success: false,
+        message: '备份目录不是Git仓库'
+      };
+    }
+
+    // 获取远程仓库地址
+    let remoteUrl = '';
+    try {
+      const { stdout } = await execAsync('git remote get-url origin', { cwd: BACKUP_DIR });
+      remoteUrl = stdout.trim();
+      // 隐藏token信息
+      if (remoteUrl.includes('@')) {
+        remoteUrl = remoteUrl.replace(/https:\/\/[^@]+@/, 'https://***@');
+      }
+    } catch {
+      return {
+        success: true,
+        message: '未配置远程仓库',
+        remoteUrl: '',
+        branch: '',
+        ahead: 0
+      };
+    }
+
+    // 获取当前分支
+    let branch = '';
+    try {
+      const { stdout } = await execAsync('git branch --show-current', { cwd: BACKUP_DIR });
+      branch = stdout.trim();
+    } catch {
+      branch = 'main';
+    }
+
+    // 检查本地领先远程的提交数
+    let ahead = 0;
+    try {
+      const { stdout } = await execAsync(`git rev-list --count origin/${branch}..HEAD`, { cwd: BACKUP_DIR });
+      ahead = parseInt(stdout.trim(), 10);
+    } catch {
+      // 可能还没有推送到远程
+      try {
+        const { stdout } = await execAsync('git rev-list --count HEAD', { cwd: BACKUP_DIR });
+        ahead = parseInt(stdout.trim(), 10);
+      } catch {
+        ahead = 0;
+      }
+    }
+
+    return {
+      success: true,
+      message: '获取成功',
+      remoteUrl,
+      branch,
+      ahead
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: `获取远程信息失败: ${error instanceof Error ? error.message : '未知错误'}`
+    };
+  }
+}
+
+/**
+ * 测试远程仓库连接
+ * @param config 推送配置
+ */
+export async function testRemoteConnection(config: PushConfig): Promise<BackupResult> {
+  try {
+    let remoteUrl = config.remoteUrl;
+    
+    // 如果提供了token，将token嵌入到URL中
+    if (config.token && remoteUrl.includes('github.com')) {
+      remoteUrl = remoteUrl.replace('https://', `https://${config.token}@`);
+    }
+
+    // 使用git ls-remote测试连接
+    await execAsync(`git ls-remote "${remoteUrl}" HEAD`, { cwd: process.cwd() });
+
+    return {
+      success: true,
+      message: '连接成功，可以正常访问远程仓库'
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : '未知错误';
+    
+    if (errorMessage.includes('Authentication failed')) {
+      return {
+        success: false,
+        message: '认证失败，请检查Token是否正确'
+      };
+    } else if (errorMessage.includes('Could not resolve host')) {
+      return {
+        success: false,
+        message: '无法连接到远程仓库，请检查URL是否正确'
+      };
+    } else if (errorMessage.includes('not found')) {
+      return {
+        success: false,
+        message: '仓库不存在，请检查URL是否正确'
+      };
+    }
+
+    return {
+      success: false,
+      message: `连接失败: ${errorMessage}`
     };
   }
 }

@@ -18,6 +18,8 @@ interface Column<T> {
   sortable?: boolean;
   /** 列宽度 */
   width?: string;
+  /** 对齐方式 */
+  align?: 'left' | 'center' | 'right';
 }
 
 /**
@@ -265,13 +267,20 @@ function AdminTable<T extends Record<string, any>>({
                 <th
                   key={String(column.key)}
                   className={cn(
-                    'px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap',
+                    'px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap',
+                    column.align === 'center' && 'text-center',
+                    column.align === 'right' && 'text-right',
+                    !column.align && 'text-left',
                     column.sortable && 'cursor-pointer select-none hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors',
                     column.width && `w-[${column.width}]`
                   )}
                   onClick={() => column.sortable && handleSort(String(column.key))}
                 >
-                  <div className="flex items-center space-x-1">
+                  <div className={cn(
+                    'flex items-center space-x-1',
+                    column.align === 'center' && 'justify-center',
+                    column.align === 'right' && 'justify-end'
+                  )}>
                     <span className="whitespace-nowrap">{column.title}</span>
                     {/* 排序图标 */}
                     {column.sortable && (
@@ -360,7 +369,12 @@ function AdminTable<T extends Record<string, any>>({
                     {columns.map(column => (
                       <td
                         key={String(column.key)}
-                        className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap"
+                        className={cn(
+                          'px-4 py-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap',
+                          column.align === 'center' && 'text-center',
+                          column.align === 'right' && 'text-right',
+                          !column.align && 'text-left'
+                        )}
                       >
                         {column.render
                           ? column.render(getCellValue(record, column.key), record, index)

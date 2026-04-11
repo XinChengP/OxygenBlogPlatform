@@ -615,6 +615,14 @@ export async function copyToClipboard(text: string): Promise<boolean> {
 }
 
 /**
+ * 时间统计项接口
+ */
+export interface TimeStatItem {
+  label: string;
+  count: number;
+}
+
+/**
  * 仪表盘统计数据接口
  */
 export interface DashboardStats {
@@ -644,6 +652,18 @@ export interface DashboardStats {
   momentWordCount: number
   /** 日志总字数 */
   changelogWordCount: number
+  /** 文章时间统计（月/季/年） */
+  blogTimeStats: {
+    month: TimeStatItem[];
+    quarter: TimeStatItem[];
+    year: TimeStatItem[];
+  }
+  /** 动态时间统计（月/季/年） */
+  momentTimeStats: {
+    month: TimeStatItem[];
+    quarter: TimeStatItem[];
+    year: TimeStatItem[];
+  }
 }
 
 /**
@@ -909,6 +929,130 @@ function advancedWordCount(text: string): { totalWords: number } {
 }
 
 /**
+ * 获取文章/动态的月份统计
+ * @param dates 日期数组
+ * @returns 月份统计数组
+ */
+function getMonthStatsFromDates(dates: string[]): TimeStatItem[] {
+  const stats: Record<string, number> = {};
+
+  dates.forEach(dateStr => {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return;
+    
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const label = `${year}年${month}月`;
+    stats[label] = (stats[label] || 0) + 1;
+  });
+
+  return Object.entries(stats)
+    .map(([label, count]) => ({ label, count }))
+    .sort((a, b) => {
+      const yearMatchA = a.label.match(/(\d{4})年/);
+      const monthMatchA = a.label.match(/年(\d+)月/);
+      const yearMatchB = b.label.match(/(\d{4})年/);
+      const monthMatchB = b.label.match(/年(\d+)月/);
+      
+      const yearA = yearMatchA ? parseInt(yearMatchA[1]) : 0;
+      const monthA = monthMatchA ? parseInt(monthMatchA[1]) : 0;
+      const yearB = yearMatchB ? parseInt(yearMatchB[1]) : 0;
+      const monthB = monthMatchB ? parseInt(monthMatchB[1]) : 0;
+
+      if (yearA !== yearB) {
+        return yearA - yearB;
+      }
+      return monthA - monthB;
+    });
+}
+
+/**
+ * 获取文章/动态的季度统计（春夏秋冬）
+ * @param dates 日期数组
+ * @returns 季度统计数组
+ */
+function getQuarterStatsFromDates(dates: string[]): TimeStatItem[] {
+  const stats: Record<string, number> = {};
+
+  dates.forEach(dateStr => {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return;
+    
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    
+    let season: string;
+    let seasonYear = year;
+    
+    if (month >= 3 && month <= 5) {
+      season = '春';
+    } else if (month >= 6 && month <= 8) {
+      season = '夏';
+    } else if (month >= 9 && month <= 11) {
+      season = '秋';
+    } else {
+      season = '冬';
+      if (month === 1 || month === 2) {
+        seasonYear = year - 1;
+      }
+    }
+    
+    const label = `${seasonYear}年${season}`;
+    stats[label] = (stats[label] || 0) + 1;
+  });
+
+  return Object.entries(stats)
+    .map(([label, count]) => ({ label, count }))
+    .sort((a, b) => {
+      const yearMatchA = a.label.match(/(\d{4})年/);
+      const yearMatchB = b.label.match(/(\d{4})年/);
+      
+      const yearA = yearMatchA ? parseInt(yearMatchA[1]) : 0;
+      const yearB = yearMatchB ? parseInt(yearMatchB[1]) : 0;
+      
+      if (yearA !== yearB) {
+        return yearA - yearB;
+      }
+      
+      const seasonOrder: Record<string, number> = { '春': 1, '夏': 2, '秋': 3, '冬': 4 };
+      const seasonA = a.label.slice(-1);
+      const seasonB = b.label.slice(-1);
+      
+      return (seasonOrder[seasonA] || 0) - (seasonOrder[seasonB] || 0);
+    });
+}
+
+/**
+ * 获取文章/动态的年度统计
+ * @param dates 日期数组
+ * @returns 年度统计数组
+ */
+function getYearStatsFromDates(dates: string[]): TimeStatItem[] {
+  const stats: Record<string, number> = {};
+
+  dates.forEach(dateStr => {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return;
+    
+    const year = date.getFullYear();
+    const label = `${year}年`;
+    stats[label] = (stats[label] || 0) + 1;
+  });
+
+  return Object.entries(stats)
+    .map(([label, count]) => ({ label, count }))
+    .sort((a, b) => {
+      const yearMatchA = a.label.match(/(\d{4})年/);
+      const yearMatchB = b.label.match(/(\d{4})年/);
+      
+      const yearA = yearMatchA ? parseInt(yearMatchA[1]) : 0;
+      const yearB = yearMatchB ? parseInt(yearMatchB[1]) : 0;
+      
+      return yearA - yearB;
+    });
+}
+
+/**
  * 服务器端：获取仪表盘统计数据
  * @returns 统计数据对象
  */
@@ -928,6 +1072,8 @@ export function getDashboardStats(): DashboardStats {
       blogWordCount: 0,
       momentWordCount: 0,
       changelogWordCount: 0,
+      blogTimeStats: { month: [], quarter: [], year: [] },
+      momentTimeStats: { month: [], quarter: [], year: [] },
     }
 
   // 检查是否在服务器端
@@ -946,6 +1092,7 @@ export function getDashboardStats(): DashboardStats {
     let blogWordCount = 0
     const categoryMap = new Map<string, number>()
     const tagMap = new Map<string, number>()
+    const blogDates: string[] = []  // 收集文章日期用于时间统计
 
     if (fs.existsSync(blogsDir) && fs.statSync(blogsDir).isDirectory()) {
       const blogFiles = fs.readdirSync(blogsDir).filter((file: string) => file.endsWith('.md'))
@@ -968,11 +1115,19 @@ export function getDashboardStats(): DashboardStats {
 
         // 简单提取日期字段
         const dateMatch = content.match(/date:\s*["']?(\d{4}-\d{2}-\d{2})/)
-        if (dateMatch) {
-          const date = new Date(dateMatch[1])
-          if (date.getMonth() === currentMonth && date.getFullYear() === currentYear) {
+        const titleMatch = content.match(/title:\s*["']?([^"'\n]+)/)
+        const date = dateMatch ? dateMatch[1] : ''
+        let title = titleMatch ? titleMatch[1].trim() : file.replace('.md', '')
+        // 移除标题末尾的引号
+        title = title.replace(/["']$/, '')
+        
+        if (date) {
+          const dateObj = new Date(date)
+          if (dateObj.getMonth() === currentMonth && dateObj.getFullYear() === currentYear) {
             monthlyBlogCount++
           }
+          // 收集文章日期
+          blogDates.push(date)
         }
 
         // 提取分类
@@ -1000,6 +1155,7 @@ export function getDashboardStats(): DashboardStats {
     const momentsDir = path.join(process.cwd(), 'src', 'content', 'moments')
     let momentCount = 0
     let momentWordCount = 0
+    const momentDates: string[] = []  // 收集动态日期用于时间统计
 
     if (fs.existsSync(momentsDir) && fs.statSync(momentsDir).isDirectory()) {
       const momentFiles = fs.readdirSync(momentsDir).filter((file: string) => file.endsWith('.md'))
@@ -1016,6 +1172,20 @@ export function getDashboardStats(): DashboardStats {
         // 统计动态字数
         const wordCount = advancedWordCount(body)
         momentWordCount += wordCount.totalWords
+
+        // 提取时间和内容
+        const timeMatch = content.match(/time:\s*["']?([^"'\n]+)/)
+        let time = timeMatch ? timeMatch[1] : ''
+        // 移除时间末尾的引号
+        time = time.replace(/["']$/, '')
+        
+        if (time) {
+          // 收集动态日期（只取日期部分 YYYY-MM-DD）
+          const dateMatch = time.match(/(\d{4}-\d{2}-\d{2})/)
+          if (dateMatch) {
+            momentDates.push(dateMatch[1])
+          }
+        }
       })
     }
 
@@ -1027,7 +1197,7 @@ export function getDashboardStats(): DashboardStats {
 
     if (fs.existsSync(changelogsDir) && fs.statSync(changelogsDir).isDirectory()) {
       const changelogFiles = fs.readdirSync(changelogsDir).filter((file: string) => file.endsWith('.md'))
-      changelogCount = changelogFiles.length
+      changelogCount = changelogFiles.length + 1  // 显示数量 = 实际文件数量 + 1
 
       // 遍历所有日志文件
       changelogFiles.forEach((file: string) => {
@@ -1123,7 +1293,20 @@ export function getDashboardStats(): DashboardStats {
       .sort((a, b) => b.count - a.count)
       .slice(0, 10) // 只取前10个
 
-    return {
+    // 计算文章和动态的时间统计
+    const blogTimeStats = {
+      month: getMonthStatsFromDates(blogDates),
+      quarter: getQuarterStatsFromDates(blogDates),
+      year: getYearStatsFromDates(blogDates),
+    }
+
+    const momentTimeStats = {
+      month: getMonthStatsFromDates(momentDates),
+      quarter: getQuarterStatsFromDates(momentDates),
+      year: getYearStatsFromDates(momentDates),
+    }
+
+    const result = {
       blogCount,
       momentCount,
       imageCount,
@@ -1137,7 +1320,11 @@ export function getDashboardStats(): DashboardStats {
       blogWordCount,
       momentWordCount,
       changelogWordCount,
-    }
+      blogTimeStats,
+      momentTimeStats,
+    };
+
+    return result;
   } catch (error) {
     console.error('获取仪表盘统计数据失败:', error)
     return defaultStats

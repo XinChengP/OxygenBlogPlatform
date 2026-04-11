@@ -31,6 +31,7 @@ import type { DashboardStats } from '@/utils/adminUtils';
 import { Changelog, ChangelogType, getTypeStats, getChangelogTypeLabel, getMonthStats, getQuarterStats, getYearStats } from '@/types/changelogTypes';
 import { PieChart, Pie, Cell, Tooltip as ReTooltip, ResponsiveContainer, Sector, LineChart, Line, XAxis, YAxis, CartesianGrid, Legend, AreaChart, Area } from 'recharts';
 import { themeColors } from '@/setting/WebSetting';
+import TimeStatsChart from '@/components/changelogs/TimeStatsChart';
 
 /**
  * 仪表盘客户端组件属性接口
@@ -345,16 +346,11 @@ const CategoryPieChart: React.FC<CategoryPieChartProps> = ({
 
       {/* 卡片头部 */}
       <div className="flex justify-between items-center mb-4 pb-3 border-b border-border/30">
-        <h3 className="text-base font-bold flex items-center gap-2 text-[#66ccff]">
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          >
-            <svg className="w-5 h-5 text-[#66ccff]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
-            </svg>
-          </motion.div>
+        <h3 className="text-base font-bold flex items-center gap-2">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+          </svg>
           博客文章分类分布
         </h3>
         {sortedData.length > 0 && (
@@ -588,47 +584,125 @@ const TagCloud: React.FC<TagCloudProps> = ({ tags, selectedTag, onSelect }) => {
   if (tags.length === 0) {
     return (
       <div className="text-center text-gray-400 dark:text-gray-500 py-8">
-        <Tag className="w-8 h-8 mx-auto mb-2 opacity-50" />
-        <p className="text-sm">暂无标签数据</p>
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-gradient-to-br from-[#66ccff]/20 to-[#ff6680]/20 flex items-center justify-center">
+            <Tag className="w-8 h-8 text-[#66ccff]/60" />
+          </div>
+          <p className="text-sm">暂无标签数据</p>
+        </motion.div>
       </div>
     );
   }
 
   const maxCount = Math.max(...tags.map(t => t.count));
+  const minCount = Math.min(...tags.map(t => t.count));
+  
+  // 根据权重计算字体大小 (1-9 范围)
+  const getFontSize = (count: number) => {
+    if (maxCount === minCount) return 5;
+    const weight = Math.round(((count - minCount) / (maxCount - minCount)) * 8) + 1;
+    return weight;
+  };
+  
+  // 标签颜色数组
+  const tagColors = [
+    { normal: '#3498db', hover: '#5dade2' },
+    { normal: '#4d34db', hover: '#6d5ae2' },
+    { normal: '#cb34db', hover: '#d65ae2' },
+    { normal: '#db346e', hover: '#e25a8e' },
+    { normal: '#db7734', hover: '#e2955a' },
+    { normal: '#c2db34', hover: '#d1e25a' },
+    { normal: '#45db34', hover: '#6ae25a' },
+    { normal: '#34dba1', hover: '#5ae2b5' },
+  ];
   
   return (
-    <div className="flex flex-wrap gap-2">
-      {tags.slice(0, 20).map((tag, index) => {
-        const size = maxCount > 0 ? 0.75 + (tag.count / maxCount) * 0.5 : 1;
+    <ul 
+      className="cloud list-none p-0 flex flex-wrap items-center justify-center leading-[2.5rem]"
+      role="navigation" 
+      aria-label="热门标签云"
+    >
+      {tags.slice(0, 25).map((tag, index) => {
+        const weight = getFontSize(tag.count);
         const isSelected = selectedTag === tag.name;
+        const color = tagColors[index % tagColors.length];
         
         return (
-          <motion.button
+          <motion.li
             key={tag.name}
-            initial={{ opacity: 0, scale: 0.8 }}
+            initial={{ opacity: 0, scale: 0.5 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: index * 0.03 }}
-            onClick={() => onSelect(isSelected ? null : tag.name)}
-            className={cn(
-              'inline-flex items-center px-3 py-1.5 rounded-full text-sm',
-              'transition-all duration-300',
-              isSelected
-                ? 'bg-[#66ccff] text-white shadow-lg shadow-[#66ccff]/30'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-[#66ccff]/10 hover:text-[#66ccff]'
-            )}
-            style={{ fontSize: `${size}rem` }}
+            transition={{ 
+              delay: index * 0.03,
+              type: "spring",
+              stiffness: 200,
+              damping: 15
+            }}
+            className="inline-block mx-1"
           >
-            {tag.name}
-            <span className={cn(
-              'ml-1.5 text-xs',
-              isSelected ? 'text-white/80' : 'text-gray-400'
-            )}>
-              {tag.count}
-            </span>
-          </motion.button>
+            <motion.button
+              data-weight={weight}
+              onClick={() => onSelect(isSelected ? null : tag.name)}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              className={cn(
+                'relative inline-block px-2 py-1 no-underline transition-all duration-300',
+                'rounded-lg hover:rounded-xl',
+                isSelected && 'bg-[#66ccff]/10'
+              )}
+              style={{
+                fontSize: `${0.6 + weight * 0.15}rem`,
+                color: isSelected ? '#66ccff' : color.normal,
+              }}
+              onMouseEnter={(e) => {
+                if (!isSelected) {
+                  e.currentTarget.style.color = color.hover;
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isSelected) {
+                  e.currentTarget.style.color = color.normal;
+                }
+              }}
+            >
+              {/* 标签文字 */}
+              <span className="relative z-10 font-medium">{tag.name}</span>
+              
+              {/* 权重显示（小数字） */}
+              <sup 
+                className={cn(
+                  'ml-0.5 text-[0.5em] opacity-60',
+                  isSelected && 'text-[#66ccff]'
+                )}
+              >
+                {tag.count}
+              </sup>
+              
+              {/* 选中指示器 */}
+              {isSelected && (
+                <motion.div
+                  layoutId="selectedTag"
+                  className="absolute inset-0 border-2 border-[#66ccff] rounded-lg -z-10"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.2 }}
+                />
+              )}
+              
+              {/* 悬停背景 */}
+              <div 
+                className="absolute inset-0 rounded-lg opacity-0 hover:opacity-100 transition-opacity duration-300 -z-10"
+                style={{ backgroundColor: `${color.normal}15` }}
+              />
+            </motion.button>
+          </motion.li>
         );
       })}
-    </div>
+    </ul>
   );
 };
 
@@ -919,16 +993,11 @@ const TypeStatsChart: React.FC<{ changelogs: Changelog[] }> = ({ changelogs }) =
 
       {/* 卡片头部 */}
       <div className="flex justify-between items-center mb-4 pb-3 border-b border-border/30">
-        <h3 className="text-base font-bold flex items-center gap-2 text-[#66ccff]">
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          >
-            <svg className="w-5 h-5 text-[#66ccff]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
-            </svg>
-          </motion.div>
+        <h3 className="text-base font-bold flex items-center gap-2">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+          </svg>
           日志类型分布
         </h3>
         {sortedData.length > 0 && (
@@ -1083,304 +1152,6 @@ const TypeStatsChart: React.FC<{ changelogs: Changelog[] }> = ({ changelogs }) =
           </div>
         </motion.div>
       )}
-    </motion.div>
-  );
-};
-
-/**
- * 统计模式类型
- */
-type StatMode = 'month' | 'quarter' | 'year';
-
-/**
- * 时间统计图表组件
- * 使用折线图展示不同时间段的更新数量
- */
-const TimeStatsChart: React.FC<{ changelogs: Changelog[] }> = ({ changelogs }) => {
-  // 当前选中的统计模式
-  const [mode, setMode] = useState<StatMode>('month');
-  const [chartType, setChartType] = useState<'line' | 'area'>('area');
-
-  // 根据模式获取统计数据
-  const getStatsData = () => {
-    switch (mode) {
-      case 'month':
-        return getMonthStats(changelogs);
-      case 'quarter':
-        return getQuarterStats(changelogs);
-      case 'year':
-        return getYearStats(changelogs);
-      default:
-        return [];
-    }
-  };
-
-  const data = getStatsData();
-
-  // 按时间排序（从早到晚）
-  const sortedData = [...data].sort((a, b) => {
-    // 提取年份（更精确的匹配）
-    const yearMatchA = a.label.match(/(\d{4})/);
-    const yearMatchB = b.label.match(/(\d{4})/);
-    const yearA = yearMatchA ? parseInt(yearMatchA[1]) : 0;
-    const yearB = yearMatchB ? parseInt(yearMatchB[1]) : 0;
-
-    if (yearA !== yearB) {
-      return yearA - yearB;
-    }
-
-    if (mode === 'month') {
-      const monthMatchA = a.label.match(/(\d+)月/);
-      const monthMatchB = b.label.match(/(\d+)月/);
-      const monthA = monthMatchA ? parseInt(monthMatchA[1]) : 0;
-      const monthB = monthMatchB ? parseInt(monthMatchB[1]) : 0;
-      return monthA - monthB;
-    } else if (mode === 'quarter') {
-      const quarterMatchA = a.label.match(/Q(\d+)/);
-      const quarterMatchB = b.label.match(/Q(\d+)/);
-      const quarterA = quarterMatchA ? parseInt(quarterMatchA[1]) : 0;
-      const quarterB = quarterMatchB ? parseInt(quarterMatchB[1]) : 0;
-      return quarterA - quarterB;
-    }
-
-    return 0;
-  });
-
-  // 模式按钮配置
-  const modeButtons: { value: StatMode; label: string }[] = [
-    { value: 'month', label: '月' },
-    { value: 'quarter', label: '季' },
-    { value: 'year', label: '年' },
-  ];
-
-  return (
-    <motion.div
-      className="p-4 rounded-xl border transition-all duration-500 backdrop-blur-md bg-card/90 border-border shadow-lg supports-[backdrop-filter]:bg-card/75 hover:shadow-xl relative overflow-hidden"
-      variants={chartContainerVariants}
-      initial="hidden"
-      animate="visible"
-    >
-      {/* 卡片头部 */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 pb-3 border-b border-border/30">
-        <h3 className="text-base font-bold flex items-center gap-2 text-[#66ccff] mb-2 sm:mb-0 whitespace-nowrap">
-          <motion.div
-            animate={{ rotate: [0, 5, -5, 0] }}
-            transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-          >
-            <svg className="w-5 h-5 text-[#66ccff] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
-            </svg>
-          </motion.div>
-          日志时间趋势
-        </h3>
-
-        <div className="flex items-center gap-3">
-          {/* 图表类型切换 */}
-          <button
-            onClick={() => setChartType(chartType === 'line' ? 'area' : 'line')}
-            className="p-1.5 rounded-lg bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground transition-all"
-            title={chartType === 'line' ? '切换为面积图' : '切换为折线图'}
-          >
-            {chartType === 'line' ? (
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            ) : (
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-            )}
-          </button>
-
-          {/* 模式切换按钮 */}
-          <div className="flex gap-1 bg-muted/30 p-1 rounded-lg">
-            {modeButtons.map((btn) => (
-              <motion.button
-                key={btn.value}
-                onClick={() => setMode(btn.value)}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className={`text-xs px-3 py-1 rounded-md transition-all font-medium ${
-                  mode === btn.value
-                    ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                }`}
-              >
-                {btn.label}
-              </motion.button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* 图表区域 */}
-      <div className="w-full flex justify-center" style={{ height: '280px' }}>
-        <div className="w-full max-w-lg">
-          {sortedData.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
-              {chartType === 'area' ? (
-                <AreaChart
-                  data={sortedData}
-                  margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-                >
-                <defs>
-                  {/* 天依蓝三层渐变背景 */}
-                  <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={themeColors.primary} stopOpacity={0.5} />
-                    <stop offset="50%" stopColor={themeColors.accent} stopOpacity={0.25} />
-                    <stop offset="100%" stopColor={themeColors.secondary} stopOpacity={0.08} />
-                  </linearGradient>
-                  {/* 天依蓝到青色渐变描边 */}
-                  <linearGradient id="strokeGradient" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stopColor={themeColors.primary} />
-                    <stop offset="50%" stopColor={themeColors.accent} />
-                    <stop offset="100%" stopColor={themeColors.primary} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="5 5" stroke="hsl(var(--border))" opacity={0.15} vertical={false} />
-                <XAxis
-                  dataKey="label"
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                  tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(value) => {
-                    if (mode === 'month') {
-                      return value.replace('年', '-').replace('月', '');
-                    } else if (mode === 'quarter') {
-                      // 格式：2025年春 → 2025-春
-                      return value.replace('年', '-');
-                    }
-                    return value;
-                  }}
-                />
-                <YAxis
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                  tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                  tickLine={false}
-                  axisLine={false}
-                  allowDecimals={false}
-                />
-                <ReTooltip
-                  contentStyle={{
-                    backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '12px',
-                    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
-                  }}
-                  itemStyle={{
-                    color: 'hsl(var(--foreground))',
-                    fontWeight: 600,
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="count"
-                  name="更新数量"
-                  stroke="url(#strokeGradient)"
-                  strokeWidth={4}
-                  fill="url(#colorCount)"
-                  dot={{
-                    fill: themeColors.primary,
-                    strokeWidth: 3,
-                    r: 5,
-                    stroke: 'hsl(var(--background))',
-                    fillOpacity: 1,
-                  }}
-                  activeDot={{ 
-                    r: 9, 
-                    stroke: 'hsl(var(--background))', 
-                    strokeWidth: 4,
-                    fill: themeColors.primary,
-                  }}
-                />
-              </AreaChart>
-            ) : (
-              <LineChart
-                data={sortedData}
-                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-              >
-                <defs>
-                  {/* 天依蓝到青色渐变描边 */}
-                  <linearGradient id="strokeGradient" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stopColor={themeColors.primary} />
-                    <stop offset="50%" stopColor={themeColors.accent} />
-                    <stop offset="100%" stopColor={themeColors.primary} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="5 5" stroke="hsl(var(--border))" opacity={0.15} vertical={false} />
-                <XAxis
-                  dataKey="label"
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                  tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(value) => {
-                    if (mode === 'month') {
-                      return value.replace('年', '-').replace('月', '');
-                    } else if (mode === 'quarter') {
-                      // 格式：2025年春 → 2025-春
-                      return value.replace('年', '-');
-                    }
-                    return value;
-                  }}
-                />
-                <YAxis
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                  tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                  tickLine={false}
-                  axisLine={false}
-                  allowDecimals={false}
-                />
-                <ReTooltip
-                  contentStyle={{
-                    backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '12px',
-                    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
-                  }}
-                  itemStyle={{
-                    color: 'hsl(var(--foreground))',
-                    fontWeight: 600,
-                  }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="count"
-                  name="更新数量"
-                  stroke="url(#strokeGradient)"
-                  strokeWidth={4}
-                  dot={{
-                    fill: themeColors.primary,
-                    strokeWidth: 3,
-                    r: 5,
-                    stroke: 'hsl(var(--background))',
-                    fillOpacity: 1,
-                  }}
-                  activeDot={{ 
-                    r: 9, 
-                    stroke: 'hsl(var(--background))', 
-                    strokeWidth: 4,
-                    fill: themeColors.primary,
-                  }}
-                />
-              </LineChart>
-            )}
-          </ResponsiveContainer>
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-            <svg className="w-12 h-12 mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-            <span className="text-sm">暂无数据</span>
-          </div>
-        )}
-        </div>
-      </div>
     </motion.div>
   );
 };
@@ -1546,44 +1317,14 @@ const DashboardClient: React.FC<DashboardClientProps> = ({ stats }) => {
             </div>
           </motion.div>
 
-          {/* 第三模块：待办进度 - 悬浮卡片 */}
-          {stats.todoCount > 0 && (
-            <motion.div variants={itemVariants}>
-              <AdminCard title="待办进度">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-6">
-                    <CircularProgress
-                      value={stats.todoCompletedCount}
-                      max={stats.todoCount}
-                      color="#66ccff"
-                    />
-                    <div>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                        {stats.todoCompletedCount}/{stats.todoCount}
-                      </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        待办事项完成进度
-                      </p>
-                      <Link 
-                        href="/admin/todo"
-                        className="inline-flex items-center mt-2 text-sm text-[#66ccff] hover:underline"
-                      >
-                        查看待办列表
-                        <ArrowRight className="w-4 h-4 ml-1" />
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              </AdminCard>
-            </motion.div>
-          )}
-
-          {/* 第四模块：更新日志时间趋势 - 100%复制的面积图 */}
-          {changelogsData.length > 0 && (
-            <motion.div variants={itemVariants}>
-              <TimeStatsChart changelogs={changelogsData} />
-            </motion.div>
-          )}
+          {/* 第三模块：内容发布趋势 - 显示文章、动态和日志的时间趋势 */}
+          <motion.div variants={itemVariants}>
+            <TimeStatsChart 
+              changelogs={changelogsData} 
+              blogTimeStats={stats.blogTimeStats}
+              momentTimeStats={stats.momentTimeStats}
+            />
+          </motion.div>
         </div>
 
         {/* 右侧副栏：辅助信息与快捷功能（占4份，约33%） */}
@@ -1647,11 +1388,11 @@ const DashboardClient: React.FC<DashboardClientProps> = ({ stats }) => {
                   iconColor="text-lime-500"
                   delay={3}
                 />
-                {/* 第三行：更新日志 + 日志字数 */}
-                <TrendCard
-                  icon={History}
+                {/* 第三行：日志总数 + 日志字数 */}
+                <StatOverviewCard
+                  icon={ScrollText}
                   value={stats.changelogCount}
-                  label="更新日志"
+                  label="日志总数"
                   gradient="bg-pink-100 dark:bg-pink-900/30"
                   iconColor="text-pink-500"
                   delay={4}
@@ -1702,7 +1443,39 @@ const DashboardClient: React.FC<DashboardClientProps> = ({ stats }) => {
             </AdminCard>
           </motion.div>
 
-          {/* 第三模块：快速入口/常用工具 */}
+          {/* 第三模块：待办进度 - 进度卡片 */}
+          {stats.todoCount > 0 && (
+            <motion.div variants={itemVariants}>
+              <AdminCard title="待办进度">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-6">
+                    <CircularProgress
+                      value={stats.todoCompletedCount}
+                      max={stats.todoCount}
+                      color="#66ccff"
+                    />
+                    <div>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                        {stats.todoCompletedCount}/{stats.todoCount}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        待办事项完成进度
+                      </p>
+                      <Link 
+                        href="/admin/todo"
+                        className="inline-flex items-center mt-2 text-sm text-[#66ccff] hover:underline"
+                      >
+                        查看待办列表
+                        <ArrowRight className="w-4 h-4 ml-1" />
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </AdminCard>
+            </motion.div>
+          )}
+
+          {/* 第四模块：快速入口/常用工具 */}
           <motion.div variants={itemVariants}>
             <AdminCard title="快速入口">
               <div className="space-y-2">
@@ -1725,14 +1498,6 @@ const DashboardClient: React.FC<DashboardClientProps> = ({ stats }) => {
               </div>
             </AdminCard>
           </motion.div>
-
-          {/* 底部：版权信息 */}
-          <motion.p 
-            variants={itemVariants}
-            className="text-center text-xs text-gray-400 dark:text-gray-500 pt-4"
-          >
-            © 2026 洛天依主题博客 · 管理后台
-          </motion.p>
         </div>
       </div>
     </motion.div>

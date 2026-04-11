@@ -2,7 +2,7 @@
 
 /**
  * Admin备份管理组件
- * 提供本地Git备份功能的管理界面
+ * 提供本地Git备份功能的管理界面，支持推送到远程仓库
  */
 
 import React, { useState, useEffect } from 'react';
@@ -19,13 +19,25 @@ import {
   FolderOpen,
   GitBranch,
   FileText,
+  Cloud,
+  Settings,
+  Link,
+  Globe,
+  Key,
+  GitCommit,
+  ArrowUp,
 } from 'lucide-react';
 import {
   performBackup,
   getBackupStatus,
   getBackupHistory,
   restoreBackup,
+  pushToRemote,
+  configureRemote,
+  getRemoteInfo,
+  testRemoteConnection,
   type BackupHistory,
+  type PushConfig,
 } from '@/actions/backupActions';
 import { toast } from '@/components/admin';
 
@@ -41,6 +53,17 @@ interface BackupStatus {
   lastBackup: string;
   trackedFiles: number;
   isGitRepo: boolean;
+  hasRemote: boolean;
+  remoteUrl: string;
+}
+
+/**
+ * 远程仓库信息接口
+ */
+interface RemoteInfo {
+  remoteUrl: string;
+  branch: string;
+  ahead: number;
 }
 
 /**
@@ -51,12 +74,31 @@ export default function BackupManager({ className = '' }: BackupManagerProps) {
   const [isRestoring, setIsRestoring] = useState(false);
   const [status, setStatus] = useState<BackupStatus | null>(null);
   const [history, setHistory] = useState<BackupHistory[]>([]);
-  const [activeTab, setActiveTab] = useState<'backup' | 'history' | 'restore'>('backup');
+  const [activeTab, setActiveTab] = useState<'backup' | 'history' | 'restore' | 'push'>('backup');
+
+  // 远程仓库相关状态
+  const [remoteInfo, setRemoteInfo] = useState<RemoteInfo | null>(null);
+  const [isPushing, setIsPushing] = useState(false);
+  const [isTestingConnection, setIsTestingConnection] = useState(false);
+  const [isConfiguring, setIsConfiguring] = useState(false);
+  const [showPushConfig, setShowPushConfig] = useState(false);
+  const [pushConfig, setPushConfig] = useState<PushConfig>({
+    remoteUrl: '',
+    branch: 'main',
+    token: '',
+  });
 
   // 加载备份状态
   useEffect(() => {
     loadStatus();
   }, []);
+
+  // 当切换到推送标签时加载远程信息
+  useEffect(() => {
+    if (activeTab === 'push') {
+      loadRemoteInfo();
+    }
+  }, [activeTab]);
 
   /**
    * 加载备份状态
@@ -70,10 +112,38 @@ export default function BackupManager({ className = '' }: BackupManagerProps) {
           lastBackup: result.lastBackup || '',
           trackedFiles: result.trackedFiles || 0,
           isGitRepo: result.totalCommits !== undefined,
+          hasRemote: result.hasRemote || false,
+          remoteUrl: result.remoteUrl || '',
         });
       }
     } catch (error) {
       console.error('加载备份状态失败:', error);
+    }
+  };
+
+  /**
+   * 加载远程仓库信息
+   */
+  const loadRemoteInfo = async () => {
+    try {
+      const result = await getRemoteInfo();
+      if (result.success) {
+        setRemoteInfo({
+          remoteUrl: result.remoteUrl || '',
+          branch: result.branch || 'main',
+          ahead: result.ahead || 0,
+        });
+        // 如果已配置远程仓库，更新表单
+        if (result.remoteUrl) {
+          setPushConfig(prev => ({
+            ...prev,
+            remoteUrl: result.remoteUrl?.replace(/https:\/\/\*\*\*@/, 'https://') || '',
+            branch: result.branch || 'main',
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('加载远程信息失败:', error);
     }
   };
 
@@ -140,10 +210,95 @@ export default function BackupManager({ className = '' }: BackupManagerProps) {
   /**
    * 切换标签页
    */
-  const handleTabChange = (tab: 'backup' | 'history' | 'restore') => {
+  const handleTabChange = (tab: 'backup' | 'history' | 'restore' | 'push') => {
     setActiveTab(tab);
     if (tab === 'history' && history.length === 0) {
       loadHistory();
+    }
+  };
+
+  /**
+   * 测试远程仓库连接
+   */
+  const handleTestConnection = async () => {
+    if (!pushConfig.remoteUrl) {
+      toast.error('请输入远程仓库地址');
+      return;
+    }
+
+    setIsTestingConnection(true);
+    try {
+      const result = await testRemoteConnection(pushConfig);
+      if (result.success) {
+        toast.success(result.message);
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error) {
+      console.error('测试连接失败:', error);
+      toast.error('测试连接失败');
+    } finally {
+      setIsTestingConnection(false);
+    }
+  };
+
+  /**
+   * 配置远程仓库
+   */
+  const handleConfigureRemote = async () => {
+    if (!pushConfig.remoteUrl) {
+      toast.error('请输入远程仓库地址');
+      return;
+    }
+
+    setIsConfiguring(true);
+    try {
+      const result = await configureRemote(pushConfig);
+      if (result.success) {
+        toast.success(result.message);
+        await loadStatus();
+        await loadRemoteInfo();
+        setShowPushConfig(false);
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error) {
+      console.error('配置远程仓库失败:', error);
+      toast.error('配置远程仓库失败');
+    } finally {
+      setIsConfiguring(false);
+    }
+  };
+
+  /**
+   * 推送到远程仓库
+   */
+  const handlePush = async () => {
+    // 如果没有配置远程仓库，显示配置面板
+    if (!status?.hasRemote) {
+      setShowPushConfig(true);
+      return;
+    }
+
+    setIsPushing(true);
+    try {
+      const result = await pushToRemote();
+      if (result.success) {
+        toast.success(result.message);
+        await loadRemoteInfo();
+      } else {
+        // 如果推送失败且提示未配置远程仓库，显示配置面板
+        if (result.message.includes('未配置远程仓库')) {
+          setShowPushConfig(true);
+        } else {
+          toast.error(result.message);
+        }
+      }
+    } catch (error) {
+      console.error('推送失败:', error);
+      toast.error('推送失败');
+    } finally {
+      setIsPushing(false);
     }
   };
 
@@ -181,7 +336,7 @@ export default function BackupManager({ className = '' }: BackupManagerProps) {
 
       {/* 状态卡片 */}
       {status && (
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -227,15 +382,33 @@ export default function BackupManager({ className = '' }: BackupManagerProps) {
               </div>
             </div>
           </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className={`rounded-xl p-4 border ${status.hasRemote ? 'bg-gradient-to-br from-cyan-500/20 to-cyan-600/20 border-cyan-500/30' : 'bg-gradient-to-br from-gray-500/10 to-gray-600/10 border-gray-500/20'}`}
+          >
+            <div className="flex items-center gap-3">
+              <Cloud className={`w-8 h-8 ${status.hasRemote ? 'text-cyan-400' : 'text-gray-400'}`} />
+              <div>
+                <div className="text-sm font-bold truncate max-w-[120px]">
+                  {status.hasRemote ? '已配置' : '未配置'}
+                </div>
+                <div className="text-xs opacity-70">远程仓库</div>
+              </div>
+            </div>
+          </motion.div>
         </div>
       )}
 
       {/* 标签页 */}
-      <div className="flex gap-2 mb-4">
+      <div className="flex flex-wrap gap-2 mb-4">
         {[
           { id: 'backup', label: '立即备份', icon: Upload },
           { id: 'history', label: '备份历史', icon: History },
           { id: 'restore', label: '版本恢复', icon: RotateCcw },
+          { id: 'push', label: '推送远程', icon: Cloud },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -410,6 +583,215 @@ export default function BackupManager({ className = '' }: BackupManagerProps) {
                     </button>
                   </div>
                 ))}
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {/* 推送远程 */}
+        {activeTab === 'push' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="space-y-4"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium">推送到远程仓库</h3>
+              {remoteInfo?.remoteUrl && (
+                <span className="text-xs px-2 py-1 bg-green-500/20 text-green-400 rounded-full">
+                  已连接
+                </span>
+              )}
+            </div>
+
+            {/* 远程仓库信息卡片 */}
+            {remoteInfo?.remoteUrl && (
+              <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-4 mb-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Globe className="w-5 h-5 text-cyan-400" />
+                  <span className="font-medium">远程仓库信息</span>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <Link className="w-4 h-4 text-cyan-400" />
+                    <span className="opacity-70">地址:</span>
+                    <code className="bg-black/20 px-2 py-0.5 rounded text-xs truncate max-w-[300px]">
+                      {remoteInfo.remoteUrl}
+                    </code>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <GitCommit className="w-4 h-4 text-cyan-400" />
+                    <span className="opacity-70">分支:</span>
+                    <span>{remoteInfo.branch || 'main'}</span>
+                  </div>
+                  {remoteInfo.ahead > 0 && (
+                    <div className="flex items-center gap-2">
+                      <ArrowUp className="w-4 h-4 text-cyan-400" />
+                      <span className="opacity-70">待推送:</span>
+                      <span className="text-cyan-400 font-medium">{remoteInfo.ahead} 个提交</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* 推送按钮区域 */}
+            {!showPushConfig ? (
+              <div className="text-center py-8">
+                <Cloud className="w-16 h-16 mx-auto mb-4 text-[#66ccff]" />
+                <h3 className="text-lg font-medium mb-2">
+                  {status?.hasRemote ? '推送到远程仓库' : '配置远程仓库'}
+                </h3>
+                <p className="text-sm opacity-70 mb-6 max-w-md mx-auto">
+                  {status?.hasRemote
+                    ? '将本地备份推送到已配置的远程仓库，实现云端同步和版本管理'
+                    : '配置远程仓库地址，将本地备份推送到GitHub等平台进行云端存储'}
+                </p>
+
+                <div className="flex justify-center gap-3">
+                  <button
+                    onClick={handlePush}
+                    disabled={isPushing}
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-[#66ccff] text-white rounded-lg hover:bg-[#66ccff]/90 transition-all disabled:opacity-50 shadow-lg"
+                  >
+                    {isPushing ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        推送中...
+                      </>
+                    ) : (
+                      <>
+                        <Cloud className="w-5 h-5" />
+                        {status?.hasRemote ? '立即推送' : '配置并推送'}
+                      </>
+                    )}
+                  </button>
+
+                  {status?.hasRemote && (
+                    <button
+                      onClick={() => setShowPushConfig(true)}
+                      className="inline-flex items-center gap-2 px-4 py-3 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-all"
+                    >
+                      <Settings className="w-5 h-5" />
+                      重新配置
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : (
+              /* 配置表单 */
+              <div className="space-y-4">
+                <div className="bg-gray-500/10 rounded-lg p-4 space-y-4">
+                  {/* 远程仓库地址 */}
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-medium mb-2">
+                      <Globe className="w-4 h-4" />
+                      远程仓库地址
+                    </label>
+                    <input
+                      type="text"
+                      value={pushConfig.remoteUrl}
+                      onChange={(e) => setPushConfig(prev => ({ ...prev, remoteUrl: e.target.value }))}
+                      placeholder="https://github.com/username/repo.git"
+                      className="w-full px-3 py-2 bg-white/5 border border-gray-300/20 rounded-lg focus:outline-none focus:border-[#66ccff] transition-colors text-sm"
+                    />
+                    <p className="text-xs opacity-50 mt-1">
+                      支持 GitHub、GitLab 等平台的 HTTPS 地址
+                    </p>
+                  </div>
+
+                  {/* 分支名 */}
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-medium mb-2">
+                      <GitBranch className="w-4 h-4" />
+                      分支名
+                    </label>
+                    <input
+                      type="text"
+                      value={pushConfig.branch}
+                      onChange={(e) => setPushConfig(prev => ({ ...prev, branch: e.target.value }))}
+                      placeholder="main"
+                      className="w-full px-3 py-2 bg-white/5 border border-gray-300/20 rounded-lg focus:outline-none focus:border-[#66ccff] transition-colors text-sm"
+                    />
+                  </div>
+
+                  {/* Token */}
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-medium mb-2">
+                      <Key className="w-4 h-4" />
+                      访问令牌 (Token)
+                    </label>
+                    <input
+                      type="password"
+                      value={pushConfig.token}
+                      onChange={(e) => setPushConfig(prev => ({ ...prev, token: e.target.value }))}
+                      placeholder="ghp_xxxxxxxxxxxx"
+                      className="w-full px-3 py-2 bg-white/5 border border-gray-300/20 rounded-lg focus:outline-none focus:border-[#66ccff] transition-colors text-sm"
+                    />
+                    <p className="text-xs opacity-50 mt-1">
+                      GitHub Personal Access Token，用于认证推送权限
+                    </p>
+                  </div>
+                </div>
+
+                {/* 操作按钮 */}
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    onClick={handleConfigureRemote}
+                    disabled={isConfiguring || !pushConfig.remoteUrl}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-[#66ccff] text-white rounded-lg hover:bg-[#66ccff]/90 transition-all disabled:opacity-50"
+                  >
+                    {isConfiguring ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        配置中...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4" />
+                        保存配置
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={handleTestConnection}
+                    disabled={isTestingConnection || !pushConfig.remoteUrl}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-all disabled:opacity-50"
+                  >
+                    {isTestingConnection ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        测试中...
+                      </>
+                    ) : (
+                      <>
+                        <Link className="w-4 h-4" />
+                        测试连接
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => setShowPushConfig(false)}
+                    className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300/30 rounded-lg hover:bg-white/5 transition-all"
+                  >
+                    <X className="w-4 h-4" />
+                    取消
+                  </button>
+                </div>
+
+                {/* 提示信息 */}
+                <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-yellow-400 mt-0.5" />
+                    <div className="text-xs opacity-80 space-y-1">
+                      <p>1. 在GitHub创建私有仓库，不要初始化（不勾选README）</p>
+                      <p>2. 生成Personal Access Token，勾选repo权限</p>
+                      <p>3. Token仅用于推送，不会被存储在代码中</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </motion.div>

@@ -6,10 +6,29 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Sector } from 'recha
 import { motion } from 'framer-motion';
 
 /**
+ * 时间统计项接口
+ */
+interface TimeStatItem {
+  label: string;
+  count: number;
+}
+
+/**
+ * 时间统计数据接口
+ */
+interface TimeStats {
+  month: TimeStatItem[];
+  quarter: TimeStatItem[];
+  year: TimeStatItem[];
+}
+
+/**
  * 类型统计环形图组件 Props
  */
 interface TypeStatsChartProps {
   changelogs: Changelog[];
+  blogTimeStats?: TimeStats;  // 文章时间统计（后台使用）
+  momentTimeStats?: TimeStats;  // 动态时间统计（后台使用）
 }
 
 /**

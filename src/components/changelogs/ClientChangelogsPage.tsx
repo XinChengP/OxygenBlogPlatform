@@ -11,10 +11,29 @@ import TimeStatsChart from './TimeStatsChart';
 import TypeStatsChart from './TypeStatsChart';
 
 /**
+ * 时间统计项接口
+ */
+interface TimeStatItem {
+  label: string;
+  count: number;
+}
+
+/**
+ * 时间统计数据接口
+ */
+interface TimeStats {
+  month: TimeStatItem[];
+  quarter: TimeStatItem[];
+  year: TimeStatItem[];
+}
+
+/**
  * 客户端开发日志页面组件的 Props 接口
  */
 interface ClientChangelogsPageProps {
   changelogs: Changelog[];
+  blogTimeStats?: TimeStats;
+  momentTimeStats?: TimeStats;
 }
 
 /**
@@ -22,7 +41,7 @@ interface ClientChangelogsPageProps {
  * 展示开发日志列表，支持展开/收起功能
  * 使用时间线样式展示日志
  */
-function ClientChangelogsPage({ changelogs }: ClientChangelogsPageProps) {
+function ClientChangelogsPage({ changelogs, blogTimeStats, momentTimeStats }: ClientChangelogsPageProps) {
   // 管理每个日志的展开/收起状态
   // key 为日志 id，value 为是否展开
   const [expandedLogs, setExpandedLogs] = useState<Record<string, boolean>>({});
@@ -184,8 +203,8 @@ function ClientChangelogsPage({ changelogs }: ClientChangelogsPageProps) {
           {/* 右侧：统计图表（固定 30% 宽度） */}
           <div className="w-full lg:w-[30%] flex-shrink-0 flex-grow-0">
             <div className="space-y-6 lg:sticky lg:top-24">
-              <TimeStatsChart changelogs={changelogs} />
-              <TypeStatsChart changelogs={changelogs} />
+              <TimeStatsChart changelogs={changelogs} blogTimeStats={blogTimeStats} momentTimeStats={momentTimeStats} />
+              <TypeStatsChart changelogs={changelogs} blogTimeStats={blogTimeStats} momentTimeStats={momentTimeStats} />
             </div>
           </div>
         </div>
