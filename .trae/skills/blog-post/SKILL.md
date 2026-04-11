@@ -24,6 +24,7 @@ category: "分类"
 tags: ["标签1", "标签2"]
 excerpt: "文章摘要"
 coverImage: "/Blogabout/xxx/图片.webp"  # 可选：封面图片路径
+hidden: false  # 可选：设置为true隐藏文章
 ---
 ```
 
@@ -38,6 +39,7 @@ coverImage: "/Blogabout/xxx/图片.webp"  # 可选：封面图片路径
 | tags | 是 | 标签数组，3-5个为宜，使用小写字母和连字符 |
 | excerpt | 是 | 文章摘要，用于列表展示 |
 | coverImage | 否 | 封面图片路径，推荐 `/Blogabout/文章名/图片.webp` |
+| hidden | 否 | 是否隐藏文章，`true` 或 `false`，默认 `false` |
 
 ### 内容分类标准
 
@@ -101,9 +103,40 @@ coverImage: "/Blogabout/vocaloid6-guide/cover.webp"
 ...
 ```
 
+## 隐藏文章功能
+
+### 设置隐藏
+
+在文章 frontmatter 中添加 `hidden: true`：
+
+```yaml
+---
+title: "草稿文章"
+date: "2026-04-11"
+category: "技术"
+tags: ["草稿"]
+excerpt: "这是一篇隐藏的文章"
+hidden: true  # 隐藏此文章
+---
+```
+
+### 隐藏文章特性
+
+- 隐藏文章不会显示在博客列表和归档页面
+- 知道文章链接的用户仍可直接访问
+- 在归档页面可以通过"显示隐藏文章"筛选器查看
+- 后台管理系统可以管理隐藏状态
+
+### 使用场景
+
+- 草稿文章，尚未完成
+- 私密内容，仅通过链接分享
+- 过时内容，保留但不展示
+
 ## 注意事项
 
 - 技术文章建议添加 `updatedAt` 字段
 - 图片优先使用 WebP 格式
 - 文件名使用英文，避免特殊字符
 - 文章内容使用 Markdown 格式编写
+- 隐藏文章修改后需要重新构建部署才能生效

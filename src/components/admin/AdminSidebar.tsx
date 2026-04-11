@@ -244,7 +244,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   const pathname = usePathname();
   
   // 展开的菜单项集合
-  const [expandedItems, setExpandedItems] = React.useState<Set<string>>(new Set(['gallery']));
+  const [expandedItems, setExpandedItems] = React.useState<Set<string>>(new Set([]));
 
   /**
    * 切换菜单项展开状态

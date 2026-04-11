@@ -20,6 +20,7 @@ description: "创建和管理个人动态。Invoke when user wants to create a n
 id: "动态ID"
 time: "YYYY-MM-DD HH:MM:SS"
 pinned: false  # 可选：设置为 true 可置顶
+hidden: false  # 可选：设置为 true 可隐藏
 tags:
   - "标签1"
   - "标签2"
@@ -36,6 +37,7 @@ images:
 | id | 是 | 动态唯一标识，如 `first-moment` |
 | time | 是 | 发布时间，格式 `YYYY-MM-DD HH:MM:SS`，使用北京时间（UTC+8） |
 | pinned | 否 | 是否置顶，`true` 或 `false`，默认 `false` |
+| hidden | 否 | 是否隐藏，`true` 或 `false`，默认 `false` |
 | tags | 否 | 标签数组，用于分类 |
 | images | 否 | 图片路径数组，支持多张图片 |
 
@@ -102,6 +104,44 @@ images:
 期待下一次的相遇～
 ```
 
+## 隐藏动态功能
+
+### 设置隐藏
+
+在动态 frontmatter 中添加 `hidden: true`：
+
+```yaml
+---
+id: "draft-moment"
+time: "2026-04-11 10:00:00"
+pinned: false
+hidden: true  # 隐藏此动态
+tags: ["草稿"]
+---
+
+这是一条隐藏的动态内容
+```
+
+### 隐藏动态特性
+
+- 隐藏动态不会显示在动态列表页面
+- 后台管理系统可以管理隐藏状态
+- 支持批量设置隐藏/显示
+
+### 使用场景
+
+- 草稿动态，尚未完成
+- 私密内容
+- 过时内容，保留但不展示
+
+## Live2D彩蛋消息
+
+当用户发现隐藏的博客文章或动态时，Live2D看板娘会显示惊喜消息：
+
+- **发现隐藏博客**: 显示特殊的欢迎消息
+- **发现隐藏动态**: 显示惊喜提示
+- **消息优先级**: 彩蛋消息使用高优先级确保显示
+
 ## 注意事项
 
 - 动态 ID 必须唯一，建议使用有意义的英文标识
@@ -109,3 +149,4 @@ images:
 - 图片数量没有严格限制，但建议合理控制
 - 动态内容支持 Markdown 格式
 - 置顶动态建议最多 3 条
+- 隐藏动态修改后需要重新构建部署才能生效

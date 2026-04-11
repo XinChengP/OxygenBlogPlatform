@@ -83,6 +83,10 @@ live2dMessageManager.showMessage(Live2DMessages.MARKDOWN.PUBLISH);
 // 通用消息
 live2dMessageManager.showMessage(Live2DMessages.GENERAL.HELLO);
 live2dMessageManager.showMessage(Live2DMessages.GENERAL.SUCCESS);
+
+// 彩蛋消息 - 发现隐藏内容时触发
+live2dMessageManager.showMessage(Live2DMessages.HIDDEN_TAG.DISCOVERED, 4000, 8);
+live2dMessageManager.showMessage(Live2DMessages.HIDDEN_TAG.SPECIAL_NOTE, 4000, 8);
 ```
 
 ### 添加自定义消息
@@ -100,6 +104,65 @@ export const Live2DMessages = {
     THEME_CHANGE: '主题切换成功～',
   }
 } as const;
+```
+
+## 彩蛋消息功能
+
+### 功能概述
+
+当用户发现隐藏的博客文章或动态时，Live2D看板娘会显示惊喜消息，增强互动体验。
+
+### 触发条件
+
+- 用户访问带有 `hidden: true` 标记的博客文章
+- 用户访问带有 `hidden: true` 标记的个人动态
+
+### 消息类型
+
+| 消息类型 | 说明 | 优先级 |
+|----------|------|--------|
+| `HIDDEN_TAG.DISCOVERED` | 发现隐藏内容时的欢迎消息 | 8（高） |
+| `HIDDEN_TAG.SPECIAL_NOTE` | 特殊提示信息 | 8（高） |
+
+### 配置位置
+
+彩蛋消息配置位于 `src/setting/live2dMessages.ts`：
+
+```typescript
+export const HiddenTagEasterEggMessages = {
+  // 发现隐藏博客时的消息
+  blog: [
+    '哇！你发现了隐藏的博客文章！✨',
+    '这是一篇特别的文章呢～',
+    // ... 更多消息
+  ],
+  // 发现隐藏动态时的消息
+  moment: [
+    '你发现了隐藏动态！好厉害！🎉',
+    '这是一条秘密动态哦～',
+    // ... 更多消息
+  ],
+};
+```
+
+### 使用示例
+
+在页面组件中检测隐藏内容并触发彩蛋消息：
+
+```typescript
+import { useEffect } from 'react';
+import live2dMessageManager from '@/utils/live2dMessageManager';
+
+useEffect(() => {
+  if (post.hidden) {
+    // 显示彩蛋消息
+    live2dMessageManager.showMessage(
+      Live2DMessages.HIDDEN_TAG.DISCOVERED,
+      4000,  // 显示4秒
+      8      // 高优先级
+    );
+  }
+}, [post.hidden]);
 ```
 
 ## 功能联动

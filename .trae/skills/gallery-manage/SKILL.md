@@ -30,6 +30,8 @@ description: "管理画廊图片资源。Invoke when user wants to add images to
 - 高级放大控制
 - 响应式网格布局
 - 图片懒加载
+- 递归扫描子目录
+- 目录树导航
 
 ## 图片管理规范
 
@@ -73,9 +75,34 @@ description: "管理画廊图片资源。Invoke when user wants to add images to
 ## 添加图片到画廊步骤
 
 1. 准备图片文件（推荐 WebP 格式）
-2. 将图片放入 `public/LTY_Picture/` 目录
+2. 将图片放入 `public/LTY_Picture/` 目录或其子目录
 3. 在动态或文章中引用图片路径
 4. 刷新页面查看效果
+
+## 目录扫描功能
+
+### 递归扫描
+
+画廊系统支持递归扫描所有子目录中的图片：
+
+- 自动扫描 `public/LTY_Picture/` 及其所有子目录
+- 支持配置排除特定目录
+- 缓存机制优化性能
+
+### 目录树导航
+
+- 生成分层的目录树结构
+- 显示每个目录的图片数量
+- 支持快速跳转到指定目录
+- 面包屑导航显示当前位置
+
+### 配置说明
+
+在 `src/actions/galleryActions.ts` 中配置排除目录：
+
+```typescript
+const EXCLUDED_DIRS = ['thumbnails', 'temp', '.git']; // 排除的目录名
+```
 
 ## 画廊配置
 
