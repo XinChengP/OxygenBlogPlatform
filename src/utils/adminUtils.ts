@@ -1096,7 +1096,7 @@ export function getDashboardStats(): DashboardStats {
 
     if (fs.existsSync(blogsDir) && fs.statSync(blogsDir).isDirectory()) {
       const blogFiles = fs.readdirSync(blogsDir).filter((file: string) => file.endsWith('.md'))
-      blogCount = blogFiles.length
+      blogCount = blogFiles.length + 1  // 显示数量 = 实际文件数量 + 1
 
       // 计算本月新增文章数和分类统计
       const currentMonth = new Date().getMonth()
@@ -1159,7 +1159,7 @@ export function getDashboardStats(): DashboardStats {
 
     if (fs.existsSync(momentsDir) && fs.statSync(momentsDir).isDirectory()) {
       const momentFiles = fs.readdirSync(momentsDir).filter((file: string) => file.endsWith('.md'))
-      momentCount = momentFiles.length
+      momentCount = momentFiles.length + 1  // 显示数量 = 实际文件数量 + 1
 
       // 统计动态字数
       momentFiles.forEach((file: string) => {
