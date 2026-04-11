@@ -5,7 +5,14 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkEmoji from 'remark-emoji';
 import rehypeHighlight from 'rehype-highlight';
-import { Changelog, getChangelogTypeColor, getChangelogTypeLabel } from '@/types/changelogTypes';
+import {
+  Changelog,
+  getChangelogTypeColor,
+  getChangelogTypeLabel,
+  getAchievementLabel,
+  getAchievementColor,
+  sortAchievementsByPriority
+} from '@/types/changelogTypes';
 import PageHeader from '@/components/ui/PageHeader';
 import TimeStatsChart from './TimeStatsChart';
 import TypeStatsChart from './TypeStatsChart';
@@ -96,15 +103,31 @@ function ClientChangelogsPage({ changelogs, blogTimeStats, momentTimeStats }: Cl
                       {/* 日志卡片内容 */}
                       <div className="flex-1 pb-6 min-w-0">
                         <div className="p-4 rounded-lg border transition-all duration-300 backdrop-blur-md bg-card/90 border-border shadow-md supports-[backdrop-filter]:bg-card/75">
-                          {/* 卡片头部：日期和类型标签 */}
+                          {/* 卡片头部：日期、成就标签和类型标签 */}
                           <div className="flex justify-between items-center mb-2 pb-2 border-b border-border/30">
                             <span className="text-muted-foreground text-xs">{changelog.date}</span>
-                            <span
-                              className="text-xs px-2 py-0.5 rounded-full text-white font-medium"
-                              style={{ backgroundColor: getChangelogTypeColor(changelog.type) }}
-                            >
-                              {getChangelogTypeLabel(changelog.type)}
-                            </span>
+                            <div className="flex items-center gap-1.5">
+                              {/* 成就标签 - 显示在类型标签左侧 */}
+                              {changelog.achievements && changelog.achievements.length > 0 &&
+                                sortAchievementsByPriority(changelog.achievements).map((achievement) => (
+                                  <span
+                                    key={achievement}
+                                    className="text-xs px-2 py-0.5 rounded-full text-white font-medium"
+                                    style={{ backgroundColor: getAchievementColor(achievement) }}
+                                    title={getAchievementLabel(achievement)}
+                                  >
+                                    {getAchievementLabel(achievement)}
+                                  </span>
+                                ))
+                              }
+                              {/* 类型标签 */}
+                              <span
+                                className="text-xs px-2 py-0.5 rounded-full text-white font-medium"
+                                style={{ backgroundColor: getChangelogTypeColor(changelog.type) }}
+                              >
+                                {getChangelogTypeLabel(changelog.type)}
+                              </span>
+                            </div>
                           </div>
 
                           {/* 日志标题 */}

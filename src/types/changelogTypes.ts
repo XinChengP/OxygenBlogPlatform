@@ -15,16 +15,26 @@
 export type ChangelogType = 'feature' | 'optimize' | 'fix' | 'docs' | 'style' | 'refactor';
 
 /**
+ * 成就类型定义
+ * - tired: 略感疲惫 - 关联提交数量 >= 10 且 < 25
+ * - exhausted: 肝爆了 - 关联提交数量 >= 25
+ * - smallButComplete: 麻雀虽小五脏俱全 - 关联提交 = 1 且 日志行数 > 55
+ * - lively: 人声鼎沸 - 日志行数 > 250
+ */
+export type ChangelogAchievement = 'tired' | 'exhausted' | 'smallButComplete' | 'lively';
+
+/**
  * 开发日志接口定义
  */
 export interface Changelog {
-  id: string;           // 文件名作为ID
-  date: string;         // 日期 YYYY-MM-DD
-  title: string;        // 日志标题
-  type: ChangelogType;  // 日志类型
-  commits: string[];    // 关联的Git提交
-  content: string;      // 日志正文内容
-  filePath: string;     // 文件路径
+  id: string;                         // 文件名作为ID
+  date: string;                       // 日期 YYYY-MM-DD
+  title: string;                      // 日志标题
+  type: ChangelogType;                // 日志类型
+  commits: string[];                  // 关联的Git提交
+  content: string;                    // 日志正文内容
+  filePath: string;                   // 文件路径
+  achievements: ChangelogAchievement[]; // 获得的成就标签
 }
 
 /**
@@ -373,4 +383,86 @@ export function getTypeStats(changelogs: Changelog[]): { type: ChangelogType; la
       count
     }))
     .sort((a, b) => b.count - a.count);
+}
+
+/**
+ * 成就配置映射
+ * 定义每个成就的名称和颜色
+ */
+const achievementConfig: Record<ChangelogAchievement, { label: string; color: string; priority: number }> = {
+  tired: { label: '略感疲惫', color: '#7366ff', priority: 1 },
+  exhausted: { label: '肝爆了', color: '#e566ff', priority: 2 },
+  smallButComplete: { label: '麻雀虽小五脏俱全', color: '#ff66a6', priority: 3 },
+  lively: { label: '人声鼎沸', color: '#ff9966', priority: 4 },
+};
+
+/**
+ * 预留颜色（用于后续拓展）
+ * #f2ff66, #80ff66, #66ffbf
+ */
+
+/**
+ * 计算日志获得的成就
+ * @param commits 关联提交数组
+ * @param contentLineCount 日志内容行数
+ * @returns 成就类型数组
+ */
+export function calculateAchievements(
+  commits: string[],
+  contentLineCount: number
+): ChangelogAchievement[] {
+  const achievements: ChangelogAchievement[] = [];
+
+  // 略感疲惫: 关联提交数量 >= 10 且 < 25
+  if (commits.length >= 10 && commits.length < 25) {
+    achievements.push('tired');
+  }
+
+  // 肝爆了: 关联提交数量 >= 25
+  if (commits.length >= 25) {
+    achievements.push('exhausted');
+  }
+
+  // 麻雀虽小五脏俱全: 关联提交 = 1 且 日志行数 > 55
+  if (commits.length === 1 && contentLineCount > 55) {
+    achievements.push('smallButComplete');
+  }
+
+  // 人声鼎沸: 日志行数 > 250
+  if (contentLineCount > 250) {
+    achievements.push('lively');
+  }
+
+  return achievements;
+}
+
+/**
+ * 获取成就的中文名称
+ * @param achievement 成就类型
+ * @returns 中文名称
+ */
+export function getAchievementLabel(achievement: ChangelogAchievement): string {
+  return achievementConfig[achievement]?.label || achievement;
+}
+
+/**
+ * 获取成就的颜色值
+ * @param achievement 成就类型
+ * @returns 十六进制颜色值
+ */
+export function getAchievementColor(achievement: ChangelogAchievement): string {
+  return achievementConfig[achievement]?.color || '#7366ff';
+}
+
+/**
+ * 按优先级排序成就
+ * @param achievements 成就类型数组
+ * @returns 按优先级排序后的成就数组
+ */
+export function sortAchievementsByPriority(achievements: ChangelogAchievement[]): ChangelogAchievement[] {
+  return [...achievements].sort((a, b) => {
+    const priorityA = achievementConfig[a]?.priority || 0;
+    const priorityB = achievementConfig[b]?.priority || 0;
+    return priorityA - priorityB;
+  });
 }

@@ -8,6 +8,7 @@ import {
   Changelog,
   ChangelogType,
   parseFrontMatter,
+  calculateAchievements,
 } from '@/types/changelogTypes';
 
 // 重新导出类型和纯函数，方便其他模块使用
@@ -21,6 +22,10 @@ export {
   getYearStats,
   getDayPartStats,
   getTypeStats,
+  calculateAchievements,
+  getAchievementLabel,
+  getAchievementColor,
+  sortAchievementsByPriority,
 } from '@/types/changelogTypes';
 
 /**
@@ -72,14 +77,22 @@ export function getServerChangelogs(): Changelog[] {
         type = 'docs'; // 默认类型
       }
 
+      // 计算日志内容行数
+      const contentLineCount = body.split('\n').length;
+
+      // 计算成就
+      const commits = (metadata.commits as string[]) || [];
+      const achievements = calculateAchievements(commits, contentLineCount);
+
       return {
         id: file.replace('.md', ''),
         date: (metadata.date as string) || '',
         title: (metadata.title as string) || '无标题',
         type: type,
-        commits: (metadata.commits as string[]) || [],
+        commits: commits,
         content: body,
-        filePath: file
+        filePath: file,
+        achievements: achievements
       };
     });
 

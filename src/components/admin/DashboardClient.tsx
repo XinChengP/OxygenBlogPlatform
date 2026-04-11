@@ -1188,6 +1188,7 @@ const DashboardClient: React.FC<DashboardClientProps> = ({ stats }) => {
         commits: [],
         content: '',
         filePath: '',
+        achievements: [],
       };
     });
   }, [stats.changelogs]);
