@@ -45,12 +45,23 @@ commits:
 
 | 类型 | 标签 | 说明 | 颜色 |
 |------|------|------|------|
-| feature | 新功能 | 新功能添加 | 绿色 |
-| optimize | 优化 | 性能优化或代码重构 | 蓝色 |
-| fix | 修复 | Bug修复 | 红色 |
-| docs | 文档 | 文档更新 | 灰色 |
-| style | 样式 | 样式调整 | 紫色 |
-| refactor | 重构 | 代码重构 | 橙色 |
+| feature | 新功能 | 新功能添加 | #66ccff (天依蓝) |
+| optimize | 优化 | 性能优化或代码重构 | #9966ff (紫色) |
+| fix | 修复 | Bug修复 | #ff66cc (粉色) |
+| docs | 文档 | 文档更新 | #ff9966 (橙色) |
+| style | 样式 | 样式调整 | #ccff66 (黄绿色) |
+| refactor | 重构 | 代码重构 | #66ff99 (绿色) |
+
+### 旧类型映射（已弃用）
+
+以下旧类型会被自动映射到新类型：
+
+| 旧类型 | 映射到 | 说明 |
+|--------|--------|------|
+| perf | optimize | 性能优化 |
+| chore | docs | 其他/杂项 |
+
+**注意**: 创建新日志时，请使用新的六种类型，不要使用已弃用的类型。
 
 ## 重要规则
 
@@ -139,6 +150,34 @@ type: "feature"
 commits:
   - "feat: 功能描述"
 ---
+
+## 后台管理日志功能
+
+项目提供后台管理界面进行日志的增删改查操作。
+
+### 访问方式
+
+- **路径**: `/admin/changelogs`
+- **环境**: 仅本地开发环境可用（`NODE_ENV=development`）
+- **功能**: 
+  - 日志列表：查看所有更新日志，支持按类型筛选
+  - 撰写日志：创建新的更新日志
+  - 编辑日志：修改现有日志内容
+  - 删除日志：删除指定日期的日志
+
+### 后台管理组件
+
+| 组件 | 路径 | 功能 |
+|------|------|------|
+| ChangelogsManageClient | `src/app/admin/changelogs/ChangelogsManageClient.tsx` | 日志列表管理 |
+| ChangelogEditClient | `src/app/admin/changelogs/edit/ChangelogEditClient.tsx` | 日志编辑/创建 |
+| changelogActions | `src/app/admin/changelogs/changelogActions.ts` | Server Actions |
+
+### 数据存储
+
+- **存储位置**: `src/content/changelogs/`
+- **文件格式**: Markdown + YAML Frontmatter
+- **命名规范**: `YYYY-MM-DD.md`
 
 ## 功能概述
 
@@ -288,18 +327,66 @@ commits:
 
 ## 组件结构
 
-### 主要组件
+### 组件结构
+
+### 前台组件
 
 | 组件 | 路径 | 功能 |
 |------|------|------|
 | ClientChangelogsPage | `src/components/changelogs/ClientChangelogsPage.tsx` | 更新日志页面客户端组件 |
 | ChangelogCard | `src/components/changelogs/ChangelogCard.tsx` | 单条日志卡片 |
 | ChangelogFilter | `src/components/changelogs/ChangelogFilter.tsx` | 类型筛选器 |
+| TypeStatsChart | `src/components/changelogs/TypeStatsChart.tsx` | 类型统计环形图 |
+| TypeStatsWidget | `src/components/changelogs/TypeStatsWidget.tsx` | 类型统计小部件 |
+
+### 后台组件
+
+| 组件 | 路径 | 功能 |
+|------|------|------|
+| ChangelogsManageClient | `src/app/admin/changelogs/ChangelogsManageClient.tsx` | 日志列表管理 |
+| ChangelogEditClient | `src/app/admin/changelogs/edit/ChangelogEditClient.tsx` | 日志编辑/创建 |
+| changelogActions | `src/app/admin/changelogs/changelogActions.ts` | Server Actions |
 
 ### 页面路径
 
-- **页面**: `src/app/changelogs/page.tsx`
+- **前台页面**: `src/app/changelogs/page.tsx`
+- **后台页面**: `src/app/admin/changelogs/page.tsx`
 - **数据获取**: `src/utils/changelogUtils.ts`
+
+## 类型定义和工具函数
+
+### 类型定义文件
+
+**文件**: `src/types/changelogTypes.ts`
+
+```typescript
+// 六种有效类型
+export type ChangelogType = 'feature' | 'optimize' | 'fix' | 'docs' | 'style' | 'refactor';
+
+// 获取类型颜色
+export function getChangelogTypeColor(type: ChangelogType): string;
+
+// 获取类型标签
+export function getChangelogTypeLabel(type: ChangelogType): string;
+
+// 解析 YAML Frontmatter
+export function parseFrontMatter(content: string): { metadata: Record<string, unknown>; content: string };
+```
+
+### 颜色配置
+
+所有类型颜色统一配置在 `src/types/changelogTypes.ts`：
+
+```typescript
+const colorMap: Record<ChangelogType, string> = {
+  feature: '#66ccff',   // 新功能 - 天依蓝
+  optimize: '#9966ff',  // 优化 - 紫色
+  fix: '#ff66cc',       // 修复 - 粉色
+  docs: '#ff9966',      // 文档 - 橙色
+  style: '#ccff66',     // 样式 - 黄绿色
+  refactor: '#66ff99',  // 重构 - 绿色
+};
+```
 
 ## 注意事项
 
@@ -309,3 +396,4 @@ commits:
 - **严格遵守排除规则，不记录博客和动态内容更新**
 - 保持内容简洁，突出重点变更
 - 技术实现表格中的文件路径必须准确
+- **已弃用类型**: `perf` 和 `chore` 会被自动映射到 `optimize` 和 `docs`

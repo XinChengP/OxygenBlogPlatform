@@ -20,6 +20,7 @@ import {
   Sparkles,
   CheckSquare,
   Database,
+  History,
 } from 'lucide-react';
 
 /**
@@ -316,6 +317,26 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       label: '待办管理',
       href: '/admin/todo',
       icon: CheckSquare,
+    },
+    {
+      id: 'changelogs',
+      label: '日志管理',
+      href: '/admin/changelogs',
+      icon: History,
+      children: [
+        {
+          id: 'changelogs-list',
+          label: '日志列表',
+          href: '/admin/changelogs',
+          icon: History,
+        },
+        {
+          id: 'changelogs-edit',
+          label: '撰写日志',
+          href: '/admin/changelogs/edit',
+          icon: PenLine,
+        },
+      ],
     },
     {
       id: 'gallery',

@@ -6,13 +6,13 @@
 /**
  * 开发日志类型定义
  * - feature: 新功能
- * - fix: 修复问题
- * - refactor: 代码重构
- * - docs: 文档更新
- * - style: 样式调整
- * - chore: 其他改动
+ * - optimize: 优化
+ * - fix: 修复
+ * - docs: 文档
+ * - style: 样式
+ * - refactor: 重构
  */
-export type ChangelogType = 'feature' | 'fix' | 'refactor' | 'docs' | 'style' | 'chore';
+export type ChangelogType = 'feature' | 'optimize' | 'fix' | 'docs' | 'style' | 'refactor';
 
 /**
  * 开发日志接口定义
@@ -147,21 +147,22 @@ export function parseFrontMatter(content: string): { metadata: Record<string, un
 }
 
 /**
- * 获取开发日志类型对应的Tailwind背景颜色类名
+ * 获取开发日志类型对应的颜色值（十六进制）
+ * 配色方案：天依蓝、紫色、粉色、橙色、黄绿色、绿色
  * @param type 开发日志类型
- * @returns Tailwind背景颜色类名
+ * @returns 十六进制颜色值
  */
 export function getChangelogTypeColor(type: ChangelogType): string {
   const colorMap: Record<ChangelogType, string> = {
-    feature: 'bg-green-500',   // 新功能 - 绿色
-    fix: 'bg-red-500',         // 修复问题 - 红色
-    refactor: 'bg-blue-500',   // 代码重构 - 蓝色
-    docs: 'bg-purple-500',     // 文档更新 - 紫色
-    style: 'bg-orange-500',    // 样式调整 - 橙色
-    chore: 'bg-gray-500',      // 其他改动 - 灰色
+    feature: '#66ccff',   // 新功能 - 天依蓝
+    optimize: '#9966ff',  // 优化 - 紫色
+    fix: '#ff66cc',       // 修复 - 粉色
+    docs: '#ff9966',      // 文档 - 橙色
+    style: '#ccff66',     // 样式 - 黄绿色
+    refactor: '#66ff99',  // 重构 - 绿色
   };
 
-  return colorMap[type] || colorMap.chore;
+  return colorMap[type] || colorMap.docs;
 }
 
 /**
@@ -172,14 +173,14 @@ export function getChangelogTypeColor(type: ChangelogType): string {
 export function getChangelogTypeLabel(type: ChangelogType): string {
   const labelMap: Record<ChangelogType, string> = {
     feature: '新功能',
+    optimize: '优化',
     fix: '修复',
-    refactor: '重构',
     docs: '文档',
     style: '样式',
-    chore: '其他',
+    refactor: '重构',
   };
 
-  return labelMap[type] || labelMap.chore;
+  return labelMap[type] || type;
 }
 
 /**

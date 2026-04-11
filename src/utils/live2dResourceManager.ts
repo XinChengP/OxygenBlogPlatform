@@ -252,7 +252,7 @@ class Live2DResourceManager {
     // 优化：添加请求头，启用HTTP缓存
     const response = await fetch(url, {
       headers: {
-        'Cache-Control': 'max-age=86400', // 24小时缓存
+        'Cache-Control': 'max-age=86400',
         'Pragma': 'cache'
       }
     });

@@ -317,7 +317,7 @@ export async function uploadImageToGitHub(
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          message: `上传图片：${filename}`,
+          message: `Upload image: ${filename}`,
           content: base64Content,
           branch: config.branch,
         }),
@@ -376,7 +376,7 @@ export async function deleteImageFromGitHub(
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          message: `删除图片：${path}`,
+          message: `Delete image: ${path}`,
           sha: fileSha,
           branch: config.branch,
         }),
@@ -635,10 +635,10 @@ async function deleteFileBySha(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        message: `删除文件：${path}`,
-        sha: sha,
-        branch: config.branch,
-      }),
+          message: `Delete file: ${path}`,
+          sha: sha,
+          branch: config.branch,
+        }),
     }
   );
 
@@ -691,10 +691,10 @@ export async function createDirectory(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        message: `创建目录：${normalizedPath}`,
-        content: '', // 空文件
-        branch: config.branch,
-      }),
+          message: `Create directory: ${normalizedPath}`,
+          content: '', // 空文件
+          branch: config.branch,
+        }),
     }
   );
 
@@ -962,7 +962,7 @@ export async function createOrUpdateMoment(
   
   // 创建或更新文件
   return await createOrUpdateFile(config, momentPath, {
-    message: metadata.pinned ? `创建/更新置顶动态：${id}` : `创建/更新动态：${id}`,
+    message: metadata.pinned ? `Create/Update pinned moment: ${id}` : `Create/Update moment: ${id}`,
     content: base64Content,
   });
 }

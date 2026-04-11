@@ -5,6 +5,9 @@ const repoName = process.env.NEXT_PUBLIC_GITHUB_REPO_NAME || 'OxygenBlogPlatform
 const nextConfig = {
   reactStrictMode: true,
 
+  // 允许的开发环境来源 - 解决跨域问题
+  allowedDevOrigins: ['100.143.40.229', 'localhost'],
+
   turbopack: {},
 
   compiler: {

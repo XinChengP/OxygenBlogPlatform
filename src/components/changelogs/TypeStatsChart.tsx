@@ -13,15 +13,16 @@ interface TypeStatsChartProps {
 }
 
 /**
- * 类型颜色映射（使用 Tailwind 颜色）
+ * 类型颜色映射
+ * 配色方案：天依蓝、紫色、粉色、橙色、黄绿色、绿色
  */
 const TYPE_COLORS: Record<ChangelogType, string> = {
-  feature: '#22c55e',   // 绿色 - 新功能
-  fix: '#ef4444',       // 红色 - 修复
-  refactor: '#3b82f6',  // 蓝色 - 重构
-  docs: '#a855f7',      // 紫色 - 文档
-  style: '#f97316',     // 橙色 - 样式
-  chore: '#6b7280',     // 灰色 - 其他
+  feature: '#66ccff',   // 新功能 - 天依蓝
+  optimize: '#9966ff',  // 优化 - 紫色
+  fix: '#ff66cc',       // 修复 - 粉色
+  docs: '#ff9966',      // 文档 - 橙色
+  style: '#ccff66',     // 样式 - 黄绿色
+  refactor: '#66ff99',  // 重构 - 绿色
 };
 
 /**
@@ -218,40 +219,87 @@ export default function TypeStatsChart({ changelogs }: TypeStatsChartProps) {
       </div>
 
       {/* 图表区域 */}
-      <div className="w-full" style={{ height: '280px' }}>
+      <div className="w-full relative" style={{ height: '280px' }}>
         {sortedData.length > 0 ? (
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={dataWithTotal}
-                cx="50%"
-                cy="50%"
-                innerRadius={65}
-                outerRadius={95}
-                paddingAngle={8}
-                dataKey="count"
-                nameKey="label"
-                onMouseEnter={onPieEnter}
-                onMouseLeave={onPieLeave}
-                onClick={onPieClick}
-              >
-                {dataWithTotal.map((entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={TYPE_COLORS[entry.type]}
-                    stroke="hsl(var(--background))"
-                    strokeWidth={3}
-                    style={{
-                      filter: activeIndex === index 
-                        ? `drop-shadow(0 0 8px ${TYPE_COLORS[entry.type]}cc) drop-shadow(0 0 12px ${TYPE_COLORS[entry.type]}66)`
-                        : 'none',
-                      cursor: 'pointer',
-                    }}
-                  />
-                ))}
-              </Pie>
-            </PieChart>
-          </ResponsiveContainer>
+          <>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={dataWithTotal}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={65}
+                  outerRadius={95}
+                  paddingAngle={8}
+                  dataKey="count"
+                  nameKey="label"
+                  onMouseEnter={onPieEnter}
+                  onMouseLeave={onPieLeave}
+                  onClick={onPieClick}
+                >
+                  {dataWithTotal.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={TYPE_COLORS[entry.type]}
+                      stroke="hsl(var(--background))"
+                      strokeWidth={3}
+                      style={{
+                        filter: activeIndex === index
+                          ? `drop-shadow(0 0 8px ${TYPE_COLORS[entry.type]}cc) drop-shadow(0 0 12px ${TYPE_COLORS[entry.type]}66)`
+                          : 'none',
+                        cursor: 'pointer',
+                      }}
+                    />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
+
+            {/* 环形中间悬浮信息显示区域 */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="text-center">
+                {activeIndex !== null ? (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    transition={{ duration: 0.2 }}
+                    key={activeIndex}
+                  >
+                    {/* 类型名称 */}
+                    <div
+                      className="text-sm font-bold mb-1"
+                      style={{ color: TYPE_COLORS[sortedData[activeIndex].type] }}
+                    >
+                      {sortedData[activeIndex].label}
+                    </div>
+                    {/* 数量 */}
+                    <div className="text-2xl font-bold text-foreground leading-tight">
+                      {sortedData[activeIndex].count}
+                    </div>
+                    {/* 百分比 */}
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      {((sortedData[activeIndex].count / totalCount) * 100).toFixed(1)}%
+                    </div>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    {/* 默认显示总计 */}
+                    <div className="text-xs text-muted-foreground mb-1">总计</div>
+                    <div className="text-2xl font-bold text-foreground leading-tight">
+                      {totalCount}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-0.5">条记录</div>
+                  </motion.div>
+                )}
+              </div>
+            </div>
+          </>
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
             <svg className="w-12 h-12 mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">

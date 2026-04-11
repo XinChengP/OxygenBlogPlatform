@@ -55,12 +55,22 @@ export function getServerChangelogs(): Changelog[] {
       const content = fs.readFileSync(filePath, 'utf8');
       const { metadata, content: body } = parseFrontMatter(content);
 
-      // 验证并获取日志类型，默认为 'chore'
+      // 验证并获取日志类型，默认为 'docs'
+      // 支持的有效类型：feature, optimize, fix, docs, style, refactor
+      // 旧类型映射：perf -> optimize, chore -> docs
       const typeValue = metadata.type as string;
-      const validTypes: ChangelogType[] = ['feature', 'fix', 'refactor', 'docs', 'style', 'chore'];
-      const type: ChangelogType = validTypes.includes(typeValue as ChangelogType)
-        ? (typeValue as ChangelogType)
-        : 'chore';
+      const validTypes: ChangelogType[] = ['feature', 'optimize', 'fix', 'docs', 'style', 'refactor'];
+
+      let type: ChangelogType;
+      if (validTypes.includes(typeValue as ChangelogType)) {
+        type = typeValue as ChangelogType;
+      } else if (typeValue === 'perf') {
+        type = 'optimize'; // 旧类型映射
+      } else if (typeValue === 'chore') {
+        type = 'docs'; // 旧类型映射
+      } else {
+        type = 'docs'; // 默认类型
+      }
 
       return {
         id: file.replace('.md', ''),

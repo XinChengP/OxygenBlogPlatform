@@ -80,7 +80,10 @@ function ClientChangelogsPage({ changelogs }: ClientChangelogsPageProps) {
                           {/* 卡片头部：日期和类型标签 */}
                           <div className="flex justify-between items-center mb-2 pb-2 border-b border-border/30">
                             <span className="text-muted-foreground text-xs">{changelog.date}</span>
-                            <span className={`text-xs px-2 py-0.5 rounded-full ${getChangelogTypeColor(changelog.type)} text-white font-medium`}>
+                            <span
+                              className="text-xs px-2 py-0.5 rounded-full text-white font-medium"
+                              style={{ backgroundColor: getChangelogTypeColor(changelog.type) }}
+                            >
                               {getChangelogTypeLabel(changelog.type)}
                             </span>
                           </div>

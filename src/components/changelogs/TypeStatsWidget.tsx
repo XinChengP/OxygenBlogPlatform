@@ -29,7 +29,10 @@ export default function TypeStatsWidget({ changelogs }: TypeStatsWidgetProps) {
               className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors duration-200"
             >
               <div className="flex items-center gap-3">
-                <span className={`text-xs px-2 py-0.5 rounded-full ${getChangelogTypeColor(item.type)} text-white font-medium`}>
+                <span
+                  className="text-xs px-2 py-0.5 rounded-full text-white font-medium"
+                  style={{ backgroundColor: getChangelogTypeColor(item.type) }}
+                >
                   {getChangelogTypeLabel(item.type)}
                 </span>
               </div>
