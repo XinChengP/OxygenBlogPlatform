@@ -18,6 +18,10 @@ concurrency:
   group: "pages"
   cancel-in-progress: false
 
+# 全局环境变量 - 强制使用 Node.js 24
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   # 构建任务
   build:
