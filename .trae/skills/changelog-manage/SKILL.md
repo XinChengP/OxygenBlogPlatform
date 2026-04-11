@@ -315,14 +315,30 @@ commits:
 - 不同类型使用不同颜色的标签
 - 可以在页面中按类型筛选
 
+### 成就标签系统
+
+日志支持自动计算成就标签，根据关联提交数量和日志行数授予不同成就：
+
+| 成就名称 | 触发条件 | 颜色 |
+|---------|---------|------|
+| 略感疲惫 | 关联提交数量 >= 10 且 < 25 | #7366ff |
+| 肝爆了 | 关联提交数量 >= 25 | #e566ff |
+| 麻雀虽小五脏俱全 | 关联提交 = 1 且 日志行数 > 55 | #ff66a6 |
+| 人声鼎沸 | 日志行数 > 250 | #ff9966 |
+
+**成就标签特性**：
+- 成就标签显示在类型标签左侧
+- 可以同时显示多个成就
+- 成就仅用于展示，不参与统计
+
 ### 显示格式
 
 ```
-┌─────────────────────────────────────┐
-│ ● feature        2026年4月9日      │
-├─────────────────────────────────────┤
-│ GitHub手动推送功能                   │
-└─────────────────────────────────────┘
+┌─────────────────────────────────────────────┐
+│ 肝爆了 人声鼎沸  ● feature   2026年4月11日  │
+├─────────────────────────────────────────────┤
+│ 后台管理功能增强与系统升级                   │
+└─────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────┐
 │ ● optimize       2026年3月22日     │
@@ -369,6 +385,9 @@ commits:
 // 六种有效类型
 export type ChangelogType = 'feature' | 'optimize' | 'fix' | 'docs' | 'style' | 'refactor';
 
+// 成就类型
+export type ChangelogAchievement = 'tired' | 'exhausted' | 'smallButComplete' | 'lively';
+
 // 获取类型颜色
 export function getChangelogTypeColor(type: ChangelogType): string;
 
@@ -377,6 +396,15 @@ export function getChangelogTypeLabel(type: ChangelogType): string;
 
 // 解析 YAML Frontmatter
 export function parseFrontMatter(content: string): { metadata: Record<string, unknown>; content: string };
+
+// 计算成就
+export function calculateAchievements(commits: string[], contentLineCount: number): ChangelogAchievement[];
+
+// 获取成就标签
+export function getAchievementLabel(achievement: ChangelogAchievement): string;
+
+// 获取成就颜色
+export function getAchievementColor(achievement: ChangelogAchievement): string;
 ```
 
 ### 颜色配置
@@ -403,3 +431,5 @@ const colorMap: Record<ChangelogType, string> = {
 - 保持内容简洁，突出重点变更
 - 技术实现表格中的文件路径必须准确
 - **已弃用类型**: `perf` 和 `chore` 会被自动映射到 `optimize` 和 `docs`
+- **成就标签**: 成就不参与任何统计，仅用于展示
+- **行数计算**: 基于原始文件内容，不包括 frontmatter 部分
