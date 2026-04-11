@@ -3,6 +3,7 @@
 /**
  * Admin代码本地备份相关的Server Actions
  * 提供备份、恢复、查看历史、推送到远程仓库等功能
+ * 版本恢复功能支持密码验证
  */
 
 import { promises as fs } from 'fs';
@@ -13,6 +14,84 @@ import { promisify } from 'util';
 const execAsync = promisify(exec);
 
 const BACKUP_DIR = path.join(process.cwd(), 'admin-backup');
+const CONFIG_DIR = path.join(process.cwd(), 'src', 'content');
+const PASSWORD_CONFIG_FILE = path.join(CONFIG_DIR, '.admin_password.json');
+
+/**
+ * 获取恢复密码
+ * 优先从配置文件读取，如果不存在则使用默认值
+ */
+async function getRestorePassword(): Promise<string> {
+  try {
+    // 尝试从配置文件读取密码
+    const configContent = await fs.readFile(PASSWORD_CONFIG_FILE, 'utf-8');
+    const config = JSON.parse(configContent);
+    if (config.restorePassword) {
+      return config.restorePassword;
+    }
+  } catch {
+    // 配置文件不存在或读取失败，使用默认值
+  }
+  // 返回环境变量或默认值
+  return process.env.ADMIN_RESTORE_PASSWORD || 'admin123';
+}
+
+/**
+ * 修改恢复密码
+ * @param oldPassword - 旧密码（用于验证身份）
+ * @param newPassword - 新密码
+ * @returns 操作结果
+ */
+export async function changeRestorePassword(
+  oldPassword: string,
+  newPassword: string
+): Promise<{ success: boolean; message: string }> {
+  try {
+    // 验证旧密码
+    const currentPassword = await getRestorePassword();
+    if (oldPassword !== currentPassword) {
+      return {
+        success: false,
+        message: '旧密码错误，请重新输入'
+      };
+    }
+
+    // 验证新密码
+    if (!newPassword || newPassword.trim().length < 6) {
+      return {
+        success: false,
+        message: '新密码长度不能少于6个字符'
+      };
+    }
+
+    // 确保配置目录存在
+    await fs.mkdir(CONFIG_DIR, { recursive: true });
+
+    // 保存新密码到配置文件
+    const config = { restorePassword: newPassword.trim() };
+    await fs.writeFile(PASSWORD_CONFIG_FILE, JSON.stringify(config, null, 2), 'utf-8');
+
+    return {
+      success: true,
+      message: '密码修改成功'
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: `密码修改失败: ${error instanceof Error ? error.message : '未知错误'}`
+    };
+  }
+}
+
+/**
+ * 验证恢复密码是否正确
+ * @param password - 要验证的密码
+ * @returns 验证结果
+ */
+export async function verifyRestorePassword(password: string): Promise<boolean> {
+  const currentPassword = await getRestorePassword();
+  return password === currentPassword;
+}
 
 export interface BackupResult {
   success: boolean;
@@ -174,6 +253,7 @@ build/
 *secret*
 *password*
 *.pem
+.admin_password.json
 `;
     await fs.writeFile(path.join(BACKUP_DIR, '.gitignore'), gitignore, 'utf-8');
 
@@ -316,10 +396,29 @@ export async function getBackupHistory(limit: number = 10): Promise<BackupResult
 }
 
 /**
- * 从指定提交恢复备份
+ * 从指定提交恢复备份（带密码验证）
+ * @param commitHash - 要恢复的提交哈希，不传则恢复最新版本
+ * @param password - 恢复密码，用于验证操作权限
  */
-export async function restoreBackup(commitHash?: string): Promise<BackupResult> {
+export async function restoreBackup(commitHash?: string, password?: string): Promise<BackupResult> {
   try {
+    // 验证密码
+    if (!password) {
+      return {
+        success: false,
+        message: '请输入恢复密码'
+      };
+    }
+
+    // 使用动态获取的密码进行验证
+    const currentPassword = await getRestorePassword();
+    if (password !== currentPassword) {
+      return {
+        success: false,
+        message: '密码错误，请重新输入'
+      };
+    }
+
     if (!(await backupDirExists())) {
       return {
         success: false,

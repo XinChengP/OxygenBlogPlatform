@@ -3,10 +3,11 @@
 /**
  * Admin备份管理组件
  * 提供本地Git备份功能的管理界面，支持推送到远程仓库
+ * 版本恢复功能支持二次确认和密码验证
  */
 
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Database,
   Upload,
@@ -26,6 +27,8 @@ import {
   Key,
   GitCommit,
   ArrowUp,
+  Shield,
+  Lock,
 } from 'lucide-react';
 import {
   performBackup,
@@ -87,6 +90,13 @@ export default function BackupManager({ className = '' }: BackupManagerProps) {
     branch: 'main',
     token: '',
   });
+
+  // 版本恢复二次确认和密码验证状态
+  const [restoreModalOpen, setRestoreModalOpen] = useState(false);
+  const [restoreStep, setRestoreStep] = useState<'confirm' | 'password'>('confirm');
+  const [restorePassword, setRestorePassword] = useState('');
+  const [selectedCommitHash, setSelectedCommitHash] = useState<string | undefined>(undefined);
+  const [passwordError, setPasswordError] = useState('');
 
   // 加载备份状态
   useEffect(() => {
@@ -184,24 +194,70 @@ export default function BackupManager({ className = '' }: BackupManagerProps) {
   };
 
   /**
-   * 执行恢复
+   * 打开恢复确认对话框（第一步：二次确认）
+   * 点击恢复按钮时调用，显示确认对话框
    */
-  const handleRestore = async (commitHash?: string) => {
-    if (!confirm('确定要恢复到此版本吗？当前修改将被覆盖！')) {
+  const openRestoreModal = (commitHash?: string) => {
+    setSelectedCommitHash(commitHash);
+    setRestoreStep('confirm');
+    setRestorePassword('');
+    setPasswordError('');
+    setRestoreModalOpen(true);
+  };
+
+  /**
+   * 关闭恢复对话框
+   */
+  const closeRestoreModal = () => {
+    if (isRestoring) return; // 恢复中不允许关闭
+    setRestoreModalOpen(false);
+    setRestoreStep('confirm');
+    setRestorePassword('');
+    setPasswordError('');
+    setSelectedCommitHash(undefined);
+  };
+
+  /**
+   * 确认恢复（从确认步骤进入密码验证步骤）
+   */
+  const handleConfirmRestore = () => {
+    setRestoreStep('password');
+    setPasswordError('');
+  };
+
+  /**
+   * 执行恢复操作（带密码验证）
+   * 用户输入密码后调用，验证密码并执行恢复
+   */
+  const handleRestoreWithPassword = async () => {
+    // 验证密码是否输入
+    if (!restorePassword.trim()) {
+      setPasswordError('请输入恢复密码');
       return;
     }
 
     setIsRestoring(true);
+    setPasswordError('');
+
     try {
-      const result = await restoreBackup(commitHash);
+      // 调用恢复接口，传入密码进行验证
+      const result = await restoreBackup(selectedCommitHash, restorePassword);
+
       if (result.success) {
         toast.success(result.message);
+        closeRestoreModal();
       } else {
-        toast.error(result.message);
+        // 密码错误或恢复失败
+        if (result.message.includes('密码') || result.message.includes('认证')) {
+          setPasswordError(result.message);
+        } else {
+          toast.error(result.message);
+          closeRestoreModal();
+        }
       }
     } catch (error) {
       console.error('恢复失败:', error);
-      toast.error('恢复失败');
+      setPasswordError('恢复失败，请稍后重试');
     } finally {
       setIsRestoring(false);
     }
@@ -565,7 +621,7 @@ export default function BackupManager({ className = '' }: BackupManagerProps) {
                       </div>
                     </div>
                     <button
-                      onClick={() => handleRestore(item.commitHash)}
+                      onClick={() => openRestoreModal(item.commitHash)}
                       disabled={isRestoring || index === 0}
                       className="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-orange-500/20 text-orange-400 rounded-lg hover:bg-orange-500/30 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                     >
@@ -797,6 +853,189 @@ export default function BackupManager({ className = '' }: BackupManagerProps) {
           </motion.div>
         )}
       </div>
+
+      {/* 版本恢复二次确认和密码验证对话框 */}
+      <AnimatePresence>
+        {restoreModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* 遮罩层 */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+              onClick={() => !isRestoring && closeRestoreModal()}
+            />
+
+            {/* 对话框内容 */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              className="relative w-full max-w-md rounded-xl shadow-2xl bg-white dark:bg-gray-800 border border-gray-200/50 dark:border-gray-700/50"
+              onClick={e => e.stopPropagation()}
+            >
+              {/* 步骤一：二次确认 */}
+              {restoreStep === 'confirm' && (
+                <>
+                  {/* 内容区域 */}
+                  <div className="p-6">
+                    <div className="flex items-start space-x-4">
+                      {/* 警告图标 */}
+                      <div className="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">
+                        <AlertCircle className="w-6 h-6" />
+                      </div>
+
+                      {/* 标题和消息 */}
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                          确认恢复版本
+                        </h3>
+                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                          您确定要将代码恢复到选定的版本吗？此操作将覆盖当前项目中的所有Admin代码，且无法撤销。
+                        </p>
+                        <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                          <p className="text-xs text-yellow-600 dark:text-yellow-400">
+                            <strong>提示：</strong>建议在恢复前先创建一个新的备份，以防万一。
+                          </p>
+                        </div>
+                        {selectedCommitHash && (
+                          <div className="mt-3 flex items-center gap-2 text-sm">
+                            <span className="text-gray-500">目标版本：</span>
+                            <code className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-orange-500 font-mono">
+                              {selectedCommitHash}
+                            </code>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 底部按钮 */}
+                  <div className="flex items-center justify-end space-x-3 px-6 py-4 border-t border-gray-200/50 dark:border-gray-700/50 bg-gray-50/50 dark:bg-gray-900/50 rounded-b-xl">
+                    <button
+                      onClick={closeRestoreModal}
+                      className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                    >
+                      取消
+                    </button>
+                    <button
+                      onClick={handleConfirmRestore}
+                      className="px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600 transition-colors"
+                    >
+                      确认恢复
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {/* 步骤二：密码验证 */}
+              {restoreStep === 'password' && (
+                <>
+                  {/* 内容区域 */}
+                  <div className="p-6">
+                    <div className="flex items-start space-x-4">
+                      {/* 密码图标 */}
+                      <div className="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400">
+                        <Lock className="w-6 h-6" />
+                      </div>
+
+                      {/* 标题和输入 */}
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                          身份验证
+                        </h3>
+                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                          请输入恢复密码以继续操作。此操作需要管理员权限。
+                        </p>
+
+                        {/* 密码输入框 */}
+                        <div className="mt-4">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            恢复密码
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="password"
+                              value={restorePassword}
+                              onChange={(e) => {
+                                setRestorePassword(e.target.value);
+                                if (passwordError) setPasswordError('');
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !isRestoring) {
+                                  handleRestoreWithPassword();
+                                }
+                              }}
+                              placeholder="请输入恢复密码"
+                              disabled={isRestoring}
+                              autoFocus
+                              className={`w-full px-4 py-2.5 bg-white dark:bg-gray-700 border rounded-lg focus:outline-none focus:ring-2 transition-all text-sm ${
+                                passwordError
+                                  ? 'border-red-500 focus:ring-red-500/20'
+                                  : 'border-gray-300 dark:border-gray-600 focus:border-orange-500 focus:ring-orange-500/20'
+                              }`}
+                            />
+                            <Shield className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          </div>
+                          {/* 错误提示 */}
+                          {passwordError && (
+                            <motion.p
+                              initial={{ opacity: 0, y: -10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="mt-2 text-sm text-red-500 flex items-center gap-1"
+                            >
+                              <AlertCircle className="w-4 h-4" />
+                              {passwordError}
+                            </motion.p>
+                          )}
+                        </div>
+
+                        {/* 密码提示 */}
+                        <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                          <p className="text-xs text-blue-600 dark:text-blue-400">
+                            <strong>默认密码：</strong>admin123（可在系统设置中修改）
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 底部按钮 */}
+                  <div className="flex items-center justify-end space-x-3 px-6 py-4 border-t border-gray-200/50 dark:border-gray-700/50 bg-gray-50/50 dark:bg-gray-900/50 rounded-b-xl">
+                    <button
+                      onClick={() => setRestoreStep('confirm')}
+                      disabled={isRestoring}
+                      className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
+                    >
+                      返回
+                    </button>
+                    <button
+                      onClick={handleRestoreWithPassword}
+                      disabled={isRestoring || !restorePassword.trim()}
+                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-orange-500 rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50"
+                    >
+                      {isRestoring ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          恢复中...
+                        </>
+                      ) : (
+                        <>
+                          <RotateCcw className="w-4 h-4" />
+                          确认恢复
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

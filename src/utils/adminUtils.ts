@@ -1137,13 +1137,12 @@ export function getDashboardStats(): DashboardStats {
           categoryMap.set(category, (categoryMap.get(category) || 0) + 1)
         }
 
-        // 提取标签
-        const tagsMatch = content.match(/tags:\s*\[([^\]]+)\]/)
-        if (tagsMatch) {
-          const tagsStr = tagsMatch[1]
-          const tags = tagsStr.split(',').map((t: string) => t.trim().replace(/["']/g, ''))
-          tags.forEach((tag: string) => {
-            if (tag) {
+        // 提取标签 - 使用 parseFrontMatter 函数统一处理
+        // 支持单行数组格式和多行YAML格式
+        const { metadata } = parseFrontMatter(content)
+        if (metadata.tags && Array.isArray(metadata.tags)) {
+          metadata.tags.forEach((tag: string) => {
+            if (tag && typeof tag === 'string') {
               tagMap.set(tag, (tagMap.get(tag) || 0) + 1)
             }
           })
