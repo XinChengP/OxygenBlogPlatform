@@ -413,13 +413,13 @@ export function calculateAchievements(
 ): ChangelogAchievement[] {
   const achievements: ChangelogAchievement[] = [];
 
-  // 略感疲惫: 关联提交数量 >= 10 且 < 25
-  if (commits.length >= 10 && commits.length < 25) {
+  // 略感疲惫: 关联提交数量 >= 10 且 < 20
+  if (commits.length >= 10 && commits.length < 20) {
     achievements.push('tired');
   }
 
-  // 肝爆了: 关联提交数量 >= 25
-  if (commits.length >= 25) {
+  // 肝爆了: 关联提交数量 >= 20
+  if (commits.length >= 20) {
     achievements.push('exhausted');
   }
 
