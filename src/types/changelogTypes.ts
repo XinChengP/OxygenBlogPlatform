@@ -16,12 +16,21 @@ export type ChangelogType = 'feature' | 'optimize' | 'fix' | 'docs' | 'style' | 
 
 /**
  * 成就类型定义
- * - tired: 略感疲惫 - 关联提交数量 >= 10 且 < 25
- * - exhausted: 肝爆了 - 关联提交数量 >= 25
+ * - tired: 略感疲惫 - 关联提交数量 >= 10 且 < 20
+ * - exhausted: 肝爆了 - 关联提交数量 >= 20
  * - smallButComplete: 麻雀虽小五脏俱全 - 关联提交 = 1 且 日志行数 > 55
  * - lively: 人声鼎沸 - 日志行数 > 250
  */
 export type ChangelogAchievement = 'tired' | 'exhausted' | 'smallButComplete' | 'lively';
+
+/**
+ * 自定义荣誉接口
+ * 用户可以在后台手动设置的荣誉标签
+ */
+export interface CustomHonor {
+  name: string;      // 荣誉名称
+  color: string;     // 荣誉颜色（CSS颜色值或渐变色）
+}
 
 /**
  * 开发日志接口定义
@@ -34,7 +43,8 @@ export interface Changelog {
   commits: string[];                  // 关联的Git提交
   content: string;                    // 日志正文内容
   filePath: string;                   // 文件路径
-  achievements: ChangelogAchievement[]; // 获得的成就标签
+  achievements: ChangelogAchievement[]; // 获得的自动成就标签
+  honors?: CustomHonor[];             // 自定义荣誉标签（后台手动设置）
 }
 
 /**
@@ -59,27 +69,90 @@ export function parseFrontMatter(content: string): { metadata: Record<string, un
   const [, frontMatter, body] = match;
   const metadata: Record<string, unknown> = {};
 
-  // 解析YAML格式，支持多行数组
+  // 解析YAML格式，支持多行数组和对象数组
   const lines = frontMatter.split('\n');
   let currentKey: string | null = null;
-  let currentArray: string[] = [];
+  let currentArray: unknown[] = [];
+  let currentObject: Record<string, string> | null = null;
 
-  lines.forEach(line => {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
     // 跳过空行和注释
     if (!line.trim() || line.trim().startsWith('#')) {
-      return;
+      continue;
     }
 
-    // 检查是否是缩进的数组元素（以 "- " 或 "-\t" 开头）
-    if (currentKey && (line.trim().startsWith('- ') || line.trim().startsWith('-\t'))) {
-      // 处理数组元素
-      let value = line.trim().substring(1).trim();
-      // 移除引号
-      if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith('\'') && value.endsWith('\''))) {
-        value = value.slice(1, -1);
+    const trimmedLine = line.trim();
+    const indent = line.length - line.trimStart().length;
+
+    // 检查是否是数组元素（以 "- " 开头）
+    if (trimmedLine.startsWith('- ')) {
+      const value = trimmedLine.substring(2).trim();
+
+      // 检查是否是对象数组的开始（形如 "- name: value"，且 value 不为空）
+      // 排除字符串数组元素（如 - "feat: xxx"）的情况
+      if (currentKey && value.includes(':') && !value.startsWith('"') && !value.startsWith('\'')) {
+        // 开始一个新的对象
+        currentObject = {};
+        const colonIndex = value.indexOf(':');
+        const objKey = value.substring(0, colonIndex).trim();
+        let objValue = value.substring(colonIndex + 1).trim();
+        // 移除引号
+        if ((objValue.startsWith('"') && objValue.endsWith('"')) ||
+            (objValue.startsWith('\'') && objValue.endsWith('\''))) {
+          objValue = objValue.slice(1, -1);
+        }
+        currentObject[objKey] = objValue;
+
+        // 检查后续行是否还有该对象的属性
+        let j = i + 1;
+        while (j < lines.length) {
+          const nextLine = lines[j];
+          const nextTrimmed = nextLine.trim();
+          const nextIndent = nextLine.length - nextLine.trimStart().length;
+
+          // 如果遇到新的数组元素或新的键值对，停止
+          if (nextTrimmed.startsWith('- ') || (nextIndent <= indent && nextTrimmed.includes(':'))) {
+            break;
+          }
+
+          // 如果是当前对象的属性（缩进更大）
+          if (nextIndent > indent && nextTrimmed.includes(':')) {
+            const nextColonIndex = nextTrimmed.indexOf(':');
+            const nextObjKey = nextTrimmed.substring(0, nextColonIndex).trim();
+            let nextObjValue = nextTrimmed.substring(nextColonIndex + 1).trim();
+            // 移除引号
+            if ((nextObjValue.startsWith('"') && nextObjValue.endsWith('"')) ||
+                (nextObjValue.startsWith('\'') && nextObjValue.endsWith('\''))) {
+              nextObjValue = nextObjValue.slice(1, -1);
+            }
+            if (currentObject) {
+              currentObject[nextObjKey] = nextObjValue;
+            }
+            j++;
+          } else {
+            break;
+          }
+        }
+
+        if (currentObject && Object.keys(currentObject).length > 0) {
+          currentArray.push(currentObject);
+        }
+        currentObject = null;
+        i = j - 1; // 更新索引
+        continue;
       }
-      currentArray.push(value);
-      return;
+
+      // 处理普通字符串数组元素
+      let processedValue = value;
+      // 移除引号
+      if ((processedValue.startsWith('"') && processedValue.endsWith('"')) ||
+          (processedValue.startsWith('\'') && processedValue.endsWith('\''))) {
+        processedValue = processedValue.slice(1, -1);
+      }
+      currentArray.push(processedValue);
+      continue;
     }
 
     // 处理之前累积的数组
@@ -92,7 +165,7 @@ export function parseFrontMatter(content: string): { metadata: Record<string, un
     // 处理新的键值对
     const colonIndex = line.indexOf(':');
     if (colonIndex === -1) {
-      return;
+      continue;
     }
 
     const key = line.substring(0, colonIndex).trim();
@@ -116,7 +189,8 @@ export function parseFrontMatter(content: string): { metadata: Record<string, un
               const elements = arrayContent.split(',').map(item => {
                 const trimmed = item.trim();
                 // 移除引号
-                if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith('\'') && trimmed.endsWith('\''))) {
+                if ((trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+                    (trimmed.startsWith('\'') && trimmed.endsWith('\''))) {
                   return trimmed.slice(1, -1);
                 }
                 return trimmed;
@@ -138,7 +212,8 @@ export function parseFrontMatter(content: string): { metadata: Record<string, un
       } else if (!isNaN(Number(value))) {
         // 数字类型
         metadata[key] = Number(value);
-      } else if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith('\'') && value.endsWith('\''))) {
+      } else if ((value.startsWith('"') && value.endsWith('"')) ||
+                 (value.startsWith('\'') && value.endsWith('\''))) {
         // 带引号的字符串，移除引号
         metadata[key] = value.slice(1, -1);
       } else {
@@ -146,7 +221,7 @@ export function parseFrontMatter(content: string): { metadata: Record<string, un
         metadata[key] = value;
       }
     }
-  });
+  }
 
   // 处理最后一个数组（如果存在）
   if (currentKey && currentArray.length > 0) {

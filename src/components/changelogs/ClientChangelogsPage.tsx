@@ -107,6 +107,18 @@ function ClientChangelogsPage({ changelogs, blogTimeStats, momentTimeStats }: Cl
                           <div className="flex justify-between items-center mb-2 pb-2 border-b border-border/30">
                             <span className="text-muted-foreground text-xs">{changelog.date}</span>
                             <div className="flex items-center gap-1.5">
+                              {/* 自定义荣誉标签 - 显示在最左侧 */}
+                              {changelog.honors && changelog.honors.length > 0 &&
+                                changelog.honors.map((honor, index) => (
+                                  <span
+                                    key={`honor-${index}`}
+                                    className="text-xs px-2 py-0.5 rounded-full text-white font-medium bg-gradient-to-r from-blue-500 via-sky-400 via-cyan-400 via-blue-400 to-blue-600"
+                                    title={honor.name}
+                                  >
+                                    {honor.name}
+                                  </span>
+                                ))
+                              }
                               {/* 成就标签 - 显示在类型标签左侧 */}
                               {changelog.achievements && changelog.achievements.length > 0 &&
                                 sortAchievementsByPriority(changelog.achievements).map((achievement) => (

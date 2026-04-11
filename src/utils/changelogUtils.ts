@@ -98,6 +98,9 @@ export function getServerChangelogs(): Changelog[] {
       const commits = (metadata.commits as string[]) || [];
       const achievements = calculateAchievements(commits, contentLineCount);
 
+      // 读取自定义荣誉
+      const honors = (metadata.honors as { name: string; color: string }[]) || [];
+
       return {
         id: file.replace('.md', ''),
         date: (metadata.date as string) || '',
@@ -106,7 +109,8 @@ export function getServerChangelogs(): Changelog[] {
         commits: commits,
         content: body,
         filePath: file,
-        achievements: achievements
+        achievements: achievements,
+        honors: honors
       };
     });
 
