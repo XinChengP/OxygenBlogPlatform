@@ -36,7 +36,8 @@ export { default as AdminTable } from './AdminTable';
 export { default as AdminModal } from './AdminModal';
 
 // 消息提示组件
-export { default as ToastProvider, useToast, toast, GlobalToastListener } from './AdminToast';
+export { ToastProvider, useToast, toast, GlobalToastListener } from './AdminToast';
+export type { default as AdminToastProps } from './AdminToast';
 
 // 确认对话框组件
 export { default as AdminConfirm } from './AdminConfirm';

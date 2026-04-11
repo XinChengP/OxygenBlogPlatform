@@ -33,6 +33,8 @@ interface AdminButtonProps {
   className?: string;
   /** 按钮类型属性 */
   htmlType?: 'button' | 'submit' | 'reset';
+  /** 图标组件 */
+  icon?: React.ReactNode;
 }
 
 /**
@@ -108,6 +110,7 @@ const AdminButton: React.FC<AdminButtonProps> = ({
   onClick,
   className,
   htmlType = 'button',
+  icon,
 }) => {
   // 计算是否禁用（加载状态时也禁用）
   const isDisabled = disabled || loading;
@@ -166,6 +169,8 @@ const AdminButton: React.FC<AdminButtonProps> = ({
           />
         </svg>
       )}
+      {/* 图标 */}
+      {icon && <span className="mr-2">{icon}</span>}
       {/* 按钮内容 */}
       {children}
     </button>

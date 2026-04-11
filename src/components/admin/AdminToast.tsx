@@ -257,4 +257,77 @@ export const GlobalToastListener: React.FC = () => {
   return null;
 };
 
-export default ToastProvider;
+/**
+ * 受控消息提示组件属性接口
+ */
+interface AdminToastProps {
+  /** 消息内容 */
+  message: string;
+  /** 消息类型 */
+  type?: 'success' | 'error' | 'warning' | 'info';
+  /** 是否显示 */
+  isVisible?: boolean;
+  /** 关闭回调 */
+  onClose?: () => void;
+  /** 持续时间（毫秒） */
+  duration?: number;
+}
+
+/**
+ * 受控消息提示组件
+ * 用于需要手动控制显示状态的消息提示
+ */
+export const AdminToast: React.FC<AdminToastProps> = ({
+  message,
+  type = 'info',
+  isVisible = false,
+  onClose,
+  duration = 3000,
+}) => {
+  const [visible, setVisible] = useState(isVisible);
+
+  useEffect(() => {
+    setVisible(isVisible);
+    if (isVisible && duration > 0 && onClose) {
+      const timer = setTimeout(() => {
+        onClose();
+      }, duration);
+      return () => clearTimeout(timer);
+    }
+  }, [isVisible, duration, onClose]);
+
+  if (!visible || !message) {
+    return null;
+  }
+
+  const styles = getToastStyles(type);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -20, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -20, scale: 0.95 }}
+      transition={{ duration: 0.2 }}
+      className={cn(
+        'flex items-center space-x-3 px-4 py-3 rounded-lg shadow-lg',
+        'text-white',
+        styles.bg
+      )}
+    >
+      <span className="flex-shrink-0">{styles.icon}</span>
+      <span className="flex-1 text-sm font-medium">{message}</span>
+      {onClose && (
+        <button
+          onClick={onClose}
+          className="flex-shrink-0 p-1 rounded hover:bg-white/20 transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      )}
+    </motion.div>
+  );
+};
+
+export default AdminToast;

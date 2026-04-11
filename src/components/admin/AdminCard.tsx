@@ -17,6 +17,8 @@ interface AdminCardProps {
   actions?: React.ReactNode;
   /** 是否移除内边距 */
   noPadding?: boolean;
+  /** 内联样式 */
+  style?: React.CSSProperties;
 }
 
 /**
@@ -37,21 +39,19 @@ const AdminCard: React.FC<AdminCardProps> = ({
   className,
   actions,
   noPadding = false,
+  style,
 }) => {
   return (
     <div
       className={cn(
-        // 基础样式：圆角、边框、阴影
         'rounded-xl border border-gray-200/50 dark:border-gray-700/50',
-        // 毛玻璃效果背景
         'bg-white/70 dark:bg-gray-800/70',
         'backdrop-blur-md',
-        // 阴影效果
         'shadow-sm hover:shadow-md',
-        // 过渡动画
         'transition-all duration-300',
         className
       )}
+      style={style}
     >
       {/* 卡片头部：标题和操作按钮 */}
       {(title || actions) && (

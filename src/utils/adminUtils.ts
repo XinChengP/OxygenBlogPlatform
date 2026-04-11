@@ -636,6 +636,14 @@ export interface DashboardStats {
   categoryStats: { name: string; count: number }[]
   /** 标签统计 */
   tagStats: { name: string; count: number }[]
+  /** 更新日志列表（用于统计图） */
+  changelogs: { date: string; type: string; title: string }[]
+  /** 文章总字数 */
+  blogWordCount: number
+  /** 动态总字数 */
+  momentWordCount: number
+  /** 日志总字数 */
+  changelogWordCount: number
 }
 
 /**
@@ -671,22 +679,256 @@ export interface SystemStatus {
 }
 
 /**
+ * 从markdown文件中解析YAML front matter
+ * @param content markdown文件内容
+ * @returns 解析后的元数据和内容
+ */
+function parseFrontMatter(content: string): { metadata: any; content: string } {
+  // 处理不同的换行符
+  const normalizedContent = content.replace(/\r\n/g, '\n');
+
+  // 使用更灵活的正则表达式匹配YAML前置元数据
+  const frontMatterRegex = /^---\s*\n([\s\S]*?)\n---\s*\n([\s\S]*)$/;
+  const match = normalizedContent.match(frontMatterRegex);
+
+  if (!match) {
+    return { metadata: {}, content };
+  }
+
+  const [, frontMatter, body] = match;
+  const metadata: any = {};
+
+  // 解析YAML格式，支持多行数组
+  const lines = frontMatter.split('\n');
+  let currentKey: string | null = null;
+  let currentArray: string[] = [];
+
+  lines.forEach(line => {
+    // 跳过空行和注释
+    if (!line.trim() || line.trim().startsWith('#')) {
+      return;
+    }
+
+    // 检查是否是缩进的数组元素
+    if (currentKey && (line.trim().startsWith('- ') || line.trim().startsWith('-\t'))) {
+      // 处理数组元素
+      let value = line.trim().substring(1).trim();
+      // 移除引号
+      if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith('\'') && value.endsWith('\''))) {
+        value = value.slice(1, -1);
+      }
+      currentArray.push(value);
+      return;
+    }
+
+    // 处理之前的数组
+    if (currentKey && currentArray.length > 0) {
+      metadata[currentKey] = currentArray;
+      currentKey = null;
+      currentArray = [];
+    }
+
+    // 处理新的键值对
+    const colonIndex = line.indexOf(':');
+    if (colonIndex === -1) {
+      return;
+    }
+
+    const key = line.substring(0, colonIndex).trim();
+    let value = line.substring(colonIndex + 1).trim();
+
+    if (key) {
+      // 检查是否是数组开始
+      if (value === '') {
+        // 多行数组开始
+        currentKey = key;
+        currentArray = [];
+      } else if (value.startsWith('[') && value.endsWith(']')) {
+        // 单行数组
+        try {
+          // 尝试直接解析JSON
+          metadata[key] = JSON.parse(value);
+        } catch {
+          try {
+            // 尝试解析YAML格式的数组
+            // 移除首尾的方括号，分割元素
+            const arrayContent = value.substring(1, value.length - 1).trim();
+            if (arrayContent) {
+              // 分割元素，处理可能的引号和空格
+              const elements = arrayContent.split(',').map(item => {
+                const trimmed = item.trim();
+                // 移除引号
+                if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith('\'') && trimmed.endsWith('\''))) {
+                  return trimmed.slice(1, -1);
+                }
+                return trimmed;
+              });
+              metadata[key] = elements;
+            } else {
+              metadata[key] = [];
+            }
+          } catch {
+            metadata[key] = value;
+          }
+        }
+      } else if (value === 'true') {
+        metadata[key] = true;
+      } else if (value === 'false') {
+        metadata[key] = false;
+      } else if (!isNaN(Number(value))) {
+        metadata[key] = Number(value);
+      } else if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith('\'') && value.endsWith('\''))) {
+        metadata[key] = value.slice(1, -1);
+      } else {
+        metadata[key] = value;
+      }
+    }
+  });
+
+  // 处理最后一个数组
+  if (currentKey && currentArray.length > 0) {
+    metadata[currentKey] = currentArray;
+  }
+
+  return { metadata, content: body.trim() };
+}
+
+/**
+ * 高级字数统计函数（简化版，用于服务器端）
+ * 支持中英文混合文本的精确字数统计
+ */
+function advancedWordCount(text: string): { totalWords: number } {
+  if (!text || text.trim().length === 0) {
+    return { totalWords: 0 };
+  }
+
+  // 清理文本：移除Markdown标记和HTML标签
+  const cleanedText = text
+    .replace(/<\/?[^>]+(>|$)/g, '')
+    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/`[^`]*`/g, '')
+    .replace(/#{1,6}\s/g, '')
+    .replace(/^[\s]*[-*+]\s+/gm, '')
+    .replace(/^[\s]*>\s+/gm, '')
+    .replace(/\|/g, '')
+    .replace(/^[\s]*-+[\s|-]*$/gm, '')
+    .replace(/\*\*|__|~~|\*|_/g, '');
+
+  let chineseChars = 0;
+  let englishWords = 0;
+  let numbers = 0;
+
+  // CJK字符范围
+  const isCJK = (charCode: number): boolean => {
+    return (
+      (charCode >= 0x4e00 && charCode <= 0x9fff) ||
+      (charCode >= 0x3400 && charCode <= 0x4dbf) ||
+      (charCode >= 0x20000 && charCode <= 0x2a6df) ||
+      (charCode >= 0x2a700 && charCode <= 0x2b73f) ||
+      (charCode >= 0x2b740 && charCode <= 0x2b81f) ||
+      (charCode >= 0x2b820 && charCode <= 0x2ceaf) ||
+      (charCode >= 0x2ceb0 && charCode <= 0x2ebef) ||
+      (charCode >= 0x3000 && charCode <= 0x303f) ||
+      (charCode >= 0x3040 && charCode <= 0x309f) ||
+      (charCode >= 0x30a0 && charCode <= 0x30ff) ||
+      (charCode >= 0x31f0 && charCode <= 0x31ff) ||
+      (charCode >= 0xff00 && charCode <= 0xffef) ||
+      (charCode >= 0xf900 && charCode <= 0xfaff)
+    );
+  };
+
+  // 数字范围
+  const isNumber = (charCode: number): boolean => {
+    return (charCode >= 0x30 && charCode <= 0x39) || (charCode >= 0xff10 && charCode <= 0xff19);
+  };
+
+  let currentWord = '';
+  let inEnglishWord = false;
+
+  for (let i = 0; i < cleanedText.length; i++) {
+    const char = cleanedText[i];
+    const charCode = char.codePointAt(0) || 0;
+
+    // 跳过空格和制表符
+    if (char === ' ' || char === '\t') {
+      if (inEnglishWord && currentWord) {
+        englishWords++;
+        currentWord = '';
+        inEnglishWord = false;
+      }
+      continue;
+    }
+
+    // 统计中文字符
+    if (isCJK(charCode)) {
+      chineseChars++;
+      if (inEnglishWord && currentWord) {
+        englishWords++;
+        currentWord = '';
+        inEnglishWord = false;
+      }
+      continue;
+    }
+
+    // 统计数字
+    if (isNumber(charCode)) {
+      numbers++;
+      if (inEnglishWord && currentWord) {
+        englishWords++;
+        currentWord = '';
+        inEnglishWord = false;
+      }
+      continue;
+    }
+
+    // 处理英文字符
+    if ((charCode >= 0x41 && charCode <= 0x5a) || (charCode >= 0x61 && charCode <= 0x7a)) {
+      currentWord += char;
+      inEnglishWord = true;
+      continue;
+    }
+
+    // 处理其他情况
+    if (inEnglishWord && currentWord) {
+      englishWords++;
+      currentWord = '';
+      inEnglishWord = false;
+    }
+  }
+
+  // 处理最后一个单词
+  if (inEnglishWord && currentWord) {
+    englishWords++;
+  }
+
+  // 总词数 = 中文字符 + 英文单词 + 数字
+  const totalWords = chineseChars + englishWords + numbers;
+
+  return { totalWords };
+}
+
+/**
  * 服务器端：获取仪表盘统计数据
  * @returns 统计数据对象
  */
 export function getDashboardStats(): DashboardStats {
   // 默认统计数据
-  const defaultStats: DashboardStats = {
-    blogCount: 0,
-    momentCount: 0,
-    imageCount: 0,
-    monthlyBlogCount: 0,
-    changelogCount: 0,
-    todoCount: 0,
-    todoCompletedCount: 0,
-    categoryStats: [],
-    tagStats: [],
-  }
+    const defaultStats: DashboardStats = {
+      blogCount: 0,
+      momentCount: 0,
+      imageCount: 0,
+      monthlyBlogCount: 0,
+      changelogCount: 0,
+      todoCount: 0,
+      todoCompletedCount: 0,
+      categoryStats: [],
+      tagStats: [],
+      changelogs: [],
+      blogWordCount: 0,
+      momentWordCount: 0,
+      changelogWordCount: 0,
+    }
 
   // 检查是否在服务器端
   if (typeof window !== 'undefined') {
@@ -701,6 +943,7 @@ export function getDashboardStats(): DashboardStats {
     const blogsDir = path.join(process.cwd(), 'src', 'content', 'blogs')
     let blogCount = 0
     let monthlyBlogCount = 0
+    let blogWordCount = 0
     const categoryMap = new Map<string, number>()
     const tagMap = new Map<string, number>()
 
@@ -715,7 +958,14 @@ export function getDashboardStats(): DashboardStats {
       blogFiles.forEach((file: string) => {
         const filePath = path.join(blogsDir, file)
         const content = fs.readFileSync(filePath, 'utf8')
-        
+
+        // 解析 front matter 获取正文内容
+        const { content: body } = parseFrontMatter(content)
+
+        // 统计文章字数
+        const wordCount = advancedWordCount(body)
+        blogWordCount += wordCount.totalWords
+
         // 简单提取日期字段
         const dateMatch = content.match(/date:\s*["']?(\d{4}-\d{2}-\d{2})/)
         if (dateMatch) {
@@ -746,20 +996,64 @@ export function getDashboardStats(): DashboardStats {
       })
     }
 
-    // 获取动态总数
+    // 获取动态总数和字数统计
     const momentsDir = path.join(process.cwd(), 'src', 'content', 'moments')
     let momentCount = 0
+    let momentWordCount = 0
 
     if (fs.existsSync(momentsDir) && fs.statSync(momentsDir).isDirectory()) {
-      momentCount = fs.readdirSync(momentsDir).filter((file: string) => file.endsWith('.md')).length
+      const momentFiles = fs.readdirSync(momentsDir).filter((file: string) => file.endsWith('.md'))
+      momentCount = momentFiles.length
+
+      // 统计动态字数
+      momentFiles.forEach((file: string) => {
+        const filePath = path.join(momentsDir, file)
+        const content = fs.readFileSync(filePath, 'utf8')
+
+        // 解析 front matter 获取正文内容
+        const { content: body } = parseFrontMatter(content)
+
+        // 统计动态字数
+        const wordCount = advancedWordCount(body)
+        momentWordCount += wordCount.totalWords
+      })
     }
 
-    // 获取更新日志总数
+    // 获取更新日志数据和字数统计
     const changelogsDir = path.join(process.cwd(), 'src', 'content', 'changelogs')
     let changelogCount = 0
+    let changelogWordCount = 0
+    const changelogs: { date: string; type: string; title: string }[] = []
 
     if (fs.existsSync(changelogsDir) && fs.statSync(changelogsDir).isDirectory()) {
-      changelogCount = fs.readdirSync(changelogsDir).filter((file: string) => file.endsWith('.md')).length
+      const changelogFiles = fs.readdirSync(changelogsDir).filter((file: string) => file.endsWith('.md'))
+      changelogCount = changelogFiles.length
+
+      // 遍历所有日志文件
+      changelogFiles.forEach((file: string) => {
+        const filePath = path.join(changelogsDir, file)
+        const content = fs.readFileSync(filePath, 'utf8')
+
+        // 解析 front matter 获取正文内容
+        const { content: body } = parseFrontMatter(content)
+
+        // 统计日志字数
+        const wordCount = advancedWordCount(body)
+        changelogWordCount += wordCount.totalWords
+
+        // 提取日期（从文件名）
+        const dateFromFile = file.replace('.md', '')
+
+        // 提取类型和标题（从文件内容）
+        const typeMatch = content.match(/type:\s*["']?([^"'\n]+)/)
+        const type = typeMatch ? typeMatch[1].trim() : 'feature'
+
+        const titleMatch = content.match(/title:\s*["']?([^"'\n]+)/)
+        const title = titleMatch ? titleMatch[1].trim() : dateFromFile
+
+        // 直接添加，不管 date 是否存在
+        changelogs.push({ date: dateFromFile, type, title })
+      })
     }
 
     // 获取待办事项统计
@@ -839,6 +1133,10 @@ export function getDashboardStats(): DashboardStats {
       todoCompletedCount,
       categoryStats,
       tagStats,
+      changelogs,
+      blogWordCount,
+      momentWordCount,
+      changelogWordCount,
     }
   } catch (error) {
     console.error('获取仪表盘统计数据失败:', error)
