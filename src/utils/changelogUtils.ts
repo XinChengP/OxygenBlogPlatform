@@ -77,8 +77,22 @@ export function getServerChangelogs(): Changelog[] {
         type = 'docs'; // 默认类型
       }
 
-      // 计算日志内容行数
-      const contentLineCount = body.split('\n').length;
+      // 计算日志内容行数（使用原始内容，不计算 trim 后的内容）
+      // 找到 frontmatter 结束位置，计算 body 原始行数
+      const lines = content.split('\n');
+      let frontmatterEnd = -1;
+      let dashCount = 0;
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].trim() === '---') {
+          dashCount++;
+          if (dashCount === 2) {
+            frontmatterEnd = i;
+            break;
+          }
+        }
+      }
+      // body 行数 = 总文件行数 - frontmatter 结束行号 - 1
+      const contentLineCount = frontmatterEnd !== -1 ? lines.length - frontmatterEnd - 1 : lines.length;
 
       // 计算成就
       const commits = (metadata.commits as string[]) || [];
