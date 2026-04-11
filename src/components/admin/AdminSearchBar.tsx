@@ -325,19 +325,6 @@ const AdminSearchBar: React.FC<AdminSearchBarProps> = ({
         </div>
       )}
 
-      {/* 快捷键提示 */}
-      <div className="hidden sm:flex items-center justify-end mt-2 text-xs text-gray-400 dark:text-gray-500">
-        <span className="flex items-center">
-          <kbd className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 font-mono">
-            Ctrl
-          </kbd>
-          <span className="mx-1">+</span>
-          <kbd className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 font-mono">
-            K
-          </kbd>
-          <span className="ml-1">快速搜索</span>
-        </span>
-      </div>
     </div>
   );
 };

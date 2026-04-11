@@ -356,12 +356,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
           href: '/admin/gallery/remote',
           icon: Cloud,
         },
-        {
-          id: 'gallery-settings',
-          label: '图床设置',
-          href: '/admin/gallery/settings',
-          icon: Wrench,
-        },
       ],
     },
     {
