@@ -199,17 +199,18 @@ export function useAdminBlogs(options: UseAdminBlogsOptions = {}): UseAdminBlogs
     // 排序
     result.sort((a, b) => {
       let comparison = 0;
-      
+
       switch (currentFilters.sortBy) {
         case 'title':
           comparison = a.title.localeCompare(b.title, 'zh-CN');
           break;
         case 'date':
         default:
-          comparison = new Date(a.updatedAt || a.date).getTime() - new Date(b.updatedAt || b.date).getTime();
+          // 按发布时间排序（优先使用发布时间date，而不是更新时间updatedAt）
+          comparison = new Date(a.date).getTime() - new Date(b.date).getTime();
           break;
       }
-      
+
       return currentFilters.sortOrder === 'desc' ? -comparison : comparison;
     });
 

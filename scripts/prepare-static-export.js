@@ -179,7 +179,7 @@ export async function batchToggleMomentPinned(ids: string[], pinned: boolean): P
 }
 
 export function generateNewMomentId(): string {
-  return \`moment-\${Date.now()}\`;
+  return 'moment-' + Date.now();
 }
 
 export async function getMomentTags(): Promise<string[]> {
