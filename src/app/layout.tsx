@@ -10,14 +10,187 @@ import ClientRouterWrapper from "@/components/ClientRouterWrapper";
 import { NavigationVisibilityProvider } from "@/contexts/NavigationVisibilityContext";
 import Analytics from "@/components/Analytics";
 
-// 使用Unicode转义序列避免服务端渲染时的编码问题
-// "心想事成 的 Blog" -> \\u5fc3\\u60f3\\u4e8b\\u6210 \\u7684 Blog
-// "个人博客" -> \\u4e2a\\u4eba\\u535a\\u5ba2
+/**
+ * 站点基础URL配置
+ * 根据部署环境自动选择正确的域名
+ */
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://blog.xinchengp.cn';
+
+/**
+ * 全局元数据配置
+ * 
+ * 优化目标：
+ * 1. 提升搜索引擎收录率
+ * 2. 优化社交媒体分享效果
+ * 3. 提供完整的站点信息
+ * 
+ * 支持的搜索引擎：
+ * - 百度搜索
+ * - Google搜索
+ * - 必应搜索
+ * - 搜狗搜索
+ * - 360搜索
+ */
 export const metadata: Metadata = {
-  title: "\u5fc3\u60f3\u4e8b\u6210 \u7684 Blog",
-  description: "\u4e2a\u4eba\u535a\u5ba2",
+  /**
+   * 页面标题模板
+   * %s 会被替换为具体页面的标题
+   */
+  title: {
+    default: "\u5fc3\u60f3\u4e8b\u6210 \u7684 Blog - \u6d1b\u5929\u4f9d\u4e3b\u9898\u4e2a\u4eba\u535a\u5ba2",
+    template: "%s | \u5fc3\u60f3\u4e8b\u6210 \u7684 Blog",
+  },
+  
+  /**
+   * 页面描述
+   * 用于搜索引擎结果页展示，建议150字以内
+   */
+  description: "\u5fc3\u60f3\u4e8b\u6210\u7684\u4e2a\u4eba\u535a\u5ba2\uff0c\u4ee5\u6d1b\u5929\u4f9d\u4e3a\u4e3b\u9898\uff0c\u5206\u4eab\u6280\u672f\u5b66\u4e60\u3001\u751f\u6d3b\u611f\u609f\u3001\u97f3\u4e50\u7b80\u8c31\u7b49\u5185\u5bb9\u3002\u4f7f\u7528 Next.js \u548c Tailwind CSS \u6784\u5efa\uff0c\u652f\u6301\u6df1\u8272\u6a21\u5f0f\u3001\u54cd\u5e94\u5f0f\u8bbe\u8ba1\u3002",
+  
+  /**
+   * 关键词
+   * 帮助搜索引擎理解网站内容主题
+   */
+  keywords: [
+    "\u5fc3\u60f3\u4e8b\u6210",
+    "\u6d1b\u5929\u4f9d",
+    "\u4e2a\u4eba\u535a\u5ba2",
+    "\u6280\u672f\u535a\u5ba2",
+    "Next.js",
+    "React",
+    "\u7b80\u8c31",
+    "VOCALOID",
+    "\u751f\u6d3b\u8bb0\u5f55",
+    "\u524d\u7aef\u5f00\u53d1",
+  ],
+  
+  /**
+   * 作者信息
+   */
+  authors: [
+    { name: "\u5fc3\u60f3\u4e8b\u6210", url: BASE_URL },
+  ],
+  
+  /**
+   * 创建者信息
+   */
+  creator: "\u5fc3\u60f3\u4e8b\u6210",
+  
+  /**
+   * 发布者信息
+   */
+  publisher: "\u5fc3\u60f3\u4e8b\u6210",
+  
+  /**
+   * 网站图标配置
+   */
   icons: {
     icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/favicon.ico',
+  },
+  
+  /**
+   * 规范URL配置
+   * 防止重复内容问题，告诉搜索引擎哪个是首选URL
+   */
+  alternates: {
+    canonical: BASE_URL,
+  },
+  
+  /**
+   * 机器人爬虫配置
+   * 控制搜索引擎如何抓取和索引网站
+   */
+  robots: {
+    index: true,          // 允许索引
+    follow: true,         // 允许跟随链接
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  
+  /**
+   * Open Graph 配置
+   * 用于社交媒体分享（微信、Facebook、LinkedIn等）
+   */
+  openGraph: {
+    type: 'website',
+    locale: 'zh_CN',
+    url: BASE_URL,
+    siteName: "\u5fc3\u60f3\u4e8b\u6210 \u7684 Blog",
+    title: "\u5fc3\u60f3\u4e8b\u6210 \u7684 Blog - \u6d1b\u5929\u4f9d\u4e3b\u9898\u4e2a\u4eba\u535a\u5ba2",
+    description: "\u5fc3\u60f3\u4e8b\u6210\u7684\u4e2a\u4eba\u535a\u5ba2\uff0c\u4ee5\u6d1b\u5929\u4f9d\u4e3a\u4e3b\u9898\uff0c\u5206\u4eab\u6280\u672f\u5b66\u4e60\u3001\u751f\u6d3b\u611f\u609f\u3001\u97f3\u4e50\u7b80\u8c31\u7b49\u5185\u5bb9\u3002",
+    images: [
+      {
+        url: `${BASE_URL}/LTY_Picture/og-image.png`,
+        width: 1200,
+        height: 630,
+        alt: "\u5fc3\u60f3\u4e8b\u6210 \u7684 Blog - \u6d1b\u5929\u4f9d\u4e3b\u9898\u4e2a\u4eba\u535a\u5ba2",
+      },
+    ],
+  },
+  
+  /**
+   * Twitter Card 配置
+   * 用于 Twitter/X 平台分享
+   */
+  twitter: {
+    card: 'summary_large_image',
+    title: "\u5fc3\u60f3\u4e8b\u6210 \u7684 Blog - \u6d1b\u5929\u4f9d\u4e3b\u9898\u4e2a\u4eba\u535a\u5ba2",
+    description: "\u5fc3\u60f3\u4e8b\u6210\u7684\u4e2a\u4eba\u535a\u5ba2\uff0c\u4ee5\u6d1b\u5929\u4f9d\u4e3a\u4e3b\u9898\uff0c\u5206\u4eab\u6280\u672f\u5b66\u4e60\u3001\u751f\u6d3b\u611f\u609f\u3001\u97f3\u4e50\u7b80\u8c31\u7b49\u5185\u5bb9\u3002",
+    images: [`${BASE_URL}/LTY_Picture/og-image.png`],
+    creator: "@xinchengp",
+  },
+  
+  /**
+   * 搜索引擎验证配置
+   * 用于百度、Google等搜索引擎的网站验证
+   * 
+   * 使用方法：
+   * 1. 在百度站长平台获取验证代码，替换 baidu-site-verification 的值
+   * 2. 在 Google Search Console 获取验证代码，替换 google-site-verification 的值
+   * 3. 在 Bing Webmaster Tools 获取验证代码，替换 msvalidate.01 的值
+   */
+  verification: {
+    // 百度站长验证（需要替换为实际验证码）
+    // 获取地址：https://ziyuan.baidu.com/site/index
+    // other: {
+    //   'baidu-site-verification': 'your-baidu-code',
+    // },
+    
+    // Google Search Console 验证（需要替换为实际验证码）
+    // 获取地址：https://search.google.com/search-console
+    // google: 'your-google-code',
+    
+    // Bing Webmaster Tools 验证（需要替换为实际验证码）
+    // 获取地址：https://www.bing.com/webmasters
+    // other: {
+    //   'msvalidate.01': 'your-bing-code',
+    // },
+  },
+  
+  /**
+   * 分类和标签
+   */
+  category: "\u4e2a\u4eba\u535a\u5ba2",
+  
+  /**
+   * 其他元数据
+   */
+  other: {
+    // 百度站长平台自动推送（可选）
+    // 'baidu-site-verification': 'your-code',
+    
+    // 360站长平台验证（可选）
+    // '360-site-verification': 'your-code',
+    
+    // 搜狗站长平台验证（可选）
+    // 'sogou_site_verification': 'your-code',
   },
 };
 
