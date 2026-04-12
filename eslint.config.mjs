@@ -43,9 +43,15 @@ const eslintConfig = [
     ignores: [
       "out/**",
       ".next/**",
+      "build/**",
+      "build_*/**",
       "node_modules/**",
       "scripts/**",
+      "public/**",
+      "electron/**",
       "*.config.*",
+      "**/*.test.ts",
+      "src/setting/**",
     ],
   },
 ];

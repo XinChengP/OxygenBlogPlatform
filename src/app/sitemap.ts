@@ -12,6 +12,12 @@
  */
 
 import { MetadataRoute } from 'next';
+
+/**
+ * 静态导出配置
+ * 强制使用静态生成模式，确保与 output: 'export' 兼容
+ */
+export const dynamic = 'force-static';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { parseFrontMatter } from '@/utils/frontMatterUtils';

@@ -23,7 +23,9 @@ const actionFiles = [
   'momentActions.ts',
   'galleryActions.ts',
   'settingsActions.ts',
-  'backupActions.ts'
+  'backupActions.ts',
+  'githubActions.ts',
+  'todoActions.ts'
 ];
 
 let restoredCount = 0;
