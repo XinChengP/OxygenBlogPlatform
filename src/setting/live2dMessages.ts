@@ -635,7 +635,7 @@ export function renderMessageTemplate(template: string, data: { text?: string } 
  * 用于画廊页面中 Live2D 看板娘的消息提示
  */
 export const GalleryMessages = {
-  // 画廊页面访问消息
+  // 画廊页面访问消息 - 提高优先级，高于通用页面消息
   PAGE_VISIT: {
     messages: [
       '欢迎来到画廊！这里有很多好看的图片~',
@@ -644,7 +644,7 @@ export const GalleryMessages = {
       '这些图片都是博主的心头好哦～'
     ],
     duration: MessageDuration.NORMAL,
-    priority: MessagePriority.NORMAL
+    priority: MessagePriority.MEDIUM
   },
   // 画廊分类切换消息
   CATEGORY_CHANGE: {
@@ -657,7 +657,7 @@ export const GalleryMessages = {
     duration: 2500,
     priority: MessagePriority.LOW
   },
-  // 画廊图片点击消息
+  // 画廊图片点击消息 - 提高优先级，确保用户交互反馈优先显示
   IMAGE_CLICK: {
     messages: [
       '这张图片真好看呢~',
@@ -666,7 +666,7 @@ export const GalleryMessages = {
       '看起来真不错！'
     ],
     duration: MessageDuration.NORMAL,
-    priority: MessagePriority.NORMAL
+    priority: MessagePriority.MEDIUM
   },
   // 画廊图片预览消息
   IMAGE_PREVIEW: {
@@ -706,7 +706,7 @@ export const GalleryMessages = {
  * 用于个人动态页面中 Live2D 看板娘的消息提示
  */
 export const MomentsMessages = {
-  // 个人动态页面访问消息
+  // 个人动态页面访问消息 - 提高优先级，高于通用页面消息
   PAGE_VISIT: {
     messages: [
       '这是博主的个人动态～记录着生活的点点滴滴！',
@@ -715,7 +715,7 @@ export const MomentsMessages = {
       '来了解一下博主的日常吧～'
     ],
     duration: MessageDuration.NORMAL,
-    priority: MessagePriority.NORMAL
+    priority: MessagePriority.MEDIUM
   }
 } as const;
 
@@ -724,7 +724,7 @@ export const MomentsMessages = {
  * 用于更新日志页面中 Live2D 看板娘的消息提示
  */
 export const ChangelogsMessages = {
-  // 更新日志页面访问消息
+  // 更新日志页面访问消息 - 提高优先级，高于通用页面消息
   PAGE_VISIT: {
     messages: [
       '这是更新日志～记录着博客的成长历程！',
@@ -733,7 +733,7 @@ export const ChangelogsMessages = {
       '了解博客的最新动态吧～'
     ],
     duration: MessageDuration.NORMAL,
-    priority: MessagePriority.NORMAL
+    priority: MessagePriority.MEDIUM
   }
 } as const;
 
