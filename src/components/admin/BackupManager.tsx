@@ -41,8 +41,8 @@ import {
   testRemoteConnection,
   type BackupHistory,
   type PushConfig,
-} from '@/actions/backupActions';
-import { toast } from '@/components/admin';
+} from '../../actions/backupActions';
+import { toast } from './AdminToast';
 
 interface BackupManagerProps {
   className?: string;
