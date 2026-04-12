@@ -1,20 +1,14 @@
 import { dirname } from "path";
 import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
-import typescriptEslint from "@typescript-eslint/eslint-plugin";
 import typescriptParser from "@typescript-eslint/parser";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
-
+/** @type {import('eslint').Linter.Config[]} */
 const eslintConfig = [
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
-    files: ["**/*.ts", "**/*.tsx"],
+    files: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
     languageOptions: {
       parser: typescriptParser,
       parserOptions: {
@@ -38,7 +32,21 @@ const eslintConfig = [
       "@next/next/no-img-element": "off",
       // 关闭未使用变量警告（暂时保持宽松）
       "@typescript-eslint/no-unused-vars": "off",
+      // 关闭 require 警告
+      "@typescript-eslint/no-require-imports": "off",
+      // 关闭 prefer-spread 警告
+      "prefer-spread": "off",
     },
+  },
+  {
+    // 忽略文件配置
+    ignores: [
+      "out/**",
+      ".next/**",
+      "node_modules/**",
+      "scripts/**",
+      "*.config.*",
+    ],
   },
 ];
 

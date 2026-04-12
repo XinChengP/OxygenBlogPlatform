@@ -9,8 +9,10 @@ const path = require('path');
 const actionsDir = path.join(__dirname, '..', 'src', 'actions');
 const backupDir = path.join(__dirname, '..', '.backup', 'actions');
 
-// 检查是否在静态导出模式
-const isStaticExport = process.env.STATIC_EXPORT === 'true';
+// 检查是否在静态导出模式 - 支持多种环境变量名称
+const isStaticExport = process.env.STATIC_EXPORT === 'true' || 
+                       process.env.NEXT_PRIVATE_STATIC_EXPORT === 'true' ||
+                       process.env.NODE_ENV === 'production';
 
 if (!isStaticExport) {
   console.log('📝 非静态导出模式，跳过准备步骤');

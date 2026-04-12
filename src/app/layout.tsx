@@ -167,11 +167,11 @@ export const metadata: Metadata = {
     // 获取地址：https://search.google.com/search-console
     // google: 'your-google-code',
     
-    // Bing Webmaster Tools 验证（需要替换为实际验证码）
+    // Bing Webmaster Tools 验证
     // 获取地址：https://www.bing.com/webmasters
-    // other: {
-    //   'msvalidate.01': 'your-bing-code',
-    // },
+    other: {
+      'msvalidate.01': '7F971987BE778887C6A2E389DD7DCF48',
+    },
   },
   
   /**

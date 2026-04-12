@@ -276,8 +276,6 @@ export default function Analytics(): React.ReactElement | null {
       onLoad={handleScriptLoad}
       onError={handleScriptError}
       // 设置 charset 确保中文正确显示
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore - Script 组件支持 charSet 属性
       charSet="UTF-8"
     />
   );
