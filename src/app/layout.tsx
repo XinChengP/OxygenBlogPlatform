@@ -163,9 +163,9 @@ export const metadata: Metadata = {
     //   'baidu-site-verification': 'your-baidu-code',
     // },
     
-    // Google Search Console 验证（需要替换为实际验证码）
+    // Google Search Console 验证
     // 获取地址：https://search.google.com/search-console
-    // google: 'your-google-code',
+    google: 'XZMqWkzpBfk49Af2iDe-zp7x0Ff429Xf8gtb0teqRUM',
     
     // Bing Webmaster Tools 验证
     // 获取地址：https://www.bing.com/webmasters
