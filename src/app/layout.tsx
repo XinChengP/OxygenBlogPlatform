@@ -157,19 +157,15 @@ export const metadata: Metadata = {
    * 3. 在 Bing Webmaster Tools 获取验证代码，替换 msvalidate.01 的值
    */
   verification: {
-    // 百度站长验证（需要替换为实际验证码）
-    // 获取地址：https://ziyuan.baidu.com/site/index
-    // other: {
-    //   'baidu-site-verification': 'your-baidu-code',
-    // },
-    
     // Google Search Console 验证
     // 获取地址：https://search.google.com/search-console
     google: 'XZMqWkzpBfk49Af2iDe-zp7x0Ff429Xf8gtb0teqRUM',
     
-    // Bing Webmaster Tools 验证
-    // 获取地址：https://www.bing.com/webmasters
+    // 百度站长验证 + Bing Webmaster Tools 验证
+    // 百度获取地址：https://ziyuan.baidu.com/site/index
+    // Bing 获取地址：https://www.bing.com/webmasters
     other: {
+      'baidu-site-verification': 'codeva-uVAjEluW1M',
       'msvalidate.01': '7F971987BE778887C6A2E389DD7DCF48',
     },
   },
