@@ -256,7 +256,7 @@ function ClientMomentsPage({ moments, blogCount, blogTotalWordCount, blogs, cate
                 公告板
               </h3>
               <div className="p-3 rounded-md bg-primary/5 border-l-2 border-primary">
-                <div className="text-muted-foreground text-sm">总想干点什么。。。</div>
+                <div className="text-muted-foreground text-sm">更新预告：一篇过年时候的博客；关于页面重构</div>
               </div>
             </div>
 
