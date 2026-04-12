@@ -3,7 +3,7 @@
  * 提供标准化的错误处理和用户反馈
  */
 
-import { toast } from '@/components/admin';
+import { toast } from '../components/admin/AdminToast';
 
 /**
  * 错误类型枚举

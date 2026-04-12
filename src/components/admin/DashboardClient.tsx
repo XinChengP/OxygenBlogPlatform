@@ -25,13 +25,13 @@ import {
   ClipboardList,
   Type,
 } from 'lucide-react';
-import { AdminCard } from '@/components/admin';
-import { cn } from '@/utils/cn';
-import type { DashboardStats } from '@/utils/adminUtils';
-import { Changelog, ChangelogType, getTypeStats, getChangelogTypeLabel, getMonthStats, getQuarterStats, getYearStats } from '@/types/changelogTypes';
+import AdminCard from './AdminCard';
+import { cn } from '../../utils/cn';
+import type { DashboardStats } from '../../utils/adminUtils';
+import { Changelog, ChangelogType, getTypeStats, getChangelogTypeLabel, getMonthStats, getQuarterStats, getYearStats } from '../../types/changelogTypes';
 import { PieChart, Pie, Cell, Tooltip as ReTooltip, ResponsiveContainer, Sector, LineChart, Line, XAxis, YAxis, CartesianGrid, Legend, AreaChart, Area } from 'recharts';
-import { themeColors } from '@/setting/WebSetting';
-import TimeStatsChart from '@/components/changelogs/TimeStatsChart';
+import { themeColors } from '../../setting/WebSetting';
+import TimeStatsChart from '../changelogs/TimeStatsChart';
 
 /**
  * 仪表盘客户端组件属性接口
