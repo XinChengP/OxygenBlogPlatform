@@ -133,7 +133,7 @@ export function createErrorHandler(context: string, defaultOptions?: ErrorHandle
   return {
     handle: (error: unknown, options?: ErrorHandlerOptions) => 
       handleError(error, context, { ...defaultOptions, ...options }),
-    wrap: <T, Args extends unknown[]>(fn: (...args: Args) => Promise<T>) => 
+    wrap: <T, Args extends unknown[]>(fn: (...args: Args) => Promise<T>, options?: ErrorHandlerOptions) => 
       withErrorHandling(fn, context, { ...defaultOptions, ...options }),
   };
 }
