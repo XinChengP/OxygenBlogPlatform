@@ -1,62 +1,20 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
-/node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
-
-# testing
-/coverage
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
-.DS_Store
-*.pem
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# env files (can opt-in for committing if needed)
+node_modules/
+.next/
+out/
+build/
 .env*
+*.local
+.idea/
+.vscode/
+*.swp
+.DS_Store
+*.log
+*secret*
+*password*
+*.pem
+.admin_password.json
 
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-
-# 后台管理系统配置（敏感信息，绝对不要提交！）
-/admin-config.json
-/admin-config.*.json
-/.admin/
-/admin-data/
-*.admin.json
-
-# 后台管理系统目录（仅本地开发使用，不要提交到GitHub）
-/src/app/admin/
-/src/app/api/admin/
-
-# 本地开发脚本（不要提交到GitHub）
-/start-dev.bat
-
-# 本地Admin备份仓库（独立git仓库，不要提交到主项目）
-/admin-backup/
-/admin-backup.ps1
-/admin-backup.sh
-/admin-restore.ps1
-
+# Admin 相关文件（不上传到 GitHub）
+admin-*
+admin_*
+src/app/admin/

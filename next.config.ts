@@ -1,5 +1,17 @@
-const isStaticExport = process.env.STATIC_EXPORT === 'true' || (process.env.NODE_ENV === 'production' && process.env.NEXT_PRIVATE_STATIC_EXPORT !== 'false');
-const isDev = process.env.NODE_ENV === 'development' && process.env.STATIC_EXPORT !== 'true';
+/**
+ * 判断是否为静态导出模式
+ * 规则：
+ * 1. 开发环境 (NODE_ENV=development) 永远不是静态导出模式
+ * 2. 只有显式设置 STATIC_EXPORT=true 或 NEXT_PRIVATE_STATIC_EXPORT=true 时才启用静态导出
+ * 3. 生产环境默认不启用静态导出，除非显式设置
+ */
+const isStaticExport = process.env.NODE_ENV !== 'development' && 
+  (process.env.STATIC_EXPORT === 'true' || process.env.NEXT_PRIVATE_STATIC_EXPORT === 'true');
+
+/**
+ * 判断是否为开发环境
+ */
+const isDev = process.env.NODE_ENV === 'development';
 const repoName = process.env.NEXT_PUBLIC_GITHUB_REPO_NAME || 'OxygenBlogPlatform';
 
 const nextConfig = {

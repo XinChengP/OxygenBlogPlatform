@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
-import ClientBlogDetail from '@/app/blogs/[slug]/ClientBlogDetail';
+import BlogDetailWrapper from '@/app/blogs/[slug]/BlogDetailWrapper';
 import 'highlight.js/styles/github-dark.css';
 import { formatBlogDate, calculateReadingTime } from '@/lib/utils';
 import { notFound } from 'next/navigation';
@@ -368,7 +368,7 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
     notFound();
   }
   
-  return <ClientBlogDetail blog={blogData} />;
+  return <BlogDetailWrapper blog={blogData} />;
 }
 
 // 禁用动态参数，只允许预生成的路由

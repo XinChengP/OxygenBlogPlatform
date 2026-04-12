@@ -235,10 +235,19 @@ interface ClientBlogDetailProps {
  * @returns JSX 元素
  */
 export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
-  const { theme } = useTheme();
+  const { theme, resolvedTheme } = useTheme();
   const { containerStyle } = useBackgroundStyle('blog-detail');
   const [copiedCode, setCopiedCode] = useState<string>('');
+  const [mounted, setMounted] = useState(false);
   const iframeRefs = useRef<Array<HTMLIFrameElement | null>>([]);
+
+  // 确保组件已挂载，避免 SSR 期间 theme 为 null
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // 在挂载前使用默认主题
+  const currentTheme = mounted ? resolvedTheme : 'light';
   
   // 计算文章时效性
   const calculateArticleAge = () => {
@@ -296,7 +305,7 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
     // 设置CSS变量以支持深色模式
     const setPasswordStyles = () => {
       const root = document.documentElement;
-      if (theme === 'dark') {
+      if (currentTheme === 'dark') {
         root.style.setProperty('--password-bg', 'rgba(55, 65, 81, 0.3)'); // gray-700 30% 透明
         root.style.setProperty('--password-text', '#f3f4f6'); // gray-100
         root.style.setProperty('--password-border', 'rgba(75, 85, 99, 0.5)'); // gray-600 50% 透明
@@ -406,7 +415,7 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
       
       if (passwordSpan && !passwordSpan.textContent?.includes('已复制!')) {
         if (e.type === 'mouseenter') {
-          (passwordSpan as HTMLElement).style.backgroundColor = theme === 'dark' ? 'rgba(75, 85, 99, 0.5)' : 'rgba(229, 229, 229, 0.5)';
+          (passwordSpan as HTMLElement).style.backgroundColor = currentTheme === 'dark' ? 'rgba(75, 85, 99, 0.5)' : 'rgba(229, 229, 229, 0.5)';
         } else if (e.type === 'mouseleave') {
           (passwordSpan as HTMLElement).style.backgroundColor = '';
         }
@@ -435,10 +444,10 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
       document.removeEventListener('mouseleave', handlePasswordHover, true);
       observer.disconnect();
     };
-  }, [theme]);
+  }, [currentTheme]);
 
   // 语法高亮主题
-  const syntaxTheme = theme === 'dark' ? oneDark : oneLight;
+  const syntaxTheme = currentTheme === 'dark' ? oneDark : oneLight;
 
   // 检测隐藏标签博客并触发彩蛋消息
   useEffect(() => {

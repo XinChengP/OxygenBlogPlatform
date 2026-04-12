@@ -13,7 +13,13 @@ import { applyThemeColors } from '@/setting/WebSetting';
  */
 function ThemeColorApplier() {
   const { resolvedTheme, theme, systemTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
+
+  // 确保组件已挂载
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   /**
    * 应用主题色并添加过渡效果
@@ -35,13 +41,16 @@ function ThemeColorApplier() {
 
   // 监听resolvedTheme变化并应用主题色
   useEffect(() => {
+    // 等待组件挂载后再应用主题
+    if (!mounted) return;
+    
     const isDark = resolvedTheme === 'dark';
     applyThemeWithTransition(isDark);
-  }, [resolvedTheme, applyThemeWithTransition]);
+  }, [resolvedTheme, applyThemeWithTransition, mounted]);
 
   // 监听系统主题变化（当设置为跟随系统时）
   useEffect(() => {
-    if (theme !== 'system') return;
+    if (!mounted || theme !== 'system') return;
 
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     
@@ -61,7 +70,7 @@ function ThemeColorApplier() {
     return () => {
       mediaQuery.removeEventListener('change', handleSystemThemeChange);
     };
-  }, [theme]);
+  }, [theme, mounted]);
 
   return null;
 }

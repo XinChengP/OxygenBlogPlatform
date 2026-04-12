@@ -253,11 +253,12 @@ export default function Analytics(): React.ReactElement | null {
 
   /**
    * SDK 加载失败的回调
+   * 仅在开发环境输出警告，不影响网站功能
    */
   const handleScriptError = useCallback(() => {
     if (process.env.NODE_ENV === 'development') {
       // eslint-disable-next-line no-console
-      console.error('[51la] SDK 脚本加载失败');
+      console.warn('[51la] SDK 脚本加载失败，统计功能将不可用');
     }
   }, []);
 
