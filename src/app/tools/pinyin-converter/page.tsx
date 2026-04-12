@@ -7,6 +7,7 @@ import { useTheme } from 'next-themes';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 import { getAssetPath } from '@/utils/assetUtils';
 import PageHeader from '@/components/ui/PageHeader';
+import { trackToolView } from '@/components/Analytics';
 
 
 
@@ -70,6 +71,18 @@ export default function PinyinConverter() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // 拼音转换器页面浏览统计 - 在组件挂载时上报
+  useEffect(() => {
+    if (mounted) {
+      // 延迟上报，确保 SDK 已加载
+      const timer = setTimeout(() => {
+        trackToolView('拼音转换器', '文本工具');
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [mounted]);
 
   // 加载拼音转换器
   useEffect(() => {

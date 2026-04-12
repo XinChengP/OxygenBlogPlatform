@@ -1,4 +1,5 @@
 import { advancedWordCount } from './wordCountUtils';
+import { parseFrontMatter } from './frontMatterUtils';
 
 interface Moment {
   id: string;
@@ -9,121 +10,6 @@ interface Moment {
   pinned?: boolean;
   hidden?: boolean;  // 是否隐藏该动态，用于前台过滤
   filePath: string;
-}
-
-/**
- * 从markdown文件中解析YAML front matter
- * @param content markdown文件内容
- * @returns 解析后的元数据和内容
- */
-export function parseFrontMatter(content: string): { metadata: any; content: string } {
-  // 处理不同的换行符
-  const normalizedContent = content.replace(/\r\n/g, '\n');
-  
-  // 使用更灵活的正则表达式匹配YAML前置元数据
-  const frontMatterRegex = /^---\s*\n([\s\S]*?)\n---\s*\n([\s\S]*)$/;
-  const match = normalizedContent.match(frontMatterRegex);
-  
-  if (!match) {
-    return { metadata: {}, content };
-  }
-  
-  const [, frontMatter, body] = match;
-  const metadata: any = {};
-  
-  // 解析YAML格式，支持多行数组
-  const lines = frontMatter.split('\n');
-  let currentKey: string | null = null;
-  let currentArray: string[] = [];
-  
-  lines.forEach(line => {
-    // 跳过空行和注释
-    if (!line.trim() || line.trim().startsWith('#')) {
-      return;
-    }
-    
-    // 检查是否是缩进的数组元素
-    if (currentKey && (line.trim().startsWith('- ') || line.trim().startsWith('-\t'))) {
-      // 处理数组元素
-      let value = line.trim().substring(1).trim();
-      // 移除引号
-      if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith('\'') && value.endsWith('\''))) {
-        value = value.slice(1, -1);
-      }
-      currentArray.push(value);
-      return;
-    }
-    
-    // 处理之前的数组
-    if (currentKey && currentArray.length > 0) {
-      metadata[currentKey] = currentArray;
-      currentKey = null;
-      currentArray = [];
-    }
-    
-    // 处理新的键值对
-    const colonIndex = line.indexOf(':');
-    if (colonIndex === -1) {
-      return;
-    }
-    
-    const key = line.substring(0, colonIndex).trim();
-    let value = line.substring(colonIndex + 1).trim();
-    
-    if (key) {
-      // 检查是否是数组开始
-      if (value === '') {
-        // 多行数组开始
-        currentKey = key;
-        currentArray = [];
-      } else if (value.startsWith('[') && value.endsWith(']')) {
-        // 单行数组
-        try {
-          // 尝试直接解析JSON
-          metadata[key] = JSON.parse(value);
-        } catch {
-          try {
-            // 尝试解析YAML格式的数组
-            // 移除首尾的方括号，分割元素
-            const arrayContent = value.substring(1, value.length - 1).trim();
-            if (arrayContent) {
-              // 分割元素，处理可能的引号和空格
-              const elements = arrayContent.split(',').map(item => {
-                const trimmed = item.trim();
-                // 移除引号
-                if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith('\'') && trimmed.endsWith('\''))) {
-                  return trimmed.slice(1, -1);
-                }
-                return trimmed;
-              });
-              metadata[key] = elements;
-            } else {
-              metadata[key] = [];
-            }
-          } catch {
-            metadata[key] = value;
-          }
-        }
-      } else if (value === 'true') {
-        metadata[key] = true;
-      } else if (value === 'false') {
-        metadata[key] = false;
-      } else if (!isNaN(Number(value))) {
-        metadata[key] = Number(value);
-      } else if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith('\'') && value.endsWith('\''))) {
-        metadata[key] = value.slice(1, -1);
-      } else {
-        metadata[key] = value;
-      }
-    }
-  });
-  
-  // 处理最后一个数组
-  if (currentKey && currentArray.length > 0) {
-    metadata[currentKey] = currentArray;
-  }
-  
-  return { metadata, content: body.trim() };
 }
 
 /**

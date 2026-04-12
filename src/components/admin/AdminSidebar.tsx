@@ -10,17 +10,13 @@ import {
   Image,
   Settings,
   ChevronDown,
-  ChevronRight,
-  PenLine,
   MessageSquare,
-  Server,
   FolderOpen,
   Cloud,
-  Wrench,
-  Sparkles,
   CheckSquare,
   Database,
   History,
+  Sparkles,
 } from 'lucide-react';
 
 /**
@@ -95,7 +91,7 @@ const NavItemComponent: React.FC<NavItemProps> = ({
         <Link
           href={item.href}
           onClick={handleClick}
-          className={`relative flex items-center justify-center w-full h-11 rounded-xl transition-all duration-300 ${
+          className={`relative flex items-center justify-center w-full h-11 rounded-xl transition-all duration-300 overflow-hidden ${
             isActive || isChildActive
               ? 'bg-gradient-to-r from-[#66ccff]/20 to-[#66ccff]/5 text-[#66ccff] shadow-lg shadow-[#66ccff]/10'
               : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/50 hover:text-gray-700 dark:hover:text-gray-200'
@@ -103,17 +99,6 @@ const NavItemComponent: React.FC<NavItemProps> = ({
           title={item.label}
         >
           <Icon className="w-5 h-5" />
-          
-          {/* 激活指示器 */}
-          {(isActive || isChildActive) && (
-            <motion.div
-              layoutId="activeIndicator"
-              className="absolute left-0 w-1 h-6 bg-gradient-to-b from-[#66ccff] to-[#4aa8e8] rounded-r-full"
-              initial={{ opacity: 0, scaleY: 0 }}
-              animate={{ opacity: 1, scaleY: 1 }}
-              transition={{ duration: 0.2 }}
-            />
-          )}
 
           {/* 徽章 */}
           {item.badge && (
@@ -123,11 +108,6 @@ const NavItemComponent: React.FC<NavItemProps> = ({
           )}
         </Link>
 
-        {/* 悬浮提示 */}
-        <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 dark:bg-gray-800 text-white text-sm font-medium rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none whitespace-nowrap z-50 shadow-xl shadow-black/20">
-          <div className="absolute left-0 top-1/2 -translate-x-1 -translate-y-1/2 w-2 h-2 bg-gray-900 dark:bg-gray-800 rotate-45" />
-          {item.label}
-        </div>
       </div>
     );
   }
@@ -277,40 +257,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       label: '文章管理',
       href: '/admin/blogs',
       icon: FileText,
-      children: [
-        {
-          id: 'blogs-list',
-          label: '文章列表',
-          href: '/admin/blogs',
-          icon: FileText,
-        },
-        {
-          id: 'blogs-edit',
-          label: '撰写文章',
-          href: '/admin/blogs/edit',
-          icon: PenLine,
-        },
-      ],
     },
     {
       id: 'moments',
       label: '动态管理',
       href: '/admin/moments',
       icon: MessageSquare,
-      children: [
-        {
-          id: 'moments-list',
-          label: '动态列表',
-          href: '/admin/moments',
-          icon: MessageSquare,
-        },
-        {
-          id: 'moments-edit',
-          label: '发布动态',
-          href: '/admin/moments/edit',
-          icon: PenLine,
-        },
-      ],
     },
     {
       id: 'todo',
@@ -323,20 +275,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       label: '日志管理',
       href: '/admin/changelogs',
       icon: History,
-      children: [
-        {
-          id: 'changelogs-list',
-          label: '日志列表',
-          href: '/admin/changelogs',
-          icon: History,
-        },
-        {
-          id: 'changelogs-edit',
-          label: '撰写日志',
-          href: '/admin/changelogs/edit',
-          icon: PenLine,
-        },
-      ],
     },
     {
       id: 'gallery',
@@ -418,7 +356,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       </div>
 
       {/* 导航菜单 */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+      <nav className={`flex-1 px-3 py-4 space-y-1 ${collapsed ? 'overflow-visible' : 'overflow-y-auto'}`}>
         {navItems.map((item) => (
           <NavItemComponent
             key={item.id}

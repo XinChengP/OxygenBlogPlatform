@@ -22,6 +22,7 @@ import { useBackgroundStyle } from '../../../hooks/useBackgroundStyle';
 import { useTheme } from 'next-themes';
 import { getAssetPath } from '../../../utils/assetUtils';
 import { Live2DMessageHelper } from '../../../utils/live2dMessageManager';
+import { trackArticleView } from '../../../components/Analytics';
 
 // 动态导入大型组件，优化初始加载性能
 const LazyTableOfContents = lazy(() => import('../../../components/TableOfContents'));
@@ -485,6 +486,16 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
       }
     };
   }, []);
+
+  // 文章浏览统计 - 在组件挂载时上报
+  useEffect(() => {
+    // 延迟上报，确保 SDK 已加载
+    const timer = setTimeout(() => {
+      trackArticleView(blog.title, blog.slug, blog.category);
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, [blog.title, blog.slug, blog.category]);
 
 
 

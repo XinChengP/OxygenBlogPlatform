@@ -16,6 +16,7 @@ import {
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 import Link from 'next/link';
 import PageHeader from '@/components/ui/PageHeader';
+import { trackToolView, trackPageView } from '@/components/Analytics';
 
 
 
@@ -71,6 +72,21 @@ export default function ToolsPage() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // 小工具页面浏览统计 - 在组件挂载时上报
+  useEffect(() => {
+    if (mounted) {
+      // 延迟上报，确保 SDK 已加载
+      const timer = setTimeout(() => {
+        trackPageView('小工具首页', {
+          category: selectedCategory === 'all' ? '全部' : selectedCategory,
+          toolCount: getToolsByCategory(selectedCategory).length
+        });
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [mounted, selectedCategory]);
 
   // 如果组件未挂载，显示占位符
   if (!mounted) {

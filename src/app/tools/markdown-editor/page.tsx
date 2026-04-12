@@ -7,6 +7,7 @@ import { useTheme } from 'next-themes';
 import { useState, useEffect } from 'react';
 import BackgroundLayer from '@/components/BackgroundLayer';
 import PageHeader from '@/components/ui/PageHeader';
+import { trackToolView } from '@/components/Analytics';
 
 
 
@@ -30,6 +31,18 @@ export default function MarkdownEditorPage() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Markdown 编辑器页面浏览统计 - 在组件挂载时上报
+  useEffect(() => {
+    if (mounted) {
+      // 延迟上报，确保 SDK 已加载
+      const timer = setTimeout(() => {
+        trackToolView('Markdown 编辑器', '文本工具');
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [mounted]);
 
   // 如果组件未挂载，显示占位符
   if (!mounted) {

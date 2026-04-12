@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import SmoothScrollProvider from "@/components/SmoothScrollProvider";
 import ClientRouterWrapper from "@/components/ClientRouterWrapper";
 import { NavigationVisibilityProvider } from "@/contexts/NavigationVisibilityContext";
+import Analytics from "@/components/Analytics";
 
 // 使用Unicode转义序列避免服务端渲染时的编码问题
 // "心想事成 的 Blog" -> \\u5fc3\\u60f3\\u4e8b\\u6210 \\u7684 Blog
@@ -214,6 +215,8 @@ export default function RootLayout({
             </ClientRouterWrapper>
           </NavigationVisibilityProvider>
         </ThemeProvider>
+        {/* 51la 网站统计 - 用于追踪访客数据 */}
+        <Analytics />
       </body>
     </html>
   );
