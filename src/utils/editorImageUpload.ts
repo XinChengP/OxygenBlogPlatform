@@ -75,10 +75,66 @@ export async function uploadBase64Image(
     };
   }
 
-  // TODO: 实现 Base64 图片上传
-  return {
-    success: false,
-    url: '',
-    message: 'Base64 上传功能暂未实现',
-  };
+  try {
+    // 验证 Base64 格式
+    const base64Regex = /^data:image\/(png|jpeg|jpg|gif|webp);base64,/;
+    if (!base64Regex.test(base64Data)) {
+      return {
+        success: false,
+        url: '',
+        message: '无效的 Base64 图片格式',
+      };
+    }
+
+    // 提取 MIME 类型和数据
+    const matches = base64Data.match(/^data:image\/(\w+);base64,(.+)$/);
+    if (!matches) {
+      return {
+        success: false,
+        url: '',
+        message: '无法解析 Base64 数据',
+      };
+    }
+
+    const mimeType = matches[1];
+    const base64Content = matches[2];
+
+    // 转换为 Blob
+    const byteCharacters = atob(base64Content);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: `image/${mimeType}` });
+
+    // 创建 FormData
+    const formData = new FormData();
+    const filename = `base64-image-${Date.now()}.${mimeType}`;
+    formData.append('file', blob, filename);
+
+    // 调用 Server Action 上传
+    const result = await uploadLocalImage(formData, targetDir);
+
+    if (result.success && result.image) {
+      return {
+        success: true,
+        url: result.image.src,
+        message: 'Base64 图片上传成功',
+      };
+    } else {
+      return {
+        success: false,
+        url: '',
+        message: result.message || 'Base64 图片上传失败',
+      };
+    }
+  } catch (error) {
+    console.error('Base64 图片上传失败:', error);
+    return {
+      success: false,
+      url: '',
+      message: error instanceof Error ? error.message : 'Base64 图片上传失败',
+    };
+  }
 }

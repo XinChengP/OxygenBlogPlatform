@@ -6,7 +6,7 @@
 
 export interface Live2DEvent {
   type: 'theme-change' | 'music-play' | 'music-pause' | 'page-navigate' | 'custom-message' | 'live2d-init' | 'live2d-ready' | 'live2d-error' | 'live2d-message' | 'gallery-category-change' | 'gallery-image-click' | 'gallery-preview-open' | 'gallery-preview-close' | 'gallery-scroll';
-  data?: any;
+  data?: Record<string, unknown> | string | number | boolean | null;
   timestamp: number;
   id?: string;
   source?: string;

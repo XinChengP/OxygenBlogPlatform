@@ -217,12 +217,12 @@ export async function uploadImageToGitHub(
  * 本地存储设置
  */
 export const clientSettings = {
-  get: (key: string): any => {
+  get: <T = unknown>(key: string): T | null => {
     if (typeof window === "undefined") return null;
     const value = localStorage.getItem(`settings_${key}`);
-    return value ? JSON.parse(value) : null;
+    return value ? (JSON.parse(value) as T) : null;
   },
-  set: (key: string, value: any): void => {
+  set: <T = unknown>(key: string, value: T): void => {
     if (typeof window === "undefined") return;
     localStorage.setItem(`settings_${key}`, JSON.stringify(value));
   },

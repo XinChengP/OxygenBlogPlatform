@@ -5,10 +5,26 @@
 
 import { live2dResourceManager, Live2DResourceConfig } from './live2dResourceManager';
 
+// Live2D 模型类型定义
+interface Live2DModel {
+  x: number;
+  y: number;
+  scale: number;
+  motions?: Record<string, unknown>;
+  expressions?: Record<string, unknown>;
+  startMotion?: (motionName: string, priority?: number) => void;
+  setExpression?: (expressionName: string) => void;
+  update?: () => void;
+  draw?: () => void;
+  hitTest?: (x: number, y: number) => string | null;
+  release?: () => void;
+  textures?: unknown[];
+}
+
 export interface Live2DInstance {
   id: string;
   canvas: HTMLCanvasElement;
-  model: any;
+  model: Live2DModel | null;
   modelPath: string;
   createdAt: number;
   lastAccessed: number;
@@ -465,21 +481,63 @@ class Live2DInstanceManager {
   }
 
   /**
+   * 获取当前活跃实例
+   */
+  private getActiveInstance(): Live2DInstance | null {
+    return this.activeInstance;
+  }
+
+  /**
    * 画布事件处理
    */
   private handleCanvasMouseEnter(): void {
-    // 实现鼠标进入逻辑
-    // TODO: 实现鼠标进入时的交互效果
+    // 鼠标进入时的交互效果
+    const instance = this.getActiveInstance();
+    if (instance && instance.model) {
+      // 触发欢迎动作
+      if (instance.model.startMotion) {
+        instance.model.startMotion('welcome', 1);
+      }
+      // 更新最后访问时间
+      instance.lastAccessed = Date.now();
+    }
   }
 
   private handleCanvasMouseLeave(): void {
-    // 实现鼠标离开逻辑
-    // TODO: 实现鼠标离开时的交互效果
+    // 鼠标离开时的交互效果
+    const instance = this.getActiveInstance();
+    if (instance && instance.model) {
+      // 触发告别动作
+      if (instance.model.startMotion) {
+        instance.model.startMotion('goodbye', 1);
+      }
+      // 重置表情
+      if (instance.model.setExpression) {
+        instance.model.setExpression('normal');
+      }
+    }
   }
 
   private handleCanvasClick(): void {
-    // 实现点击逻辑
-    // TODO: 实现点击时的交互效果
+    // 点击时的交互效果
+    const instance = this.getActiveInstance();
+    if (instance && instance.model) {
+      // 随机触发动作或表情
+      const random = Math.random();
+      if (random < 0.5 && instance.model.startMotion) {
+        // 触发随机动作
+        const motions = ['tap', 'click', 'touch'];
+        const randomMotion = motions[Math.floor(Math.random() * motions.length)];
+        instance.model.startMotion(randomMotion, 2);
+      } else if (instance.model.setExpression) {
+        // 触发随机表情
+        const expressions = ['happy', 'surprised', 'normal'];
+        const randomExpression = expressions[Math.floor(Math.random() * expressions.length)];
+        instance.model.setExpression(randomExpression);
+      }
+      // 更新最后访问时间
+      instance.lastAccessed = Date.now();
+    }
   }
 
   /**

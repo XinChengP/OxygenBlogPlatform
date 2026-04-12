@@ -17,7 +17,12 @@ interface BilibiliUserInfo {
  * 缓存机制
  * 避免短时间内重复请求
  */
-const cache = new Map<string, { data: any; timestamp: number }>();
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+
+const cache = new Map<string, CacheEntry<unknown>>();
 const CACHE_DURATION = 60 * 60 * 1000; // 1小时缓存
 
 /**
@@ -87,16 +92,18 @@ async function fetchWithProxy(url: string, proxyIndex: number = 0): Promise<Resp
  * 使用多代理重试机制，确保请求稳定性
  * @param mid B站用户ID
  */
-export async function getBilibiliUserInfo(mid: string | number): Promise<{
+export interface BilibiliUserInfoResult {
   data: { video_count: number; name: string; mid: string | number };
   code: number;
   message?: string;
-}> {
+}
+
+export async function getBilibiliUserInfo(mid: string | number): Promise<BilibiliUserInfoResult> {
   // 检查缓存
   const cacheKey = `bilibili_user_${mid}`;
   const cached = cache.get(cacheKey);
   if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-    return cached.data;
+    return cached.data as BilibiliUserInfoResult;
   }
 
   // B站公开接口（无风控）

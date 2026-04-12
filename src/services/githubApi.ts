@@ -465,7 +465,7 @@ async function withRetry<T>(
  * @param error - 错误对象
  * @returns 用户友好的错误消息
  */
-export function handleGitHubError(error: any): string {
+export function handleGitHubError(error: unknown): string {
   // 如果是网络错误
   if (error instanceof TypeError && error.message.includes('fetch')) {
     return '网络连接失败，请检查网络设置后重试';
@@ -530,8 +530,8 @@ export async function batchCreateOrUpdateFiles(
     content: string;
     message: string;
   }>
-): Promise<{ success: boolean; results: any[]; errors: string[] }> {
-  const results: any[] = [];
+): Promise<{ success: boolean; results: Array<{ path: string; success: boolean; data?: unknown; error?: string }>; errors: string[] }> {
+  const results: Array<{ path: string; success: boolean; data?: unknown; error?: string }> = [];
   const errors: string[] = [];
   
   for (const file of files) {
@@ -579,14 +579,14 @@ export async function batchDeleteFiles(
     path: string;
     sha: string;
   }>
-): Promise<{ success: boolean; results: any[]; errors: string[] }> {
-  const results: any[] = [];
+): Promise<{ success: boolean; results: Array<{ path: string; success: boolean; data?: unknown; error?: string }>; errors: string[] }> {
+  const results: Array<{ path: string; success: boolean; data?: unknown; error?: string }> = [];
   const errors: string[] = [];
-  
+
   for (const file of files) {
     try {
       // 使用重试机制执行删除操作
-      const result = await withRetry(() => 
+      const result = await withRetry(() =>
         deleteFileBySha(config, file.path, file.sha)
       );
       results.push({

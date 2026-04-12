@@ -30,7 +30,7 @@ export interface LoaderStats {
 }
 
 // 资源缓存
-const resourceCache = new Map<string, { data: any; timestamp: number }>();
+const resourceCache = new Map<string, { data: unknown; timestamp: number }>();
 const CACHE_DURATION = 5 * 60 * 1000; // 5分钟缓存
 
 // 加载统计
@@ -68,7 +68,7 @@ export async function loadWithRetry<T>(
       loaderStats.cacheHits++;
       return {
         success: true,
-        data: cached.data,
+        data: cached.data as T,
         loadTime: 0,
         retryCount: 0,
         fromCache: true,

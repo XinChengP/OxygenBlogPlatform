@@ -592,7 +592,7 @@ class GlobalMusicPlayerManager {
    * @param event - 事件名称
    * @param detail - 事件详情数据
    */
-  private emitEvent(event: string, detail?: any) {
+  private emitEvent(event: string, detail?: unknown) {
     const listeners = this.eventListeners.get(event);
     if (listeners) {
       listeners.forEach(handler => {

@@ -1,23 +1,50 @@
 import path from 'path';
+import type * as fsType from 'fs';
+import type * as httpsType from 'https';
 import { GalleryImage, ImageSource, ImageCategory, ImageCategoryTree } from '../types/gallery';
 import { getAssetPath } from './assetUtils';
 
 // 只在服务器端环境中导入 fs 和 https 模块
-let fs: any;
-let https: any;
+let fs: typeof fsType | undefined;
+let https: typeof httpsType | undefined;
 if (typeof window === 'undefined') {
   fs = require('fs');
   https = require('https');
 }
 
 /**
- * 服务端 HTTPS 请求函数（禁用 SSL 证书验证）
+ * HTTPS 响应类型
+ */
+interface HttpsResponse {
+  statusCode?: number;
+  statusMessage?: string;
+  on(event: 'data', callback: (chunk: string) => void): void;
+  on(event: 'end', callback: () => void): void;
+}
+
+/**
+ * HTTPS 请求类型
+ */
+interface HttpsRequest {
+  on(event: 'error', callback: (error: Error) => void): void;
+  setTimeout(timeout: number, callback: () => void): void;
+  destroy(): void;
+  end(): void;
+}
+
+/**
+ * 服务端 HTTPS 请求函数
  * @param url - 请求 URL
  * @param headers - 请求头
  * @returns 响应数据
  */
-const serverHttpsFetch = (url: string, headers: Record<string, string>): Promise<any> => {
+const serverHttpsFetch = <T = unknown>(url: string, headers: Record<string, string>): Promise<T> => {
   return new Promise((resolve, reject) => {
+    if (!https) {
+      reject(new Error('HTTPS module not available'));
+      return;
+    }
+
     const parsedUrl = new URL(url);
     const options = {
       hostname: parsedUrl.hostname,
@@ -25,19 +52,18 @@ const serverHttpsFetch = (url: string, headers: Record<string, string>): Promise
       path: parsedUrl.pathname + parsedUrl.search,
       method: 'GET',
       headers: headers,
-      rejectUnauthorized: false, // 禁用 SSL 证书验证
       agent: false
     };
     
-    const req = https.request(options, (res: any) => {
+    const req = https.request(options, (res: import('http').IncomingMessage) => {
       let data = '';
-      res.on('data', (chunk: any) => {
+      res.on('data', (chunk: string) => {
         data += chunk;
       });
       res.on('end', () => {
         if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
           try {
-            resolve(JSON.parse(data));
+            resolve(JSON.parse(data) as T);
           } catch (e) {
             reject(new Error(`Failed to parse JSON: ${data.substring(0, 100)}`));
           }
@@ -47,7 +73,7 @@ const serverHttpsFetch = (url: string, headers: Record<string, string>): Promise
       });
     });
     
-    req.on('error', (e: any) => {
+    req.on('error', (e: Error) => {
       reject(e);
     });
     

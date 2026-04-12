@@ -25,7 +25,7 @@ export interface ResourceLoadResult {
 }
 
 interface CachedResource {
-  data: any;
+  data: unknown;
   size: number;
   loadTime: number;
   accessTime: number;

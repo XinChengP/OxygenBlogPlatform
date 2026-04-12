@@ -275,7 +275,13 @@ export function useGallery(options: UseGalleryOptions): UseGalleryReturn {
             token: '', // 公开仓库不需要 Token
           }, path);
 
-          const galleryImages: GalleryImage[] = imagesData.map((item: any) => ({
+          interface GitHubImageItem {
+            sha?: string;
+            path: string;
+            name: string;
+          }
+
+          const galleryImages: GalleryImage[] = imagesData.map((item: GitHubImageItem) => ({
             id: item.sha || item.path,
             src: getImageDownloadUrl({
               owner: config?.owner || DEFAULT_GALLERY_CONFIG.owner,
@@ -294,7 +300,13 @@ export function useGallery(options: UseGalleryOptions): UseGalleryReturn {
           // 使用认证 API 获取图片列表
           const imagesData = await getImagesFromRepo(githubConfig, path);
 
-          const galleryImages: GalleryImage[] = imagesData.map((item: any) => ({
+          interface GitHubImageItem {
+            sha?: string;
+            path: string;
+            name: string;
+          }
+
+          const galleryImages: GalleryImage[] = imagesData.map((item: GitHubImageItem) => ({
             id: item.sha || item.path,
             src: getImageDownloadUrl(githubConfig, item.path),
             alt: item.name,
