@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkEmoji from 'remark-emoji';
@@ -16,6 +16,7 @@ import {
 import PageHeader from '@/components/ui/PageHeader';
 import TimeStatsChart from './TimeStatsChart';
 import TypeStatsChart from './TypeStatsChart';
+import { Live2DMessageHelper } from '@/utils/live2dMessageManager';
 
 /**
  * 时间统计项接口
@@ -52,6 +53,11 @@ function ClientChangelogsPage({ changelogs, blogTimeStats, momentTimeStats }: Cl
   // 管理每个日志的展开/收起状态
   // key 为日志 id，value 为是否展开
   const [expandedLogs, setExpandedLogs] = useState<Record<string, boolean>>({});
+
+  // 页面加载时发送Live2D欢迎消息
+  useEffect(() => {
+    Live2DMessageHelper.showChangelogsMessage('PAGE_VISIT');
+  }, []);
 
   /**
    * 切换日志的展开/收起状态

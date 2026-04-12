@@ -288,6 +288,11 @@ const MusicPlayerComponent = function MusicPlayer({
      */
     const handlePlayStart = () => {
       // 使用 list.list 获取音频列表（APlayer 的 list 属性）
+      // 添加空值检查，防止 player.list 未定义时报错
+      if (!player.list || !player.list.list || player.list.index < 0) {
+        console.warn('[MusicPlayer] 播放器列表尚未初始化，跳过事件处理');
+        return;
+      }
       const currentAudio = player.list.list[player.list.index];
       if (currentAudio) {
         // 触发 Live2D 音乐播放事件

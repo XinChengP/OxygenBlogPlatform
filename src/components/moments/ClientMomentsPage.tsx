@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkEmoji from 'remark-emoji';
@@ -14,6 +14,7 @@ import { getAvatarPath, name } from '@/setting/AboutSetting';
 import type { TodoConfig } from '@/types/todo';
 import PageHeader from '@/components/ui/PageHeader';
 import { getAssetPath } from '@/utils/assetUtils';
+import { Live2DMessageHelper } from '@/utils/live2dMessageManager';
 
 interface ClientMomentsPageProps {
   moments: Array<{ id: string; time: string; content: string; tags: string[]; images?: string[]; pinned?: boolean; filePath: string }>;
@@ -30,6 +31,11 @@ function ClientMomentsPage({ moments, blogCount, blogTotalWordCount, blogs, cate
     categoryCount,
     tagCount
   });
+
+  // 页面加载时发送Live2D欢迎消息
+  useEffect(() => {
+    Live2DMessageHelper.showMomentsMessage('PAGE_VISIT');
+  }, []);
 
   return (
     <div className="min-h-screen">

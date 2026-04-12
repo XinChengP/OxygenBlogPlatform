@@ -631,6 +631,113 @@ export function renderMessageTemplate(template: string, data: { text?: string } 
 }
 
 /**
+ * 画廊页面消息配置
+ * 用于画廊页面中 Live2D 看板娘的消息提示
+ */
+export const GalleryMessages = {
+  // 画廊页面访问消息
+  PAGE_VISIT: {
+    messages: [
+      '欢迎来到画廊！这里有很多好看的图片~',
+      '来看看博主的精心收藏吧～',
+      '画廊里有不少精彩图片呢！',
+      '这些图片都是博主的心头好哦～'
+    ],
+    duration: MessageDuration.NORMAL,
+    priority: MessagePriority.NORMAL
+  },
+  // 画廊分类切换消息
+  CATEGORY_CHANGE: {
+    messages: [
+      '切换到{category}分类了~',
+      '正在浏览{category}分类的图片~',
+      '{category}分类有很多好看的图片呢！',
+      '来看看{category}分类吧~'
+    ],
+    duration: 2500,
+    priority: MessagePriority.LOW
+  },
+  // 画廊图片点击消息
+  IMAGE_CLICK: {
+    messages: [
+      '这张图片真好看呢~',
+      '喜欢这张图片吗？',
+      '这张图的色调很舒服~',
+      '看起来真不错！'
+    ],
+    duration: MessageDuration.NORMAL,
+    priority: MessagePriority.NORMAL
+  },
+  // 画廊图片预览消息
+  IMAGE_PREVIEW: {
+    messages: [
+      '正在查看大图~',
+      '这张图好清晰呀！',
+      '细节看得更清楚了~'
+    ],
+    duration: 2500,
+    priority: MessagePriority.LOW
+  },
+  // 关闭画廊预览消息
+  PREVIEW_CLOSE: {
+    messages: [
+      '预览已关闭~',
+      '回到画廊了~',
+      '继续看其他图片吧！'
+    ],
+    duration: MessageDuration.SHORT,
+    priority: MessagePriority.LOW
+  },
+  // 画廊滚动浏览消息（低概率触发）
+  SCROLL: {
+    messages: [
+      '正在浏览画廊~',
+      '看看还有什么好看的图片吧！',
+      '这么多好看的图片~',
+      '继续往下看看吧~'
+    ],
+    duration: 2500,
+    priority: MessagePriority.LOW
+  }
+} as const;
+
+/**
+ * 个人动态页面消息配置
+ * 用于个人动态页面中 Live2D 看板娘的消息提示
+ */
+export const MomentsMessages = {
+  // 个人动态页面访问消息
+  PAGE_VISIT: {
+    messages: [
+      '这是博主的个人动态～记录着生活的点点滴滴！',
+      '来看看最近都发生了什么吧～',
+      '生活中的小确幸都在这里呢～',
+      '来了解一下博主的日常吧～'
+    ],
+    duration: MessageDuration.NORMAL,
+    priority: MessagePriority.NORMAL
+  }
+} as const;
+
+/**
+ * 更新日志页面消息配置
+ * 用于更新日志页面中 Live2D 看板娘的消息提示
+ */
+export const ChangelogsMessages = {
+  // 更新日志页面访问消息
+  PAGE_VISIT: {
+    messages: [
+      '这是更新日志～记录着博客的成长历程！',
+      '来看看博客都有哪些变化吧～',
+      '每一次更新都是博主的心血呢～',
+      '了解博客的最新动态吧～'
+    ],
+    duration: MessageDuration.NORMAL,
+    priority: MessagePriority.NORMAL
+  }
+} as const;
+
+/**
  * 隐藏标签博客彩蛋消息配置
  * 用于触发 Live2D 看板娘的特殊彩蛋消息
  */

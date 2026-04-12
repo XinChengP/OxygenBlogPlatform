@@ -4,10 +4,10 @@
  * 重构版本：支持配置化消息、优化的显示逻辑和优先级机制
  */
 
-import { 
-  MessageConfig, 
-  getRandomMessage, 
-  MessagePriority, 
+import {
+  MessageConfig,
+  getRandomMessage,
+  MessagePriority,
   MessageDuration,
   WelcomeMessages,
   InteractionMessages,
@@ -21,6 +21,9 @@ import {
   GeneralMessages,
   HolidayMessages,
   HiddenTagEasterEggMessages,
+  GalleryMessages,
+  MomentsMessages,
+  ChangelogsMessages,
   getTimeGreetingConfig,
   getPageMessageConfig,
   getHolidayMessageConfig,
@@ -788,7 +791,7 @@ export class Live2DMessageHelper {
   static showHiddenTagEasterEgg(): void {
     // 随机选择发现消息或特别提示
     const useDiscovery = Math.random() < 0.6; // 60% 概率显示发现消息
-    
+
     if (useDiscovery) {
       const config = HiddenTagEasterEggMessages.DISCOVERY;
       live2dMessageManager.showMessage(
@@ -804,5 +807,61 @@ export class Live2DMessageHelper {
         config.priority
       );
     }
+  }
+
+  /**
+   * 显示画廊页面消息
+   * @param type 消息类型（PAGE_VISIT, CATEGORY_CHANGE, IMAGE_CLICK, IMAGE_PREVIEW, PREVIEW_CLOSE, SCROLL）
+   * @param data 可选数据，用于模板渲染（如 {category} 占位符替换）
+   */
+  static showGalleryMessage(
+    type: 'PAGE_VISIT' | 'CATEGORY_CHANGE' | 'IMAGE_CLICK' | 'IMAGE_PREVIEW' | 'PREVIEW_CLOSE' | 'SCROLL',
+    data?: { category?: string }
+  ): void {
+    const config = GalleryMessages[type];
+    if (!config) return;
+
+    let message = getRandomMessage(config);
+
+    // 处理模板占位符
+    if (type === 'CATEGORY_CHANGE' && data?.category) {
+      message = renderMessageTemplate(message, { text: data.category });
+    }
+
+    live2dMessageManager.showMessage(
+      message,
+      config.duration,
+      config.priority
+    );
+  }
+
+  /**
+   * 显示个人动态页面消息
+   * @param type 消息类型（目前仅支持 PAGE_VISIT）
+   */
+  static showMomentsMessage(type: 'PAGE_VISIT'): void {
+    const config = MomentsMessages[type];
+    if (!config) return;
+
+    live2dMessageManager.showMessage(
+      getRandomMessage(config),
+      config.duration,
+      config.priority
+    );
+  }
+
+  /**
+   * 显示更新日志页面消息
+   * @param type 消息类型（目前仅支持 PAGE_VISIT）
+   */
+  static showChangelogsMessage(type: 'PAGE_VISIT'): void {
+    const config = ChangelogsMessages[type];
+    if (!config) return;
+
+    live2dMessageManager.showMessage(
+      getRandomMessage(config),
+      config.duration,
+      config.priority
+    );
   }
 }

@@ -9,6 +9,7 @@ import ImagePreview from './components/ImagePreview';
 import CategoryFilter from './components/CategoryFilter';
 import { useBackgroundStyle } from '../../hooks/useBackgroundStyle';
 import { live2dEventEmitter, Live2DEvents, emitLive2DEvent } from '../../utils/live2dEventEmitter';
+import { Live2DMessageHelper } from '../../utils/live2dMessageManager';
 import { Image, Grid3X3, ChevronDown, Filter } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 
@@ -85,7 +86,7 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
       selectedCategory: category,
       selectedSubCategory: subCategory || null
     }));
-    
+
     // 发送分类切换事件给Live2D
     emitLive2DEvent(Live2DEvents.INFO, {
       type: 'gallery-category-change',
@@ -93,27 +94,11 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
       subCategory: subCategory || null,
       timestamp: Date.now()
     });
-    
-    // 根据分类和子分类发送不同的Live2D消息
-    if (category && subCategory) {
-      emitLive2DEvent(Live2DEvents.LIVE2D_MESSAGE, {
-        message: `现在正在查看${category}分类的${subCategory}子分类图片~`,
-        type: 'gallery',
-        priority: 2
-      });
-    } else if (category) {
-      emitLive2DEvent(Live2DEvents.LIVE2D_MESSAGE, {
-        message: `现在正在查看${category}分类的图片~`,
-        type: 'gallery',
-        priority: 2
-      });
-    } else {
-      emitLive2DEvent(Live2DEvents.LIVE2D_MESSAGE, {
-        message: '现在查看全部图片~',
-        type: 'gallery',
-        priority: 2
-      });
-    }
+
+    // 根据分类和子分类发送不同的Live2D消息（使用配置化消息）
+    Live2DMessageHelper.showGalleryMessage('CATEGORY_CHANGE', {
+      category: category ? (subCategory ? `${category}-${subCategory}` : category) : '全部'
+    });
   };
 
   // 处理图片点击（打开预览）
@@ -123,7 +108,7 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
       selectedImage: image,
       isPreviewOpen: true
     }));
-    
+
     // 发送图片点击事件给Live2D
     emitLive2DEvent(Live2DEvents.CLICK, {
       type: 'gallery-image-click',
@@ -132,22 +117,9 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
       imageCategory: image.category,
       timestamp: Date.now()
     });
-    
-    // 发送随机Live2D互动消息
-    const interactionMessages = [
-      '这张图片真好看呢~',
-      '洛天依好可爱呀！',
-      '喜欢这张图片吗？',
-      '这张图的色调很舒服~',
-      '看起来真不错！'
-    ];
-    const randomMessage = interactionMessages[Math.floor(Math.random() * interactionMessages.length)];
-    
-    emitLive2DEvent(Live2DEvents.LIVE2D_MESSAGE, {
-      message: randomMessage,
-      type: 'gallery',
-      priority: 3
-    });
+
+    // 发送图片点击消息（使用配置化消息）
+    Live2DMessageHelper.showGalleryMessage('IMAGE_CLICK');
   };
 
   // 关闭预览
@@ -157,19 +129,15 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
       isPreviewOpen: false,
       selectedImage: null
     }));
-    
+
     // 发送预览关闭事件给Live2D
     emitLive2DEvent(Live2DEvents.INFO, {
       type: 'gallery-preview-close',
       timestamp: Date.now()
     });
-    
-    // 发送关闭预览消息
-    emitLive2DEvent(Live2DEvents.LIVE2D_MESSAGE, {
-      message: '预览已关闭~',
-      type: 'gallery',
-      priority: 2
-    });
+
+    // 发送关闭预览消息（使用配置化消息）
+    Live2DMessageHelper.showGalleryMessage('PREVIEW_CLOSE');
   };
 
   // 画廊加载完成事件
@@ -180,13 +148,9 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
       totalCategories: state.categories.length,
       timestamp: Date.now()
     });
-    
-    // 发送欢迎消息
-    emitLive2DEvent(Live2DEvents.LIVE2D_MESSAGE, {
-      message: '欢迎来到画廊！这里有很多好看的图片~',
-      type: 'gallery',
-      priority: 1
-    });
+
+    // 发送欢迎消息（使用配置化消息）
+    Live2DMessageHelper.showGalleryMessage('PAGE_VISIT');
   }, [state.images.length, state.categories.length]);
 
   // 监听画廊预览状态变化
@@ -200,13 +164,9 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
         imageCategory: state.selectedImage.category,
         timestamp: Date.now()
       });
-      
-      // 发送预览打开消息
-      emitLive2DEvent(Live2DEvents.LIVE2D_MESSAGE, {
-        message: '正在查看大图~',
-        type: 'gallery',
-        priority: 2
-      });
+
+      // 发送预览打开消息（使用配置化消息）
+      Live2DMessageHelper.showGalleryMessage('IMAGE_PREVIEW');
     }
   }, [state.isPreviewOpen, state.selectedImage]);
 
@@ -217,7 +177,7 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
       if (scrollThrottleRef.current) {
         clearTimeout(scrollThrottleRef.current);
       }
-      
+
       scrollThrottleRef.current = window.setTimeout(() => {
         // 发送滚动事件给Live2D
         emitLive2DEvent(Live2DEvents.PAGE_SCROLL, {
@@ -226,29 +186,17 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
           scrollPercentage: Math.round((window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100),
           timestamp: Date.now()
         });
-        
-        // 随机发送滚动互动消息
-        const scrollMessages = [
-          '正在浏览画廊~',
-          '看看还有什么好看的图片吧！',
-          '这么多好看的图片，都不知道选哪张了~',
-          '继续往下看看吧~'
-        ];
-        
+
+        // 低概率发送滚动浏览消息（使用配置化消息）
         if (Math.random() > 0.7) { // 30%概率发送消息
-          const randomMessage = scrollMessages[Math.floor(Math.random() * scrollMessages.length)];
-          emitLive2DEvent(Live2DEvents.LIVE2D_MESSAGE, {
-            message: randomMessage,
-            type: 'gallery',
-            priority: 1
-          });
+          Live2DMessageHelper.showGalleryMessage('SCROLL');
         }
       }, 1000);
     };
-    
+
     // 添加滚动事件监听
     window.addEventListener('scroll', handleScroll);
-    
+
     return () => {
       // 清除定时器
       if (scrollThrottleRef.current) {
