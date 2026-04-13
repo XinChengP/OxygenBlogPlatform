@@ -9,6 +9,7 @@ import SmoothScrollProvider from "@/components/SmoothScrollProvider";
 import ClientRouterWrapper from "@/components/ClientRouterWrapper";
 import { NavigationVisibilityProvider } from "@/contexts/NavigationVisibilityContext";
 import Analytics from "@/components/Analytics";
+import SecurityProvider from "@/components/security/SecurityProvider";
 
 /**
  * 站点基础URL配置
@@ -363,27 +364,34 @@ export default function RootLayout({
       >
         {/* 平滑导航脚本 - 使用普通script标签 */}
         <script src="/js/smooth-navigation.js" defer />
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange={false}
-          storageKey="theme"
+        {/* 安全保护提供者 - 提供CSP、防劫持、完整性检测等安全功能 */}
+        <SecurityProvider
+          enableCSP={true}
+          enableHijackingProtection={true}
+          enableIntegrityCheck={true}
         >
-          <NavigationVisibilityProvider>
-            <ClientRouterWrapper>
-              <SmoothScrollProvider>
-                <BackgroundLayer />
-                <Navigation />
-                <main className="min-h-screen transition-colors duration-300 relative">
-                  {children}
-                </main>
-                <Footer />
-                <ConditionalComponents />
-              </SmoothScrollProvider>
-            </ClientRouterWrapper>
-          </NavigationVisibilityProvider>
-        </ThemeProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange={false}
+            storageKey="theme"
+          >
+            <NavigationVisibilityProvider>
+              <ClientRouterWrapper>
+                <SmoothScrollProvider>
+                  <BackgroundLayer />
+                  <Navigation />
+                  <main className="min-h-screen transition-colors duration-300 relative">
+                    {children}
+                  </main>
+                  <Footer />
+                  <ConditionalComponents />
+                </SmoothScrollProvider>
+              </ClientRouterWrapper>
+            </NavigationVisibilityProvider>
+          </ThemeProvider>
+        </SecurityProvider>
         {/* 51la 网站统计 - 用于追踪访客数据 */}
         <Analytics />
       </body>
