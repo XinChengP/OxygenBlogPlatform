@@ -61,6 +61,20 @@
       /forward-logs/i,
       /integrity-check/i,
     ],
+    // Next.js 运行时脚本白名单（防止误报）
+    allowedInlineScriptPatterns: [
+      // Next.js 运行时代码
+      /self\.__next_f\.push/i,
+      /__NEXT_DATA__/i,
+      /next-route-announcer/i,
+      /nextjs/i,
+      // React 运行时代码
+      /react-root/i,
+      /react-dom/i,
+      // 开发工具
+      /webpack/i,
+      /turbopack/i,
+    ],
   };
 
   // ============================================
@@ -128,7 +142,17 @@
    */
   function isSuspiciousCode(code) {
     if (!code || typeof code !== 'string') return false;
-    
+
+    // 首先检查是否在白名单中（Next.js 运行时脚本等）
+    const isAllowed = CONFIG.allowedInlineScriptPatterns.some(pattern => {
+      return pattern.test(code);
+    });
+
+    // 如果在白名单中，不视为可疑
+    if (isAllowed) {
+      return false;
+    }
+
     const suspiciousPatterns = [
       /eval\s*\(/i,
       /document\.write/i,
@@ -142,7 +166,7 @@
       /<script/i,
       /on\w+\s*=/i,
     ];
-    
+
     return suspiciousPatterns.some(pattern => pattern.test(code));
   }
 

@@ -184,8 +184,14 @@ export const developmentCSP: CSPDirectives = {
  */
 export function generateCSPString(directives: CSPDirectives): string {
   const entries: string[] = [];
-  
+
   for (const [key, value] of Object.entries(directives)) {
+    // frame-ancestors 指令不能通过 meta 标签设置，只能通过 HTTP 响应头设置
+    // 参考: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy/frame-ancestors
+    if (key === 'frame-ancestors') {
+      continue;
+    }
+
     if (key === 'upgrade-insecure-requests' && value === true) {
       entries.push('upgrade-insecure-requests');
     } else if (key === 'block-all-mixed-content' && value === true) {
@@ -194,7 +200,7 @@ export function generateCSPString(directives: CSPDirectives): string {
       entries.push(`${key} ${value.join(' ')}`);
     }
   }
-  
+
   return entries.join('; ');
 }
 
