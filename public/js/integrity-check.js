@@ -48,6 +48,19 @@
       'v6.51.la',
       'sdk.51.la',
     ],
+    // 开发环境允许的脚本模式（React DevTools, HMR等）
+    allowedScriptPatterns: [
+      /react-devtools/i,
+      /hmr/i,
+      /hot-module-replacement/i,
+      /webpack/i,
+      /next-dev/i,
+      /turbopack/i,
+      /__nextjs/i,
+      /intercept-console-error/i,
+      /forward-logs/i,
+      /integrity-check/i,
+    ],
   };
 
   // ============================================
@@ -221,44 +234,66 @@
     }
 
     /**
-     * 检查脚本完整性
-     */
-    checkScriptIntegrity() {
-      const violations = [];
-      const scripts = document.querySelectorAll('script');
-      const baselineScripts = this.baseline.get('__scripts__');
+   * 检查脚本是否在允许的开发工具列表中
+   * @param {string} src 脚本来源
+   * @param {string} content 脚本内容
+   * @returns {boolean} 是否允许
+   */
+  isAllowedDevScript(src, content) {
+    // 检查是否是开发工具脚本
+    const checkString = src + ' ' + (content || '').substring(0, 200);
+    
+    return CONFIG.allowedScriptPatterns.some(pattern => {
+      return pattern.test(checkString);
+    });
+  }
 
-      // 检查脚本数量变化
-      if (scripts.length > baselineScripts.count) {
-        const newScripts = Array.from(scripts).slice(baselineScripts.count);
+  /**
+   * 检查脚本完整性
+   */
+  checkScriptIntegrity() {
+    const violations = [];
+    const scripts = document.querySelectorAll('script');
+    const baselineScripts = this.baseline.get('__scripts__');
+
+    // 检查脚本数量变化
+    if (scripts.length > baselineScripts.count) {
+      const newScripts = Array.from(scripts).slice(baselineScripts.count);
+      
+      newScripts.forEach(script => {
+        const src = script.src || 'inline';
+        const content = script.textContent || '';
         
-        newScripts.forEach(script => {
-          const src = script.src || 'inline';
-          
-          // 检查是否是允许的域名
-          if (src !== 'inline' && !isAllowedDomain(src)) {
+        // 跳过开发工具脚本（React DevTools, HMR等）
+        if (this.isAllowedDevScript(src, content)) {
+          Logger.info('跳过开发工具脚本检测', src);
+          return;
+        }
+        
+        // 检查是否是允许的域名
+        if (src !== 'inline' && !isAllowedDomain(src)) {
+          violations.push({
+            type: 'unauthorized_script',
+            source: src,
+            message: `检测到未授权的外部脚本: ${src}`,
+          });
+        }
+
+        // 检查内联脚本内容
+        if (src === 'inline' && content) {
+          if (isSuspiciousCode(content)) {
             violations.push({
-              type: 'unauthorized_script',
-              source: src,
-              message: `检测到未授权的外部脚本: ${src}`,
+              type: 'suspicious_inline_script',
+              message: '检测到可疑的内联脚本内容',
+              preview: content.substring(0, 100),
             });
           }
-
-          // 检查内联脚本内容
-          if (src === 'inline' && script.textContent) {
-            if (isSuspiciousCode(script.textContent)) {
-              violations.push({
-                type: 'suspicious_inline_script',
-                message: '检测到可疑的内联脚本内容',
-                preview: script.textContent.substring(0, 100),
-              });
-            }
-          }
-        });
-      }
-
-      return violations;
+        }
+      });
     }
+
+    return violations;
+  }
 
     /**
      * 执行完整性检查
@@ -392,6 +427,11 @@
         if (mutation.type === 'childList') {
           mutation.addedNodes.forEach(node => {
             if (node.nodeType === Node.ELEMENT_NODE) {
+              // 跳过开发工具相关的元素
+              if (this.isDevToolElement(node)) {
+                return;
+              }
+              
               if (node.tagName === 'SCRIPT') {
                 shouldCheck = true;
               }
@@ -412,6 +452,31 @@
           this.performCheck();
         }, 100);
       }
+    }
+
+    /**
+     * 检查元素是否是开发工具相关的元素
+     * @param {Element} element DOM元素
+     * @returns {boolean} 是否是开发工具元素
+     */
+    isDevToolElement(element) {
+      // 检查元素的ID或类名是否包含开发工具相关关键词
+      const id = element.id || '';
+      const className = element.className || '';
+      const checkString = (id + ' ' + className).toLowerCase();
+      
+      const devToolKeywords = [
+        'react-devtools',
+        'nextjs',
+        'turbopack',
+        'hmr',
+        'hot-reload',
+        'webpack',
+        '__next',
+        'data-integrity-check',
+      ];
+      
+      return devToolKeywords.some(keyword => checkString.includes(keyword));
     }
 
     /**

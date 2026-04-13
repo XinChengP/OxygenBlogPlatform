@@ -176,6 +176,19 @@ function SecurityMonitor(): null {
 }
 
 /**
+ * 检测是否在开发环境
+ */
+function isDevelopment(): boolean {
+  if (typeof window === 'undefined') return false;
+  
+  const hostname = window.location.hostname;
+  return hostname === 'localhost' || 
+         hostname === '127.0.0.1' || 
+         hostname === '::1' ||
+         hostname.endsWith('.localhost');
+}
+
+/**
  * 安全提供者组件
  * 整合所有安全功能
  */
@@ -192,14 +205,23 @@ export default function SecurityProvider({
   // 获取CSP内容
   const cspContent = customCSP || generateCSPString(getCurrentCSP());
   
-  // 启动防劫持保护
+  // 判断是否在开发环境
+  const isDev = isDevelopment();
+  
+  // 启动防劫持保护（开发环境下降低监控频率）
   useHijackingProtection({
     enableIframeEscape: true,
-    enableDOMMonitoring: true,
-    enableScriptMonitoring: true,
+    enableDOMMonitoring: !isDev, // 开发环境禁用DOM监控
+    enableScriptMonitoring: !isDev, // 开发环境禁用脚本监控
     enableNetworkMonitoring: true,
-    checkInterval: 5000,
+    checkInterval: isDev ? 30000 : 5000, // 开发环境降低检查频率
     onHijackingDetected: (type, details) => {
+      // 开发环境下只记录日志，不显示错误
+      if (isDev) {
+        console.log(`[安全] 检测到潜在问题: ${type}`, details);
+        return;
+      }
+      
       console.error(`[安全] 检测到劫持行为: ${type}`, details);
       
       // 上报到分析服务
@@ -225,8 +247,8 @@ export default function SecurityProvider({
       {/* CSP策略注入 */}
       {enableCSP && <CSPMetaTag cspContent={cspContent} />}
       
-      {/* 完整性检测 */}
-      {enableIntegrityCheck && <IntegrityCheckLoader />}
+      {/* 完整性检测 - 生产环境才启用 */}
+      {enableIntegrityCheck && !isDev && <IntegrityCheckLoader />}
       
       {/* 安全监控 */}
       <SecurityMonitor />
