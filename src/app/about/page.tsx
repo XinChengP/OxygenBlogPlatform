@@ -207,6 +207,39 @@ export default function AboutPage() {
                 </motion.a>
               </div>
             </motion.div>
+
+            {/* 兴趣爱好卡片 - 移动到左侧边栏 */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+              className={getGlassStyle("rounded-2xl p-6 border shadow-lg")}
+            >
+              <div className="flex items-center mb-4">
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ duration: 0.5, delay: 0.6 }}
+                  className="w-10 h-10 rounded-lg flex items-center justify-center mr-3 bg-gradient-to-br from-primary to-primary/60"
+                >
+                  <span className="font-bold text-lg">🏷️</span>
+                </motion.div>
+                <h3 className="text-xl font-semibold text-foreground">兴趣爱好</h3>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {['洛天依', '乒乓球', '围棋', 'Video', 'Minecraft', 'Genshin Impact', 'Roco kingdom'].map((tag, index) => (
+                  <motion.span
+                    key={tag}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.3, delay: 0.7 + index * 0.05 }}
+                    className="px-3 py-1 text-sm rounded-full border border-primary/20 bg-primary/10 text-primary transition-all duration-300 hover:scale-105 cursor-default"
+                  >
+                    {tag}
+                  </motion.span>
+                ))}
+              </div>
+            </motion.div>
           </motion.aside>
 
           {/* 右侧主内容区 */}
@@ -216,66 +249,30 @@ export default function AboutPage() {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="lg:col-span-3 space-y-6"
           >
-            {/* 关于我和兴趣爱好 - 两列布局 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* 关于我卡片 */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.4 }}
-                className={getGlassStyle("rounded-2xl p-6 border shadow-lg")}
-              >
-                <div className="flex items-center mb-4">
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ duration: 0.5, delay: 0.5 }}
-                    className="w-10 h-10 rounded-lg flex items-center justify-center mr-3 bg-gradient-to-br from-primary to-primary/60"
-                  >
-                    <span className="font-bold text-lg">🎯</span>
-                  </motion.div>
-                  <h3 className="text-xl font-semibold text-foreground">关于我</h3>
-                </div>
-                <div className="text-muted-foreground leading-relaxed space-y-3">
-                  <p>{aboutMeP1}</p>
-                  <p>{aboutMeP2}</p>
-                  <p>{aboutMeP3}</p>
-                </div>
-              </motion.div>
-
-              {/* 兴趣爱好卡片 */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.5 }}
-                className={getGlassStyle("rounded-2xl p-6 border shadow-lg")}
-              >
-                <div className="flex items-center mb-4">
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ duration: 0.5, delay: 0.6 }}
-                    className="w-10 h-10 rounded-lg flex items-center justify-center mr-3 bg-gradient-to-br from-primary to-primary/60"
-                  >
-                    <span className="font-bold text-lg">🏷️</span>
-                  </motion.div>
-                  <h3 className="text-xl font-semibold text-foreground">兴趣爱好</h3>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {['洛天依', '乒乓球', '围棋', 'Video', 'Minecraft', 'Genshin Impact', 'Roco kingdom'].map((tag, index) => (
-                    <motion.span
-                      key={tag}
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.3, delay: 0.7 + index * 0.05 }}
-                      className="px-3 py-1 text-sm rounded-full border border-primary/20 bg-primary/10 text-primary transition-all duration-300 hover:scale-105 cursor-default"
-                    >
-                      {tag}
-                    </motion.span>
-                  ))}
-                </div>
-              </motion.div>
-            </div>
+            {/* 关于我卡片 - 单独展示 */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              className={getGlassStyle("rounded-2xl p-6 border shadow-lg")}
+            >
+              <div className="flex items-center mb-4">
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ duration: 0.5, delay: 0.5 }}
+                  className="w-10 h-10 rounded-lg flex items-center justify-center mr-3 bg-gradient-to-br from-primary to-primary/60"
+                >
+                  <span className="font-bold text-lg">🎯</span>
+                </motion.div>
+                <h3 className="text-xl font-semibold text-foreground">关于我</h3>
+              </div>
+              <div className="text-muted-foreground leading-relaxed space-y-3">
+                <p>{aboutMeP1}</p>
+                <p>{aboutMeP2}</p>
+                <p>{aboutMeP3}</p>
+              </div>
+            </motion.div>
 
             {/* 底部装饰 */}
             <div className="text-center">
