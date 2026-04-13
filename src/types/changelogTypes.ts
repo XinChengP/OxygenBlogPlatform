@@ -22,9 +22,8 @@ export type ChangelogType = 'feature' | 'optimize' | 'fix' | 'docs' | 'style' | 
  * - tired: 略感疲惫 - 关联提交数量 >= 10 且 < 20
  * - exhausted: 肝爆了 - 关联提交数量 >= 20
  * - smallButComplete: 麻雀虽小五脏俱全 - 关联提交 = 1 且 日志行数 > 55
- * - lively: 人声鼎沸 - 日志行数 > 250
  */
-export type ChangelogAchievement = 'tired' | 'exhausted' | 'smallButComplete' | 'lively';
+export type ChangelogAchievement = 'tired' | 'exhausted' | 'smallButComplete';
 
 /**
  * 自定义荣誉接口
@@ -287,7 +286,6 @@ const achievementConfig: Record<ChangelogAchievement, { label: string; color: st
   tired: { label: '略感疲惫', color: '#7366ff', priority: 1 },
   exhausted: { label: '肝爆了', color: '#e566ff', priority: 2 },
   smallButComplete: { label: '麻雀虽小五脏俱全', color: '#ff66a6', priority: 3 },
-  lively: { label: '人声鼎沸', color: '#ff9966', priority: 4 },
 };
 
 /**
@@ -320,11 +318,6 @@ export function calculateAchievements(
   // 麻雀虽小五脏俱全: 关联提交 = 1 且 日志行数 > 55
   if (commits.length === 1 && contentLineCount > 55) {
     achievements.push('smallButComplete');
-  }
-
-  // 人声鼎沸: 日志行数 > 250
-  if (contentLineCount > 250) {
-    achievements.push('lively');
   }
 
   return achievements;

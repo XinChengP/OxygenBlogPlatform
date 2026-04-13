@@ -437,21 +437,26 @@ class NetworkMonitor {
    * 监控fetch请求
    */
   private monitorFetch(): void {
-    this.originalFetch = window.fetch;
-    
+    // 保存原始fetch函数和配置引用，避免this上下文丢失
+    const originalFetch = window.fetch.bind(window);
+    this.originalFetch = originalFetch;
+    const config = this.config;
+    const isSuspiciousRequest = this.isSuspiciousRequest.bind(this);
+
     window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === 'string' ? input : input.toString();
-      
+
       // 检查是否是可疑请求
-      if (this.isSuspiciousRequest(url)) {
-        this.config.onHijackingDetected('suspicious_fetch', {
+      if (isSuspiciousRequest(url)) {
+        config.onHijackingDetected('suspicious_fetch', {
           url,
           init,
           timestamp: new Date().toISOString(),
         });
       }
-      
-      return this.originalFetch!(input, init);
+
+      // 使用保存的原始fetch函数，确保正确的this绑定
+      return originalFetch(input, init);
     };
   }
   
@@ -459,8 +464,12 @@ class NetworkMonitor {
    * 监控XHR请求
    */
   private monitorXHR(): void {
-    this.originalXHROpen = XMLHttpRequest.prototype.open;
-    
+    // 保存原始open方法引用
+    const originalXHROpen = XMLHttpRequest.prototype.open.bind(XMLHttpRequest.prototype);
+    this.originalXHROpen = originalXHROpen;
+    const config = this.config;
+    const isSuspiciousRequest = this.isSuspiciousRequest.bind(this);
+
     XMLHttpRequest.prototype.open = function(
       method: string,
       url: string | URL,
@@ -469,17 +478,18 @@ class NetworkMonitor {
       password?: string | null
     ): void {
       const urlString = url.toString();
-      
+
       // 检查是否是可疑请求
-      if ((this as unknown as { isSuspiciousRequest: (url: string) => boolean }).isSuspiciousRequest?.(urlString)) {
-        (this as unknown as { config: HijackingConfig }).config?.onHijackingDetected('suspicious_xhr', {
+      if (isSuspiciousRequest(urlString)) {
+        config.onHijackingDetected('suspicious_xhr', {
           method,
           url: urlString,
           timestamp: new Date().toISOString(),
         });
       }
-      
-      return (this as unknown as { originalXHROpen: typeof XMLHttpRequest.prototype.open }).originalXHROpen!(method, url, async ?? true, username, password);
+
+      // 使用保存的原始open方法
+      return originalXHROpen(method, url, async ?? true, username, password);
     };
   }
   
@@ -487,20 +497,25 @@ class NetworkMonitor {
    * 监控sendBeacon
    */
   private monitorSendBeacon(): void {
-    this.originalSendBeacon = navigator.sendBeacon;
-    
+    // 保存原始sendBeacon方法引用
+    const originalSendBeacon = navigator.sendBeacon.bind(navigator);
+    this.originalSendBeacon = originalSendBeacon;
+    const config = this.config;
+    const isSuspiciousRequest = this.isSuspiciousRequest.bind(this);
+
     navigator.sendBeacon = (url: string | URL, data?: BodyInit | null): boolean => {
       const urlString = url.toString();
-      
-      if (this.isSuspiciousRequest(urlString)) {
-        this.config.onHijackingDetected('suspicious_beacon', {
+
+      if (isSuspiciousRequest(urlString)) {
+        config.onHijackingDetected('suspicious_beacon', {
           url: urlString,
           data: data?.toString()?.substring(0, 500),
           timestamp: new Date().toISOString(),
         });
       }
-      
-      return this.originalSendBeacon!(url, data);
+
+      // 使用保存的原始sendBeacon方法
+      return originalSendBeacon(url, data);
     };
   }
   

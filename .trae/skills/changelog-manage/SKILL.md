@@ -324,7 +324,6 @@ commits:
 | 略感疲惫 | 关联提交数量 >= 10 且 < 20 | #7366ff |
 | 肝爆了 | 关联提交数量 >= 20 | #e566ff |
 | 麻雀虽小五脏俱全 | 关联提交 = 1 且 日志行数 > 55 | #ff66a6 |
-| 人声鼎沸 | 日志行数 > 250 | #ff9966 |
 
 **成就标签特性**：
 - 成就标签显示在类型标签左侧
@@ -335,7 +334,7 @@ commits:
 
 ```
 ┌─────────────────────────────────────────────┐
-│ 肝爆了 人声鼎沸  ● feature   2026年4月11日  │
+│ 肝爆了  ● feature   2026年4月11日           │
 ├─────────────────────────────────────────────┤
 │ 后台管理功能增强与系统升级                   │
 └─────────────────────────────────────────────┘
@@ -386,7 +385,7 @@ commits:
 export type ChangelogType = 'feature' | 'optimize' | 'fix' | 'docs' | 'style' | 'refactor';
 
 // 成就类型
-export type ChangelogAchievement = 'tired' | 'exhausted' | 'smallButComplete' | 'lively';
+export type ChangelogAchievement = 'tired' | 'exhausted' | 'smallButComplete';
 
 // 获取类型颜色
 export function getChangelogTypeColor(type: ChangelogType): string;
