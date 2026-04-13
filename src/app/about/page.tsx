@@ -5,7 +5,7 @@
  */
 'use client';
 
-import React, { useState, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from 'next-themes';
 import { Cover } from '@/components/ui/cover';
@@ -16,7 +16,6 @@ import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 
 // 导入配置
 import {
-  title,
   BeforeAnimationText,
   AnimationText,
   name,
@@ -29,10 +28,6 @@ import {
   bilibili,
   isBorder,
 } from '@/setting/AboutSetting';
-
-// 动态导入大型组件
-const LazyFriendsLink = lazy(() => import('@/components/FriendsLink'));
-const LazyRelatedLinks = lazy(() => import('@/components/RelatedLinks'));
 
 /**
  * 关于页面组件
@@ -47,13 +42,6 @@ export default function AboutPage() {
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  const isDark = resolvedTheme === 'dark';
-
-  // 主题颜色
-  const primaryColor = '#66ccff';
-  const secondaryColor = '#1e40af';
-  const accentColor = '#06b6d4';
 
   // 毛玻璃样式函数 - 与其他页面保持一致
   const getGlassStyle = (baseStyle: string = '') => {
@@ -288,16 +276,6 @@ export default function AboutPage() {
                 </div>
               </motion.div>
             </div>
-
-            {/* 友情链接模块 */}
-            <Suspense fallback={<div className="h-32 bg-gray-200 dark:bg-gray-700 animate-pulse rounded-lg"></div>}>
-              <LazyFriendsLink />
-            </Suspense>
-
-            {/* 相关链接模块 */}
-            <Suspense fallback={<div className="h-24 bg-gray-200 dark:bg-gray-700 animate-pulse rounded-lg"></div>}>
-              <LazyRelatedLinks />
-            </Suspense>
 
             {/* 底部装饰 */}
             <div className="text-center">

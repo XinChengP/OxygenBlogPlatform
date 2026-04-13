@@ -7,11 +7,38 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { emojy, name } from '@/setting/NavigationSetting';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 import { useNavigationVisibility } from '@/contexts/NavigationVisibilityContext';
+import { Users, MessageSquare, Link2, User, ChevronDown } from 'lucide-react';
 
+/**
+ * 导航项类型定义
+ */
+interface NavItem {
+  href: string;
+  label: string;
+}
+
+/**
+ * 下拉菜单项类型定义
+ */
+interface DropdownItem {
+  label: string;
+  href: string;
+  icon: React.ReactNode;
+}
+
+/**
+ * 下拉菜单配置类型
+ */
+interface DropdownConfig {
+  label: string;
+  icon: React.ReactNode;
+  items: DropdownItem[];
+}
 
 /**
  * 导航栏组件
  * 支持响应式设计和主题切换
+ * 包含社交和关于下拉菜单
  * 
  * 注意：所有 hooks 必须在条件返回之前调用，遵循 React Hooks 规则
  */
@@ -20,25 +47,43 @@ const Navigation = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isNearTop, setIsNearTop] = useState(false);
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const pathname = usePathname();
   
   // 所有 hooks 必须在条件返回之前调用
   const { navigationStyle } = useBackgroundStyle('home');
   const { isVisible, isAtTop, setVisibility, setAtTop } = useNavigationVisibility();
 
-  // 导航项配置
-  const navItems = useMemo(() => [
+  // 普通导航项配置（不包含下拉菜单的项）
+  const regularNavItems = useMemo(() => [
     { href: '/', label: '首页' },
     { href: '/blogs', label: '博客' },
     { href: '/archive', label: '归档' },
     { href: '/gallery', label: '画廊' },
     { href: '/moments', label: '动态' },
     { href: '/changelogs', label: '日志' },
-    { href: '/guestbook', label: '留言板' },
     { href: '/tools', label: '小工具' },
-    { href: '/about', label: '关于' },
-    // 设置选项已从导航栏隐藏，但功能仍然保留
   ], []);
+
+  // 社交下拉菜单配置
+  const socialDropdown: DropdownConfig = useMemo(() => ({
+    label: '社交',
+    icon: <Users className="w-4 h-4" />,
+    items: [
+      { href: '/guestbook', label: '留言板', icon: <MessageSquare className="w-4 h-4" /> },
+      { href: '/friends', label: '友链', icon: <Link2 className="w-4 h-4" /> },
+    ],
+  }), []);
+
+  // 关于下拉菜单配置
+  const aboutDropdown: DropdownConfig = useMemo(() => ({
+    label: '关于',
+    icon: <User className="w-4 h-4" />,
+    items: [
+      { href: '/about', label: '关于我', icon: <User className="w-4 h-4" /> },
+      { href: '/links', label: '相关链接', icon: <Link2 className="w-4 h-4" /> },
+    ],
+  }), []);
 
   /**
    * 检查链接是否为当前页面
@@ -49,6 +94,13 @@ const Navigation = () => {
     }
     return pathname.startsWith(href);
   }, [pathname]);
+
+  /**
+   * 检查下拉菜单是否包含当前页面
+   */
+  const isDropdownActive = useCallback((dropdown: DropdownConfig) => {
+    return dropdown.items.some(item => isActive(item.href));
+  }, [isActive]);
 
   /**
    * 切换移动端菜单显示状态
@@ -81,10 +133,26 @@ const Navigation = () => {
 
     // 移动端关闭菜单
     setIsMenuOpen(false);
+    // 关闭下拉菜单
+    setActiveDropdown(null);
 
     // 保存当前滚动位置
     sessionStorage.setItem(`scrollPos_${pathname}`, window.scrollY.toString());
   }, [pathname]);
+
+  /**
+   * 处理下拉菜单悬停
+   */
+  const handleDropdownEnter = useCallback((label: string) => {
+    setActiveDropdown(label);
+  }, []);
+
+  /**
+   * 处理下拉菜单离开
+   */
+  const handleDropdownLeave = useCallback(() => {
+    setActiveDropdown(null);
+  }, []);
 
   /**
    * 监听滚动事件，添加滚动效果和隐藏/显示逻辑
@@ -160,6 +228,80 @@ const Navigation = () => {
     }`;
   }, [isAtTop]);
 
+  // 获取链接样式
+  const getLinkClassName = useCallback((href: string, isDropdown = false) => {
+    const baseClasses = 'px-2 xl:px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300 nav-link whitespace-nowrap flex items-center gap-1';
+    const isCurrent = isActive(href);
+    
+    if (isCurrent) {
+      return `${baseClasses} ${isAtTop ? 'text-white' : 'text-primary dark:text-primary'}`;
+    }
+    
+    if (isDropdown) {
+      return `${baseClasses} ${isAtTop ? 'text-white hover:text-gray-200' : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary'}`;
+    }
+    
+    return `${baseClasses} ${isAtTop ? 'text-white hover:text-gray-200' : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary'}`;
+  }, [isActive, isAtTop]);
+
+  // 渲染下拉菜单
+  const renderDropdown = useCallback((dropdown: DropdownConfig) => {
+    const isActive = isDropdownActive(dropdown);
+    const isOpen = activeDropdown === dropdown.label;
+    
+    return (
+      <div
+        key={dropdown.label}
+        className="relative"
+        onMouseEnter={() => handleDropdownEnter(dropdown.label)}
+        onMouseLeave={handleDropdownLeave}
+      >
+        <button
+          className={getLinkClassName('', true)}
+          aria-expanded={isOpen}
+          aria-haspopup="true"
+        >
+          {dropdown.label}
+          <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+        </button>
+        
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className={`absolute top-full left-0 mt-1 w-40 rounded-lg shadow-lg border overflow-hidden ${
+                isAtTop 
+                  ? 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-gray-200/50 dark:border-gray-700/50' 
+                  : 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-gray-200/50 dark:border-gray-700/50'
+              }`}
+            >
+              <div className="py-1">
+                {dropdown.items.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={(e) => handleLinkClick(e, item.href)}
+                    className={`flex items-center gap-2 px-4 py-2 text-sm transition-colors duration-200 ${
+                      pathname === item.href
+                        ? 'text-primary dark:text-primary bg-primary/10 dark:bg-primary/10'
+                        : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary hover:bg-gray-50 dark:hover:bg-gray-800'
+                    }`}
+                  >
+                    {item.icon}
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  }, [activeDropdown, handleDropdownEnter, handleDropdownLeave, getLinkClassName, handleLinkClick, pathname, isAtTop, isDropdownActive]);
+
   // 后台页面不显示导航栏 - 在所有 hooks 调用之后再条件返回
   if (pathname.startsWith('/admin')) {
     return null;
@@ -193,20 +335,32 @@ const Navigation = () => {
           {/* Navigation Links */}
           <div className="hidden lg:flex items-center">
             <div className="flex items-center space-x-1 xl:space-x-4">
-              {navItems.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={(e) => handleLinkClick(e, item.href)}
-                    className={`px-2 xl:px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300 nav-link whitespace-nowrap ${
-                      pathname === item.href
-                        ? isAtTop ? 'text-white' : 'text-primary dark:text-primary'
-                        : isAtTop ? 'text-white hover:text-gray-200' : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary'
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
+              {/* 普通导航项（日志之前） */}
+              {regularNavItems.slice(0, 6).map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={(e) => handleLinkClick(e, item.href)}
+                  className={getLinkClassName(item.href)}
+                >
+                  {item.label}
+                </Link>
+              ))}
+              
+              {/* 社交下拉菜单 */}
+              {renderDropdown(socialDropdown)}
+              
+              {/* 普通导航项（小工具） */}
+              <Link
+                href="/tools"
+                onClick={(e) => handleLinkClick(e, '/tools')}
+                className={getLinkClassName('/tools')}
+              >
+                小工具
+              </Link>
+              
+              {/* 关于下拉菜单 */}
+              {renderDropdown(aboutDropdown)}
             </div>
           </div>
           
@@ -248,7 +402,8 @@ const Navigation = () => {
               transition={{ duration: 0.3, ease: "easeInOut" }}
             >
               <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-                {navItems.map((item) => (
+                {/* 普通导航项 */}
+                {regularNavItems.map((item) => (
                   <Link
                     key={item.href}
                     href={item.href}
@@ -262,6 +417,50 @@ const Navigation = () => {
                     {item.label}
                   </Link>
                 ))}
+                
+                {/* 社交下拉菜单项（移动端展开显示） */}
+                <div className="border-t border-gray-200/50 dark:border-gray-700/50 my-2 pt-2">
+                  <div className={`px-3 py-2 text-sm font-medium ${isAtTop ? 'text-white/70' : 'text-gray-500 dark:text-gray-400'}`}>
+                    社交
+                  </div>
+                  {socialDropdown.items.map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={(e) => handleLinkClick(e, item.href)}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-md text-base font-medium transition-colors duration-300 ${
+                        pathname === item.href
+                          ? isAtTop ? 'text-white' : 'text-primary dark:text-primary'
+                          : isAtTop ? 'text-white hover:text-gray-200' : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary hover:bg-gray-50/80 dark:hover:bg-gray-800/50'
+                      }`}
+                    >
+                      {item.icon}
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+                
+                {/* 关于下拉菜单项（移动端展开显示） */}
+                <div className="border-t border-gray-200/50 dark:border-gray-700/50 my-2 pt-2">
+                  <div className={`px-3 py-2 text-sm font-medium ${isAtTop ? 'text-white/70' : 'text-gray-500 dark:text-gray-400'}`}>
+                    关于
+                  </div>
+                  {aboutDropdown.items.map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={(e) => handleLinkClick(e, item.href)}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-md text-base font-medium transition-colors duration-300 ${
+                        pathname === item.href
+                          ? isAtTop ? 'text-white' : 'text-primary dark:text-primary'
+                          : isAtTop ? 'text-white hover:text-gray-200' : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary hover:bg-gray-50/80 dark:hover:bg-gray-800/50'
+                      }`}
+                    >
+                      {item.icon}
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
               </div>
             </motion.div>
           )}
