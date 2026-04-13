@@ -437,8 +437,8 @@ class NetworkMonitor {
    * 监控fetch请求
    */
   private monitorFetch(): void {
-    // 保存原始fetch函数和配置引用，避免this上下文丢失
-    const originalFetch = window.fetch.bind(window);
+    // 保存原始fetch函数引用，不要提前绑定，让调用时动态绑定
+    const originalFetch = window.fetch;
     this.originalFetch = originalFetch;
     const config = this.config;
     const isSuspiciousRequest = this.isSuspiciousRequest.bind(this);
@@ -455,8 +455,9 @@ class NetworkMonitor {
         });
       }
 
-      // 使用保存的原始fetch函数，确保正确的this绑定
-      return originalFetch(input, init);
+      // 使用保存的原始fetch函数，通过call正确传递this上下文
+      // 注意：fetch必须在window上下文中调用
+      return originalFetch.call(window, input, init);
     };
   }
   

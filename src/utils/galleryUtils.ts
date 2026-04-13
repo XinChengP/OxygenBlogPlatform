@@ -46,13 +46,25 @@ const serverHttpsFetch = <T = unknown>(url: string, headers: Record<string, stri
     }
 
     const parsedUrl = new URL(url);
+    
+    // 动态导入 https 模块以获取 Agent 类
+    const httpsModule = require('https');
+    
+    // 创建自定义 HTTPS Agent，在开发环境中允许自签名证书
+    // 这可以解决 "unable to verify the first certificate" 错误
+    const agent = new httpsModule.Agent({
+      rejectUnauthorized: process.env.NODE_ENV === 'production', // 生产环境严格验证，开发环境允许自签名证书
+      // 设置超时时间
+      timeout: 30000,
+    });
+    
     const options = {
       hostname: parsedUrl.hostname,
       port: 443,
       path: parsedUrl.pathname + parsedUrl.search,
       method: 'GET',
       headers: headers,
-      agent: false
+      agent: agent // 使用自定义 agent 替代默认的 false
     };
     
     const req = https.request(options, (res: import('http').IncomingMessage) => {
