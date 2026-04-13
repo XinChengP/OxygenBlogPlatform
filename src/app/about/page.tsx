@@ -20,9 +20,6 @@ import {
   AnimationText,
   name,
   slogan,
-  aboutMeP1,
-  aboutMeP2,
-  aboutMeP3,
   mail,
   github,
   bilibili,
@@ -87,14 +84,17 @@ export default function AboutPage() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="lg:col-span-1 space-y-6"
           >
-            {/* 个人信息卡片 */}
-            <div className={getGlassStyle("rounded-2xl shadow-xl border overflow-hidden")}>
+            {/* 个人信息卡片 - 合并联系我 */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className={getGlassStyle("rounded-2xl shadow-xl border overflow-hidden")}
+            >
               {/* 标语区域 */}
               <div className="p-6 text-center border-b border-border/50">
-                <div className="text-xl sm:text-2xl font-semibold relative z-20 py-2">
-                  <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary via-primary/80 to-primary/60">
-                    {BeforeAnimationText}
-                  </span>
+                <div className="text-xl sm:text-2xl font-semibold relative z-20 py-2 bg-clip-text text-transparent bg-gradient-to-r from-primary via-primary/80 to-primary/60">
+                  {BeforeAnimationText}
                   <Cover>{AnimationText}</Cover>
                 </div>
               </div>
@@ -119,92 +119,81 @@ export default function AboutPage() {
                   {slogan}
                 </p>
               </div>
-            </div>
 
-            {/* 联系我 - 简化版卡片 */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              className={getGlassStyle("rounded-2xl p-4 border shadow-lg")}
-            >
-              <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                <span className="w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br from-primary to-primary/60 text-white text-sm">
-                  💬
-                </span>
-                联系我
-              </h3>
-              <div className="grid grid-cols-4 gap-2">
-                {/* Email */}
-                <motion.a
-                  href={`mailto:${mail}`}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="flex items-center justify-center w-10 h-10 rounded-lg bg-background border border-border hover:border-primary/50 transition-all duration-300"
-                  title="邮箱联系"
-                >
-                  <OptimizedIcon
-                    src="/assets/mail.svg"
-                    alt="Mail"
-                    className="text-foreground"
-                    width={18}
-                    height={18}
-                  />
-                </motion.a>
-                {/* GitHub */}
-                <motion.a
-                  href={github}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="flex items-center justify-center w-10 h-10 rounded-lg bg-background border border-border hover:border-primary/50 transition-all duration-300"
-                  title="GitHub"
-                >
-                  <OptimizedIcon
-                    src="/assets/github.svg"
-                    alt="GitHub"
-                    className="text-foreground"
-                    width={18}
-                    height={18}
-                  />
-                </motion.a>
-                {/* Bilibili */}
-                <motion.a
-                  href={bilibili}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="flex items-center justify-center w-10 h-10 rounded-lg bg-background border border-border hover:border-primary/50 transition-all duration-300"
-                  title="哔哩哔哩"
-                >
-                  <OptimizedIcon
-                    src="/assets/bilibili.png"
-                    alt="Bilibili"
-                    className="text-foreground"
-                    width={18}
-                    height={18}
-                  />
-                </motion.a>
-                {/* VSQX */}
-                <motion.a
-                  href="https://www.vsqx.top/space/16984"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="flex items-center justify-center w-10 h-10 rounded-lg bg-background border border-border hover:border-primary/50 transition-all duration-300"
-                  title="VSQX"
-                >
-                  <OptimizedIcon
-                    src="/assets/vsqx.ico"
-                    alt="VSQX"
-                    className="text-foreground"
-                    width={18}
-                    height={18}
-                  />
-                </motion.a>
+              {/* 联系我 - 合并到个人信息卡片底部 */}
+              <div className="px-6 pb-6">
+                <div className="grid grid-cols-4 gap-2">
+                  {/* Email */}
+                  <motion.a
+                    href={`mailto:${mail}`}
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="flex items-center justify-center w-10 h-10 rounded-lg bg-background border border-border hover:border-primary/50 transition-all duration-300"
+                    title="邮箱联系"
+                  >
+                    <OptimizedIcon
+                      src="/assets/mail.svg"
+                      alt="Mail"
+                      className="text-foreground"
+                      width={18}
+                      height={18}
+                    />
+                  </motion.a>
+                  {/* GitHub */}
+                  <motion.a
+                    href={github}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="flex items-center justify-center w-10 h-10 rounded-lg bg-background border border-border hover:border-primary/50 transition-all duration-300"
+                    title="GitHub"
+                  >
+                    <OptimizedIcon
+                      src="/assets/github.svg"
+                      alt="GitHub"
+                      className="text-foreground"
+                      width={18}
+                      height={18}
+                    />
+                  </motion.a>
+                  {/* Bilibili */}
+                  <motion.a
+                    href={bilibili}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="flex items-center justify-center w-10 h-10 rounded-lg bg-background border border-border hover:border-primary/50 transition-all duration-300"
+                    title="哔哩哔哩"
+                  >
+                    <OptimizedIcon
+                      src="/assets/bilibili.png"
+                      alt="Bilibili"
+                      className="text-foreground"
+                      width={18}
+                      height={18}
+                    />
+                  </motion.a>
+                  {/* VSQX */}
+                  <motion.a
+                    href="https://www.vsqx.top/space/16984"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="flex items-center justify-center w-10 h-10 rounded-lg bg-background border border-border hover:border-primary/50 transition-all duration-300"
+                    title="VSQX"
+                  >
+                    <OptimizedIcon
+                      src="/assets/vsqx.ico"
+                      alt="VSQX"
+                      className="text-foreground"
+                      width={18}
+                      height={18}
+                    />
+                  </motion.a>
+                </div>
               </div>
             </motion.div>
 
@@ -216,14 +205,6 @@ export default function AboutPage() {
               className={getGlassStyle("rounded-2xl p-6 border shadow-lg")}
             >
               <div className="flex items-center mb-4">
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ duration: 0.5, delay: 0.6 }}
-                  className="w-10 h-10 rounded-lg flex items-center justify-center mr-3 bg-gradient-to-br from-primary to-primary/60"
-                >
-                  <span className="font-bold text-lg">🏷️</span>
-                </motion.div>
                 <h3 className="text-xl font-semibold text-foreground">兴趣爱好</h3>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -247,39 +228,95 @@ export default function AboutPage() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
-            className="lg:col-span-3 space-y-6"
+            className="lg:col-span-3"
           >
-            {/* 关于我卡片 - 单独展示 */}
+            {/* 关于卡片 - 合并所有内容 */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.4 }}
               className={getGlassStyle("rounded-2xl p-6 border shadow-lg")}
             >
-              <div className="flex items-center mb-4">
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ duration: 0.5, delay: 0.5 }}
-                  className="w-10 h-10 rounded-lg flex items-center justify-center mr-3 bg-gradient-to-br from-primary to-primary/60"
-                >
-                  <span className="font-bold text-lg">🎯</span>
-                </motion.div>
-                <h3 className="text-xl font-semibold text-foreground">关于我</h3>
+              {/* 关于我 */}
+              <div className="mb-8">
+                <div className="flex items-center mb-4">
+                  <h3 className="text-xl font-semibold text-foreground">关于我</h3>
+                </div>
+                <div className="text-muted-foreground leading-relaxed space-y-4">
+                  <p className="indent-8">
+                    一个机械工程专业的25级大学牲。
+                  </p>
+                  <p className="indent-8">
+                    总想搞一些东西，总是在焦虑之中，总爱碎碎念。。。
+                  </p>
+                  <div className="my-4 p-4 bg-primary/5 rounded-lg border border-primary/10">
+                    <p className="text-sm text-muted-foreground/80 mb-2">来个超绝比喻介绍一下自己：</p>
+                    <p className="italic">
+                      就像冬日清晨的桥梁，<br />
+                      热爱就在桥的另一侧，<br />
+                      明明有路，却总被雾笼罩着。<br />
+                      至于无感的事物，<br />
+                      就好似桥梁站在桥边，<br />
+                      举目望去，<br />
+                      唯有一片空白。
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div className="text-muted-foreground leading-relaxed space-y-3">
-                <p>{aboutMeP1}</p>
-                <p>{aboutMeP2}</p>
-                <p>{aboutMeP3}</p>
+
+              {/* 分隔线 */}
+              <div className="border-t border-border/50 my-6"></div>
+
+              {/* 关于本站 */}
+              <div className="mb-8">
+                <div className="flex items-center mb-4">
+                  <h3 className="text-xl font-semibold text-foreground">关于本站</h3>
+                </div>
+                <div className="text-muted-foreground leading-relaxed space-y-3 text-sm">
+                  <p className="indent-8">
+                    这就要追溯到longlong years ago了（
+                  </p>
+                  <p className="indent-8">
+                    初三（还是初二？）那会在QQ空间看到有好友（不熟的那种）搞了个网站，觉得挺厉害，然后就没有然后了（bushi）。高一，超绝班级职务是四大部门，然后稀里糊涂整了个宣传部网络分部（宣网部）部长，我就寻思给班级搞个网站，然后了解了一点，发现一窍不通，而且财力不济，然后就咕咕咕了。之后就是本博客的故事了，首先登场的是额滴高中哥们，来自TUT（怎么这么像颜文字qwq）的Allenwdk，在高考完的暑假里用他学长搞的模版（没错我也用了这个模版）搞了个博客，我了解到消息后鸽了三个月菜严肃学习，然后本博客诞生了。后来瞎搞了一段时间后，想搞一搞动态博客，买了个五年的域名（xinchengp.cn），又斥巨资租了一年的服务器（俺颇有家资），到手里发现一点不会搞，磕磕绊绊在b站上搜教程，看文档，头都要大了，最后折腾了一番放弃了（看看事故现场www.xinchengp.cn，26年12月就到期了），还是老老实实的整现在的小博客吧。就顺手把买的那个域名替换掉了原来github自带的。（blog.xinchengp.cn）
+                  </p>
+                  <p className="text-primary font-medium text-center">关于本站的故事未完待续。。。</p>
+                </div>
+              </div>
+
+              {/* 分隔线 */}
+              <div className="border-t border-border/50 my-6"></div>
+
+              {/* 关于域名 */}
+              <div className="mb-8">
+                <div className="flex items-center mb-4">
+                  <h3 className="text-xl font-semibold text-foreground">关于域名</h3>
+                </div>
+                <div className="text-muted-foreground leading-relaxed space-y-3 text-sm">
+                  <p className="indent-8">
+                    Longlonglong years ago，我的QQ昵称就叫心想事成，一直没换过（别问为啥没换过，单纯就是取名废）。
+                  </p>
+                  <p className="indent-8">
+                    后来其他平台上用过各式各样的id，比如菜鷄（Cay_Jir），诶嘿（Eiheir），用久了总感觉这不是我自己（雾）
+                  </p>
+                  <p className="indent-8">
+                    高三那年三四月的时候，大半夜的感觉无聊，那就入坑一下崩铁吧，于是直接用鸽子的米游社账号（额滴原神账号也是这个）注册一个，然后就是喜闻乐见的起名环节了，思来想去不知道起什么好，就决定从我的QQ昵称入手，先取了首尾俩字&ldquo;心成&rdquo;，但是看上去怪怪的，又联想到心想事&ldquo;橙&rdquo;这个经典语录，那就&ldquo;心橙&rdquo;，又寻思再把&ldquo;心&rdquo;谐音换掉，由于高中沉迷原神，那段时间天天刷余响套（来歆余响），嗯，这个&ldquo;歆&rdquo;挺好，于是乎就这样我的第4代（或者1代ProplusMax）互联网id歆橙（Xincheng）诞生了，至于域名多了个p，一是因为这个域名被注册了，二是因为我想做一个P主（调歌！），所以在后面加了一个p。
+                  </p>
+                  <p className="indent-8">
+                    至于选择.cn，一个是因为权威（确信），一个是因为相对比较便宜（超绝.com贵上天了，只恨财力不济）。
+                  </p>
+                </div>
+              </div>
+
+              {/* 分隔线 */}
+              <div className="border-t border-border/50 my-6"></div>
+
+              {/* 最后的最后 */}
+              <div className="text-center py-4 bg-gradient-to-br from-primary/5 to-primary/10 rounded-lg">
+                <p className="text-muted-foreground leading-relaxed">
+                  ·最后的最后，感谢你看到这里，听一个自我内耗大学生的碎碎念awa
+                </p>
               </div>
             </motion.div>
-
-            {/* 底部装饰 */}
-            <div className="text-center">
-              <p className="text-muted-foreground text-sm">
-                &ldquo;这世界的浪漫有很多，孤独的人永远没有错&rdquo;
-              </p>
-            </div>
           </motion.main>
         </div>
       </div>

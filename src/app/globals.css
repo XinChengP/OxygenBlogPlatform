@@ -387,9 +387,69 @@ pre code {
     display: block;
 }
 
+#landlord:hover .refresh-button {
+    display: flex;
+}
+
 .hide-button:hover {
     border: 1px solid rgba(102,204,255,.6);
     background: rgba(102,204,255,.6);
+}
+
+/* 刷新按钮样式 - 与隐藏按钮保持一致 */
+.refresh-button {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    overflow: hidden;
+    width: 60px;
+    height: 20px;
+    border: 1px solid rgba(102,204,255,.4);
+    border-radius: 12px;
+    background: rgba(102,204,255,.2);
+    box-shadow: 0 3px 15px 2px rgba(102,204,255,.4);
+    text-align: center;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: inherit;
+    position: absolute;
+    top: 100px;
+    left: 0;
+    z-index: 10000;
+}
+
+.refresh-button:hover {
+    border: 1px solid rgba(102,204,255,.6);
+    background: rgba(102,204,255,.6);
+}
+
+/* 刷新按钮加载状态 */
+.refresh-button.loading {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.refresh-button.loading .refresh-icon {
+    animation: refresh-spin 1s linear infinite;
+}
+
+@keyframes refresh-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(-360deg); }
+}
+
+/* 适配网站主题的刷新按钮样式 */
+.refresh-button.luotianyi-theme {
+    border-color: rgba(var(--primary), 0.4);
+    background: rgba(var(--primary), 0.2);
+    box-shadow: 0 3px 15px 2px rgba(var(--primary), 0.4);
+}
+
+.refresh-button.luotianyi-theme:hover {
+    border-color: rgba(var(--primary), 0.6);
+    background: rgba(var(--primary), 0.6);
 }
 
 @media (max-width: 860px) {

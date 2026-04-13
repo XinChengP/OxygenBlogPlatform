@@ -76,33 +76,6 @@ export default function LinksPage() {
         >
           {/* 相关链接组件 - 复用现有组件 */}
           <RelatedLinks />
-
-          {/* 底部装饰性说明 */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.8 }}
-            className={getGlassStyle("rounded-2xl p-6 border shadow-lg mt-8 text-center")}
-          >
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ duration: 0.5, delay: 0.9 }}
-              className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4"
-              style={{
-                background: `linear-gradient(135deg, ${primaryColor} 0%, #06b6d4 100%)`,
-              }}
-            >
-              <span className="text-white text-xl">💡</span>
-            </motion.div>
-            <h3 className="text-lg font-semibold text-foreground mb-2">
-              友情链接
-            </h3>
-            <p className="text-muted-foreground text-sm max-w-md mx-auto leading-relaxed">
-              如果您希望交换友情链接，欢迎通过留言板或邮件联系我。
-              本站欢迎与洛天依、技术博客、个人创作等相关网站的友链交换。
-            </p>
-          </motion.div>
         </motion.main>
       </div>
     </div>

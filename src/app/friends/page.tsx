@@ -8,7 +8,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from 'next-themes';
-import { Globe, Heart, Link2 } from 'lucide-react';
+import { Globe, Link2 } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 import FriendsLink from '@/components/FriendsLink';
@@ -76,39 +76,6 @@ export default function FriendsPage() {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="space-y-8"
         >
-          {/* 友链说明卡片 */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className={getGlassStyle("rounded-2xl p-6 border shadow-lg")}
-          >
-            <div className="flex items-center mb-4">
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ duration: 0.5, delay: 0.4 }}
-                className="w-10 h-10 rounded-lg flex items-center justify-center mr-3"
-                style={{
-                  background: `linear-gradient(135deg, ${primaryColor} 0%, #06b6d4 50%, ${primaryColor} 100%)`,
-                  backgroundSize: '200% 200%',
-                }}
-              >
-                <Heart className="w-5 h-5 text-white" />
-              </motion.div>
-              <h3 className="text-xl font-semibold text-foreground">关于友链</h3>
-            </div>
-            <div className="text-muted-foreground leading-relaxed space-y-3">
-              <p>
-                友情链接是互联网精神的一种体现，它连接着不同的网站和博客，让信息更加自由地流动。
-              </p>
-              <p>
-                这里展示的是我认可的优质网站和博客，它们或许与我有相似的兴趣，或许在技术上给了我启发，
-                又或许只是单纯的有趣。希望这些链接也能为你带来一些收获。
-              </p>
-            </div>
-          </motion.div>
-
           {/* 友链列表 - 复用 FriendsLink 组件 */}
           <FriendsLink />
 

@@ -23,7 +23,7 @@ interface NavItem {
 interface DropdownItem {
   label: string;
   href: string;
-  icon: React.ReactNode;
+  icon?: React.ReactNode;
 }
 
 /**
@@ -61,7 +61,6 @@ const Navigation = () => {
     { href: '/archive', label: '归档' },
     { href: '/gallery', label: '画廊' },
     { href: '/moments', label: '动态' },
-    { href: '/changelogs', label: '日志' },
     { href: '/tools', label: '小工具' },
   ], []);
 
@@ -70,8 +69,8 @@ const Navigation = () => {
     label: '社交',
     icon: <Users className="w-4 h-4" />,
     items: [
-      { href: '/guestbook', label: '留言板', icon: <MessageSquare className="w-4 h-4" /> },
-      { href: '/friends', label: '友链', icon: <Link2 className="w-4 h-4" /> },
+      { href: '/friends', label: '友链' },
+      { href: '/guestbook', label: '留言板' },
     ],
   }), []);
 
@@ -80,8 +79,9 @@ const Navigation = () => {
     label: '关于',
     icon: <User className="w-4 h-4" />,
     items: [
-      { href: '/about', label: '关于我', icon: <User className="w-4 h-4" /> },
-      { href: '/links', label: '相关链接', icon: <Link2 className="w-4 h-4" /> },
+      { href: '/about', label: '关于我' },
+      { href: '/changelogs', label: '日志' },
+      { href: '/links', label: '相关链接' },
     ],
   }), []);
 
@@ -272,10 +272,10 @@ const Navigation = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
-              className={`absolute top-full left-0 mt-1 w-40 rounded-lg shadow-lg border overflow-hidden ${
+              className={`absolute top-full left-0 mt-1 w-24 rounded-lg shadow-lg border overflow-hidden ${
                 isAtTop 
-                  ? 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-gray-200/50 dark:border-gray-700/50' 
-                  : 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-gray-200/50 dark:border-gray-700/50'
+                  ? 'bg-white/70 dark:bg-gray-900/70 backdrop-blur-md border-gray-200/50 dark:border-gray-700/50' 
+                  : 'bg-white/70 dark:bg-gray-900/70 backdrop-blur-md border-gray-200/50 dark:border-gray-700/50'
               }`}
             >
               <div className="py-1">
@@ -284,13 +284,12 @@ const Navigation = () => {
                     key={item.href}
                     href={item.href}
                     onClick={(e) => handleLinkClick(e, item.href)}
-                    className={`flex items-center gap-2 px-4 py-2 text-sm transition-colors duration-200 ${
+                    className={`block px-4 py-2 text-sm transition-colors duration-200 ${
                       pathname === item.href
                         ? 'text-primary dark:text-primary bg-primary/10 dark:bg-primary/10'
                         : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary hover:bg-gray-50 dark:hover:bg-gray-800'
                     }`}
                   >
-                    {item.icon}
                     {item.label}
                   </Link>
                 ))}
@@ -335,8 +334,8 @@ const Navigation = () => {
           {/* Navigation Links */}
           <div className="hidden lg:flex items-center">
             <div className="flex items-center space-x-1 xl:space-x-4">
-              {/* 普通导航项（日志之前） */}
-              {regularNavItems.slice(0, 6).map((item) => (
+              {/* 普通导航项 */}
+              {regularNavItems.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
@@ -349,15 +348,6 @@ const Navigation = () => {
               
               {/* 社交下拉菜单 */}
               {renderDropdown(socialDropdown)}
-              
-              {/* 普通导航项（小工具） */}
-              <Link
-                href="/tools"
-                onClick={(e) => handleLinkClick(e, '/tools')}
-                className={getLinkClassName('/tools')}
-              >
-                小工具
-              </Link>
               
               {/* 关于下拉菜单 */}
               {renderDropdown(aboutDropdown)}
@@ -428,13 +418,12 @@ const Navigation = () => {
                       key={item.href}
                       href={item.href}
                       onClick={(e) => handleLinkClick(e, item.href)}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-md text-base font-medium transition-colors duration-300 ${
+                      className={`block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300 ${
                         pathname === item.href
                           ? isAtTop ? 'text-white' : 'text-primary dark:text-primary'
                           : isAtTop ? 'text-white hover:text-gray-200' : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary hover:bg-gray-50/80 dark:hover:bg-gray-800/50'
                       }`}
                     >
-                      {item.icon}
                       {item.label}
                     </Link>
                   ))}
@@ -450,13 +439,12 @@ const Navigation = () => {
                       key={item.href}
                       href={item.href}
                       onClick={(e) => handleLinkClick(e, item.href)}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-md text-base font-medium transition-colors duration-300 ${
+                      className={`block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300 ${
                         pathname === item.href
                           ? isAtTop ? 'text-white' : 'text-primary dark:text-primary'
                           : isAtTop ? 'text-white hover:text-gray-200' : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary hover:bg-gray-50/80 dark:hover:bg-gray-800/50'
                       }`}
                     >
-                      {item.icon}
                       {item.label}
                     </Link>
                   ))}

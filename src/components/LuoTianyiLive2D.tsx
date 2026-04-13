@@ -917,6 +917,63 @@ export default function LuoTianyiLive2D() {
         setIsVisible(!isVisible);
     };
 
+    /**
+     * 刷新 Live2D 看板娘
+     * 重新加载模型和脚本
+     */
+    const refreshLive2D = useCallback(async () => {
+        console.log('[LuoTianyiLive2D] 用户触发刷新，重新加载 Live2D...');
+        
+        // 防止重复点击
+        if (isLoading) {
+            console.log('[LuoTianyiLive2D] 正在加载中，忽略刷新请求');
+            return;
+        }
+        
+        // 显示刷新提示消息
+        setMessage('天依正在重新加载～');
+        setMessageOpacity(1);
+        
+        // 重置加载状态
+        setIsLoading(true);
+        setLoadProgress(0);
+        
+        try {
+            // 清除可能存在的旧 Live2D 实例
+            if (typeof window !== 'undefined') {
+                // 清除全局消息系统标记
+                (window as any).messageSystemInitialized = false;
+                
+                // 如果有 Live2D 实例，尝试清理
+                const live2DInstance = (window as any).Live2D;
+                if (live2DInstance && live2DInstance.dispose) {
+                    try {
+                        live2DInstance.dispose();
+                    } catch (e) {
+                        console.log('[LuoTianyiLive2D] 清理旧实例时出错:', e);
+                    }
+                }
+            }
+            
+            // 延迟一下确保清理完成
+            await new Promise(resolve => setTimeout(resolve, 300));
+            
+            // 重新加载 Live2D
+            await loadLive2D();
+            
+            console.log('[LuoTianyiLive2D] 刷新完成');
+            setMessage('天依已重新加载！');
+            setMessageOpacity(1);
+            triggerFadeOut();
+        } catch (error) {
+            console.error('[LuoTianyiLive2D] 刷新失败:', error);
+            setMessage('刷新失败了，请刷新页面试试～');
+            setMessageOpacity(1);
+            setIsLoading(false);
+            triggerFadeOut();
+        }
+    }, [loadLive2D, triggerFadeOut, isLoading]);
+
     const getCurrentThemeClass = () => {
         return 'luotianyi-theme';
     };
@@ -1012,6 +1069,34 @@ export default function LuoTianyiLive2D() {
                 >
                     隐藏
                 </div>
+                
+                {/* 刷新按钮 - 重新加载 Live2D */}
+                <div 
+                    className={`refresh-button ${getCurrentThemeClass()} ${isLoading ? 'loading' : ''}`}
+                    onClick={refreshLive2D}
+                    title={isLoading ? '加载中...' : '重新加载天依'}
+                    style={{
+                        opacity: isLoading ? 0.6 : 1,
+                        cursor: isLoading ? 'not-allowed' : 'pointer',
+                        pointerEvents: isLoading ? 'none' : 'auto'
+                    }}
+                >
+                    <svg 
+                        width="12" 
+                        height="12" 
+                        viewBox="0 0 24 24" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        strokeWidth="2" 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round"
+                        className="refresh-icon"
+                    >
+                        <polyline points="23 4 23 10 17 10"></polyline>
+                        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                    </svg>
+                    {isLoading ? '加载中' : '刷新'}
+                </div>
             </div>
         </>
     );
@@ -1039,6 +1124,23 @@ const Live2DStyles = () => (
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+        
+        /* 刷新按钮旋转动画 */
+        @keyframes refresh-spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(-360deg); }
+        }
+        
+        /* 刷新按钮加载状态 */
+        .refresh-button.loading .refresh-icon {
+            animation: refresh-spin 1s linear infinite;
+        }
+        
+        /* 刷新按钮禁用状态 */
+        .refresh-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
     `}</style>
 );
