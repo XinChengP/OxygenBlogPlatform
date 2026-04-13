@@ -32,9 +32,8 @@
     // 发现篡改时的回调函数
     onTamperingDetected: null,
     // 关键元素选择器列表
+    // 注意：head 和 body 被排除，因为 React/Next.js 会在运行时动态修改它们
     criticalSelectors: [
-      'head',
-      'body',
       'title',
       'meta[charset]',
       'link[rel="canonical"]',
@@ -68,12 +67,19 @@
       /__NEXT_DATA__/i,
       /next-route-announcer/i,
       /nextjs/i,
+      /__next/i,
       // React 运行时代码
       /react-root/i,
       /react-dom/i,
+      /react/i,
       // 开发工具
       /webpack/i,
       /turbopack/i,
+      // 常见的合法脚本模式
+      /function\s*\(\s*\)\s*\{\s*try\s*\{/i,  // 自执行函数
+      /console\./i,  // console 调用
+      /setTimeout/i,
+      /setInterval/i,
     ],
   };
 
@@ -273,6 +279,19 @@
   }
 
   /**
+   * 检查脚本是否在白名单中
+   * @param {string} content 脚本内容
+   * @returns {boolean} 是否在白名单中
+   */
+  isAllowedInlineScript(content) {
+    if (!content || typeof content !== 'string') return false;
+
+    return CONFIG.allowedInlineScriptPatterns.some(pattern => {
+      return pattern.test(content);
+    });
+  }
+
+  /**
    * 检查脚本完整性
    */
   checkScriptIntegrity() {
@@ -283,17 +302,17 @@
     // 检查脚本数量变化
     if (scripts.length > baselineScripts.count) {
       const newScripts = Array.from(scripts).slice(baselineScripts.count);
-      
+
       newScripts.forEach(script => {
         const src = script.src || 'inline';
         const content = script.textContent || '';
-        
+
         // 跳过开发工具脚本（React DevTools, HMR等）
         if (this.isAllowedDevScript(src, content)) {
           Logger.info('跳过开发工具脚本检测', src);
           return;
         }
-        
+
         // 检查是否是允许的域名
         if (src !== 'inline' && !isAllowedDomain(src)) {
           violations.push({
@@ -305,6 +324,12 @@
 
         // 检查内联脚本内容
         if (src === 'inline' && content) {
+          // 首先检查是否在白名单中
+          if (this.isAllowedInlineScript(content)) {
+            Logger.info('跳过白名单内联脚本检测');
+            return;
+          }
+
           if (isSuspiciousCode(content)) {
             violations.push({
               type: 'suspicious_inline_script',
