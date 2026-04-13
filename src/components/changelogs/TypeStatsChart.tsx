@@ -238,7 +238,7 @@ export default function TypeStatsChart({ changelogs }: TypeStatsChartProps) {
       </div>
 
       {/* 图表区域 */}
-      <div className="w-full relative" style={{ height: '280px' }}>
+      <div className="w-full relative" style={{ height: '280px', minWidth: '200px' }}>
         {sortedData.length > 0 ? (
           <>
             <ResponsiveContainer width="100%" height="100%">

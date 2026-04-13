@@ -222,12 +222,7 @@ export default function RootLayout({
           fetchPriority="high"
         />
         
-        {/* 预加载关键CSS - 避免渲染阻塞 */}
-        <link 
-          rel="preload" 
-          href="/css/aplayer-theme.css" 
-          as="style"
-        />
+
         
         {/* 字体预加载 - 使用font-display: swap避免FOIT */}
         <style dangerouslySetInnerHTML={{__html:`

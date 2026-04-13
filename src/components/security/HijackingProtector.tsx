@@ -464,8 +464,8 @@ class NetworkMonitor {
    * 监控XHR请求
    */
   private monitorXHR(): void {
-    // 保存原始open方法引用
-    const originalXHROpen = XMLHttpRequest.prototype.open.bind(XMLHttpRequest.prototype);
+    // 保存原始open方法引用，不要提前绑定this，让调用时动态绑定
+    const originalXHROpen = XMLHttpRequest.prototype.open;
     this.originalXHROpen = originalXHROpen;
     const config = this.config;
     const isSuspiciousRequest = this.isSuspiciousRequest.bind(this);
@@ -488,8 +488,8 @@ class NetworkMonitor {
         });
       }
 
-      // 使用保存的原始open方法
-      return originalXHROpen(method, url, async ?? true, username, password);
+      // 使用保存的原始open方法，通过call正确传递this上下文
+      return originalXHROpen.call(this, method, url, async ?? true, username, password);
     };
   }
   

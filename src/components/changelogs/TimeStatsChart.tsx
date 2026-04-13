@@ -223,8 +223,8 @@ export default function TimeStatsChart({ changelogs, blogTimeStats, momentTimeSt
       </div>
 
       {/* 图表区域 */}
-      <div className="w-full flex justify-center" style={{ height: '280px' }}>
-        <div className="w-full max-w-lg">
+      <div className="w-full flex justify-center" style={{ height: '280px', minWidth: '200px' }}>
+        <div className="w-full max-w-lg" style={{ minWidth: '200px' }}>
           {filteredData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               {chartType === 'area' ? (

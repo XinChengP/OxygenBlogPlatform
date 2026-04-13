@@ -369,7 +369,7 @@ const CategoryPieChart: React.FC<CategoryPieChartProps> = ({
       </div>
 
       {/* 图表区域 */}
-      <div className="w-full relative" style={{ height: '280px' }}>
+      <div className="w-full relative" style={{ height: '280px', minWidth: '200px' }}>
         {sortedData.length > 0 ? (
           <>
             <ResponsiveContainer width="100%" height="100%">
@@ -1016,7 +1016,7 @@ const TypeStatsChart: React.FC<{ changelogs: Changelog[] }> = ({ changelogs }) =
       </div>
 
       {/* 图表区域 */}
-      <div className="w-full relative" style={{ height: '280px' }}>
+      <div className="w-full relative" style={{ height: '280px', minWidth: '200px' }}>
         {sortedData.length > 0 ? (
           <>
             <ResponsiveContainer width="100%" height="100%">
