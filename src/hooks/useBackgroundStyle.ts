@@ -1,7 +1,7 @@
 import { useMemo, useEffect, useState } from 'react';
 import { enableBackground, backgroundImage } from '../setting/WebSetting';
 
-type PageType = 'home' | 'blogs' | 'about' | 'blog-detail' | 'archive' | 'guestbook' | 'tools' | 'gallery';
+type PageType = 'home' | 'blogs' | 'about' | 'blog-detail' | 'archive' | 'guestbook' | 'tools' | 'gallery' | 'friends' | 'links';
 
 interface StyleConfig {
   className: string;

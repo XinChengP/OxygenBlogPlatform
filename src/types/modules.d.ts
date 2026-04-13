@@ -24,7 +24,7 @@ declare module '@/setting/blogSetting' {
 }
 
 declare module '@/hooks/useBackgroundStyle' {
-  type PageType = 'home' | 'blogs' | 'about' | 'blog-detail' | 'archive' | 'guestbook' | 'tools';
+  type PageType = 'home' | 'blogs' | 'about' | 'blog-detail' | 'archive' | 'guestbook' | 'tools' | 'gallery' | 'friends' | 'links';
   
   interface StyleConfig {
     className: string;
