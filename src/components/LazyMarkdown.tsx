@@ -18,9 +18,14 @@ const loadPlugins = async () => {
     import('rehype-slug')
   ]);
   
+  // 配置 rehype-raw 允许特定的 HTML 标签通过
+  const rehypeRawWithConfig = [rehypeRaw.default, { 
+    passThrough: ['div', 'span', 'img', 'p', 'br', 'hr', 'a', 'strong', 'em', 'code', 'pre'] 
+  }];
+  
   return {
     remarkPlugins: [remarkGfm.default, remarkMath.default, remarkBreaks.default, remarkEmoji.default],
-    rehypePlugins: [rehypeKatex.default, rehypeRaw.default, rehypeSlug.default]
+    rehypePlugins: [rehypeKatex.default, rehypeRawWithConfig, rehypeSlug.default]
   };
 };
 

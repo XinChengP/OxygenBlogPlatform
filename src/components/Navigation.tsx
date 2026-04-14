@@ -229,11 +229,11 @@ const Navigation = () => {
   }, [isAtTop]);
 
   // 获取链接样式
-  const getLinkClassName = useCallback((href: string, isDropdown = false) => {
+  const getLinkClassName = useCallback((href: string, isDropdown = false, isDropdownItemActive = false) => {
     const baseClasses = 'px-2 xl:px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300 nav-link whitespace-nowrap flex items-center gap-1';
     const isCurrent = isActive(href);
     
-    if (isCurrent) {
+    if (isCurrent || isDropdownItemActive) {
       return `${baseClasses} ${isAtTop ? 'text-white' : 'text-primary dark:text-primary'}`;
     }
     
@@ -246,7 +246,7 @@ const Navigation = () => {
 
   // 渲染下拉菜单
   const renderDropdown = useCallback((dropdown: DropdownConfig) => {
-    const isActive = isDropdownActive(dropdown);
+    const isDropdownActiveState = isDropdownActive(dropdown);
     const isOpen = activeDropdown === dropdown.label;
     
     return (
@@ -257,7 +257,7 @@ const Navigation = () => {
         onMouseLeave={handleDropdownLeave}
       >
         <button
-          className={getLinkClassName('', true)}
+          className={getLinkClassName('', true, isDropdownActiveState)}
           aria-expanded={isOpen}
           aria-haspopup="true"
         >

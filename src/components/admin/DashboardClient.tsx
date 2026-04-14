@@ -287,10 +287,10 @@ const CategoryPieChart: React.FC<CategoryPieChartProps> = ({
 }) => {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
-  // 颜色配置
+  // 颜色配置（排除天依蓝 #66ccff，只给洛天依分类使用）
   const colors = [
-    '#66ccff', '#9966ff', '#ff66cc', '#ff9966', '#66ff99',
-    '#ff6666', '#66ffff', '#ffcc66', '#cc66ff', '#66ffcc'
+    '#9966ff', '#ff66cc', '#ff9966', '#66ff99',
+    '#ff6666', '#ffcc66', '#cc66ff', '#ff9999', '#99ff99', '#ffff99'
   ];
 
   if (categories.length === 0) {
@@ -308,12 +308,16 @@ const CategoryPieChart: React.FC<CategoryPieChartProps> = ({
   // 计算总数
   const totalCount = sortedData.reduce((sum, item) => sum + item.count, 0);
 
-  // 为数据添加颜色
-  const dataWithColor = sortedData.map((item, index) => ({
-    ...item,
-    label: item.name,
-    color: colors[index % colors.length],
-  }));
+  // 为数据添加颜色，洛天依分类锁定为天依蓝 (#66ccff)
+  const dataWithColor = sortedData.map((item, index) => {
+    // 洛天依分类使用天依蓝
+    const isLuotianyi = item.name === '洛天依';
+    return {
+      ...item,
+      label: item.name,
+      color: isLuotianyi ? '#66ccff' : colors[index % colors.length],
+    };
+  });
 
   // 为数据添加总数（用于 tooltip）
   const dataWithTotal = dataWithColor.map(item => ({
