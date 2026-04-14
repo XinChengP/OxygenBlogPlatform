@@ -650,31 +650,9 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
               
               /* 确保特殊元素内的所有内容都不被缩进 */
               .prose blockquote *,
-              .prose div *:not(.flex):not(.flex *) {
+              .prose div * {
                 margin-left: 0 !important;
                 text-indent: 0 !important;
-              }
-              
-              /* 保留 flex 布局容器的样式 */
-              .prose .flex {
-                display: flex !important;
-              }
-              
-              .prose .flex-wrap {
-                flex-wrap: wrap !important;
-              }
-              
-              .prose .justify-center {
-                justify-content: center !important;
-              }
-              
-              .prose .gap-2 {
-                gap: 0.5rem !important;
-              }
-              
-              .prose .flex > img {
-                margin-left: 0 !important;
-                margin-right: 0 !important;
               }
             `}</style>
             <div className="bg-card/50 backdrop-blur-sm rounded-xl shadow-lg p-6 md:p-8">
@@ -740,20 +718,6 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                     },
                     // 表格
                     table({ children }: ComponentProps) {
-                      // 检查表格内容是否主要是图片（用于图片布局）
-                      const childrenStr = JSON.stringify(children);
-                      const isImageTable = childrenStr.includes('"img"') || childrenStr.includes('src');
-                      
-                      if (isImageTable) {
-                        return (
-                          <div className="overflow-x-auto my-8">
-                            <table className="w-full border-collapse border-0">
-                              {children}
-                            </table>
-                          </div>
-                        );
-                      }
-                      
                       return (
                         <div className="overflow-x-auto my-8">
                           <table className="min-w-full border-collapse border border-gray-300 dark:border-gray-600 rounded-xl overflow-hidden shadow-sm">
@@ -784,18 +748,6 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                       );
                     },
                     th({ children }: ComponentProps) {
-                      // 检查表头内容（用于判断是否是图片表格）
-                      const childrenStr = JSON.stringify(children);
-                      const isImageHeader = childrenStr.includes('图') || childrenStr.includes('图片');
-                      
-                      if (isImageHeader) {
-                        return (
-                          <th className="px-2 py-2 text-center text-sm font-semibold text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-                            {children}
-                          </th>
-                        );
-                      }
-                      
                       return (
                         <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700">
                           {children}
@@ -803,33 +755,6 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                       );
                     },
                     td({ children }: ComponentProps) {
-                      // 检查单元格内容是否只包含图片
-                      const childrenArray = Array.isArray(children) ? children : [children];
-                      const hasOnlyImages = childrenArray.every(child => {
-                        if (child && typeof child === 'object') {
-                          const type = child.type;
-                          if (type === 'img' || (type && type.name === 'img')) {
-                            return true;
-                          }
-                          if (child.props && child.props.src) {
-                            return true;
-                          }
-                        }
-                        if (typeof child === 'string' && child.trim() === '') {
-                          return true;
-                        }
-                        return false;
-                      });
-                      
-                      // 如果只包含图片，使用适合图片的样式
-                      if (hasOnlyImages && childrenArray.length > 0) {
-                        return (
-                          <td className="px-2 py-2 text-center border-b border-gray-200 dark:border-gray-700">
-                            {children}
-                          </td>
-                        );
-                      }
-                      
                       return (
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">
                           {children}
@@ -901,38 +826,6 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                     p({ children }: ComponentProps) {
                       // 检查博客是否带有"简谱"标签，如果有则不添加首行缩进
                       const hasSheetMusicTag = blog.tags && blog.tags.some(tag => tag === '简谱');
-                      
-                      // 检查段落内容是否只包含图片（用于行内布局）
-                      const childrenArray = Array.isArray(children) ? children : [children];
-                      const hasOnlyImages = childrenArray.every(child => {
-                        // 检查是否是图片元素或包含图片的React元素
-                        if (child && typeof child === 'object') {
-                          const type = child.type;
-                          // 检查是否是 img 标签或自定义图片组件
-                          if (type === 'img' || (type && type.name === 'img')) {
-                            return true;
-                          }
-                          // 检查 props 中是否有 src 属性（自定义图片组件）
-                          if (child.props && child.props.src) {
-                            return true;
-                          }
-                        }
-                        // 检查是否是空文本节点
-                        if (typeof child === 'string' && child.trim() === '') {
-                          return true;
-                        }
-                        return false;
-                      });
-                      
-                      // 如果段落只包含图片，使用 flex 布局让图片并排显示
-                      if (hasOnlyImages && childrenArray.length > 0) {
-                        return (
-                          <p className="my-4 flex flex-wrap justify-center items-center gap-2">
-                            {children}
-                          </p>
-                        );
-                      }
-                      
                       return (
                         <p 
                           className="mb-4 leading-relaxed text-base" 
@@ -978,138 +871,22 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                         </a>
                       );
                     },
-                    // 图片 - 基础加载，支持通过 alt 属性控制布局
-                    // alt 格式: 图片描述 | 布局参数
-                    // 布局参数:
-                    //   - layout=inline: 行内显示（多张图片并排）
-                    //   - layout=center: 居中显示（默认）
-                    //   - layout=left: 左对齐
-                    //   - layout=right: 右对齐
-                    //   - width=xxx: 设置宽度（如 width=200px 或 width=50%）
-                    // 示例: "图一 | layout=inline width=32%"
+                    // 图片 - 基础加载
                     img({ src, alt, ...props }: any) {
                       // 处理 GitHub Pages 基础路径
                       const processedSrc = src ? getAssetPath(src) : src;
-                      
-                      // 解析 alt 属性中的布局和样式参数
-                      let imageAlt = alt || '图片';
-                      let layout = 'center'; // 默认居中
-                      let customWidth = '';
-                      let customClass = '';
-                      
-                      // 检查 alt 是否包含布局参数（使用 | 分隔）
-                      if (alt && alt.includes('|')) {
-                        const parts = alt.split('|');
-                        imageAlt = parts[0].trim();
-                        const params = parts[1].trim();
-                        
-                        // 解析布局参数
-                        if (params.includes('layout=inline')) {
-                          layout = 'inline';
-                        } else if (params.includes('layout=left')) {
-                          layout = 'left';
-                        } else if (params.includes('layout=right')) {
-                          layout = 'right';
-                        }
-                        
-                        // 解析宽度参数
-                        const widthMatch = params.match(/width=(\S+)/);
-                        if (widthMatch) {
-                          customWidth = widthMatch[1];
-                        }
-                      }
-                      
-                      // 根据布局设置样式
-                      let containerClass = 'my-8';
-                      let imageClass = 'rounded-xl shadow-lg max-w-full h-auto';
-                      
-                      switch (layout) {
-                        case 'inline':
-                          // 行内布局：图片并排显示，不包裹div，直接返回img
-                          imageClass = `rounded-xl shadow-lg h-auto inline-block align-middle mx-1`;
-                          // 构建图片样式
-                          const inlineStyle: React.CSSProperties = {};
-                          if (customWidth) {
-                            inlineStyle.width = customWidth;
-                          }
-                          return (
-                            <img
-                              src={processedSrc}
-                              alt={imageAlt}
-                              className={imageClass}
-                              style={inlineStyle}
-                              loading="lazy"
-                              {...props}
-                            />
-                          );
-                        case 'left':
-                          containerClass = 'my-8 text-left';
-                          imageClass = 'rounded-xl shadow-lg max-w-full h-auto';
-                          break;
-                        case 'right':
-                          containerClass = 'my-8 text-right';
-                          imageClass = 'rounded-xl shadow-lg max-w-full h-auto ml-auto';
-                          break;
-                        case 'center':
-                        default:
-                          containerClass = 'my-8 text-center';
-                          imageClass = 'rounded-xl shadow-lg mx-auto max-w-full h-auto';
-                          break;
-                      }
-                      
-                      // 构建图片样式
-                      const imageStyle: React.CSSProperties = {};
-                      if (customWidth) {
-                        imageStyle.width = customWidth;
-                      }
-                      
-                      // 检查是否在表格中（通过检查父元素）
-                      const isInTable = props.node?.parent?.tagName === 'td' || props.node?.parent?.tagName === 'th';
-                      
-                      if (isInTable) {
-                        // 在表格中显示时，简化样式
-                        return (
-                          <img
-                            src={processedSrc}
-                            alt={imageAlt}
-                            className="rounded-xl shadow-lg max-w-full h-auto mx-auto"
-                            style={imageStyle}
-                            loading="lazy"
-                            {...props}
-                          />
-                        );
-                      }
-                      
                       return (
-                        <div className={containerClass}>
+                        <div className="my-8 text-center">
                           <img
                             src={processedSrc}
-                            alt={imageAlt}
-                            className={imageClass}
-                            style={imageStyle}
+                            alt={alt || '图片'}
+                            className="rounded-xl shadow-lg mx-auto max-w-full h-auto"
                             loading="lazy"
                             {...props}
                           />
-                          {imageAlt && layout !== 'inline' && (
-                            <p className="text-sm text-muted-foreground mt-3 italic">{imageAlt}</p>
+                          {alt && (
+                            <p className="text-sm text-muted-foreground mt-3 italic">{alt}</p>
                           )}
-                        </div>
-                      );
-                    },
-                    // 自定义 div 组件 - 支持图片布局容器
-                    div({ className, children, ...props }: any) {
-                      // 如果 className 包含 flex，保留 flex 布局
-                      if (className && className.includes('flex')) {
-                        return (
-                          <div className={className} {...props}>
-                            {children}
-                          </div>
-                        );
-                      }
-                      // 默认情况下，让 div 正常渲染
-                      return (
-                        <div className={className} {...props}>
-                          {children}
                         </div>
                       );
                     },
