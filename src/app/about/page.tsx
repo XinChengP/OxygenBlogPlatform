@@ -51,7 +51,7 @@ export default function AboutPage() {
   // 如果还没有挂载，显示默认样式避免闪烁
   if (!mounted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-8 pt-[65px]">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-8 pt-[80px]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="animate-pulse">
             <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
@@ -65,7 +65,7 @@ export default function AboutPage() {
 
   return (
     <div className={containerStyle.className} style={containerStyle.style}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-[80px] pb-16">
         {/* 页面标题 - 使用统一的 PageHeader 组件 */}
         <PageHeader
           title="关于我"

@@ -616,11 +616,11 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
           {/* 文章内容 */}
           <article className="prose prose-lg dark:prose-invert max-w-none">
             <style jsx>{`
-              /* 只对根级别的p标签添加缩进 */
-              .prose > p {
+              /* 只对根级别的span（段落）添加缩进 */
+              .prose > span {
                 margin-left: 1.5rem;
               }
-              
+
               /* 确保特殊元素不被缩进 */
               .prose > h1,
               .prose > h2,
@@ -632,25 +632,23 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
               .prose > ul,
               .prose > ol,
               .prose > table,
-              .prose > pre,
-              .prose > div {
+              .prose > pre {
                 margin-left: 0;
               }
-              
-              /* 确保特殊元素内的p标签不被缩进 - 覆盖内联样式 */
-              .prose blockquote p,
-              .prose ul p,
-              .prose ol p,
-              .prose table p,
-              .prose pre p,
-              .prose div p {
+
+              /* 确保特殊元素内的span（段落）不被缩进 - 覆盖内联样式 */
+              .prose blockquote span,
+              .prose ul span,
+              .prose ol span,
+              .prose table span,
+              .prose pre span {
                 margin-left: 0 !important;
                 text-indent: 0 !important;
               }
-              
+
               /* 确保特殊元素内的所有内容都不被缩进 */
               .prose blockquote *,
-              .prose div * {
+              .prose span * {
                 margin-left: 0 !important;
                 text-indent: 0 !important;
               }
@@ -826,13 +824,15 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                     p({ children }: ComponentProps) {
                       // 检查博客是否带有"简谱"标签，如果有则不添加首行缩进
                       const hasSheetMusicTag = blog.tags && blog.tags.some(tag => tag === '简谱');
+                      // 使用 span 而非 div 或 p 标签，避免嵌套块级元素导致的 hydration 错误
+                      // span 是内联元素，可以合法地嵌套在 p 标签中
                       return (
-                        <p 
-                          className="mb-4 leading-relaxed text-base" 
+                        <span
+                          className="block mb-4 leading-relaxed text-base"
                           style={{ textIndent: hasSheetMusicTag ? '0' : '2em' }}
                         >
                           {children}
-                        </p>
+                        </span>
                       );
                     },
                     // 列表
@@ -876,18 +876,20 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                       // 处理 GitHub Pages 基础路径
                       const processedSrc = src ? getAssetPath(src) : src;
                       return (
-                        <div className="my-8 text-center">
+                        // 使用 React.Fragment 避免添加额外元素，防止在 p 标签内嵌套块级元素
+                        <>
                           <img
                             src={processedSrc}
                             alt={alt || '图片'}
-                            className="rounded-xl shadow-lg mx-auto max-w-full h-auto"
+                            className="rounded-xl shadow-lg mx-auto max-w-full h-auto my-4"
                             loading="lazy"
                             {...props}
                           />
                           {alt && (
-                            <p className="text-sm text-muted-foreground mt-3 italic">{alt}</p>
+                            // 使用 em 标签显示图片描述，避免嵌套块级元素
+                            <em className="block text-sm text-muted-foreground mt-2 mb-4 italic text-center">{alt}</em>
                           )}
-                        </div>
+                        </>
                       );
                     },
                     // iframe 处理 - 增强错误处理和清理

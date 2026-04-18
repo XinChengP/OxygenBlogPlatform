@@ -1,20 +1,35 @@
+/**
+ * 留言板页面
+ * 使用与其他页面统一的布局风格：PageHeader + 内容区域
+ */
 'use client';
 
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { useTheme } from 'next-themes';
 import { motion } from 'framer-motion';
+import { MessageSquare } from 'lucide-react';
+import PageHeader from '@/components/ui/PageHeader';
 
 // 动态导入大型组件
 const LazyGiscusGuestbookBoard = lazy(() => import('@/components/GiscusGuestbookBoard'));
+
+// 加载占位组件
+function GuestbookSkeleton() {
+  return (
+    <div className="space-y-4">
+      {/* 评论区占位 */}
+      <div className="h-96 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse"></div>
+    </div>
+  );
+}
 
 export default function Guestbook() {
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
-  // 主题颜色
-  const [primaryColor] = useState('#66ccff');
-  const [secondaryColor] = useState('#1e40af');
-  const [accentColor] = useState('#06b6d4');
+  // 主题颜色 - 使用天依蓝配色
+  const primaryColor = '#66ccff';
+  const accentColor = '#06b6d4';
 
   useEffect(() => {
     setMounted(true);
@@ -26,57 +41,66 @@ export default function Guestbook() {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* 背景装饰元素 */}
-      <div className="absolute inset-0 overflow-hidden">
-        {/* 移除所有背景装饰元素 */}
+      {/* 背景装饰元素 - 添加柔和的渐变背景 */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* 左上角装饰圆 */}
+        <motion.div 
+          className="absolute -top-20 -left-20 w-96 h-96 rounded-full opacity-30"
+          style={{ 
+            background: `radial-gradient(circle, ${primaryColor}40 0%, transparent 70%)`,
+          }}
+          animate={{ 
+            scale: [1, 1.1, 1],
+            opacity: [0.3, 0.4, 0.3]
+          }}
+          transition={{ 
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        />
+        {/* 右下角装饰圆 */}
+        <motion.div 
+          className="absolute -bottom-32 -right-32 w-[500px] h-[500px] rounded-full opacity-20"
+          style={{ 
+            background: `radial-gradient(circle, ${accentColor}40 0%, transparent 70%)`,
+          }}
+          animate={{ 
+            scale: [1, 1.15, 1],
+            opacity: [0.2, 0.3, 0.2]
+          }}
+          transition={{ 
+            duration: 10,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 1
+          }}
+        />
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-20">
-        {/* 主要内容卡片 - 使用更简洁的样式 */}
-        <div className="relative z-10 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
-          {/* 头部区域 - 使用半透明主题色背景 */}
-          <div 
-            className="relative p-8 text-white transition-all duration-500 overflow-hidden"
-            style={{
-              background: `
-                linear-gradient(135deg, ${primaryColor}dd 0%, ${accentColor}dd 50%, ${secondaryColor}dd 100%),
-                radial-gradient(circle at top left, ${primaryColor}aa 0%, transparent 50%),
-                radial-gradient(circle at bottom right, ${secondaryColor}aa 0%, transparent 50%)
-              `,
-            }}
-          >
-            {/* 动态光效背景 */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-pulse"></div>
-            <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-black/10"></div>
-            
-            {/* 装饰性几何图形 */}
-            <div className="absolute top-4 right-4 w-20 h-20 rounded-full opacity-20" 
-                 style={{ background: `radial-gradient(circle, ${accentColor}aa, transparent)` }}></div>
-            <div className="absolute bottom-4 left-4 w-16 h-16 rounded-full opacity-15" 
-                 style={{ background: `radial-gradient(circle, ${primaryColor}aa, transparent)` }}></div>
-            
-            <div className="relative z-10">
-              <h1 className="text-2xl md:text-3xl font-bold mb-2 drop-shadow-2xl tracking-wide title">博客留言板</h1>
-              <p className="text-lg opacity-90 drop-shadow-lg">欢迎留下您的想法、建议或任何想要分享的内容。每一句话都是对我们最大的鼓励！</p>
-            </div>
-          </div>
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-[80px] pb-16">
+        {/* 页面标题 - 使用统一的 PageHeader 组件 */}
+        <PageHeader
+          title="留言板"
+          description="欢迎留下您的想法和建议"
+          size="lg"
+          className="mb-12"
+          gradientStyle="primary"
+          icon={<MessageSquare className="w-full h-full" />}
+          showDivider
+        />
 
-          {/* 主要内容区域 */}
-          <div className="p-8 md:p-10 md:pt-8">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              <Suspense fallback={<div className="h-64 bg-gray-200 dark:bg-gray-700 animate-pulse rounded-lg"></div>}>
-                <LazyGiscusGuestbookBoard />
-              </Suspense>
-            </motion.div>
-          </div>
-        </div>
+        {/* 留言板主体 */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <Suspense fallback={<GuestbookSkeleton />}>
+            <LazyGiscusGuestbookBoard />
+          </Suspense>
+        </motion.div>
       </div>
-      
-      
     </div>
   );
 }

@@ -113,11 +113,11 @@ export default function ToolsPage() {
       className={`min-h-screen transition-colors duration-300 ${isDark ? 'dark' : ''} ${containerStyle.className}`}
       style={containerStyle.style}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         {/* 页面标题 */}
         <PageHeader
           title="小工具"
-          description="提供各种实用的小工具，提高您的工作效率"
+          description="超绝小工具"
           size="lg"
           className="mb-12"
         />

@@ -147,7 +147,7 @@ const nextConfig = {
               value: [
                 "default-src 'self'",
                 "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://giscus.app https://v6.51.la https://sdk.51.la https://www.google-analytics.com https://www.googletagmanager.com",
-                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://giscus.app",
                 "img-src 'self' data: blob: https: http:",
                 "font-src 'self' https://fonts.gstatic.com data:",
                 "connect-src 'self' https://api.github.com https://giscus.app https://v6.51.la https://sdk.51.la https://www.google-analytics.com",

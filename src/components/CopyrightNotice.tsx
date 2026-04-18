@@ -41,7 +41,9 @@ export default function CopyrightNotice({
   
   const licenseInfo = getCCLicenseInfo(licenseType);
   const articleUrl = `${copyrightConfig.siteUrl}/blogs/${encodeURIComponent(slug)}`;
-  const publishYear = new Date(publishDate).getFullYear();
+  // 获取当前年份，显示格式为 "2025 - 【当前年份】"
+  const currentYear = new Date().getFullYear();
+  const copyrightYear = currentYear === 2025 ? "2025" : `2025 - ${currentYear}`;
   
   // 判断是否需要折叠（超过3个引用）
   const shouldCollapse = reference && reference.length > 3;
@@ -103,7 +105,7 @@ export default function CopyrightNotice({
         <div className="text-sm text-gray-600 dark:text-gray-400">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div className="flex flex-wrap items-center gap-2">
-              <span>© {publishYear} {copyrightConfig.author}</span>
+              <span>© {copyrightYear} {copyrightConfig.author}</span>
               <span className="hidden sm:inline">•</span>
               <Link 
                 href={licenseInfo.url}

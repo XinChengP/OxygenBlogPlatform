@@ -2,7 +2,7 @@
 title: "怎么在搜索引擎找到博客？"
 date: "2026-04-12"
 category: "技术"
-tags: ["nextjs", "seo", "github-pages", "教程"]
+tags: ["nextjs", "seo", "github pages", "教程"]
 excerpt: "这能被搜到多是一件美逝啊"
 coverImage: "/Blogabout/seo-optimization-guide/cover.jpg"
 ---

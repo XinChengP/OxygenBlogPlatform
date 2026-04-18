@@ -72,7 +72,7 @@ function ClientChangelogsPage({ changelogs, blogTimeStats, momentTimeStats }: Cl
 
   return (
     <div className="min-h-screen">
-      <div className="container mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 pt-24 pb-16">
+      <div className="container mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 pt-[80px] pb-16">
         {/* 页面标题区域 */}
         <PageHeader
           title="开发日志"

@@ -337,7 +337,7 @@ export default function RootLayout({
           (function(){
             var OriginTitile=document.title,titleTime;
             var titleLeave="\\u8bf7\\u4f60\\u7559\\u4e0b\\uff0c\\u4e0d\\u8981\\u79bb\\u5f00QAQ";
-            var titleBack="\\u8fd8\\u6709\\u6211\\uff0c\\u5728\\u4f60\\u8eab\\u8fb9\\u8bf4\\u6211\\u7231\\u4f60\\u554awawa";
+            var titleBack="\\u8fd8\\u6709\\u6211\\uff0c\\u5728\\u4f60\\u8eab\\u8fb9\\u8bf4\\u6211\\u7231\\u4f60\\u554aawa";
             document.addEventListener("visibilitychange",function(){
               if(document.hidden){
                 document.title=titleLeave;

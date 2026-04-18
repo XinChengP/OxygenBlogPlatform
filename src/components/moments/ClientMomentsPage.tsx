@@ -39,10 +39,10 @@ function ClientMomentsPage({ moments, blogCount, blogTotalWordCount, blogs, cate
 
   return (
     <div className="min-h-screen">
-      <div className="container mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 pt-24 pb-16">
+      <div className="container mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 pt-[80px] pb-16">
         <PageHeader
           title="个人动态"
-          description="记录生活点滴，分享日常思考"
+          description="日常发癫"
           size="lg"
           className="mb-12"
         />
@@ -63,7 +63,8 @@ function ClientMomentsPage({ moments, blogCount, blogTotalWordCount, blogs, cate
                 ...blogs.map(blog => ({
                   type: 'blog',
                   id: blog.id,
-                  time: new Date(blog.updatedAt || blog.date).getTime(),
+                  // 使用发布时间进行排序，而非更新时间
+                  time: new Date(blog.date).getTime(),
                   pinned: false,
                   data: blog
                 }))
@@ -187,12 +188,13 @@ function ClientMomentsPage({ moments, blogCount, blogTotalWordCount, blogs, cate
                 } else {
                   const blog = item.data as { id: string; title: string; date: string; updatedAt?: string };
                   return (
-                    <div 
-                      key={blog.id} 
+                    <div
+                      key={blog.id}
                       className="p-4 rounded-lg border transition-all duration-300 backdrop-blur-md bg-card/90 border-border shadow-md supports-[backdrop-filter]:bg-card/75"
                     >
                       <div className="text-foreground text-sm">
-                        <p>在【{blog.updatedAt || blog.date}】发布了<a href={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/blogs/${encodeURIComponent(blog.id)}`} className="text-primary hover:underline">《{blog.title}》</a></p>
+                        {/* 使用 blog.date 显示发布时间，而非 updatedAt */}
+                        <p>在【{blog.date}】发布了<a href={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/blogs/${encodeURIComponent(blog.id)}`} className="text-primary hover:underline">《{blog.title}》</a></p>
                       </div>
                     </div>
                   );

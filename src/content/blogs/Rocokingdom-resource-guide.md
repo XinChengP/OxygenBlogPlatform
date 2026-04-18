@@ -1,8 +1,9 @@
 ---
 title: "洛克王国资源提取"
 date: "2026-01-05"
+updatedAt: "2026-04-18"
 category: "技术"
-tags: ["游戏", "资源提取", "洛克王国"]
+tags: ["游戏", "资源提取", "洛克王国","教程"]
 excerpt: "洛克资源提取のxio教程"
 coverImage: "/Blogabout/rocokingdom-Resource/cover.webp"
 ---
@@ -64,12 +65,13 @@ coverImage: "/Blogabout/rocokingdom-Resource/cover.webp"
 
 ## 幺零零仈陆、资源链接
 
-### 精灵相关资源
+### 宠物相关资源
 | 资源类型 | 链接 | 说明 |
 |---------|------|------|
-| 精灵资源 | `https://res.17roco.qq.com/res/combat/spirits/编号-.swf` | 皮肤格式：`1编号0` |
-| 精灵图鉴预览 | `http://res.17roco.qq.com/res/combat/previews/编号-idle.swf` | 精灵图鉴静态预览 |
-| 精灵图鉴图标 | `https://res.17roco.qq.com/res/combat/icons/编号-.png` | 仓库内未选择精灵样式 |
+| 宠物资源 | `https://res.17roco.qq.com/res/combat/spirits/编号-.swf` | 皮肤格式：`1编号0`，`1编号1` |
+| 宠物图鉴预览 | `http://res.17roco.qq.com/res/combat/previews/编号-idle.swf` | 宠物图鉴静态预览 |
+| 宠物图鉴图标 | `https://res.17roco.qq.com/res/combat/icons/编号-.png` | 仓库内未选择宠物样式 |
+| 宠物血脉图标 | `https://res.17roco.qq.com/res/talent/血脉编号_small.png` | 编号从1开始 |
 
 ps：一个宠物可能有多个皮肤，具体皮肤编号可在洛克数据库中查询（应该洛克群里有这玩意吧（逃）
 
@@ -93,7 +95,7 @@ ps：一个宠物可能有多个皮肤，具体皮肤编号可在洛克数据库
 ### 道具资源
 | 资源类型 | 链接 | 说明 |
 |---------|------|------|
-| 精灵蛋图片 | `https://res.17roco.qq.com/res/egg/编号(0-15、21、27-29).png` | 8、9、11、14暂无<br>21:乖乖组蛋蛋<br>29:精灵组蛋蛋 |
+| 宠物蛋图片 | `https://res.17roco.qq.com/res/egg/编号(0-15、21、27-29).png` | 8、9、11、14暂无<br>21:乖乖组蛋蛋<br>29:宠物组蛋蛋 |
 | HP药剂图片 | `https://res.17roco.qq.com/res/item/编号(16842754-16842763、16842774、16842775).png` | 含潘多诺格HP药剂 |
 | PP药剂图片 | `https://res.17roco.qq.com/res/item/编号(16908290-16908296).png` | 含潘多诺格PP药剂 |
 | 异常状态药剂图片 | `https://res.17roco.qq.com/res/item/编号(16973826-16973833).png` | 各种异常状态治疗药剂 |
@@ -106,7 +108,7 @@ ps：一个宠物可能有多个皮肤，具体皮肤编号可在洛克数据库
 | 经验果图片2 | `https://res.17roco.qq.com/res/item/编号(17170481-17170487).png` | 1万经验果-魔方糖果 |
 | 经验果图片3 | `https://res.17roco.qq.com/res/item/编号(17235972-17235975).png` | 小成长果实、奇妙果、魔力果、怪蛋酱汁 |
 | 升级果图片 | `https://res.17roco.qq.com/res/item/17498114.png` | 升级果(神奇糖果) |
-| 刷新天赋值果实图片 | `https://res.17roco.qq.com/res/item/编号(17367043-17367047).png` | 重置精灵天赋值 |
+| 刷新天赋值果实图片 | `https://res.17roco.qq.com/res/item/编号(17367043-17367047).png` | 重置宠物天赋值 |
 | 努力值果实图片 | `https://res.17roco.qq.com/res/item/编号(17563651-17563657).png` | 17563651:遗忘果实 |
 
 ### 其他资源

@@ -81,6 +81,8 @@ export const productionCSP: CSPDirectives = {
     "'unsafe-inline'", // Tailwind CSS和styled-components需要
     // Google Fonts
     'https://fonts.googleapis.com',
+    // Giscus评论系统样式
+    'https://giscus.app',
   ],
   
   // 图片来源控制

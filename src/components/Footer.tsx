@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { year, name, aWord } from '@/setting/FooterSetting';
+import { name, aWord } from '@/setting/FooterSetting';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -36,6 +36,12 @@ function Footer() {
   // 网站上线时间 - 使用 useMemo 缓存
   const launchDate = useMemo(() => new Date('2025-11-06T20:00:00'), []);
   const [runTime, setRunTime] = useState('');
+
+  // 计算版权年份，格式为 "2025 - 【当前年份】"
+  const copyrightYear = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    return currentYear === 2025 ? "2025" : `2025 - ${currentYear}`;
+  }, []);
 
   // 实时更新运行时间 - 使用 requestAnimationFrame 优化性能
   useEffect(() => {
@@ -74,22 +80,23 @@ function Footer() {
   }
 
   return (
-    <footer className="backdrop-blur-md bg-background/60 border-t border-border/30 py-3 supports-[backdrop-filter]:bg-background/40">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <p className="flex flex-wrap items-center justify-center gap-1 text-xs text-muted-foreground/70">
+    <footer className="backdrop-blur-md bg-background/60 border-t border-border/30 py-4 supports-[backdrop-filter]:bg-background/40">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-3">
+        {/* 第一行：版权、自定义文案、洛天依链接 */}
+        <p className="flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground/70">
           {/* 版权信息 */}
-          <span>&copy; {year} {name}</span>
+          <span>&copy; {copyrightYear} {name}</span>
 
           {/* 自定义文案 */}
           {aWord && (
             <>
-              <span className="mx-1">·</span>
+              <span className="mx-1.5">·</span>
               <span>{aWord}</span>
             </>
           )}
 
           {/* 洛天依B站主页链接 */}
-          <span className="mx-1">·</span>
+          <span className="mx-1.5">·</span>
           <span>由</span>
           <Link
             href="https://space.bilibili.com/36081646"
@@ -100,10 +107,44 @@ function Footer() {
             世界第一吃货殿下
           </Link>
           <span>提供动力（确信）</span>
+        </p>
 
+        {/* 第二行：运行时间、技术栈和备案信息 */}
+        <p className="flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground/70">
           {/* 网站运行时间 */}
-          <span className="mx-1">·</span>
           <span>{runTime}</span>
+
+          {/* 技术栈信息 */}
+          <span className="mx-1.5">·</span>
+          <span>Powered by</span>
+          <Link
+            href="https://nextjs.org/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-muted-foreground/70 hover:text-primary transition-colors duration-200 underline-offset-4 hover:underline nav-link"
+          >
+            Next.js
+          </Link>
+          <span>&</span>
+          <Link
+            href="https://pages.github.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-muted-foreground/70 hover:text-primary transition-colors duration-200 underline-offset-4 hover:underline nav-link"
+          >
+            GitHub Pages
+          </Link>
+
+          {/* 备案信息 */}
+          <span className="mx-1.5">·</span>
+          <Link
+            href="https://beian.miit.gov.cn/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-muted-foreground/70 hover:text-primary transition-colors duration-200 underline-offset-4 hover:underline nav-link"
+          >
+            津ICP备2025041817号
+          </Link>
         </p>
       </div>
     </footer>

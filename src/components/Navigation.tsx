@@ -89,6 +89,10 @@ const Navigation = () => {
    * 检查链接是否为当前页面
    */
   const isActive = useCallback((href: string) => {
+    // 空字符串不视为任何页面的激活状态
+    if (!href || href === '') {
+      return false;
+    }
     if (href === '/') {
       return pathname === '/';
     }
@@ -307,6 +311,7 @@ const Navigation = () => {
   }
   
   return (
+    <>
     <motion.nav
       className={navClassName}
       style={{
@@ -380,82 +385,98 @@ const Navigation = () => {
             </button>
           </div>
         </div>
-        
-        {/* Mobile menu */}
-        <AnimatePresence>
-          {isMenuOpen && (
-            <motion.div
-              className="lg:hidden overflow-hidden"
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3, ease: "easeInOut" }}
-            >
-              <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-                {/* 普通导航项 */}
-                {regularNavItems.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={(e) => handleLinkClick(e, item.href)}
-                    className={`block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300 nav-link ${
-                      pathname === item.href
-                        ? isAtTop ? 'text-white' : 'text-primary dark:text-primary'
-                        : isAtTop ? 'text-white hover:text-gray-200' : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary hover:bg-gray-50/80 dark:hover:bg-gray-800/50'
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-                
-                {/* 社交下拉菜单项（移动端展开显示） */}
-                <div className="border-t border-gray-200/50 dark:border-gray-700/50 my-2 pt-2">
-                  <div className={`px-3 py-2 text-sm font-medium ${isAtTop ? 'text-white/70' : 'text-gray-500 dark:text-gray-400'}`}>
-                    社交
-                  </div>
-                  {socialDropdown.items.map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={(e) => handleLinkClick(e, item.href)}
-                      className={`block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300 ${
-                        pathname === item.href
-                          ? isAtTop ? 'text-white' : 'text-primary dark:text-primary'
-                          : isAtTop ? 'text-white hover:text-gray-200' : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary hover:bg-gray-50/80 dark:hover:bg-gray-800/50'
-                      }`}
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
-                </div>
-                
-                {/* 关于下拉菜单项（移动端展开显示） */}
-                <div className="border-t border-gray-200/50 dark:border-gray-700/50 my-2 pt-2">
-                  <div className={`px-3 py-2 text-sm font-medium ${isAtTop ? 'text-white/70' : 'text-gray-500 dark:text-gray-400'}`}>
-                    关于
-                  </div>
-                  {aboutDropdown.items.map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={(e) => handleLinkClick(e, item.href)}
-                      className={`block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300 ${
-                        pathname === item.href
-                          ? isAtTop ? 'text-white' : 'text-primary dark:text-primary'
-                          : isAtTop ? 'text-white hover:text-gray-200' : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary hover:bg-gray-50/80 dark:hover:bg-gray-800/50'
-                      }`}
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
     </motion.nav>
-  );
+    
+    {/* Mobile menu - 右侧气泡式菜单（放在导航栏外部，使用 Portal 方式定位） */}
+    <AnimatePresence>
+      {isMenuOpen && (
+        <motion.div
+          className="lg:hidden fixed top-16 right-2 z-[100001]"
+          initial={{ opacity: 0, x: 20, scale: 0.95 }}
+          animate={{ opacity: 1, x: 0, scale: 1 }}
+          exit={{ opacity: 0, x: 20, scale: 0.95 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
+        >
+          {/* 气泡式菜单容器 - 透明度和导航栏保持一致 */}
+          <div className={`
+            min-w-[140px] rounded-2xl shadow-xl border
+            ${isAtTop 
+              ? 'bg-white/70 dark:bg-gray-900/70 border-gray-200/50 dark:border-gray-700/50 backdrop-blur-md' 
+              : 'bg-white/70 dark:bg-gray-900/70 border-gray-200/50 dark:border-gray-700/50 backdrop-blur-md'
+            }
+            py-3 px-2
+          `}>
+            {/* 普通导航项 */}
+            <div className="space-y-1">
+              {regularNavItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={(e) => handleLinkClick(e, item.href)}
+                  className={`block px-4 py-2 rounded-xl text-base font-medium transition-all duration-200 text-right ${
+                    pathname === item.href
+                      ? 'text-primary dark:text-primary bg-primary/10 dark:bg-primary/10'
+                      : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary hover:bg-gray-100/50 dark:hover:bg-gray-800/50'
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+            
+            {/* 分隔线 */}
+            <div className="border-t border-gray-200/50 dark:border-gray-700/50 my-2 mx-2" />
+            
+            {/* 社交分类 */}
+            <div className="space-y-1">
+              <div className={`px-4 py-1 text-xs font-medium text-right ${isAtTop ? 'text-gray-400 dark:text-gray-500' : 'text-gray-400 dark:text-gray-500'}`}>
+                社交
+              </div>
+              {socialDropdown.items.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={(e) => handleLinkClick(e, item.href)}
+                  className={`block px-4 py-2 rounded-xl text-base font-medium transition-all duration-200 text-right ${
+                    pathname === item.href
+                      ? 'text-primary dark:text-primary bg-primary/10 dark:bg-primary/10'
+                      : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary hover:bg-gray-100/50 dark:hover:bg-gray-800/50'
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+            
+            {/* 分隔线 */}
+            <div className="border-t border-gray-200/50 dark:border-gray-700/50 my-2 mx-2" />
+            
+            {/* 关于分类 */}
+            <div className="space-y-1">
+              <div className={`px-4 py-1 text-xs font-medium text-right ${isAtTop ? 'text-gray-400 dark:text-gray-500' : 'text-gray-400 dark:text-gray-500'}`}>
+                关于
+              </div>
+              {aboutDropdown.items.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={(e) => handleLinkClick(e, item.href)}
+                  className={`block px-4 py-2 rounded-xl text-base font-medium transition-all duration-200 text-right ${
+                    pathname === item.href
+                      ? 'text-primary dark:text-primary bg-primary/10 dark:bg-primary/10'
+                      : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary hover:bg-gray-100/50 dark:hover:bg-gray-800/50'
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  </>);
 };
 
 // 使用React.memo减少不必要的渲染

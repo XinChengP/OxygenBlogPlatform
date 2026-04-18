@@ -248,11 +248,11 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
 
   return (
     <div className={containerStyle.className} style={containerStyle.style}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-[80px] pb-16">
         {/* 页面头部 - 添加入场动画 */}
         <PageHeader
           title="画廊"
-          description="精选图片集，记录美好瞬间"
+          description="佬，嘿嘿，我亲爱的佬"
           size="lg"
           className="mb-8"
         />
