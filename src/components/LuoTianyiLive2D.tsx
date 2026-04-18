@@ -192,8 +192,9 @@ export default function LuoTianyiLive2D() {
     // 获取当前页面类型和路径
     const getCurrentPageInfo = useCallback(() => {
         if (typeof window === 'undefined') return { page: '', path: '' };
-        
+
         const path = window.location.pathname;
+        // 页面映射表 - 包含所有现有页面
         const pageMap: { [key: string]: string } = {
             '/': '首页',
             '/about': '关于页面',
@@ -201,9 +202,14 @@ export default function LuoTianyiLive2D() {
             '/guestbook': '留言板',
             '/settings': '设置页面',
             '/tools': '工具页面',
-            '/blogs': '博客文章'
+            '/blogs': '博客文章',
+            '/gallery': '画廊页面',
+            '/moments': '个人动态',
+            '/changelogs': '更新日志',
+            '/friends': '友链页面',
+            '/links': '相关链接'
         };
-        
+
         let pageType = '其他页面';
         for (const [route, name] of Object.entries(pageMap)) {
             if (path.startsWith(route)) {
@@ -211,12 +217,17 @@ export default function LuoTianyiLive2D() {
                 break;
             }
         }
-        
-        // 特殊处理博客文章页面
-        if (path.includes('/blogs/') && path !== '/blogs/') {
+
+        // 特殊处理博客文章页面（具体文章页）
+        if (path.startsWith('/blogs/') && path !== '/blogs') {
             pageType = '博客文章';
         }
-        
+
+        // 特殊处理工具子页面
+        if (path.startsWith('/tools/')) {
+            pageType = '工具页面';
+        }
+
         return { page: pageType, path };
     }, []);
 

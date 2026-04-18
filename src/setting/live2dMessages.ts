@@ -222,6 +222,42 @@ export const PageMessages = {
     priority: MessagePriority.NORMAL
   },
 
+  // 更新日志页面
+  CHANGELOGS: {
+    messages: [
+      '这是更新日志～记录着博客的成长历程！',
+      '来看看博客都有哪些变化吧～',
+      '每一次更新都是博主的心血呢～',
+      '了解博客的最新动态吧～'
+    ],
+    duration: MessageDuration.NORMAL,
+    priority: MessagePriority.NORMAL
+  },
+
+  // 友链页面
+  FRIENDS: {
+    messages: [
+      '这里是友链页面～认识一下博主的朋友们吧！',
+      '友情链接是博主和其他博主之间的桥梁呢～',
+      '来看看都有哪些有趣的博客吧～',
+      '欢迎和博主交换友链哦～'
+    ],
+    duration: MessageDuration.NORMAL,
+    priority: MessagePriority.NORMAL
+  },
+
+  // 相关链接页面
+  LINKS: {
+    messages: [
+      '这里是相关链接页面～收集了很多有用的资源！',
+      '来看看博主推荐的一些好网站吧～',
+      '这些链接都是博主精心挑选的呢～',
+      '说不定能找到你感兴趣的内容哦～'
+    ],
+    duration: MessageDuration.NORMAL,
+    priority: MessagePriority.NORMAL
+  },
+
   // 其他页面
   OTHER: {
     messages: [
@@ -594,9 +630,12 @@ export function getPageMessageConfig(pageType: string): MessageConfig {
     '工具页面': PageMessages.TOOLS,
     '设置页面': PageMessages.SETTINGS,
     '画廊页面': PageMessages.GALLERY,
-    '个人动态': PageMessages.MOMENTS
+    '个人动态': PageMessages.MOMENTS,
+    '更新日志': PageMessages.CHANGELOGS,
+    '友链页面': PageMessages.FRIENDS,
+    '相关链接': PageMessages.LINKS
   };
-  
+
   return pageConfigMap[pageType] || PageMessages.OTHER;
 }
 
