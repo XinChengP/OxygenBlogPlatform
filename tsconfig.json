@@ -23,7 +23,9 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": [
+        "./src/*"
+      ]
     }
   },
   "include": [
@@ -35,7 +37,9 @@
     "src/types/**/*.d.ts",
     ".next/dev/types/**/*.ts",
     "src/**/*.ts",
-    "src/**/*.tsx"
+    "src/**/*.tsx",
+    "out/dev/types/**/*.ts",
+    "out/dev/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",

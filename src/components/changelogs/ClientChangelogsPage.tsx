@@ -115,15 +115,23 @@ function ClientChangelogsPage({ changelogs, blogTimeStats, momentTimeStats }: Cl
                             <div className="flex items-center gap-1.5">
                               {/* 自定义荣誉标签 - 显示在最左侧 */}
                               {changelog.honors && changelog.honors.length > 0 &&
-                                changelog.honors.map((honor, index) => (
-                                  <span
-                                    key={`honor-${index}`}
-                                    className="text-xs px-2 py-0.5 rounded-full text-white font-medium bg-gradient-to-r from-blue-500 via-sky-400 via-cyan-400 via-blue-400 to-blue-600"
-                                    title={honor.name}
-                                  >
-                                    {honor.name}
-                                  </span>
-                                ))
+                                changelog.honors.map((honor, index) => {
+                                  // 默认荣誉颜色 - 天依蓝渐变
+                                  const defaultHonorColor = 'bg-gradient-to-r from-blue-500 via-sky-400 via-cyan-400 via-blue-400 to-blue-600';
+                                  // 如果honor定义了color且不是默认颜色，则使用自定义颜色（通过style设置）
+                                  // 否则使用默认的渐变背景色（通过className设置）
+                                  const hasCustomColor = honor.color && honor.color !== defaultHonorColor;
+                                  return (
+                                    <span
+                                      key={`honor-${index}`}
+                                      className={`text-xs px-2 py-0.5 rounded-full text-white font-medium ${hasCustomColor ? '' : defaultHonorColor}`}
+                                      style={hasCustomColor ? { background: honor.color } : undefined}
+                                      title={honor.name}
+                                    >
+                                      {honor.name}
+                                    </span>
+                                  );
+                                })
                               }
                               {/* 成就标签 - 显示在类型标签左侧 */}
                               {changelog.achievements && changelog.achievements.length > 0 &&
