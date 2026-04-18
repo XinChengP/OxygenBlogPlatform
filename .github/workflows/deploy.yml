@@ -46,11 +46,214 @@ jobs:
           # 将 actions 文件替换为空实现，避免 Server Actions 错误
           echo "准备静态导出：将 actions 文件替换为空实现..."
           
-          # 创建空实现内容
+          # 创建空实现内容（包含类型定义）
           cat > /tmp/empty-actions.ts << 'ENDOFFILE'
           // 静态导出模式 - 空实现
           // 此文件在 GitHub Pages 构建时自动生成
           
+          // ==================== 类型定义 ====================
+          
+          // Blog Actions 类型
+          export interface BlogPost {
+            id: string;
+            title: string;
+            slug: string;
+            date: string;
+            category: string;
+            tags: string[];
+            excerpt: string;
+            content: string;
+            coverImage?: string;
+            readingTime?: number;
+            wordCount?: number;
+            updatedAt?: string;
+            hidden?: boolean;
+            pinned?: boolean;
+            pinnedAt?: string;
+            filePath: string;
+          }
+          
+          export interface BlogPostData {
+            title: string;
+            content: string;
+            date?: string;
+            category: string;
+            tags?: string[];
+            excerpt?: string;
+            coverImage?: string;
+            slug?: string;
+            hidden?: boolean;
+          }
+          
+          export interface ActionResult<T = any> {
+            success: boolean;
+            message: string;
+            data?: T;
+            filePath?: string;
+          }
+          
+          // Moment Actions 类型
+          export interface MomentData {
+            time: string;
+            content: string;
+            tags?: string[];
+            images?: string[];
+            pinned?: boolean;
+            hidden?: boolean;
+          }
+          
+          export interface Moment {
+            id: string;
+            time: string;
+            content: string;
+            tags: string[];
+            images: string[];
+            pinned: boolean;
+            hidden: boolean;
+          }
+          
+          // Gallery Actions 类型
+          export interface GalleryImage {
+            src: string;
+            thumbnail?: string;
+            alt?: string;
+            title?: string;
+            category?: string;
+            date?: string;
+            width?: number;
+            height?: number;
+            fileSize?: number;
+            source?: 'local' | 'github';
+            localPath?: string;
+            githubUrl?: string;
+            sha?: string;
+          }
+          
+          export interface UploadResult {
+            success: boolean;
+            message: string;
+            image?: GalleryImage;
+          }
+          
+          export interface UploadMultipleResult {
+            success: boolean;
+            message: string;
+            images: GalleryImage[];
+            failed: string[];
+          }
+          
+          export interface GalleryStats {
+            totalImages: number;
+            totalSize: number;
+            directories: number;
+          }
+          
+          export interface DirectoryTree {
+            name: string;
+            path: string;
+            type: 'directory' | 'file';
+            size?: number;
+            children?: DirectoryTree[];
+            imageCount?: number;
+          }
+          
+          // Todo Actions 类型
+          export interface TodoItem {
+            id: string;
+            content: string;
+            completed: boolean;
+            priority: 'high' | 'medium' | 'low';
+            dueDate?: string;
+            createdAt: string;
+            updatedAt?: string;
+          }
+          
+          export interface TodoConfig {
+            title: string;
+            items: TodoItem[];
+            showStats: boolean;
+          }
+          
+          export interface TodoFormData {
+            content: string;
+            priority?: 'high' | 'medium' | 'low';
+            dueDate?: string;
+          }
+          
+          export interface TodoActionResult<T = any> {
+            success: boolean;
+            message: string;
+            data?: T;
+          }
+          
+          // Settings Actions 类型
+          export interface SystemSettings {
+            siteName: string;
+            siteDescription: string;
+            siteUrl: string;
+            author: string;
+            email: string;
+            metaTitle: string;
+            metaDescription: string;
+            keywords: string;
+            ogImage: string;
+            github: string;
+            twitter: string;
+            weibo: string;
+            bilibili: string;
+            socialEmail: string;
+            enablePwa: boolean;
+            enableAnalytics: boolean;
+            enableComments: boolean;
+            maintenanceMode: boolean;
+          }
+          
+          // Backup Actions 类型
+          export interface BackupResult {
+            success: boolean;
+            message: string;
+            backupPath?: string;
+            commitHash?: string;
+            filesCount?: number;
+            timestamp?: string;
+          }
+          
+          export interface BackupHistory {
+            commitHash: string;
+            message: string;
+            timestamp: string;
+            filesCount: number;
+          }
+          
+          export interface PushConfig {
+            remoteUrl: string;
+            branch?: string;
+            token?: string;
+          }
+          
+          // GitHub Actions 类型
+          export interface GitPushResult {
+            success: boolean;
+            message: string;
+            commitHash?: string;
+            pushedFiles?: string[];
+          }
+          
+          export interface GitStatus {
+            isRepo: boolean;
+            hasRemote: boolean;
+            currentBranch: string;
+            hasUncommittedChanges: boolean;
+            uncommittedFiles: string[];
+            trackingBranch?: string;
+            hasPushable: boolean;
+            aheadCount: number;
+            behindCount: number;
+          }
+          
+          // ==================== 函数实现 ====================
+          
+          // Blog Actions
           export async function getBlogList() { return []; }
           export async function getBlogDetail() { return { success: false, message: '静态导出模式不支持此功能' }; }
           export async function createBlog() { return { success: false, message: '静态导出模式不支持此功能' }; }
@@ -62,6 +265,8 @@ jobs:
           export async function saveBlogMarkdown() { return { success: false, message: '静态导出模式不支持此功能' }; }
           export async function toggleBlogHidden() { return { success: false, message: '静态导出模式不支持此功能' }; }
           export async function batchToggleBlogHidden() { return { success: false, message: '静态导出模式不支持此功能' }; }
+          
+          // Moment Actions
           export async function getMomentList() { return { success: false, message: '静态导出模式不支持此功能', data: [] }; }
           export async function getMomentDetail() { return { success: false, message: '静态导出模式不支持此功能' }; }
           export async function createMoment() { return { success: false, message: '静态导出模式不支持此功能' }; }
@@ -74,6 +279,8 @@ jobs:
           export async function getMomentTags() { return []; }
           export async function toggleMomentHidden() { return { success: false, message: '静态导出模式不支持此功能' }; }
           export async function batchToggleMomentHidden() { return { success: false, message: '静态导出模式不支持此功能' }; }
+          
+          // Gallery Actions
           export async function getLocalGalleryImages() { return []; }
           export async function getLocalGalleryDirectories() { return []; }
           export async function getLocalGalleryDirectoryTree() { return []; }
@@ -82,6 +289,8 @@ jobs:
           export async function uploadLocalImage() { return { success: false, message: '静态导出模式不支持此功能' }; }
           export async function uploadLocalImages() { return { success: false, message: '静态导出模式不支持此功能', images: [], failed: [] }; }
           export async function getLocalGalleryStats() { return { totalImages: 0, totalSize: 0, directories: 0 }; }
+          
+          // Todo Actions
           export async function getTodoConfig() { return { success: true, message: '获取成功', data: { title: '待办事项', items: [], showStats: true } }; }
           export async function getTodoList() { return { success: true, message: '获取成功', data: [] }; }
           export async function getTodoItem() { return { success: false, message: '静态导出模式不支持此功能' }; }
@@ -91,6 +300,8 @@ jobs:
           export async function toggleTodoComplete() { return { success: false, message: '静态导出模式不支持此功能' }; }
           export async function batchDeleteTodoItems() { return { success: false, message: '静态导出模式不支持此功能' }; }
           export async function updateTodoConfigSettings() { return { success: false, message: '静态导出模式不支持此功能' }; }
+          
+          // Settings Actions
           export async function getSettings() { return { siteName: 'Blog', siteDescription: '', siteUrl: '', author: '', email: '', metaTitle: '', metaDescription: '', keywords: '', ogImage: '', github: '', twitter: '', weibo: '', bilibili: '', socialEmail: '', enablePwa: true, enableAnalytics: false, enableComments: true, maintenanceMode: false }; }
           export async function saveSettings() { return { success: false, message: '静态导出模式不支持此功能' }; }
           export async function resetSettings() { return { success: false, message: '静态导出模式不支持此功能' }; }
@@ -98,6 +309,8 @@ jobs:
           export async function updateSeoSettings() { return { success: false, message: '静态导出模式不支持此功能' }; }
           export async function updateSocialSettings() { return { success: false, message: '静态导出模式不支持此功能' }; }
           export async function updateAdvancedSettings() { return { success: false, message: '静态导出模式不支持此功能' }; }
+          
+          // Backup Actions
           export async function changeRestorePassword() { return { success: false, message: '静态导出模式不支持此功能' }; }
           export async function verifyRestorePassword() { return false; }
           export async function getBackupPath() { return ''; }
@@ -111,6 +324,8 @@ jobs:
           export async function pushToRemote() { return { success: false, message: '静态导出模式不支持此功能' }; }
           export async function getRemoteInfo() { return { success: false, message: '静态导出模式不支持此功能' }; }
           export async function testRemoteConnection() { return { success: false, message: '静态导出模式不支持此功能' }; }
+          
+          // GitHub Actions
           export async function initGitRepo() { return { success: false, message: '静态导出模式不支持此功能', isRepo: false, hasRemote: false }; }
           export async function getGitStatus() { return { isRepo: false, hasRemote: false, currentBranch: '', hasUncommittedChanges: false, uncommittedFiles: [], hasPushable: false, aheadCount: 0, behindCount: 0 }; }
           export async function hasUncommittedChanges() { return false; }
