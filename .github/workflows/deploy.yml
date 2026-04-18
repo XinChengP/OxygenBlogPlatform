@@ -317,7 +317,7 @@ jobs:
           export async function backupDirExists() { return false; }
           export async function initBackupRepo() { return { success: false, message: '静态导出模式不支持此功能' }; }
           export async function performBackup() { return { success: false, message: '静态导出模式不支持此功能' }; }
-          export async function getBackupHistory() { return { success: false, message: '静态导出模式不支持此功能', history: [] }; }
+          export async function getBackupHistory(limit?: number) { return { success: false, message: '静态导出模式不支持此功能', history: [] }; }
           export async function restoreBackup() { return { success: false, message: '静态导出模式不支持此功能' }; }
           export async function getBackupStatus() { return { success: false, message: '静态导出模式不支持此功能', totalCommits: 0, lastBackup: '', trackedFiles: 0, hasRemote: false, remoteUrl: '' }; }
           export async function configureRemote() { return { success: false, message: '静态导出模式不支持此功能' }; }
