@@ -254,20 +254,20 @@ jobs:
           // ==================== 函数实现 ====================
           
           // Blog Actions
-          export async function getBlogList() { return []; }
+          export async function getBlogList() { return [] as BlogPost[]; }
           export async function getBlogDetail(id: string) { return { success: false, message: '静态导出模式不支持此功能' }; }
           export async function createBlog(data: BlogPostData) { return { success: false, message: '静态导出模式不支持此功能' }; }
           export async function updateBlog(id: string, data: Partial<BlogPostData>) { return { success: false, message: '静态导出模式不支持此功能' }; }
           export async function deleteBlog(id: string) { return { success: false, message: '静态导出模式不支持此功能' }; }
           export async function batchDeleteBlogs(ids: string[]) { return { success: false, message: '静态导出模式不支持此功能' }; }
           export async function batchUpdateBlogCategory(ids: string[], category: string) { return { success: false, message: '静态导出模式不支持此功能' }; }
-          export async function getBlogCategories() { return []; }
+          export async function getBlogCategories() { return [] as string[]; }
           export async function saveBlogMarkdown(slug: string, content: string) { return { success: false, message: '静态导出模式不支持此功能' }; }
           export async function toggleBlogHidden(id: string) { return { success: false, message: '静态导出模式不支持此功能' }; }
           export async function batchToggleBlogHidden(ids: string[], hidden: boolean) { return { success: false, message: '静态导出模式不支持此功能' }; }
           
           // Moment Actions
-          export async function getMomentList() { return { success: false, message: '静态导出模式不支持此功能', data: [] }; }
+          export async function getMomentList() { return { success: false, message: '静态导出模式不支持此功能', data: [] as Moment[] }; }
           export async function getMomentDetail(id: string) { return { success: false, message: '静态导出模式不支持此功能' }; }
           export async function createMoment(data: MomentData) { return { success: false, message: '静态导出模式不支持此功能' }; }
           export async function updateMoment(id: string, data: Partial<MomentData>) { return { success: false, message: '静态导出模式不支持此功能' }; }
@@ -276,15 +276,15 @@ jobs:
           export async function toggleMomentPinned(id: string) { return { success: false, message: '静态导出模式不支持此功能' }; }
           export async function batchToggleMomentPinned(ids: string[], pinned: boolean) { return { success: false, message: '静态导出模式不支持此功能' }; }
           export async function generateNewMomentId() { return 'moment-' + Date.now(); }
-          export async function getMomentTags() { return []; }
+          export async function getMomentTags() { return [] as string[]; }
           export async function toggleMomentHidden(id: string) { return { success: false, message: '静态导出模式不支持此功能' }; }
           export async function batchToggleMomentHidden(ids: string[], hidden: boolean) { return { success: false, message: '静态导出模式不支持此功能' }; }
           
           // Gallery Actions
-          export async function getLocalGalleryImages(path?: string) { return []; }
-          export async function getLocalGalleryDirectories() { return []; }
-          export async function getLocalGalleryDirectoryTree() { return []; }
-          export async function getLocalGallerySubDirectories(path?: string) { return []; }
+          export async function getLocalGalleryImages(path?: string) { return [] as GalleryImage[]; }
+          export async function getLocalGalleryDirectories() { return [] as string[]; }
+          export async function getLocalGalleryDirectoryTree() { return [] as DirectoryTree[]; }
+          export async function getLocalGallerySubDirectories(path?: string) { return [] as string[]; }
           export async function deleteLocalImage(path: string) { return { success: false, message: '静态导出模式不支持此功能' }; }
           export async function uploadLocalImage(formData?: FormData, path?: string) { return { success: false, message: '静态导出模式不支持此功能' }; }
           export async function uploadLocalImages(formDataList?: FormData[], path?: string) { return { success: false, message: '静态导出模式不支持此功能', images: [], failed: [] }; }
@@ -334,8 +334,8 @@ jobs:
           export async function pushToGitHub(message?: string) { return { success: false, message: '静态导出模式不支持此功能' }; }
           export async function buildAndPush(buildMessage?: string, pushMessage?: string) { return { success: false, message: '静态导出模式不支持此功能' }; }
           export async function addRemote(remoteName?: string, remoteUrl?: string) { return { success: false, message: '静态导出模式不支持此功能' }; }
-          export async function getRemoteList() { return []; }
-          export async function getCommitHistory(count?: number) { return []; }
+          export async function getRemoteList() { return [] as Array<{ name: string; url: string }>; }
+          export async function getCommitHistory(count?: number) { return [] as Array<{ hash: string; message: string; date: string; author: string }>; }
           ENDOFFILE
           
           # 复制空实现到所有 actions 文件
