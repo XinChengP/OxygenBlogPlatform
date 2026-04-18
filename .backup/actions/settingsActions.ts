@@ -28,8 +28,8 @@ export interface ActionResult {
   message: string;
 }
 
-// 空实现函数（不使用 async，不返回 Promise）
-export function getSettings(): SystemSettings {
+// 空实现函数
+export async function getSettings(): Promise<SystemSettings> {
   return {
     siteName: '心想事成 的 Blog',
     siteDescription: '以洛天依为主题的个人博客',
@@ -52,10 +52,10 @@ export function getSettings(): SystemSettings {
   };
 }
 
-export function saveSettings(settings: Partial<SystemSettings>): ActionResult {
+export async function saveSettings(settings: Partial<SystemSettings>): Promise<ActionResult> {
   return { success: false, message: '静态导出模式不支持此功能' };
 }
 
-export function resetSettings(): ActionResult {
+export async function resetSettings(): Promise<ActionResult> {
   return { success: false, message: '静态导出模式不支持此功能' };
 }

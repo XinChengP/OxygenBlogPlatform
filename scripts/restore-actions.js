@@ -7,7 +7,8 @@ const fs = require('fs');
 const path = require('path');
 
 const actionsDir = path.join(__dirname, '..', 'src', 'actions');
-const backupDir = path.join(__dirname, '..', '.backup', 'actions');
+// 从 node_modules 中恢复备份
+const backupDir = path.join(__dirname, '..', 'node_modules', '.backup-actions');
 
 console.log('🔄 恢复原始 Actions 文件...');
 
@@ -46,14 +47,7 @@ actionFiles.forEach(file => {
 const remainingFiles = fs.readdirSync(backupDir);
 if (remainingFiles.length === 0) {
   fs.rmdirSync(backupDir);
-  // 尝试删除父目录 .backup（如果为空）
-  const parentBackupDir = path.dirname(backupDir);
-  try {
-    fs.rmdirSync(parentBackupDir);
-    console.log('🗑️ 已清理备份目录');
-  } catch {
-    // 目录不为空，忽略错误
-  }
+  console.log('🗑️ 已清理备份目录');
 }
 
 console.log(`✨ 恢复完成，共恢复 ${restoredCount} 个文件`);

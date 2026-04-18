@@ -7,7 +7,8 @@ const fs = require('fs');
 const path = require('path');
 
 const actionsDir = path.join(__dirname, '..', 'src', 'actions');
-const backupDir = path.join(__dirname, '..', '.backup', 'actions');
+// 将备份存储在 node_modules 中，避免被 Next.js 扫描到
+const backupDir = path.join(__dirname, '..', 'node_modules', '.backup-actions');
 
 // 检查是否在静态导出模式 - 支持多种环境变量名称
 const isStaticExport = process.env.STATIC_EXPORT === 'true' || 
@@ -26,7 +27,7 @@ if (!fs.existsSync(backupDir)) {
   fs.mkdirSync(backupDir, { recursive: true });
 }
 
-// 定义每个文件的特定内容（不使用 'use client' 或 'use server'）
+// 定义每个文件的特定内容（不使用 'use client' 或 'use server'，不使用 async，不返回 Promise）
 const fileContents = {
   'blogActions.ts': `// 静态导出模式 - Server Actions 被替换为静态兼容版本
 // 注意：此文件在构建时自动生成，请勿手动修改
@@ -69,48 +70,48 @@ export interface ActionResult<T = any> {
   filePath?: string;
 }
 
-// 空实现函数 - 在静态导出模式下返回默认值
-export async function getBlogDetail(id: string): Promise<ActionResult<BlogPost>> {
+// 空实现函数 - 在静态导出模式下返回默认值（不使用 async，不返回 Promise）
+export function getBlogDetail(id: string): ActionResult<BlogPost> {
   return { success: false, message: '静态导出模式不支持此功能' };
 }
 
-export async function getBlogList(): Promise<BlogPost[]> {
+export function getBlogList(): BlogPost[] {
   return [];
 }
 
-export async function createBlog(data: BlogPostData): Promise<ActionResult> {
+export function createBlog(data: BlogPostData): ActionResult {
   return { success: false, message: '静态导出模式不支持此功能' };
 }
 
-export async function updateBlog(id: string, data: Partial<BlogPostData>): Promise<ActionResult> {
+export function updateBlog(id: string, data: Partial<BlogPostData>): ActionResult {
   return { success: false, message: '静态导出模式不支持此功能' };
 }
 
-export async function deleteBlog(id: string): Promise<ActionResult> {
+export function deleteBlog(id: string): ActionResult {
   return { success: false, message: '静态导出模式不支持此功能' };
 }
 
-export async function batchDeleteBlogs(ids: string[]): Promise<ActionResult> {
+export function batchDeleteBlogs(ids: string[]): ActionResult {
   return { success: false, message: '静态导出模式不支持此功能' };
 }
 
-export async function batchUpdateBlogCategory(ids: string[], category: string): Promise<ActionResult> {
+export function batchUpdateBlogCategory(ids: string[], category: string): ActionResult {
   return { success: false, message: '静态导出模式不支持此功能' };
 }
 
-export async function getBlogCategories(): Promise<string[]> {
+export function getBlogCategories(): string[] {
   return [];
 }
 
-export async function saveBlogMarkdown(slug: string, content: string): Promise<ActionResult> {
+export function saveBlogMarkdown(slug: string, content: string): ActionResult {
   return { success: false, message: '静态导出模式不支持此功能' };
 }
 
-export async function toggleBlogHidden(id: string): Promise<ActionResult<BlogPost>> {
+export function toggleBlogHidden(id: string): ActionResult<BlogPost> {
   return { success: false, message: '静态导出模式不支持此功能' };
 }
 
-export async function batchToggleBlogHidden(ids: string[], hidden: boolean): Promise<ActionResult> {
+export function batchToggleBlogHidden(ids: string[], hidden: boolean): ActionResult {
   return { success: false, message: '静态导出模式不支持此功能' };
 }
 `,
@@ -145,36 +146,36 @@ export interface ActionResult<T = any> {
   filePath?: string;
 }
 
-// 空实现函数
-export async function getMomentDetail(id: string): Promise<ActionResult<Moment>> {
+// 空实现函数（不使用 async，不返回 Promise）
+export function getMomentDetail(id: string): ActionResult<Moment> {
   return { success: false, message: '静态导出模式不支持此功能' };
 }
 
-export async function getMomentList(): Promise<ActionResult<Moment[]>> {
+export function getMomentList(): ActionResult<Moment[]> {
   return { success: true, message: '', data: [] };
 }
 
-export async function createMoment(data: MomentData): Promise<ActionResult> {
+export function createMoment(data: MomentData): ActionResult {
   return { success: false, message: '静态导出模式不支持此功能' };
 }
 
-export async function updateMoment(id: string, data: Partial<MomentData>): Promise<ActionResult> {
+export function updateMoment(id: string, data: Partial<MomentData>): ActionResult {
   return { success: false, message: '静态导出模式不支持此功能' };
 }
 
-export async function deleteMoment(id: string): Promise<ActionResult> {
+export function deleteMoment(id: string): ActionResult {
   return { success: false, message: '静态导出模式不支持此功能' };
 }
 
-export async function batchDeleteMoments(ids: string[]): Promise<ActionResult> {
+export function batchDeleteMoments(ids: string[]): ActionResult {
   return { success: false, message: '静态导出模式不支持此功能' };
 }
 
-export async function toggleMomentPinned(id: string): Promise<ActionResult> {
+export function toggleMomentPinned(id: string): ActionResult {
   return { success: false, message: '静态导出模式不支持此功能' };
 }
 
-export async function batchToggleMomentPinned(ids: string[], pinned: boolean): Promise<ActionResult> {
+export function batchToggleMomentPinned(ids: string[], pinned: boolean): ActionResult {
   return { success: false, message: '静态导出模式不支持此功能' };
 }
 
@@ -182,15 +183,15 @@ export function generateNewMomentId(): string {
   return 'moment-' + Date.now();
 }
 
-export async function getMomentTags(): Promise<string[]> {
+export function getMomentTags(): string[] {
   return [];
 }
 
-export async function toggleMomentHidden(id: string): Promise<ActionResult<Moment>> {
+export function toggleMomentHidden(id: string): ActionResult<Moment> {
   return { success: false, message: '静态导出模式不支持此功能' };
 }
 
-export async function batchToggleMomentHidden(ids: string[], hidden: boolean): Promise<ActionResult> {
+export function batchToggleMomentHidden(ids: string[], hidden: boolean): ActionResult {
   return { success: false, message: '静态导出模式不支持此功能' };
 }
 `,
@@ -228,40 +229,40 @@ export interface DirectoryTree {
   imageCount?: number;
 }
 
-// 空实现函数
-export async function getLocalGalleryImages(subPath?: string): Promise<GalleryImage[]> {
+// 空实现函数（不使用 async，不返回 Promise）
+export function getLocalGalleryImages(subPath?: string): GalleryImage[] {
   return [];
 }
 
-export async function getLocalGalleryDirectories(subPath?: string): Promise<string[]> {
+export function getLocalGalleryDirectories(subPath?: string): string[] {
   return [];
 }
 
-export async function getLocalGalleryDirectoryTree(): Promise<DirectoryTree[]> {
+export function getLocalGalleryDirectoryTree(): DirectoryTree[] {
   return [];
 }
 
-export async function getLocalGallerySubDirectories(parentPath?: string): Promise<{
+export function getLocalGallerySubDirectories(parentPath?: string): {
   name: string;
   path: string;
   imageCount: number;
-}[]> {
+}[] {
   return [];
 }
 
-export async function deleteLocalImage(imagePath: string): Promise<{ success: boolean; message: string }> {
+export function deleteLocalImage(imagePath: string): { success: boolean; message: string } {
   return { success: false, message: '静态导出模式不支持此功能' };
 }
 
-export async function uploadLocalImage(formData: FormData, targetPath?: string): Promise<UploadResult> {
+export function uploadLocalImage(formData: FormData, targetPath?: string): UploadResult {
   return { success: false, message: '静态导出模式不支持此功能' };
 }
 
-export async function uploadLocalImages(formDataList: FormData[], targetPath?: string): Promise<UploadMultipleResult> {
+export function uploadLocalImages(formDataList: FormData[], targetPath?: string): UploadMultipleResult {
   return { success: false, message: '不支持', images: [], failed: [] };
 }
 
-export async function getLocalGalleryStats(): Promise<GalleryStats> {
+export function getLocalGalleryStats(): GalleryStats {
   return { totalImages: 0, totalSize: 0, directories: 0 };
 }
 `,
@@ -296,8 +297,8 @@ export interface ActionResult {
   message: string;
 }
 
-// 空实现函数
-export async function getSettings(): Promise<SystemSettings> {
+// 空实现函数（不使用 async，不返回 Promise）
+export function getSettings(): SystemSettings {
   return {
     siteName: '心想事成 的 Blog',
     siteDescription: '以洛天依为主题的个人博客',
@@ -320,11 +321,11 @@ export async function getSettings(): Promise<SystemSettings> {
   };
 }
 
-export async function saveSettings(settings: Partial<SystemSettings>): Promise<ActionResult> {
+export function saveSettings(settings: Partial<SystemSettings>): ActionResult {
   return { success: false, message: '静态导出模式不支持此功能' };
 }
 
-export async function resetSettings(): Promise<ActionResult> {
+export function resetSettings(): ActionResult {
   return { success: false, message: '静态导出模式不支持此功能' };
 }
 `,
@@ -355,59 +356,59 @@ export interface PushConfig {
   token?: string;
 }
 
-// 空实现函数 - 在静态导出模式下返回默认值
-export async function changeRestorePassword(
+// 空实现函数 - 在静态导出模式下返回默认值（不使用 async，不返回 Promise）
+export function changeRestorePassword(
   oldPassword: string,
   newPassword: string
-): Promise<{ success: boolean; message: string }> {
+): { success: boolean; message: string } {
   return { success: false, message: '静态导出模式不支持此功能' };
 }
 
-export async function verifyRestorePassword(password: string): Promise<boolean> {
+export function verifyRestorePassword(password: string): boolean {
   return false;
 }
 
-export async function getBackupPath(): Promise<string> {
+export function getBackupPath(): string {
   return '';
 }
 
-export async function backupDirExists(): Promise<boolean> {
+export function backupDirExists(): boolean {
   return false;
 }
 
-export async function initBackupRepo(): Promise<BackupResult> {
+export function initBackupRepo(): BackupResult {
   return { success: false, message: '静态导出模式不支持此功能' };
 }
 
-export async function performBackup(): Promise<BackupResult> {
+export function performBackup(): BackupResult {
   return { success: false, message: '静态导出模式不支持此功能' };
 }
 
-export async function getBackupHistory(limit: number = 10): Promise<BackupResult & { history?: BackupHistory[] }> {
+export function getBackupHistory(limit: number = 10): BackupResult & { history?: BackupHistory[] } {
   return { success: false, message: '静态导出模式不支持此功能', history: [] };
 }
 
-export async function restoreBackup(commitHash?: string, password?: string): Promise<BackupResult> {
+export function restoreBackup(commitHash?: string, password?: string): BackupResult {
   return { success: false, message: '静态导出模式不支持此功能' };
 }
 
-export async function getBackupStatus(): Promise<BackupResult & { totalCommits?: number; lastBackup?: string; trackedFiles?: number; hasRemote?: boolean; remoteUrl?: string }> {
+export function getBackupStatus(): BackupResult & { totalCommits?: number; lastBackup?: string; trackedFiles?: number; hasRemote?: boolean; remoteUrl?: string } {
   return { success: false, message: '静态导出模式不支持此功能', totalCommits: 0, lastBackup: '', trackedFiles: 0, hasRemote: false };
 }
 
-export async function configureRemote(config: PushConfig): Promise<BackupResult> {
+export function configureRemote(config: PushConfig): BackupResult {
   return { success: false, message: '静态导出模式不支持此功能' };
 }
 
-export async function pushToRemote(config?: PushConfig): Promise<BackupResult> {
+export function pushToRemote(config?: PushConfig): BackupResult {
   return { success: false, message: '静态导出模式不支持此功能' };
 }
 
-export async function getRemoteInfo(): Promise<BackupResult & { remoteUrl?: string; branch?: string; ahead?: number }> {
+export function getRemoteInfo(): BackupResult & { remoteUrl?: string; branch?: string; ahead?: number } {
   return { success: false, message: '静态导出模式不支持此功能' };
 }
 
-export async function testRemoteConnection(config: PushConfig): Promise<BackupResult> {
+export function testRemoteConnection(config: PushConfig): BackupResult {
   return { success: false, message: '静态导出模式不支持此功能' };
 }
 `,
@@ -440,17 +441,17 @@ export interface GitStatus {
   behindCount: number;
 }
 
-// 空实现函数
-export async function initGitRepo(): Promise<{
+// 空实现函数（不使用 async，不返回 Promise）
+export function initGitRepo(): {
   success: boolean;
   message: string;
   isRepo: boolean;
   hasRemote: boolean;
-}> {
+} {
   return { success: false, message: '静态导出模式不支持此功能', isRepo: false, hasRemote: false };
 }
 
-export async function getGitStatus(): Promise<GitStatus> {
+export function getGitStatus(): GitStatus {
   return {
     isRepo: false,
     hasRemote: false,
@@ -463,56 +464,56 @@ export async function getGitStatus(): Promise<GitStatus> {
   };
 }
 
-export async function hasUncommittedChanges(): Promise<boolean> {
+export function hasUncommittedChanges(): boolean {
   return false;
 }
 
-export async function isAheadOfRemote(): Promise<boolean> {
+export function isAheadOfRemote(): boolean {
   return false;
 }
 
-export async function getUncommittedFiles(): Promise<{
+export function getUncommittedFiles(): {
   modified: string[];
   created: string[];
   deleted: string[];
   renamed: string[];
-}> {
+} {
   return { modified: [], created: [], deleted: [], renamed: [] };
 }
 
-export async function pushToGitHub(message?: string): Promise<GitPushResult> {
+export function pushToGitHub(message?: string): GitPushResult {
   return { success: false, message: '静态导出模式不支持此功能' };
 }
 
-export async function buildAndPush(
+export function buildAndPush(
   buildMessage?: string,
   pushMessage?: string
-): Promise<GitPushResult> {
+): GitPushResult {
   return { success: false, message: '静态导出模式不支持此功能' };
 }
 
-export async function addRemote(
+export function addRemote(
   name: string,
   url: string
-): Promise<{ success: boolean; message: string }> {
+): { success: boolean; message: string } {
   return { success: false, message: '静态导出模式不支持此功能' };
 }
 
-export async function getRemoteList(): Promise<Array<{
+export function getRemoteList(): Array<{
   name: string;
   url: string;
-}>> {
+}> {
   return [];
 }
 
-export async function getCommitHistory(
+export function getCommitHistory(
   limit?: number
-): Promise<Array<{
+): Array<{
   hash: string;
   message: string;
   date: string;
   author: string;
-}>> {
+}> {
   return [];
 }
 `,
@@ -522,8 +523,8 @@ export async function getCommitHistory(
 
 import type { TodoItem, TodoConfig, TodoFormData, TodoActionResult } from '@/types/todo';
 
-// 空实现函数
-export async function getTodoConfig(): Promise<TodoActionResult<TodoConfig>> {
+// 空实现函数（不使用 async，不返回 Promise）
+export function getTodoConfig(): TodoActionResult<TodoConfig> {
   return {
     success: true,
     message: '获取成功',
@@ -535,44 +536,51 @@ export async function getTodoConfig(): Promise<TodoActionResult<TodoConfig>> {
   };
 }
 
-export async function getTodoList(): Promise<TodoActionResult<TodoItem[]>> {
+export function getTodoList(): TodoActionResult<TodoItem[]> {
   return { success: true, message: '获取成功', data: [] };
 }
 
-export async function getTodoItem(id: string): Promise<TodoActionResult<TodoItem>> {
+export function getTodoItem(id: string): TodoActionResult<TodoItem> {
   return { success: false, message: '静态导出模式不支持此功能' };
 }
 
-export async function createTodoItem(data: TodoFormData): Promise<TodoActionResult<TodoItem>> {
+export function createTodoItem(data: TodoFormData): TodoActionResult<TodoItem> {
   return { success: false, message: '静态导出模式不支持此功能' };
 }
 
-export async function updateTodoItem(
+export function updateTodoItem(
   id: string,
   data: Partial<TodoFormData>
-): Promise<TodoActionResult<TodoItem>> {
+): TodoActionResult<TodoItem> {
   return { success: false, message: '静态导出模式不支持此功能' };
 }
 
-export async function deleteTodoItem(id: string): Promise<TodoActionResult> {
+export function deleteTodoItem(id: string): TodoActionResult {
   return { success: false, message: '静态导出模式不支持此功能' };
 }
 
-export async function toggleTodoComplete(id: string): Promise<TodoActionResult<TodoItem>> {
+export function toggleTodoComplete(id: string): TodoActionResult<TodoItem> {
   return { success: false, message: '静态导出模式不支持此功能' };
 }
 
-export async function batchDeleteTodoItems(ids: string[]): Promise<TodoActionResult> {
+export function batchDeleteTodoItems(ids: string[]): TodoActionResult {
   return { success: false, message: '静态导出模式不支持此功能' };
 }
 
-export async function updateTodoConfigSettings(
+export function updateTodoConfigSettings(
   settings: Partial<Pick<TodoConfig, 'title' | 'showStats'>>
-): Promise<TodoActionResult<TodoConfig>> {
+): TodoActionResult<TodoConfig> {
   return { success: false, message: '静态导出模式不支持此功能' };
 }
 `
 };
+
+// 检查文件是否是原始 Server Actions 文件（包含 'use server'）
+function isOriginalServerAction(filePath) {
+  if (!fs.existsSync(filePath)) return false;
+  const content = fs.readFileSync(filePath, 'utf-8');
+  return content.includes("'use server'") || content.includes('"use server"');
+}
 
 // 备份并替换文件
 Object.entries(fileContents).forEach(([file, content]) => {
@@ -580,9 +588,11 @@ Object.entries(fileContents).forEach(([file, content]) => {
   const backupPath = path.join(backupDir, file);
   
   if (fs.existsSync(srcPath)) {
-    // 备份原始文件
-    fs.copyFileSync(srcPath, backupPath);
-    console.log(`✅ 已备份: ${file}`);
+    // 只有当文件是原始 Server Actions 文件时才备份
+    if (isOriginalServerAction(srcPath)) {
+      fs.copyFileSync(srcPath, backupPath);
+      console.log(`✅ 已备份: ${file}`);
+    }
     
     // 写入静态导出版本
     fs.writeFileSync(srcPath, content);

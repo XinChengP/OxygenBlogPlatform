@@ -8,7 +8,8 @@ import {
   Globe, 
   ExternalLink, 
   Users,
-  Tag
+  Tag,
+  Sparkles
 } from "lucide-react";
 import Image from 'next/image';
 import { 
