@@ -223,7 +223,7 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
 
   return (
     <div className={containerStyle.className} style={containerStyle.style}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-[80px] pb-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
           <PageHeader
             title="博客归档"
             description={`共 ${totalPosts} 篇文章，按年份、月份和日期归档`}

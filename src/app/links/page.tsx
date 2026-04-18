@@ -45,7 +45,7 @@ export default function LinksPage() {
 
   return (
     <div className={containerStyle.className} style={containerStyle.style}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-[80px] pb-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         {/* 页面标题 - 使用统一的 PageHeader 组件 */}
         <PageHeader
           title="相关链接"

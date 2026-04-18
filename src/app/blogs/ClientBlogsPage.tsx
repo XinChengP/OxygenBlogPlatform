@@ -345,7 +345,7 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
   if (initialPosts.length === 0) {
     return (
       <div className={containerStyle.className} style={containerStyle.style}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-[80px] pb-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
           {/* 页面标题 */}
           <PageHeader
             title="博客文章"
@@ -381,7 +381,7 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
 
   return (
       <div className={containerStyle.className} style={containerStyle.style}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-[80px] pb-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
           {/* 页面标题 */}
           <PageHeader
             title="博客文章"
