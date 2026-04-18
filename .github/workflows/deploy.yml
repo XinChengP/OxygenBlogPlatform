@@ -113,6 +113,11 @@ jobs:
           }
           
           // Gallery Actions 类型
+          export enum ImageSource {
+            Local = 'local',
+            Remote = 'remote'
+          }
+          
           export interface GalleryImage {
             id: string;
             src: string;
@@ -122,7 +127,7 @@ jobs:
             title?: string;
             category: string;
             subCategory?: string;
-            source: 'local' | 'remote';
+            source: ImageSource;
             createdAt: string;
             updatedAt?: string;
             width?: number;
