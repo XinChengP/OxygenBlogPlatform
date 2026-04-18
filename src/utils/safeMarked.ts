@@ -6,11 +6,78 @@
 import DOMPurify from 'dompurify';
 import { marked } from 'marked';
 
+// 缓存配置
+const CACHE_CONFIG = {
+  // 最大缓存条目数
+  maxSize: 100,
+  // 缓存过期时间（毫秒）- 30分钟
+  ttl: 30 * 60 * 1000,
+};
+
+// 带过期时间的缓存项接口
+interface CacheEntry {
+  value: string;
+  timestamp: number;
+}
+
 // 缓存机制：用于存储已处理的Markdown内容
-const markdownCache = new Map<string, string>();
+const markdownCache = new Map<string, CacheEntry>();
 
 // 保存原始的String.repeat方法
 const originalRepeat = String.prototype.repeat;
+
+/**
+ * 设置缓存项，自动处理过期和容量限制
+ * @param key - 缓存键
+ * @param value - 缓存值
+ */
+function setCacheItem(key: string, value: string): void {
+  // 如果缓存已满，删除最旧的条目
+  if (markdownCache.size >= CACHE_CONFIG.maxSize) {
+    const oldestKey = markdownCache.keys().next().value;
+    if (oldestKey !== undefined) {
+      markdownCache.delete(oldestKey);
+    }
+  }
+  
+  markdownCache.set(key, {
+    value,
+    timestamp: Date.now(),
+  });
+}
+
+/**
+ * 获取缓存项，自动检查过期
+ * @param key - 缓存键
+ * @returns 缓存值或undefined
+ */
+function getCacheItem(key: string): string | undefined {
+  const entry = markdownCache.get(key);
+  
+  if (!entry) {
+    return undefined;
+  }
+  
+  // 检查是否过期
+  if (Date.now() - entry.timestamp > CACHE_CONFIG.ttl) {
+    markdownCache.delete(key);
+    return undefined;
+  }
+  
+  return entry.value;
+}
+
+/**
+ * 清理过期的缓存项
+ */
+function cleanupCache(): void {
+  const now = Date.now();
+  for (const [key, entry] of markdownCache.entries()) {
+    if (now - entry.timestamp > CACHE_CONFIG.ttl) {
+      markdownCache.delete(key);
+    }
+  }
+}
 
 // 创建安全的repeat方法
 function safeRepeat(this: string, count: number): string {
@@ -39,11 +106,22 @@ marked.setOptions({
 /**
  * 安全的Markdown转HTML函数
  * 添加缓存机制，提高性能
+ * 
+ * 缓存策略：
+ * - 最大缓存100条记录
+ * - 缓存过期时间30分钟
+ * - 使用LRU策略清理旧缓存
  */
 export async function safeMarkdownToHtml(markdown: string): Promise<string> {
+  // 定期清理过期缓存（每10次调用清理一次）
+  if (Math.random() < 0.1) {
+    cleanupCache();
+  }
+  
   // 检查缓存中是否已有处理结果
-  if (markdownCache.has(markdown)) {
-    return markdownCache.get(markdown)!;
+  const cached = getCacheItem(markdown);
+  if (cached !== undefined) {
+    return cached;
   }
   
   try {
@@ -89,13 +167,14 @@ export async function safeMarkdownToHtml(markdown: string): Promise<string> {
     // 使用DOMPurify清理HTML，防止XSS攻击
     const sanitizedHtml = DOMPurify.sanitize(html);
     
-    // 缓存结果
-    markdownCache.set(markdown, sanitizedHtml);
+    // 缓存结果（使用改进的缓存机制）
+    setCacheItem(markdown, sanitizedHtml);
     
     return sanitizedHtml;
   } catch {
     const result = fallbackMarkdownToHtml(markdown);
-    markdownCache.set(markdown, result);
+    // 缓存结果（使用改进的缓存机制）
+    setCacheItem(markdown, result);
     return result;
   }
 }

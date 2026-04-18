@@ -16,7 +16,8 @@ export function debounce<T extends (...args: unknown[]) => unknown>(
   fn: T,
   delay: number
 ): (...args: Parameters<T>) => void {
-  let timer: NodeJS.Timeout | null = null;
+  // 使用 ReturnType<typeof setTimeout> 以获得更好的跨环境兼容性
+  let timer: ReturnType<typeof setTimeout> | null = null;
   
   return function (...args: Parameters<T>) {
     if (timer) {

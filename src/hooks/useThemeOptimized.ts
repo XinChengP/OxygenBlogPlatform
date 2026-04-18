@@ -109,6 +109,9 @@ export function useThemeOptimized(config: ThemeOptimizerConfig = {}) {
     
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
+    // 注意：applyThemeColors 是外部导入的函数，不是 hook 依赖
+    // 它不会随着组件生命周期变化，所以不需要添加到依赖数组
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [theme]);
   
   // 性能监控
