@@ -38,7 +38,7 @@ export const metadata: Metadata = {
    * %s 会被替换为具体页面的标题
    */
   title: {
-    default: "\u5fc3\u60f3\u4e8b\u6210 \u7684 Blog - \u6d1b\u5929\u4f9d\u4e3b\u9898\u4e2a\u4eba\u535a\u5ba2",
+    default: "\u5fc3\u60f3\u4e8b\u6210 \u7684 Blog",
     template: "%s | \u5fc3\u60f3\u4e8b\u6210 \u7684 Blog",
   },
   
@@ -274,7 +274,8 @@ export default function RootLayout({
                   
                   // 十六进制转RGB
                   function hexToRgb(hex) {
-                    var result = /^#?([a-f\\d]{2})([a-f\\d]{2})([a-f\\d]{2})$/i.exec(hex);
+                    // 使用正则匹配十六进制颜色值，\d 表示数字，[a-f] 表示小写十六进制字母
+                    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
                     return result ? {
                       r: parseInt(result[1], 16),
                       g: parseInt(result[2], 16),
@@ -336,8 +337,9 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{__html:`
           (function(){
             var OriginTitile=document.title,titleTime;
-            var titleLeave="\\u8bf7\\u4f60\\u7559\\u4e0b\\uff0c\\u4e0d\\u8981\\u79bb\\u5f00QAQ";
-            var titleBack="\\u8fd8\\u6709\\u6211\\uff0c\\u5728\\u4f60\\u8eab\\u8fb9\\u8bf4\\u6211\\u7231\\u4f60\\u554aawa";
+            // 使用单引号包裹字符串，避免转义问题
+            var titleLeave='请你留下，不要离开QAQ';
+            var titleBack='还有我，在你身边说我爱你啊awa';
             document.addEventListener("visibilitychange",function(){
               if(document.hidden){
                 document.title=titleLeave;
