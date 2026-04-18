@@ -114,19 +114,20 @@ jobs:
           
           // Gallery Actions 类型
           export interface GalleryImage {
+            id: string;
             src: string;
+            fallbackSrc?: string;
             thumbnail?: string;
-            alt?: string;
+            alt: string;
             title?: string;
-            category?: string;
-            date?: string;
+            category: string;
+            subCategory?: string;
+            source: 'local' | 'remote';
+            createdAt: string;
+            updatedAt?: string;
             width?: number;
             height?: number;
-            fileSize?: number;
-            source?: 'local' | 'github';
-            localPath?: string;
-            githubUrl?: string;
-            sha?: string;
+            size?: number;
           }
           
           export interface UploadResult {
