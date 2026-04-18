@@ -11,8 +11,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "npm run sync-theme && next build",
-    "build:pages": "set STATIC_EXPORT=true && npm run sync-theme && next build",
-    "build:static": "set STATIC_EXPORT=true && npm run sync-theme && next build",
+    "build:pages": "cross-env STATIC_EXPORT=true npm run sync-theme && cross-env STATIC_EXPORT=true next build",
+    "build:static": "cross-env STATIC_EXPORT=true npm run sync-theme && cross-env STATIC_EXPORT=true next build",
     "start": "next start",
     "serve": "node scripts/serve-static.js",
     "lint": "next lint",
@@ -76,6 +76,7 @@
     "@typescript-eslint/eslint-plugin": "^8.35.0",
     "@typescript-eslint/parser": "^8.35.0",
     "compression": "^1.8.1",
+    "cross-env": "^7.0.3",
     "electron": "^34.0.0",
     "eslint": "^9.39.3",
     "express": "^5.2.1",
