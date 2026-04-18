@@ -322,7 +322,7 @@ jobs:
           export async function getBackupStatus() { return { success: false, message: '静态导出模式不支持此功能', totalCommits: 0, lastBackup: '', trackedFiles: 0, hasRemote: false, remoteUrl: '' }; }
           export async function configureRemote() { return { success: false, message: '静态导出模式不支持此功能' }; }
           export async function pushToRemote() { return { success: false, message: '静态导出模式不支持此功能' }; }
-          export async function getRemoteInfo() { return { success: false, message: '静态导出模式不支持此功能' }; }
+          export async function getRemoteInfo() { return { success: false, message: '静态导出模式不支持此功能', remoteUrl: '', branch: 'main', ahead: 0 }; }
           export async function testRemoteConnection() { return { success: false, message: '静态导出模式不支持此功能' }; }
           
           // GitHub Actions
