@@ -287,12 +287,12 @@ jobs:
           export async function getLocalGallerySubDirectories(path?: string) { return [] as string[]; }
           export async function deleteLocalImage(path: string) { return { success: false, message: '静态导出模式不支持此功能' }; }
           export async function uploadLocalImage(formData?: FormData, path?: string) { return { success: false, message: '静态导出模式不支持此功能' }; }
-          export async function uploadLocalImages(formDataList?: FormData[], path?: string) { return { success: false, message: '静态导出模式不支持此功能', images: [], failed: [] }; }
+          export async function uploadLocalImages(formDataList?: FormData[], path?: string) { return { success: false, message: '静态导出模式不支持此功能', images: [] as GalleryImage[], failed: [] as string[] }; }
           export async function getLocalGalleryStats() { return { totalImages: 0, totalSize: 0, directories: 0 }; }
           
           // Todo Actions
-          export async function getTodoConfig() { return { success: true, message: '获取成功', data: { title: '待办事项', items: [], showStats: true } }; }
-          export async function getTodoList() { return { success: true, message: '获取成功', data: [] }; }
+          export async function getTodoConfig() { return { success: true, message: '获取成功', data: { title: '待办事项', items: [] as TodoItem[], showStats: true } }; }
+          export async function getTodoList() { return { success: true, message: '获取成功', data: [] as TodoItem[] }; }
           export async function getTodoItem(id: string) { return { success: false, message: '静态导出模式不支持此功能' }; }
           export async function createTodoItem(data: TodoFormData) { return { success: false, message: '静态导出模式不支持此功能' }; }
           export async function updateTodoItem(id: string, data: Partial<TodoFormData>) { return { success: false, message: '静态导出模式不支持此功能' }; }
@@ -317,7 +317,7 @@ jobs:
           export async function backupDirExists() { return false; }
           export async function initBackupRepo() { return { success: false, message: '静态导出模式不支持此功能' }; }
           export async function performBackup() { return { success: false, message: '静态导出模式不支持此功能' }; }
-          export async function getBackupHistory(limit?: number) { return { success: false, message: '静态导出模式不支持此功能', history: [] }; }
+          export async function getBackupHistory(limit?: number) { return { success: false, message: '静态导出模式不支持此功能', history: [] as BackupHistory[] }; }
           export async function restoreBackup(commitHash?: string, password?: string) { return { success: false, message: '静态导出模式不支持此功能' }; }
           export async function getBackupStatus() { return { success: false, message: '静态导出模式不支持此功能', totalCommits: 0, lastBackup: '', trackedFiles: 0, hasRemote: false, remoteUrl: '' }; }
           export async function configureRemote(config?: PushConfig) { return { success: false, message: '静态导出模式不支持此功能' }; }
@@ -330,7 +330,7 @@ jobs:
           export async function getGitStatus() { return { isRepo: false, hasRemote: false, currentBranch: '', hasUncommittedChanges: false, uncommittedFiles: [], hasPushable: false, aheadCount: 0, behindCount: 0 }; }
           export async function hasUncommittedChanges() { return false; }
           export async function isAheadOfRemote() { return false; }
-          export async function getUncommittedFiles() { return { modified: [], added: [], deleted: [], renamed: [] }; }
+          export async function getUncommittedFiles() { return { modified: [] as string[], added: [] as string[], deleted: [] as string[], renamed: [] as string[] }; }
           export async function pushToGitHub(message?: string) { return { success: false, message: '静态导出模式不支持此功能' }; }
           export async function buildAndPush(buildMessage?: string, pushMessage?: string) { return { success: false, message: '静态导出模式不支持此功能' }; }
           export async function addRemote(remoteName?: string, remoteUrl?: string) { return { success: false, message: '静态导出模式不支持此功能' }; }
