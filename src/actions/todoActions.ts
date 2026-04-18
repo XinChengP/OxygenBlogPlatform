@@ -1,278 +1,152 @@
-'use server';
-
 /**
  * 待办管理相关的 Server Actions
  * 提供待办事项的增删改查功能
  * 待办数据使用 JSON 格式存储
+ *
+ * 注意：此文件支持两种运行模式
+ * 1. 本地开发模式（NEXT_PRIVATE_STATIC_EXPORT !== 'true'）：使用真实的文件系统操作
+ * 2. 静态导出模式（NEXT_PRIVATE_STATIC_EXPORT === 'true'）：返回空实现，用于 GitHub Pages 构建
  */
 
-import { revalidatePath } from 'next/cache';
-import { promises as fs } from 'fs';
-import path from 'path';
+// 检测是否在静态导出模式 - 必须在任何导入之前检测
+const isStaticExport = process.env.NEXT_PRIVATE_STATIC_EXPORT === 'true' || process.env.STATIC_EXPORT === 'true';
+
+// 类型定义
 import type { TodoItem, TodoConfig, TodoFormData, TodoActionResult } from '@/types/todo';
 
-// 待办数据存储路径
-const TODO_FILE = path.join(process.cwd(), 'src', 'content', 'todo.json');
+// ============================================
+// 静态导出模式：空实现（不使用 'use server'）
+// ============================================
 
-/**
- * 默认待办配置
- */
-const DEFAULT_CONFIG: TodoConfig = {
-  title: '待办事项',
-  items: [],
-  showStats: true,
-};
+function getTodoConfigStatic(): Promise<TodoActionResult<TodoConfig>> {
+  return Promise.resolve({ success: false, message: '静态导出模式不支持此功能' });
+}
 
-/**
- * 确保待办文件存在
- */
-async function ensureTodoFile(): Promise<void> {
+function getTodoListStatic(): Promise<TodoActionResult<TodoItem[]>> {
+  return Promise.resolve({ success: false, message: '静态导出模式不支持此功能', data: [] });
+}
+
+function getTodoItemStatic(): Promise<TodoActionResult<TodoItem>> {
+  return Promise.resolve({ success: false, message: '静态导出模式不支持此功能' });
+}
+
+function createTodoItemStatic(): Promise<TodoActionResult<TodoItem>> {
+  return Promise.resolve({ success: false, message: '静态导出模式不支持此功能' });
+}
+
+function updateTodoItemStatic(): Promise<TodoActionResult<TodoItem>> {
+  return Promise.resolve({ success: false, message: '静态导出模式不支持此功能' });
+}
+
+function deleteTodoItemStatic(): Promise<TodoActionResult> {
+  return Promise.resolve({ success: false, message: '静态导出模式不支持此功能' });
+}
+
+function toggleTodoCompleteStatic(): Promise<TodoActionResult<TodoItem>> {
+  return Promise.resolve({ success: false, message: '静态导出模式不支持此功能' });
+}
+
+function batchDeleteTodoItemsStatic(): Promise<TodoActionResult> {
+  return Promise.resolve({ success: false, message: '静态导出模式不支持此功能' });
+}
+
+function updateTodoConfigSettingsStatic(): Promise<TodoActionResult<TodoConfig>> {
+  return Promise.resolve({ success: false, message: '静态导出模式不支持此功能' });
+}
+
+// ============================================
+// 本地开发模式：真实实现（使用 'use server'）
+// ============================================
+
+// 只有在非静态导出模式下才导入和使用 Server Actions 相关功能
+let todoActionsReal: {
+  getTodoConfig: () => Promise<TodoActionResult<TodoConfig>>;
+  getTodoList: () => Promise<TodoActionResult<TodoItem[]>>;
+  getTodoItem: (id: string) => Promise<TodoActionResult<TodoItem>>;
+  createTodoItem: (data: TodoFormData) => Promise<TodoActionResult<TodoItem>>;
+  updateTodoItem: (id: string, data: Partial<TodoFormData>) => Promise<TodoActionResult<TodoItem>>;
+  deleteTodoItem: (id: string) => Promise<TodoActionResult>;
+  toggleTodoComplete: (id: string) => Promise<TodoActionResult<TodoItem>>;
+  batchDeleteTodoItems: (ids: string[]) => Promise<TodoActionResult>;
+  updateTodoConfigSettings: (settings: Partial<Pick<TodoConfig, 'title' | 'showStats'>>) => Promise<TodoActionResult<TodoConfig>>;
+} | null = null;
+
+// 动态导入真实实现（只在非静态导出模式下）
+if (!isStaticExport) {
+  // 使用 require 动态导入，避免在静态导出时解析
   try {
-    await fs.access(TODO_FILE);
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const realModule = require('./todoActions.real');
+    todoActionsReal = realModule;
   } catch {
-    // 文件不存在，创建默认配置
-    await fs.writeFile(TODO_FILE, JSON.stringify(DEFAULT_CONFIG, null, 2), 'utf-8');
+    // 如果真实实现模块不存在，使用空实现
+    todoActionsReal = null;
   }
 }
 
-/**
- * 读取待办配置
- */
-async function readTodoConfig(): Promise<TodoConfig> {
-  try {
-    await ensureTodoFile();
-    const content = await fs.readFile(TODO_FILE, 'utf-8');
-    return JSON.parse(content) as TodoConfig;
-  } catch (error) {
-    console.error('读取待办配置失败:', error);
-    return DEFAULT_CONFIG;
-  }
-}
+// ============================================
+// 导出函数：根据环境选择实现
+// ============================================
 
-/**
- * 保存待办配置
- */
-async function saveTodoConfig(config: TodoConfig): Promise<void> {
-  await ensureTodoFile();
-  await fs.writeFile(TODO_FILE, JSON.stringify(config, null, 2), 'utf-8');
-}
-
-/**
- * 生成新的待办 ID
- */
-function generateTodoId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).substring(2, 7);
-}
-
-/**
- * 获取待办配置
- */
 export async function getTodoConfig(): Promise<TodoActionResult<TodoConfig>> {
-  try {
-    const config = await readTodoConfig();
-    return { success: true, message: '获取成功', data: config };
-  } catch (error) {
-    console.error('获取待办配置失败:', error);
-    return { success: false, message: '获取失败', data: DEFAULT_CONFIG };
+  if (isStaticExport || !todoActionsReal) {
+    return getTodoConfigStatic();
   }
+  return todoActionsReal.getTodoConfig();
 }
 
-/**
- * 获取待办列表
- */
 export async function getTodoList(): Promise<TodoActionResult<TodoItem[]>> {
-  try {
-    const config = await readTodoConfig();
-    return { success: true, message: '获取成功', data: config.items };
-  } catch (error) {
-    console.error('获取待办列表失败:', error);
-    return { success: false, message: '获取失败', data: [] };
+  if (isStaticExport || !todoActionsReal) {
+    return getTodoListStatic();
   }
+  return todoActionsReal.getTodoList();
 }
 
-/**
- * 获取单个待办
- */
 export async function getTodoItem(id: string): Promise<TodoActionResult<TodoItem>> {
-  try {
-    const config = await readTodoConfig();
-    const item = config.items.find(item => item.id === id);
-    
-    if (!item) {
-      return { success: false, message: '待办不存在' };
-    }
-    
-    return { success: true, message: '获取成功', data: item };
-  } catch (error) {
-    console.error('获取待办详情失败:', error);
-    return { success: false, message: '获取失败' };
+  if (isStaticExport || !todoActionsReal) {
+    return getTodoItemStatic();
   }
+  return todoActionsReal.getTodoItem(id);
 }
 
-/**
- * 创建待办
- */
 export async function createTodoItem(data: TodoFormData): Promise<TodoActionResult<TodoItem>> {
-  try {
-    const config = await readTodoConfig();
-    
-    const now = new Date().toISOString();
-    const newItem: TodoItem = {
-      id: generateTodoId(),
-      content: data.content,
-      completed: false,
-      priority: data.priority,
-      dueDate: data.dueDate,
-      createdAt: now,
-    };
-    
-    config.items.unshift(newItem);
-    await saveTodoConfig(config);
-    
-    revalidatePath('/admin/todo');
-    revalidatePath('/moments');
-    
-    return { success: true, message: '创建成功', data: newItem };
-  } catch (error) {
-    console.error('创建待办失败:', error);
-    return { success: false, message: '创建失败' };
+  if (isStaticExport || !todoActionsReal) {
+    return createTodoItemStatic();
   }
+  return todoActionsReal.createTodoItem(data);
 }
 
-/**
- * 更新待办
- */
 export async function updateTodoItem(id: string, data: Partial<TodoFormData>): Promise<TodoActionResult<TodoItem>> {
-  try {
-    const config = await readTodoConfig();
-    const index = config.items.findIndex(item => item.id === id);
-    
-    if (index === -1) {
-      return { success: false, message: '待办不存在' };
-    }
-    
-    const now = new Date().toISOString();
-    config.items[index] = {
-      ...config.items[index],
-      ...data,
-      updatedAt: now,
-    };
-    
-    await saveTodoConfig(config);
-    
-    revalidatePath('/admin/todo');
-    revalidatePath('/moments');
-    
-    return { success: true, message: '更新成功', data: config.items[index] };
-  } catch (error) {
-    console.error('更新待办失败:', error);
-    return { success: false, message: '更新失败' };
+  if (isStaticExport || !todoActionsReal) {
+    return updateTodoItemStatic();
   }
+  return todoActionsReal.updateTodoItem(id, data);
 }
 
-/**
- * 删除待办
- */
 export async function deleteTodoItem(id: string): Promise<TodoActionResult> {
-  try {
-    const config = await readTodoConfig();
-    const index = config.items.findIndex(item => item.id === id);
-    
-    if (index === -1) {
-      return { success: false, message: '待办不存在' };
-    }
-    
-    config.items.splice(index, 1);
-    await saveTodoConfig(config);
-    
-    revalidatePath('/admin/todo');
-    revalidatePath('/moments');
-    
-    return { success: true, message: '删除成功' };
-  } catch (error) {
-    console.error('删除待办失败:', error);
-    return { success: false, message: '删除失败' };
+  if (isStaticExport || !todoActionsReal) {
+    return deleteTodoItemStatic();
   }
+  return todoActionsReal.deleteTodoItem(id);
 }
 
-/**
- * 切换待办完成状态
- */
 export async function toggleTodoComplete(id: string): Promise<TodoActionResult<TodoItem>> {
-  try {
-    const config = await readTodoConfig();
-    const index = config.items.findIndex(item => item.id === id);
-    
-    if (index === -1) {
-      return { success: false, message: '待办不存在' };
-    }
-    
-    const now = new Date().toISOString();
-    const newCompleted = !config.items[index].completed;
-    
-    config.items[index] = {
-      ...config.items[index],
-      completed: newCompleted,
-      updatedAt: now,
-    };
-    
-    await saveTodoConfig(config);
-    
-    revalidatePath('/admin/todo');
-    revalidatePath('/moments');
-    
-    return { 
-      success: true, 
-      message: newCompleted ? '已标记为完成' : '已标记为未完成', 
-      data: config.items[index] 
-    };
-  } catch (error) {
-    console.error('切换待办状态失败:', error);
-    return { success: false, message: '操作失败' };
+  if (isStaticExport || !todoActionsReal) {
+    return toggleTodoCompleteStatic();
   }
+  return todoActionsReal.toggleTodoComplete(id);
 }
 
-/**
- * 批量删除待办
- */
 export async function batchDeleteTodoItems(ids: string[]): Promise<TodoActionResult> {
-  try {
-    const config = await readTodoConfig();
-    config.items = config.items.filter(item => !ids.includes(item.id));
-    await saveTodoConfig(config);
-    
-    revalidatePath('/admin/todo');
-    revalidatePath('/moments');
-    
-    return { success: true, message: `成功删除 ${ids.length} 条待办` };
-  } catch (error) {
-    console.error('批量删除待办失败:', error);
-    return { success: false, message: '批量删除失败' };
+  if (isStaticExport || !todoActionsReal) {
+    return batchDeleteTodoItemsStatic();
   }
+  return todoActionsReal.batchDeleteTodoItems(ids);
 }
 
-/**
- * 更新待办配置（标题、统计显示等）
- */
 export async function updateTodoConfigSettings(settings: Partial<Pick<TodoConfig, 'title' | 'showStats'>>): Promise<TodoActionResult<TodoConfig>> {
-  try {
-    const config = await readTodoConfig();
-    
-    if (settings.title !== undefined) {
-      config.title = settings.title;
-    }
-    if (settings.showStats !== undefined) {
-      config.showStats = settings.showStats;
-    }
-    
-    await saveTodoConfig(config);
-    
-    revalidatePath('/admin/todo');
-    revalidatePath('/moments');
-    
-    return { success: true, message: '配置更新成功', data: config };
-  } catch (error) {
-    console.error('更新待办配置失败:', error);
-    return { success: false, message: '配置更新失败' };
+  if (isStaticExport || !todoActionsReal) {
+    return updateTodoConfigSettingsStatic();
   }
+  return todoActionsReal.updateTodoConfigSettings(settings);
 }

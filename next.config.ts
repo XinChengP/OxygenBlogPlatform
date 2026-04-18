@@ -149,6 +149,8 @@ const staticConfig = {
   trailingSlash: true,
   basePath: (process.env.CUSTOM_DOMAIN === 'true' || process.env.NEXT_PUBLIC_SITE_URL === 'https://blog.xinchengp.cn') ? '' : (process.env.NEXT_PUBLIC_BASE_PATH || ''),
   assetPrefix: (process.env.CUSTOM_DOMAIN === 'true' || process.env.NEXT_PUBLIC_SITE_URL === 'https://blog.xinchengp.cn') ? '' : (process.env.NEXT_PUBLIC_BASE_PATH || ''),
+  // 静态导出模式下禁用 Server Actions
+  experimental: undefined,
   images: {
     unoptimized: true,
     remotePatterns: [
@@ -164,6 +166,17 @@ const staticConfig = {
     NEXT_PUBLIC_GITHUB_REPO_NAME: process.env.NEXT_PUBLIC_GITHUB_REPO_NAME || '',
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL || '',
     CUSTOM_DOMAIN: process.env.CUSTOM_DOMAIN || 'false',
+  },
+  // 使用 webpack 排除 actions 目录
+  webpack: (config: any, { isServer }: { isServer: boolean }) => {
+    if (!isServer) {
+      // 在客户端构建中排除 actions 目录
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        '@/actions': false,
+      };
+    }
+    return config;
   },
 };
 

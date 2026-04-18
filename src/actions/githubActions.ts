@@ -1,17 +1,19 @@
-'use server';
-
 /**
- * GitHub 推送功能的后端逻辑
+ * GitHub 推送功能相关的 Server Actions
  * 提供 Git 仓库操作、状态检查和推送到 GitHub 的功能
  * 使用 simple-git 库执行 Git 操作
+ * 
+ * 注意：此文件支持两种运行模式
+ * 1. 本地开发模式（NEXT_PRIVATE_STATIC_EXPORT !== 'true'）：使用真实的 Git 操作
+ * 2. 静态导出模式（NEXT_PRIVATE_STATIC_EXPORT === 'true'）：返回空实现，用于 GitHub Pages 构建
  */
 
-import simpleGit, { SimpleGit } from 'simple-git';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import path from 'path';
+// 检测是否在静态导出模式 - 必须在任何导入之前检测
+const isStaticExport = process.env.NEXT_PRIVATE_STATIC_EXPORT === 'true' || process.env.STATIC_EXPORT === 'true';
 
-const execAsync = promisify(exec);
+// ============================================
+// 类型定义
+// ============================================
 
 /**
  * Git 操作结果接口
@@ -43,36 +45,157 @@ export interface GitStatus {
   behindCount: number;
 }
 
-/**
- * 获取 Git 仓库根目录路径
- * 使用 process.cwd() 获取当前工作目录，即项目根目录
- */
-function getRepoPath(): string {
-  return process.cwd();
+// ============================================
+// 静态导出模式：空实现（不使用 'use server'）
+// ============================================
+
+function initGitRepoStatic(): Promise<{
+  success: boolean;
+  message: string;
+  isRepo: boolean;
+  hasRemote: boolean;
+}> {
+  return Promise.resolve({
+    success: false,
+    message: '静态导出模式不支持此功能',
+    isRepo: false,
+    hasRemote: false,
+  });
 }
 
-/**
- * 初始化 Git 仓库实例
- * 创建一个 simple-git 实例，指向项目根目录
- */
-function getGit(): SimpleGit {
-  return simpleGit(getRepoPath());
+function getGitStatusStatic(): Promise<GitStatus> {
+  return Promise.resolve({
+    isRepo: false,
+    hasRemote: false,
+    currentBranch: '',
+    hasUncommittedChanges: false,
+    uncommittedFiles: [],
+    hasPushable: false,
+    aheadCount: 0,
+    behindCount: 0,
+  });
 }
 
-/**
- * 检查指定目录是否是 Git 仓库
- * @param dirPath 要检查的目录路径
- * @returns 如果是 Git 仓库返回 true，否则返回 false
- */
-async function isGitRepository(dirPath: string): Promise<boolean> {
+function hasUncommittedChangesStatic(): Promise<boolean> {
+  return Promise.resolve(false);
+}
+
+function isAheadOfRemoteStatic(): Promise<boolean> {
+  return Promise.resolve(false);
+}
+
+function getUncommittedFilesStatic(): Promise<{
+  modified: string[];
+  added: string[];
+  deleted: string[];
+  renamed: string[];
+}> {
+  return Promise.resolve({ modified: [], added: [], deleted: [], renamed: [] });
+}
+
+function pushToGitHubStatic(_message?: string): Promise<GitPushResult> {
+  return Promise.resolve({
+    success: false,
+    message: '静态导出模式不支持此功能',
+  });
+}
+
+function buildAndPushStatic(
+  _buildMessage?: string,
+  _pushMessage?: string
+): Promise<GitPushResult> {
+  return Promise.resolve({
+    success: false,
+    message: '静态导出模式不支持此功能',
+  });
+}
+
+function addRemoteStatic(
+  _remoteName: string = 'origin',
+  _remoteUrl: string
+): Promise<{
+  success: boolean;
+  message: string;
+}> {
+  return Promise.resolve({
+    success: false,
+    message: '静态导出模式不支持此功能',
+  });
+}
+
+function getRemoteListStatic(): Promise<Array<{
+  name: string;
+  url: string;
+}>> {
+  return Promise.resolve([]);
+}
+
+function getCommitHistoryStatic(
+  _count: number = 10
+): Promise<Array<{
+  hash: string;
+  message: string;
+  date: string;
+  author: string;
+}>> {
+  return Promise.resolve([]);
+}
+
+// ============================================
+// 本地开发模式：真实实现（使用 'use server'）
+// ============================================
+
+// 只有在非静态导出模式下才导入和使用 Server Actions 相关功能
+let githubActionsReal: {
+  initGitRepo: () => Promise<{
+    success: boolean;
+    message: string;
+    isRepo: boolean;
+    hasRemote: boolean;
+  }>;
+  getGitStatus: () => Promise<GitStatus>;
+  hasUncommittedChanges: () => Promise<boolean>;
+  isAheadOfRemote: () => Promise<boolean>;
+  getUncommittedFiles: () => Promise<{
+    modified: string[];
+    added: string[];
+    deleted: string[];
+    renamed: string[];
+  }>;
+  pushToGitHub: (message?: string) => Promise<GitPushResult>;
+  buildAndPush: (buildMessage?: string, pushMessage?: string) => Promise<GitPushResult>;
+  addRemote: (remoteName?: string, remoteUrl?: string) => Promise<{
+    success: boolean;
+    message: string;
+  }>;
+  getRemoteList: () => Promise<Array<{
+    name: string;
+    url: string;
+  }>>;
+  getCommitHistory: (count?: number) => Promise<Array<{
+    hash: string;
+    message: string;
+    date: string;
+    author: string;
+  }>>;
+} | null = null;
+
+// 动态导入真实实现（只在非静态导出模式下）
+if (!isStaticExport) {
+  // 使用 eval 包装 require 动态导入，避免 Turbopack 在构建时解析
   try {
-    const git = simpleGit(dirPath);
-    await git.checkIsRepo();
-    return true;
+    // eslint-disable-next-line no-eval
+    const realModule = eval("require('./githubActions.real')");
+    githubActionsReal = realModule;
   } catch {
-    return false;
+    // 如果真实实现模块不存在，使用空实现
+    githubActionsReal = null;
   }
 }
+
+// ============================================
+// 导出函数：根据环境选择实现
+// ============================================
 
 /**
  * 初始化 Git 仓库
@@ -86,53 +209,10 @@ export async function initGitRepo(): Promise<{
   isRepo: boolean;
   hasRemote: boolean;
 }> {
-  try {
-    const repoPath = getRepoPath();
-
-    // 检查当前目录是否已经是 Git 仓库
-    const isRepo = await isGitRepository(repoPath);
-
-    if (!isRepo) {
-      // 如果不是 Git 仓库，初始化一个新的仓库
-      const git = simpleGit(repoPath);
-      await git.init();
-
-      return {
-        success: true,
-        message: 'Git 仓库初始化成功，但尚未配置远程仓库',
-        isRepo: true,
-        hasRemote: false,
-      };
-    }
-
-    // 检查是否存在远程仓库配置
-    const git = getGit();
-    const remotes = await git.getRemotes();
-
-    if (remotes.length === 0) {
-      return {
-        success: true,
-        message: '当前是 Git 仓库，但尚未配置远程仓库。请先添加远程仓库地址。',
-        isRepo: true,
-        hasRemote: false,
-      };
-    }
-
-    return {
-      success: true,
-      message: 'Git 仓库已就绪',
-      isRepo: true,
-      hasRemote: true,
-    };
-  } catch (error) {
-    console.error('初始化 Git 仓库失败:', error);
-    return {
-      success: false,
-      message: `初始化 Git 仓库失败: ${error instanceof Error ? error.message : '未知错误'}`,
-      isRepo: false,
-      hasRemote: false,
-    };
+  if (isStaticExport || !githubActionsReal) {
+    return initGitRepoStatic();
   }
+  return githubActionsReal.initGitRepo();
 }
 
 /**
@@ -142,99 +222,10 @@ export async function initGitRepo(): Promise<{
  * @returns 返回 GitStatus 对象，描述当前 Git 仓库状态
  */
 export async function getGitStatus(): Promise<GitStatus> {
-  try {
-    const repoPath = getRepoPath();
-    const isRepo = await isGitRepository(repoPath);
-
-    // 如果不是 Git 仓库，返回默认值
-    if (!isRepo) {
-      return {
-        isRepo: false,
-        hasRemote: false,
-        currentBranch: '',
-        hasUncommittedChanges: false,
-        uncommittedFiles: [],
-        hasPushable: false,
-        aheadCount: 0,
-        behindCount: 0,
-      };
-    }
-
-    const git = getGit();
-
-    // 获取当前分支名称
-    const branchSummary = await git.branchLocal();
-    const currentBranch = branchSummary.current;
-
-    // 获取文件状态（检测未提交的更改）
-    const status = await git.status();
-
-    // 获取跟踪分支信息
-    const trackingBranch = status.tracking || undefined;
-
-    // 获取远程仓库列表
-    const remotes = await git.getRemotes();
-    const hasRemote = remotes.length > 0;
-
-    // 检测是否有未提交的更改
-    const hasUncommittedChanges = !status.isClean();
-
-    // 获取未提交的文件列表
-    const uncommittedFiles: string[] = [];
-    if (!status.isClean()) {
-      // 收集已修改的文件
-      if (status.modified.length > 0) {
-        uncommittedFiles.push(...status.modified);
-      }
-      // 收集未跟踪的文件（新增文件）
-      if (status.not_added.length > 0) {
-        uncommittedFiles.push(...status.not_added);
-      }
-      // 收集已删除的文件
-      if (status.deleted.length > 0) {
-        uncommittedFiles.push(...status.deleted);
-      }
-      // 收集已重命名的文件（取重命名后的路径）
-      if (status.renamed.length > 0) {
-        uncommittedFiles.push(...status.renamed.map(r => r.to));
-      }
-      // 收集已暂存的文件
-      if (status.staged.length > 0) {
-        uncommittedFiles.push(...status.staged);
-      }
-    }
-
-    // 获取本地与远程的同步状态
-    // ahead: 本地有提交但远程没有
-    // behind: 远程有提交但本地没有
-    const aheadCount = status.ahead;
-    const behindCount = status.behind;
-    const hasPushable = aheadCount > 0;
-
-    return {
-      isRepo: true,
-      hasRemote,
-      currentBranch,
-      hasUncommittedChanges,
-      uncommittedFiles: [...new Set(uncommittedFiles)], // 去重
-      trackingBranch,
-      hasPushable,
-      aheadCount,
-      behindCount,
-    };
-  } catch (error) {
-    console.error('获取 Git 状态失败:', error);
-    return {
-      isRepo: false,
-      hasRemote: false,
-      currentBranch: '',
-      hasUncommittedChanges: false,
-      uncommittedFiles: [],
-      hasPushable: false,
-      aheadCount: 0,
-      behindCount: 0,
-    };
+  if (isStaticExport || !githubActionsReal) {
+    return getGitStatusStatic();
   }
+  return githubActionsReal.getGitStatus();
 }
 
 /**
@@ -243,22 +234,10 @@ export async function getGitStatus(): Promise<GitStatus> {
  * @returns 如果有未提交的更改返回 true，否则返回 false
  */
 export async function hasUncommittedChanges(): Promise<boolean> {
-  try {
-    const repoPath = getRepoPath();
-    const isRepo = await isGitRepository(repoPath);
-
-    if (!isRepo) {
-      return false;
-    }
-
-    const git = getGit();
-    const status = await git.status();
-
-    return !status.isClean();
-  } catch (error) {
-    console.error('检查未提交更改失败:', error);
-    return false;
+  if (isStaticExport || !githubActionsReal) {
+    return hasUncommittedChangesStatic();
   }
+  return githubActionsReal.hasUncommittedChanges();
 }
 
 /**
@@ -268,23 +247,10 @@ export async function hasUncommittedChanges(): Promise<boolean> {
  * @returns 如果有领先提交返回 true，否则返回 false
  */
 export async function isAheadOfRemote(): Promise<boolean> {
-  try {
-    const repoPath = getRepoPath();
-    const isRepo = await isGitRepository(repoPath);
-
-    if (!isRepo) {
-      return false;
-    }
-
-    const git = getGit();
-    const status = await git.status();
-
-    // 如果 ahead > 0，说明有本地提交还未推送到远程
-    return status.ahead > 0;
-  } catch (error) {
-    console.error('检测远程同步状态失败:', error);
-    return false;
+  if (isStaticExport || !githubActionsReal) {
+    return isAheadOfRemoteStatic();
   }
+  return githubActionsReal.isAheadOfRemote();
 }
 
 /**
@@ -298,27 +264,10 @@ export async function getUncommittedFiles(): Promise<{
   deleted: string[];
   renamed: string[];
 }> {
-  try {
-    const repoPath = getRepoPath();
-    const isRepo = await isGitRepository(repoPath);
-
-    if (!isRepo) {
-      return { modified: [], added: [], deleted: [], renamed: [] };
-    }
-
-    const git = getGit();
-    const status = await git.status();
-
-    return {
-      modified: status.modified,
-      added: status.not_added,
-      deleted: status.deleted,
-      renamed: status.renamed.map(r => r.to),
-    };
-  } catch (error) {
-    console.error('获取未提交文件列表失败:', error);
-    return { modified: [], added: [], deleted: [], renamed: [] };
+  if (isStaticExport || !githubActionsReal) {
+    return getUncommittedFilesStatic();
   }
+  return githubActionsReal.getUncommittedFiles();
 }
 
 /**
@@ -329,159 +278,10 @@ export async function getUncommittedFiles(): Promise<{
  * @returns 返回 GitPushResult，描述推送操作的结果
  */
 export async function pushToGitHub(message?: string): Promise<GitPushResult> {
-  try {
-    const repoPath = getRepoPath();
-
-    // 首先检查是否是 Git 仓库
-    const isRepo = await isGitRepository(repoPath);
-    if (!isRepo) {
-      return {
-        success: false,
-        message: '当前目录不是 Git 仓库，请先初始化仓库',
-      };
-    }
-
-    const git = getGit();
-
-    // 检查是否有远程仓库
-    const remotes = await git.getRemotes();
-    if (remotes.length === 0) {
-      return {
-        success: false,
-        message: '尚未配置远程仓库，请先添加远程仓库地址（git remote add origin <url>）',
-      };
-    }
-
-    // 获取当前状态
-    const status = await git.status();
-
-    // 如果没有更改且没有待推送的提交，直接返回
-    if (status.isClean() && status.ahead === 0) {
-      return {
-        success: true,
-        message: '没有需要推送的内容（工作区干净且已同步到远程）',
-        commitHash: undefined,
-        pushedFiles: [],
-      };
-    }
-
-    // 如果工作区干净但有待推送的提交，说明之前的更改已经提交但尚未推送
-    if (status.isClean() && status.ahead > 0) {
-      // 直接推送已有的提交
-      const currentBranch = status.current;
-      if (!currentBranch) {
-        return {
-          success: false,
-          message: '无法获取当前分支名称',
-        };
-      }
-
-      const remoteName = remotes[0]?.name;
-      if (!remoteName) {
-        return {
-          success: false,
-          message: '未找到远程仓库',
-        };
-      }
-
-      try {
-        await git.push(remoteName, currentBranch);
-        return {
-          success: true,
-          message: `推送成功（${status.ahead} 个提交已同步到远程）`,
-          commitHash: undefined,
-          pushedFiles: [],
-        };
-      } catch (pushError) {
-        return {
-          success: false,
-          message: `推送失败: ${pushError instanceof Error ? pushError.message : '未知错误'}`,
-        };
-      }
-    }
-
-    // 收集所有需要推送的文件
-    const pushedFiles: string[] = [];
-    if (status.modified.length > 0) {
-      pushedFiles.push(...status.modified);
-    }
-    if (status.not_added.length > 0) {
-      pushedFiles.push(...status.not_added);
-    }
-    if (status.deleted.length > 0) {
-      pushedFiles.push(...status.deleted);
-    }
-    if (status.renamed && status.renamed.length > 0) {
-      pushedFiles.push(...status.renamed.map(r => r.to));
-    }
-
-    // 添加所有更改到暂存区
-    await git.add('.');
-
-    // 生成提交消息
-    const commitMessage = message || `更新于 ${new Date().toLocaleString('zh-CN')}`;
-
-    // 提交更改
-    const commitResult = await git.commit(commitMessage);
-
-    // 获取提交哈希
-    const commitHash = commitResult.commit;
-
-    // 获取当前分支名称和远程仓库名称
-    const currentBranch = status.current;
-    if (!currentBranch) {
-      return {
-        success: false,
-        message: '无法获取当前分支名称',
-      };
-    }
-
-    const remoteName = remotes[0]?.name;
-    if (!remoteName) {
-      return {
-        success: false,
-        message: '未找到远程仓库',
-      };
-    }
-
-    // 推送到远程仓库
-    try {
-      // 尝试推送到当前分支的跟踪分支
-      await git.push(remoteName, currentBranch);
-    } catch (pushError) {
-      // 如果推送失败，尝试设置上游分支并推送
-      const commonUpstreamBranches = ['main', 'master', 'develop'];
-      let pushed = false;
-
-      for (const upstreamBranch of commonUpstreamBranches) {
-        try {
-          await git.push(remoteName, `${currentBranch}:${upstreamBranch}`, ['--set-upstream']);
-          pushed = true;
-          break;
-        } catch {
-          continue;
-        }
-      }
-
-      // 如果还是失败，尝试直接推送当前分支并设置上游
-      if (!pushed) {
-        await git.push(remoteName, currentBranch, ['--set-upstream']);
-      }
-    }
-
-    return {
-      success: true,
-      message: '推送成功',
-      commitHash,
-      pushedFiles: [...new Set(pushedFiles)],
-    };
-  } catch (error) {
-    console.error('推送失败:', error);
-    return {
-      success: false,
-      message: `推送失败: ${error instanceof Error ? error.message : '未知错误'}`,
-    };
+  if (isStaticExport || !githubActionsReal) {
+    return pushToGitHubStatic(message);
   }
+  return githubActionsReal.pushToGitHub(message);
 }
 
 /**
@@ -495,61 +295,10 @@ export async function buildAndPush(
   buildMessage?: string,
   pushMessage?: string
 ): Promise<GitPushResult> {
-  try {
-    const repoPath = getRepoPath();
-
-    // 记录开始构建的信息
-    console.log('开始构建项目...');
-    const buildStartTime = Date.now();
-
-    // 执行 npm run build:pages 命令
-    try {
-      const { stdout: buildStdout, stderr: buildStderr } = await execAsync(
-        'npm run build:pages',
-        {
-          cwd: repoPath,
-          timeout: 30 * 60 * 1000, // 30 分钟超时
-          maxBuffer: 50 * 1024 * 1024, // 50MB 缓冲区
-        }
-      );
-
-      const buildEndTime = Date.now();
-      const buildDuration = ((buildEndTime - buildStartTime) / 1000).toFixed(2);
-
-      console.log(`构建完成，耗时: ${buildDuration} 秒`);
-      if (buildStdout) {
-        console.log('构建输出:', buildStdout);
-      }
-      if (buildStderr) {
-        console.warn('构建警告:', buildStderr);
-      }
-    } catch (buildError) {
-      console.error('构建失败:', buildError);
-      return {
-        success: false,
-        message: `构建失败: ${buildError instanceof Error ? buildError.message : '未知错误'}`,
-      };
-    }
-
-    // 构建成功后，执行 Git 推送
-    const defaultPushMessage = pushMessage ||
-      `构建完成推送于 ${new Date().toLocaleString('zh-CN')}`;
-
-    const finalCommitMessage = buildMessage
-      ? `${buildMessage} - ${defaultPushMessage}`
-      : defaultPushMessage;
-
-    // 执行 Git 推送操作
-    const pushResult = await pushToGitHub(finalCommitMessage);
-
-    return pushResult;
-  } catch (error) {
-    console.error('构建并推送失败:', error);
-    return {
-      success: false,
-      message: `构建并推送失败: ${error instanceof Error ? error.message : '未知错误'}`,
-    };
+  if (isStaticExport || !githubActionsReal) {
+    return buildAndPushStatic(buildMessage, pushMessage);
   }
+  return githubActionsReal.buildAndPush(buildMessage, pushMessage);
 }
 
 /**
@@ -566,44 +315,10 @@ export async function addRemote(
   success: boolean;
   message: string;
 }> {
-  try {
-    const repoPath = getRepoPath();
-
-    const isRepo = await isGitRepository(repoPath);
-    if (!isRepo) {
-      return {
-        success: false,
-        message: '当前目录不是 Git 仓库，请先初始化仓库',
-      };
-    }
-
-    const git = getGit();
-
-    // 检查远程仓库是否已存在
-    const existingRemotes = await git.getRemotes();
-    const remoteExists = existingRemotes.some(r => r.name === remoteName);
-
-    if (remoteExists) {
-      await git.remote([`set-url`, remoteName, remoteUrl]);
-      return {
-        success: true,
-        message: `远程仓库 ${remoteName} 的 URL 已更新`,
-      };
-    }
-
-    await git.remote(['add', remoteName, remoteUrl]);
-
-    return {
-      success: true,
-      message: `成功添加远程仓库 ${remoteName}`,
-    };
-  } catch (error) {
-    console.error('添加远程仓库失败:', error);
-    return {
-      success: false,
-      message: `添加远程仓库失败: ${error instanceof Error ? error.message : '未知错误'}`,
-    };
+  if (isStaticExport || !githubActionsReal) {
+    return addRemoteStatic(remoteName, remoteUrl);
   }
+  return githubActionsReal.addRemote(remoteName, remoteUrl);
 }
 
 /**
@@ -615,25 +330,10 @@ export async function getRemoteList(): Promise<Array<{
   name: string;
   url: string;
 }>> {
-  try {
-    const repoPath = getRepoPath();
-
-    const isRepo = await isGitRepository(repoPath);
-    if (!isRepo) {
-      return [];
-    }
-
-    const git = getGit();
-    const remotes = await git.getRemotes(true);
-
-    return remotes.map(remote => ({
-      name: remote.name,
-      url: remote.refs?.fetch || remote.refs?.push || '',
-    }));
-  } catch (error) {
-    console.error('获取远程仓库列表失败:', error);
-    return [];
+  if (isStaticExport || !githubActionsReal) {
+    return getRemoteListStatic();
   }
+  return githubActionsReal.getRemoteList();
 }
 
 /**
@@ -650,33 +350,8 @@ export async function getCommitHistory(
   date: string;
   author: string;
 }>> {
-  try {
-    const repoPath = getRepoPath();
-
-    const isRepo = await isGitRepository(repoPath);
-    if (!isRepo) {
-      return [];
-    }
-
-    const git = getGit();
-
-    const { stdout } = await execAsync(
-      `git log --pretty=format:"%H|%s|%ad|%an" --date=iso -n ${count}`,
-      { cwd: repoPath }
-    );
-
-    if (!stdout.trim()) {
-      return [];
-    }
-
-    const commits = stdout.trim().split('\n').map(line => {
-      const [hash, message, date, author] = line.split('|');
-      return { hash, message, date, author };
-    });
-
-    return commits;
-  } catch (error) {
-    console.error('获取提交历史失败:', error);
-    return [];
+  if (isStaticExport || !githubActionsReal) {
+    return getCommitHistoryStatic(count);
   }
+  return githubActionsReal.getCommitHistory(count);
 }

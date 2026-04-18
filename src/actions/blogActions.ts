@@ -1,5 +1,3 @@
-'use server';
-
 /**
  * 博客文章管理相关的 Server Actions
  * 提供博客文章的增删改查功能
@@ -10,19 +8,10 @@
  * 2. 静态导出模式（NEXT_PRIVATE_STATIC_EXPORT === 'true'）：返回空实现，用于 GitHub Pages 构建
  */
 
-import { revalidatePath } from 'next/cache';
-import { promises as fs } from 'fs';
-import path from 'path';
-
-// 检测是否在静态导出模式
+// 检测是否在静态导出模式 - 必须在任何导入之前检测
 const isStaticExport = process.env.NEXT_PRIVATE_STATIC_EXPORT === 'true' || process.env.STATIC_EXPORT === 'true';
 
-// 博客文章数据存储路径
-const BLOGS_DIR = path.join(process.cwd(), 'src', 'content', 'blogs');
-
-/**
- * 博客文章数据接口
- */
+// 类型定义
 export interface BlogPost {
   id: string;
   title: string;
@@ -37,16 +26,11 @@ export interface BlogPost {
   wordCount?: number;
   updatedAt?: string;
   hidden?: boolean;
-  /** 文章置顶状态，true 为置顶 */
   pinned?: boolean;
-  /** 置顶时间 */
   pinnedAt?: string;
   filePath: string;
 }
 
-/**
- * 博客文章创建/更新数据接口
- */
 export interface BlogPostData {
   title: string;
   content: string;
@@ -59,184 +43,11 @@ export interface BlogPostData {
   hidden?: boolean;
 }
 
-/**
- * 操作结果接口
- */
 export interface ActionResult<T = any> {
   success: boolean;
   message: string;
   data?: T;
   filePath?: string;
-}
-
-/**
- * 确保博客目录存在
- */
-async function ensureBlogsDir(): Promise<void> {
-  try {
-    await fs.access(BLOGS_DIR);
-  } catch {
-    await fs.mkdir(BLOGS_DIR, { recursive: true });
-  }
-}
-
-/**
- * 解析 YAML 格式的键值
- * 支持字符串、数字、布尔值以及内联数组格式
- */
-function parseYamlValue(value: string): string | string[] | boolean {
-  const trimmed = value.trim();
-  
-  // 检查是否是内联数组格式 [...]
-  if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
-    const arrayContent = trimmed.slice(1, -1).trim();
-    if (!arrayContent) return [];
-    
-    // 分割数组元素并清理引号
-    const items = arrayContent.split(',').map(item => {
-      const cleaned = item.trim().replace(/^["']|["']$/g, '');
-      return cleaned;
-    }).filter(item => item.length > 0);
-    
-    return items;
-  }
-  
-  // 检查布尔值
-  if (trimmed === 'true') return true;
-  if (trimmed === 'false') return false;
-  
-  // 返回字符串，移除首尾引号
-  return trimmed.replace(/^["']|["']$/g, '');
-}
-
-/**
- * 解析 Markdown frontmatter
- * 从 Markdown 内容中提取 YAML 格式的 frontmatter 和正文内容
- * 支持 LF (\n) 和 CRLF (\r\n) 两种换行符格式
- */
-function parseFrontmatter(content: string): { frontmatter: Record<string, any>; body: string } {
-  // 使用 \r?\n 支持 Windows (CRLF) 和 Unix (LF) 换行符
-  // 正则表达式匹配:
-  // 1. ^---\r?\n 开头分隔符
-  // 2. ([\s\S]*?) 捕获 frontmatter 内容（非贪婪模式）
-  // 3. \r?\n---\r?\n 结尾分隔符
-  // 4. ([\s\S]*$) 捕获 body 内容
-  const frontmatterRegex = /^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/;
-  const match = content.match(frontmatterRegex);
-
-  if (!match) {
-    return { frontmatter: {}, body: content };
-  }
-
-  const frontmatterStr = match[1];
-  const body = match[2];
-  const frontmatter: Record<string, any> = {};
-
-  // 简单的 YAML 解析
-  const lines = frontmatterStr.split(/\r?\n/);
-  let currentKey = '';
-  let currentArray: string[] | null = null;
-  
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-    
-    // 检查是否是数组项（以 "- " 开头）
-    if (trimmed.startsWith('- ')) {
-      if (currentArray !== null) {
-        currentArray.push(trimmed.substring(2).replace(/"/g, ''));
-      }
-      continue;
-    }
-    
-    // 检查是否是键值对
-    const colonIndex = trimmed.indexOf(':');
-    if (colonIndex > 0) {
-      const key = trimmed.substring(0, colonIndex).trim();
-      const value = trimmed.substring(colonIndex + 1).trim();
-      
-      // 检查是否是数组开始（值为空表示下一行是数组）
-      if (value === '') {
-        currentKey = key;
-        currentArray = [];
-        frontmatter[key] = currentArray;
-      } else {
-        currentKey = key;
-        currentArray = null;
-        // 解析值：支持字符串、内联数组、布尔值
-        frontmatter[key] = parseYamlValue(value);
-      }
-    }
-  }
-  
-  return { frontmatter, body };
-}
-
-/**
- * 生成 frontmatter 字符串
- * 将数据对象转换为 YAML 格式的 frontmatter
- */
-function generateFrontmatter(data: Record<string, any>): string {
-  let result = '---\n';
-  
-  for (const [key, value] of Object.entries(data)) {
-    if (Array.isArray(value)) {
-      // 处理数组类型（如 tags）
-      if (value.length > 0) {
-        result += `${key}:\n`;
-        for (const item of value) {
-          result += `  - "${item}"\n`;
-        }
-      }
-    } else if (key === 'hidden') {
-      // 特殊处理 hidden 字段：只有值为 true 时才生成
-      if (value === true) {
-        result += `${key}: true\n`;
-      }
-    } else if (value !== undefined && value !== null && value !== '') {
-      // 处理其他非空值
-      result += `${key}: "${value}"\n`;
-    }
-  }
-  
-  result += '---\n';
-  return result;
-}
-
-/**
- * 从文件名生成文章 ID
- * 文件名格式：slug.md 或 date-slug.md
- */
-function generateIdFromFilename(filename: string): string {
-  return filename.replace(/\.md$/, '');
-}
-
-/**
- * 生成文章文件名
- * 格式：slug.md（如果没有 slug 则使用标题的拼音或时间戳）
- */
-function generateFilename(slug: string, title: string): string {
-  if (slug) {
-    // 清理 slug，确保是有效的文件名
-    const cleanSlug = slug
-      .toLowerCase()
-      .replace(/[^a-z0-9\u4e00-\u9fa5-]/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '');
-    return `${cleanSlug}.md`;
-  }
-  
-  // 如果没有 slug，使用时间戳
-  const timestamp = Date.now();
-  return `${timestamp}.md`;
-}
-
-/**
- * 计算阅读时间（按每分钟 300 字计算）
- */
-function calculateReadingTime(content: string): number {
-  const wordCount = content.replace(/\s/g, '').length;
-  return Math.ceil(wordCount / 300);
 }
 
 // ============================================
@@ -291,7 +102,177 @@ async function batchToggleBlogHiddenStatic(ids: string[], hidden: boolean): Prom
 // 本地开发模式：真实实现
 // ============================================
 
+// 只有在非静态导出模式下才导入 Node.js 模块
+let fs: typeof import('fs/promises') | null = null;
+let path: typeof import('path') | null = null;
+let revalidatePath: ((path: string) => void) | null = null;
+
+if (!isStaticExport) {
+  try {
+    // 使用 eval 避免 Turbopack 在构建时解析
+    // eslint-disable-next-line no-eval
+    fs = eval("require('fs/promises')");
+    // eslint-disable-next-line no-eval
+    path = eval("require('path')");
+    // eslint-disable-next-line no-eval
+    const nextCache = eval("require('next/cache')");
+    revalidatePath = nextCache.revalidatePath;
+  } catch {
+    // 如果导入失败，保持为 null
+  }
+}
+
+// 博客文章数据存储路径
+const BLOGS_DIR = !isStaticExport && path ? path.join(process.cwd(), 'src', 'content', 'blogs') : '';
+
+/**
+ * 确保博客目录存在
+ */
+async function ensureBlogsDir(): Promise<void> {
+  if (!fs || !path) return;
+  try {
+    await fs.access(BLOGS_DIR);
+  } catch {
+    await fs.mkdir(BLOGS_DIR, { recursive: true });
+  }
+}
+
+/**
+ * 解析 YAML 格式的键值
+ */
+function parseYamlValue(value: string): string | string[] | boolean {
+  const trimmed = value.trim();
+  
+  if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+    const arrayContent = trimmed.slice(1, -1).trim();
+    if (!arrayContent) return [];
+    
+    const items = arrayContent.split(',').map(item => {
+      const cleaned = item.trim().replace(/^["']|["']$/g, '');
+      return cleaned;
+    }).filter(item => item.length > 0);
+    
+    return items;
+  }
+  
+  if (trimmed === 'true') return true;
+  if (trimmed === 'false') return false;
+  
+  return trimmed.replace(/^["']|["']$/g, '');
+}
+
+/**
+ * 解析 Markdown frontmatter
+ */
+function parseFrontmatter(content: string): { frontmatter: Record<string, any>; body: string } {
+  const frontmatterRegex = /^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/;
+  const match = content.match(frontmatterRegex);
+
+  if (!match) {
+    return { frontmatter: {}, body: content };
+  }
+
+  const frontmatterStr = match[1];
+  const body = match[2];
+  const frontmatter: Record<string, any> = {};
+
+  const lines = frontmatterStr.split(/\r?\n/);
+  let currentKey = '';
+  let currentArray: string[] | null = null;
+  
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    
+    if (trimmed.startsWith('- ')) {
+      if (currentArray !== null) {
+        currentArray.push(trimmed.substring(2).replace(/"/g, ''));
+      }
+      continue;
+    }
+    
+    const colonIndex = trimmed.indexOf(':');
+    if (colonIndex > 0) {
+      const key = trimmed.substring(0, colonIndex).trim();
+      const value = trimmed.substring(colonIndex + 1).trim();
+      
+      if (value === '') {
+        currentKey = key;
+        currentArray = [];
+        frontmatter[key] = currentArray;
+      } else {
+        currentKey = key;
+        currentArray = null;
+        frontmatter[key] = parseYamlValue(value);
+      }
+    }
+  }
+  
+  return { frontmatter, body };
+}
+
+/**
+ * 生成 frontmatter 字符串
+ */
+function generateFrontmatter(data: Record<string, any>): string {
+  let result = '---\n';
+  
+  for (const [key, value] of Object.entries(data)) {
+    if (Array.isArray(value)) {
+      if (value.length > 0) {
+        result += `${key}:\n`;
+        for (const item of value) {
+          result += `  - "${item}"\n`;
+        }
+      }
+    } else if (key === 'hidden') {
+      if (value === true) {
+        result += `${key}: true\n`;
+      }
+    } else if (value !== undefined && value !== null && value !== '') {
+      result += `${key}: "${value}"\n`;
+    }
+  }
+  
+  result += '---\n';
+  return result;
+}
+
+/**
+ * 从文件名生成文章 ID
+ */
+function generateIdFromFilename(filename: string): string {
+  return filename.replace(/\.md$/, '');
+}
+
+/**
+ * 生成文章文件名
+ */
+function generateFilename(slug: string, title: string): string {
+  if (slug) {
+    const cleanSlug = slug
+      .toLowerCase()
+      .replace(/[^a-z0-9\u4e00-\u9fa5-]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+    return `${cleanSlug}.md`;
+  }
+  
+  const timestamp = Date.now();
+  return `${timestamp}.md`;
+}
+
+/**
+ * 计算阅读时间
+ */
+function calculateReadingTime(content: string): number {
+  const wordCount = content.replace(/\s/g, '').length;
+  return Math.ceil(wordCount / 300);
+}
+
 async function getBlogListReal(): Promise<BlogPost[]> {
+  if (!fs || !path) return [];
+  
   try {
     await ensureBlogsDir();
     const files = await fs.readdir(BLOGS_DIR);
@@ -328,7 +309,6 @@ async function getBlogListReal(): Promise<BlogPost[]> {
       }
     }
     
-    // 按日期倒序排列
     blogs.sort((a, b) => {
       const dateA = new Date(a.updatedAt || a.date).getTime();
       const dateB = new Date(b.updatedAt || b.date).getTime();
@@ -343,8 +323,9 @@ async function getBlogListReal(): Promise<BlogPost[]> {
 }
 
 async function getBlogDetailReal(id: string): Promise<ActionResult<BlogPost>> {
+  if (!fs || !path) return { success: false, message: '文件系统不可用' };
+  
   try {
-    // 尝试直接匹配文件名
     const possibleFiles = [
       path.join(BLOGS_DIR, `${id}.md`),
       path.join(BLOGS_DIR, `${id}`),
@@ -363,7 +344,6 @@ async function getBlogDetailReal(id: string): Promise<ActionResult<BlogPost>> {
       }
     }
     
-    // 如果直接匹配失败，尝试遍历所有文件查找
     if (!content) {
       await ensureBlogsDir();
       const files = await fs.readdir(BLOGS_DIR);
@@ -375,7 +355,6 @@ async function getBlogDetailReal(id: string): Promise<ActionResult<BlogPost>> {
           const fileContent = await fs.readFile(fp, 'utf-8');
           const { frontmatter, body } = parseFrontmatter(fileContent);
           
-          // 匹配 ID（文件名）或 slug
           const fileId = generateIdFromFilename(file);
           if (fileId === id || frontmatter.slug === id) {
             content = fileContent;
@@ -420,14 +399,14 @@ async function getBlogDetailReal(id: string): Promise<ActionResult<BlogPost>> {
 }
 
 async function createBlogReal(data: BlogPostData): Promise<ActionResult<BlogPost>> {
+  if (!fs || !path || !revalidatePath) return { success: false, message: '文件系统不可用' };
+  
   try {
     await ensureBlogsDir();
     
-    // 生成文件名
     const filename = generateFilename(data.slug || '', data.title);
     const filePath = path.join(BLOGS_DIR, filename);
     
-    // 检查文件是否已存在
     try {
       await fs.access(filePath);
       return { success: false, message: '文章已存在，请使用不同的别名' };
@@ -435,13 +414,9 @@ async function createBlogReal(data: BlogPostData): Promise<ActionResult<BlogPost
       // 文件不存在，可以创建
     }
     
-    // 生成日期
     const date = data.date || new Date().toISOString().split('T')[0];
-    
-    // 生成摘要（如果没有提供）
     const excerpt = data.excerpt || data.content.substring(0, 150);
     
-    // 生成 Markdown 内容（包含 hidden 字段）
     const frontmatter = generateFrontmatter({
       title: data.title,
       date: date,
@@ -484,8 +459,9 @@ async function createBlogReal(data: BlogPostData): Promise<ActionResult<BlogPost
 }
 
 async function updateBlogReal(id: string, data: Partial<BlogPostData>): Promise<ActionResult<BlogPost>> {
+  if (!fs || !path || !revalidatePath) return { success: false, message: '文件系统不可用' };
+  
   try {
-    // 查找现有文章
     const existingResult = await getBlogDetailReal(id);
     if (!existingResult.success || !existingResult.data) {
       return { success: false, message: '文章不存在' };
@@ -493,10 +469,8 @@ async function updateBlogReal(id: string, data: Partial<BlogPostData>): Promise<
     
     const existingBlog = existingResult.data;
     
-    // 确定文件路径
     const oldFilePath = path.join(BLOGS_DIR, `${id}.md`);
     
-    // 合并数据（包含 hidden 属性）
     const updatedData: BlogPostData = {
       title: data.title ?? existingBlog.title,
       content: data.content ?? existingBlog.content,
@@ -509,10 +483,8 @@ async function updateBlogReal(id: string, data: Partial<BlogPostData>): Promise<
       hidden: data.hidden ?? existingBlog.hidden,
     };
     
-    // 生成更新时间
     const updatedAt = new Date().toISOString().split('T')[0];
     
-    // 生成 Markdown 内容（包含 hidden 字段）
     const frontmatter = generateFrontmatter({
       title: updatedData.title,
       date: updatedData.date,
@@ -526,13 +498,11 @@ async function updateBlogReal(id: string, data: Partial<BlogPostData>): Promise<
     
     const markdownContent = frontmatter + '\n' + (updatedData.content || '');
     
-    // 如果 slug 改变，需要重命名文件
     let newFilePath = oldFilePath;
     if (data.slug && data.slug !== id) {
       const newFilename = generateFilename(data.slug, updatedData.title);
       newFilePath = path.join(BLOGS_DIR, newFilename);
       
-      // 检查新文件名是否已存在
       if (newFilePath !== oldFilePath) {
         try {
           await fs.access(newFilePath);
@@ -543,10 +513,8 @@ async function updateBlogReal(id: string, data: Partial<BlogPostData>): Promise<
       }
     }
     
-    // 写入文件
     await fs.writeFile(newFilePath, markdownContent, 'utf-8');
     
-    // 如果文件路径改变，删除旧文件
     if (newFilePath !== oldFilePath) {
       try {
         await fs.unlink(oldFilePath);
@@ -584,6 +552,8 @@ async function updateBlogReal(id: string, data: Partial<BlogPostData>): Promise<
 }
 
 async function deleteBlogReal(id: string): Promise<ActionResult> {
+  if (!fs || !path || !revalidatePath) return { success: false, message: '文件系统不可用' };
+  
   try {
     const filePath = path.join(BLOGS_DIR, `${id}.md`);
     
@@ -605,53 +575,43 @@ async function deleteBlogReal(id: string): Promise<ActionResult> {
 }
 
 async function batchDeleteBlogsReal(ids: string[]): Promise<ActionResult> {
-  try {
-    let deletedCount = 0;
-    let failedCount = 0;
-    
-    for (const id of ids) {
-      const result = await deleteBlogReal(id);
-      if (result.success) {
-        deletedCount++;
-      } else {
-        failedCount++;
-      }
+  let deletedCount = 0;
+  let failedCount = 0;
+  
+  for (const id of ids) {
+    const result = await deleteBlogReal(id);
+    if (result.success) {
+      deletedCount++;
+    } else {
+      failedCount++;
     }
-    
-    if (failedCount > 0) {
-      return { success: true, message: `成功删除 ${deletedCount} 篇文章，${failedCount} 篇删除失败` };
-    }
-    
-    return { success: true, message: `成功删除 ${deletedCount} 篇文章` };
-  } catch (error) {
-    console.error('批量删除博客失败:', error);
-    return { success: false, message: '批量删除失败' };
   }
+  
+  if (failedCount > 0) {
+    return { success: true, message: `成功删除 ${deletedCount} 篇文章，${failedCount} 篇删除失败` };
+  }
+  
+  return { success: true, message: `成功删除 ${deletedCount} 篇文章` };
 }
 
 async function batchUpdateBlogCategoryReal(ids: string[], category: string): Promise<ActionResult> {
-  try {
-    let updatedCount = 0;
-    let failedCount = 0;
-    
-    for (const id of ids) {
-      const result = await updateBlogReal(id, { category });
-      if (result.success) {
-        updatedCount++;
-      } else {
-        failedCount++;
-      }
+  let updatedCount = 0;
+  let failedCount = 0;
+  
+  for (const id of ids) {
+    const result = await updateBlogReal(id, { category });
+    if (result.success) {
+      updatedCount++;
+    } else {
+      failedCount++;
     }
-    
-    if (failedCount > 0) {
-      return { success: true, message: `成功修改 ${updatedCount} 篇文章分类，${failedCount} 篇修改失败` };
-    }
-    
-    return { success: true, message: `成功修改 ${updatedCount} 篇文章分类` };
-  } catch (error) {
-    console.error('批量修改分类失败:', error);
-    return { success: false, message: '批量修改分类失败' };
   }
+  
+  if (failedCount > 0) {
+    return { success: true, message: `成功修改 ${updatedCount} 篇文章分类，${failedCount} 篇修改失败` };
+  }
+  
+  return { success: true, message: `成功修改 ${updatedCount} 篇文章分类` };
 }
 
 async function getBlogCategoriesReal(): Promise<string[]> {
@@ -673,6 +633,8 @@ async function getBlogCategoriesReal(): Promise<string[]> {
 }
 
 async function saveBlogMarkdownReal(slug: string, content: string): Promise<ActionResult> {
+  if (!fs || !path || !revalidatePath) return { success: false, message: '文件系统不可用' };
+  
   try {
     await ensureBlogsDir();
     
@@ -694,18 +656,14 @@ async function saveBlogMarkdownReal(slug: string, content: string): Promise<Acti
 
 async function toggleBlogHiddenReal(id: string): Promise<ActionResult<BlogPost>> {
   try {
-    // 获取当前文章详情
     const existingResult = await getBlogDetailReal(id);
     if (!existingResult.success || !existingResult.data) {
       return { success: false, message: '文章不存在' };
     }
     
     const existingBlog = existingResult.data;
-    
-    // 切换隐藏状态
     const newHiddenStatus = !existingBlog.hidden;
     
-    // 更新文章
     const updateResult = await updateBlogReal(id, { hidden: newHiddenStatus });
     
     if (!updateResult.success) {
@@ -724,40 +682,33 @@ async function toggleBlogHiddenReal(id: string): Promise<ActionResult<BlogPost>>
 }
 
 async function batchToggleBlogHiddenReal(ids: string[], hidden: boolean): Promise<ActionResult> {
-  try {
-    let successCount = 0;
-    let failedCount = 0;
-    
-    // 遍历所有文章 ID，逐个更新隐藏状态
-    for (const id of ids) {
-      const result = await updateBlogReal(id, { hidden });
-      if (result.success) {
-        successCount++;
-      } else {
-        failedCount++;
-      }
+  let successCount = 0;
+  let failedCount = 0;
+  
+  for (const id of ids) {
+    const result = await updateBlogReal(id, { hidden });
+    if (result.success) {
+      successCount++;
+    } else {
+      failedCount++;
     }
-    
-    // 根据操作结果返回相应的消息
-    if (failedCount > 0) {
-      return {
-        success: true,
-        message: hidden
-          ? `成功隐藏 ${successCount} 篇文章，${failedCount} 篇操作失败`
-          : `成功显示 ${successCount} 篇文章，${failedCount} 篇操作失败`,
-      };
-    }
-    
+  }
+  
+  if (failedCount > 0) {
     return {
       success: true,
       message: hidden
-        ? `成功隐藏 ${successCount} 篇文章`
-        : `成功显示 ${successCount} 篇文章`,
+        ? `成功隐藏 ${successCount} 篇文章，${failedCount} 篇操作失败`
+        : `成功显示 ${successCount} 篇文章，${failedCount} 篇操作失败`,
     };
-  } catch (error) {
-    console.error('批量切换隐藏状态失败:', error);
-    return { success: false, message: '批量操作失败' };
   }
+  
+  return {
+    success: true,
+    message: hidden
+      ? `成功隐藏 ${successCount} 篇文章`
+      : `成功显示 ${successCount} 篇文章`,
+  };
 }
 
 // ============================================
