@@ -291,8 +291,8 @@ jobs:
           export async function getLocalGalleryDirectories() { return [] as string[]; }
           export async function getLocalGalleryDirectoryTree() { return [] as DirectoryTree[]; }
           export async function getLocalGallerySubDirectories(path?: string) { return [] as string[]; }
-          export async function deleteLocalImage(path: string) { return { success: false, message: '静态导出模式不支持此功能', image: undefined }; }
-          export async function uploadLocalImage(formData?: FormData, path?: string) { return { success: false, message: '静态导出模式不支持此功能', image: undefined }; }
+          export async function deleteLocalImage(path: string): Promise<UploadResult> { return { success: false, message: '静态导出模式不支持此功能' }; }
+          export async function uploadLocalImage(formData?: FormData, path?: string): Promise<UploadResult> { return { success: false, message: '静态导出模式不支持此功能' }; }
           export async function uploadLocalImages(formDataList?: FormData[], path?: string) { return { success: false, message: '静态导出模式不支持此功能', images: [] as GalleryImage[], failed: [] as string[] }; }
           export async function getLocalGalleryStats() { return { totalImages: 0, totalSize: 0, directories: 0 }; }
           
