@@ -37,23 +37,23 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci --silent
+        run: npm ci
 
       - name: Prepare for static export
         run: |
           # 删除本地环境文件，避免覆盖 GitHub Actions 的环境变量
           rm -f .env.local
-          # 将 actions 文件替换为空实现，避免 Server Actions 错误
-          echo "准备静态导出：将 actions 文件替换为空实现..."
           
-          # 创建空实现内容（包含类型定义）
-          cat > /tmp/empty-actions.ts << 'ENDOFFILE'
+          # 创建静态导出用的空 actions 实现
+          echo "准备静态导出：创建空 actions 实现..."
+          
+          # 创建空实现文件
+          cat > src/actions/index.ts << 'ENDOFFILE'
           // 静态导出模式 - 空实现
           // 此文件在 GitHub Pages 构建时自动生成
           
           // ==================== 类型定义 ====================
           
-          // Blog Actions 类型
           export interface BlogPost {
             id: string;
             title: string;
@@ -92,7 +92,6 @@ jobs:
             filePath?: string;
           }
           
-          // Moment Actions 类型
           export interface MomentData {
             time: string;
             content: string;
@@ -112,7 +111,6 @@ jobs:
             hidden: boolean;
           }
           
-          // Gallery Actions 类型
           export enum ImageSource {
             Local = 'local',
             Remote = 'remote'
@@ -163,7 +161,6 @@ jobs:
             imageCount?: number;
           }
           
-          // Todo Actions 类型
           export interface TodoItem {
             id: string;
             content: string;
@@ -192,7 +189,6 @@ jobs:
             data?: T;
           }
           
-          // Settings Actions 类型
           export interface SystemSettings {
             siteName: string;
             siteDescription: string;
@@ -214,7 +210,6 @@ jobs:
             maintenanceMode: boolean;
           }
           
-          // Backup Actions 类型
           export interface BackupResult {
             success: boolean;
             message: string;
@@ -237,7 +232,6 @@ jobs:
             token?: string;
           }
           
-          // GitHub Actions 类型
           export interface GitPushResult {
             success: boolean;
             message: string;
@@ -344,14 +338,7 @@ jobs:
           export async function getCommitHistory(count?: number) { return [] as Array<{ hash: string; message: string; date: string; author: string }>; }
           ENDOFFILE
           
-          # 复制空实现到所有 actions 文件
-          for file in src/actions/*.ts; do
-            if [ -f "$file" ] && [[ ! "$file" == *.real.ts ]]; then
-              echo "处理: $file"
-              cp /tmp/empty-actions.ts "$file"
-            fi
-          done
-          echo "actions 文件替换完成"
+          echo "空 actions 实现创建完成"
 
       - name: Build project
         env:
@@ -374,7 +361,7 @@ jobs:
           echo "NEXT_PRIVATE_STATIC_EXPORT: $NEXT_PRIVATE_STATIC_EXPORT"
           echo "STATIC_EXPORT: $STATIC_EXPORT"
           # 执行构建
-          npm run build:pages
+          npm run sync-theme && npx next build
 
       - name: Setup Pages
         uses: actions/configure-pages@v4

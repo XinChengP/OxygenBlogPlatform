@@ -6,7 +6,8 @@
  * 3. 生产环境默认不启用静态导出，除非显式设置
  */
 const isStaticExport = process.env.NODE_ENV !== 'development' && 
-  (process.env.STATIC_EXPORT === 'true' || process.env.NEXT_PRIVATE_STATIC_EXPORT === 'true');
+  (String(process.env.STATIC_EXPORT).toLowerCase() === 'true' || 
+   String(process.env.NEXT_PRIVATE_STATIC_EXPORT).toLowerCase() === 'true');
 
 /**
  * 判断是否为开发环境
@@ -63,7 +64,7 @@ const baseConfig = {
 // 开发环境配置（支持 Server Actions）
 const devConfig = {
   ...baseConfig,
-  experimental: {
+  experimental: isStaticExport ? undefined : {
     serverActions: {
       bodySizeLimit: '10mb',
     },
@@ -167,15 +168,20 @@ const staticConfig = {
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL || '',
     CUSTOM_DOMAIN: process.env.CUSTOM_DOMAIN || 'false',
   },
-  // 使用 webpack 排除 actions 目录
+  // 使用 webpack 替换 actions 为静态导出版本
   webpack: (config: any, { isServer }: { isServer: boolean }) => {
-    if (!isServer) {
-      // 在客户端构建中排除 actions 目录
-      config.resolve.alias = {
-        ...config.resolve.alias,
-        '@/actions': false,
-      };
-    }
+    const path = require('path');
+    // 在静态导出模式下，将 @/actions 指向空实现
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@/actions': path.resolve(__dirname, 'src/actions/index.static.ts'),
+      '@/actions/todoActions': path.resolve(__dirname, 'src/actions/index.static.ts'),
+      '@/actions/settingsActions': path.resolve(__dirname, 'src/actions/index.static.ts'),
+      '@/actions/githubActions': path.resolve(__dirname, 'src/actions/index.static.ts'),
+      '@/actions/backupActions': path.resolve(__dirname, 'src/actions/index.static.ts'),
+      '@/actions/momentActions': path.resolve(__dirname, 'src/actions/index.static.ts'),
+      '@/actions/galleryActions': path.resolve(__dirname, 'src/actions/index.static.ts'),
+    };
     return config;
   },
 };
