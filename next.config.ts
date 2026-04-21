@@ -22,7 +22,9 @@ const baseConfig = {
   // 允许的开发环境来源 - 解决跨域问题
   allowedDevOrigins: ['100.143.40.229', 'localhost'],
 
-  turbopack: {},
+  // 静态导出模式下使用 webpack，以确保别名配置生效
+  // 开发模式使用 Turbopack（Next.js 16 默认）
+  turbopack: isStaticExport ? undefined : {},
 
   compiler: {
     reactRemoveProperties: isStaticExport,
@@ -168,21 +170,17 @@ const staticConfig = {
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL || '',
     CUSTOM_DOMAIN: process.env.CUSTOM_DOMAIN || 'false',
   },
-  // 使用 webpack 替换 actions 为静态导出版本
-  webpack: (config: any, { isServer }: { isServer: boolean }) => {
-    const path = require('path');
-    // 在静态导出模式下，将 @/actions 指向空实现
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      '@/actions': path.resolve(__dirname, 'src/actions/index.static.ts'),
-      '@/actions/todoActions': path.resolve(__dirname, 'src/actions/index.static.ts'),
-      '@/actions/settingsActions': path.resolve(__dirname, 'src/actions/index.static.ts'),
-      '@/actions/githubActions': path.resolve(__dirname, 'src/actions/index.static.ts'),
-      '@/actions/backupActions': path.resolve(__dirname, 'src/actions/index.static.ts'),
-      '@/actions/momentActions': path.resolve(__dirname, 'src/actions/index.static.ts'),
-      '@/actions/galleryActions': path.resolve(__dirname, 'src/actions/index.static.ts'),
-    };
-    return config;
+  // 使用 Turbopack 别名配置替换 actions 为静态导出版本
+  turbopack: {
+    resolveAlias: {
+      '@/actions': './src/actions/index.static.ts',
+      '@/actions/todoActions': './src/actions/index.static.ts',
+      '@/actions/settingsActions': './src/actions/index.static.ts',
+      '@/actions/githubActions': './src/actions/index.static.ts',
+      '@/actions/backupActions': './src/actions/index.static.ts',
+      '@/actions/momentActions': './src/actions/index.static.ts',
+      '@/actions/galleryActions': './src/actions/index.static.ts',
+    },
   },
 };
 

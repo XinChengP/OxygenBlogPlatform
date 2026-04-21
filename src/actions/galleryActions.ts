@@ -1,176 +1,217 @@
 /**
- * 图床管理相关的 Server Actions
- * 提供本地图床的增删改查功能，支持递归扫描所有图片目录
- *
- * 注意：此文件支持两种运行模式
- * 1. 本地开发模式（NEXT_PRIVATE_STATIC_EXPORT !== 'true'）：使用真实的文件系统操作
- * 2. 静态导出模式（NEXT_PRIVATE_STATIC_EXPORT === 'true'）：返回空实现，用于 GitHub Pages 构建
+ * 静态导出模式下的空 actions 实现
+ * 所有函数返回不支持的错误信息
  */
 
-// 检测是否在静态导出模式 - 必须在任何导入之前检测
-const isStaticExport = process.env.NEXT_PRIVATE_STATIC_EXPORT === 'true' || process.env.STATIC_EXPORT === 'true';
+// 导入类型
+import type { ImageSource } from '@/types/gallery';
+
+// ============================================
+// Todo Actions
+// ============================================
+export interface TodoItem {
+  id: string;
+  content: string;
+  completed: boolean;
+  priority?: 'high' | 'medium' | 'low';
+  dueDate?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface TodoConfig {
+  title: string;
+  items: TodoItem[];
+  showStats: boolean;
+}
+
+export const getTodoConfig = async (): Promise<{ success: boolean; message: string; data: TodoConfig | null }> => ({ 
+  success: false, 
+  message: '静态导出模式不支持此功能',
+  data: null
+});
+
+export const getTodoList = async (): Promise<{ success: boolean; message: string; data: TodoItem[] }> => ({ success: false, message: '静态导出模式不支持此功能', data: [] });
+export const getTodoItem = async (_id?: string): Promise<{ success: boolean; message: string; data: TodoItem | null }> => ({ success: false, message: '静态导出模式不支持此功能', data: null });
+export const createTodoItem = async (_data?: any): Promise<{ success: boolean; message: string; data: TodoItem | null }> => ({ success: false, message: '静态导出模式不支持此功能', data: null });
+export const updateTodoItem = async (_id?: string, _data?: any): Promise<{ success: boolean; message: string; data: TodoItem | null }> => ({ success: false, message: '静态导出模式不支持此功能', data: null });
+export const deleteTodoItem = async (_id?: string): Promise<{ success: boolean; message: string; data: string | null }> => ({ success: false, message: '静态导出模式不支持此功能', data: null });
+export const toggleTodoComplete = async (_id?: string): Promise<{ success: boolean; message: string; data: TodoItem | null }> => ({ success: false, message: '静态导出模式不支持此功能', data: null });
+export const batchDeleteTodoItems = async (_ids?: string[]): Promise<{ success: boolean; message: string; data: string[] }> => ({ success: false, message: '静态导出模式不支持此功能', data: [] });
+export const updateTodoConfigSettings = async (_config?: any): Promise<{ success: boolean; message: string; data: TodoConfig | null }> => ({ success: false, message: '静态导出模式不支持此功能', data: null });
+
+// ============================================
+// GitHub Actions
+// ============================================
+export const pushToGitHub = async (_message?: string) => ({ success: false, message: '静态导出模式不支持此功能' });
+export const buildAndPush = async (_buildMessage?: string, _pushMessage?: string): Promise<GitPushResult> => ({ success: false, message: '静态导出模式不支持此功能' });
+export interface GitStatus {
+  ahead: number;
+  behind: number;
+  modified: string[];
+  untracked: string[];
+  hasPushable: boolean;
+}
+
+export interface GitPushResult {
+  success: boolean;
+  message: string;
+}
+
+export const getGitStatus = async (): Promise<GitStatus> => ({ 
+  ahead: 0, 
+  behind: 0, 
+  modified: [], 
+  untracked: [],
+  hasPushable: false
+});
+
+// ============================================
+// Gallery Actions
+// ============================================
+export const uploadLocalImage = async (_formData?: FormData, _path?: string): Promise<{ success: boolean; message: string; image?: GalleryImage }> => ({ success: false, message: '静态导出模式不支持此功能' });
+export interface GalleryImage {
+  id: string;
+  src: string;
+  fallbackSrc?: string;
+  thumbnail?: string;
+  alt: string;
+  source: ImageSource;
+  category: string;
+  subCategory?: string;
+  width?: number;
+  height?: number;
+  createdAt: string;
+  updatedAt?: string;
+  size?: number;
+}
+
+export const getLocalGalleryImages = async (_path?: string): Promise<GalleryImage[]> => [];
+export const deleteLocalImage = async (_path?: string) => ({ success: false, message: '静态导出模式不支持此功能' });
+export const getLocalGalleryStats = async () => ({ success: false, message: '静态导出模式不支持此功能', data: { total: 0, used: 0, remaining: 0 } });
+export const getLocalGalleryDirectoryTree = async (_path?: string) => ({ success: false, message: '静态导出模式不支持此功能', data: [] });
+export const getLocalGallerySubDirectories = async (_path?: string) => ({ success: false, message: '静态导出模式不支持此功能', data: [] });
+export type DirectoryTree = { name: string; path: string; type: 'file' | 'directory'; children?: DirectoryTree[] };
+
+// ============================================
+// Moment Actions
+// ============================================
+export const getMomentList = async (_page?: number, _pageSize?: number): Promise<{ success: boolean; message: string; data: Moment[]; pagination: { page: number; pageSize: number; total: number; totalPages: number } }> => ({ success: false, message: '静态导出模式不支持此功能', data: [], pagination: { page: 1, pageSize: 10, total: 0, totalPages: 0 } });
+export const getMomentById = async (_id?: string) => ({ success: false, message: '静态导出模式不支持此功能' });
+export const getMomentDetail = async (_id?: string): Promise<{ success: boolean; message: string; data: Moment | null }> => ({ success: false, message: '静态导出模式不支持此功能', data: null });
+export const createMoment = async (_data?: any) => ({ success: false, message: '静态导出模式不支持此功能' });
+export const updateMoment = async (_id?: string, _data?: any) => ({ success: false, message: '静态导出模式不支持此功能' });
+export const deleteMoment = async (_id?: string) => ({ success: false, message: '静态导出模式不支持此功能' });
+export const toggleMomentLike = async (_id?: string) => ({ success: false, message: '静态导出模式不支持此功能', data: null });
+export const toggleMomentHidden = async (_id?: string): Promise<{ success: boolean; message: string; data: Moment | null }> => ({ success: false, message: '静态导出模式不支持此功能', data: null });
+export const toggleMomentPinned = async (_id?: string): Promise<{ success: boolean; message: string; data: Moment | null }> => ({ success: false, message: '静态导出模式不支持此功能', data: null });
+export const batchDeleteMoments = async (_ids?: string[]) => ({ success: false, message: '静态导出模式不支持此功能' });
+export const batchToggleMomentPinned = async (_ids?: string[], _pinned?: boolean) => ({ success: false, message: '静态导出模式不支持此功能' });
+export const batchToggleMomentHidden = async (_ids?: string[], _hidden?: boolean) => ({ success: false, message: '静态导出模式不支持此功能' });
+export const getMomentTags = async (): Promise<string[]> => [];
+export const generateNewMomentId = async (): Promise<string> => '';
+export const getMomentConfig = async () => ({ success: false, message: '静态导出模式不支持此功能' });
+export const updateMomentConfig = async (_config?: any) => ({ success: false, message: '静态导出模式不支持此功能' });
 
 // 类型定义
-export interface UploadResult {
+export type Moment = { id: string; content: string; date: string; time: string; tags: string[]; likes: number; isHidden: boolean; hidden: boolean; isPinned: boolean; pinned: boolean; images: string[] };
+export type MomentData = Partial<Moment>;
+
+// ============================================
+// Backup Actions
+// ============================================
+export interface BackupResult {
   success: boolean;
   message: string;
-  image?: import('@/types/gallery').GalleryImage;
+  backupId?: string;
+  timestamp?: string;
+  error?: string;
 }
 
-export interface UploadMultipleResult {
+export interface BackupHistory {
+  id: string;
+  commitHash: string;
+  timestamp: string;
+  message: string;
+  author: string;
+  size: number;
+  filesCount: number;
+}
+
+export interface PushConfig {
+  remoteUrl: string;
+  branch: string;
+  token?: string;
+}
+
+export const getBackupList = async () => ({ success: false, message: '静态导出模式不支持此功能', data: [] });
+export const createBackup = async (_password?: string) => ({ success: false, message: '静态导出模式不支持此功能' });
+export const restoreBackup = async (_hash?: string, _password?: string) => ({ success: false, message: '静态导出模式不支持此功能' });
+export const deleteBackup = async (_id?: string) => ({ success: false, message: '静态导出模式不支持此功能' });
+export const verifyBackupPassword = async (_password?: string) => ({ success: false, message: '静态导出模式不支持此功能' });
+export const changeRestorePassword = async (_oldPassword?: string, _newPassword?: string) => ({ success: false, message: '静态导出模式不支持此功能' });
+export const getBackupPath = async () => '';
+export const backupDirExists = async () => false;
+export const initBackupRepo = async () => ({ success: false, message: '静态导出模式不支持此功能' });
+export const performBackup = async () => ({ success: false, message: '静态导出模式不支持此功能' });
+export const getBackupHistory = async (_limit?: number) => ({ success: false, message: '静态导出模式不支持此功能', history: [] });
+export const getBackupStatus = async (): Promise<{ success: boolean; message: string; hasPassword: boolean; lastBackup: string | null; totalCommits?: number; trackedFiles?: number; isGitRepo?: boolean; hasRemote?: boolean; remoteUrl?: string }> => ({ success: false, message: '静态导出模式不支持此功能', hasPassword: false, lastBackup: null });
+export const configureRemote = async (_config?: PushConfig) => ({ success: false, message: '静态导出模式不支持此功能' });
+export const pushToRemote = async (_config?: PushConfig) => ({ success: false, message: '静态导出模式不支持此功能' });
+export const getRemoteInfo = async (): Promise<{ success: boolean; message: string; remoteUrl: string; branch: string; ahead?: number }> => ({ success: false, message: '静态导出模式不支持此功能', remoteUrl: '', branch: '' });
+export const testRemoteConnection = async (_config?: PushConfig) => ({ success: false, message: '静态导出模式不支持此功能' });
+
+// ============================================
+// Settings Actions
+// ============================================
+export const getSettings = async () => ({ success: false, message: '静态导出模式不支持此功能' });
+export const updateSettings = async (_settings?: any) => ({ success: false, message: '静态导出模式不支持此功能' });
+
+// ============================================
+// Blog Actions
+// ============================================
+export interface BlogPost {
+  id: string;
+  title: string;
+  slug: string;
+  date: string;
+  updatedAt?: string;
+  category: string;
+  tags: string[];
+  excerpt: string;
+  content: string;
+  coverImage?: string;
+  filePath: string;
+  hidden?: boolean;
+  pinned?: boolean;
+  pinnedAt?: string;
+}
+
+export interface BlogPostData {
+  title: string;
+  slug: string;
+  date: string;
+  category: string;
+  tags: string[];
+  excerpt: string;
+  content?: string;
+  coverImage?: string;
+}
+
+export interface ActionResult<T = any> {
   success: boolean;
   message: string;
-  images: import('@/types/gallery').GalleryImage[];
-  failed: string[];
+  data?: T;
 }
 
-export interface GalleryStats {
-  totalImages: number;
-  totalSize: number;
-  directories: number;
-}
-
-export interface DirectoryTree {
-  name: string;
-  path: string;
-  type: 'directory' | 'file';
-  size?: number;
-  children?: DirectoryTree[];
-  imageCount?: number;
-}
-
-// 使用类型别名引用 GalleryImage
- type GalleryImage = import('@/types/gallery').GalleryImage;
-
-// ============================================
-// 静态导出模式：空实现
-// ============================================
-
-function getLocalGalleryImagesStatic(subPath?: string): Promise<GalleryImage[]> {
-  return Promise.resolve([]);
-}
-
-function getLocalGalleryDirectoriesStatic(subPath?: string): Promise<string[]> {
-  return Promise.resolve([]);
-}
-
-function getLocalGalleryDirectoryTreeStatic(): Promise<DirectoryTree[]> {
-  return Promise.resolve([]);
-}
-
-function getLocalGallerySubDirectoriesStatic(parentPath?: string): Promise<{
-  name: string;
-  path: string;
-  imageCount: number;
-}[]> {
-  return Promise.resolve([]);
-}
-
-function deleteLocalImageStatic(imagePath: string): Promise<{ success: boolean; message: string }> {
-  return Promise.resolve({ success: false, message: '静态导出模式不支持此功能' });
-}
-
-function uploadLocalImageStatic(formData: FormData, targetPath?: string): Promise<UploadResult> {
-  return Promise.resolve({ success: false, message: '静态导出模式不支持此功能' });
-}
-
-function uploadLocalImagesStatic(formDataList: FormData[], targetPath?: string): Promise<UploadMultipleResult> {
-  return Promise.resolve({ success: false, message: '静态导出模式不支持此功能', images: [], failed: [] });
-}
-
-function getLocalGalleryStatsStatic(): Promise<GalleryStats> {
-  return Promise.resolve({ totalImages: 0, totalSize: 0, directories: 0 });
-}
-
-// ============================================
-// 本地开发模式：真实实现
-// ============================================
-
-// 只有在非静态导出模式下才导入和使用 Server Actions 相关功能
-let galleryActionsReal: {
-  getLocalGalleryImages: (subPath?: string) => Promise<GalleryImage[]>;
-  getLocalGalleryDirectories: (subPath?: string) => Promise<string[]>;
-  getLocalGalleryDirectoryTree: () => Promise<DirectoryTree[]>;
-  getLocalGallerySubDirectories: (parentPath?: string) => Promise<{ name: string; path: string; imageCount: number }[]>;
-  deleteLocalImage: (imagePath: string) => Promise<{ success: boolean; message: string }>;
-  uploadLocalImage: (formData: FormData, targetPath?: string) => Promise<UploadResult>;
-  uploadLocalImages: (formDataList: FormData[], targetPath?: string) => Promise<UploadMultipleResult>;
-  getLocalGalleryStats: () => Promise<GalleryStats>;
-} | null = null;
-
-// 动态导入真实实现（只在非静态导出模式下）
-if (!isStaticExport) {
-  // 使用 eval 包装 require 动态导入，避免 Turbopack 在构建时解析
-  try {
-    // eslint-disable-next-line no-eval
-    const realModule = eval("require('./galleryActions.real')");
-    galleryActionsReal = realModule;
-  } catch {
-    // 如果真实实现模块不存在，使用空实现
-    galleryActionsReal = null;
-  }
-}
-
-// ============================================
-// 导出函数：根据环境选择实现
-// ============================================
-
-export async function getLocalGalleryImages(subPath?: string): Promise<GalleryImage[]> {
-  if (isStaticExport || !galleryActionsReal) {
-    return getLocalGalleryImagesStatic(subPath);
-  }
-  return galleryActionsReal.getLocalGalleryImages(subPath);
-}
-
-export async function getLocalGalleryDirectories(subPath?: string): Promise<string[]> {
-  if (isStaticExport || !galleryActionsReal) {
-    return getLocalGalleryDirectoriesStatic(subPath);
-  }
-  return galleryActionsReal.getLocalGalleryDirectories(subPath);
-}
-
-export async function getLocalGalleryDirectoryTree(): Promise<DirectoryTree[]> {
-  if (isStaticExport || !galleryActionsReal) {
-    return getLocalGalleryDirectoryTreeStatic();
-  }
-  return galleryActionsReal.getLocalGalleryDirectoryTree();
-}
-
-export async function getLocalGallerySubDirectories(parentPath?: string): Promise<{
-  name: string;
-  path: string;
-  imageCount: number;
-}[]> {
-  if (isStaticExport || !galleryActionsReal) {
-    return getLocalGallerySubDirectoriesStatic(parentPath);
-  }
-  return galleryActionsReal.getLocalGallerySubDirectories(parentPath);
-}
-
-export async function deleteLocalImage(imagePath: string): Promise<{ success: boolean; message: string }> {
-  if (isStaticExport || !galleryActionsReal) {
-    return deleteLocalImageStatic(imagePath);
-  }
-  return galleryActionsReal.deleteLocalImage(imagePath);
-}
-
-export async function uploadLocalImage(formData: FormData, targetPath?: string): Promise<UploadResult> {
-  if (isStaticExport || !galleryActionsReal) {
-    return uploadLocalImageStatic(formData, targetPath);
-  }
-  return galleryActionsReal.uploadLocalImage(formData, targetPath);
-}
-
-export async function uploadLocalImages(formDataList: FormData[], targetPath?: string): Promise<UploadMultipleResult> {
-  if (isStaticExport || !galleryActionsReal) {
-    return uploadLocalImagesStatic(formDataList, targetPath);
-  }
-  return galleryActionsReal.uploadLocalImages(formDataList, targetPath);
-}
-
-export async function getLocalGalleryStats(): Promise<GalleryStats> {
-  if (isStaticExport || !galleryActionsReal) {
-    return getLocalGalleryStatsStatic();
-  }
-  return galleryActionsReal.getLocalGalleryStats();
-}
+export const getBlogList = async (): Promise<BlogPost[]> => [];
+export const getBlogDetail = async (_id: string): Promise<ActionResult<BlogPost>> => ({ success: false, message: '静态导出模式不支持此功能' });
+export const createBlog = async (_data: BlogPostData): Promise<ActionResult<BlogPost>> => ({ success: false, message: '静态导出模式不支持此功能' });
+export const updateBlog = async (_id: string, _data: Partial<BlogPostData>): Promise<ActionResult<BlogPost>> => ({ success: false, message: '静态导出模式不支持此功能' });
+export const deleteBlog = async (_id: string): Promise<ActionResult> => ({ success: false, message: '静态导出模式不支持此功能' });
+export const batchDeleteBlogs = async (_ids: string[]): Promise<ActionResult> => ({ success: false, message: '静态导出模式不支持此功能' });
+export const batchUpdateBlogCategory = async (_ids: string[], _category: string): Promise<ActionResult> => ({ success: false, message: '静态导出模式不支持此功能' });
+export const getBlogCategories = async (): Promise<string[]> => [];
+export const saveBlogMarkdown = async (_slug: string, _content: string): Promise<ActionResult> => ({ success: false, message: '静态导出模式不支持此功能' });
+export const toggleBlogHidden = async (_id: string): Promise<ActionResult<BlogPost>> => ({ success: false, message: '静态导出模式不支持此功能' });
+export const batchToggleBlogHidden = async (_ids: string[], _hidden: boolean): Promise<ActionResult> => ({ success: false, message: '静态导出模式不支持此功能' });

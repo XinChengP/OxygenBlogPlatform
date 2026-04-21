@@ -1,12 +1,13 @@
 /**
  * 博客文章管理相关的 Server Actions
  * 提供博客文章的增删改查功能
- * 博客文章使用 Markdown 格式存储（带 frontmatter）
  * 
  * 注意：此文件支持两种运行模式
  * 1. 本地开发模式（NEXT_PRIVATE_STATIC_EXPORT !== 'true'）：使用真实的文件系统操作
  * 2. 静态导出模式（NEXT_PRIVATE_STATIC_EXPORT === 'true'）：返回空实现，用于 GitHub Pages 构建
  */
+
+'use server';
 
 // 检测是否在静态导出模式 - 必须在任何导入之前检测
 const isStaticExport = process.env.NEXT_PRIVATE_STATIC_EXPORT === 'true' || process.env.STATIC_EXPORT === 'true';
@@ -43,93 +44,25 @@ export interface BlogPostData {
   hidden?: boolean;
 }
 
-export interface ActionResult<T = any> {
+export interface ActionResult<T = unknown> {
   success: boolean;
   message: string;
   data?: T;
   filePath?: string;
 }
 
-// ============================================
-// 静态导出模式：空实现
-// ============================================
+// 只有在非静态导出模式下才导入和使用 Server Actions 相关功能
+import { promises as fs } from 'fs';
+import path from 'path';
+import { revalidatePath } from 'next/cache';
 
-async function getBlogListStatic(): Promise<BlogPost[]> {
-  return [];
-}
-
-async function getBlogDetailStatic(id: string): Promise<ActionResult<BlogPost>> {
-  return { success: false, message: '静态导出模式不支持此功能' };
-}
-
-async function createBlogStatic(data: BlogPostData): Promise<ActionResult<BlogPost>> {
-  return { success: false, message: '静态导出模式不支持此功能' };
-}
-
-async function updateBlogStatic(id: string, data: Partial<BlogPostData>): Promise<ActionResult<BlogPost>> {
-  return { success: false, message: '静态导出模式不支持此功能' };
-}
-
-async function deleteBlogStatic(id: string): Promise<ActionResult> {
-  return { success: false, message: '静态导出模式不支持此功能' };
-}
-
-async function batchDeleteBlogsStatic(ids: string[]): Promise<ActionResult> {
-  return { success: false, message: '静态导出模式不支持此功能' };
-}
-
-async function batchUpdateBlogCategoryStatic(ids: string[], category: string): Promise<ActionResult> {
-  return { success: false, message: '静态导出模式不支持此功能' };
-}
-
-async function getBlogCategoriesStatic(): Promise<string[]> {
-  return [];
-}
-
-async function saveBlogMarkdownStatic(slug: string, content: string): Promise<ActionResult> {
-  return { success: false, message: '静态导出模式不支持此功能' };
-}
-
-async function toggleBlogHiddenStatic(id: string): Promise<ActionResult<BlogPost>> {
-  return { success: false, message: '静态导出模式不支持此功能' };
-}
-
-async function batchToggleBlogHiddenStatic(ids: string[], hidden: boolean): Promise<ActionResult> {
-  return { success: false, message: '静态导出模式不支持此功能' };
-}
-
-// ============================================
-// 本地开发模式：真实实现
-// ============================================
-
-// 只有在非静态导出模式下才导入 Node.js 模块
-let fs: typeof import('fs/promises') | null = null;
-let path: typeof import('path') | null = null;
-let revalidatePath: ((path: string) => void) | null = null;
-
-if (!isStaticExport) {
-  try {
-    // 使用 eval 避免 Turbopack 在构建时解析
-    // eslint-disable-next-line no-eval
-    fs = eval("require('fs/promises')");
-    // eslint-disable-next-line no-eval
-    path = eval("require('path')");
-    // eslint-disable-next-line no-eval
-    const nextCache = eval("require('next/cache')");
-    revalidatePath = nextCache.revalidatePath;
-  } catch {
-    // 如果导入失败，保持为 null
-  }
-}
-
-// 博客文章数据存储路径
-const BLOGS_DIR = !isStaticExport && path ? path.join(process.cwd(), 'src', 'content', 'blogs') : '';
+// 博客文章存储目录
+const BLOGS_DIR = path.join(process.cwd(), 'src', 'content', 'blogs');
 
 /**
  * 确保博客目录存在
  */
 async function ensureBlogsDir(): Promise<void> {
-  if (!fs || !path) return;
   try {
     await fs.access(BLOGS_DIR);
   } catch {
@@ -138,183 +71,224 @@ async function ensureBlogsDir(): Promise<void> {
 }
 
 /**
- * 解析 YAML 格式的键值
+ * 解析 frontmatter
+ * @param content Markdown 文件内容
+ * @returns 解析后的 frontmatter 和正文
  */
-function parseYamlValue(value: string): string | string[] | boolean {
-  const trimmed = value.trim();
-  
-  if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
-    const arrayContent = trimmed.slice(1, -1).trim();
-    if (!arrayContent) return [];
-    
-    const items = arrayContent.split(',').map(item => {
-      const cleaned = item.trim().replace(/^["']|["']$/g, '');
-      return cleaned;
-    }).filter(item => item.length > 0);
-    
-    return items;
-  }
-  
-  if (trimmed === 'true') return true;
-  if (trimmed === 'false') return false;
-  
-  return trimmed.replace(/^["']|["']$/g, '');
-}
-
-/**
- * 解析 Markdown frontmatter
- */
-function parseFrontmatter(content: string): { frontmatter: Record<string, any>; body: string } {
-  const frontmatterRegex = /^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/;
+function parseFrontMatter(content: string): { frontmatter: Record<string, unknown>; body: string } {
+  const frontmatterRegex = /^---\s*\n([\s\S]*?)\n---\s*\n([\s\S]*)$/;
   const match = content.match(frontmatterRegex);
 
   if (!match) {
     return { frontmatter: {}, body: content };
   }
 
-  const frontmatterStr = match[1];
+  const frontmatterText = match[1];
   const body = match[2];
-  const frontmatter: Record<string, any> = {};
+  const frontmatter: Record<string, unknown> = {};
 
-  const lines = frontmatterStr.split(/\r?\n/);
-  let currentKey = '';
-  let currentArray: string[] | null = null;
-  
+  const lines = frontmatterText.split('\n');
   for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-    
-    if (trimmed.startsWith('- ')) {
-      if (currentArray !== null) {
-        currentArray.push(trimmed.substring(2).replace(/"/g, ''));
-      }
-      continue;
-    }
-    
-    const colonIndex = trimmed.indexOf(':');
+    const colonIndex = line.indexOf(':');
     if (colonIndex > 0) {
-      const key = trimmed.substring(0, colonIndex).trim();
-      const value = trimmed.substring(colonIndex + 1).trim();
-      
-      if (value === '') {
-        currentKey = key;
-        currentArray = [];
-        frontmatter[key] = currentArray;
-      } else {
-        currentKey = key;
-        currentArray = null;
-        frontmatter[key] = parseYamlValue(value);
+      const key = line.slice(0, colonIndex).trim();
+      let value: unknown = line.slice(colonIndex + 1).trim();
+
+      if (typeof value === 'string') {
+        value = value.replace(/^["']|["']$/g, '');
+
+        if ((value as string).startsWith('[') && (value as string).endsWith(']')) {
+          try {
+            value = JSON.parse((value as string).replace(/'/g, '"'));
+          } catch {
+            // 保持原字符串
+          }
+        }
+
+        if (value === 'true') value = true;
+        if (value === 'false') value = false;
       }
+
+      frontmatter[key] = value;
     }
   }
-  
+
   return { frontmatter, body };
 }
 
 /**
  * 生成 frontmatter 字符串
+ * @param data 博客数据
+ * @returns frontmatter 字符串
  */
-function generateFrontmatter(data: Record<string, any>): string {
-  let result = '---\n';
+function generateFrontMatter(data: BlogPostData & { slug: string; date: string }): string {
+  const lines = ['---'];
+
+  lines.push(`title: "${data.title}"`);
+  lines.push(`date: "${data.date}"`);
+  lines.push(`category: "${data.category}"`);
   
-  for (const [key, value] of Object.entries(data)) {
-    if (Array.isArray(value)) {
-      if (value.length > 0) {
-        result += `${key}:\n`;
-        for (const item of value) {
-          result += `  - "${item}"\n`;
-        }
-      }
-    } else if (key === 'hidden') {
-      if (value === true) {
-        result += `${key}: true\n`;
-      }
-    } else if (value !== undefined && value !== null && value !== '') {
-      result += `${key}: "${value}"\n`;
-    }
+  if (data.tags && data.tags.length > 0) {
+    lines.push(`tags: [${data.tags.map((tag) => `"${tag}"`).join(', ')}]`);
   }
   
-  result += '---\n';
-  return result;
-}
-
-/**
- * 从文件名生成文章 ID
- */
-function generateIdFromFilename(filename: string): string {
-  return filename.replace(/\.md$/, '');
-}
-
-/**
- * 生成文章文件名
- */
-function generateFilename(slug: string, title: string): string {
-  if (slug) {
-    const cleanSlug = slug
-      .toLowerCase()
-      .replace(/[^a-z0-9\u4e00-\u9fa5-]/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '');
-    return `${cleanSlug}.md`;
+  if (data.excerpt) {
+    lines.push(`excerpt: "${data.excerpt}"`);
   }
   
-  const timestamp = Date.now();
-  return `${timestamp}.md`;
+  if (data.coverImage) {
+    lines.push(`coverImage: "${data.coverImage}"`);
+  }
+  
+  if (data.hidden) {
+    lines.push('hidden: true');
+  }
+
+  lines.push('---');
+
+  return lines.join('\n');
 }
 
 /**
  * 计算阅读时间
+ * @param content 文章内容
+ * @returns 阅读时间（分钟）
  */
 function calculateReadingTime(content: string): number {
-  const wordCount = content.replace(/\s/g, '').length;
-  return Math.ceil(wordCount / 300);
+  const wordsPerMinute = 200;
+  const wordCount = content.trim().split(/\s+/).length;
+  return Math.ceil(wordCount / wordsPerMinute);
 }
 
-async function getBlogListReal(): Promise<BlogPost[]> {
-  if (!fs || !path) return [];
+/**
+ * 生成 slug
+ * @param title 标题
+ * @returns slug 字符串
+ */
+function generateSlug(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9\u4e00-\u9fa5]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+/**
+ * 获取所有博客文件列表
+ * @returns 文件名数组
+ */
+async function getBlogFiles(): Promise<string[]> {
+  if (isStaticExport) {
+    return [];
+  }
   
   try {
     await ensureBlogsDir();
     const files = await fs.readdir(BLOGS_DIR);
-    const mdFiles = files.filter(f => f.endsWith('.md'));
-    
+    return files.filter((file) => file.endsWith('.md'));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * 读取博客文件内容
+ * @param slug 博客 slug
+ * @returns 博客数据
+ */
+async function readBlogFile(slug: string): Promise<BlogPost | null> {
+  if (isStaticExport) {
+    return null;
+  }
+  
+  try {
+    const filePath = path.join(BLOGS_DIR, `${slug}.md`);
+    const content = await fs.readFile(filePath, 'utf-8');
+    const { frontmatter, body } = parseFrontMatter(content);
+
+    const wordCount = body.trim().split(/\s+/).length;
+
+    return {
+      id: slug,
+      slug,
+      title: (frontmatter.title as string) || '',
+      date: (frontmatter.date as string) || '',
+      category: (frontmatter.category as string) || '',
+      tags: (frontmatter.tags as string[]) || [],
+      excerpt: (frontmatter.excerpt as string) || '',
+      content: body.trim(),
+      coverImage: (frontmatter.coverImage as string),
+      readingTime: calculateReadingTime(body),
+      wordCount,
+      updatedAt: (frontmatter.updatedAt as string),
+      hidden: (frontmatter.hidden as boolean) || false,
+      pinned: (frontmatter.pinned as boolean) || false,
+      pinnedAt: (frontmatter.pinnedAt as string),
+      filePath: `src/content/blogs/${slug}.md`,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 写入博客文件
+ * @param slug 博客 slug
+ * @param data 博客数据
+ */
+async function writeBlogFile(slug: string, data: BlogPostData & { date: string }): Promise<void> {
+  if (isStaticExport) {
+    return;
+  }
+  
+  await ensureBlogsDir();
+  const filePath = path.join(BLOGS_DIR, `${slug}.md`);
+  const frontmatter = generateFrontMatter({ ...data, slug });
+  const content = `${frontmatter}\n\n${data.content}`;
+  await fs.writeFile(filePath, content, 'utf-8');
+}
+
+/**
+ * 删除博客文件
+ * @param slug 博客 slug
+ */
+async function deleteBlogFile(slug: string): Promise<void> {
+  if (isStaticExport) {
+    return;
+  }
+  
+  const filePath = path.join(BLOGS_DIR, `${slug}.md`);
+  await fs.unlink(filePath);
+}
+
+/**
+ * 获取博客列表
+ * @returns 博客列表
+ */
+export async function getBlogList(): Promise<BlogPost[]> {
+  if (isStaticExport) {
+    return [];
+  }
+  
+  try {
+    const files = await getBlogFiles();
     const blogs: BlogPost[] = [];
-    
-    for (const file of mdFiles) {
-      try {
-        const filePath = path.join(BLOGS_DIR, file);
-        const content = await fs.readFile(filePath, 'utf-8');
-        const { frontmatter, body } = parseFrontmatter(content);
-        
-        blogs.push({
-          id: generateIdFromFilename(file),
-          title: frontmatter.title || '',
-          slug: generateIdFromFilename(file),
-          date: frontmatter.date || '',
-          category: frontmatter.category || '',
-          tags: frontmatter.tags || [],
-          excerpt: frontmatter.excerpt || '',
-          content: body.trim(),
-          coverImage: frontmatter.coverImage || '',
-          readingTime: calculateReadingTime(body),
-          wordCount: body.replace(/\s/g, '').length,
-          updatedAt: frontmatter.updatedAt || '',
-          hidden: frontmatter.hidden || false,
-          pinned: frontmatter.pinned || false,
-          pinnedAt: frontmatter.pinnedAt || '',
-          filePath: filePath,
-        });
-      } catch (e) {
-        console.error(`读取博客文件失败: ${file}`, e);
+
+    for (const file of files) {
+      const slug = file.replace('.md', '');
+      const blog = await readBlogFile(slug);
+      if (blog) {
+        blogs.push(blog);
       }
     }
-    
+
+    // 按日期倒序排列，置顶文章优先
     blogs.sort((a, b) => {
-      const dateA = new Date(a.updatedAt || a.date).getTime();
-      const dateB = new Date(b.updatedAt || b.date).getTime();
-      return dateB - dateA;
+      if (a.pinned !== b.pinned) {
+        return a.pinned ? -1 : 1;
+      }
+      return new Date(b.date).getTime() - new Date(a.date).getTime();
     });
-    
+
     return blogs;
   } catch (error) {
     console.error('获取博客列表失败:', error);
@@ -322,156 +296,96 @@ async function getBlogListReal(): Promise<BlogPost[]> {
   }
 }
 
-async function getBlogDetailReal(id: string): Promise<ActionResult<BlogPost>> {
-  if (!fs || !path) return { success: false, message: '文件系统不可用' };
+/**
+ * 获取博客详情
+ * @param slug 博客 slug
+ * @returns 博客详情
+ */
+export async function getBlogDetail(slug: string): Promise<ActionResult<BlogPost>> {
+  if (isStaticExport) {
+    return { success: false, message: 'Static export mode does not support this feature' };
+  }
   
   try {
-    const possibleFiles = [
-      path.join(BLOGS_DIR, `${id}.md`),
-      path.join(BLOGS_DIR, `${id}`),
-    ];
-    
-    let filePath = '';
-    let content = '';
-    
-    for (const fp of possibleFiles) {
-      try {
-        content = await fs.readFile(fp, 'utf-8');
-        filePath = fp;
-        break;
-      } catch {
-        continue;
-      }
+    const blog = await readBlogFile(slug);
+
+    if (!blog) {
+      return { success: false, message: 'Blog not found' };
     }
-    
-    if (!content) {
-      await ensureBlogsDir();
-      const files = await fs.readdir(BLOGS_DIR);
-      const mdFiles = files.filter(f => f.endsWith('.md'));
-      
-      for (const file of mdFiles) {
-        const fp = path.join(BLOGS_DIR, file);
-        try {
-          const fileContent = await fs.readFile(fp, 'utf-8');
-          const { frontmatter, body } = parseFrontmatter(fileContent);
-          
-          const fileId = generateIdFromFilename(file);
-          if (fileId === id || frontmatter.slug === id) {
-            content = fileContent;
-            filePath = fp;
-            break;
-          }
-        } catch {
-          continue;
-        }
-      }
-    }
-    
-    if (!content) {
-      return { success: false, message: '文章不存在' };
-    }
-    
-    const { frontmatter, body } = parseFrontmatter(content);
-    const filename = path.basename(filePath);
-    
-    const blog: BlogPost = {
-      id: generateIdFromFilename(filename),
-      title: frontmatter.title || '',
-      slug: frontmatter.slug || generateIdFromFilename(filename),
-      date: frontmatter.date || '',
-      category: frontmatter.category || '',
-      tags: frontmatter.tags || [],
-      excerpt: frontmatter.excerpt || '',
-      content: body.trim(),
-      coverImage: frontmatter.coverImage || '',
-      readingTime: calculateReadingTime(body),
-      wordCount: body.replace(/\s/g, '').length,
-      updatedAt: frontmatter.updatedAt || '',
-      hidden: frontmatter.hidden || false,
-      filePath: filePath,
-    };
-    
-    return { success: true, message: '获取成功', data: blog };
+
+    return { success: true, message: 'Success', data: blog };
   } catch (error) {
-    console.error('获取博客详情失败:', error);
-    return { success: false, message: '获取文章详情失败' };
+    return { success: false, message: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
 
-async function createBlogReal(data: BlogPostData): Promise<ActionResult<BlogPost>> {
-  if (!fs || !path || !revalidatePath) return { success: false, message: '文件系统不可用' };
+/**
+ * 创建博客
+ * @param data 博客数据
+ * @returns 创建的博客
+ */
+export async function createBlog(data: BlogPostData): Promise<ActionResult<BlogPost>> {
+  if (isStaticExport) {
+    return { success: false, message: 'Static export mode does not support this feature' };
+  }
   
   try {
-    await ensureBlogsDir();
-    
-    const filename = generateFilename(data.slug || '', data.title);
-    const filePath = path.join(BLOGS_DIR, filename);
-    
-    try {
-      await fs.access(filePath);
-      return { success: false, message: '文章已存在，请使用不同的别名' };
-    } catch {
-      // 文件不存在，可以创建
+    if (!data.title || data.title.trim() === '') {
+      return { success: false, message: 'Title cannot be empty' };
     }
-    
+
+    if (!data.content || data.content.trim() === '') {
+      return { success: false, message: 'Content cannot be empty' };
+    }
+
+    const slug = data.slug || generateSlug(data.title);
     const date = data.date || new Date().toISOString().split('T')[0];
-    const excerpt = data.excerpt || data.content.substring(0, 150);
-    
-    const frontmatter = generateFrontmatter({
-      title: data.title,
-      date: date,
-      category: data.category,
-      tags: data.tags || [],
-      excerpt: excerpt,
-      coverImage: data.coverImage || '',
-      hidden: data.hidden || false,
-    });
-    
-    const markdownContent = frontmatter + '\n' + (data.content || '');
-    
-    await fs.writeFile(filePath, markdownContent, 'utf-8');
-    
+
+    // 检查文件是否已存在
+    const existingBlog = await readBlogFile(slug);
+    if (existingBlog) {
+      return { success: false, message: 'Blog with this slug already exists' };
+    }
+
+    await writeBlogFile(slug, { ...data, date });
+
+    const newBlog = await readBlogFile(slug);
+    if (!newBlog) {
+      return { success: false, message: 'Failed to create blog' };
+    }
+
     revalidatePath('/admin/blogs');
     revalidatePath('/blogs');
     revalidatePath('/archive');
-    
-    const blog: BlogPost = {
-      id: generateIdFromFilename(filename),
-      title: data.title,
-      slug: data.slug || generateIdFromFilename(filename),
-      date: date,
-      category: data.category,
-      tags: data.tags || [],
-      excerpt: excerpt,
-      content: data.content || '',
-      coverImage: data.coverImage,
-      readingTime: calculateReadingTime(data.content || ''),
-      wordCount: (data.content || '').replace(/\s/g, '').length,
-      hidden: data.hidden || false,
-      filePath: filePath,
-    };
-    
-    return { success: true, message: '文章创建成功', data: blog, filePath };
+
+    return { success: true, message: 'Created successfully', data: newBlog, filePath: `src/content/blogs/${slug}.md` };
   } catch (error) {
-    console.error('创建博客失败:', error);
-    return { success: false, message: '创建文章失败' };
+    return { success: false, message: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
 
-async function updateBlogReal(id: string, data: Partial<BlogPostData>): Promise<ActionResult<BlogPost>> {
-  if (!fs || !path || !revalidatePath) return { success: false, message: '文件系统不可用' };
+/**
+ * 更新博客
+ * @param slug 博客 slug
+ * @param data 更新的数据
+ * @returns 更新后的博客
+ */
+export async function updateBlog(
+  slug: string,
+  data: Partial<BlogPostData>
+): Promise<ActionResult<BlogPost>> {
+  if (isStaticExport) {
+    return { success: false, message: 'Static export mode does not support this feature' };
+  }
   
   try {
-    const existingResult = await getBlogDetailReal(id);
-    if (!existingResult.success || !existingResult.data) {
-      return { success: false, message: '文章不存在' };
+    const existingBlog = await readBlogFile(slug);
+
+    if (!existingBlog) {
+      return { success: false, message: 'Blog not found' };
     }
-    
-    const existingBlog = existingResult.data;
-    
-    const oldFilePath = path.join(BLOGS_DIR, `${id}.md`);
-    
-    const updatedData: BlogPostData = {
+
+    const updatedData: BlogPostData & { date: string } = {
       title: data.title ?? existingBlog.title,
       content: data.content ?? existingBlog.content,
       date: data.date ?? existingBlog.date,
@@ -479,315 +393,266 @@ async function updateBlogReal(id: string, data: Partial<BlogPostData>): Promise<
       tags: data.tags ?? existingBlog.tags,
       excerpt: data.excerpt ?? existingBlog.excerpt,
       coverImage: data.coverImage ?? existingBlog.coverImage,
-      slug: data.slug ?? existingBlog.slug,
       hidden: data.hidden ?? existingBlog.hidden,
     };
-    
-    const updatedAt = new Date().toISOString().split('T')[0];
-    
-    const frontmatter = generateFrontmatter({
-      title: updatedData.title,
-      date: updatedData.date,
-      updatedAt: updatedAt,
-      category: updatedData.category,
-      tags: updatedData.tags || [],
-      excerpt: updatedData.excerpt || updatedData.content?.substring(0, 150) || '',
-      coverImage: updatedData.coverImage || '',
-      hidden: updatedData.hidden || false,
-    });
-    
-    const markdownContent = frontmatter + '\n' + (updatedData.content || '');
-    
-    let newFilePath = oldFilePath;
-    if (data.slug && data.slug !== id) {
-      const newFilename = generateFilename(data.slug, updatedData.title);
-      newFilePath = path.join(BLOGS_DIR, newFilename);
-      
-      if (newFilePath !== oldFilePath) {
-        try {
-          await fs.access(newFilePath);
-          return { success: false, message: '目标文件名已存在' };
-        } catch {
-          // 文件不存在，可以重命名
-        }
-      }
+
+    await writeBlogFile(slug, updatedData);
+
+    const updatedBlog = await readBlogFile(slug);
+    if (!updatedBlog) {
+      return { success: false, message: 'Failed to update blog' };
     }
-    
-    await fs.writeFile(newFilePath, markdownContent, 'utf-8');
-    
-    if (newFilePath !== oldFilePath) {
-      try {
-        await fs.unlink(oldFilePath);
-      } catch {
-        // 忽略删除错误
-      }
-    }
-    
+
     revalidatePath('/admin/blogs');
     revalidatePath('/blogs');
     revalidatePath('/archive');
-    
-    const blog: BlogPost = {
-      id: generateIdFromFilename(path.basename(newFilePath)),
-      title: updatedData.title,
-      slug: updatedData.slug || generateIdFromFilename(path.basename(newFilePath)),
-      date: updatedData.date || '',
-      category: updatedData.category,
-      tags: updatedData.tags || [],
-      excerpt: updatedData.excerpt || '',
-      content: updatedData.content || '',
-      coverImage: updatedData.coverImage,
-      readingTime: calculateReadingTime(updatedData.content || ''),
-      wordCount: (updatedData.content || '').replace(/\s/g, '').length,
-      updatedAt: updatedAt,
-      hidden: updatedData.hidden || false,
-      filePath: newFilePath,
-    };
-    
-    return { success: true, message: '文章更新成功', data: blog };
+    revalidatePath(`/blogs/${slug}`);
+
+    return { success: true, message: 'Updated successfully', data: updatedBlog, filePath: `src/content/blogs/${slug}.md` };
   } catch (error) {
-    console.error('更新博客失败:', error);
-    return { success: false, message: '更新文章失败' };
+    return { success: false, message: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
 
-async function deleteBlogReal(id: string): Promise<ActionResult> {
-  if (!fs || !path || !revalidatePath) return { success: false, message: '文件系统不可用' };
+/**
+ * 删除博客
+ * @param slug 博客 slug
+ * @returns 操作结果
+ */
+export async function deleteBlog(slug: string): Promise<ActionResult> {
+  if (isStaticExport) {
+    return { success: false, message: 'Static export mode does not support this feature' };
+  }
   
   try {
-    const filePath = path.join(BLOGS_DIR, `${id}.md`);
-    
-    try {
-      await fs.unlink(filePath);
-    } catch {
-      return { success: false, message: '文章不存在' };
+    const existingBlog = await readBlogFile(slug);
+
+    if (!existingBlog) {
+      return { success: false, message: 'Blog not found' };
     }
-    
+
+    await deleteBlogFile(slug);
+
     revalidatePath('/admin/blogs');
     revalidatePath('/blogs');
     revalidatePath('/archive');
-    
-    return { success: true, message: '文章删除成功' };
+
+    return { success: true, message: 'Deleted successfully' };
   } catch (error) {
-    console.error('删除博客失败:', error);
-    return { success: false, message: '删除文章失败' };
+    return { success: false, message: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
 
-async function batchDeleteBlogsReal(ids: string[]): Promise<ActionResult> {
-  let deletedCount = 0;
-  let failedCount = 0;
-  
-  for (const id of ids) {
-    const result = await deleteBlogReal(id);
-    if (result.success) {
-      deletedCount++;
-    } else {
-      failedCount++;
-    }
+/**
+ * 批量删除博客
+ * @param slugs 博客 slug 数组
+ * @returns 操作结果
+ */
+export async function batchDeleteBlogs(slugs: string[]): Promise<ActionResult> {
+  if (isStaticExport) {
+    return { success: false, message: 'Static export mode does not support this feature' };
   }
   
-  if (failedCount > 0) {
-    return { success: true, message: `成功删除 ${deletedCount} 篇文章，${failedCount} 篇删除失败` };
-  }
-  
-  return { success: true, message: `成功删除 ${deletedCount} 篇文章` };
-}
-
-async function batchUpdateBlogCategoryReal(ids: string[], category: string): Promise<ActionResult> {
-  let updatedCount = 0;
-  let failedCount = 0;
-  
-  for (const id of ids) {
-    const result = await updateBlogReal(id, { category });
-    if (result.success) {
-      updatedCount++;
-    } else {
-      failedCount++;
-    }
-  }
-  
-  if (failedCount > 0) {
-    return { success: true, message: `成功修改 ${updatedCount} 篇文章分类，${failedCount} 篇修改失败` };
-  }
-  
-  return { success: true, message: `成功修改 ${updatedCount} 篇文章分类` };
-}
-
-async function getBlogCategoriesReal(): Promise<string[]> {
   try {
-    const blogs = await getBlogListReal();
-    const categories = new Set<string>();
+    if (!slugs || slugs.length === 0) {
+      return { success: false, message: 'No blogs selected' };
+    }
+
+    let deletedCount = 0;
+    for (const slug of slugs) {
+      const existingBlog = await readBlogFile(slug);
+      if (existingBlog) {
+        await deleteBlogFile(slug);
+        deletedCount++;
+      }
+    }
+
+    revalidatePath('/admin/blogs');
+    revalidatePath('/blogs');
+    revalidatePath('/archive');
+
+    return { success: true, message: `Successfully deleted ${deletedCount} blogs` };
+  } catch (error) {
+    return { success: false, message: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
+/**
+ * 批量更新博客分类
+ * @param slugs 博客 slug 数组
+ * @param category 新分类
+ * @returns 操作结果
+ */
+export async function batchUpdateBlogCategory(slugs: string[], category: string): Promise<ActionResult> {
+  if (isStaticExport) {
+    return { success: false, message: 'Static export mode does not support this feature' };
+  }
+  
+  try {
+    if (!slugs || slugs.length === 0) {
+      return { success: false, message: 'No blogs selected' };
+    }
+
+    let updatedCount = 0;
+    for (const slug of slugs) {
+      const existingBlog = await readBlogFile(slug);
+      if (existingBlog) {
+        await writeBlogFile(slug, {
+          title: existingBlog.title,
+          content: existingBlog.content,
+          date: existingBlog.date,
+          category,
+          tags: existingBlog.tags,
+          excerpt: existingBlog.excerpt,
+          coverImage: existingBlog.coverImage,
+          hidden: existingBlog.hidden,
+        });
+        updatedCount++;
+      }
+    }
+
+    revalidatePath('/admin/blogs');
+    revalidatePath('/blogs');
+    revalidatePath('/archive');
+
+    return { success: true, message: `Successfully updated ${updatedCount} blogs` };
+  } catch (error) {
+    return { success: false, message: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
+/**
+ * 获取所有分类
+ * @returns 分类列表
+ */
+export async function getBlogCategories(): Promise<string[]> {
+  if (isStaticExport) {
+    return [];
+  }
+  
+  try {
+    const blogs = await getBlogList();
+    const categorySet = new Set<string>();
     
     for (const blog of blogs) {
       if (blog.category) {
-        categories.add(blog.category);
+        categorySet.add(blog.category);
       }
     }
-    
-    return Array.from(categories).sort();
-  } catch (error) {
-    console.error('获取分类失败:', error);
+
+    return Array.from(categorySet).sort();
+  } catch {
     return [];
   }
 }
 
-async function saveBlogMarkdownReal(slug: string, content: string): Promise<ActionResult> {
-  if (!fs || !path || !revalidatePath) return { success: false, message: '文件系统不可用' };
+/**
+ * 保存博客 Markdown 文件
+ * @param slug 博客 slug
+ * @param content Markdown 内容
+ * @returns 操作结果
+ */
+export async function saveBlogMarkdown(slug: string, content: string): Promise<ActionResult> {
+  if (isStaticExport) {
+    return { success: false, message: 'Static export mode does not support this feature' };
+  }
   
   try {
-    await ensureBlogsDir();
-    
-    const filename = slug.endsWith('.md') ? slug : `${slug}.md`;
-    const filePath = path.join(BLOGS_DIR, filename);
-    
-    await fs.writeFile(filePath, content, 'utf-8');
-    
+    const existingBlog = await readBlogFile(slug);
+
+    if (!existingBlog) {
+      return { success: false, message: 'Blog not found' };
+    }
+
+    await writeBlogFile(slug, {
+      title: existingBlog.title,
+      content,
+      date: existingBlog.date,
+      category: existingBlog.category,
+      tags: existingBlog.tags,
+      excerpt: existingBlog.excerpt,
+      coverImage: existingBlog.coverImage,
+      hidden: existingBlog.hidden,
+    });
+
     revalidatePath('/admin/blogs');
     revalidatePath('/blogs');
     revalidatePath('/archive');
-    
-    return { success: true, message: '保存成功', filePath };
+    revalidatePath(`/blogs/${slug}`);
+
+    return { success: true, message: 'Saved successfully' };
   } catch (error) {
-    console.error('保存 Markdown 失败:', error);
-    return { success: false, message: '保存失败' };
+    return { success: false, message: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
 
-async function toggleBlogHiddenReal(id: string): Promise<ActionResult<BlogPost>> {
+/**
+ * 切换博客隐藏状态
+ * @param slug 博客 slug
+ * @returns 更新后的博客
+ */
+export async function toggleBlogHidden(slug: string): Promise<ActionResult<BlogPost>> {
+  if (isStaticExport) {
+    return { success: false, message: 'Static export mode does not support this feature' };
+  }
+  
   try {
-    const existingResult = await getBlogDetailReal(id);
-    if (!existingResult.success || !existingResult.data) {
-      return { success: false, message: '文章不存在' };
+    const existingBlog = await readBlogFile(slug);
+
+    if (!existingBlog) {
+      return { success: false, message: 'Blog not found' };
     }
-    
-    const existingBlog = existingResult.data;
-    const newHiddenStatus = !existingBlog.hidden;
-    
-    const updateResult = await updateBlogReal(id, { hidden: newHiddenStatus });
-    
-    if (!updateResult.success) {
-      return { success: false, message: '切换隐藏状态失败' };
-    }
-    
-    return {
-      success: true,
-      message: newHiddenStatus ? '文章已隐藏' : '文章已显示',
-      data: updateResult.data,
-    };
+
+    const updatedBlog = await updateBlog(slug, {
+      hidden: !existingBlog.hidden,
+    });
+
+    return updatedBlog;
   } catch (error) {
-    console.error('切换文章隐藏状态失败:', error);
-    return { success: false, message: '切换隐藏状态失败' };
+    return { success: false, message: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
 
-async function batchToggleBlogHiddenReal(ids: string[], hidden: boolean): Promise<ActionResult> {
-  let successCount = 0;
-  let failedCount = 0;
+/**
+ * 批量切换博客隐藏状态
+ * @param slugs 博客 slug 数组
+ * @param hidden 隐藏状态
+ * @returns 操作结果
+ */
+export async function batchToggleBlogHidden(slugs: string[], hidden: boolean): Promise<ActionResult> {
+  if (isStaticExport) {
+    return { success: false, message: 'Static export mode does not support this feature' };
+  }
   
-  for (const id of ids) {
-    const result = await updateBlogReal(id, { hidden });
-    if (result.success) {
-      successCount++;
-    } else {
-      failedCount++;
+  try {
+    if (!slugs || slugs.length === 0) {
+      return { success: false, message: 'No blogs selected' };
     }
-  }
-  
-  if (failedCount > 0) {
-    return {
-      success: true,
-      message: hidden
-        ? `成功隐藏 ${successCount} 篇文章，${failedCount} 篇操作失败`
-        : `成功显示 ${successCount} 篇文章，${failedCount} 篇操作失败`,
-    };
-  }
-  
-  return {
-    success: true,
-    message: hidden
-      ? `成功隐藏 ${successCount} 篇文章`
-      : `成功显示 ${successCount} 篇文章`,
-  };
-}
 
-// ============================================
-// 导出函数：根据环境选择实现
-// ============================================
+    let updatedCount = 0;
+    for (const slug of slugs) {
+      const existingBlog = await readBlogFile(slug);
+      if (existingBlog) {
+        await writeBlogFile(slug, {
+          title: existingBlog.title,
+          content: existingBlog.content,
+          date: existingBlog.date,
+          category: existingBlog.category,
+          tags: existingBlog.tags,
+          excerpt: existingBlog.excerpt,
+          coverImage: existingBlog.coverImage,
+          hidden,
+        });
+        updatedCount++;
+      }
+    }
 
-export async function getBlogList(): Promise<BlogPost[]> {
-  if (isStaticExport) {
-    return getBlogListStatic();
-  }
-  return getBlogListReal();
-}
+    revalidatePath('/admin/blogs');
+    revalidatePath('/blogs');
+    revalidatePath('/archive');
 
-export async function getBlogDetail(id: string): Promise<ActionResult<BlogPost>> {
-  if (isStaticExport) {
-    return getBlogDetailStatic(id);
+    return { success: true, message: `Successfully ${hidden ? 'hidden' : 'shown'} ${updatedCount} blogs` };
+  } catch (error) {
+    return { success: false, message: error instanceof Error ? error.message : 'Unknown error' };
   }
-  return getBlogDetailReal(id);
-}
-
-export async function createBlog(data: BlogPostData): Promise<ActionResult<BlogPost>> {
-  if (isStaticExport) {
-    return createBlogStatic(data);
-  }
-  return createBlogReal(data);
-}
-
-export async function updateBlog(id: string, data: Partial<BlogPostData>): Promise<ActionResult<BlogPost>> {
-  if (isStaticExport) {
-    return updateBlogStatic(id, data);
-  }
-  return updateBlogReal(id, data);
-}
-
-export async function deleteBlog(id: string): Promise<ActionResult> {
-  if (isStaticExport) {
-    return deleteBlogStatic(id);
-  }
-  return deleteBlogReal(id);
-}
-
-export async function batchDeleteBlogs(ids: string[]): Promise<ActionResult> {
-  if (isStaticExport) {
-    return batchDeleteBlogsStatic(ids);
-  }
-  return batchDeleteBlogsReal(ids);
-}
-
-export async function batchUpdateBlogCategory(ids: string[], category: string): Promise<ActionResult> {
-  if (isStaticExport) {
-    return batchUpdateBlogCategoryStatic(ids, category);
-  }
-  return batchUpdateBlogCategoryReal(ids, category);
-}
-
-export async function getBlogCategories(): Promise<string[]> {
-  if (isStaticExport) {
-    return getBlogCategoriesStatic();
-  }
-  return getBlogCategoriesReal();
-}
-
-export async function saveBlogMarkdown(slug: string, content: string): Promise<ActionResult> {
-  if (isStaticExport) {
-    return saveBlogMarkdownStatic(slug, content);
-  }
-  return saveBlogMarkdownReal(slug, content);
-}
-
-export async function toggleBlogHidden(id: string): Promise<ActionResult<BlogPost>> {
-  if (isStaticExport) {
-    return toggleBlogHiddenStatic(id);
-  }
-  return toggleBlogHiddenReal(id);
-}
-
-export async function batchToggleBlogHidden(ids: string[], hidden: boolean): Promise<ActionResult> {
-  if (isStaticExport) {
-    return batchToggleBlogHiddenStatic(ids, hidden);
-  }
-  return batchToggleBlogHiddenReal(ids, hidden);
 }
