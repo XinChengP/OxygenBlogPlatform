@@ -2,6 +2,7 @@
 title: "2025年度总结"
 date: "2026-01-01"
 updatedAt: "2026-01-02"
+author: 歆橙
 category: "生活"
 tags: ["总结"]
 excerpt: "回首2025，展望2026"

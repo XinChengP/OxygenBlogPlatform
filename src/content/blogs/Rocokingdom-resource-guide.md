@@ -2,6 +2,7 @@
 title: "洛克王国资源提取"
 date: "2026-01-05"
 updatedAt: "2026-04-18"
+author: 歆橙
 category: "技术"
 tags: ["游戏", "资源提取", "洛克王国","教程"]
 excerpt: "洛克资源提取のxio教程"

@@ -2,6 +2,7 @@
 title: "调校指北"
 date: "2026-01-04"
 updatedAt: "2026-04-09"
+author: 歆橙
 category: "学习"
 tags:
   - "VOCALOID"
