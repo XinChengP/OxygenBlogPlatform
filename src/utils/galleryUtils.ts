@@ -420,6 +420,13 @@ const GALLERY_PATH_MAPPINGS: GalleryCategoryConfig[] = [
     sortOrder: 5,
     description: '竖版壁纸'
   },
+  {
+    pathPattern: 'LTYpicture/wallpapers&illustration/avatar',
+    mainCategory: '美图',
+    subCategory: '头像',
+    sortOrder: 6,
+    description: '头像图片'
+  },
   // 中文路径支持
   {
     pathPattern: 'LTYpicture/壁纸插画',
@@ -441,7 +448,14 @@ const GALLERY_PATH_MAPPINGS: GalleryCategoryConfig[] = [
     sortOrder: 5,
     description: '竖版壁纸'
   },
-  
+  {
+    pathPattern: 'LTYpicture/壁纸插画/头像',
+    mainCategory: '美图',
+    subCategory: '头像',
+    sortOrder: 6,
+    description: '头像图片'
+  },
+
   // ========== 其他分类 ==========
   // 英文路径
   {
