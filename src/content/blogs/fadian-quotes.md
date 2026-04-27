@@ -13,6 +13,7 @@ seriesOrder: 1
 language: zh-CN
 seoTitle: 对洛佬の发癫语录
 seoDescription: 华风夏韵，洛水天依
+coverImage: "/Blogabout/fadian/cover.gif"
 ---
 
 # 对洛佬の发癫语录
