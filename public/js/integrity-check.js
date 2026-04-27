@@ -46,6 +46,7 @@
       'giscus.app',
       'v6.51.la',
       'sdk.51.la',
+      'player.bilibili.com', // 允许B站视频嵌入
     ],
     // 开发环境允许的脚本模式（React DevTools, HMR等）
     allowedScriptPatterns: [

@@ -366,6 +366,7 @@ class DOMMonitor {
     const allowedDomains = [
       'giscus.app',
       'github.com',
+      'player.bilibili.com', // 允许B站视频嵌入
     ];
     
     try {
