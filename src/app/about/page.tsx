@@ -122,7 +122,9 @@ export default function AboutPage() {
 
               {/* 联系我 - 合并到个人信息卡片底部 */}
               <div className="px-6 pb-6">
-                <div className="grid grid-cols-4 gap-2">
+                {/* 使用 flex + justify-center 让社交图标整体居中 */}
+                <div className="flex justify-center">
+                  <div className="grid grid-cols-4 gap-2">
                   {/* Email */}
                   <motion.a
                     href={`mailto:${mail}`}
@@ -157,7 +159,7 @@ export default function AboutPage() {
                       height={18}
                     />
                   </motion.a>
-                  {/* Bilibili */}
+                  {/* Bilibili - 使用 SVG 矢量图优化加载 */}
                   <motion.a
                     href={bilibili}
                     target="_blank"
@@ -168,14 +170,14 @@ export default function AboutPage() {
                     title="哔哩哔哩"
                   >
                     <OptimizedIcon
-                      src="/assets/bilibili.png"
+                      src="/assets/bilibili.svg?v=2"
                       alt="Bilibili"
                       className="text-foreground"
                       width={18}
                       height={18}
                     />
                   </motion.a>
-                  {/* VSQX */}
+                  {/* VSQX - 使用 SVG 矢量图优化加载 */}
                   <motion.a
                     href="https://www.vsqx.top/space/16984"
                     target="_blank"
@@ -186,13 +188,14 @@ export default function AboutPage() {
                     title="VSQX"
                   >
                     <OptimizedIcon
-                      src="/assets/vsqx.ico"
+                      src="/assets/vsqx.svg?v=2"
                       alt="VSQX"
                       className="text-foreground"
                       width={18}
                       height={18}
                     />
                   </motion.a>
+                  </div>
                 </div>
               </div>
             </motion.div>
