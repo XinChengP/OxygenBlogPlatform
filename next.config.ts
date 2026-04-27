@@ -122,7 +122,7 @@ const devConfig = {
               "connect-src 'self' https://api.github.com https://giscus.app https://v6.51.la https://sdk.51.la https://www.google-analytics.com",
               "media-src 'self' https: http:",
               "object-src 'none'",
-              "frame-src https://giscus.app https://*.github.com",
+              "frame-src https://giscus.app https://*.github.com https://player.bilibili.com",
               "frame-ancestors 'self' https://*.github.io",
               "form-action 'self'",
               "base-uri 'self'",

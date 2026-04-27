@@ -141,6 +141,8 @@ export const productionCSP: CSPDirectives = {
     // GitHub相关
     'https://*.github.com',
     'https://*.github.io',
+    // B站视频播放器
+    'https://player.bilibili.com',
   ],
   
   // 防止被嵌入到恶意网站（点击劫持防护）
