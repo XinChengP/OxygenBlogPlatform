@@ -118,6 +118,27 @@
         }
     }
     /**
+     * 解析kMandarin格式数据
+     * kMandarin.txt中的多音字使用空格分隔，如：U+4E07: wàn mò
+     */
+    parseMandarinData(data) {
+        const lines = data.split('\n');
+        for (const line of lines) {
+            const trimmedLine = line.trim();
+            if (!trimmedLine || trimmedLine.startsWith('#'))
+                continue;
+            const match = trimmedLine.match(/^U\+([0-9A-Fa-f]+):\s*(.+?)(?:\s*#.*)?$/);
+            if (!match)
+                continue;
+            const unicode = match[1].toUpperCase();
+            // kMandarin.txt中使用空格分隔多音字，需要同时处理空格和逗号
+            const pinyins = match[2].split(/[,\s]+/).map(p => p.trim()).filter(p => p);
+            if (pinyins.length > 0) {
+                this.data[unicode] = pinyins;
+            }
+        }
+    }
+    /**
      * 从pinyin.txt加载数据
      */
     async loadPinyinData(basePath) {
@@ -150,25 +171,6 @@
                 return fs.readFileSync(fullPath, 'utf-8');
             }
             throw new Error('Unsupported environment');
-        }
-        /**
-         * 解析kMandarin格式数据
-         */
-        parseMandarinData(data) {
-            const lines = data.split('\n');
-            for (const line of lines) {
-                const trimmedLine = line.trim();
-                if (!trimmedLine || trimmedLine.startsWith('#'))
-                    continue;
-                const match = trimmedLine.match(/^U\+([0-9A-Fa-f]+):\s*(.+?)(?:\s*#.*)?$/);
-                if (!match)
-                    continue;
-                const unicode = match[1].toUpperCase();
-                const pinyins = match[2].split(',').map(p => p.trim()).filter(p => p);
-                if (pinyins.length > 0) {
-                    this.data[unicode] = pinyins;
-                }
-            }
         }
         /**
          * 解析pinyin.txt格式数据
