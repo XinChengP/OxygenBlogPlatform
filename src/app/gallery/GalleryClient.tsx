@@ -19,6 +19,9 @@ interface GalleryClientProps {
   initialCategories: ImageCategoryTree[];
 }
 
+// 首屏优先加载的图片数量
+const INITIAL_LOAD_COUNT = 20;
+
 // GalleryClient组件
 const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps) => {
   // 调试日志：输出接收到的初始数据
@@ -53,18 +56,9 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
     isLoading: false,
     error: null
   });
-  
+
   // 滚动节流定时器引用
   const scrollThrottleRef = useRef<number>(0);
-
-  // 客户端挂载后设置状态
-  useEffect(() => {
-    setIsMounted(true);
-    // 移动端默认折叠侧边栏
-    if (window.innerWidth < 1024) {
-      setIsSidebarCollapsed(true);
-    }
-  }, []);
 
   // 毛玻璃样式函数 - 与归档页面保持一致
   const getGlassStyle = (baseStyle: string) => {
@@ -78,6 +72,15 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
   const filteredImages = useMemo(() => {
     return filterImagesByCategory(state.images, state.selectedCategory, state.selectedSubCategory);
   }, [state.images, state.selectedCategory, state.selectedSubCategory]);
+
+  // 客户端挂载后设置状态
+  useEffect(() => {
+    setIsMounted(true);
+    // 移动端默认折叠侧边栏
+    if (window.innerWidth < 1024) {
+      setIsSidebarCollapsed(true);
+    }
+  }, []);
 
   // 处理分类选择
   const handleCategoryChange = (category: string | null, subCategory?: string | null) => {
@@ -332,10 +335,10 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
               )}
             </motion.div>
             
-            {/* 图片展示区域 - 瀑布流布局 */}
+            {/* 图片展示区域 - 网格布局 */}
             {filteredImages.length > 0 ? (
-              <motion.div 
-                className="columns-1 sm:columns-2 md:columns-3 lg:columns-3 xl:columns-4 space-y-4"
+              <motion.div
+                className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"
                 initial="hidden"
                 animate="visible"
                 variants={{
@@ -348,10 +351,11 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
                   }
                 }}
               >
+                {/* 渲染所有图片，通过原生懒加载控制实际加载时机 */}
                 {filteredImages.map((image, index) => (
-                  <motion.div 
-                    key={image.id} 
-                    className="mb-4 break-inside-avoid"
+                  <motion.div
+                    key={image.id}
+                    className="h-full"
                     variants={{
                       hidden: { opacity: 0, y: 20 },
                       visible: { opacity: 1, y: 0 }
@@ -361,6 +365,8 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
                       image={image}
                       onClick={() => handleImageClick(image)}
                       index={index}
+                      // 前 INITIAL_LOAD_COUNT 张图片设置高优先级，其余懒加载
+                      priority={index < INITIAL_LOAD_COUNT ? 'high' : 'low'}
                     />
                   </motion.div>
                 ))}

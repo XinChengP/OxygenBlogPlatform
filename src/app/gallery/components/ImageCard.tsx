@@ -11,10 +11,12 @@ interface ImageCardProps {
   image: GalleryImage;
   onClick: () => void;
   index: number;
+  /** 图片加载优先级：high=首屏立即加载，low=懒加载 */
+  priority?: 'high' | 'low';
 }
 
 // ImageCard组件
-const ImageCard = ({ image, onClick, index }: ImageCardProps) => {
+const ImageCard = ({ image, onClick, index, priority = 'low' }: ImageCardProps) => {
   // 图片加载状态
   const [loadStatus, setLoadStatus] = useState<ImageLoadStatus>('loading');
   const [retryCount, setRetryCount] = useState(0);
@@ -135,6 +137,8 @@ const ImageCard = ({ image, onClick, index }: ImageCardProps) => {
           referrerPolicy="no-referrer"
           whileHover={{ scale: 1.05 }}
           transition={{ duration: 0.3 }}
+          loading={priority === 'high' ? 'eager' : 'lazy'}
+          decoding="async"
         />
         
         {/* 加载失败状态 */}

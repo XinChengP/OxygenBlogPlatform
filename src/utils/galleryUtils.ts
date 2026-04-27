@@ -359,42 +359,42 @@ const GALLERY_PATH_MAPPINGS: GalleryCategoryConfig[] = [
   {
     pathPattern: 'LTYpicture/emoticon',
     mainCategory: '表情包',
-    sortOrder: 1,
+    sortOrder: 10,
     description: '洛天依表情包合集'
   },
   {
     pathPattern: 'LTYpicture/emoticon/Zi_Series',
     mainCategory: '表情包',
     subCategory: 'Zi系列',
-    sortOrder: 2,
+    sortOrder: 11,
     description: '活！字！乱！刷！ 来源：B站up主 Armillary_璇玑'
   },
   {
     pathPattern: 'LTYpicture/emoticon/辟浪',
     mainCategory: '表情包',
     subCategory: '辟浪',
-    sortOrder: 3,
+    sortOrder: 12,
     description: '辟浪系列表情包'
   },
   // 中文路径支持
   {
     pathPattern: 'LTYpicture/表情包',
     mainCategory: '表情包',
-    sortOrder: 1,
+    sortOrder: 10,
     description: '洛天依表情包合集'
   },
   {
     pathPattern: 'LTYpicture/表情包/Zi系列',
     mainCategory: '表情包',
     subCategory: 'Zi系列',
-    sortOrder: 2,
+    sortOrder: 11,
     description: '活！字！乱！刷！ 来源：B站up主 Armillary_璇玑'
   },
   {
     pathPattern: 'LTYpicture/表情包/辟浪',
     mainCategory: '表情包',
     subCategory: '辟浪',
-    sortOrder: 3,
+    sortOrder: 12,
     description: '辟浪系列表情包'
   },
   
@@ -403,56 +403,56 @@ const GALLERY_PATH_MAPPINGS: GalleryCategoryConfig[] = [
   {
     pathPattern: 'LTYpicture/wallpapers&illustration',
     mainCategory: '美图',
-    sortOrder: 3,
+    sortOrder: 1,
     description: '佬の壁纸和曲绘'
   },
   {
     pathPattern: 'LTYpicture/wallpapers&illustration/heng',
     mainCategory: '美图',
     subCategory: '横屏',
-    sortOrder: 4,
+    sortOrder: 2,
     description: '横版壁纸'
   },
   {
     pathPattern: 'LTYpicture/wallpapers&illustration/shu',
     mainCategory: '美图',
     subCategory: '竖屏',
-    sortOrder: 5,
+    sortOrder: 3,
     description: '竖版壁纸'
   },
   {
     pathPattern: 'LTYpicture/wallpapers&illustration/avatar',
     mainCategory: '美图',
     subCategory: '头像',
-    sortOrder: 6,
+    sortOrder: 4,
     description: '头像图片'
   },
   // 中文路径支持
   {
     pathPattern: 'LTYpicture/壁纸插画',
     mainCategory: '美图',
-    sortOrder: 3,
+    sortOrder: 1,
     description: '佬の壁纸和曲绘'
   },
   {
     pathPattern: 'LTYpicture/壁纸插画/横屏',
     mainCategory: '美图',
     subCategory: '横屏',
-    sortOrder: 4,
+    sortOrder: 2,
     description: '横版壁纸'
   },
   {
     pathPattern: 'LTYpicture/壁纸插画/竖屏',
     mainCategory: '美图',
     subCategory: '竖屏',
-    sortOrder: 5,
+    sortOrder: 3,
     description: '竖版壁纸'
   },
   {
     pathPattern: 'LTYpicture/壁纸插画/头像',
     mainCategory: '美图',
     subCategory: '头像',
-    sortOrder: 6,
+    sortOrder: 4,
     description: '头像图片'
   },
 
@@ -638,15 +638,21 @@ export const getSubCategories = (mainCategory: string): GalleryCategoryConfig[] 
  * @returns 排序顺序
  */
 export const getCategorySortOrder = (
-  mainCategory: string, 
+  mainCategory: string,
   subCategory?: string
 ): number => {
-  for (const config of GALLERY_PATH_MAPPINGS) {
-    if (config.mainCategory === mainCategory) {
-      if (!subCategory && !config.subCategory) {
+  // 查找主分类的排序顺序（不带子分类的配置项）
+  if (!subCategory) {
+    // 优先查找完全匹配主分类且没有子分类的配置
+    for (const config of GALLERY_PATH_MAPPINGS) {
+      if (config.mainCategory === mainCategory && !config.subCategory) {
         return config.sortOrder || 99;
       }
-      if (subCategory && config.subCategory === subCategory) {
+    }
+  } else {
+    // 查找子分类的排序顺序
+    for (const config of GALLERY_PATH_MAPPINGS) {
+      if (config.mainCategory === mainCategory && config.subCategory === subCategory) {
         return config.sortOrder || 99;
       }
     }
@@ -655,8 +661,10 @@ export const getCategorySortOrder = (
 };
 
 /**
- * 清除画廊远程图片缓存
- * @param config - GitHub图床配置（可选，不提供则清除所有缓存）
+ * 清除画廊远程图片缓存（已弃用）
+ * 现在图片缓存完全依赖 CDN 和浏览器的原生 HTTP 缓存机制
+ * 此函数保留用于兼容旧代码，不再执行任何操作
+ * @deprecated 使用 CDN 的缓存策略替代
  */
 export const clearRemoteImagesCache = (config?: {
   owner: string;
@@ -664,53 +672,9 @@ export const clearRemoteImagesCache = (config?: {
   branch: string;
   path: string;
 }): void => {
-  const isBrowser = typeof window !== 'undefined';
-  
-  if (config) {
-    // 清除特定配置的缓存
-    const cacheKey = `gallery_remote_images_${config.owner}_${config.repo}_${config.branch}_${config.path}`;
-    
-    // 清除浏览器缓存
-    if (isBrowser) {
-      try {
-        localStorage.removeItem(cacheKey);
-        console.log(`[Gallery] 已清除浏览器缓存: ${cacheKey}`);
-      } catch (error) {
-        console.warn('[Gallery] 清除浏览器缓存失败:', error);
-      }
-    }
-    
-    // 清除服务端缓存
-    if (!isBrowser && fs) {
-      try {
-        const serverCachePath = path.join(process.cwd(), '.next', 'cache', 'gallery');
-        const serverCacheFile = path.join(serverCachePath, `${cacheKey}.json`);
-        if (fs.existsSync(serverCacheFile)) {
-          fs.unlinkSync(serverCacheFile);
-          console.log(`[Gallery] 已清除服务端缓存: ${serverCacheFile}`);
-        }
-      } catch (error) {
-        console.warn('[Gallery] 清除服务端缓存失败:', error);
-      }
-    }
-  } else {
-    // 清除所有画廊相关的缓存
-    if (isBrowser) {
-      try {
-        const keysToRemove: string[] = [];
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key && key.startsWith('gallery_remote_images_')) {
-            keysToRemove.push(key);
-          }
-        }
-        keysToRemove.forEach(key => localStorage.removeItem(key));
-        console.log(`[Gallery] 已清除所有浏览器缓存，共 ${keysToRemove.length} 个`);
-      } catch (error) {
-        console.warn('[Gallery] 清除所有浏览器缓存失败:', error);
-      }
-    }
-  }
+  // 缓存机制已移除，此函数不再执行任何操作
+  // 图片缓存现在完全依赖 jsDelivr CDN 的 HTTP 缓存头控制
+  console.log('[Gallery] clearRemoteImagesCache 已弃用，缓存现由 CDN 统一管理');
 };
 
 /**
@@ -718,6 +682,7 @@ export const clearRemoteImagesCache = (config?: {
  * @param config - GitHub图床配置
  * @param options - 可选配置项
  * @returns 远程图片数组
+ * @description 图片缓存完全依赖 jsDelivr CDN 的 HTTP 缓存机制，不再使用 localStorage 或服务端文件缓存
  */
 export const getRemoteImages = async (config: {
   owner: string;
@@ -725,88 +690,37 @@ export const getRemoteImages = async (config: {
   branch: string;
   path: string;
 }, options?: {
-  forceRefresh?: boolean; // 是否强制刷新缓存
+  forceRefresh?: boolean; // 是否强制刷新（通过添加时间戳查询参数实现）
 }): Promise<GalleryImage[]> => {
   // 检测是否在浏览器环境
   const isBrowser = typeof window !== 'undefined';
   const { forceRefresh = false } = options || {};
-  
-  // 缓存键，用于存储API响应
-  const cacheKey = `gallery_remote_images_${config.owner}_${config.repo}_${config.branch}_${config.path}`;
-  
-  // 服务端文件缓存路径
-  const serverCachePath = path.join(process.cwd(), '.next', 'cache', 'gallery');
-  const serverCacheFile = path.join(serverCachePath, `${cacheKey}.json`);
-  
-  // 如果不是强制刷新，尝试从缓存获取
-  if (!forceRefresh) {
-    // 尝试从服务端文件缓存获取（仅服务端环境）
-    if (!isBrowser && fs) {
-      try {
-        // 确保缓存目录存在
-        if (!fs.existsSync(serverCachePath)) {
-          fs.mkdirSync(serverCachePath, { recursive: true });
-        }
-        
-        // 检查缓存文件是否存在
-        if (fs.existsSync(serverCacheFile)) {
-          const cachedData = JSON.parse(fs.readFileSync(serverCacheFile, 'utf-8'));
-          // 检查缓存是否在1小时内有效（更长的缓存时间）
-          if (cachedData.timestamp && Date.now() - cachedData.timestamp < 60 * 60 * 1000) {
-            console.log('[Gallery] Using server file cache for remote images');
-            return cachedData.images;
-          }
-        }
-      } catch (error) {
-        console.warn('[Gallery] Failed to read server cache:', error);
-      }
-    }
-    
-    // 尝试从localStorage获取缓存（仅浏览器环境）
-    if (isBrowser) {
-      try {
-        const cached = localStorage.getItem(cacheKey);
-        if (cached) {
-          const cacheData = JSON.parse(cached);
-          // 检查缓存是否在24小时内有效
-          if (cacheData.timestamp && Date.now() - cacheData.timestamp < 24 * 60 * 60 * 1000) {
-            console.log('Using cached remote images');
-            return cacheData.images;
-          }
-        }
-      } catch (error) {
-        console.warn('Failed to parse cached remote images:', error);
-      }
-    }
-  } else {
-    console.log('[Gallery] 强制刷新模式，跳过缓存');
-  }
-  
+
   // 重试机制，最多重试3次
   const maxRetries = 3;
   let retryCount = 0;
-  
+
   while (retryCount < maxRetries) {
     try {
       // 使用 GitHub Trees API 一次性获取整个目录树，减少 API 调用次数
       // Trees API 可以递归获取所有文件，避免多次调用 Contents API
       const treesApiUrl = `https://api.github.com/repos/${config.owner}/${config.repo}/git/trees/${config.branch}?recursive=1`;
-      
+
       // 请求头 - 添加 GitHub Token 认证以提高 API 限制
       const headers: Record<string, string> = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
         'Accept': 'application/vnd.github.v3+json',
         'X-GitHub-Api-Version': '2022-11-28'
       };
-      
+
       // 如果有 GitHub Token，添加到请求头（仅服务端环境）
       if (!isBrowser && process.env.GITHUB_TOKEN) {
         headers['Authorization'] = `Bearer ${process.env.GITHUB_TOKEN}`;
         console.log('[Gallery] Using GitHub Token for authentication');
       }
-      
+
       let treeData: any;
-      
+
       // 服务端使用自定义 HTTPS 请求（禁用 SSL 证书验证）
       // 浏览器端使用 fetch
       if (!isBrowser && https) {
@@ -817,11 +731,11 @@ export const getRemoteImages = async (config: {
         const fetchOptions: RequestInit = {
           headers,
           mode: 'cors',
-          cache: 'force-cache'
+          cache: forceRefresh ? 'no-cache' : 'default' // 强制刷新时使用 no-cache
         };
-        
+
         const response = await fetch(treesApiUrl, fetchOptions);
-        
+
         if (!response.ok) {
           if (response.status === 403 && retryCount < maxRetries - 1) {
             retryCount++;
@@ -832,47 +746,47 @@ export const getRemoteImages = async (config: {
           }
           throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
         }
-        
+
         treeData = await response.json();
       }
-      
+
       const images: GalleryImage[] = [];
-      
+
       // 处理目录树中的所有文件
       // Trees API 返回的是扁平化的文件列表，需要过滤出图片文件
       const basePath = config.path ? config.path.replace(/^\//, '') : '';
-      
+
       for (const item of treeData.tree || []) {
         // 只处理文件（type === 'blob'）
         if (item.type !== 'blob') continue;
-        
+
         // 解码路径中的 URL 编码字符（如中文）
         // GitHub Trees API 返回的路径可能是 URL 编码的
         const decodedPath = decodeURIComponent(item.path);
-        
+
         // 检查是否在指定路径下
         if (basePath && !decodedPath.startsWith(basePath + '/') && decodedPath !== basePath) {
           continue;
         }
-        
+
         // 检查是否为图片文件
         if (!isImageFile(decodedPath)) continue;
-        
+
         // 处理图片文件
         // Trees API 返回的 item.path 是相对于仓库根目录的完整路径
         const fullPath = decodedPath.replace(/^\//, '');
-        
+
         // 获取相对于仓库根目录的目录路径
         let relativePath = path.dirname(fullPath);
-        
+
         // 规范化路径分隔符，将反斜杠转换为正斜杠，确保跨平台兼容性
         relativePath = relativePath.replace(/\\/g, '/');
-        
+
         // 处理根目录情况
         if (relativePath === '.') {
           relativePath = '';
         }
-        
+
         // 调试日志：输出处理后的路径信息（仅在开发环境）
         if (process.env.NODE_ENV === 'development') {
           console.log(`[Gallery] 处理图片路径:`, {
@@ -882,20 +796,22 @@ export const getRemoteImages = async (config: {
             fullPath
           });
         }
-        
+
         // 使用路径映射函数确定分类
         const { mainCategory, subCategory } = mapPathToCategory(relativePath);
-        
+
         // 构造jsDelivr加速URL
         const encodedImagePath = fullPath.split('/').map(encodeURIComponent).join('/');
-        const jsdelivrUrl = `https://cdn.jsdelivr.net/gh/${config.owner}/${config.repo}@${config.branch}/${encodedImagePath}`;
-        
+        // 添加时间戳查询参数实现强制刷新（当 forceRefresh 为 true 时）
+        const cacheBuster = forceRefresh ? `?t=${Date.now()}` : '';
+        const jsdelivrUrl = `https://cdn.jsdelivr.net/gh/${config.owner}/${config.repo}@${config.branch}/${encodedImagePath}${cacheBuster}`;
+
         // 构造 GitHub raw URL 作为备用
         const githubRawUrl = `https://raw.githubusercontent.com/${config.owner}/${config.repo}/${config.branch}/${encodedImagePath}`;
-        
+
         // 从路径中提取文件名
         const fileName = path.basename(fullPath);
-        
+
         images.push({
           id: generateImageId(fullPath), // 使用完整路径生成唯一ID
           src: jsdelivrUrl, // 使用jsDelivr加速URL作为主URL
@@ -908,36 +824,7 @@ export const getRemoteImages = async (config: {
           updatedAt: new Date().toISOString() // Trees API 不提供更新时间，使用当前时间
         });
       }
-      
-      // 将结果缓存到localStorage（浏览器环境）
-      if (typeof window !== 'undefined') {
-        try {
-          localStorage.setItem(cacheKey, JSON.stringify({
-            images,
-            timestamp: Date.now()
-          }));
-        } catch (error) {
-          console.warn('Failed to cache remote images:', error);
-        }
-      }
-      
-      // 将结果缓存到服务端文件（服务端环境）
-      if (!isBrowser && fs) {
-        try {
-          // 确保缓存目录存在
-          if (!fs.existsSync(serverCachePath)) {
-            fs.mkdirSync(serverCachePath, { recursive: true });
-          }
-          fs.writeFileSync(serverCacheFile, JSON.stringify({
-            images,
-            timestamp: Date.now()
-          }, null, 2));
-          console.log('[Gallery] Saved remote images to server file cache');
-        } catch (error) {
-          console.warn('[Gallery] Failed to save server cache:', error);
-        }
-      }
-      
+
       return images;
     } catch (error) {
       retryCount++;
@@ -955,13 +842,13 @@ export const getRemoteImages = async (config: {
         );
         return [];
       }
-      
+
       const waitTime = 1000 * Math.pow(2, retryCount);
       console.log(`Retrying remote image loading in ${waitTime}ms...`);
       await new Promise(resolve => setTimeout(resolve, waitTime));
     }
   }
-  
+
   return [];
 };
 
@@ -1012,13 +899,24 @@ export const getAllCategories = (images: GalleryImage[]): ImageCategoryTree[] =>
  */
 export const filterImagesByCategory = (images: GalleryImage[], category: string | null, subCategory?: string | null): GalleryImage[] => {
   if (!category) {
-    return images;
+    // 全部分类：按分类排序顺序排序图片，让美图排在表情包前面
+    return [...images].sort((a, b) => {
+      const orderA = getCategorySortOrder(a.category);
+      const orderB = getCategorySortOrder(b.category);
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+      // 同一分类内按子分类排序
+      const subOrderA = getCategorySortOrder(a.category, a.subCategory);
+      const subOrderB = getCategorySortOrder(b.category, b.subCategory);
+      return subOrderA - subOrderB;
+    });
   }
-  
+
   if (subCategory) {
     return images.filter(image => image.category === category && image.subCategory === subCategory);
   }
-  
+
   return images.filter(image => image.category === category);
 };
 
