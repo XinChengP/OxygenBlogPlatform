@@ -23,7 +23,7 @@ coverImage: "/Blogabout/weimingming-docx/cover.jpg"
 ## 简介
 
 演唱：洛天依ace
-作词;suya
+作词：suya
 作曲/调教/视频：星葵
 编曲/混音：阿落
 曲绘：suya 次方

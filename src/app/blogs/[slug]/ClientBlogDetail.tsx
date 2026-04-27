@@ -822,8 +822,8 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                     },
                     // 段落
                     p({ children }: ComponentProps) {
-                      // 检查博客是否带有"简谱"标签，如果有则不添加首行缩进
-                      const hasSheetMusicTag = blog.tags && blog.tags.some(tag => tag === '简谱');
+                      // 检查博客是否带有"简谱"或"扒谱"标签，如果有则不添加首行缩进
+                      const hasSheetMusicTag = blog.tags && blog.tags.some(tag => tag === '简谱' || tag === '扒谱');
                       // 使用 span 而非 div 或 p 标签，避免嵌套块级元素导致的 hydration 错误
                       // span 是内联元素，可以合法地嵌套在 p 标签中
                       return (
