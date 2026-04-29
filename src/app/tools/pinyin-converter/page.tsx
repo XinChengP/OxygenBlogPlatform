@@ -26,6 +26,7 @@ interface PinyinOptions {
   nonChinese: 'keep' | 'remove' | 'replace';
   replaceChar: string;
   outputFormat: 'full' | 'initials' | 'both';
+  uFormat: 'ü' | 'v';
 }
 
 // 拼音转换器组件
@@ -61,7 +62,8 @@ export default function PinyinConverter() {
     lowercase: true,
     nonChinese: 'remove',
     replaceChar: '',
-    outputFormat: 'full'
+    outputFormat: 'full',
+    uFormat: 'ü'
   });
   const [isCustomMode, setIsCustomMode] = useState(false);
   const [showOnlyHeteronyms, setShowOnlyHeteronyms] = useState(false);
@@ -222,6 +224,15 @@ export default function PinyinConverter() {
     return cleanPinyin.charAt(0).toUpperCase();
   }, []);
 
+  // 转换 ü 为 v（根据用户设置）
+  const convertUFormat = useCallback((pinyin: string, uFormat: 'ü' | 'v'): string => {
+    if (uFormat === 'ü') {
+      return pinyin;
+    }
+    // 将 ü 替换为 v
+    return pinyin.replace(/ü/g, 'v');
+  }, []);
+
   // 转换拼音 - 使用拼音转换器库
   const convertToPinyin = useCallback(async (text: string, options: PinyinOptions) => {
     if (!pinyinConverter || !text) return { text: '', detailed: [] };
@@ -287,6 +298,9 @@ export default function PinyinConverter() {
                   processedPinyin = processedPinyin.toLowerCase();
                 }
                 
+                // 处理 ü/v 格式
+                processedPinyin = convertUFormat(processedPinyin, options.uFormat);
+                
                 // 处理输出格式
                 let finalOutput = processedPinyin;
                 if (options.outputFormat === 'initials') {
@@ -313,7 +327,9 @@ export default function PinyinConverter() {
       if (options.outputFormat === 'both') {
         finalText = processedResults.map((result: any) => {
           // 如果有选中的拼音，使用选中的；否则使用第一个
-          const pinyin = result.selectedPinyin || result.pinyin[0];
+          let pinyin = result.selectedPinyin || result.pinyin[0];
+          // 处理 ü/v 格式
+          pinyin = convertUFormat(pinyin, options.uFormat);
           if (options.outputFormat === 'both' && result.isHeteronym) {
             const initials = getPinyinInitials(pinyin);
             return `${pinyin}(${initials})`;
@@ -323,7 +339,10 @@ export default function PinyinConverter() {
       } else {
         finalText = processedResults.map((result: any) => {
           // 如果有选中的拼音，使用选中的；否则使用第一个
-          return result.selectedPinyin || result.pinyin[0];
+          let pinyin = result.selectedPinyin || result.pinyin[0];
+          // 处理 ü/v 格式
+          pinyin = convertUFormat(pinyin, options.uFormat);
+          return pinyin;
         }).join(options.separator);
       }
       
@@ -333,7 +352,7 @@ export default function PinyinConverter() {
       console.error('拼音转换失败:', error);
       return { text: text, detailed: [] };
     }
-  }, [heteronymSelections, convertToneMarkToNumber, getPinyinInitials, pinyinConverter]); // 移除不必要的options依赖
+  }, [heteronymSelections, convertToneMarkToNumber, getPinyinInitials, convertUFormat, pinyinConverter]); // 移除不必要的options依赖
 
   // 处理输入变化
   const handleInputChange = useCallback((text: string) => {
@@ -539,6 +558,9 @@ export default function PinyinConverter() {
           processedPinyin = processedPinyin.toLowerCase();
         }
         
+        // 处理 ü/v 格式
+        processedPinyin = convertUFormat(processedPinyin, options.uFormat);
+        
         // 处理输出格式
         let finalPinyin = processedPinyin;
         if (options.outputFormat === 'initials') {
@@ -566,6 +588,9 @@ export default function PinyinConverter() {
           processedPinyin = processedPinyin.toLowerCase();
         }
         
+        // 处理 ü/v 格式
+        processedPinyin = convertUFormat(processedPinyin, options.uFormat);
+        
         if (options.outputFormat === 'initials') {
           expectedOutput = getPinyinInitials(processedPinyin);
         } else if (options.outputFormat === 'both') {
@@ -590,7 +615,7 @@ export default function PinyinConverter() {
     } else {
       return parts.join(options.separator);
     }
-  }, [heteronymSelections, options.toneStyle, options.outputFormat, options.lowercase, convertToneMarkToNumber, getPinyinInitials, options.separator]);
+  }, [heteronymSelections, options.toneStyle, options.outputFormat, options.lowercase, options.uFormat, convertToneMarkToNumber, getPinyinInitials, convertUFormat, options.separator]);
 
   // 处理转换结果中的多音字点击
   const handleOutputCharClick = useCallback((char: string, index: number) => {
@@ -780,7 +805,7 @@ export default function PinyinConverter() {
           </div>
           
           {/* 转换选项控制 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
             {/* 声调样式 */}
             <div className="space-y-2">
               <h3 className="text-sm font-medium text-foreground">声调样式</h3>
@@ -921,6 +946,31 @@ export default function PinyinConverter() {
                   maxLength={1}
                 />
               )}
+            </div>
+
+            {/* ü/v 格式切换 */}
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium text-foreground">ü 显示格式</h3>
+              <div className="flex gap-1">
+                {[
+                  { key: 'ü', label: 'ü' },
+                  { key: 'v', label: 'v' }
+                ].map(({ key, label }) => (
+                  <button
+                    key={key}
+                    onClick={() => handleOptionChange('uFormat', key)}
+                    className={`px-2 py-1 text-xs rounded transition-all duration-200 flex-1 ${
+                      options.uFormat === key
+                        ? 'bg-[#66ccff] text-white shadow-md'
+                        : isDark
+                        ? 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+                        : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
