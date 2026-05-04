@@ -20,9 +20,26 @@ declare global {
  */
 export default function NotFound() {
   const [cardVisible, setCardVisible] = useState(true);
+  // 使用状态存储主题色，避免服务端和客户端渲染不一致导致的 hydration mismatch
+  // 使用项目默认主题色（blue主题）作为初始值，确保首次渲染颜色正确
+  const [primaryColor, setPrimaryColor] = useState('#66ccff');
+  const [accentColor, setAccentColor] = useState('#06b6d4');
+  const [isMounted, setIsMounted] = useState(false);
 
   // 确保组件已挂载
   useEffect(() => {
+    // 标记组件已挂载，此时可以安全地获取客户端特有的值
+    setIsMounted(true);
+
+    // 监听主题变化事件，动态更新主题色
+    const handleThemeChange = () => {
+      const primary = getThemeColor('primary');
+      const accent = getThemeColor('accent');
+      setPrimaryColor(primary);
+      setAccentColor(accent);
+    };
+    window.addEventListener('themechange', handleThemeChange);
+
     // 确保视频自动播放
     const ensureVideoAutoplay = () => {
       const video = document.querySelector('video');
@@ -115,40 +132,65 @@ export default function NotFound() {
     return () => {
       observer.disconnect();
       delete window.hideLive2D;
+      window.removeEventListener('themechange', handleThemeChange);
     };
   }, []);
 
   // 获取 CSS 变量中的主题色并确保格式一致
+  // 注意：此函数只能在客户端调用，服务端渲染时使用默认值
   const getThemeColor = (colorName: string): string => {
-    if (typeof window === 'undefined') return '#3b82f6'; // 默认蓝色
-    const hex = getComputedStyle(document.documentElement).getPropertyValue(`--theme-${colorName}`).trim() || '#3b82f6';
-    
-    // 如果已经是十六进制格式，直接返回
-    if (hex.startsWith('#')) {
-      return hex;
+    if (typeof window === 'undefined') return '#3b82f6'; // 服务端默认蓝色
+
+    // 首先尝试获取 --theme-xxx 变量
+    let color = getComputedStyle(document.documentElement).getPropertyValue(`--theme-${colorName}`).trim();
+
+    // 如果没有找到，尝试获取 --color-xxx 变量
+    if (!color) {
+      color = getComputedStyle(document.documentElement).getPropertyValue(`--color-${colorName}`).trim();
     }
-    
+
+    // 如果仍然没有找到，使用默认值
+    if (!color) {
+      const defaults: Record<string, string> = {
+        primary: '#66ccff',
+        accent: '#06b6d4',
+        secondary: '#1e40af'
+      };
+      return defaults[colorName] || '#3b82f6';
+    }
+
+    // 如果已经是十六进制格式，直接返回
+    if (color.startsWith('#')) {
+      return color;
+    }
+
     // 如果是rgb格式，转换为十六进制
-    const rgbMatch = hex.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+    const rgbMatch = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
     if (rgbMatch) {
       let r = parseInt(rgbMatch[1]).toString(16);
       let g = parseInt(rgbMatch[2]).toString(16);
       let b = parseInt(rgbMatch[3]).toString(16);
-      
+
       // 确保十六进制字符串长度为2
       r = r.length === 1 ? '0' + r : r;
       g = g.length === 1 ? '0' + g : g;
       b = b.length === 1 ? '0' + b : b;
       return `#${r}${g}${b}`;
     }
-    
-    // 默认返回十六进制格式
-    return hex.startsWith('#') ? hex : `#${hex}`;
-  };
 
-  // 获取当前主题色（始终使用十六进制格式）
-  const primaryColor = getThemeColor('primary');
-  const accentColor = getThemeColor('accent');
+    // 如果是 oklch 格式，返回默认值（因为 oklch 不适合直接用于 SVG 属性）
+    if (color.startsWith('oklch')) {
+      const defaults: Record<string, string> = {
+        primary: '#66ccff',
+        accent: '#06b6d4',
+        secondary: '#1e40af'
+      };
+      return defaults[colorName] || '#3b82f6';
+    }
+
+    // 默认返回十六进制格式
+    return color.startsWith('#') ? color : `#${color}`;
+  };
 
 
 
@@ -440,14 +482,13 @@ export default function NotFound() {
                 }}
               />
               
-              <h1 
-                className="text-7xl md:text-8xl font-black relative z-10 tracking-wider"
+              <h1
+                className="text-7xl md:text-8xl font-black relative z-10 tracking-wider text-transparent bg-clip-text"
                 style={{
-                  background: `linear-gradient(135deg, ${primaryColor}, ${accentColor}, ${primaryColor})`,
+                  // 使用 backgroundImage 设置渐变背景，配合 bg-clip-text 实现文字渐变效果
+                  // 注意：需要同时设置 text-transparent 类才能使效果生效
+                  backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${accentColor}, ${primaryColor})`,
                   backgroundSize: '200% 200%',
-                  WebkitBackgroundClip: 'text',
-                  backgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
                   filter: 'drop-shadow(0 0 30px rgba(255,255,255,0.4))',
                   animation: 'gradientShift 3s ease-in-out infinite'
                 }}
@@ -519,13 +560,12 @@ export default function NotFound() {
                 </div>
               </div>
               
-              <h2 className="text-xl md:text-2xl font-bold text-white mb-3 drop-shadow-xl">
-                <span 
+              <h2 className="text-xl md:text-2xl font-bold mb-3 drop-shadow-xl">
+                <span
+                  className="text-transparent bg-clip-text"
                   style={{
-                    background: `linear-gradient(135deg, ${primaryColor}, ${accentColor})`,
-                    WebkitBackgroundClip: 'text',
-                    backgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent'
+                    // 使用 backgroundImage 设置渐变背景，配合 bg-clip-text 实现文字渐变效果
+                    backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${accentColor})`,
                   }}
                 >
                   页面未找到
