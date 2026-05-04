@@ -19,6 +19,11 @@ import {
   type Pet,
   type Talent,
 } from '@/data/rocoPets';
+import {
+  accountManager,
+  initializePresetAccounts,
+  type AccountPets,
+} from '@/data/rocoPets';
 import { Live2DMessageHelper } from '@/utils/live2dMessageManager';
 
 // 魔力值颜色配置 - 使用自定义配色方案，支持亮色/暗色模式
@@ -48,7 +53,90 @@ const STORAGE_KEYS = {
   selectedSkins: 'roco-selected-skins',
   selectedTalents: 'roco-selected-talents',
   showSkinButton: 'roco-show-skin-button',
+  imageCache: 'roco-image-cache', // 图片缓存状态记录
 };
+
+// ==================== 宠物图标缓存系统 ====================
+// 缓存策略：使用内存缓存 + localStorage 持久化记录
+// 避免每次刷新页面都重新从网络加载图片
+
+// 内存缓存：存储已经加载成功的图片 URL
+const imageCache = new Map<string, string>();
+
+// 从 localStorage 读取缓存记录（记录哪些 URL 曾经加载成功过）
+function getCachedImageUrls(): Set<string> {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEYS.imageCache);
+    if (stored) {
+      const urls = JSON.parse(stored) as string[];
+      return new Set(urls);
+    }
+  } catch {
+    // 解析失败时返回空集合
+  }
+  return new Set();
+}
+
+// 保存缓存记录到 localStorage
+function saveCachedImageUrls(urls: Set<string>) {
+  try {
+    localStorage.setItem(STORAGE_KEYS.imageCache, JSON.stringify(Array.from(urls)));
+  } catch {
+    // 存储失败时静默处理
+  }
+}
+
+// 全局缓存记录集合
+const cachedImageUrls = getCachedImageUrls();
+
+// 标记某个图片 URL 已缓存成功
+function markImageAsCached(url: string) {
+  if (!cachedImageUrls.has(url)) {
+    cachedImageUrls.add(url);
+    saveCachedImageUrls(cachedImageUrls);
+  }
+  imageCache.set(url, url);
+}
+
+// 检查某个图片 URL 是否已经缓存过
+function isImageCached(url: string): boolean {
+  return imageCache.has(url) || cachedImageUrls.has(url);
+}
+
+// 预加载单张图片并缓存
+function preloadImage(url: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    // 如果已经在内存缓存中，直接返回成功
+    if (imageCache.has(url)) {
+      resolve(true);
+      return;
+    }
+
+    const img = new Image();
+    img.onload = () => {
+      markImageAsCached(url);
+      resolve(true);
+    };
+    img.onerror = () => {
+      resolve(false);
+    };
+    img.src = url;
+  });
+}
+
+// 批量预加载图片
+async function preloadImages(urls: string[], batchSize = 10): Promise<void> {
+  // 过滤掉已经缓存的图片
+  const uncachedUrls = urls.filter(url => !isImageCached(url));
+  if (uncachedUrls.length === 0) return;
+
+  // 分批加载，避免同时发起过多请求
+  for (let i = 0; i < uncachedUrls.length; i += batchSize) {
+    const batch = uncachedUrls.slice(i, i + batchSize);
+    await Promise.all(batch.map(url => preloadImage(url)));
+  }
+}
+// ==================== 缓存系统结束 ====================
 
 // 右键菜单类型
 interface ContextMenuState {
@@ -56,7 +144,7 @@ interface ContextMenuState {
   x: number;
   y: number;
   petId: number | null;
-  context: 'list' | 'banned' | 'lineup';
+  context: 'list' | 'banned' | 'lineup' | 'hidden';
 }
 
 // 模态框类型
@@ -184,6 +272,24 @@ export default function RocoPetSimulator() {
   const [isDragOverLineup, setIsDragOverLineup] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // 账号管理状态
+  const [accounts, setAccounts] = useState<AccountPets[]>([]);
+  const [currentAccount, setCurrentAccount] = useState<string>('');
+  const [showOnlyOwned, setShowOnlyOwned] = useState(false);
+  const [isBatchMode, setIsBatchMode] = useState(false);
+  const [selectedBatchPets, setSelectedBatchPets] = useState<number[]>([]);
+  const [showAccountDropdown, setShowAccountDropdown] = useState(false);
+  const [newAccountName, setNewAccountName] = useState('');
+  const [showNewAccountInput, setShowNewAccountInput] = useState(false);
+  const [importExportModal, setImportExportModal] = useState<{ open: boolean; mode: 'import' | 'export' }>({ open: false, mode: 'import' });
+  const [importText, setImportText] = useState('');
+  const [exportFormat, setExportFormat] = useState<'id' | 'name'>('id');
+
+  // 批量操作栏拖拽状态
+  const [batchPanelPos, setBatchPanelPos] = useState({ x: 16, y: 96 }); // 默认位置：左上角
+  const [isDraggingBatchPanel, setIsDraggingBatchPanel] = useState(false);
+  const batchPanelDragRef = useRef<{ startX: number; startY: number; initialX: number; initialY: number } | null>(null);
+
   // 从本地存储加载数据
   useEffect(() => {
     const loadData = () => {
@@ -207,6 +313,52 @@ export default function RocoPetSimulator() {
     loadData();
     // 页面加载时触发Live2D消息
     Live2DMessageHelper.showRocoSimulatorMessage('PAGE_VISIT');
+  }, []);
+
+  // 初始化账号数据（加载预设账号）
+  useEffect(() => {
+    const initAccounts = () => {
+      // 先初始化预设账号
+      initializePresetAccounts();
+      // 然后加载账号数据到状态
+      setAccounts(accountManager.getAccounts());
+      setCurrentAccount(accountManager.getCurrentAccount());
+    };
+    initAccounts();
+  }, []);
+
+  // 预加载宠物图片到缓存
+  useEffect(() => {
+    // 组件挂载后，延迟预加载当前可见的宠物图片
+    // 使用 requestIdleCallback 或 setTimeout 避免阻塞页面渲染
+    const preloadPetImages = () => {
+      // 收集所有需要预加载的图片 URL
+      const urlsToPreload: string[] = [];
+
+      // 预加载所有宠物的主图片（分批进行，避免一次性请求过多）
+      pets.forEach((pet, index) => {
+        const imageId = pet.imageId || pet.id;
+        const formattedId = String(imageId).padStart(3, '0');
+        const networkUrl = `https://res.17roco.qq.com/res/combat/icons/${formattedId}-.png`;
+
+        // 只预加载前 30 个可见宠物和已拥有的宠物，避免一次性加载过多
+        if (index < 30 || accountManager.hasPet(pet.id)) {
+          urlsToPreload.push(networkUrl);
+        }
+      });
+
+      // 批量预加载图片
+      if (urlsToPreload.length > 0) {
+        preloadImages(urlsToPreload, 5); // 每批 5 个，避免阻塞
+      }
+    };
+
+    // 使用 requestIdleCallback 如果可用，否则用 setTimeout
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      window.requestIdleCallback(() => preloadPetImages(), { timeout: 2000 });
+    } else {
+      setTimeout(preloadPetImages, 1000);
+    }
   }, []);
 
   // 保存到本地存储
@@ -236,7 +388,161 @@ export default function RocoPetSimulator() {
     setTimeout(() => setNotification(null), 3000);
   }, []);
 
-  // 获取宠物图片URL（网络优先，失败用本地）
+  // 刷新账号数据
+  const refreshAccounts = useCallback(() => {
+    setAccounts(accountManager.getAccounts());
+    setCurrentAccount(accountManager.getCurrentAccount());
+  }, []);
+
+  // 切换账号
+  const handleSwitchAccount = useCallback((name: string) => {
+    accountManager.switchAccount(name);
+    refreshAccounts();
+    showNotification(`已切换到账号：${name}`);
+    setShowAccountDropdown(false);
+  }, [refreshAccounts, showNotification]);
+
+  // 创建新账号
+  const handleCreateAccount = useCallback(() => {
+    if (!newAccountName.trim()) {
+      showNotification('请输入账号名称', 'error');
+      return;
+    }
+    const success = accountManager.createAccount(newAccountName.trim());
+    if (success) {
+      refreshAccounts();
+      setNewAccountName('');
+      setShowNewAccountInput(false);
+      showNotification(`账号 "${newAccountName.trim()}" 创建成功`);
+    } else {
+      showNotification('账号名称已存在', 'error');
+    }
+  }, [newAccountName, refreshAccounts, showNotification]);
+
+  // 删除账号
+  const handleDeleteAccount = useCallback((name: string) => {
+    if (confirm(`确定要删除账号 "${name}" 吗？此操作不可恢复。`)) {
+      const success = accountManager.deleteAccount(name);
+      if (success) {
+        refreshAccounts();
+        showNotification(`账号 "${name}" 已删除`);
+      } else {
+        showNotification('至少保留一个账号', 'error');
+      }
+    }
+  }, [refreshAccounts, showNotification]);
+
+  // 标记宠物拥有状态
+  const togglePetOwnership = useCallback((petId: number) => {
+    const hasPet = accountManager.hasPet(petId);
+    if (hasPet) {
+      accountManager.removePetFromCurrentAccount(petId);
+      showNotification('已标记为未拥有');
+    } else {
+      accountManager.addPetToCurrentAccount(petId);
+      showNotification('已标记为已拥有');
+    }
+    refreshAccounts();
+  }, [refreshAccounts, showNotification]);
+
+  // 批量标记宠物
+  const batchToggleOwnership = useCallback((own: boolean) => {
+    if (selectedBatchPets.length === 0) {
+      showNotification('请先选择宠物', 'error');
+      return;
+    }
+    if (own) {
+      const result = accountManager.batchAddPetsToCurrentAccount(selectedBatchPets);
+      showNotification(`成功标记 ${result.added} 只宠物为已拥有`);
+    } else {
+      const result = accountManager.batchRemovePetsFromCurrentAccount(selectedBatchPets);
+      showNotification(`成功标记 ${result.removed} 只宠物为未拥有`);
+    }
+    setSelectedBatchPets([]);
+    refreshAccounts();
+  }, [selectedBatchPets, refreshAccounts, showNotification]);
+
+  // 批量操作栏拖拽逻辑
+  const handleBatchPanelMouseDown = useCallback((e: React.MouseEvent) => {
+    // 只有点击标题栏才能拖拽
+    if ((e.target as HTMLElement).closest('.batch-panel-header')) {
+      setIsDraggingBatchPanel(true);
+      batchPanelDragRef.current = {
+        startX: e.clientX,
+        startY: e.clientY,
+        initialX: batchPanelPos.x,
+        initialY: batchPanelPos.y,
+      };
+      e.preventDefault();
+    }
+  }, [batchPanelPos]);
+
+  const handleBatchPanelMouseMove = useCallback((e: MouseEvent) => {
+    if (!isDraggingBatchPanel || !batchPanelDragRef.current) return;
+    const dx = e.clientX - batchPanelDragRef.current.startX;
+    const dy = e.clientY - batchPanelDragRef.current.startY;
+    setBatchPanelPos({
+      x: Math.max(0, Math.min(window.innerWidth - 200, batchPanelDragRef.current.initialX + dx)),
+      y: Math.max(0, Math.min(window.innerHeight - 150, batchPanelDragRef.current.initialY + dy)),
+    });
+  }, [isDraggingBatchPanel]);
+
+  const handleBatchPanelMouseUp = useCallback(() => {
+    setIsDraggingBatchPanel(false);
+    batchPanelDragRef.current = null;
+  }, []);
+
+  // 监听拖拽事件
+  useEffect(() => {
+    if (isDraggingBatchPanel) {
+      window.addEventListener('mousemove', handleBatchPanelMouseMove);
+      window.addEventListener('mouseup', handleBatchPanelMouseUp);
+      return () => {
+        window.removeEventListener('mousemove', handleBatchPanelMouseMove);
+        window.removeEventListener('mouseup', handleBatchPanelMouseUp);
+      };
+    }
+  }, [isDraggingBatchPanel, handleBatchPanelMouseMove, handleBatchPanelMouseUp]);
+
+  // 导入宠物
+  const handleImportPets = useCallback(() => {
+    if (!importText.trim()) {
+      showNotification('请输入宠物列表', 'error');
+      return;
+    }
+    const { found, notFound } = accountManager.parsePetInput(importText);
+    if (found.length > 0) {
+      const result = accountManager.batchAddPetsToCurrentAccount(found);
+      showNotification(`成功导入 ${result.added} 只宠物，${notFound.length} 只未找到`);
+    } else {
+      showNotification('未找到匹配的宠物', 'error');
+    }
+    setImportText('');
+    setImportExportModal({ open: false, mode: 'import' });
+    refreshAccounts();
+  }, [importText, refreshAccounts, showNotification]);
+
+  // 获取导出文本
+  const getExportText = useCallback(() => {
+    const petIds = accountManager.getCurrentAccountPetIds();
+    if (exportFormat === 'id') {
+      return petIds.join(', ');
+    } else {
+      return petIds.map(id => getPetById(id)?.name || id).join(', ');
+    }
+  }, [exportFormat]);
+
+  // 复制到剪贴板
+  const copyToClipboard = useCallback(async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      showNotification('已复制到剪贴板');
+    } catch {
+      showNotification('复制失败', 'error');
+    }
+  }, [showNotification]);
+
+  // 获取宠物图片URL（网络优先，失败用本地，支持缓存）
   const getPetImageUrl = useCallback((pet: Pet): string => {
     const skinIndex = selectedSkins[pet.id];
     const imageId = pet.imageId || pet.id;
@@ -253,7 +559,35 @@ export default function RocoPetSimulator() {
     // 本地备用路径
     const localUrl = `/roco-icons/pets/${imageId}.png`;
 
-    // 返回网络URL，让img标签的onError处理失败情况
+    // 如果网络图片已经缓存成功过，直接返回网络URL（浏览器会从缓存读取）
+    // 如果网络图片未缓存过，仍然返回网络URL，让img标签尝试加载
+    return networkUrl;
+  }, [selectedSkins]);
+
+  // 获取宠物图片URL（带缓存优化版本）
+  // 如果网络图片之前加载成功过，直接返回网络URL；否则先尝试本地图片
+  const getPetImageUrlWithCache = useCallback((pet: Pet): string => {
+    const skinIndex = selectedSkins[pet.id];
+    const imageId = pet.imageId || pet.id;
+    const formattedId = String(imageId).padStart(3, '0');
+
+    // 构建网络URL
+    let networkUrl: string;
+    if (skinIndex && skinIndex > 0 && skinPets[pet.id]) {
+      networkUrl = `https://res.17roco.qq.com/res/combat/icons/1${formattedId}${skinIndex - 1}-.png`;
+    } else {
+      networkUrl = `https://res.17roco.qq.com/res/combat/icons/${formattedId}-.png`;
+    }
+
+    // 本地备用路径
+    const localUrl = `/roco-icons/pets/${imageId}.png`;
+
+    // 如果网络图片已经缓存成功过，直接返回网络URL（浏览器会从磁盘缓存读取）
+    if (isImageCached(networkUrl)) {
+      return networkUrl;
+    }
+
+    // 未缓存过，返回网络URL让浏览器尝试加载
     return networkUrl;
   }, [selectedSkins]);
 
@@ -530,8 +864,19 @@ export default function RocoPetSimulator() {
     const isLarge = context === 'banned' || context === 'lineup';
     const imgSize = isLarge ? 'w-14 h-14' : 'w-12 h-12';
     const isDraggable = context === 'list' || context === 'hidden';
+    // 账号管理相关状态
+    const isOwned = accountManager.hasPet(pet.id);
+    const isBatchSelected = selectedBatchPets.includes(pet.id);
+    const showBatchCheckbox = isBatchMode && (context === 'list' || context === 'hidden');
 
-    // 处理宠物图片加载失败
+    // 处理宠物图片加载成功 - 标记缓存
+    const handlePetImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+      const img = e.currentTarget;
+      // 标记这张图片已经成功加载过，下次刷新时可以直接从缓存读取
+      markImageAsCached(img.src);
+    };
+
+    // 处理宠物图片加载失败 - 切换到本地备用图片
     const handlePetImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
       const img = e.currentTarget;
       const localUrl = getLocalPetImageUrl(pet);
@@ -549,6 +894,24 @@ export default function RocoPetSimulator() {
       }
     };
 
+    // 处理批量选择复选框点击
+    const handleBatchCheckboxClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setSelectedBatchPets(prev => {
+        if (prev.includes(pet.id)) {
+          return prev.filter(id => id !== pet.id);
+        } else {
+          return [...prev, pet.id];
+        }
+      });
+    };
+
+    // 处理标记拥有状态点击
+    const handleOwnershipClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      togglePetOwnership(pet.id);
+    };
+
     return (
       <motion.div
         key={`${context}-${pet.id}`}
@@ -556,23 +919,42 @@ export default function RocoPetSimulator() {
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         whileHover={{ scale: 1.05 }}
-        draggable={isDraggable}
+        draggable={isDraggable && !isBatchMode}
         onDragStart={(e) => handleDragStart(e as unknown as React.DragEvent, pet.id)}
         onDragEnd={handleDragEnd}
         className={`relative flex flex-col items-center p-1 rounded-lg cursor-pointer transition-colors min-h-[80px] ${
           isDark ? 'hover:bg-gray-700/50' : 'hover:bg-gray-100/50'
-        } ${isDraggable ? 'cursor-move' : ''} ${dragState.draggedPetId === pet.id ? 'opacity-50' : ''}`}
+        } ${isDraggable && !isBatchMode ? 'cursor-move' : ''} ${dragState.draggedPetId === pet.id ? 'opacity-50' : ''} ${isOwned && !isBatchMode ? (isDark ? 'bg-green-900/20' : 'bg-green-50/50') : ''} ${isBatchSelected ? (isDark ? 'ring-2 ring-blue-500' : 'ring-2 ring-blue-400') : ''}`}
         onContextMenu={(e) => handleContextMenu(e, pet.id, context === 'banned' ? 'banned' : context === 'lineup' ? 'lineup' : 'list')}
       >
+        {/* 批量选择复选框 */}
+        {showBatchCheckbox && (
+          <div
+            className="absolute top-0 left-0 z-10 w-5 h-5 rounded-full border-2 flex items-center justify-center cursor-pointer"
+            style={{
+              backgroundColor: isBatchSelected ? '#3b82f6' : isDark ? '#374151' : '#ffffff',
+              borderColor: isBatchSelected ? '#3b82f6' : isDark ? '#6b7280' : '#d1d5db',
+            }}
+            onClick={handleBatchCheckboxClick}
+          >
+            {isBatchSelected && (
+              <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+          </div>
+        )}
         {/* 宠物图片 */}
         <div className="relative flex-shrink-0">
           <img
-            src={getPetImageUrl(pet)}
+            src={getPetImageUrlWithCache(pet)}
             alt={pet.name}
+            onLoad={handlePetImageLoad}
             onError={handlePetImageError}
             className={`${imgSize} rounded-lg object-cover border-2 ${
               context === 'banned' ? 'border-red-500' :
               context === 'lineup' ? getMagicColor(pet.magic).border :
+              isOwned ? 'border-green-400 dark:border-green-500' :
               'border-gray-300 dark:border-gray-600'
             }`}
           />
@@ -605,7 +987,7 @@ export default function RocoPetSimulator() {
                 setCurrentPetId(pet.id);
                 setModals(prev => ({ ...prev, skin: true }));
               }}
-              className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-orange-500 text-white text-[10px] flex items-center justify-center"
+              className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-orange-500 text-white text-[10px] flex items-center justify-center"
               title="切换外观"
             >
               🎨
@@ -618,7 +1000,7 @@ export default function RocoPetSimulator() {
         </span>
       </motion.div>
     );
-  }, [bannedPets, lineup, selectedTalents, showSkinButton, getPetImageUrl, getTalentImageUrl, getLocalPetImageUrl, getLocalTalentImageUrl, handleContextMenu, isDark, dragState.draggedPetId, handleDragStart, handleDragEnd, getMagicColor]);
+  }, [bannedPets, lineup, selectedTalents, showSkinButton, getPetImageUrl, getPetImageUrlWithCache, getTalentImageUrl, getLocalPetImageUrl, getLocalTalentImageUrl, handleContextMenu, isDark, dragState.draggedPetId, handleDragStart, handleDragEnd, getMagicColor, isBatchMode, selectedBatchPets, togglePetOwnership]);
 
   // 按魔力值分组的宠物
   const petsByMagic = useMemo(() => getPetsByMagic(), []);
@@ -641,11 +1023,17 @@ export default function RocoPetSimulator() {
                  pet.id.toString().includes(query);
         }
         return true;
+      }).filter(pet => {
+        // 只显示已有宠物筛选
+        if (showOnlyOwned) {
+          return accountManager.hasPet(pet.id);
+        }
+        return true;
       });
     });
 
     return filtered;
-  }, [petsByMagic, searchQuery, magicFilter]);
+  }, [petsByMagic, searchQuery, magicFilter, showOnlyOwned]);
 
   // 是否有搜索结果
   const hasSearchResults = useMemo(() => {
@@ -935,7 +1323,103 @@ export default function RocoPetSimulator() {
             {/* 标题、搜索框和魔力值筛选 */}
             <div className="flex flex-col gap-4 mb-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>宠物列表</h3>
+                {/* 账号切换器 */}
+                <div className="flex items-center gap-2">
+                  <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>宠物列表</h3>
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowAccountDropdown(prev => !prev)}
+                      className={`flex items-center gap-1 px-2 py-1 text-xs rounded-lg border transition-colors ${
+                        isDark
+                          ? 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
+                          : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      <span className="max-w-[80px] truncate">{currentAccount || '默认账号'}</span>
+                      <svg className={`w-3 h-3 transition-transform ${showAccountDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    {/* 账号下拉菜单 */}
+                    {showAccountDropdown && (
+                      <div className={`absolute top-full left-0 mt-1 z-20 rounded-lg shadow-lg py-1 min-w-[140px] ${
+                        isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
+                      }`}>
+                        {accounts.map(account => (
+                          <div key={account.name} className="flex items-center justify-between px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 whitespace-nowrap">
+                            <button
+                              onClick={() => handleSwitchAccount(account.name)}
+                              className={`text-left text-sm whitespace-nowrap ${
+                                account.name === currentAccount
+                                  ? 'text-green-500 font-medium'
+                                  : isDark ? 'text-gray-300' : 'text-gray-700'
+                              }`}
+                            >
+                              {account.name} ({account.petIds.length})
+                            </button>
+                            {accounts.length > 1 && (
+                              <button
+                                onClick={() => handleDeleteAccount(account.name)}
+                                className="ml-2 text-red-500 hover:text-red-600 text-xs flex-shrink-0"
+                                title="删除账号"
+                              >
+                                ×
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                        {/* 新建账号输入框 */}
+                        {showNewAccountInput ? (
+                          <div className="px-3 py-1.5 flex items-center gap-1">
+                            <input
+                              type="text"
+                              value={newAccountName}
+                              onChange={(e) => setNewAccountName(e.target.value)}
+                              placeholder="账号名称"
+                              className={`flex-1 px-2 py-1 text-xs rounded border ${
+                                isDark
+                                  ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-500'
+                                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
+                              }`}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleCreateAccount();
+                                if (e.key === 'Escape') {
+                                  setShowNewAccountInput(false);
+                                  setNewAccountName('');
+                                }
+                              }}
+                              autoFocus
+                            />
+                            <button
+                              onClick={handleCreateAccount}
+                              className="text-green-500 hover:text-green-600 text-xs"
+                              title="确认"
+                            >
+                              ✓
+                            </button>
+                            <button
+                              onClick={() => {
+                                setShowNewAccountInput(false);
+                                setNewAccountName('');
+                              }}
+                              className="text-red-500 hover:text-red-600 text-xs"
+                              title="取消"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setShowNewAccountInput(true)}
+                            className={`w-full text-left px-3 py-1.5 text-sm ${isDark ? 'text-blue-400 hover:bg-gray-700' : 'text-blue-500 hover:bg-gray-50'}`}
+                          >
+                            + 新建账号
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
                 <div className="relative">
                   <input
                     type="text"
@@ -971,23 +1455,67 @@ export default function RocoPetSimulator() {
                 </div>
               </div>
 
-              {/* 魔力值筛选按钮 */}
-              <div className="flex flex-wrap gap-2">
+              {/* 魔力值筛选按钮和账号管理操作 */}
+              <div className="flex flex-wrap items-center gap-2">
                 {MAGIC_FILTERS.map(filter => (
+                  <button
+                    key={filter.value}
+                    onClick={() => setMagicFilter(filter.value)}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${
+                      magicFilter === filter.value
+                        ? `${isDark ? filter.color.dark : filter.color.light} text-white shadow-md`
+                        : isDark
+                        ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    {filter.label}
+                  </button>
+                ))}
+                {/* 分隔线 */}
+                <div className={`w-px h-5 mx-1 ${isDark ? 'bg-gray-600' : 'bg-gray-300'}`} />
+                {/* 只显示已有开关 */}
                 <button
-                  key={filter.value}
-                  onClick={() => setMagicFilter(filter.value)}
+                  onClick={() => setShowOnlyOwned(prev => !prev)}
                   className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${
-                    magicFilter === filter.value
-                      ? `${isDark ? filter.color.dark : filter.color.light} text-white shadow-md`
+                    showOnlyOwned
+                      ? 'bg-green-500 text-white shadow-md'
+                      : isDark
+                      ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                  title={showOnlyOwned ? '显示全部宠物' : '只显示已拥有的宠物'}
+                >
+                  {showOnlyOwned ? '✓ 已有' : '已有'}
+                </button>
+                {/* 批量选择按钮 */}
+                <button
+                  onClick={() => {
+                    setIsBatchMode(prev => !prev);
+                    setSelectedBatchPets([]);
+                  }}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${
+                    isBatchMode
+                      ? 'bg-blue-500 text-white shadow-md'
                       : isDark
                       ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >
-                  {filter.label}
+                  {isBatchMode ? '✓ 批量' : '批量'}
                 </button>
-              ))}
+                {/* 导入/导出按钮 */}
+                <button
+                  onClick={() => setImportExportModal({ open: true, mode: 'import' })}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${
+                    isDark
+                      ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                  title="导入/导出宠物列表"
+                >
+                  导入/导出
+                </button>
               </div>
             </div>
 
@@ -1123,12 +1651,132 @@ export default function RocoPetSimulator() {
               </button>
             </>
           )}
+          {/* 标记拥有状态 */}
+          {(contextMenu.context === 'list' || contextMenu.context === 'hidden') && (
+            <>
+              <div className={`my-1 h-px ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`} />
+              {accountManager.hasPet(contextMenu.petId!) ? (
+                <button
+                  onClick={() => {
+                    accountManager.removePetFromCurrentAccount(contextMenu.petId!);
+                    refreshAccounts();
+                    showNotification('已标记为未拥有');
+                  }}
+                  className={`w-full px-4 py-2 text-left text-sm hover:bg-red-500/10 text-red-500`}
+                >
+                  标记为未拥有
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    accountManager.addPetToCurrentAccount(contextMenu.petId!);
+                    refreshAccounts();
+                    showNotification('已标记为已拥有');
+                  }}
+                  className={`w-full px-4 py-2 text-left text-sm hover:bg-green-500/10 text-green-500`}
+                >
+                  标记为已拥有
+                </button>
+              )}
+            </>
+          )}
         </div>
       )}
 
       {/* 点击其他地方隐藏右键菜单 */}
       {contextMenu.visible && (
         <div className="fixed inset-0 z-40" onClick={hideContextMenu} />
+      )}
+
+      {/* 批量操作栏 - 可拖拽，悬浮在页面上 */}
+      {isBatchMode && (
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.8, opacity: 0 }}
+          style={{
+            left: `${batchPanelPos.x}px`,
+            top: `${batchPanelPos.y}px`,
+          }}
+          onMouseDown={handleBatchPanelMouseDown}
+          className={`fixed z-[10003] px-3 py-2 rounded-xl shadow-2xl border max-w-[280px] cursor-default select-none ${
+            isDark
+              ? 'bg-gray-800/95 border-gray-700'
+              : 'bg-white/95 border-gray-200'
+          } backdrop-blur-sm ${isDraggingBatchPanel ? 'cursor-move' : ''}`}
+        >
+          {/* 拖拽标题栏 */}
+          <div className="batch-panel-header flex items-center justify-between mb-2 cursor-move">
+            <span className={`text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+              已选 <span className="text-blue-500 font-bold">{selectedBatchPets.length}</span>
+            </span>
+            <button
+              onClick={() => {
+                setIsBatchMode(false);
+                setSelectedBatchPets([]);
+              }}
+              className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${
+                isDark
+                  ? 'bg-gray-700 text-gray-400 hover:bg-gray-600'
+                  : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
+              }`}
+              title="退出批量模式"
+            >
+              ×
+            </button>
+          </div>
+
+          {/* 快捷操作 */}
+          <div className="flex items-center gap-1 mb-2">
+            <button
+              onClick={() => {
+                // 全选当前可见的所有宠物
+                const allVisiblePetIds: number[] = [];
+                Object.values(filteredPetsByMagic).forEach(list => {
+                  list.forEach(pet => {
+                    if (!allVisiblePetIds.includes(pet.id)) {
+                      allVisiblePetIds.push(pet.id);
+                    }
+                  });
+                });
+                setSelectedBatchPets(allVisiblePetIds);
+              }}
+              className={`flex-1 px-2 py-1 text-[10px] rounded transition-colors ${
+                isDark
+                  ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              全选
+            </button>
+            <button
+              onClick={() => setSelectedBatchPets([])}
+              className={`flex-1 px-2 py-1 text-[10px] rounded transition-colors ${
+                isDark
+                  ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              清空
+            </button>
+          </div>
+
+          {/* 主要操作按钮 */}
+          <div className="flex flex-col gap-1">
+            <button
+              onClick={() => batchToggleOwnership(true)}
+              className="w-full px-2 py-1.5 text-[11px] bg-green-500 hover:bg-green-600 text-white rounded transition-colors"
+            >
+              标记为已拥有
+            </button>
+            <button
+              onClick={() => batchToggleOwnership(false)}
+              className="w-full px-2 py-1.5 text-[11px] bg-red-500 hover:bg-red-600 text-white rounded transition-colors"
+            >
+              标记为未拥有
+            </button>
+          </div>
+        </motion.div>
       )}
 
       {/* 外观选择模态框 */}
@@ -1346,6 +1994,136 @@ export default function RocoPetSimulator() {
                 确认
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 导入/导出模态框 */}
+      {importExportModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setImportExportModal({ open: false, mode: 'import' })}>
+          <div className={`rounded-xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto ${isDark ? 'bg-gray-800' : 'bg-white'}`} onClick={e => e.stopPropagation()}>
+            {/* 模态框标题和模式切换 */}
+            <div className="flex items-center justify-between mb-4">
+              <h3 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                {importExportModal.mode === 'import' ? '导入宠物' : '导出宠物'}
+              </h3>
+              <div className="flex rounded-lg overflow-hidden border">
+                <button
+                  onClick={() => {
+                    setImportExportModal({ open: true, mode: 'import' });
+                    setImportText('');
+                  }}
+                  className={`px-3 py-1 text-xs transition-colors ${
+                    importExportModal.mode === 'import'
+                      ? 'bg-blue-500 text-white'
+                      : isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  导入
+                </button>
+                <button
+                  onClick={() => {
+                    setImportExportModal({ open: true, mode: 'export' });
+                    setExportFormat('id');
+                  }}
+                  className={`px-3 py-1 text-xs transition-colors ${
+                    importExportModal.mode === 'export'
+                      ? 'bg-blue-500 text-white'
+                      : isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  导出
+                </button>
+              </div>
+            </div>
+
+            {/* 导入模式内容 */}
+            {importExportModal.mode === 'import' && (
+              <div className="space-y-4">
+                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  输入宠物ID或名称，多个宠物用逗号、换行或空格分隔。系统会自动识别并匹配宠物。
+                </p>
+                <textarea
+                  value={importText}
+                  onChange={(e) => setImportText(e.target.value)}
+                  placeholder="例如：2585, 海芙约忒, 巴哈姆特&#10;或者每行一个宠物名称"
+                  className={`w-full h-48 p-3 rounded-lg border resize-none text-sm ${
+                    isDark
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-500'
+                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
+                  }`}
+                />
+                <div className="flex justify-end gap-2">
+                  <button
+                    onClick={() => setImportExportModal({ open: false, mode: 'import' })}
+                    className={`px-4 py-2 rounded-lg ${isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                  >
+                    取消
+                  </button>
+                  <button
+                    onClick={handleImportPets}
+                    className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg"
+                  >
+                    导入
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* 导出模式内容 */}
+            {importExportModal.mode === 'export' && (
+              <div className="space-y-4">
+                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  导出当前账号拥有的宠物列表。选择导出格式后，可以复制到剪贴板。
+                </p>
+                {/* 导出格式选择 */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setExportFormat('id')}
+                    className={`px-3 py-1.5 text-xs rounded-full transition-all ${
+                      exportFormat === 'id'
+                        ? 'bg-blue-500 text-white'
+                        : isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    ID格式
+                  </button>
+                  <button
+                    onClick={() => setExportFormat('name')}
+                    className={`px-3 py-1.5 text-xs rounded-full transition-all ${
+                      exportFormat === 'name'
+                        ? 'bg-blue-500 text-white'
+                        : isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    名称格式
+                  </button>
+                </div>
+                {/* 导出内容预览 */}
+                <div className={`p-3 rounded-lg border max-h-48 overflow-y-auto ${
+                  isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'
+                }`}>
+                  <pre className={`text-xs whitespace-pre-wrap break-all ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                    {getExportText() || '当前账号没有宠物'}
+                  </pre>
+                </div>
+                <div className="flex justify-end gap-2">
+                  <button
+                    onClick={() => setImportExportModal({ open: false, mode: 'import' })}
+                    className={`px-4 py-2 rounded-lg ${isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                  >
+                    关闭
+                  </button>
+                  <button
+                    onClick={() => copyToClipboard(getExportText())}
+                    disabled={!getExportText()}
+                    className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white rounded-lg transition-colors"
+                  >
+                    复制到剪贴板
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

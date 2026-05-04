@@ -56,7 +56,6 @@ export const pets: Pet[] = [
   { id: 3362, name: "塞勒姆", magic: 4 },
 
   // ==================== 3魔力宠物（中坚力量）====================
-  { id: 2030, name: "乾镜双凤", magic: 3 },
   { id: 2466, name: "小小飞儿", magic: 3 },
   { id: 2302, name: "龙之飞儿", magic: 3 },
   { id: 3095, name: "沌之飞儿", magic: 3 },
@@ -73,9 +72,10 @@ export const pets: Pet[] = [
   { id: 2689, name: "革凡普王", magic: 3 },
   { id: 2696, name: "汐纱水王", magic: 3 },
   { id: 2824, name: "光明孔雀女王", magic: 3 },
-  { id: 2862, name: "噬元械龙", magic: 3 },
   { id: 2889, name: "凌羽圣翼王", magic: 3 },
+  { id: 2030, name: "乾镜双凤", magic: 3 },
   { id: 2930, name: "雪莉再生机", magic: 3 },
+  { id: 2862, name: "噬元械龙", magic: 3 },
   { id: 2949, name: "煌明火王", magic: 3 },
   { id: 3018, name: "云举瑶鹿", magic: 3 },
   { id: 3039, name: "圣裁战龙王", magic: 3 },
@@ -104,6 +104,7 @@ export const pets: Pet[] = [
   { id: 2297, name: "普之舜舜", magic: 2 },
   { id: 2717, name: "禁之舜舜", magic: 2 },
   { id: 2344, name: "立春", magic: 2 },
+  { id: 2991, name: "桃夭", magic: 2 },
   { id: 2402, name: "豪炎战神", magic: 2 },
   { id: 3036, name: "吉禄豪炎", magic: 2 },
   { id: 2419, name: "蹦天御尊", magic: 2 },
@@ -120,7 +121,6 @@ export const pets: Pet[] = [
   { id: 2908, name: "史小韵", magic: 2 },
   { id: 2956, name: "西塔尔", magic: 2 },
   { id: 2980, name: "寂夜魔王", magic: 2 },
-  { id: 2991, name: "桃夭", magic: 2 },
   { id: 3031, name: "灵瑞朱雀", magic: 2 },
   { id: 3103, name: "战斗暴龙兽", magic: 2 },
   { id: 3116, name: "钢铁加鲁鲁兽", magic: 2 },
@@ -277,6 +277,7 @@ export const pets: Pet[] = [
   { id: 3351, name: "幻梦天使", magic: 1 },
   { id: 3366, name: "恶灵总长", magic: 1 },
   { id: 3368, name: "荷裳仙灵", magic: 1 },
+  { id: 3381, name: "皓月洛神", magic: 1 },
   { id: 3390, name: "冥光绮涟", magic: 1 },
 
   // ==================== 逃跑组宠物 ====================
@@ -543,8 +544,10 @@ export const skinPets: Record<number, string[]> = {
   3330: ["破东风孔明", "妙算·破东风孔明"],
   3333: ["枭姬", "学院新星·枭姬"],
   3355: ["瑟雷纳斯", "龙灵·瑟雷纳斯"],
+  3362: ["塞勒姆", "聆谣·塞勒姆"],
   3374: ["拂影游侠", "异彩·拂影游侠"],
   3380: ["泷景", "诗意·泷景"],
+  3381: ["皓月洛神", "异彩·皓月洛神"],
   3390: ["冥光绮涟", "汐誓·冥光绮涟"],
 };
 
@@ -1551,6 +1554,378 @@ export function getPetsByMagic(): Record<number, Pet[]> {
     acc[pet.magic].push(pet);
     return acc;
   }, {} as Record<number, Pet[]>);
+}
+
+// ==================== 账号宠物数据管理 ====================
+
+/**
+ * 账号宠物数据接口
+ * @property name - 账号名称
+ * @property petIds - 拥有的宠物ID列表
+ */
+export interface AccountPets {
+  name: string;
+  petIds: number[];
+}
+
+/**
+ * 设置 Cookie
+ * @param name - Cookie 名称
+ * @param value - Cookie 值
+ * @param days - 过期天数
+ */
+function setCookie(name: string, value: string, days: number = 365): void {
+  if (typeof document === 'undefined') return;
+  const expires = new Date();
+  expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+  document.cookie = `${name}=${encodeURIComponent(value)};expires=${expires.toUTCString()};path=/;SameSite=Lax`;
+}
+
+/**
+ * 获取 Cookie
+ * @param name - Cookie 名称
+ * @returns Cookie 值或 null
+ */
+function getCookie(name: string): string | null {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+  return match ? decodeURIComponent(match[2]) : null;
+}
+
+/**
+ * 删除 Cookie
+ * @param name - Cookie 名称
+ */
+function deleteCookie(name: string): void {
+  if (typeof document === 'undefined') return;
+  document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;SameSite=Lax`;
+}
+
+const ACCOUNT_STORAGE_KEY = 'roco-account-pets';
+const CURRENT_ACCOUNT_KEY = 'roco-current-account';
+
+/**
+ * 账号宠物数据管理类
+ * 支持多账号管理，使用 Cookie + localStorage 双重存储
+ */
+export class AccountManager {
+  private accounts: AccountPets[];
+  private currentAccount: string;
+
+  constructor() {
+    this.accounts = this.loadAccounts();
+    this.currentAccount = this.loadCurrentAccount();
+    // 如果没有账号，创建一个默认账号
+    if (this.accounts.length === 0) {
+      this.accounts.push({ name: '默认账号', petIds: [] });
+      this.currentAccount = '默认账号';
+      this.saveAccounts();
+    }
+  }
+
+  /**
+   * 重置为初始状态（只保留默认账号）
+   */
+  resetToDefault(): void {
+    this.accounts = [{ name: '默认账号', petIds: [] }];
+    this.currentAccount = '默认账号';
+    this.saveAccounts();
+    this.saveCurrentAccount();
+  }
+
+  /**
+   * 从存储加载账号数据
+   * 优先级：Cookie > localStorage
+   */
+  private loadAccounts(): AccountPets[] {
+    try {
+      // 优先从 Cookie 读取
+      const cookieData = getCookie(ACCOUNT_STORAGE_KEY);
+      if (cookieData) {
+        return JSON.parse(cookieData);
+      }
+      // 从 localStorage 读取
+      const localData = localStorage.getItem(ACCOUNT_STORAGE_KEY);
+      if (localData) {
+        return JSON.parse(localData);
+      }
+    } catch (error) {
+      console.error('加载账号数据失败:', error);
+    }
+    return [];
+  }
+
+  /**
+   * 保存账号数据到存储
+   * 同时写入 Cookie 和 localStorage
+   */
+  private saveAccounts(): void {
+    try {
+      const data = JSON.stringify(this.accounts);
+      // 写入 Cookie（GitHub Pages 兼容）
+      setCookie(ACCOUNT_STORAGE_KEY, data, 365);
+      // 备份到 localStorage
+      localStorage.setItem(ACCOUNT_STORAGE_KEY, data);
+    } catch (error) {
+      console.error('保存账号数据失败:', error);
+    }
+  }
+
+  /**
+   * 加载当前选中的账号
+   */
+  private loadCurrentAccount(): string {
+    try {
+      const cookieCurrent = getCookie(CURRENT_ACCOUNT_KEY);
+      if (cookieCurrent) return cookieCurrent;
+      const localCurrent = localStorage.getItem(CURRENT_ACCOUNT_KEY);
+      if (localCurrent) return localCurrent;
+    } catch (error) {
+      console.error('加载当前账号失败:', error);
+    }
+    return this.accounts[0]?.name || '默认账号';
+  }
+
+  /**
+   * 保存当前选中的账号
+   */
+  private saveCurrentAccount(): void {
+    try {
+      setCookie(CURRENT_ACCOUNT_KEY, this.currentAccount, 365);
+      localStorage.setItem(CURRENT_ACCOUNT_KEY, this.currentAccount);
+    } catch (error) {
+      console.error('保存当前账号失败:', error);
+    }
+  }
+
+  /**
+   * 获取所有账号
+   */
+  getAccounts(): AccountPets[] {
+    return [...this.accounts];
+  }
+
+  /**
+   * 获取当前账号名称
+   */
+  getCurrentAccount(): string {
+    return this.currentAccount;
+  }
+
+  /**
+   * 获取当前账号拥有的宠物ID列表
+   */
+  getCurrentAccountPetIds(): number[] {
+    const account = this.accounts.find(a => a.name === this.currentAccount);
+    return account ? [...account.petIds] : [];
+  }
+
+  /**
+   * 切换当前账号
+   */
+  switchAccount(accountName: string): boolean {
+    const account = this.accounts.find(a => a.name === accountName);
+    if (account) {
+      this.currentAccount = accountName;
+      this.saveCurrentAccount();
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * 创建新账号
+   */
+  createAccount(name: string): boolean {
+    if (this.accounts.some(a => a.name === name)) {
+      return false; // 账号已存在
+    }
+    this.accounts.push({ name, petIds: [] });
+    this.currentAccount = name;
+    this.saveAccounts();
+    this.saveCurrentAccount();
+    return true;
+  }
+
+  /**
+   * 删除账号
+   */
+  deleteAccount(name: string): boolean {
+    if (this.accounts.length <= 1) {
+      return false; // 至少保留一个账号
+    }
+    this.accounts = this.accounts.filter(a => a.name !== name);
+    if (this.currentAccount === name) {
+      this.currentAccount = this.accounts[0].name;
+      this.saveCurrentAccount();
+    }
+    this.saveAccounts();
+    return true;
+  }
+
+  /**
+   * 添加宠物到当前账号
+   */
+  addPetToCurrentAccount(petId: number): boolean {
+    const account = this.accounts.find(a => a.name === this.currentAccount);
+    if (account && !account.petIds.includes(petId)) {
+      account.petIds.push(petId);
+      this.saveAccounts();
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * 从当前账号移除宠物
+   */
+  removePetFromCurrentAccount(petId: number): boolean {
+    const account = this.accounts.find(a => a.name === this.currentAccount);
+    if (account) {
+      const index = account.petIds.indexOf(petId);
+      if (index > -1) {
+        account.petIds.splice(index, 1);
+        this.saveAccounts();
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * 批量添加宠物到当前账号
+   */
+  batchAddPetsToCurrentAccount(petIds: number[]): { added: number; failed: number } {
+    const account = this.accounts.find(a => a.name === this.currentAccount);
+    if (!account) return { added: 0, failed: petIds.length };
+
+    let added = 0;
+    let failed = 0;
+
+    petIds.forEach(petId => {
+      if (!account.petIds.includes(petId)) {
+        account.petIds.push(petId);
+        added++;
+      } else {
+        failed++;
+      }
+    });
+
+    if (added > 0) {
+      this.saveAccounts();
+    }
+    return { added, failed };
+  }
+
+  /**
+   * 批量移除宠物从当前账号
+   */
+  batchRemovePetsFromCurrentAccount(petIds: number[]): { removed: number; failed: number } {
+    const account = this.accounts.find(a => a.name === this.currentAccount);
+    if (!account) return { removed: 0, failed: petIds.length };
+
+    let removed = 0;
+    let failed = 0;
+
+    petIds.forEach(petId => {
+      const index = account.petIds.indexOf(petId);
+      if (index > -1) {
+        account.petIds.splice(index, 1);
+        removed++;
+      } else {
+        failed++;
+      }
+    });
+
+    if (removed > 0) {
+      this.saveAccounts();
+    }
+    return { removed, failed };
+  }
+
+  /**
+   * 检查当前账号是否拥有某只宠物
+   */
+  hasPet(petId: number): boolean {
+    const account = this.accounts.find(a => a.name === this.currentAccount);
+    return account ? account.petIds.includes(petId) : false;
+  }
+
+  /**
+   * 解析宠物输入文本
+   * 支持宠物ID和名称混合输入，逗号、换行、空格分隔
+   */
+  parsePetInput(input: string): { found: number[]; notFound: string[] } {
+    const parts = input.split(/[,，\s\n]+/).map(s => s.trim()).filter(Boolean);
+    const found: number[] = [];
+    const notFound: string[] = [];
+
+    parts.forEach(part => {
+      const petId = parseInt(part);
+      if (!isNaN(petId)) {
+        // 按ID查找
+        const pet = getPetById(petId);
+        if (pet) {
+          found.push(petId);
+        } else {
+          notFound.push(part);
+        }
+      } else {
+        // 按名称查找
+        const pet = pets.find(p => p.name === part || p.name.includes(part));
+        if (pet) {
+          found.push(pet.id);
+        } else {
+          notFound.push(part);
+        }
+      }
+    });
+
+    return { found, notFound };
+  }
+}
+
+/**
+ * 账号管理器单例实例
+ */
+export const accountManager = new AccountManager();
+
+/**
+ * 初始化预设账号数据
+ * 用于部署时预置账号信息
+ */
+export function initializePresetAccounts(): void {
+  const presetAccounts: AccountPets[] = [
+    {
+      name: '心想事成awa',
+      petIds: [
+        2005, 2108, 2205, 2235, 2236, 2269, 2277, 2278, 2901, 2328, 2296, 2320, 2470, 2578,
+        2335, 2348, 2349, 2792, 2392, 2394, 3313, 2414, 2431, 2445, 2483, 2488, 2508, 2526,
+        2527, 2552, 2554, 2560, 2617, 2631, 2635, 2657, 2665, 2817, 2831, 2835, 2859, 2881,
+        2887, 2896, 2925, 2933, 2982, 3004, 3008, 3052, 3109, 3167, 3169, 3171, 3204, 3238,
+        3307, 3317, 3339, 3349, 3351, 3368, 3381, 3029, 2297, 2717, 2402, 2449, 2528, 2549,
+        2559, 2661, 2768, 2806, 2908, 2980, 2991, 3103, 3144, 3260, 3277, 3297, 3298, 3330,
+        3332, 3355, 3374, 2030, 2466, 2302, 2315, 2368, 2371, 2379, 2606, 2396, 2456, 2689,
+        2696, 2824, 2862, 2889, 2949, 3018, 3039, 3081, 3117, 3124, 3138, 3159, 3201, 3219,
+        3226, 3244, 3266, 3285, 3308, 3309, 3316, 3338, 3361, 3380, 2585, 2810, 2920, 2928,
+        3019, 3152, 3262, 3362, 3092,
+      ],
+    },
+  ];
+
+  // 检查是否已存在预设账号，如果不存在则添加
+  const existingAccounts = accountManager.getAccounts();
+  presetAccounts.forEach(preset => {
+    const exists = existingAccounts.some(a => a.name === preset.name);
+    if (!exists) {
+      // 使用私有方法直接添加账号数据
+      const accounts = (accountManager as unknown as { accounts: AccountPets[] }).accounts;
+      accounts.push(preset);
+    }
+  });
+
+  // 保存到存储
+  (accountManager as unknown as { saveAccounts: () => void }).saveAccounts();
 }
 
 // ==================== 默认导出 ====================
