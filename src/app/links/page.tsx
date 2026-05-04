@@ -53,7 +53,6 @@ export default function LinksPage() {
           size="lg"
           className="mb-8"
           gradientStyle="primary"
-          icon={<Link2 className="w-full h-full" />}
         />
 
         {/* 主内容区 - 相关链接展示 */}

@@ -217,7 +217,6 @@ export default function FriendsPage() {
           size="lg"
           className="mb-12"
           gradientStyle="primary"
-          icon={<Globe className="w-full h-full" />}
           showDivider
         />
 

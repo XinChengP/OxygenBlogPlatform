@@ -596,7 +596,6 @@ export default function NotFound() {
                   }}
                 />
                 <span className="relative z-10 flex items-center justify-center gap-2 text-white">
-                  <span className="text-lg">🏠</span>
                   <span>返回首页</span>
                 </span>
               </Link>
@@ -618,7 +617,6 @@ export default function NotFound() {
                   }}
                 />
                 <span className="relative z-10 flex items-center justify-center gap-2 text-white">
-                  <span className="text-lg">📚</span>
                   <span>浏览博客</span>
                 </span>
               </Link>

@@ -86,7 +86,6 @@ export default function Guestbook() {
           size="lg"
           className="mb-12"
           gradientStyle="primary"
-          icon={<MessageSquare className="w-full h-full" />}
           showDivider
         />
 
