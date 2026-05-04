@@ -8,6 +8,11 @@ module.exports = {
   darkMode: "class",
   theme: {
     extend: {
+      gridTemplateColumns: {
+        '14': 'repeat(14, minmax(0, 1fr))',
+        '16': 'repeat(16, minmax(0, 1fr))',
+        '18': 'repeat(18, minmax(0, 1fr))',
+      },
       colors: {
         background: "var(--color-background)",
         foreground: "var(--color-foreground)",

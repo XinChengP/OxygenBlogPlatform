@@ -24,6 +24,7 @@ import {
   GalleryMessages,
   MomentsMessages,
   ChangelogsMessages,
+  RocoSimulatorMessages,
   getTimeGreetingConfig,
   getPageMessageConfig,
   getHolidayMessageConfig,
@@ -856,6 +857,23 @@ export class Live2DMessageHelper {
    */
   static showChangelogsMessage(type: 'PAGE_VISIT'): void {
     const config = ChangelogsMessages[type];
+    if (!config) return;
+
+    live2dMessageManager.showMessage(
+      getRandomMessage(config),
+      config.duration,
+      config.priority
+    );
+  }
+
+  /**
+   * 显示洛克王国宠物模拟器消息
+   * @param type 消息类型（PAGE_VISIT, ADD_TO_LINEUP, REMOVE_FROM_LINEUP, SWITCH_SKIN, SELECT_TALENT, CLEAR_LINEUP, BAN_PET, UNBAN_PET, LINEUP_FULL, EXCLUSIVE_CONFLICT, MAGIC_OVER_LIMIT）
+   */
+  static showRocoSimulatorMessage(
+    type: 'PAGE_VISIT' | 'ADD_TO_LINEUP' | 'REMOVE_FROM_LINEUP' | 'SWITCH_SKIN' | 'SELECT_TALENT' | 'CLEAR_LINEUP' | 'BAN_PET' | 'UNBAN_PET' | 'LINEUP_FULL' | 'EXCLUSIVE_CONFLICT' | 'MAGIC_OVER_LIMIT'
+  ): void {
+    const config = RocoSimulatorMessages[type];
     if (!config) return;
 
     live2dMessageManager.showMessage(

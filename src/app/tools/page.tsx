@@ -236,19 +236,32 @@ export default function ToolsPage() {
 
             {/* 工具展示区域 */}
             <div className="space-y-6">
-              {getToolsByCategory(selectedCategory).length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {getToolsByCategory(selectedCategory).map((tool, index) => (
-                    <ToolCard key={tool.id} tool={tool} index={index} isDark={isDark} />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <p className="text-muted-foreground text-lg">
-                    该分类下暂无可用工具...
-                  </p>
-                </div>
-              )}
+              {/* 
+               * 获取需要展示的工具列表
+               * 当选择"全部"分类时，需要排除已经在特色区域展示过的工具，避免重复显示
+               * 其他分类直接显示该分类下的所有工具
+               */}
+              {(() => {
+                const toolsToShow = getToolsByCategory(selectedCategory);
+                // 只有在"全部"分类下，才需要过滤掉特色工具
+                const filteredTools = selectedCategory === 'all' 
+                  ? toolsToShow.filter(tool => !tool.featured)
+                  : toolsToShow;
+                
+                return filteredTools.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredTools.map((tool, index) => (
+                      <ToolCard key={tool.id} tool={tool} index={index} isDark={isDark} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <p className="text-muted-foreground text-lg">
+                      该分类下暂无可用工具...
+                    </p>
+                  </div>
+                );
+              })()}
             </div>
           </motion.main>
         </div>

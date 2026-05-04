@@ -809,3 +809,131 @@ export const HiddenTagEasterEggMessages = {
     priority: 10 // 彩蛋消息优先级
   }
 } as const;
+
+/**
+ * 洛克王国宠物模拟器消息配置
+ * 用于洛克王国宠物模拟器页面中 Live2D 看板娘的消息提示
+ */
+export const RocoSimulatorMessages = {
+  // 页面访问消息
+  PAGE_VISIT: {
+    messages: [
+      '欢迎来到洛克王国宠物模拟器！天依陪你一起探索魔法世界～',
+      '宠物模拟器启动啦！准备好组建你的梦幻阵容了吗？',
+      '哇！是洛克王国呢～天依也想拥有一只可爱的宠物！',
+      '魔法世界的大门已开启，快来挑选你喜欢的宠物吧～'
+    ],
+    duration: MessageDuration.NORMAL,
+    priority: MessagePriority.MEDIUM
+  },
+  // 添加宠物到阵容消息
+  ADD_TO_LINEUP: {
+    messages: [
+      '成功添加宠物！阵容越来越强大了呢～',
+      '新伙伴加入！这只宠物看起来很厉害的样子～',
+      '又添一员大将！你的阵容正在成型哦～',
+      '好选择！这只宠物会和天依一样可爱吗？'
+    ],
+    duration: MessageDuration.SHORT,
+    priority: MessagePriority.MEDIUM
+  },
+  // 移除宠物消息
+  REMOVE_FROM_LINEUP: {
+    messages: [
+      '宠物已移除～有时候需要做出一些艰难的选择呢',
+      '再见了小伙伴～下次再一起战斗吧～',
+      '阵容调整中...天依相信你的判断！',
+      '移除了呢～是为了给更棒的宠物腾位置吗？'
+    ],
+    duration: MessageDuration.SHORT,
+    priority: MessagePriority.LOW
+  },
+  // 切换外观消息
+  SWITCH_SKIN: {
+    messages: [
+      '换新衣服啦！这只宠物变得更帅气了呢～',
+      '外观切换成功！不同的风格有不同的魅力哦～',
+      '哇～这个造型天依也很喜欢呢！',
+      '换装完成！宠物们也要美美哒～'
+    ],
+    duration: MessageDuration.SHORT,
+    priority: MessagePriority.LOW
+  },
+  // 选择血脉消息
+  SELECT_TALENT: {
+    messages: [
+      '血脉觉醒！这只宠物获得了新的力量～',
+      '选择了血脉呢～这可是影响战斗的重要决定！',
+      '血脉之力涌动中...感觉变得更强了！',
+      '天依觉得这是个很棒的选择哦～'
+    ],
+    duration: MessageDuration.SHORT,
+    priority: MessagePriority.LOW
+  },
+  // 清空阵容消息
+  CLEAR_LINEUP: {
+    messages: [
+      '阵容已清空～让我们重新开始组建队伍吧！',
+      '一切归零，新的起点！这次要组建什么样的阵容呢？',
+      '清空完成！就像一张白纸，等待你挥洒创意～',
+      '重新开始啦！天依期待看到你的新阵容哦～'
+    ],
+    duration: MessageDuration.NORMAL,
+    priority: MessagePriority.MEDIUM
+  },
+  // 禁赛宠物消息
+  BAN_PET: {
+    messages: [
+      '这只宠物被禁赛了～看来太强了需要休息一下呢',
+      '禁赛成功！为了公平竞技，这是必要的措施哦～',
+      '暂时不能上场了呢～不过其他宠物也有机会表现啦～',
+      '被禁赛了...天依会为它加油的！'
+    ],
+    duration: MessageDuration.SHORT,
+    priority: MessagePriority.LOW
+  },
+  // 解除禁赛消息
+  UNBAN_PET: {
+    messages: [
+      '解除禁赛！欢迎回来，又可以一起战斗啦～',
+      '解禁成功！这只宠物等不及要上场了呢～',
+      '重获自由！让它大展身手吧～',
+      '回来啦～天依就知道你会想念它的！'
+    ],
+    duration: MessageDuration.SHORT,
+    priority: MessagePriority.LOW
+  },
+  // 阵容已满消息
+  LINEUP_FULL: {
+    messages: [
+      '阵容已满啦！需要先移除一只宠物才能添加新的哦～',
+      '位置不够了呢～要做出选择，舍弃哪一只呢？',
+      '已经塞不下更多宠物啦～阵容很豪华呢！',
+      '满了满了～天依觉得现在的阵容已经很强了！'
+    ],
+    duration: MessageDuration.SHORT,
+    priority: MessagePriority.LOW
+  },
+  // 互斥冲突消息
+  EXCLUSIVE_CONFLICT: {
+    messages: [
+      '这两只宠物不能同时上场呢～它们好像不太合得来...',
+      '检测到互斥关系！需要选择其中一只留下哦～',
+      '冲突警告！这两只宠物在一起会打架的～',
+      '不能同时选择呢～天依建议你好好考虑一下搭配！'
+    ],
+    duration: MessageDuration.NORMAL,
+    priority: MessagePriority.MEDIUM
+  },
+  // 魔力值超限消息
+  MAGIC_OVER_LIMIT: {
+    messages: [
+      '魔力值超限啦！阵容太强了需要调整一下～',
+      '魔力值不够了呢～要平衡一下阵容的实力哦～',
+      '超出限制啦！试试换一些魔力值低的宠物吧～',
+      '魔力值爆表！天依觉得你需要重新规划一下阵容～'
+    ],
+    duration: MessageDuration.NORMAL,
+    priority: MessagePriority.MEDIUM
+  }
+} as const;
