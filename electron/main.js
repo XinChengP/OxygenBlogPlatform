@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, ipcMain, dialog, shell, clipboard, Tray, globalShortcut } = require('electron')
+const { app, BrowserWindow, Menu, ipcMain, dialog, shell, clipboard, Tray } = require('electron')
 const path = require('path')
 const fs = require('fs')
 const http = require('http')
@@ -1200,21 +1200,6 @@ function openFolder(folderPath) {
 // 应用准备就绪
 app.whenReady().then(() => {
   createWindow()
-
-  // 注册全局快捷键 F11 用于全屏切换
-  globalShortcut.register('F11', () => {
-    if (mainWindow) {
-      const isFullScreen = mainWindow.isFullScreen()
-      mainWindow.setFullScreen(!isFullScreen)
-    }
-  })
-
-  // 注册全局快捷键 Esc 用于退出全屏
-  globalShortcut.register('Esc', () => {
-    if (mainWindow && mainWindow.isFullScreen()) {
-      mainWindow.setFullScreen(false)
-    }
-  })
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
