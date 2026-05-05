@@ -5,12 +5,13 @@
  * 1. 在构建时从网易云 API 获取歌单数据
  * 2. 将数据保存为静态 JSON 文件
  * 3. 生产环境直接读取静态文件，避免跨域问题
+ * 4. 支持重试机制和降级处理
  * 
  * 使用方式：
  * node scripts/fetch-netease-playlist.js
  * 
  * @author 歆橙
- * @version 1.0
+ * @version 2.0
  * @date 2026-05-05
  */
 
@@ -24,60 +25,86 @@ const API_BASE_URL = 'api.toolkal.com';
 // 请求超时时间（毫秒）
 const TIMEOUT = 30000;
 
+// 重试次数
+const MAX_RETRIES = 3;
+
+// 重试延迟（毫秒）
+const RETRY_DELAY = 2000;
+
 /**
- * 发送 HTTPS 请求
+ * 延迟函数
+ * @param {number} ms 毫秒
+ * @returns {Promise<void>}
+ */
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * 发送 HTTPS 请求（带重试）
  * @param {string} endpoint API 端点
  * @param {Record<string, string | number>} params 查询参数
+ * @param {number} retryCount 当前重试次数
  * @returns {Promise<unknown>} 响应数据
  */
-function fetchFromNeteaseApi(endpoint, params = {}) {
-  return new Promise((resolve, reject) => {
-    // 构建查询字符串
-    const queryParams = new URLSearchParams();
-    Object.entries(params).forEach(([key, value]) => {
-      queryParams.append(key, String(value));
-    });
-    queryParams.append('timestamp', Date.now().toString());
+async function fetchFromNeteaseApi(endpoint, params = {}, retryCount = 0) {
+  try {
+    return await new Promise((resolve, reject) => {
+      // 构建查询字符串
+      const queryParams = new URLSearchParams();
+      Object.entries(params).forEach(([key, value]) => {
+        queryParams.append(key, String(value));
+      });
+      queryParams.append('timestamp', Date.now().toString());
 
-    const options = {
-      hostname: API_BASE_URL,
-      path: `${endpoint}?${queryParams.toString()}`,
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      },
-      timeout: TIMEOUT,
-    };
+      const options = {
+        hostname: API_BASE_URL,
+        path: `${endpoint}?${queryParams.toString()}`,
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        },
+        timeout: TIMEOUT,
+      };
 
-    const req = https.request(options, (res) => {
-      let data = '';
+      const req = https.request(options, (res) => {
+        let data = '';
 
-      res.on('data', (chunk) => {
-        data += chunk;
+        res.on('data', (chunk) => {
+          data += chunk;
+        });
+
+        res.on('end', () => {
+          try {
+            const jsonData = JSON.parse(data);
+            resolve(jsonData);
+          } catch (error) {
+            reject(new Error(`解析 JSON 失败: ${error.message}`));
+          }
+        });
       });
 
-      res.on('end', () => {
-        try {
-          const jsonData = JSON.parse(data);
-          resolve(jsonData);
-        } catch (error) {
-          reject(new Error(`解析 JSON 失败: ${error.message}`));
-        }
+      req.on('error', (error) => {
+        reject(new Error(`请求失败: ${error.message}`));
       });
-    });
 
-    req.on('error', (error) => {
-      reject(new Error(`请求失败: ${error.message}`));
-    });
+      req.on('timeout', () => {
+        req.destroy();
+        reject(new Error('请求超时'));
+      });
 
-    req.on('timeout', () => {
-      req.destroy();
-      reject(new Error('请求超时'));
+      req.end();
     });
-
-    req.end();
-  });
+  } catch (error) {
+    // 如果还有重试次数，延迟后重试
+    if (retryCount < MAX_RETRIES) {
+      console.log(`  请求失败，${RETRY_DELAY / 1000}秒后重试 (${retryCount + 1}/${MAX_RETRIES})...`);
+      await delay(RETRY_DELAY);
+      return fetchFromNeteaseApi(endpoint, params, retryCount + 1);
+    }
+    throw error;
+  }
 }
 
 /**
@@ -154,6 +181,15 @@ async function getLyric(songId) {
 }
 
 /**
+ * 检查是否已有缓存的静态文件
+ * @returns {boolean} 是否存在缓存文件
+ */
+function hasCachedPlaylist() {
+  const outputPath = path.join(process.cwd(), 'public', 'content', 'netease-playlist.json');
+  return fs.existsSync(outputPath);
+}
+
+/**
  * 主函数
  */
 async function main() {
@@ -187,13 +223,36 @@ async function main() {
     console.log(`📋 歌单 ID: ${playlistId}`);
     console.log(`🔢 限制数量: ${limit}`);
 
+    // 检查是否已有缓存文件
+    const hasCache = hasCachedPlaylist();
+    if (hasCache) {
+      console.log('💾 发现已缓存的歌单数据');
+    }
+
     // 获取歌单歌曲列表
     console.log('🎶 正在获取歌曲列表...');
-    const tracks = await getPlaylistTracks(playlistId, limit);
-    console.log(`✅ 获取到 ${tracks.length} 首歌曲`);
+    let tracks;
+    try {
+      tracks = await getPlaylistTracks(playlistId, limit);
+      console.log(`✅ 获取到 ${tracks.length} 首歌曲`);
+    } catch (error) {
+      console.error(`❌ 获取歌曲列表失败: ${error.message}`);
+      
+      // 如果有缓存，使用缓存数据
+      if (hasCache) {
+        console.log('⚠️ 使用已缓存的歌单数据继续构建');
+        process.exit(0);
+      }
+      
+      // 没有缓存，创建一个空的歌单文件
+      console.log('⚠️ 创建空歌单文件，构建将继续');
+      createEmptyPlaylist(playlistId);
+      process.exit(0);
+    }
 
     if (tracks.length === 0) {
       console.log('⚠️ 歌单为空');
+      createEmptyPlaylist(playlistId);
       process.exit(0);
     }
 
@@ -202,8 +261,24 @@ async function main() {
 
     // 获取歌曲播放链接
     console.log('🔗 正在获取播放链接...');
-    const urlMap = await getSongUrls(songIds);
-    console.log(`✅ 获取到 ${urlMap.size} 个播放链接`);
+    let urlMap;
+    try {
+      urlMap = await getSongUrls(songIds);
+      console.log(`✅ 获取到 ${urlMap.size} 个播放链接`);
+    } catch (error) {
+      console.error(`❌ 获取播放链接失败: ${error.message}`);
+      
+      // 如果有缓存，使用缓存数据
+      if (hasCache) {
+        console.log('⚠️ 使用已缓存的歌单数据继续构建');
+        process.exit(0);
+      }
+      
+      // 没有缓存，创建一个空的歌单文件
+      console.log('⚠️ 创建空歌单文件，构建将继续');
+      createEmptyPlaylist(playlistId);
+      process.exit(0);
+    }
 
     // 获取歌词（并行请求，限制并发数）
     console.log('📝 正在获取歌词...');
@@ -254,27 +329,68 @@ async function main() {
     console.log(`✅ 成功处理 ${songs.length}/${tracks.length} 首歌曲`);
 
     // 保存到静态文件
-    const outputDir = path.join(process.cwd(), 'public', 'content');
-    if (!fs.existsSync(outputDir)) {
-      fs.mkdirSync(outputDir, { recursive: true });
-    }
-
-    const outputPath = path.join(outputDir, 'netease-playlist.json');
-    fs.writeFileSync(outputPath, JSON.stringify({
-      version: '1.0',
-      lastUpdated: new Date().toISOString(),
-      playlistId,
-      total: songs.length,
-      songs,
-    }, null, 2));
-
-    console.log(`💾 数据已保存到: ${outputPath}`);
+    savePlaylist(playlistId, songs);
     console.log('🎉 网易云歌单数据获取完成！');
 
   } catch (error) {
     console.error('❌ 获取失败:', error.message);
-    process.exit(1);
+    
+    // 如果有缓存，使用缓存数据
+    if (hasCachedPlaylist()) {
+      console.log('⚠️ 使用已缓存的歌单数据继续构建');
+      process.exit(0);
+    }
+    
+    // 没有缓存，创建一个空的歌单文件
+    console.log('⚠️ 创建空歌单文件，构建将继续');
+    createEmptyPlaylist('unknown');
+    process.exit(0);
   }
+}
+
+/**
+ * 保存歌单数据到文件
+ * @param {string} playlistId 歌单 ID
+ * @param {Array} songs 歌曲列表
+ */
+function savePlaylist(playlistId, songs) {
+  const outputDir = path.join(process.cwd(), 'public', 'content');
+  if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true });
+  }
+
+  const outputPath = path.join(outputDir, 'netease-playlist.json');
+  fs.writeFileSync(outputPath, JSON.stringify({
+    version: '1.0',
+    lastUpdated: new Date().toISOString(),
+    playlistId,
+    total: songs.length,
+    songs,
+  }, null, 2));
+
+  console.log(`💾 数据已保存到: ${outputPath}`);
+}
+
+/**
+ * 创建空歌单文件（降级方案）
+ * @param {string} playlistId 歌单 ID
+ */
+function createEmptyPlaylist(playlistId) {
+  const outputDir = path.join(process.cwd(), 'public', 'content');
+  if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true });
+  }
+
+  const outputPath = path.join(outputDir, 'netease-playlist.json');
+  fs.writeFileSync(outputPath, JSON.stringify({
+    version: '1.0',
+    lastUpdated: new Date().toISOString(),
+    playlistId,
+    total: 0,
+    songs: [],
+  }, null, 2));
+
+  console.log(`💾 空歌单文件已创建: ${outputPath}`);
 }
 
 // 执行主函数
