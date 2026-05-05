@@ -312,12 +312,16 @@ async function main() {
 
         const artistNames = track.ar.map((artist) => artist.name).join('、');
 
+        // 将 HTTP URL 转换为 HTTPS，避免混合内容问题
+        const httpsUrl = songUrl.replace(/^http:/, 'https:');
+        const httpsCover = track.al.picUrl.replace(/^http:/, 'https:');
+
         return {
           id: `netease-${track.id}`,
           name: track.name,
           artist: artistNames,
-          url: songUrl,
-          cover: track.al.picUrl,
+          url: httpsUrl,
+          cover: httpsCover,
           lrc: lyricMap.get(track.id),
           source: 'netease',
           neteaseId: track.id,
