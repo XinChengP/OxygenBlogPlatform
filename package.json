@@ -11,7 +11,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "npm run sync-theme && next build",
-    "build:pages": "node scripts/prepare-static-export.js prepare && npm run sync-theme && next build && node scripts/prepare-static-export.js restore",
+    "build:pages": "node scripts/prepare-static-export.js prepare && npm run sync-theme && node scripts/fetch-netease-playlist.js && next build && node scripts/prepare-static-export.js restore",
     "build:static": "node scripts/prepare-static-export.js prepare && npm run sync-theme && next build && node scripts/prepare-static-export.js restore",
     "start": "next start",
     "serve": "node scripts/serve-static.js",

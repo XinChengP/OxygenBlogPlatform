@@ -536,31 +536,43 @@ class MusicConfigManager {
           try {
             console.log('[MusicConfigManager] 正在加载网易云歌单...');
             
-            // 设置 API 基础 URL
-            neteaseMusicApi.setConfig({ baseUrl: neteaseConfig.apiBaseUrl });
-            
-            // 先测试 API 连接
-            const isConnected = await neteaseMusicApi.testConnection();
-            if (!isConnected) {
-              console.warn('[MusicConfigManager] 无法连接到网易云 API 服务');
+            // 首先尝试从预获取的静态文件加载（生产环境）
+            const staticNeteaseSongs = await this.loadStaticNeteasePlaylist();
+            if (staticNeteaseSongs && staticNeteaseSongs.length > 0) {
+              this.neteaseSongsCache = staticNeteaseSongs;
+              config.songs = [...this.neteaseSongsCache];
+              neteaseLoaded = true;
+              console.log(`[MusicConfigManager] 从静态文件加载了 ${staticNeteaseSongs.length} 首网易云歌曲`);
             } else {
-              // 获取网易云歌曲
-              const neteaseSongs = await neteaseMusicApi.getFullPlaylistSongs(
-                neteaseConfig.playlistId,
-                neteaseConfig.limit
-              );
-
-              if (neteaseSongs.length > 0) {
-                // 转换为标准格式并缓存
-                this.neteaseSongsCache = neteaseSongs.map(convertNeteaseSongToConfig);
-                
-                // 只使用网易云歌曲（本地音乐默认隐藏）
-                config.songs = [...this.neteaseSongsCache];
-                neteaseLoaded = true;
-
-                console.log(`[MusicConfigManager] 成功加载 ${this.neteaseSongsCache.length} 首网易云歌曲`);
+              // 静态文件不存在或为空，尝试实时获取（开发环境）
+              console.log('[MusicConfigManager] 静态文件不存在，尝试实时获取...');
+              
+              // 设置 API 基础 URL
+              neteaseMusicApi.setConfig({ baseUrl: neteaseConfig.apiBaseUrl });
+              
+              // 先测试 API 连接
+              const isConnected = await neteaseMusicApi.testConnection();
+              if (!isConnected) {
+                console.warn('[MusicConfigManager] 无法连接到网易云 API 服务');
               } else {
-                console.warn('[MusicConfigManager] 网易云歌单为空');
+                // 获取网易云歌曲
+                const neteaseSongs = await neteaseMusicApi.getFullPlaylistSongs(
+                  neteaseConfig.playlistId,
+                  neteaseConfig.limit
+                );
+
+                if (neteaseSongs.length > 0) {
+                  // 转换为标准格式并缓存
+                  this.neteaseSongsCache = neteaseSongs.map(convertNeteaseSongToConfig);
+                  
+                  // 只使用网易云歌曲（本地音乐默认隐藏）
+                  config.songs = [...this.neteaseSongsCache];
+                  neteaseLoaded = true;
+
+                  console.log(`[MusicConfigManager] 成功加载 ${this.neteaseSongsCache.length} 首网易云歌曲`);
+                } else {
+                  console.warn('[MusicConfigManager] 网易云歌单为空');
+                }
               }
             }
           } catch (error) {
@@ -606,6 +618,74 @@ class MusicConfigManager {
       return this.config;
     }
     return DEFAULT_MUSIC_CONFIG;
+  }
+
+  /**
+   * 从静态文件加载网易云歌单
+   * 用于生产环境，避免跨域问题
+   * 
+   * @returns Promise<SongConfig[] | null> 歌曲列表，如果文件不存在返回 null
+   */
+  private async loadStaticNeteasePlaylist(): Promise<SongConfig[] | null> {
+    try {
+      const response = await fetch(getAssetPath('/content/netease-playlist.json'), {
+        cache: 'no-store',
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const data = await response.json();
+      
+      if (!data.songs || !Array.isArray(data.songs) || data.songs.length === 0) {
+        return null;
+      }
+
+      // 验证并转换歌曲格式
+      const songs: SongConfig[] = data.songs
+        .filter((song: unknown) => this.isValidNeteaseSong(song))
+        .map((song: ConvertedNeteaseSong) => ({
+          id: song.id,
+          name: song.name,
+          artist: song.artist,
+          url: song.url,
+          cover: song.cover,
+          lrc: song.lrc,
+          source: 'netease' as const,
+          neteaseId: song.neteaseId,
+          duration: song.duration,
+        }));
+
+      return songs;
+    } catch (error) {
+      console.warn('[MusicConfigManager] 加载静态网易云歌单失败:', error);
+      return null;
+    }
+  }
+
+  /**
+   * 验证网易云歌曲格式是否有效
+   * 
+   * @param song - 待验证的歌曲对象
+   * @returns boolean 是否有效
+   */
+  private isValidNeteaseSong(song: unknown): song is ConvertedNeteaseSong {
+    if (typeof song !== 'object' || song === null) {
+      return false;
+    }
+
+    const s = song as Record<string, unknown>;
+
+    return (
+      typeof s.id === 'string' &&
+      typeof s.name === 'string' &&
+      typeof s.artist === 'string' &&
+      typeof s.url === 'string' &&
+      typeof s.cover === 'string' &&
+      s.source === 'netease' &&
+      typeof s.neteaseId === 'number'
+    );
   }
 
   /**
