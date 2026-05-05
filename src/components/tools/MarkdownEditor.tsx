@@ -808,9 +808,12 @@ export default function MarkdownEditor({
               
               // 2秒后恢复原状
               setTimeout(() => {
-                button.innerHTML = originalText;
-                button.classList.remove('bg-green-500', 'hover:bg-green-600');
-                button.classList.add('bg-[#66ccff]', 'hover:bg-[#55bbee]');
+                // 检查按钮是否仍然存在
+                if (button && document.contains(button)) {
+                  button.innerHTML = originalText;
+                  button.classList.remove('bg-green-500', 'hover:bg-green-600');
+                  button.classList.add('bg-[#66ccff]', 'hover:bg-[#55bbee]');
+                }
               }, 2000);
               
             } catch (error) {

@@ -229,6 +229,9 @@ const MusicPlayerComponent = function MusicPlayer({
   const highlightArtistNames = useCallback(() => {
     const artistElements = document.querySelectorAll('.aplayer-list-author');
     artistElements.forEach(element => {
+      // 检查元素是否存在
+      if (!element) return;
+      
       const text = element.textContent || '';
       let highlightedText = text;
       
@@ -273,7 +276,7 @@ const MusicPlayerComponent = function MusicPlayer({
       }
       
       // 如果有变化，使用 DOMPurify 清理后更新 HTML
-      if (highlightedText !== text) {
+      if (highlightedText !== text && element) {
         element.innerHTML = DOMPurify.sanitize(highlightedText);
       }
     });
