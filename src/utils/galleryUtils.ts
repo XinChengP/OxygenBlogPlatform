@@ -38,6 +38,17 @@ interface HttpsRequest {
  * @param headers - 请求头
  * @returns 响应数据
  */
+/**
+ * 检查主机名是否被错误解析到本地地址
+ * @param hostname - 主机名
+ * @returns 是否被错误解析
+ */
+const isHostnameMisconfigured = (hostname: string): boolean => {
+  // 检查是否是常见的应该解析到外网但被解析到本地的域名
+  const externalDomains = ['api.github.com', 'github.com', 'cdn.jsdelivr.net'];
+  return externalDomains.includes(hostname);
+};
+
 const serverHttpsFetch = <T = unknown>(url: string, headers: Record<string, string>): Promise<T> => {
   return new Promise((resolve, reject) => {
     if (!https) {
@@ -46,6 +57,15 @@ const serverHttpsFetch = <T = unknown>(url: string, headers: Record<string, stri
     }
 
     const parsedUrl = new URL(url);
+    
+    // 调试日志：输出解析后的URL信息
+    console.log('[Gallery] HTTPS请求配置:', {
+      原始URL: url,
+      主机名: parsedUrl.hostname,
+      端口: parsedUrl.port || 443,
+      路径: parsedUrl.pathname + parsedUrl.search,
+      NODE_ENV: process.env.NODE_ENV
+    });
     
     // 动态导入 https 模块以获取 Agent 类
     const httpsModule = require('https');
@@ -60,11 +80,13 @@ const serverHttpsFetch = <T = unknown>(url: string, headers: Record<string, stri
     
     const options = {
       hostname: parsedUrl.hostname,
-      port: 443,
+      port: parsedUrl.port || 443, // 使用URL中指定的端口，如果没有则默认使用443
       path: parsedUrl.pathname + parsedUrl.search,
       method: 'GET',
       headers: headers,
-      agent: agent // 使用自定义 agent 替代默认的 false
+      agent: agent, // 使用自定义 agent 替代默认的 false
+      // 添加lookup选项以使用IPv4优先，避免某些网络环境下的DNS解析问题
+      family: 4
     };
     
     const req = https.request(options, (res: import('http').IncomingMessage) => {
@@ -86,7 +108,23 @@ const serverHttpsFetch = <T = unknown>(url: string, headers: Record<string, stri
     });
     
     req.on('error', (e: Error) => {
-      reject(e);
+      // 详细记录错误信息以便诊断
+      console.error('[Gallery] HTTPS请求错误:', {
+        错误消息: e.message,
+        错误名称: e.name,
+        主机名: parsedUrl.hostname,
+        端口: parsedUrl.port || 443,
+        原始URL: url,
+        堆栈: e.stack
+      });
+      
+      // 检查是否是连接被拒绝错误，且主机名是应该解析到外网的域名
+      if (e.message.includes('ECONNREFUSED 127.0.0.1') && isHostnameMisconfigured(parsedUrl.hostname)) {
+        console.error(`[Gallery] DNS解析错误: ${parsedUrl.hostname} 被错误解析到 127.0.0.1，请检查hosts文件或网络配置`);
+        reject(new Error(`DNS解析错误: ${parsedUrl.hostname} 被错误解析到本地地址，请检查hosts文件或网络配置`));
+      } else {
+        reject(e);
+      }
     });
     
     req.setTimeout(30000, () => {
@@ -873,8 +911,17 @@ export const getAllImages = async (options?: {
       path: ''
     }, options);
   } catch (error) {
-    console.warn('Failed to fetch remote images, only showing local images:', error);
-    // 在开发环境中，如果获取远程图片失败，只显示本地图片
+    // 详细记录错误信息
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.warn('[Gallery] 获取远程图片失败，仅显示本地图片:', errorMessage);
+    
+    // 如果是DNS解析错误，给出更明确的提示
+    if (errorMessage.includes('DNS解析错误')) {
+      console.warn('[Gallery] 提示: 请检查系统hosts文件或网络代理设置');
+    }
+    
+    // 远程图片获取失败时，只返回本地图片
+    remoteImages = [];
   }
   
   // 合并所有图片
