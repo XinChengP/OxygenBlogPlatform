@@ -83,13 +83,13 @@ export const availableTools: ToolItem[] = [
     isActive: false
   },
   {
-    id: 'roco-pet-simulator',
+    id: 'roco-team',
     name: '阵容搭配模拟器',
     description: '洛克王国天梯赛宠物一览和阵容搭配模拟器，支持禁赛设置、外观切换、血脉选择',
     category: '其他',
     icon: '🎮',
     isActive: true,
-    path: '/tools/roco-pet-simulator',
+    path: '/tools/roco-team',
     featured: true
   }
 ];
