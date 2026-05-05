@@ -570,13 +570,16 @@
   transition: all 0.2s ease;
   border-radius: 4px;
   margin: 3px 8px;
-  /* 增加列表项高度，确保内容完整显示 */
-  min-height: 50px;
-  white-space: normal;
-  overflow: visible;
-  padding: 10px 12px;
-  /* 确保文本不会溢出 */
-  line-height: 1.4;
+  /* 固定列表项高度，强制单行显示 */
+  height: 40px;
+  min-height: 40px;
+  white-space: nowrap;
+  overflow: hidden;
+  padding: 8px 12px;
+  /* 垂直居中对齐 */
+  line-height: 24px;
+  display: flex;
+  align-items: center;
 }
 
 .aplayer .aplayer-list .aplayer-list-item:hover {
@@ -602,6 +605,8 @@
   min-width: 24px;
   text-align: center;
   transition: all var(--aplayer-transition-speed) var(--aplayer-transition-timing);
+  flex-shrink: 0;
+  line-height: 24px;
 }
 
 .aplayer .aplayer-list .aplayer-list-light .aplayer-list-index {
@@ -613,28 +618,37 @@
 .aplayer .aplayer-list .aplayer-list-item-content {
   color: var(--aplayer-fg);
   transition: all var(--aplayer-transition-speed) var(--aplayer-transition-timing);
-  /* 确保内容区域有足够空间 */
+  /* 使用 flex 布局让歌名和作者在一行 */
   width: 100%;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
 }
 
 .aplayer .aplayer-list .aplayer-list-item-content .aplayer-list-title {
   font-weight: 500;
-  line-height: 1.4;
-  /* 确保歌曲名称完整显示 */
-  white-space: normal;
-  word-break: break-word;
-  margin-bottom: 2px;
+  line-height: 24px;
+  /* 强制单行显示，超出显示省略号 */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
 }
 
 .aplayer .aplayer-list .aplayer-list-item-content .aplayer-list-author {
   color: var(--aplayer-info-fg);
   font-size: 12px;
-  margin-top: 2px;
-  /* 确保歌手名称完整显示 */
-  white-space: normal;
-  word-break: break-word;
+  line-height: 24px;
+  /* 强制单行显示，超出显示省略号 */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   opacity: 0.8;
+  margin-left: 8px;
+  flex-shrink: 0;
+  max-width: 50%;
 }
 
 /* 显示完整的歌曲信息 */

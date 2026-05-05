@@ -445,6 +445,10 @@ class NetworkMonitor {
     const isSuspiciousRequest = this.isSuspiciousRequest.bind(this);
 
     window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+      // 检查 input 是否有效
+      if (!input) {
+        return originalFetch(input, init);
+      }
       const url = typeof input === 'string' ? input : input.toString();
 
       // 检查是否是可疑请求
@@ -479,7 +483,11 @@ class NetworkMonitor {
       username?: string | null,
       password?: string | null
     ): void {
-      const urlString = url.toString();
+      // 检查 url 是否有效
+      if (!url) {
+        return originalXHROpen.call(this, method, url, async ?? true, username, password);
+      }
+      const urlString = typeof url === 'string' ? url : url.toString();
 
       // 检查是否是可疑请求
       if (isSuspiciousRequest(urlString)) {
@@ -506,7 +514,11 @@ class NetworkMonitor {
     const isSuspiciousRequest = this.isSuspiciousRequest.bind(this);
 
     navigator.sendBeacon = (url: string | URL, data?: BodyInit | null): boolean => {
-      const urlString = url.toString();
+      // 检查 url 是否有效
+      if (!url) {
+        return originalSendBeacon(url, data);
+      }
+      const urlString = typeof url === 'string' ? url : url.toString();
 
       if (isSuspiciousRequest(urlString)) {
         config.onHijackingDetected('suspicious_beacon', {

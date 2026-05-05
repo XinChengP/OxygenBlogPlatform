@@ -232,10 +232,18 @@ const MusicPlayerComponent = function MusicPlayer({
       const text = element.textContent || '';
       let highlightedText = text;
       
+      // 高亮洛天依Official（整体天依蓝 #66ccff）
+      if (text.includes('洛天依Official')) {
+        highlightedText = highlightedText.replace(
+          /洛天依Official/g, 
+          '<span style="color: #66ccff">洛天依Official</span>'
+        );
+      }
+      
       // 高亮洛天依（天依蓝 #66ccff）
       if (text.includes('洛天依')) {
         highlightedText = highlightedText.replace(
-          /洛天依/g, 
+          /洛天依(?!Official)/g, 
           '<span style="color: #66ccff">洛天依</span>'
         );
       }

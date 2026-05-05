@@ -3,16 +3,59 @@
  * 
  * 功能说明：
  * 1. 加载音乐配置文件（music.json）
- * 2. 验证配置格式是否正确
- * 3. 提供默认配置作为降级方案
- * 4. 使用 getAssetPath 处理所有资源路径，确保 GitHub Pages 兼容性
+ * 2. 支持本地音乐和网易云歌单混合模式
+ * 3. 验证配置格式是否正确
+ * 4. 提供默认配置作为降级方案
+ * 5. 使用 getAssetPath 处理所有资源路径，确保 GitHub Pages 兼容性
  * 
  * @author 歆橙
- * @version 1.0
- * @date 2026-03-18
+ * @version 2.0
+ * @date 2026-05-05
  */
 
 import { getAssetPath } from '@/utils/assetUtils';
+import { neteaseMusicApi, ConvertedNeteaseSong } from '@/services/neteaseMusicApi';
+
+/**
+ * 音乐来源类型
+ */
+export type MusicSource = 'local' | 'netease';
+
+/**
+ * 本地音乐源配置接口
+ */
+export interface LocalSourceConfig {
+  /** 是否启用 */
+  enabled: boolean;
+  /** 描述信息 */
+  description: string;
+}
+
+/**
+ * 网易云音乐源配置接口
+ */
+export interface NeteaseSourceConfig {
+  /** 是否启用 */
+  enabled: boolean;
+  /** 描述信息 */
+  description: string;
+  /** API 基础 URL */
+  apiBaseUrl: string;
+  /** 歌单 ID */
+  playlistId: string;
+  /** 获取歌曲数量限制 */
+  limit: number;
+}
+
+/**
+ * 音乐源配置接口
+ */
+export interface MusicSourcesConfig {
+  /** 本地音乐源配置 */
+  local: LocalSourceConfig;
+  /** 网易云音乐源配置 */
+  netease: NeteaseSourceConfig;
+}
 
 /**
  * 单首歌曲的配置接口
@@ -25,12 +68,18 @@ export interface SongConfig {
   name: string;
   /** 歌手名称，支持多位歌手（如"洛天依、乐正绫"） */
   artist: string;
-  /** 音频文件路径，相对于 public 目录 */
+  /** 音频文件路径，相对于 public 目录（本地音乐）或直接 URL（网易云） */
   url: string;
-  /** 封面图片路径，可选，相对于 public 目录 */
+  /** 封面图片路径，可选，相对于 public 目录或直接 URL */
   cover?: string;
-  /** 歌词文件路径，可选，相对于 public 目录 */
+  /** 歌词文件路径，可选，相对于 public 目录或歌词内容 */
   lrc?: string;
+  /** 音乐来源 */
+  source?: MusicSource;
+  /** 网易云歌曲 ID（仅网易云音乐使用） */
+  neteaseId?: number;
+  /** 歌曲时长（秒，仅网易云音乐使用） */
+  duration?: number;
 }
 
 /**
@@ -44,6 +93,8 @@ export interface MusicConfig {
   lastUpdated: string;
   /** 配置文件描述信息 */
   description?: string;
+  /** 音乐源配置 */
+  sources?: MusicSourcesConfig;
   /** 歌曲列表数组 */
   songs: SongConfig[];
 }
@@ -57,12 +108,16 @@ export interface ProcessedAudioItem {
   name: string;
   /** 歌手名称 */
   artist: string;
-  /** 处理后的音频文件完整路径 */
+  /** 处理后的音频文件完整路径或 URL */
   url: string;
-  /** 处理后的封面图片完整路径（可选） */
+  /** 处理后的封面图片完整路径或 URL（可选） */
   cover?: string;
-  /** 处理后的歌词文件完整路径（可选） */
+  /** 处理后的歌词文件完整路径或歌词内容（可选） */
   lrc?: string;
+  /** 音乐来源 */
+  source?: MusicSource;
+  /** 网易云歌曲 ID（仅网易云音乐使用） */
+  neteaseId?: number;
 }
 
 /**
@@ -71,9 +126,22 @@ export interface ProcessedAudioItem {
  * 确保播放器始终有可播放的内容
  */
 const DEFAULT_MUSIC_CONFIG: MusicConfig = {
-  version: "1.0",
-  lastUpdated: "2026-03-18",
+  version: "2.0",
+  lastUpdated: "2026-05-05",
   description: "默认音乐配置（降级方案）",
+  sources: {
+    local: {
+      enabled: true,
+      description: "本地音乐文件"
+    },
+    netease: {
+      enabled: false,
+      description: "网易云音乐歌单",
+      apiBaseUrl: "https://api.toolkal.com",
+      playlistId: "",
+      limit: 100
+    }
+  },
   songs: [
     {
       id: "yiban-yiban",
@@ -81,7 +149,8 @@ const DEFAULT_MUSIC_CONFIG: MusicConfig = {
       artist: "洛天依",
       url: "/music/一半一半 - 洛天依.mp3",
       cover: "/music/covers/一半一半 - 洛天依.jpg",
-      lrc: "/music/lyrics/一半一半 - 洛天依.lrc"
+      lrc: "/music/lyrics/一半一半 - 洛天依.lrc",
+      source: "local"
     },
     {
       id: "sanyue-yu",
@@ -89,7 +158,8 @@ const DEFAULT_MUSIC_CONFIG: MusicConfig = {
       artist: "洛天依",
       url: "/music/三月雨 - 洛天依.mp3",
       cover: "/music/covers/三月雨 - 洛天依.png",
-      lrc: "/music/lyrics/三月雨 - 洛天依.lrc"
+      lrc: "/music/lyrics/三月雨 - 洛天依.lrc",
+      source: "local"
     },
     {
       id: "xiachong",
@@ -97,7 +167,8 @@ const DEFAULT_MUSIC_CONFIG: MusicConfig = {
       artist: "洛天依",
       url: "/music/夏虫 - 洛天依.mp3",
       cover: "/music/covers/夏虫 - 洛天依.jpg",
-      lrc: "/music/lyrics/夏虫 - 洛天依.lrc"
+      lrc: "/music/lyrics/夏虫 - 洛天依.lrc",
+      source: "local"
     },
     {
       id: "tianxing-wen",
@@ -105,7 +176,8 @@ const DEFAULT_MUSIC_CONFIG: MusicConfig = {
       artist: "洛天依",
       url: "/music/天星问 - 洛天依.mp3",
       cover: "/music/covers/天星问 - 洛天依.jpg",
-      lrc: "/music/lyrics/天星问 - 洛天依.lrc"
+      lrc: "/music/lyrics/天星问 - 洛天依.lrc",
+      source: "local"
     },
     {
       id: "liuguang",
@@ -113,7 +185,8 @@ const DEFAULT_MUSIC_CONFIG: MusicConfig = {
       artist: "洛天依",
       url: "/music/流光 (Light Me Up) - 洛天依.mp3",
       cover: "/music/covers/流光 (Light Me Up) - 洛天依.jpg",
-      lrc: "/music/lyrics/流光 (Light Me Up) - 洛天依.lrc"
+      lrc: "/music/lyrics/流光 (Light Me Up) - 洛天依.lrc",
+      source: "local"
     },
     {
       id: "sha-a",
@@ -121,7 +194,8 @@ const DEFAULT_MUSIC_CONFIG: MusicConfig = {
       artist: "洛天依",
       url: "/music/啥啊 - 洛天依.mp3",
       cover: "/music/covers/啥啊 - 洛天依.jpg",
-      lrc: "/music/lyrics/啥啊 - 洛天依.lrc"
+      lrc: "/music/lyrics/啥啊 - 洛天依.lrc",
+      source: "local"
     },
     {
       id: "yiyang-defengbao-zhongxin",
@@ -129,7 +203,8 @@ const DEFAULT_MUSIC_CONFIG: MusicConfig = {
       artist: "洛天依",
       url: "/music/异样的风暴中心 - 洛天依.mp3",
       cover: "/music/covers/异样的风暴中心 - 洛天依.jpg",
-      lrc: "/music/lyrics/异样的风暴中心 - 洛天依.lrc"
+      lrc: "/music/lyrics/异样的风暴中心 - 洛天依.lrc",
+      source: "local"
     },
     {
       id: "gehang-sifang",
@@ -137,7 +212,8 @@ const DEFAULT_MUSIC_CONFIG: MusicConfig = {
       artist: "洛天依",
       url: "/music/歌行四方 - 洛天依.mp3",
       cover: "/music/covers/歌行四方 - 洛天依.jpg",
-      lrc: "/music/lyrics/歌行四方 - 洛天依.lrc"
+      lrc: "/music/lyrics/歌行四方 - 洛天依.lrc",
+      source: "local"
     },
     {
       id: "hudie",
@@ -145,7 +221,8 @@ const DEFAULT_MUSIC_CONFIG: MusicConfig = {
       artist: "洛天依",
       url: "/music/蝴蝶 - 洛天依.mp3",
       cover: "/music/covers/蝴蝶 - 洛天依.jpg",
-      lrc: "/music/lyrics/蝴蝶 - 洛天依.lrc"
+      lrc: "/music/lyrics/蝴蝶 - 洛天依.lrc",
+      source: "local"
     },
     {
       id: "baishixi",
@@ -153,7 +230,8 @@ const DEFAULT_MUSIC_CONFIG: MusicConfig = {
       artist: "洛天依、乐正绫",
       url: "/music/白石溪 - 洛天依、乐正绫.mp3",
       cover: "/music/covers/白石溪 - 洛天依、乐正绫.png",
-      lrc: "/music/lyrics/白石溪 - 洛天依、乐正绫.lrc"
+      lrc: "/music/lyrics/白石溪 - 洛天依、乐正绫.lrc",
+      source: "local"
     }
   ]
 };
@@ -183,12 +261,24 @@ function validateSongConfig(song: unknown): song is SongConfig {
     return false;
   }
 
-  // 验证可选字段：如果存在，必须是字符串类型
+  // 验证可选字段：如果存在，必须是正确的类型
   if (s.cover !== undefined && typeof s.cover !== 'string') {
     return false;
   }
 
   if (s.lrc !== undefined && typeof s.lrc !== 'string') {
+    return false;
+  }
+
+  if (s.source !== undefined && !['local', 'netease'].includes(s.source as string)) {
+    return false;
+  }
+
+  if (s.neteaseId !== undefined && typeof s.neteaseId !== 'number') {
+    return false;
+  }
+
+  if (s.duration !== undefined && typeof s.duration !== 'number') {
     return false;
   }
 
@@ -257,27 +347,56 @@ function processSongConfig(song: SongConfig): ProcessedAudioItem {
   const processedItem: ProcessedAudioItem = {
     name: song.name,
     artist: song.artist,
-    // 使用 getAssetPath 处理音频文件路径，确保 GitHub Pages 兼容性
-    url: getAssetPath(song.url)
+    // 本地音乐使用 getAssetPath 处理路径，网易云音乐直接使用 URL
+    url: song.source === 'netease' ? song.url : getAssetPath(song.url),
+    source: song.source || 'local',
   };
 
   // 如果有封面图片，处理封面路径
   if (song.cover) {
-    processedItem.cover = getAssetPath(song.cover);
+    processedItem.cover = song.source === 'netease' 
+      ? song.cover 
+      : getAssetPath(song.cover);
   }
 
-  // 如果有歌词文件，处理歌词路径
+  // 如果有歌词，处理歌词
   if (song.lrc) {
-    processedItem.lrc = getAssetPath(song.lrc);
+    // 网易云音乐的歌词是内容字符串，本地音乐是文件路径
+    processedItem.lrc = song.lrc;
+  }
+
+  // 如果是网易云音乐，保存歌曲 ID
+  if (song.neteaseId) {
+    processedItem.neteaseId = song.neteaseId;
   }
 
   return processedItem;
 }
 
 /**
+ * 将网易云歌曲转换为标准 SongConfig 格式
+ * @param neteaseSong 转换后的网易云歌曲
+ * @returns 标准 SongConfig 格式
+ */
+function convertNeteaseSongToConfig(neteaseSong: ConvertedNeteaseSong): SongConfig {
+  return {
+    id: neteaseSong.id,
+    name: neteaseSong.name,
+    artist: neteaseSong.artist,
+    url: neteaseSong.url,
+    cover: neteaseSong.cover,
+    lrc: neteaseSong.lrc,
+    source: 'netease',
+    neteaseId: neteaseSong.neteaseId,
+    duration: neteaseSong.duration,
+  };
+}
+
+/**
  * 音乐配置管理器类
  * 单例模式，确保全局只有一个配置管理器实例
  * 提供配置加载、验证和处理功能
+ * 支持本地音乐和网易云歌单混合模式
  */
 class MusicConfigManager {
   /** 单例实例 */
@@ -294,6 +413,9 @@ class MusicConfigManager {
   
   /** 加载 Promise 缓存，用于并发请求时复用 */
   private loadPromise: Promise<MusicConfig> | null = null;
+
+  /** 网易云歌曲缓存 */
+  private neteaseSongsCache: SongConfig[] | null = null;
 
   /**
    * 私有构造函数，防止外部实例化
@@ -314,6 +436,7 @@ class MusicConfigManager {
   /**
    * 加载音乐配置文件
    * 从 /content/music.json 加载配置，验证格式并缓存
+   * 如果启用了网易云歌单，会同时加载网易云歌曲
    * 
    * @returns Promise<MusicConfig> 加载完成的配置对象
    */
@@ -345,11 +468,14 @@ class MusicConfigManager {
   /**
    * 实际执行配置获取的方法
    * 支持客户端和服务端两种环境
+   * 支持混合加载本地音乐和网易云歌单
    * 
    * @returns Promise<MusicConfig> 配置对象
    */
   private async fetchConfig(): Promise<MusicConfig> {
     try {
+      let config: MusicConfig;
+
       // 在客户端环境中，使用 fetch 从静态资源路径获取
       if (typeof window !== 'undefined') {
         // 使用 getAssetPath 处理配置文件路径，确保 GitHub Pages 兼容性
@@ -364,23 +490,9 @@ class MusicConfigManager {
           throw new Error(`HTTP 错误: ${response.status}`);
         }
 
-        const config = await response.json();
-        
-        // 验证配置格式
-        if (validateMusicConfig(config)) {
-          this.config = config;
-          this.isLoaded = true;
-          console.log(`[MusicConfigManager] 配置加载成功，共 ${config.songs.length} 首歌曲`);
-          return config;
-        } else {
-          console.warn('[MusicConfigManager] 配置格式验证失败，使用默认配置');
-          this.config = DEFAULT_MUSIC_CONFIG;
-          this.isLoaded = true;
-          return DEFAULT_MUSIC_CONFIG;
-        }
+        config = await response.json();
       } else {
         // 在服务端环境中，使用文件系统读取
-        // 从 public 目录读取配置文件（与客户端保持一致）
         const fs = await import('fs');
         const path = await import('path');
         
@@ -396,21 +508,83 @@ class MusicConfigManager {
         }
 
         const fileContent = fs.readFileSync(configFilePath, 'utf-8');
-        const config = JSON.parse(fileContent);
+        config = JSON.parse(fileContent);
+      }
 
-        // 验证配置格式
-        if (validateMusicConfig(config)) {
-          this.config = config;
-          this.isLoaded = true;
-          console.log(`[MusicConfigManager] 服务端配置加载成功，共 ${config.songs.length} 首歌曲`);
-          return config;
-        } else {
-          console.warn('[MusicConfigManager] 配置格式验证失败，使用默认配置');
-          this.config = DEFAULT_MUSIC_CONFIG;
-          this.isLoaded = true;
-          return DEFAULT_MUSIC_CONFIG;
+      // 验证配置格式
+      if (!validateMusicConfig(config)) {
+        console.warn('[MusicConfigManager] 配置格式验证失败，使用默认配置');
+        this.config = DEFAULT_MUSIC_CONFIG;
+        this.isLoaded = true;
+        return DEFAULT_MUSIC_CONFIG;
+      }
+
+      // 处理音乐源加载逻辑
+      // 策略：优先加载网易云音乐，如果失败则降级到本地音乐
+      if (typeof window !== 'undefined') {
+        const neteaseConfig = config.sources?.netease;
+        const localConfig = config.sources?.local;
+        
+        // 获取本地歌曲列表（默认隐藏，作为备用）
+        const localSongs = config.songs.filter(song => song.source === 'local');
+        
+        // 标记是否成功加载了网络音乐
+        let neteaseLoaded = false;
+        
+        // 如果启用了网易云，尝试加载
+        if (neteaseConfig?.enabled && neteaseConfig.playlistId) {
+          try {
+            console.log('[MusicConfigManager] 正在加载网易云歌单...');
+            
+            // 设置 API 基础 URL
+            neteaseMusicApi.setConfig({ baseUrl: neteaseConfig.apiBaseUrl });
+            
+            // 先测试 API 连接
+            const isConnected = await neteaseMusicApi.testConnection();
+            if (!isConnected) {
+              console.warn('[MusicConfigManager] 无法连接到网易云 API 服务');
+            } else {
+              // 获取网易云歌曲
+              const neteaseSongs = await neteaseMusicApi.getFullPlaylistSongs(
+                neteaseConfig.playlistId,
+                neteaseConfig.limit
+              );
+
+              if (neteaseSongs.length > 0) {
+                // 转换为标准格式并缓存
+                this.neteaseSongsCache = neteaseSongs.map(convertNeteaseSongToConfig);
+                
+                // 只使用网易云歌曲（本地音乐默认隐藏）
+                config.songs = [...this.neteaseSongsCache];
+                neteaseLoaded = true;
+
+                console.log(`[MusicConfigManager] 成功加载 ${this.neteaseSongsCache.length} 首网易云歌曲`);
+              } else {
+                console.warn('[MusicConfigManager] 网易云歌单为空');
+              }
+            }
+          } catch (error) {
+            console.error('[MusicConfigManager] 加载网易云歌单失败:', error);
+          }
+        }
+        
+        // 如果网易云音乐加载失败且启用了本地音乐，则降级到本地音乐
+        if (!neteaseLoaded && localConfig?.enabled && localSongs.length > 0) {
+          console.log('[MusicConfigManager] 网易云音乐加载失败，降级到本地音乐');
+          config.songs = [...localSongs];
+        }
+        
+        // 如果两者都未加载成功，使用默认配置
+        if (config.songs.length === 0) {
+          console.warn('[MusicConfigManager] 没有可用的音乐源，使用默认配置');
+          config.songs = [...DEFAULT_MUSIC_CONFIG.songs];
         }
       }
+
+      this.config = config;
+      this.isLoaded = true;
+      console.log(`[MusicConfigManager] 配置加载成功，共 ${config.songs.length} 首歌曲`);
+      return config;
     } catch (error) {
       // 加载失败时使用默认配置作为降级方案
       console.error('[MusicConfigManager] 加载配置文件失败:', error);
@@ -498,6 +672,17 @@ class MusicConfigManager {
   }
 
   /**
+   * 根据音乐源筛选歌曲
+   * 
+   * @param source - 音乐源类型
+   * @returns SongConfig[] 匹配的歌曲列表
+   */
+  public filterSongsBySource(source: MusicSource): SongConfig[] {
+    const config = this.getConfig();
+    return config.songs.filter(song => song.source === source);
+  }
+
+  /**
    * 获取歌曲总数
    * 
    * @returns number 歌曲总数
@@ -505,6 +690,16 @@ class MusicConfigManager {
   public getSongCount(): number {
     const config = this.getConfig();
     return config.songs.length;
+  }
+
+  /**
+   * 获取特定来源的歌曲数量
+   * 
+   * @param source - 音乐源类型
+   * @returns number 歌曲数量
+   */
+  public getSongCountBySource(source: MusicSource): number {
+    return this.filterSongsBySource(source).length;
   }
 
   /**
@@ -517,6 +712,26 @@ class MusicConfigManager {
   }
 
   /**
+   * 检查网易云歌单是否已启用
+   * 
+   * @returns boolean 是否启用
+   */
+  public isNeteaseEnabled(): boolean {
+    const config = this.getConfig();
+    return config.sources?.netease?.enabled ?? false;
+  }
+
+  /**
+   * 获取网易云歌单配置
+   * 
+   * @returns NeteaseSourceConfig | undefined 网易云配置
+   */
+  public getNeteaseConfig(): NeteaseSourceConfig | undefined {
+    const config = this.getConfig();
+    return config.sources?.netease;
+  }
+
+  /**
    * 重置配置管理器
    * 清除缓存的配置，下次调用时会重新加载
    * 用于配置更新后刷新
@@ -526,7 +741,49 @@ class MusicConfigManager {
     this.isLoaded = false;
     this.isLoading = false;
     this.loadPromise = null;
+    this.neteaseSongsCache = null;
     console.log('[MusicConfigManager] 配置已重置');
+  }
+
+  /**
+   * 刷新网易云歌单
+   * 清除缓存并重新加载网易云歌曲
+   * 
+   * @returns Promise<boolean> 是否刷新成功
+   */
+  public async refreshNeteasePlaylist(): Promise<boolean> {
+    const config = this.getConfig();
+    
+    if (!config.sources?.netease?.enabled || !config.sources.netease.playlistId) {
+      console.warn('[MusicConfigManager] 网易云歌单未启用或未配置');
+      return false;
+    }
+
+    try {
+      const neteaseConfig = config.sources.netease;
+      
+      // 设置 API 基础 URL
+      neteaseMusicApi.setConfig({ baseUrl: neteaseConfig.apiBaseUrl });
+      
+      // 获取网易云歌曲
+      const neteaseSongs = await neteaseMusicApi.getFullPlaylistSongs(
+        neteaseConfig.playlistId,
+        neteaseConfig.limit
+      );
+
+      // 转换为标准格式并缓存
+      this.neteaseSongsCache = neteaseSongs.map(convertNeteaseSongToConfig);
+
+      // 合并本地歌曲和网易云歌曲
+      const localSongs = config.songs.filter(song => song.source === 'local');
+      config.songs = [...localSongs, ...this.neteaseSongsCache];
+
+      console.log(`[MusicConfigManager] 成功刷新网易云歌单，共 ${this.neteaseSongsCache.length} 首歌曲`);
+      return true;
+    } catch (error) {
+      console.error('[MusicConfigManager] 刷新网易云歌单失败:', error);
+      return false;
+    }
   }
 }
 

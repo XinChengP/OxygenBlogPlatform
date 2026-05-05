@@ -1,7 +1,20 @@
 {
-  "version": "1.0",
-  "lastUpdated": "2026-03-18",
-  "description": "洛天依主题博客音乐播放列表配置文件",
+  "version": "2.0",
+  "lastUpdated": "2026-05-05",
+  "description": "洛天依主题博客音乐播放列表配置文件（支持本地音乐+网易云歌单混合模式）",
+  "sources": {
+    "local": {
+      "enabled": true,
+      "description": "本地音乐文件"
+    },
+    "netease": {
+      "enabled": true,
+      "description": "网易云音乐歌单 - 华风夏韵 洛水天依",
+      "apiBaseUrl": "https://api.toolkal.com",
+      "playlistId": "14349636887",
+      "limit": 500
+    }
+  },
   "songs": [
     {
       "id": "yiban-yiban",
@@ -9,7 +22,8 @@
       "artist": "洛天依",
       "url": "/music/一半一半 - 洛天依.mp3",
       "cover": "/music/covers/一半一半 - 洛天依.jpg",
-      "lrc": "/music/lyrics/一半一半 - 洛天依.lrc"
+      "lrc": "/music/lyrics/一半一半 - 洛天依.lrc",
+      "source": "local"
     },
     {
       "id": "sanyue-yu",
@@ -17,7 +31,8 @@
       "artist": "洛天依",
       "url": "/music/三月雨 - 洛天依.mp3",
       "cover": "/music/covers/三月雨 - 洛天依.png",
-      "lrc": "/music/lyrics/三月雨 - 洛天依.lrc"
+      "lrc": "/music/lyrics/三月雨 - 洛天依.lrc",
+      "source": "local"
     },
     {
       "id": "xiachong",
@@ -25,7 +40,8 @@
       "artist": "洛天依",
       "url": "/music/夏虫 - 洛天依.mp3",
       "cover": "/music/covers/夏虫 - 洛天依.jpg",
-      "lrc": "/music/lyrics/夏虫 - 洛天依.lrc"
+      "lrc": "/music/lyrics/夏虫 - 洛天依.lrc",
+      "source": "local"
     },
     {
       "id": "tianxing-wen",
@@ -33,7 +49,8 @@
       "artist": "洛天依",
       "url": "/music/天星问 - 洛天依.mp3",
       "cover": "/music/covers/天星问 - 洛天依.jpg",
-      "lrc": "/music/lyrics/天星问 - 洛天依.lrc"
+      "lrc": "/music/lyrics/天星问 - 洛天依.lrc",
+      "source": "local"
     },
     {
       "id": "liuguang",
@@ -41,7 +58,8 @@
       "artist": "洛天依",
       "url": "/music/流光 (Light Me Up) - 洛天依.mp3",
       "cover": "/music/covers/流光 (Light Me Up) - 洛天依.jpg",
-      "lrc": "/music/lyrics/流光 (Light Me Up) - 洛天依.lrc"
+      "lrc": "/music/lyrics/流光 (Light Me Up) - 洛天依.lrc",
+      "source": "local"
     },
     {
       "id": "sha-a",
@@ -49,7 +67,8 @@
       "artist": "洛天依",
       "url": "/music/啥啊 - 洛天依.mp3",
       "cover": "/music/covers/啥啊 - 洛天依.jpg",
-      "lrc": "/music/lyrics/啥啊 - 洛天依.lrc"
+      "lrc": "/music/lyrics/啥啊 - 洛天依.lrc",
+      "source": "local"
     },
     {
       "id": "yiyang-defengbao-zhongxin",
@@ -57,7 +76,8 @@
       "artist": "洛天依",
       "url": "/music/异样的风暴中心 - 洛天依.mp3",
       "cover": "/music/covers/异样的风暴中心 - 洛天依.jpg",
-      "lrc": "/music/lyrics/异样的风暴中心 - 洛天依.lrc"
+      "lrc": "/music/lyrics/异样的风暴中心 - 洛天依.lrc",
+      "source": "local"
     },
     {
       "id": "gehang-sifang",
@@ -65,7 +85,8 @@
       "artist": "洛天依",
       "url": "/music/歌行四方 - 洛天依.mp3",
       "cover": "/music/covers/歌行四方 - 洛天依.jpg",
-      "lrc": "/music/lyrics/歌行四方 - 洛天依.lrc"
+      "lrc": "/music/lyrics/歌行四方 - 洛天依.lrc",
+      "source": "local"
     },
     {
       "id": "hudie",
@@ -73,7 +94,8 @@
       "artist": "洛天依",
       "url": "/music/蝴蝶 - 洛天依.mp3",
       "cover": "/music/covers/蝴蝶 - 洛天依.jpg",
-      "lrc": "/music/lyrics/蝴蝶 - 洛天依.lrc"
+      "lrc": "/music/lyrics/蝴蝶 - 洛天依.lrc",
+      "source": "local"
     },
     {
       "id": "baishixi",
@@ -81,7 +103,8 @@
       "artist": "洛天依、乐正绫",
       "url": "/music/白石溪 - 洛天依、乐正绫.mp3",
       "cover": "/music/covers/白石溪 - 洛天依、乐正绫.png",
-      "lrc": "/music/lyrics/白石溪 - 洛天依、乐正绫.lrc"
+      "lrc": "/music/lyrics/白石溪 - 洛天依、乐正绫.lrc",
+      "source": "local"
     }
   ]
 }
