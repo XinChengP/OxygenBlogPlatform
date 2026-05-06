@@ -84,6 +84,9 @@ const MusicPlayerComponent = function MusicPlayer({
   /** 当前播放模式 */
   const [playMode, setPlayMode] = useState<PlayMode>('list');
   
+  /** 使用 ref 存储 playMode，确保事件处理器中能获取最新值 */
+  const playModeRef = useRef<PlayMode>('list');
+  
   /** APlayer 实例引用（用于事件监听器清理） */
   const playerInstanceRef = useRef<APlayerNS.APlayer | null>(null);
   
@@ -167,6 +170,8 @@ const MusicPlayerComponent = function MusicPlayer({
   const applyPlayMode = useCallback((player: APlayerNS.APlayer, mode: PlayMode) => {
     if (!player || !player.options) return;
     
+    console.log('[MusicPlayer] 应用播放模式:', mode);
+    
     // 设置 APlayer 的 order 配置
     player.options.order = PLAY_MODE_TO_ORDER[mode];
     
@@ -174,8 +179,44 @@ const MusicPlayerComponent = function MusicPlayer({
     // APlayer 没有原生的单曲循环模式，需要通过设置 loop 属性来模拟
     if (mode === 'single') {
       player.options.loop = true;
+      console.log('[MusicPlayer] 启用单曲循环模式');
     } else {
-      player.options.loop = loop;
+      // 列表循环和随机播放模式下，loop 应该为 false
+      player.options.loop = false;
+      if (mode === 'random') {
+        console.log('[MusicPlayer] 启用随机播放模式，order:', player.options.order);
+        
+        // 关键修复：重新生成随机顺序数组
+        // APlayer 的 randomOrder 在初始化时只生成一次，切换模式时需要重新生成
+        const audioCount = player.list && player.list.list ? player.list.list.length : 0;
+        if (audioCount > 0) {
+          // @ts-ignore - APlayer 内部方法
+          const shuffleFn = (window as any).APlayer?.default?.randomOrder || 
+                           (player as any).constructor?.randomOrder;
+          
+          if (shuffleFn && typeof shuffleFn === 'function') {
+            // @ts-ignore
+            player.randomOrder = shuffleFn(audioCount);
+            console.log('[MusicPlayer] 已重新生成随机顺序数组');
+          } else {
+            // 备用方案：手动生成随机顺序
+            const indices = Array.from({ length: audioCount }, (_, i) => i);
+            // Fisher-Yates 洗牌算法
+            for (let i = indices.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [indices[i], indices[j]] = [indices[j], indices[i]];
+            }
+            // @ts-ignore
+            player.randomOrder = indices;
+            console.log('[MusicPlayer] 已手动生成随机顺序数组');
+          }
+        }
+        
+        // 随机模式下，确保列表已正确初始化
+        if (player.list && player.list.list) {
+          console.log('[MusicPlayer] 当前歌曲数量:', player.list.list.length);
+        }
+      }
     }
     
     // 保存到 localStorage
@@ -185,6 +226,15 @@ const MusicPlayerComponent = function MusicPlayer({
       console.warn('[MusicPlayer] 保存播放模式失败:', error);
     }
   }, [loop]);
+
+  /**
+   * 同步 playMode 到 ref
+   * 确保事件处理器中能获取最新的 playMode 值
+   */
+  useEffect(() => {
+    playModeRef.current = playMode;
+    console.log('[MusicPlayer] 播放模式更新:', playMode);
+  }, [playMode]);
 
   /**
    * 监听播放模式变化事件
@@ -296,8 +346,9 @@ const MusicPlayerComponent = function MusicPlayer({
     /**
      * 播放开始事件处理
      * 触发 Live2D 提示，保存播放状态
+     * 同时检查音频链接是否过期，如过期则刷新
      */
-    const handlePlayStart = () => {
+    const handlePlayStart = async () => {
       // 使用 list.list 获取音频列表（APlayer 的 list 属性）
       // 添加空值检查，防止 player.list 未定义时报错
       if (!player.list || !player.list.list || player.list.index < 0) {
@@ -319,6 +370,49 @@ const MusicPlayerComponent = function MusicPlayer({
           artist: currentAudio.artist || '',
           playedAt: Date.now()
         });
+        
+        // 检查是否是网易云音乐，如果是则验证链接是否有效
+        if (currentAudio.source === 'netease' && currentAudio.neteaseId) {
+          try {
+            // 检查当前音频是否已加载成功
+            // 错误代码说明：
+            // 1 = MEDIA_ERR_ABORTED - 用户中止
+            // 2 = MEDIA_ERR_NETWORK - 网络错误（可能是 403）
+            // 3 = MEDIA_ERR_DECODE - 解码错误
+            // 4 = MEDIA_ERR_SRC_NOT_SUPPORTED - 不支持/无法访问
+            const hasError = player.audio && player.audio.error;
+            const errorCode = player.audio?.error?.code;
+            
+            // 主动检测链接是否可能过期：检查 URL 是否包含过期时间戳
+            // 网易云音乐链接通常包含时间戳，超过时间后会返回 403
+            const url = player.audio?.src || currentAudio.url || '';
+            const urlExpired = url.includes('music.126.net') && 
+                              (hasError || errorCode === 2 || errorCode === 4);
+            
+            if (hasError || urlExpired) {
+              console.log(`[MusicPlayer] 检测到音频错误(Code: ${errorCode})，尝试刷新链接: ${currentAudio.name}`);
+              player.notice('音乐链接已过期，正在刷新...');
+              
+              const { neteaseMusicApi } = await import('@/services/neteaseMusicApi');
+              // 使用智能获取方法，自动处理缓存和刷新
+              const freshUrl = await neteaseMusicApi.getSmartSongUrl(currentAudio.neteaseId);
+              
+              if (freshUrl) {
+                console.log(`[MusicPlayer] 成功获取新链接: ${currentAudio.name}`);
+                currentAudio.url = freshUrl;
+                player.audio.src = freshUrl;
+                player.audio.load();
+                player.play();
+                player.notice('链接已刷新');
+              } else {
+                console.error(`[MusicPlayer] 无法获取新链接: ${currentAudio.name}`);
+                player.notice('该歌曲暂时无法播放');
+              }
+            }
+          } catch (error) {
+            console.warn('[MusicPlayer] 刷新链接失败:', error);
+          }
+        }
       }
       // 保存播放状态
       globalManager.savePlayState();
@@ -341,45 +435,383 @@ const MusicPlayerComponent = function MusicPlayer({
       globalManager.savePlayState();
     };
 
+    // 标志位：防止重复触发歌曲结束处理
+    let isEndingHandled = false;
+
+    /**
+     * 播放进度更新事件处理
+     * 用于检测歌曲是否即将结束，作为 ended 事件的备用机制
+     */
+    const handleTimeUpdate = () => {
+      globalManager.savePlayState();
+      
+      // 检测歌曲是否即将结束（剩余时间小于 1 秒）
+      // 这是为了处理 ended 事件可能不被触发的情况
+      if (player.audio && player.duration > 0) {
+        const currentTime = player.audio.currentTime;
+        const duration = player.duration;
+        const remainingTime = duration - currentTime;
+        
+        // 重置标志位：如果歌曲回到开头或切换了歌曲，重置标志位
+        if (currentTime < 1) {
+          isEndingHandled = false;
+        }
+        
+        // 如果剩余时间小于 1 秒且接近结束，且未处理过，手动触发下一首
+        if (remainingTime < 1 && remainingTime > 0 && !player.paused && !isEndingHandled) {
+          isEndingHandled = true; // 设置标志位，防止重复触发
+          console.log('[MusicPlayer] 检测到歌曲即将结束，准备切换下一首');
+          
+          // 延迟 1.2 秒后检查并切换
+          setTimeout(() => {
+            // 使用全局管理器获取最新的播放器实例，避免闭包问题
+            const currentPlayer = globalManager.getPlayer();
+            if (!currentPlayer) {
+              console.warn('[MusicPlayer] 无法获取播放器实例');
+              isEndingHandled = false;
+              return;
+            }
+            
+            // 调试日志：检查播放器状态 (v2)
+            console.log('[MusicPlayer] 播放器实例状态 (v2):', {
+              hasList: !!currentPlayer.list,
+              listType: typeof currentPlayer.list,
+              listKeys: currentPlayer.list ? Object.keys(currentPlayer.list) : 'N/A',
+              hasAudio: !!currentPlayer.audio,
+              paused: currentPlayer.paused,
+              duration: currentPlayer.duration,
+              currentTime: currentPlayer.audio?.currentTime
+            });
+            
+            // 再次检查，确保歌曲已经结束（播放器暂停或时间接近结束）
+            const isEnded = currentPlayer.paused || 
+              (currentPlayer.audio && currentPlayer.audio.currentTime >= duration - 0.5);
+            
+            if (isEnded) {
+              const currentMode = playModeRef.current;
+              console.log('[MusicPlayer] 歌曲已结束，当前模式:', currentMode);
+              
+              if (currentMode === 'single') {
+                // 单曲循环
+                console.log('[MusicPlayer] 单曲循环：重新播放');
+                currentPlayer.seek(0);
+                currentPlayer.play();
+              } else if (currentMode === 'list' || currentMode === 'random') {
+                // 列表循环或随机播放模式
+                console.log(`[MusicPlayer] ${currentMode}模式：切换到下一首`);
+                // 详细检查 list 对象
+                if (!currentPlayer.list) {
+                  console.warn('[MusicPlayer] currentPlayer.list 为 null/undefined');
+                } else {
+                  // APlayer 的 list 对象可能有不同的属性名
+                  const listData = currentPlayer.list;
+                  // @ts-ignore - 可能使用 audios 属性
+                  const audioList = listData.list || listData.audios || listData;
+                  const isArray = Array.isArray(audioList);
+                  
+                  console.log('[MusicPlayer] list 对象详情 (v2):', {
+                    hasListProperty: 'list' in listData,
+                    hasAudiosProperty: 'audios' in listData,
+                    listValue: listData.list,
+                    audiosValue: (listData as any).audios,
+                    isArray: isArray,
+                    length: isArray ? audioList.length : 'N/A',
+                    index: listData.index
+                  });
+                  
+                  if (isArray && audioList.length > 0) {
+                    const currentIndex = listData.index || 0;
+                    const nextIndex = (currentIndex + 1) % audioList.length;
+                    console.log(`[MusicPlayer] 从索引 ${currentIndex} 切换到 ${nextIndex}，列表长度: ${audioList.length}`);
+                    currentPlayer.list.switch(nextIndex);
+                  } else {
+                    console.warn('[MusicPlayer] 无法获取有效的音频列表');
+                  }
+                }
+              }
+            } else {
+              console.log('[MusicPlayer] 歌曲未真正结束，取消切换');
+            }
+            // 切换完成后重置标志位（延迟一点，确保切换完成）
+            setTimeout(() => {
+              isEndingHandled = false;
+            }, 500);
+          }, 1200);
+        }
+      }
+    };
+
     /**
      * 列表切换事件处理
-     * 重新应用歌手名称高亮
+     * 重新应用歌手名称高亮，预刷新网易云音乐链接
      */
-    const handleListSwitch = () => {
+    const handleListSwitch = async () => {
       globalManager.savePlayState();
       // 延迟执行高亮，确保 DOM 已更新
       setTimeout(highlightArtistNames, 100);
+      
+      // 预刷新网易云音乐链接（静默刷新，不打扰用户）
+      if (player.list && player.list.list && player.list.index >= 0) {
+        const currentAudio = player.list.list[player.list.index];
+        if (currentAudio?.source === 'netease' && currentAudio.neteaseId) {
+          try {
+            const { neteaseMusicApi } = await import('@/services/neteaseMusicApi');
+            // 使用智能获取方法，只在需要时刷新
+            const freshUrl = await neteaseMusicApi.getSmartSongUrl(currentAudio.neteaseId);
+            
+            if (freshUrl && freshUrl !== currentAudio.url) {
+              console.log(`[MusicPlayer] 预刷新链接: ${currentAudio.name}`);
+              currentAudio.url = freshUrl;
+              // 如果音频元素已创建，更新 src
+              if (player.audio) {
+                player.audio.src = freshUrl;
+              }
+            }
+          } catch (error) {
+            // 静默失败，不影响用户体验
+            console.warn('[MusicPlayer] 预刷新链接失败:', error);
+          }
+        }
+      }
     };
 
     /**
      * 播放结束事件处理
-     * 用于处理单曲循环模式
+     * 用于处理单曲循环、列表循环和随机播放模式
      */
     const handleEnded = () => {
-      const currentMode = playMode;
+      // 使用 ref 获取最新的播放模式，避免闭包问题
+      const currentMode = playModeRef.current;
+      
+      console.log('[MusicPlayer] 歌曲播放结束，当前模式:', currentMode);
       
       // 单曲循环模式下，重新播放当前歌曲
       if (currentMode === 'single') {
+        console.log('[MusicPlayer] 单曲循环：重新播放当前歌曲');
         player.seek(0);
         player.play();
+      } 
+      // 随机播放模式下，APlayer 会自动选择下一首随机歌曲
+      else if (currentMode === 'random') {
+        console.log('[MusicPlayer] 随机播放模式：等待 APlayer 自动选择下一首');
+        // 验证 APlayer 的随机列表是否已正确初始化
+        if (player.list && player.list.list) {
+          // APlayer 应该自动处理，但如果没有自动切换，手动触发
+          setTimeout(() => {
+            if (player.paused) {
+              console.log('[MusicPlayer] 随机模式未自动播放，手动切换到下一首');
+              const nextIndex = (player.list.index + 1) % player.list.list.length;
+              player.list.switch(nextIndex);
+            }
+          }, 500);
+        }
+      }
+      // 列表循环模式下，手动切换到下一首
+      else if (currentMode === 'list') {
+        console.log('[MusicPlayer] 列表循环模式：切换到下一首');
+        if (player.list && player.list.list && player.list.list.length > 0) {
+          const currentIndex = player.list.index;
+          const nextIndex = (currentIndex + 1) % player.list.list.length;
+          console.log(`[MusicPlayer] 从索引 ${currentIndex} 切换到 ${nextIndex}`);
+          player.list.switch(nextIndex);
+        }
       }
     };
 
-    // 注册事件监听器
+    /**
+     * 音频加载错误事件处理
+     * 当音频链接过期或不可用时尝试刷新链接
+     */
+    const handleError = async () => {
+      // 获取当前播放的歌曲
+      if (!player.list || !player.list.list || player.list.index < 0) {
+        return;
+      }
+      
+      const currentAudio = player.list.list[player.list.index];
+      
+      // 检查是否是本地音乐
+      const isLocalMusic = currentAudio.source === 'local' || !currentAudio.source;
+      
+      if (isLocalMusic) {
+        // 本地音乐出现错误，可能是文件不存在或路径错误
+        console.error(`[MusicPlayer] 本地音乐加载失败: ${currentAudio.name}`, currentAudio.url);
+        player.notice(`歌曲 "${currentAudio.name}" 加载失败，请检查文件是否存在`);
+        return;
+      }
+      
+      // 网易云音乐出现 403 错误，尝试刷新链接
+      if (!currentAudio || !currentAudio.neteaseId) {
+        console.warn('[MusicPlayer] 无法获取当前歌曲信息，跳过链接刷新');
+        return;
+      }
+      
+      console.log(`[MusicPlayer] 音频加载失败（403 Forbidden），尝试刷新链接: ${currentAudio.name}`);
+      player.notice('音乐链接已过期，正在尝试重新获取...');
+      
+      // 尝试获取最新的播放链接
+      try {
+        const { neteaseMusicApi } = await import('@/services/neteaseMusicApi');
+        // 使用智能获取方法，自动处理缓存和刷新
+        const freshUrl = await neteaseMusicApi.getSmartSongUrl(currentAudio.neteaseId);
+        
+        if (freshUrl) {
+          console.log(`[MusicPlayer] 成功获取新链接: ${currentAudio.name}`);
+          player.notice('已重新获取音乐链接');
+          
+          // 更新音频 URL
+          currentAudio.url = freshUrl;
+          
+          // 重新加载并播放
+          if (player.audio) {
+            player.audio.src = freshUrl;
+            player.audio.load();
+            player.play();
+          }
+        } else {
+          console.error(`[MusicPlayer] 无法获取新链接: ${currentAudio.name}`);
+          player.notice('该歌曲暂时无法播放，已自动跳过');
+          // 如果刷新失败，切换到下一首
+          setTimeout(() => {
+            if (player.list) {
+              player.list.switch((player.list.index + 1) % player.list.list.length);
+            }
+          }, 1500);
+        }
+      } catch (error) {
+        console.error('[MusicPlayer] 刷新音频链接失败:', error);
+        player.notice('网络错误，请稍后重试');
+      }
+    };
+
+    /**
+     * 底层 audio 元素错误事件处理
+     * 直接监听 HTMLAudioElement 的 error 事件，捕获更详细的错误信息
+     */
+    const handleAudioElementError = async () => {
+      if (!player.audio) return;
+      
+      // 获取详细的错误代码
+      const errorCode = player.audio.error?.code;
+      const errorMessage = player.audio.error?.message || '未知错误';
+      
+      console.log(`[MusicPlayer] Audio 元素错误 - Code: ${errorCode}, Message: ${errorMessage}`);
+      
+      // MEDIA_ERR_NETWORK (2) 或 MEDIA_ERR_SRC_NOT_SUPPORTED (4) 可能是链接过期
+      if (errorCode === 2 || errorCode === 4) {
+        // 获取当前播放的歌曲
+        if (!player.list || !player.list.list || player.list.index < 0) {
+          return;
+        }
+        
+        const currentAudio = player.list.list[player.list.index];
+        
+        // 只处理网易云音乐
+        if (currentAudio?.source === 'netease' && currentAudio.neteaseId) {
+          console.log(`[MusicPlayer] 检测到网络/SRC错误，尝试刷新链接: ${currentAudio.name}`);
+          player.notice('音乐链接已过期，正在刷新...');
+          
+          try {
+            const { neteaseMusicApi } = await import('@/services/neteaseMusicApi');
+            // 使用智能获取方法，自动处理缓存和刷新
+            const freshUrl = await neteaseMusicApi.getSmartSongUrl(currentAudio.neteaseId);
+            
+            if (freshUrl) {
+              console.log(`[MusicPlayer] 成功刷新链接: ${currentAudio.name}`);
+              player.notice('链接已刷新，正在重新播放...');
+              
+              // 更新音频 URL
+              currentAudio.url = freshUrl;
+              player.audio.src = freshUrl;
+              player.audio.load();
+              
+              // 延迟一下再播放，确保加载完成
+              setTimeout(() => {
+                player.play();
+              }, 500);
+            } else {
+              console.error(`[MusicPlayer] 无法获取新链接，跳过歌曲: ${currentAudio.name}`);
+              player.notice('该歌曲暂时无法播放，自动切换到下一首');
+              setTimeout(() => {
+                // 切换到下一首歌曲
+                // APlayer 使用 list.switch 来切换歌曲
+                if (player.list && player.list.list && player.list.list.length > 0) {
+                  const nextIndex = (player.list.index + 1) % player.list.list.length;
+                  player.list.switch(nextIndex);
+                }
+              }, 1500);
+            }
+          } catch (error) {
+            console.error('[MusicPlayer] 刷新链接失败:', error);
+            player.notice('刷新链接失败，请稍后重试');
+          }
+        }
+      }
+    };
+
+    /**
+     * 播放失败检测
+     * 当 play() 方法被拒绝时触发（如 403 错误）
+     */
+    const handlePlayError = async () => {
+      // 获取当前播放的歌曲
+      if (!player.list || !player.list.list || player.list.index < 0) {
+        return;
+      }
+      
+      const currentAudio = player.list.list[player.list.index];
+      
+      // 只处理网易云音乐
+      if (currentAudio?.source === 'netease' && currentAudio.neteaseId) {
+        console.log(`[MusicPlayer] 播放失败，尝试刷新链接: ${currentAudio.name}`);
+        player.notice('播放失败，正在尝试刷新链接...');
+        
+        try {
+          const { neteaseMusicApi } = await import('@/services/neteaseMusicApi');
+          const freshUrl = await neteaseMusicApi.getFreshSongUrl(currentAudio.neteaseId);
+          
+          if (freshUrl && freshUrl !== currentAudio.url) {
+            console.log(`[MusicPlayer] 获取到新链接，更新并播放: ${currentAudio.name}`);
+            currentAudio.url = freshUrl;
+            if (player.audio) {
+              player.audio.src = freshUrl;
+              player.audio.load();
+              player.play();
+            }
+          }
+        } catch (error) {
+          console.warn('[MusicPlayer] 播放失败时刷新链接出错:', error);
+        }
+      }
+    };
+
+    // 注册 APlayer 事件监听器
     player.on('play', handlePlayStart);
     player.on('pause', handlePause);
-    player.on('timeupdate', handlePlayerEvent);
+    // 使用 handleTimeUpdate 替代 handlePlayerEvent，包含播放结束检测逻辑
+    player.on('timeupdate', handleTimeUpdate);
     player.on('volumechange', handlePlayerEvent);
     player.on('listswitch', handleListSwitch);
+    // ended 事件可能不被触发，所以使用 timeupdate 作为备用机制
     player.on('ended', handleEnded);
+    player.on('error', handleError);
+
+    // 注册底层 audio 元素事件监听器
+    // 这能捕获 APlayer 可能无法捕获的错误（如 403 Forbidden）
+    if (player.audio) {
+      player.audio.addEventListener('error', handleAudioElementError);
+    }
 
     // 注意：APlayer 没有 off 方法，事件监听器会在播放器销毁时自动清理
     // 由于播放器是全局单例，不需要手动移除监听器
+    // 使用 highlightArtistNames 作为唯一依赖，因为 playMode 通过 ref 获取
     return () => {
-      // 清理函数为空，因为 APlayer 不支持 off 方法
-      // 播放器实例由 GlobalMusicPlayerManager 管理，会在适当时候销毁
+      // 清理 audio 元素的事件监听器
+      if (player.audio) {
+        player.audio.removeEventListener('error', handleAudioElementError);
+      }
     };
-  }, [playMode, highlightArtistNames]);
+  }, [highlightArtistNames]);
 
   /**
    * 初始化 APlayer 播放器
@@ -412,6 +844,11 @@ const MusicPlayerComponent = function MusicPlayer({
           
           // 更新播放器的容器引用
           player.container = aplayerRef.current;
+        }
+        
+        // 重新设置事件监听器（页面切换后需要重新绑定）
+        if (player) {
+          setupPlayerEventListeners(player, globalManager);
         }
         
         setIsInitialized(true);
@@ -452,11 +889,13 @@ const MusicPlayerComponent = function MusicPlayer({
         audio: audioList, // 音频列表已由 musicConfigManager 处理路径
         fixed: true, // 吸底模式
         autoplay: autoPlay,
-        loop: restoredMode === 'single' ? true : loop, // 单曲循环模式启用 loop
+        // loop 属性控制单曲循环，列表循环由 APlayer 内部处理
+        // 单曲循环时设为 true，其他模式设为 false
+        loop: restoredMode === 'single',
         preload: 'metadata',
         volume: initialVolume,
         mutex: true, // 阻止其他播放器同时播放
-        lrcType: 3, // 启用歌词显示，使用 lrc 文件
+        lrcType: 1, // 启用歌词显示，使用内联歌词（lrc 字段直接包含歌词内容）
         listFolded: true, // 折叠列表
         listMaxHeight: 400, // 列表最大高度
         storageName: 'musicPlayer', // 本地存储名称
@@ -499,7 +938,8 @@ const MusicPlayerComponent = function MusicPlayer({
       document.addEventListener('visibilitychange', handleVisibilityChange);
 
       // 设置播放器实例到全局管理器
-      globalManager.setPlayer(ap);
+      // 使用 initPlayer 而不是 setPlayer，确保 isInitialized 被正确设置
+      globalManager.initPlayer(ap);
       (window as any).globalAPlayer = ap;
 
       // 应用歌手名称高亮

@@ -249,6 +249,31 @@ class GlobalMusicPlayerManager {
     if (this.player && this.player.options) {
       if (mode === 'random') {
         this.player.options.order = 'random';
+        
+        // 关键修复：重新生成随机顺序数组
+        const audioCount = this.player.list && this.player.list.list ? this.player.list.list.length : 0;
+        if (audioCount > 0) {
+          // @ts-ignore - APlayer 内部方法
+          const shuffleFn = (window as any).APlayer?.default?.randomOrder || 
+                           (this.player as any).constructor?.randomOrder;
+          
+          if (shuffleFn && typeof shuffleFn === 'function') {
+            // @ts-ignore
+            this.player.randomOrder = shuffleFn(audioCount);
+            console.log('[GlobalMusicPlayer] 已重新生成随机顺序数组');
+          } else {
+            // 备用方案：手动生成随机顺序
+            const indices = Array.from({ length: audioCount }, (_, i) => i);
+            // Fisher-Yates 洗牌算法
+            for (let i = indices.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [indices[i], indices[j]] = [indices[j], indices[i]];
+            }
+            // @ts-ignore
+            this.player.randomOrder = indices;
+            console.log('[GlobalMusicPlayer] 已手动生成随机顺序数组');
+          }
+        }
       } else {
         this.player.options.order = 'list';
       }

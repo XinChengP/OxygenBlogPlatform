@@ -371,6 +371,33 @@ export function useMusicPlayer(): UseMusicPlayerReturn {
         player.options.loop = true;
       } else {
         player.options.loop = false;
+        
+        // 随机播放模式下需要重新生成随机顺序
+        if (mode === 'random') {
+          const audioCount = player.list && player.list.list ? player.list.list.length : 0;
+          if (audioCount > 0) {
+            // @ts-ignore - APlayer 内部方法
+            const shuffleFn = (window as any).APlayer?.default?.randomOrder || 
+                             (player as any).constructor?.randomOrder;
+            
+            if (shuffleFn && typeof shuffleFn === 'function') {
+              // @ts-ignore
+              player.randomOrder = shuffleFn(audioCount);
+              console.log('[useMusicPlayer] 已重新生成随机顺序数组');
+            } else {
+              // 备用方案：手动生成随机顺序
+              const indices = Array.from({ length: audioCount }, (_, i) => i);
+              // Fisher-Yates 洗牌算法
+              for (let i = indices.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [indices[i], indices[j]] = [indices[j], indices[i]];
+              }
+              // @ts-ignore
+              player.randomOrder = indices;
+              console.log('[useMusicPlayer] 已手动生成随机顺序数组');
+            }
+          }
+        }
       }
       
       // 更新状态

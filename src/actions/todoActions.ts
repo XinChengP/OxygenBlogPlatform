@@ -1,328 +1,242 @@
 /**
- * 待办管理相关的 Server Actions
- * 提供待办事项的增删改查功能
- * 待办数据使用 JSON 格式存储
- * 
- * 注意：此文件支持两种运行模式
- * 1. 本地开发模式（NEXT_PRIVATE_STATIC_EXPORT !== 'true'）：使用真实的文件系统操作
- * 2. 静态导出模式（NEXT_PRIVATE_STATIC_EXPORT === 'true'）：返回空实现，用于 GitHub Pages 构建
+ * 静态导出模式下的空 actions 实现
+ * 所有函数返回不支持的错误信息
  */
 
-'use server';
+// 导入类型
+import type { ImageSource } from '@/types/gallery';
 
-// 检测是否在静态导出模式 - 必须在任何导入之前检测
-const isStaticExport = process.env.NEXT_PRIVATE_STATIC_EXPORT === 'true' || process.env.STATIC_EXPORT === 'true';
+// ============================================
+// Todo Actions
+// ============================================
+export interface TodoItem {
+  id: string;
+  content: string;
+  completed: boolean;
+  priority?: 'high' | 'medium' | 'low';
+  dueDate?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface TodoConfig {
+  title: string;
+  items: TodoItem[];
+  showStats: boolean;
+}
+
+export const getTodoConfig = async (): Promise<{ success: boolean; message: string; data: TodoConfig | null }> => ({ 
+  success: false, 
+  message: '静态导出模式不支持此功能',
+  data: null
+});
+
+export const getTodoList = async (): Promise<{ success: boolean; message: string; data: TodoItem[] }> => ({ success: false, message: '静态导出模式不支持此功能', data: [] });
+export const getTodoItem = async (_id?: string): Promise<{ success: boolean; message: string; data: TodoItem | null }> => ({ success: false, message: '静态导出模式不支持此功能', data: null });
+export const createTodoItem = async (_data?: any): Promise<{ success: boolean; message: string; data: TodoItem | null }> => ({ success: false, message: '静态导出模式不支持此功能', data: null });
+export const updateTodoItem = async (_id?: string, _data?: any): Promise<{ success: boolean; message: string; data: TodoItem | null }> => ({ success: false, message: '静态导出模式不支持此功能', data: null });
+export const deleteTodoItem = async (_id?: string): Promise<{ success: boolean; message: string; data: string | null }> => ({ success: false, message: '静态导出模式不支持此功能', data: null });
+export const toggleTodoComplete = async (_id?: string): Promise<{ success: boolean; message: string; data: TodoItem | null }> => ({ success: false, message: '静态导出模式不支持此功能', data: null });
+export const batchDeleteTodoItems = async (_ids?: string[]): Promise<{ success: boolean; message: string; data: string[] }> => ({ success: false, message: '静态导出模式不支持此功能', data: [] });
+export const updateTodoConfigSettings = async (_config?: any): Promise<{ success: boolean; message: string; data: TodoConfig | null }> => ({ success: false, message: '静态导出模式不支持此功能', data: null });
+
+// ============================================
+// GitHub Actions
+// ============================================
+export const pushToGitHub = async (_message?: string) => ({ success: false, message: '静态导出模式不支持此功能' });
+export const buildAndPush = async (_buildMessage?: string, _pushMessage?: string): Promise<GitPushResult> => ({ success: false, message: '静态导出模式不支持此功能' });
+export interface GitStatus {
+  ahead: number;
+  behind: number;
+  modified: string[];
+  untracked: string[];
+  hasPushable: boolean;
+}
+
+export interface GitPushResult {
+  success: boolean;
+  message: string;
+}
+
+export const getGitStatus = async (): Promise<GitStatus> => ({ 
+  ahead: 0, 
+  behind: 0, 
+  modified: [], 
+  untracked: [],
+  hasPushable: false
+});
+
+// ============================================
+// Gallery Actions
+// ============================================
+export const uploadLocalImage = async (_formData?: FormData, _path?: string): Promise<{ success: boolean; message: string; image?: GalleryImage }> => ({ success: false, message: '静态导出模式不支持此功能' });
+export interface GalleryImage {
+  id: string;
+  src: string;
+  fallbackSrc?: string;
+  thumbnail?: string;
+  alt: string;
+  source: ImageSource;
+  category: string;
+  subCategory?: string;
+  width?: number;
+  height?: number;
+  createdAt: string;
+  updatedAt?: string;
+  size?: number;
+}
+
+export const getLocalGalleryImages = async (_path?: string): Promise<GalleryImage[]> => [];
+export const deleteLocalImage = async (_path?: string) => ({ success: false, message: '静态导出模式不支持此功能' });
+export const getLocalGalleryStats = async () => ({ success: false, message: '静态导出模式不支持此功能', data: { total: 0, used: 0, remaining: 0 } });
+export const getLocalGalleryDirectoryTree = async (_path?: string) => ({ success: false, message: '静态导出模式不支持此功能', data: [] });
+export const getLocalGallerySubDirectories = async (_path?: string) => ({ success: false, message: '静态导出模式不支持此功能', data: [] });
+export type DirectoryTree = { name: string; path: string; type: 'file' | 'directory'; children?: DirectoryTree[] };
+
+// ============================================
+// Moment Actions
+// ============================================
+export const getMomentList = async (_page?: number, _pageSize?: number): Promise<{ success: boolean; message: string; data: Moment[]; pagination: { page: number; pageSize: number; total: number; totalPages: number } }> => ({ success: false, message: '静态导出模式不支持此功能', data: [], pagination: { page: 1, pageSize: 10, total: 0, totalPages: 0 } });
+export const getMomentById = async (_id?: string) => ({ success: false, message: '静态导出模式不支持此功能' });
+export const getMomentDetail = async (_id?: string): Promise<{ success: boolean; message: string; data: Moment | null }> => ({ success: false, message: '静态导出模式不支持此功能', data: null });
+export const createMoment = async (_data?: any) => ({ success: false, message: '静态导出模式不支持此功能' });
+export const updateMoment = async (_id?: string, _data?: any) => ({ success: false, message: '静态导出模式不支持此功能' });
+export const deleteMoment = async (_id?: string) => ({ success: false, message: '静态导出模式不支持此功能' });
+export const toggleMomentLike = async (_id?: string) => ({ success: false, message: '静态导出模式不支持此功能', data: null });
+export const toggleMomentHidden = async (_id?: string): Promise<{ success: boolean; message: string; data: Moment | null }> => ({ success: false, message: '静态导出模式不支持此功能', data: null });
+export const toggleMomentPinned = async (_id?: string): Promise<{ success: boolean; message: string; data: Moment | null }> => ({ success: false, message: '静态导出模式不支持此功能', data: null });
+export const batchDeleteMoments = async (_ids?: string[]) => ({ success: false, message: '静态导出模式不支持此功能' });
+export const batchToggleMomentPinned = async (_ids?: string[], _pinned?: boolean) => ({ success: false, message: '静态导出模式不支持此功能' });
+export const batchToggleMomentHidden = async (_ids?: string[], _hidden?: boolean) => ({ success: false, message: '静态导出模式不支持此功能' });
+export const getMomentTags = async (): Promise<string[]> => [];
+export const generateNewMomentId = async (): Promise<string> => '';
+export const getMomentConfig = async () => ({ success: false, message: '静态导出模式不支持此功能' });
+export const updateMomentConfig = async (_config?: any) => ({ success: false, message: '静态导出模式不支持此功能' });
 
 // 类型定义
-import type { TodoItem, TodoConfig, TodoFormData, TodoActionResult } from '@/types/todo';
-import { promises as fs } from 'fs';
-import path from 'path';
-import { revalidatePath } from 'next/cache';
+export type Moment = { id: string; content: string; date: string; time: string; tags: string[]; likes: number; isHidden: boolean; hidden: boolean; isPinned: boolean; pinned: boolean; images: string[] };
+export type MomentData = Partial<Moment>;
 
-// 待办数据文件路径
-const TODO_FILE_PATH = path.join(process.cwd(), 'src', 'content', 'todo.json');
-
-/**
- * 读取待办数据文件
- * @returns 待办配置对象
- */
-async function readTodoFile(): Promise<TodoConfig> {
-  if (isStaticExport) {
-    return { title: 'Todo List', showStats: true, items: [] };
-  }
-  
-  try {
-    const content = await fs.readFile(TODO_FILE_PATH, 'utf-8');
-    return JSON.parse(content) as TodoConfig;
-  } catch {
-    return { title: 'Todo List', showStats: true, items: [] };
-  }
+// ============================================
+// Backup Actions
+// ============================================
+export interface BackupResult {
+  success: boolean;
+  message: string;
+  backupId?: string;
+  timestamp?: string;
+  error?: string;
 }
 
-/**
- * 写入待办数据文件
- * @param data 待办配置对象
- */
-async function writeTodoFile(data: TodoConfig): Promise<void> {
-  if (isStaticExport) return;
-  
-  const dir = path.dirname(TODO_FILE_PATH);
-  try {
-    await fs.access(dir);
-  } catch {
-    await fs.mkdir(dir, { recursive: true });
-  }
-  await fs.writeFile(TODO_FILE_PATH, JSON.stringify(data, null, 2), 'utf-8');
+export interface BackupHistory {
+  id: string;
+  commitHash: string;
+  timestamp: string;
+  message: string;
+  author: string;
+  size: number;
+  filesCount: number;
 }
 
-/**
- * 生成唯一ID
- * @returns 唯一ID字符串
- */
-function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+export interface PushConfig {
+  remoteUrl: string;
+  branch: string;
+  token?: string;
 }
 
-/**
- * 获取待办配置
- * @returns 待办配置
- */
-export async function getTodoConfig(): Promise<TodoActionResult<TodoConfig>> {
-  try {
-    const config = await readTodoFile();
-    return { success: true, message: 'Success', data: config };
-  } catch (error) {
-    return { success: false, message: error instanceof Error ? error.message : 'Unknown error' };
-  }
+export const getBackupList = async () => ({ success: false, message: '静态导出模式不支持此功能', data: [] });
+export const createBackup = async (_password?: string) => ({ success: false, message: '静态导出模式不支持此功能' });
+export const restoreBackup = async (_hash?: string, _password?: string) => ({ success: false, message: '静态导出模式不支持此功能' });
+export const deleteBackup = async (_id?: string) => ({ success: false, message: '静态导出模式不支持此功能' });
+export const verifyBackupPassword = async (_password?: string) => ({ success: false, message: '静态导出模式不支持此功能' });
+export const changeRestorePassword = async (_oldPassword?: string, _newPassword?: string) => ({ success: false, message: '静态导出模式不支持此功能' });
+export const getBackupPath = async () => '';
+export const backupDirExists = async () => false;
+export const initBackupRepo = async () => ({ success: false, message: '静态导出模式不支持此功能' });
+export const performBackup = async () => ({ success: false, message: '静态导出模式不支持此功能' });
+export const getBackupHistory = async (_limit?: number) => ({ success: false, message: '静态导出模式不支持此功能', history: [] });
+export const getBackupStatus = async (): Promise<{ success: boolean; message: string; hasPassword: boolean; lastBackup: string | null; totalCommits?: number; trackedFiles?: number; isGitRepo?: boolean; hasRemote?: boolean; remoteUrl?: string }> => ({ success: false, message: '静态导出模式不支持此功能', hasPassword: false, lastBackup: null });
+export const configureRemote = async (_config?: PushConfig) => ({ success: false, message: '静态导出模式不支持此功能' });
+export const pushToRemote = async (_config?: PushConfig) => ({ success: false, message: '静态导出模式不支持此功能' });
+export const getRemoteInfo = async (): Promise<{ success: boolean; message: string; remoteUrl: string; branch: string; ahead?: number }> => ({ success: false, message: '静态导出模式不支持此功能', remoteUrl: '', branch: '' });
+export const testRemoteConnection = async (_config?: PushConfig) => ({ success: false, message: '静态导出模式不支持此功能' });
+
+// ============================================
+// Settings Actions
+// ============================================
+export const getSettings = async () => ({ success: false, message: '静态导出模式不支持此功能' });
+export const updateSettings = async (_settings?: any) => ({ success: false, message: '静态导出模式不支持此功能' });
+
+// ============================================
+// Blog Actions
+// ============================================
+export interface BlogPost {
+  id: string;
+  title: string;
+  slug: string;
+  date: string;
+  updatedAt?: string;
+  category: string;
+  tags: string[];
+  excerpt: string;
+  content: string;
+  coverImage?: string;
+  filePath: string;
+  hidden?: boolean;
+  pinned?: boolean;
+  pinnedAt?: string;
 }
 
-/**
- * 获取待办列表
- * @returns 待办事项列表
- */
-export async function getTodoList(): Promise<TodoActionResult<TodoItem[]>> {
-  try {
-    const config = await readTodoFile();
-    return { success: true, message: 'Success', data: config.items || [] };
-  } catch (error) {
-    return { success: false, message: error instanceof Error ? error.message : 'Unknown error', data: [] };
-  }
+export interface BlogPostData {
+  title: string;
+  slug: string;
+  date: string;
+  category: string;
+  tags: string[];
+  excerpt: string;
+  content?: string;
+  coverImage?: string;
 }
 
-/**
- * 获取单个待办事项
- * @param id 待办事项ID
- * @returns 待办事项详情
- */
-export async function getTodoItem(id: string): Promise<TodoActionResult<TodoItem>> {
-  try {
-    const config = await readTodoFile();
-    const item = config.items?.find((item) => item.id === id);
-    
-    if (!item) {
-      return { success: false, message: 'Todo item not found' };
-    }
-    
-    return { success: true, message: 'Success', data: item };
-  } catch (error) {
-    return { success: false, message: error instanceof Error ? error.message : 'Unknown error' };
-  }
+export interface ActionResult<T = any> {
+  success: boolean;
+  message: string;
+  data?: T;
 }
 
-/**
- * 创建待办事项
- * @param data 待办事项表单数据
- * @returns 创建的待办事项
- */
-export async function createTodoItem(data: TodoFormData): Promise<TodoActionResult<TodoItem>> {
-  if (isStaticExport) {
-    return { success: false, message: 'Static export mode does not support this feature' };
-  }
-  
-  try {
-    if (!data.content || data.content.trim() === '') {
-      return { success: false, message: 'Content cannot be empty' };
-    }
+export const getBlogList = async (): Promise<BlogPost[]> => [];
+export const getBlogDetail = async (_id: string): Promise<ActionResult<BlogPost>> => ({ success: false, message: '静态导出模式不支持此功能' });
+export const createBlog = async (_data: BlogPostData): Promise<ActionResult<BlogPost>> => ({ success: false, message: '静态导出模式不支持此功能' });
+export const updateBlog = async (_id: string, _data: Partial<BlogPostData>): Promise<ActionResult<BlogPost>> => ({ success: false, message: '静态导出模式不支持此功能' });
+export const deleteBlog = async (_id: string): Promise<ActionResult> => ({ success: false, message: '静态导出模式不支持此功能' });
+export const batchDeleteBlogs = async (_ids: string[]): Promise<ActionResult> => ({ success: false, message: '静态导出模式不支持此功能' });
+export const batchUpdateBlogCategory = async (_ids: string[], _category: string): Promise<ActionResult> => ({ success: false, message: '静态导出模式不支持此功能' });
+export const getBlogCategories = async (): Promise<string[]> => [];
+export const saveBlogMarkdown = async (_slug: string, _content: string): Promise<ActionResult> => ({ success: false, message: '静态导出模式不支持此功能' });
+export const toggleBlogHidden = async (_id: string): Promise<ActionResult<BlogPost>> => ({ success: false, message: '静态导出模式不支持此功能' });
+export const batchToggleBlogHidden = async (_ids: string[], _hidden: boolean): Promise<ActionResult> => ({ success: false, message: '静态导出模式不支持此功能' });
 
-    const config = await readTodoFile();
-    
-    const newItem: TodoItem = {
-      id: generateId(),
-      content: data.content.trim(),
-      completed: false,
-      priority: data.priority || 'medium',
-      dueDate: data.dueDate,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+// ============================================
+// Changelog Actions
+// ============================================
+export type ChangelogType = 'feature' | 'optimize' | 'fix' | 'docs' | 'style' | 'refactor';
+export type ChangelogAchievement = 'tired' | 'exhausted' | 'smallButComplete' | 'lively';
 
-    if (!config.items) {
-      config.items = [];
-    }
-    
-    config.items.push(newItem);
-    await writeTodoFile(config);
-    
-    revalidatePath('/admin/todo');
-    revalidatePath('/moments');
-    
-    return { success: true, message: 'Created successfully', data: newItem };
-  } catch (error) {
-    return { success: false, message: error instanceof Error ? error.message : 'Unknown error' };
-  }
+export interface Changelog {
+  id: string;
+  date: string;
+  title: string;
+  content: string;
+  type: ChangelogType;
+  commits: string[];
+  filePath: string;
+  achievements: ChangelogAchievement[];
+  honors?: { name: string; color: string }[];
 }
 
-/**
- * 更新待办事项
- * @param id 待办事项ID
- * @param data 更新的数据
- * @returns 更新后的待办事项
- */
-export async function updateTodoItem(
-  id: string,
-  data: Partial<TodoFormData>
-): Promise<TodoActionResult<TodoItem>> {
-  if (isStaticExport) {
-    return { success: false, message: 'Static export mode does not support this feature' };
-  }
-  
-  try {
-    const config = await readTodoFile();
-    const itemIndex = config.items?.findIndex((item) => item.id === id);
-    
-    if (itemIndex === undefined || itemIndex === -1) {
-      return { success: false, message: 'Todo item not found' };
-    }
-
-    const item = config.items[itemIndex];
-    
-    if (data.content !== undefined) {
-      item.content = data.content.trim();
-    }
-    if (data.priority !== undefined) {
-      item.priority = data.priority;
-    }
-    if (data.dueDate !== undefined) {
-      item.dueDate = data.dueDate;
-    }
-    
-    item.updatedAt = new Date().toISOString();
-    
-    await writeTodoFile(config);
-    
-    revalidatePath('/admin/todo');
-    revalidatePath('/moments');
-    
-    return { success: true, message: 'Updated successfully', data: item };
-  } catch (error) {
-    return { success: false, message: error instanceof Error ? error.message : 'Unknown error' };
-  }
-}
-
-/**
- * 删除待办事项
- * @param id 待办事项ID
- * @returns 操作结果
- */
-export async function deleteTodoItem(id: string): Promise<TodoActionResult> {
-  if (isStaticExport) {
-    return { success: false, message: 'Static export mode does not support this feature' };
-  }
-  
-  try {
-    const config = await readTodoFile();
-    const itemIndex = config.items?.findIndex((item) => item.id === id);
-    
-    if (itemIndex === undefined || itemIndex === -1) {
-      return { success: false, message: 'Todo item not found' };
-    }
-
-    config.items!.splice(itemIndex, 1);
-    await writeTodoFile(config);
-    
-    revalidatePath('/admin/todo');
-    revalidatePath('/moments');
-    
-    return { success: true, message: 'Deleted successfully' };
-  } catch (error) {
-    return { success: false, message: error instanceof Error ? error.message : 'Unknown error' };
-  }
-}
-
-/**
- * 切换待办事项完成状态
- * @param id 待办事项ID
- * @returns 更新后的待办事项
- */
-export async function toggleTodoComplete(id: string): Promise<TodoActionResult<TodoItem>> {
-  if (isStaticExport) {
-    return { success: false, message: 'Static export mode does not support this feature' };
-  }
-  
-  try {
-    const config = await readTodoFile();
-    const item = config.items?.find((item) => item.id === id);
-    
-    if (!item) {
-      return { success: false, message: 'Todo item not found' };
-    }
-
-    item.completed = !item.completed;
-    item.updatedAt = new Date().toISOString();
-    
-    await writeTodoFile(config);
-    
-    revalidatePath('/admin/todo');
-    revalidatePath('/moments');
-    
-    return { success: true, message: item.completed ? 'Marked as completed' : 'Marked as incomplete', data: item };
-  } catch (error) {
-    return { success: false, message: error instanceof Error ? error.message : 'Unknown error' };
-  }
-}
-
-/**
- * 批量删除待办事项
- * @param ids 待办事项ID数组
- * @returns 操作结果
- */
-export async function batchDeleteTodoItems(ids: string[]): Promise<TodoActionResult> {
-  if (isStaticExport) {
-    return { success: false, message: 'Static export mode does not support this feature' };
-  }
-  
-  try {
-    if (!ids || ids.length === 0) {
-      return { success: false, message: 'No todo items selected' };
-    }
-
-    const config = await readTodoFile();
-    const originalLength = config.items?.length || 0;
-    
-    config.items = config.items?.filter((item) => !ids.includes(item.id)) || [];
-    
-    const deletedCount = originalLength - config.items.length;
-    
-    await writeTodoFile(config);
-    
-    revalidatePath('/admin/todo');
-    revalidatePath('/moments');
-    
-    return { success: true, message: `Successfully deleted ${deletedCount} todo items` };
-  } catch (error) {
-    return { success: false, message: error instanceof Error ? error.message : 'Unknown error' };
-  }
-}
-
-/**
- * 更新待办配置设置
- * @param settings 设置项
- * @returns 更新后的配置
- */
-export async function updateTodoConfigSettings(
-  settings: Partial<Pick<TodoConfig, 'title' | 'showStats'>>
-): Promise<TodoActionResult<TodoConfig>> {
-  if (isStaticExport) {
-    return { success: false, message: 'Static export mode does not support this feature' };
-  }
-  
-  try {
-    const config = await readTodoFile();
-    
-    if (settings.title !== undefined) {
-      config.title = settings.title;
-    }
-    if (settings.showStats !== undefined) {
-      config.showStats = settings.showStats;
-    }
-    
-    await writeTodoFile(config);
-    
-    revalidatePath('/admin/todo');
-    revalidatePath('/moments');
-    
-    return { success: true, message: 'Config updated successfully', data: config };
-  } catch (error) {
-    return { success: false, message: error instanceof Error ? error.message : 'Unknown error' };
-  }
-}
+export const getChangelogs = async (): Promise<Changelog[]> => [];
+export const getChangelogByDate = async (_date: string): Promise<Changelog | null> => null;
+export const checkChangelogExists = async (_date: string): Promise<boolean> => false;
+export const createChangelog = async (_data: { date: string; type: string; content: string; title?: string; commits?: string[]; honors?: { name: string; color: string }[] }): Promise<{ success: boolean; message: string; data?: Changelog }> => ({ success: false, message: '静态导出模式不支持此功能' });
+export const updateChangelog = async (_date: string, _data: Partial<{ type: string; content: string; title?: string; commits?: string[]; honors?: { name: string; color: string }[] }>): Promise<{ success: boolean; message: string; data?: Changelog }> => ({ success: false, message: '静态导出模式不支持此功能' });
+export const deleteChangelog = async (_date: string): Promise<{ success: boolean; message: string }> => ({ success: false, message: '静态导出模式不支持此功能' });

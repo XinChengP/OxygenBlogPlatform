@@ -26,6 +26,10 @@ declare namespace APlayerNS {
     cover?: string;
     lrc?: string;
     type?: 'auto' | 'hls' | 'normal';
+    /** 网易云音乐歌曲 ID（可选） */
+    neteaseId?: number;
+    /** 音乐来源（可选） */
+    source?: 'local' | 'netease';
   }
 
   interface APlayerAudioList {
@@ -93,6 +97,9 @@ declare namespace APlayerNS {
     off(event: string, handler: () => void): this;
     once(event: string, handler: () => void): this;
     trigger(event: string): this;
+    
+    // 显示通知消息
+    notice(text: string, time?: number, opacity?: number): void;
   }
 }
 

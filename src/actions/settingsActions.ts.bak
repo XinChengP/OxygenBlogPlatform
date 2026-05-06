@@ -215,28 +215,3 @@ export const getBlogCategories = async (): Promise<string[]> => [];
 export const saveBlogMarkdown = async (_slug: string, _content: string): Promise<ActionResult> => ({ success: false, message: '静态导出模式不支持此功能' });
 export const toggleBlogHidden = async (_id: string): Promise<ActionResult<BlogPost>> => ({ success: false, message: '静态导出模式不支持此功能' });
 export const batchToggleBlogHidden = async (_ids: string[], _hidden: boolean): Promise<ActionResult> => ({ success: false, message: '静态导出模式不支持此功能' });
-
-// ============================================
-// Changelog Actions
-// ============================================
-export type ChangelogType = 'feature' | 'optimize' | 'fix' | 'docs' | 'style' | 'refactor';
-export type ChangelogAchievement = 'tired' | 'exhausted' | 'smallButComplete' | 'lively';
-
-export interface Changelog {
-  id: string;
-  date: string;
-  title: string;
-  content: string;
-  type: ChangelogType;
-  commits: string[];
-  filePath: string;
-  achievements: ChangelogAchievement[];
-  honors?: { name: string; color: string }[];
-}
-
-export const getChangelogs = async (): Promise<Changelog[]> => [];
-export const getChangelogByDate = async (_date: string): Promise<Changelog | null> => null;
-export const checkChangelogExists = async (_date: string): Promise<boolean> => false;
-export const createChangelog = async (_data: { date: string; type: string; content: string; title?: string; commits?: string[]; honors?: { name: string; color: string }[] }): Promise<{ success: boolean; message: string; data?: Changelog }> => ({ success: false, message: '静态导出模式不支持此功能' });
-export const updateChangelog = async (_date: string, _data: Partial<{ type: string; content: string; title?: string; commits?: string[]; honors?: { name: string; color: string }[] }>): Promise<{ success: boolean; message: string; data?: Changelog }> => ({ success: false, message: '静态导出模式不支持此功能' });
-export const deleteChangelog = async (_date: string): Promise<{ success: boolean; message: string }> => ({ success: false, message: '静态导出模式不支持此功能' });
