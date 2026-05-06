@@ -374,6 +374,8 @@ const MusicPlayerComponent = function MusicPlayer({
         // 检查是否是网易云音乐，如果是则验证链接是否有效
         if (currentAudio.source === 'netease' && currentAudio.neteaseId) {
           try {
+            const { neteaseMusicApi } = await import('@/services/neteaseMusicApi');
+            
             // 检查当前音频是否已加载成功
             // 错误代码说明：
             // 1 = MEDIA_ERR_ABORTED - 用户中止
@@ -386,24 +388,29 @@ const MusicPlayerComponent = function MusicPlayer({
             // 主动检测链接是否可能过期：检查 URL 是否包含过期时间戳
             // 网易云音乐链接通常包含时间戳，超过时间后会返回 403
             const url = player.audio?.src || currentAudio.url || '';
+            
+            // 检查链接是否需要刷新（缓存即将过期或已过期）
+            const needRefresh = neteaseMusicApi.isUrlNeedRefresh(currentAudio.neteaseId);
             const urlExpired = url.includes('music.126.net') && 
                               (hasError || errorCode === 2 || errorCode === 4);
             
-            if (hasError || urlExpired) {
-              console.log(`[MusicPlayer] 检测到音频错误(Code: ${errorCode})，尝试刷新链接: ${currentAudio.name}`);
-              player.notice('音乐链接已过期，正在刷新...');
+            if (needRefresh || hasError || urlExpired) {
+              console.log(`[MusicPlayer] 检测到音频链接需要刷新(Code: ${errorCode}, needRefresh: ${needRefresh})，尝试刷新链接: ${currentAudio.name}`);
+              player.notice('正在获取最新音乐链接...');
               
-              const { neteaseMusicApi } = await import('@/services/neteaseMusicApi');
               // 使用智能获取方法，自动处理缓存和刷新
               const freshUrl = await neteaseMusicApi.getSmartSongUrl(currentAudio.neteaseId);
               
-              if (freshUrl) {
+              if (freshUrl && freshUrl !== currentAudio.url) {
                 console.log(`[MusicPlayer] 成功获取新链接: ${currentAudio.name}`);
                 currentAudio.url = freshUrl;
                 player.audio.src = freshUrl;
                 player.audio.load();
                 player.play();
                 player.notice('链接已刷新');
+              } else if (freshUrl) {
+                // 链接未变化，不需要重新加载
+                console.log(`[MusicPlayer] 链接未变化，继续播放: ${currentAudio.name}`);
               } else {
                 console.error(`[MusicPlayer] 无法获取新链接: ${currentAudio.name}`);
                 player.notice('该歌曲暂时无法播放');

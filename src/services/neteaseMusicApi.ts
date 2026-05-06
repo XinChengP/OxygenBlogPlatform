@@ -784,6 +784,74 @@ class NeteaseMusicApiService {
     
     console.log(`[NeteaseMusicApi] 后台刷新完成`);
   }
+
+  /**
+   * 强制刷新所有缓存的 URL
+   * 在播放器初始化时调用，确保所有链接都是最新的
+   * @param songIds 歌曲 ID 数组
+   * @returns 成功刷新的数量
+   */
+  async forceRefreshAllUrls(songIds: number[]): Promise<number> {
+    console.log(`[NeteaseMusicApi] 强制刷新所有 ${songIds.length} 首歌曲的链接...`);
+    
+    // 先清除所有缓存
+    this.clearUrlCache();
+    
+    let successCount = 0;
+    const batchSize = 5; // 增大批量大小，加快初始化速度
+    
+    for (let i = 0; i < songIds.length; i += batchSize) {
+      const batch = songIds.slice(i, i + batchSize);
+      
+      const results = await Promise.all(
+        batch.map(async (id) => {
+          try {
+            const url = await this.getFreshSongUrl(id);
+            if (url) {
+              return { id, success: true };
+            }
+            return { id, success: false };
+          } catch {
+            return { id, success: false };
+          }
+        })
+      );
+      
+      results.forEach(result => {
+        if (result.success) {
+          successCount++;
+        } else {
+          console.warn(`[NeteaseMusicApi] 刷新失败: ${result.id}`);
+        }
+      });
+      
+      // 批次间添加小延迟
+      if (i + batchSize < songIds.length) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+    }
+    
+    console.log(`[NeteaseMusicApi] 强制刷新完成，成功 ${successCount}/${songIds.length}`);
+    return successCount;
+  }
+
+  /**
+   * 获取缓存中的 URL
+   * 如果缓存不存在或已过期，返回 null
+   * @param songId 歌曲 ID
+   * @returns 缓存的 URL 或 null
+   */
+  getCachedUrl(songId: number): string | null {
+    const cache = this.urlCache.get(songId);
+    if (!cache) return null;
+    
+    const age = Date.now() - cache.cachedAt;
+    if (age > URL_CACHE_EXPIRE_TIME) {
+      return null;
+    }
+    
+    return cache.url;
+  }
 }
 
 // 导出单例实例

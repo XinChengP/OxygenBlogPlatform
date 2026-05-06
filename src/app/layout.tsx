@@ -213,14 +213,9 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
         <link rel="dns-prefetch" href="https://giscus.app" />
         
-        {/* 预加载关键背景图片 - 首页背景图 */}
-        <link 
-          rel="preload" 
-          href="/LTY_Picture/光与影.png" 
-          as="image" 
-          type="image/png"
-          fetchPriority="high"
-        />
+        {/* 注意：背景图片由 BackgroundLayer 组件动态加载，不预加载以避免浏览器警告
+            BackgroundLayer 会在客户端挂载后根据主题设置加载图片，预加载可能导致资源浪费
+        */}
         
 
         
