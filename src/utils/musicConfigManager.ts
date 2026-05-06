@@ -550,15 +550,19 @@ class MusicConfigManager {
               // 设置 API 基础 URL
               neteaseMusicApi.setConfig({ baseUrl: neteaseConfig.apiBaseUrl });
               
+              // 初始化 API，清除过期缓存
+              await neteaseMusicApi.initialize();
+              
               // 先测试 API 连接
               const isConnected = await neteaseMusicApi.testConnection();
               if (!isConnected) {
                 console.warn('[MusicConfigManager] 无法连接到网易云 API 服务');
               } else {
-                // 获取网易云歌曲
+                // 获取网易云歌曲（强制刷新，忽略缓存）
                 const neteaseSongs = await neteaseMusicApi.getFullPlaylistSongs(
                   neteaseConfig.playlistId,
-                  neteaseConfig.limit
+                  neteaseConfig.limit,
+                  true // 强制刷新链接
                 );
 
                 if (neteaseSongs.length > 0) {
@@ -845,10 +849,14 @@ class MusicConfigManager {
       // 设置 API 基础 URL
       neteaseMusicApi.setConfig({ baseUrl: neteaseConfig.apiBaseUrl });
       
-      // 获取网易云歌曲
+      // 初始化 API，清除过期缓存
+      await neteaseMusicApi.initialize();
+      
+      // 获取网易云歌曲（强制刷新，忽略缓存）
       const neteaseSongs = await neteaseMusicApi.getFullPlaylistSongs(
         neteaseConfig.playlistId,
-        neteaseConfig.limit
+        neteaseConfig.limit,
+        true // 强制刷新链接
       );
 
       // 转换为标准格式并缓存

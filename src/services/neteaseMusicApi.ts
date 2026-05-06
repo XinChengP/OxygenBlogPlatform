@@ -493,14 +493,16 @@ class NeteaseMusicApiService {
    * 获取完整歌单歌曲（包含播放链接）
    * @param playlistId 歌单 ID
    * @param limit 限制数量
+   * @param forceRefresh 是否强制刷新，忽略缓存（默认 false）
    * @returns 标准格式的歌曲列表
    */
   async getFullPlaylistSongs(
     playlistId: number | string,
-    limit: number = 100
+    limit: number = 100,
+    forceRefresh: boolean = false
   ): Promise<ConvertedNeteaseSong[]> {
     try {
-      console.log(`[NeteaseMusicApi] 正在获取歌单: ${playlistId}, 使用代理: ${this.config.useProxy}`);
+      console.log(`[NeteaseMusicApi] 正在获取歌单：${playlistId}, 使用代理：${this.config.useProxy}, 强制刷新：${forceRefresh}`);
 
       // 获取歌单歌曲列表
       const tracks = await this.getPlaylistTracks(playlistId, limit);
@@ -511,6 +513,12 @@ class NeteaseMusicApiService {
 
       // 获取歌曲 ID 列表
       const songIds = tracks.map((track) => track.id);
+
+      // 如果强制刷新，先清除缓存
+      if (forceRefresh) {
+        this.clearUrlCache();
+        console.log('[NeteaseMusicApi] 已清除旧缓存，获取全新链接');
+      }
 
       // 获取歌曲播放链接
       const urlMap = await this.getSongUrls(songIds);
@@ -653,6 +661,43 @@ class NeteaseMusicApiService {
     this.urlCache.clear();
     localStorage.removeItem(URL_CACHE_KEY);
     console.log('[NeteaseMusicApi] URL 缓存已清除');
+  }
+  
+  /**
+   * 初始化时自动清除过期缓存
+   * 在页面加载时调用，确保使用新链接
+   */
+  async initialize(): Promise<void> {
+    console.log('[NeteaseMusicApi] 初始化，清除过期缓存...');
+    
+    // 检查缓存是否已过期
+    const cachedData = localStorage.getItem(URL_CACHE_KEY);
+    if (cachedData) {
+      try {
+        const cache = JSON.parse(cachedData) as Record<string, CachedSongUrl>;
+        const now = Date.now();
+        let expiredCount = 0;
+        
+        // 检查是否有过期的缓存
+        for (const data of Object.values(cache)) {
+          if (now - data.cachedAt >= URL_CACHE_EXPIRE_TIME) {
+            expiredCount++;
+            break;
+          }
+        }
+        
+        // 如果有过期的缓存，清除所有缓存
+        if (expiredCount > 0) {
+          console.log(`[NeteaseMusicApi] 发现 ${expiredCount} 个过期缓存，清除所有缓存`);
+          this.clearUrlCache();
+        } else {
+          console.log('[NeteaseMusicApi] 缓存未过期，保留现有缓存');
+        }
+      } catch (error) {
+        console.warn('[NeteaseMusicApi] 检查缓存失败:', error);
+        this.clearUrlCache();
+      }
+    }
   }
   
   /**
