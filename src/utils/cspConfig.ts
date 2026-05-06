@@ -111,12 +111,13 @@ export const productionCSP: CSPDirectives = {
     "'self'",
     // GitHub API
     'https://api.github.com',
-    // Giscus评论系统
+    // Giscus 评论系统
     'https://giscus.app',
     'https://api.github.com',
-    // 51la统计
+    // 51la 统计
     'https://v6.51.la',
     'https://sdk.51.la',
+    'https://collect-v6.51.la',  // 51la 数据收集
     // Google Analytics
     'https://www.google-analytics.com',
     // 本地开发
