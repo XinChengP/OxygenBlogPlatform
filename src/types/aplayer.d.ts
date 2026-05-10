@@ -26,10 +26,8 @@ declare namespace APlayerNS {
     cover?: string;
     lrc?: string;
     type?: 'auto' | 'hls' | 'normal';
-    /** 网易云音乐歌曲 ID（可选） */
-    neteaseId?: number;
     /** 音乐来源（可选） */
-    source?: 'local' | 'netease';
+    source?: 'local';
   }
 
   interface APlayerAudioList {

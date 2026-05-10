@@ -1,18 +1,11 @@
 {
-  "version": "2.0",
-  "lastUpdated": "2026-05-05",
-  "description": "洛天依主题博客音乐播放列表配置文件（支持本地音乐+网易云歌单混合模式）",
+  "version": "3.0",
+  "lastUpdated": "2026-05-07",
+  "description": "洛天依主题博客音乐播放列表配置文件（仅本地音乐）",
   "sources": {
     "local": {
       "enabled": true,
       "description": "本地音乐文件"
-    },
-    "netease": {
-      "enabled": true,
-      "description": "网易云音乐歌单 - 华风夏韵 洛水天依",
-      "apiBaseUrl": "https://api.toolkal.com",
-      "playlistId": "14349636887",
-      "limit": 500
     }
   },
   "songs": [
