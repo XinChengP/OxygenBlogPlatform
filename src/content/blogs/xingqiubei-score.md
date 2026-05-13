@@ -41,12 +41,9 @@ coverImage: "/Blogabout/Xingqiubei/cover.webp"
 
 ## 简谱
 > 扒谱：歆橙
-<div style="text-align: center; margin: 20px 0;">
-  <img src="/Blogabout/Xingqiubei/01.svg" alt="第一页" style="max-width: 100%; height: auto;">
-</div>
-
-<div style="text-align: center; margin: 20px 0;">
-  <img src="/Blogabout/Xingqiubei/02.svg" alt="第二页" style="max-width: 100%; height: auto;">
+<div class="image-grid image-grid-2-cols image-grid-equal-height">
+  <img src="/Blogabout/Xingqiubei/01.svg" alt="第一页" />
+  <img src="/Blogabout/Xingqiubei/02.svg" alt="第二页" />
 </div>
 
 PS：小白第二次扒谱，还有很多地方需要完善，欢迎各位大佬指正（博主依旧太菜了，前奏扒不出来QAQ）
