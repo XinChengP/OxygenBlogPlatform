@@ -35,7 +35,20 @@ if exist "node_modules\.cache" (
 )
 
 echo.
-echo [4/4] Starting dev server...
+echo [4/4] Checking and stopping processes on port 7120...
+for /f "tokens=5" %%a in ('netstat -aon ^| find ":7120" ^| find "LISTENING"') do (
+    echo     Stopping process PID %%a...
+    taskkill /f /pid %%a >nul 2>&1
+    if !errorlevel! equ 0 (
+        echo     Done: Process %%a stopped
+    ) else (
+        echo     Failed: Could not stop process %%a
+    )
+)
+echo     Done: Port 7120 is now free
+
+echo.
+echo [5/5] Starting dev server...
 echo.
 echo ========================================
 echo   Server starting...

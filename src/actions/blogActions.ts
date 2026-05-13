@@ -1,242 +1,658 @@
 /**
- * 静态导出模式下的空 actions 实现
- * 所有函数返回不支持的错误信息
+ * 博客文章管理相关的 Server Actions
+ * 提供博客文章的增删改查功能
+ * 
+ * 注意：此文件支持两种运行模式
+ * 1. 本地开发模式（NEXT_PRIVATE_STATIC_EXPORT !== 'true'）：使用真实的文件系统操作
+ * 2. 静态导出模式（NEXT_PRIVATE_STATIC_EXPORT === 'true'）：返回空实现，用于 GitHub Pages 构建
  */
 
-// 导入类型
-import type { ImageSource } from '@/types/gallery';
+'use server';
 
-// ============================================
-// Todo Actions
-// ============================================
-export interface TodoItem {
-  id: string;
-  content: string;
-  completed: boolean;
-  priority?: 'high' | 'medium' | 'low';
-  dueDate?: string;
-  createdAt: string;
-  updatedAt?: string;
-}
-
-export interface TodoConfig {
-  title: string;
-  items: TodoItem[];
-  showStats: boolean;
-}
-
-export const getTodoConfig = async (): Promise<{ success: boolean; message: string; data: TodoConfig | null }> => ({ 
-  success: false, 
-  message: '静态导出模式不支持此功能',
-  data: null
-});
-
-export const getTodoList = async (): Promise<{ success: boolean; message: string; data: TodoItem[] }> => ({ success: false, message: '静态导出模式不支持此功能', data: [] });
-export const getTodoItem = async (_id?: string): Promise<{ success: boolean; message: string; data: TodoItem | null }> => ({ success: false, message: '静态导出模式不支持此功能', data: null });
-export const createTodoItem = async (_data?: any): Promise<{ success: boolean; message: string; data: TodoItem | null }> => ({ success: false, message: '静态导出模式不支持此功能', data: null });
-export const updateTodoItem = async (_id?: string, _data?: any): Promise<{ success: boolean; message: string; data: TodoItem | null }> => ({ success: false, message: '静态导出模式不支持此功能', data: null });
-export const deleteTodoItem = async (_id?: string): Promise<{ success: boolean; message: string; data: string | null }> => ({ success: false, message: '静态导出模式不支持此功能', data: null });
-export const toggleTodoComplete = async (_id?: string): Promise<{ success: boolean; message: string; data: TodoItem | null }> => ({ success: false, message: '静态导出模式不支持此功能', data: null });
-export const batchDeleteTodoItems = async (_ids?: string[]): Promise<{ success: boolean; message: string; data: string[] }> => ({ success: false, message: '静态导出模式不支持此功能', data: [] });
-export const updateTodoConfigSettings = async (_config?: any): Promise<{ success: boolean; message: string; data: TodoConfig | null }> => ({ success: false, message: '静态导出模式不支持此功能', data: null });
-
-// ============================================
-// GitHub Actions
-// ============================================
-export const pushToGitHub = async (_message?: string) => ({ success: false, message: '静态导出模式不支持此功能' });
-export const buildAndPush = async (_buildMessage?: string, _pushMessage?: string): Promise<GitPushResult> => ({ success: false, message: '静态导出模式不支持此功能' });
-export interface GitStatus {
-  ahead: number;
-  behind: number;
-  modified: string[];
-  untracked: string[];
-  hasPushable: boolean;
-}
-
-export interface GitPushResult {
-  success: boolean;
-  message: string;
-}
-
-export const getGitStatus = async (): Promise<GitStatus> => ({ 
-  ahead: 0, 
-  behind: 0, 
-  modified: [], 
-  untracked: [],
-  hasPushable: false
-});
-
-// ============================================
-// Gallery Actions
-// ============================================
-export const uploadLocalImage = async (_formData?: FormData, _path?: string): Promise<{ success: boolean; message: string; image?: GalleryImage }> => ({ success: false, message: '静态导出模式不支持此功能' });
-export interface GalleryImage {
-  id: string;
-  src: string;
-  fallbackSrc?: string;
-  thumbnail?: string;
-  alt: string;
-  source: ImageSource;
-  category: string;
-  subCategory?: string;
-  width?: number;
-  height?: number;
-  createdAt: string;
-  updatedAt?: string;
-  size?: number;
-}
-
-export const getLocalGalleryImages = async (_path?: string): Promise<GalleryImage[]> => [];
-export const deleteLocalImage = async (_path?: string) => ({ success: false, message: '静态导出模式不支持此功能' });
-export const getLocalGalleryStats = async () => ({ success: false, message: '静态导出模式不支持此功能', data: { total: 0, used: 0, remaining: 0 } });
-export const getLocalGalleryDirectoryTree = async (_path?: string) => ({ success: false, message: '静态导出模式不支持此功能', data: [] });
-export const getLocalGallerySubDirectories = async (_path?: string) => ({ success: false, message: '静态导出模式不支持此功能', data: [] });
-export type DirectoryTree = { name: string; path: string; type: 'file' | 'directory'; children?: DirectoryTree[] };
-
-// ============================================
-// Moment Actions
-// ============================================
-export const getMomentList = async (_page?: number, _pageSize?: number): Promise<{ success: boolean; message: string; data: Moment[]; pagination: { page: number; pageSize: number; total: number; totalPages: number } }> => ({ success: false, message: '静态导出模式不支持此功能', data: [], pagination: { page: 1, pageSize: 10, total: 0, totalPages: 0 } });
-export const getMomentById = async (_id?: string) => ({ success: false, message: '静态导出模式不支持此功能' });
-export const getMomentDetail = async (_id?: string): Promise<{ success: boolean; message: string; data: Moment | null }> => ({ success: false, message: '静态导出模式不支持此功能', data: null });
-export const createMoment = async (_data?: any) => ({ success: false, message: '静态导出模式不支持此功能' });
-export const updateMoment = async (_id?: string, _data?: any) => ({ success: false, message: '静态导出模式不支持此功能' });
-export const deleteMoment = async (_id?: string) => ({ success: false, message: '静态导出模式不支持此功能' });
-export const toggleMomentLike = async (_id?: string) => ({ success: false, message: '静态导出模式不支持此功能', data: null });
-export const toggleMomentHidden = async (_id?: string): Promise<{ success: boolean; message: string; data: Moment | null }> => ({ success: false, message: '静态导出模式不支持此功能', data: null });
-export const toggleMomentPinned = async (_id?: string): Promise<{ success: boolean; message: string; data: Moment | null }> => ({ success: false, message: '静态导出模式不支持此功能', data: null });
-export const batchDeleteMoments = async (_ids?: string[]) => ({ success: false, message: '静态导出模式不支持此功能' });
-export const batchToggleMomentPinned = async (_ids?: string[], _pinned?: boolean) => ({ success: false, message: '静态导出模式不支持此功能' });
-export const batchToggleMomentHidden = async (_ids?: string[], _hidden?: boolean) => ({ success: false, message: '静态导出模式不支持此功能' });
-export const getMomentTags = async (): Promise<string[]> => [];
-export const generateNewMomentId = async (): Promise<string> => '';
-export const getMomentConfig = async () => ({ success: false, message: '静态导出模式不支持此功能' });
-export const updateMomentConfig = async (_config?: any) => ({ success: false, message: '静态导出模式不支持此功能' });
+// 检测是否在静态导出模式 - 必须在任何导入之前检测
+const isStaticExport = process.env.NEXT_PRIVATE_STATIC_EXPORT === 'true' || process.env.STATIC_EXPORT === 'true';
 
 // 类型定义
-export type Moment = { id: string; content: string; date: string; time: string; tags: string[]; likes: number; isHidden: boolean; hidden: boolean; isPinned: boolean; pinned: boolean; images: string[] };
-export type MomentData = Partial<Moment>;
-
-// ============================================
-// Backup Actions
-// ============================================
-export interface BackupResult {
-  success: boolean;
-  message: string;
-  backupId?: string;
-  timestamp?: string;
-  error?: string;
-}
-
-export interface BackupHistory {
-  id: string;
-  commitHash: string;
-  timestamp: string;
-  message: string;
-  author: string;
-  size: number;
-  filesCount: number;
-}
-
-export interface PushConfig {
-  remoteUrl: string;
-  branch: string;
-  token?: string;
-}
-
-export const getBackupList = async () => ({ success: false, message: '静态导出模式不支持此功能', data: [] });
-export const createBackup = async (_password?: string) => ({ success: false, message: '静态导出模式不支持此功能' });
-export const restoreBackup = async (_hash?: string, _password?: string) => ({ success: false, message: '静态导出模式不支持此功能' });
-export const deleteBackup = async (_id?: string) => ({ success: false, message: '静态导出模式不支持此功能' });
-export const verifyBackupPassword = async (_password?: string) => ({ success: false, message: '静态导出模式不支持此功能' });
-export const changeRestorePassword = async (_oldPassword?: string, _newPassword?: string) => ({ success: false, message: '静态导出模式不支持此功能' });
-export const getBackupPath = async () => '';
-export const backupDirExists = async () => false;
-export const initBackupRepo = async () => ({ success: false, message: '静态导出模式不支持此功能' });
-export const performBackup = async () => ({ success: false, message: '静态导出模式不支持此功能' });
-export const getBackupHistory = async (_limit?: number) => ({ success: false, message: '静态导出模式不支持此功能', history: [] });
-export const getBackupStatus = async (): Promise<{ success: boolean; message: string; hasPassword: boolean; lastBackup: string | null; totalCommits?: number; trackedFiles?: number; isGitRepo?: boolean; hasRemote?: boolean; remoteUrl?: string }> => ({ success: false, message: '静态导出模式不支持此功能', hasPassword: false, lastBackup: null });
-export const configureRemote = async (_config?: PushConfig) => ({ success: false, message: '静态导出模式不支持此功能' });
-export const pushToRemote = async (_config?: PushConfig) => ({ success: false, message: '静态导出模式不支持此功能' });
-export const getRemoteInfo = async (): Promise<{ success: boolean; message: string; remoteUrl: string; branch: string; ahead?: number }> => ({ success: false, message: '静态导出模式不支持此功能', remoteUrl: '', branch: '' });
-export const testRemoteConnection = async (_config?: PushConfig) => ({ success: false, message: '静态导出模式不支持此功能' });
-
-// ============================================
-// Settings Actions
-// ============================================
-export const getSettings = async () => ({ success: false, message: '静态导出模式不支持此功能' });
-export const updateSettings = async (_settings?: any) => ({ success: false, message: '静态导出模式不支持此功能' });
-
-// ============================================
-// Blog Actions
-// ============================================
 export interface BlogPost {
   id: string;
   title: string;
   slug: string;
   date: string;
-  updatedAt?: string;
   category: string;
   tags: string[];
   excerpt: string;
   content: string;
   coverImage?: string;
-  filePath: string;
+  readingTime?: number;
+  wordCount?: number;
+  updatedAt?: string;
   hidden?: boolean;
   pinned?: boolean;
   pinnedAt?: string;
+  filePath: string;
 }
 
 export interface BlogPostData {
   title: string;
-  slug: string;
-  date: string;
+  content: string;
+  date?: string;
   category: string;
-  tags: string[];
-  excerpt: string;
-  content?: string;
+  tags?: string[];
+  excerpt?: string;
   coverImage?: string;
+  slug?: string;
+  hidden?: boolean;
 }
 
-export interface ActionResult<T = any> {
+export interface ActionResult<T = unknown> {
   success: boolean;
   message: string;
   data?: T;
+  filePath?: string;
 }
 
-export const getBlogList = async (): Promise<BlogPost[]> => [];
-export const getBlogDetail = async (_id: string): Promise<ActionResult<BlogPost>> => ({ success: false, message: '静态导出模式不支持此功能' });
-export const createBlog = async (_data: BlogPostData): Promise<ActionResult<BlogPost>> => ({ success: false, message: '静态导出模式不支持此功能' });
-export const updateBlog = async (_id: string, _data: Partial<BlogPostData>): Promise<ActionResult<BlogPost>> => ({ success: false, message: '静态导出模式不支持此功能' });
-export const deleteBlog = async (_id: string): Promise<ActionResult> => ({ success: false, message: '静态导出模式不支持此功能' });
-export const batchDeleteBlogs = async (_ids: string[]): Promise<ActionResult> => ({ success: false, message: '静态导出模式不支持此功能' });
-export const batchUpdateBlogCategory = async (_ids: string[], _category: string): Promise<ActionResult> => ({ success: false, message: '静态导出模式不支持此功能' });
-export const getBlogCategories = async (): Promise<string[]> => [];
-export const saveBlogMarkdown = async (_slug: string, _content: string): Promise<ActionResult> => ({ success: false, message: '静态导出模式不支持此功能' });
-export const toggleBlogHidden = async (_id: string): Promise<ActionResult<BlogPost>> => ({ success: false, message: '静态导出模式不支持此功能' });
-export const batchToggleBlogHidden = async (_ids: string[], _hidden: boolean): Promise<ActionResult> => ({ success: false, message: '静态导出模式不支持此功能' });
+// 只有在非静态导出模式下才导入和使用 Server Actions 相关功能
+import { promises as fs } from 'fs';
+import path from 'path';
+import { revalidatePath } from 'next/cache';
 
-// ============================================
-// Changelog Actions
-// ============================================
-export type ChangelogType = 'feature' | 'optimize' | 'fix' | 'docs' | 'style' | 'refactor';
-export type ChangelogAchievement = 'tired' | 'exhausted' | 'smallButComplete' | 'lively';
+// 博客文章存储目录
+const BLOGS_DIR = path.join(process.cwd(), 'src', 'content', 'blogs');
 
-export interface Changelog {
-  id: string;
-  date: string;
-  title: string;
-  content: string;
-  type: ChangelogType;
-  commits: string[];
-  filePath: string;
-  achievements: ChangelogAchievement[];
-  honors?: { name: string; color: string }[];
+/**
+ * 确保博客目录存在
+ */
+async function ensureBlogsDir(): Promise<void> {
+  try {
+    await fs.access(BLOGS_DIR);
+  } catch {
+    await fs.mkdir(BLOGS_DIR, { recursive: true });
+  }
 }
 
-export const getChangelogs = async (): Promise<Changelog[]> => [];
-export const getChangelogByDate = async (_date: string): Promise<Changelog | null> => null;
-export const checkChangelogExists = async (_date: string): Promise<boolean> => false;
-export const createChangelog = async (_data: { date: string; type: string; content: string; title?: string; commits?: string[]; honors?: { name: string; color: string }[] }): Promise<{ success: boolean; message: string; data?: Changelog }> => ({ success: false, message: '静态导出模式不支持此功能' });
-export const updateChangelog = async (_date: string, _data: Partial<{ type: string; content: string; title?: string; commits?: string[]; honors?: { name: string; color: string }[] }>): Promise<{ success: boolean; message: string; data?: Changelog }> => ({ success: false, message: '静态导出模式不支持此功能' });
-export const deleteChangelog = async (_date: string): Promise<{ success: boolean; message: string }> => ({ success: false, message: '静态导出模式不支持此功能' });
+/**
+ * 解析 frontmatter
+ * @param content Markdown 文件内容
+ * @returns 解析后的 frontmatter 和正文
+ */
+function parseFrontMatter(content: string): { frontmatter: Record<string, unknown>; body: string } {
+  const frontmatterRegex = /^---\s*\n([\s\S]*?)\n---\s*\n([\s\S]*)$/;
+  const match = content.match(frontmatterRegex);
+
+  if (!match) {
+    return { frontmatter: {}, body: content };
+  }
+
+  const frontmatterText = match[1];
+  const body = match[2];
+  const frontmatter: Record<string, unknown> = {};
+
+  const lines = frontmatterText.split('\n');
+  for (const line of lines) {
+    const colonIndex = line.indexOf(':');
+    if (colonIndex > 0) {
+      const key = line.slice(0, colonIndex).trim();
+      let value: unknown = line.slice(colonIndex + 1).trim();
+
+      if (typeof value === 'string') {
+        value = value.replace(/^["']|["']$/g, '');
+
+        if ((value as string).startsWith('[') && (value as string).endsWith(']')) {
+          try {
+            value = JSON.parse((value as string).replace(/'/g, '"'));
+          } catch {
+            // 保持原字符串
+          }
+        }
+
+        if (value === 'true') value = true;
+        if (value === 'false') value = false;
+      }
+
+      frontmatter[key] = value;
+    }
+  }
+
+  return { frontmatter, body };
+}
+
+/**
+ * 生成 frontmatter 字符串
+ * @param data 博客数据
+ * @returns frontmatter 字符串
+ */
+function generateFrontMatter(data: BlogPostData & { slug: string; date: string }): string {
+  const lines = ['---'];
+
+  lines.push(`title: "${data.title}"`);
+  lines.push(`date: "${data.date}"`);
+  lines.push(`category: "${data.category}"`);
+  
+  if (data.tags && data.tags.length > 0) {
+    lines.push(`tags: [${data.tags.map((tag) => `"${tag}"`).join(', ')}]`);
+  }
+  
+  if (data.excerpt) {
+    lines.push(`excerpt: "${data.excerpt}"`);
+  }
+  
+  if (data.coverImage) {
+    lines.push(`coverImage: "${data.coverImage}"`);
+  }
+  
+  if (data.hidden) {
+    lines.push('hidden: true');
+  }
+
+  lines.push('---');
+
+  return lines.join('\n');
+}
+
+/**
+ * 计算阅读时间
+ * @param content 文章内容
+ * @returns 阅读时间（分钟）
+ */
+function calculateReadingTime(content: string): number {
+  const wordsPerMinute = 200;
+  const wordCount = content.trim().split(/\s+/).length;
+  return Math.ceil(wordCount / wordsPerMinute);
+}
+
+/**
+ * 生成 slug
+ * @param title 标题
+ * @returns slug 字符串
+ */
+function generateSlug(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9\u4e00-\u9fa5]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+/**
+ * 获取所有博客文件列表
+ * @returns 文件名数组
+ */
+async function getBlogFiles(): Promise<string[]> {
+  if (isStaticExport) {
+    return [];
+  }
+  
+  try {
+    await ensureBlogsDir();
+    const files = await fs.readdir(BLOGS_DIR);
+    return files.filter((file) => file.endsWith('.md'));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * 读取博客文件内容
+ * @param slug 博客 slug
+ * @returns 博客数据
+ */
+async function readBlogFile(slug: string): Promise<BlogPost | null> {
+  if (isStaticExport) {
+    return null;
+  }
+  
+  try {
+    const filePath = path.join(BLOGS_DIR, `${slug}.md`);
+    const content = await fs.readFile(filePath, 'utf-8');
+    const { frontmatter, body } = parseFrontMatter(content);
+
+    const wordCount = body.trim().split(/\s+/).length;
+
+    return {
+      id: slug,
+      slug,
+      title: (frontmatter.title as string) || '',
+      date: (frontmatter.date as string) || '',
+      category: (frontmatter.category as string) || '',
+      tags: (frontmatter.tags as string[]) || [],
+      excerpt: (frontmatter.excerpt as string) || '',
+      content: body.trim(),
+      coverImage: (frontmatter.coverImage as string),
+      readingTime: calculateReadingTime(body),
+      wordCount,
+      updatedAt: (frontmatter.updatedAt as string),
+      hidden: (frontmatter.hidden as boolean) || false,
+      pinned: (frontmatter.pinned as boolean) || false,
+      pinnedAt: (frontmatter.pinnedAt as string),
+      filePath: `src/content/blogs/${slug}.md`,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 写入博客文件
+ * @param slug 博客 slug
+ * @param data 博客数据
+ */
+async function writeBlogFile(slug: string, data: BlogPostData & { date: string }): Promise<void> {
+  if (isStaticExport) {
+    return;
+  }
+  
+  await ensureBlogsDir();
+  const filePath = path.join(BLOGS_DIR, `${slug}.md`);
+  const frontmatter = generateFrontMatter({ ...data, slug });
+  const content = `${frontmatter}\n\n${data.content}`;
+  await fs.writeFile(filePath, content, 'utf-8');
+}
+
+/**
+ * 删除博客文件
+ * @param slug 博客 slug
+ */
+async function deleteBlogFile(slug: string): Promise<void> {
+  if (isStaticExport) {
+    return;
+  }
+  
+  const filePath = path.join(BLOGS_DIR, `${slug}.md`);
+  await fs.unlink(filePath);
+}
+
+/**
+ * 获取博客列表
+ * @returns 博客列表
+ */
+export async function getBlogList(): Promise<BlogPost[]> {
+  if (isStaticExport) {
+    return [];
+  }
+  
+  try {
+    const files = await getBlogFiles();
+    const blogs: BlogPost[] = [];
+
+    for (const file of files) {
+      const slug = file.replace('.md', '');
+      const blog = await readBlogFile(slug);
+      if (blog) {
+        blogs.push(blog);
+      }
+    }
+
+    // 按日期倒序排列，置顶文章优先
+    blogs.sort((a, b) => {
+      if (a.pinned !== b.pinned) {
+        return a.pinned ? -1 : 1;
+      }
+      return new Date(b.date).getTime() - new Date(a.date).getTime();
+    });
+
+    return blogs;
+  } catch (error) {
+    console.error('获取博客列表失败:', error);
+    return [];
+  }
+}
+
+/**
+ * 获取博客详情
+ * @param slug 博客 slug
+ * @returns 博客详情
+ */
+export async function getBlogDetail(slug: string): Promise<ActionResult<BlogPost>> {
+  if (isStaticExport) {
+    return { success: false, message: 'Static export mode does not support this feature' };
+  }
+  
+  try {
+    const blog = await readBlogFile(slug);
+
+    if (!blog) {
+      return { success: false, message: 'Blog not found' };
+    }
+
+    return { success: true, message: 'Success', data: blog };
+  } catch (error) {
+    return { success: false, message: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
+/**
+ * 创建博客
+ * @param data 博客数据
+ * @returns 创建的博客
+ */
+export async function createBlog(data: BlogPostData): Promise<ActionResult<BlogPost>> {
+  if (isStaticExport) {
+    return { success: false, message: 'Static export mode does not support this feature' };
+  }
+  
+  try {
+    if (!data.title || data.title.trim() === '') {
+      return { success: false, message: 'Title cannot be empty' };
+    }
+
+    if (!data.content || data.content.trim() === '') {
+      return { success: false, message: 'Content cannot be empty' };
+    }
+
+    const slug = data.slug || generateSlug(data.title);
+    const date = data.date || new Date().toISOString().split('T')[0];
+
+    // 检查文件是否已存在
+    const existingBlog = await readBlogFile(slug);
+    if (existingBlog) {
+      return { success: false, message: 'Blog with this slug already exists' };
+    }
+
+    await writeBlogFile(slug, { ...data, date });
+
+    const newBlog = await readBlogFile(slug);
+    if (!newBlog) {
+      return { success: false, message: 'Failed to create blog' };
+    }
+
+    revalidatePath('/admin/blogs');
+    revalidatePath('/blogs');
+    revalidatePath('/archive');
+
+    return { success: true, message: 'Created successfully', data: newBlog, filePath: `src/content/blogs/${slug}.md` };
+  } catch (error) {
+    return { success: false, message: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
+/**
+ * 更新博客
+ * @param slug 博客 slug
+ * @param data 更新的数据
+ * @returns 更新后的博客
+ */
+export async function updateBlog(
+  slug: string,
+  data: Partial<BlogPostData>
+): Promise<ActionResult<BlogPost>> {
+  if (isStaticExport) {
+    return { success: false, message: 'Static export mode does not support this feature' };
+  }
+  
+  try {
+    const existingBlog = await readBlogFile(slug);
+
+    if (!existingBlog) {
+      return { success: false, message: 'Blog not found' };
+    }
+
+    const updatedData: BlogPostData & { date: string } = {
+      title: data.title ?? existingBlog.title,
+      content: data.content ?? existingBlog.content,
+      date: data.date ?? existingBlog.date,
+      category: data.category ?? existingBlog.category,
+      tags: data.tags ?? existingBlog.tags,
+      excerpt: data.excerpt ?? existingBlog.excerpt,
+      coverImage: data.coverImage ?? existingBlog.coverImage,
+      hidden: data.hidden ?? existingBlog.hidden,
+    };
+
+    await writeBlogFile(slug, updatedData);
+
+    const updatedBlog = await readBlogFile(slug);
+    if (!updatedBlog) {
+      return { success: false, message: 'Failed to update blog' };
+    }
+
+    revalidatePath('/admin/blogs');
+    revalidatePath('/blogs');
+    revalidatePath('/archive');
+    revalidatePath(`/blogs/${slug}`);
+
+    return { success: true, message: 'Updated successfully', data: updatedBlog, filePath: `src/content/blogs/${slug}.md` };
+  } catch (error) {
+    return { success: false, message: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
+/**
+ * 删除博客
+ * @param slug 博客 slug
+ * @returns 操作结果
+ */
+export async function deleteBlog(slug: string): Promise<ActionResult> {
+  if (isStaticExport) {
+    return { success: false, message: 'Static export mode does not support this feature' };
+  }
+  
+  try {
+    const existingBlog = await readBlogFile(slug);
+
+    if (!existingBlog) {
+      return { success: false, message: 'Blog not found' };
+    }
+
+    await deleteBlogFile(slug);
+
+    revalidatePath('/admin/blogs');
+    revalidatePath('/blogs');
+    revalidatePath('/archive');
+
+    return { success: true, message: 'Deleted successfully' };
+  } catch (error) {
+    return { success: false, message: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
+/**
+ * 批量删除博客
+ * @param slugs 博客 slug 数组
+ * @returns 操作结果
+ */
+export async function batchDeleteBlogs(slugs: string[]): Promise<ActionResult> {
+  if (isStaticExport) {
+    return { success: false, message: 'Static export mode does not support this feature' };
+  }
+  
+  try {
+    if (!slugs || slugs.length === 0) {
+      return { success: false, message: 'No blogs selected' };
+    }
+
+    let deletedCount = 0;
+    for (const slug of slugs) {
+      const existingBlog = await readBlogFile(slug);
+      if (existingBlog) {
+        await deleteBlogFile(slug);
+        deletedCount++;
+      }
+    }
+
+    revalidatePath('/admin/blogs');
+    revalidatePath('/blogs');
+    revalidatePath('/archive');
+
+    return { success: true, message: `Successfully deleted ${deletedCount} blogs` };
+  } catch (error) {
+    return { success: false, message: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
+/**
+ * 批量更新博客分类
+ * @param slugs 博客 slug 数组
+ * @param category 新分类
+ * @returns 操作结果
+ */
+export async function batchUpdateBlogCategory(slugs: string[], category: string): Promise<ActionResult> {
+  if (isStaticExport) {
+    return { success: false, message: 'Static export mode does not support this feature' };
+  }
+  
+  try {
+    if (!slugs || slugs.length === 0) {
+      return { success: false, message: 'No blogs selected' };
+    }
+
+    let updatedCount = 0;
+    for (const slug of slugs) {
+      const existingBlog = await readBlogFile(slug);
+      if (existingBlog) {
+        await writeBlogFile(slug, {
+          title: existingBlog.title,
+          content: existingBlog.content,
+          date: existingBlog.date,
+          category,
+          tags: existingBlog.tags,
+          excerpt: existingBlog.excerpt,
+          coverImage: existingBlog.coverImage,
+          hidden: existingBlog.hidden,
+        });
+        updatedCount++;
+      }
+    }
+
+    revalidatePath('/admin/blogs');
+    revalidatePath('/blogs');
+    revalidatePath('/archive');
+
+    return { success: true, message: `Successfully updated ${updatedCount} blogs` };
+  } catch (error) {
+    return { success: false, message: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
+/**
+ * 获取所有分类
+ * @returns 分类列表
+ */
+export async function getBlogCategories(): Promise<string[]> {
+  if (isStaticExport) {
+    return [];
+  }
+  
+  try {
+    const blogs = await getBlogList();
+    const categorySet = new Set<string>();
+    
+    for (const blog of blogs) {
+      if (blog.category) {
+        categorySet.add(blog.category);
+      }
+    }
+
+    return Array.from(categorySet).sort();
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * 保存博客 Markdown 文件
+ * @param slug 博客 slug
+ * @param content Markdown 内容
+ * @returns 操作结果
+ */
+export async function saveBlogMarkdown(slug: string, content: string): Promise<ActionResult> {
+  if (isStaticExport) {
+    return { success: false, message: 'Static export mode does not support this feature' };
+  }
+  
+  try {
+    const existingBlog = await readBlogFile(slug);
+
+    if (!existingBlog) {
+      return { success: false, message: 'Blog not found' };
+    }
+
+    await writeBlogFile(slug, {
+      title: existingBlog.title,
+      content,
+      date: existingBlog.date,
+      category: existingBlog.category,
+      tags: existingBlog.tags,
+      excerpt: existingBlog.excerpt,
+      coverImage: existingBlog.coverImage,
+      hidden: existingBlog.hidden,
+    });
+
+    revalidatePath('/admin/blogs');
+    revalidatePath('/blogs');
+    revalidatePath('/archive');
+    revalidatePath(`/blogs/${slug}`);
+
+    return { success: true, message: 'Saved successfully' };
+  } catch (error) {
+    return { success: false, message: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
+/**
+ * 切换博客隐藏状态
+ * @param slug 博客 slug
+ * @returns 更新后的博客
+ */
+export async function toggleBlogHidden(slug: string): Promise<ActionResult<BlogPost>> {
+  if (isStaticExport) {
+    return { success: false, message: 'Static export mode does not support this feature' };
+  }
+  
+  try {
+    const existingBlog = await readBlogFile(slug);
+
+    if (!existingBlog) {
+      return { success: false, message: 'Blog not found' };
+    }
+
+    const updatedBlog = await updateBlog(slug, {
+      hidden: !existingBlog.hidden,
+    });
+
+    return updatedBlog;
+  } catch (error) {
+    return { success: false, message: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
+/**
+ * 批量切换博客隐藏状态
+ * @param slugs 博客 slug 数组
+ * @param hidden 隐藏状态
+ * @returns 操作结果
+ */
+export async function batchToggleBlogHidden(slugs: string[], hidden: boolean): Promise<ActionResult> {
+  if (isStaticExport) {
+    return { success: false, message: 'Static export mode does not support this feature' };
+  }
+  
+  try {
+    if (!slugs || slugs.length === 0) {
+      return { success: false, message: 'No blogs selected' };
+    }
+
+    let updatedCount = 0;
+    for (const slug of slugs) {
+      const existingBlog = await readBlogFile(slug);
+      if (existingBlog) {
+        await writeBlogFile(slug, {
+          title: existingBlog.title,
+          content: existingBlog.content,
+          date: existingBlog.date,
+          category: existingBlog.category,
+          tags: existingBlog.tags,
+          excerpt: existingBlog.excerpt,
+          coverImage: existingBlog.coverImage,
+          hidden,
+        });
+        updatedCount++;
+      }
+    }
+
+    revalidatePath('/admin/blogs');
+    revalidatePath('/blogs');
+    revalidatePath('/archive');
+
+    return { success: true, message: `Successfully ${hidden ? 'hidden' : 'shown'} ${updatedCount} blogs` };
+  } catch (error) {
+    return { success: false, message: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
