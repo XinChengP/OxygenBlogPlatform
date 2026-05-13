@@ -673,7 +673,7 @@ const MusicPlayerComponent = function MusicPlayer({
         preload: 'metadata',
         volume: initialVolume,
         mutex: true, // 阻止其他播放器同时播放
-        lrcType: 1, // 启用歌词显示，使用内联歌词（lrc 字段直接包含歌词内容）
+        lrcType: 2, // 启用歌词显示，使用歌词文件路径（lrc 字段是 URL）
         listFolded: true, // 折叠列表
         listMaxHeight: 400, // 列表最大高度
         storageName: 'musicPlayer', // 本地存储名称

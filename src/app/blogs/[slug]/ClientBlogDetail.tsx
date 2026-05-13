@@ -636,44 +636,54 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                 margin-left: 0;
               }
 
-              /* 确保特殊元素内的span（段落）不被缩进 - 覆盖内联样式 */
-              .prose blockquote span,
-              .prose ul span,
-              .prose ol span,
-              .prose table span,
-              .prose pre span {
-                margin-left: 0 !important;
-                text-indent: 0 !important;
+              /* 表格样式重置 - 确保单元格没有圆角 */
+              .prose table {
+                border-radius: 0;
+                border-collapse: collapse;
               }
 
-              /* 确保特殊元素内的所有内容都不被缩进 */
-              .prose blockquote *,
-              .prose span * {
-                margin-left: 0 !important;
-                text-indent: 0 !important;
+              .prose table th,
+              .prose table td {
+                border-radius: 0 !important;
+                border: none;
+                border-bottom: 1px solid rgba(0, 0, 0, 0.1);
               }
+
+              .dark .prose table th,
+              .dark .prose table td {
+                border-bottom-color: rgba(255, 255, 255, 0.1);
+              }
+
             `}</style>
             <div className="bg-card/50 backdrop-blur-sm rounded-xl shadow-lg p-6 md:p-8">
               <div className="prose prose-lg dark:prose-invert max-w-none">
                 <LazyMarkdown
                   content={blog.content}
                   components={{
-                    // 代码块渲染
+                    // 代码块渲染 - 优化为玻璃态风格
                     code({ inline, className, children, ...props }: any) {
                       const match = /language-(\w+)/.exec(className || '');
                       const language = match ? normalizeLanguage(match[1]) : '';
                       const childrenString = String(children || '').replace(/\n$/, '');
-                      
+
+                      // 多行代码块（有语言指定）
                       if (!inline && language) {
                         return (
-                          <div className="relative my-6">
-                            <div className="flex justify-between items-center bg-gray-100 dark:bg-gray-800 px-4 py-3 text-sm text-gray-600 dark:text-gray-400 rounded-t-lg border-b border-gray-200 dark:border-gray-700">
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium">{getLanguageDisplayName(language)}</span>
+                          <div className="relative my-6 rounded-xl overflow-hidden shadow-lg border border-border/30">
+                            {/* 代码块头部 - 玻璃态风格 */}
+                            <div className="flex justify-between items-center bg-gradient-to-r from-card/80 to-card/60 backdrop-blur-md px-4 py-3 text-sm border-b border-border/30">
+                              <div className="flex items-center gap-3">
+                                {/* 窗口控制点装饰 */}
+                                <div className="flex gap-1.5">
+                                  <span className="w-3 h-3 rounded-full bg-red-400/80"></span>
+                                  <span className="w-3 h-3 rounded-full bg-yellow-400/80"></span>
+                                  <span className="w-3 h-3 rounded-full bg-green-400/80"></span>
+                                </div>
+                                <span className="font-medium text-foreground/80 ml-2">{getLanguageDisplayName(language)}</span>
                               </div>
                               <motion.button
                                 onClick={() => copyToClipboard(childrenString)}
-                                className="flex items-center gap-2 hover:text-primary transition-colors px-3 py-1 rounded-md hover:bg-white/20 dark:hover:bg-black/20"
+                                className="flex items-center gap-2 text-foreground/70 hover:text-primary transition-all duration-200 px-3 py-1.5 rounded-lg hover:bg-primary/10"
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 title="复制代码"
@@ -682,11 +692,17 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                                 <span className="text-xs">{copiedCode === childrenString ? '已复制!' : '复制'}</span>
                               </motion.button>
                             </div>
-                            <div className="rounded-b-lg overflow-hidden">
+                            {/* 代码内容区域 */}
+                            <div className="overflow-hidden">
                               <SyntaxHighlighter
                                 style={syntaxTheme}
                                 language={language}
                                 PreTag="div"
+                                customStyle={{
+                                  margin: 0,
+                                  borderRadius: 0,
+                                  background: 'transparent',
+                                }}
                                 {...props}
                               >
                                 {childrenString}
@@ -695,30 +711,53 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                           </div>
                         );
                       }
-                      
-                      // 行内代码
+
+                      // 多行代码块（无语言指定，如快捷键列表）
+                      if (!inline && !language) {
+                        const lines = childrenString.split('\n');
+                        return (
+                          <div className="my-6 space-y-2">
+                            {lines.map((line, index) => (
+                              <div
+                                key={index}
+                                className="px-4 py-2 bg-slate-100/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-lg border border-slate-200 dark:border-slate-700 text-sm font-mono text-slate-800 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                              >
+                                {line || '\u00A0'}
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      }
+
+                      // 行内代码 - 优化为更精致的样式
                       return (
-                        <code className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-md text-sm font-mono border border-gray-200 dark:border-gray-700" {...props}>
+                        <code className="px-1.5 py-0.5 bg-primary/10 text-primary rounded-md text-sm font-mono border border-primary/20" {...props}>
                           {children}
                         </code>
                       );
                     },
-                    // 引用块
+                    // 引用块 - 优化为玻璃态风格
                     blockquote({ children }: ComponentProps) {
                       return (
-                        <blockquote className="border-l-4 border-primary bg-primary/5 p-6 my-6 rounded-r-xl shadow-sm">
-                          <div className="flex items-start gap-3">
-                            <div className="text-primary text-xl">💡</div>
-                            <div className="flex-1 text-base leading-relaxed">{children}</div>
+                        <blockquote className="relative my-6 rounded-xl overflow-hidden shadow-lg border border-primary/20 bg-gradient-to-br from-primary/10 via-card/50 to-primary/5 backdrop-blur-md">
+                          {/* 左侧装饰条 */}
+                          <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-primary via-primary/60 to-primary"></div>
+                          <div className="p-6 pl-8">
+                            <div className="flex items-start gap-4">
+                              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                                <span className="text-primary text-lg">💡</span>
+                              </div>
+                              <div className="flex-1 text-base leading-relaxed text-foreground/90">{children}</div>
+                            </div>
                           </div>
                         </blockquote>
                       );
                     },
-                    // 表格
+                    // 表格 - 优化为玻璃态风格
                     table({ children }: ComponentProps) {
                       return (
-                        <div className="overflow-x-auto my-8">
-                          <table className="min-w-full border-collapse border border-gray-300 dark:border-gray-600 rounded-xl overflow-hidden shadow-sm">
+                        <div className="overflow-x-auto my-8 rounded-xl shadow-lg">
+                          <table className="min-w-full border-collapse">
                             {children}
                           </table>
                         </div>
@@ -726,35 +765,35 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                     },
                     thead({ children }: ComponentProps) {
                       return (
-                        <thead className="bg-gray-100 dark:bg-gray-800">
+                        <thead className="bg-gradient-to-r from-primary/20 to-primary/10 backdrop-blur-md">
                           {children}
                         </thead>
                       );
                     },
                     tbody({ children }: ComponentProps) {
                       return (
-                        <tbody className="bg-background divide-y divide-gray-200 dark:divide-gray-700">
+                        <tbody className="bg-card/40 backdrop-blur-sm divide-y divide-border/50">
                           {children}
                         </tbody>
                       );
                     },
                     tr({ children }: ComponentProps) {
                       return (
-                        <tr className="hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                        <tr className="hover:bg-primary/5 transition-colors duration-200">
                           {children}
                         </tr>
                       );
                     },
                     th({ children }: ComponentProps) {
                       return (
-                        <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700">
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-foreground/90 uppercase tracking-wider border-b border-primary/20 rounded-none">
                           {children}
                         </th>
                       );
                     },
                     td({ children }: ComponentProps) {
                       return (
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground/80 border-b border-border/30 rounded-none">
                           {children}
                         </td>
                       );
@@ -822,14 +861,11 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                     },
                     // 段落
                     p({ children }: ComponentProps) {
-                      // 检查博客是否带有"简谱"或"扒谱"标签，如果有则不添加首行缩进
-                      const hasSheetMusicTag = blog.tags && blog.tags.some(tag => tag === '简谱' || tag === '扒谱');
                       // 使用 span 而非 div 或 p 标签，避免嵌套块级元素导致的 hydration 错误
                       // span 是内联元素，可以合法地嵌套在 p 标签中
                       return (
                         <span
                           className="block mb-4 leading-relaxed text-base"
-                          style={{ textIndent: hasSheetMusicTag ? '0' : '2em' }}
                         >
                           {children}
                         </span>

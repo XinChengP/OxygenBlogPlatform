@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, ipcMain, dialog, shell, clipboard, Tray } = require('electron')
+const { app, BrowserWindow, Menu, ipcMain, dialog, shell, clipboard, Tray, globalShortcut } = require('electron')
 const path = require('path')
 const fs = require('fs')
 const http = require('http')
@@ -20,16 +20,16 @@ let tray = null
 let childWindows = []
 
 // ==================== URL 配置 ====================
-const DEV_SERVER_URL = 'http://localhost:3000'
-const ADMIN_URL = 'http://localhost:3000/admin'
-const NOT_FOUND_URL = 'http://localhost:3000/404'
-const BLOGS_URL = 'http://localhost:3000/blogs'
-const ARCHIVE_URL = 'http://localhost:3000/archive'
-const GALLERY_URL = 'http://localhost:3000/gallery'
-const MOMENTS_URL = 'http://localhost:3000/moments'
-const CHANGELOGS_URL = 'http://localhost:3000/changelogs'
-const GUESTBOOK_URL = 'http://localhost:3000/guestbook'
-const TOOLS_URL = 'http://localhost:3000/tools'
+const DEV_SERVER_URL = 'http://localhost:7120'
+const ADMIN_URL = 'http://localhost:7120/admin'
+const NOT_FOUND_URL = 'http://localhost:7120/404'
+const BLOGS_URL = 'http://localhost:7120/blogs'
+const ARCHIVE_URL = 'http://localhost:7120/archive'
+const GALLERY_URL = 'http://localhost:7120/gallery'
+const MOMENTS_URL = 'http://localhost:7120/moments'
+const CHANGELOGS_URL = 'http://localhost:7120/changelogs'
+const GUESTBOOK_URL = 'http://localhost:7120/guestbook'
+const TOOLS_URL = 'http://localhost:7120/tools'
 
 // 项目路径
 const PROJECT_ROOT = path.join(__dirname, '..')

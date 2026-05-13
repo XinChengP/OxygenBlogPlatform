@@ -54,7 +54,7 @@ ping -n 2 127.0.0.1 >nul
 set /a WAIT_COUNT+=1
 echo Checking server... [%WAIT_COUNT%/%MAX_WAIT%]
 
-powershell -Command "try { $r = Invoke-WebRequest -Uri 'http://localhost:3000' -TimeoutSec 2 -UseBasicParsing; exit 0 } catch { exit 1 }" >nul 2>&1
+powershell -Command "try { $r = Invoke-WebRequest -Uri 'http://localhost:7120' -TimeoutSec 2 -UseBasicParsing; exit 0 } catch { exit 1 }" >nul 2>&1
 
 if !errorlevel! equ 0 (
     echo Server is ready!
@@ -67,7 +67,7 @@ if !WAIT_COUNT! lss !MAX_WAIT! (
 
 echo.
 echo Server failed to start within %MAX_WAIT% seconds
-echo Please check if port 3000 is already in use.
+echo Please check if port 7120 is already in use.
 pause
 exit /b 1
 

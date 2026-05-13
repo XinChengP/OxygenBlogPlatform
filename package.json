@@ -9,7 +9,7 @@
     "url": "https://github.com/XinChengP/OxygenBlogPlatform.git"
   },
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 7120",
     "build": "npm run sync-theme && next build",
     "build:pages": "node scripts/prepare-static-export.js prepare && npm run sync-theme && set NODE_OPTIONS=--max-old-space-size=8192 && next build && node scripts/prepare-static-export.js restore",
     "build:static": "node scripts/prepare-static-export.js prepare && npm run sync-theme && next build && node scripts/prepare-static-export.js restore",
