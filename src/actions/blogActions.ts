@@ -30,6 +30,11 @@ export interface BlogPost {
   pinned?: boolean;
   pinnedAt?: string;
   filePath: string;
+  author?: string;
+  seriesOrder?: number;
+  language?: string;
+  seoTitle?: string;
+  seoDescription?: string;
 }
 
 export interface BlogPostData {
@@ -42,6 +47,11 @@ export interface BlogPostData {
   coverImage?: string;
   slug?: string;
   hidden?: boolean;
+  author?: string;
+  seriesOrder?: number;
+  language?: string;
+  seoTitle?: string;
+  seoDescription?: string;
 }
 
 export interface ActionResult<T = unknown> {
@@ -126,14 +136,42 @@ function generateFrontMatter(data: BlogPostData & { slug: string; date: string }
 
   lines.push(`title: "${data.title}"`);
   lines.push(`date: "${data.date}"`);
+  
+  if (data.updatedAt) {
+    lines.push(`updatedAt: "${data.updatedAt}"`);
+  }
+  
   lines.push(`category: "${data.category}"`);
   
   if (data.tags && data.tags.length > 0) {
-    lines.push(`tags: [${data.tags.map((tag) => `"${tag}"`).join(', ')}]`);
+    lines.push(`tags:`);
+    for (const tag of data.tags) {
+      lines.push(`  - ${tag}`);
+    }
   }
   
   if (data.excerpt) {
     lines.push(`excerpt: "${data.excerpt}"`);
+  }
+  
+  if (data.author) {
+    lines.push(`author: "${data.author}"`);
+  }
+  
+  if (data.seriesOrder) {
+    lines.push(`seriesOrder: ${data.seriesOrder}`);
+  }
+  
+  if (data.language) {
+    lines.push(`language: "${data.language}"`);
+  }
+  
+  if (data.seoTitle) {
+    lines.push(`seoTitle: "${data.seoTitle}"`);
+  }
+  
+  if (data.seoDescription) {
+    lines.push(`seoDescription: "${data.seoDescription}"`);
   }
   
   if (data.coverImage) {
@@ -224,6 +262,11 @@ async function readBlogFile(slug: string): Promise<BlogPost | null> {
       pinned: (frontmatter.pinned as boolean) || false,
       pinnedAt: (frontmatter.pinnedAt as string),
       filePath: `src/content/blogs/${slug}.md`,
+      author: (frontmatter.author as string),
+      seriesOrder: (frontmatter.seriesOrder as number),
+      language: (frontmatter.language as string),
+      seoTitle: (frontmatter.seoTitle as string),
+      seoDescription: (frontmatter.seoDescription as string),
     };
   } catch {
     return null;
@@ -385,7 +428,7 @@ export async function updateBlog(
       return { success: false, message: 'Blog not found' };
     }
 
-    const updatedData: BlogPostData & { date: string } = {
+    const updatedData: BlogPostData & { date: string; updatedAt?: string } = {
       title: data.title ?? existingBlog.title,
       content: data.content ?? existingBlog.content,
       date: data.date ?? existingBlog.date,
@@ -394,6 +437,12 @@ export async function updateBlog(
       excerpt: data.excerpt ?? existingBlog.excerpt,
       coverImage: data.coverImage ?? existingBlog.coverImage,
       hidden: data.hidden ?? existingBlog.hidden,
+      author: data.author ?? existingBlog.author,
+      seriesOrder: data.seriesOrder ?? existingBlog.seriesOrder,
+      language: data.language ?? existingBlog.language,
+      seoTitle: data.seoTitle ?? existingBlog.seoTitle,
+      seoDescription: data.seoDescription ?? existingBlog.seoDescription,
+      updatedAt: new Date().toISOString().split('T')[0],
     };
 
     await writeBlogFile(slug, updatedData);

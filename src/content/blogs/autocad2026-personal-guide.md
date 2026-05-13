@@ -2,7 +2,7 @@
 title: "Auto CAD2026个人使用心得（持续更新）"
 date: "2026-05-12"
 author: 歆橙
-category: "学习笔记"
+category: "学习"
 tags:
   - "CAD"
   - "软件使用"

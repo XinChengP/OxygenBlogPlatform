@@ -25,6 +25,11 @@ tags: ["标签1", "标签2"]
 excerpt: "文章摘要"
 coverImage: "/Blogabout/xxx/图片.webp"  # 可选：封面图片路径
 hidden: false  # 可选：设置为true隐藏文章
+author: "作者名"  # 可选：文章作者
+seriesOrder: 1  # 可选：系列文章序号
+language: "zh-CN"  # 可选：文章语言
+seoTitle: "SEO标题"  # 可选：自定义SEO标题
+seoDescription: "SEO描述"  # 可选：自定义SEO描述
 ---
 ```
 
@@ -40,6 +45,11 @@ hidden: false  # 可选：设置为true隐藏文章
 | excerpt | 是 | 文章摘要，用于列表展示 |
 | coverImage | 否 | 封面图片路径，推荐 `/Blogabout/文章名/图片.webp` |
 | hidden | 否 | 是否隐藏文章，`true` 或 `false`，默认 `false` |
+| author | 否 | 文章作者，用于文章署名展示 |
+| seriesOrder | 否 | 系列文章序号，用于系列文章排序 |
+| language | 否 | 文章语言，如 `zh-CN`、`en`，用于多语言支持 |
+| seoTitle | 否 | 自定义SEO标题，用于页面 `<title>` 标签 |
+| seoDescription | 否 | 自定义SEO描述，用于页面 `<meta name="description">` 标签 |
 
 ### 内容分类标准
 
@@ -90,6 +100,11 @@ category: "技术"
 tags: ["vocaloid", "音乐制作", "教程"]
 excerpt: "详细介绍 VOCALOID6 的安装和基础使用方法"
 coverImage: "/Blogabout/vocaloid6-guide/cover.webp"
+author: "歆橙"
+seriesOrder: 1
+language: "zh-CN"
+seoTitle: "VOCALOID6 使用指南 - 详细教程"
+seoDescription: "本文详细介绍 VOCALOID6 的安装和基础使用方法，帮助初学者快速上手"
 ---
 
 # VOCALOID6 使用指南
@@ -99,6 +114,37 @@ coverImage: "/Blogabout/vocaloid6-guide/cover.webp"
 ...
 
 ## 二、基础操作
+
+...
+```
+
+### 发癫语录类文章示例
+
+对于洛天依相关的发癫语录类文章，可参考以下结构：
+
+```markdown
+---
+title: "对洛佬の发癫语录"
+date: "2025-11-16"
+updatedAt: "2026-04-28"
+category: "洛天依"
+tags: ["洛天依", "VOCALOID", "发癫"]
+excerpt: "华风夏韵，洛水天依"
+coverImage: "/Blogabout/fadian/cover.gif"
+author: "歆橙"
+seriesOrder: 1
+language: "zh-CN"
+seoTitle: "对洛佬の发癫语录"
+seoDescription: "华风夏韵，洛水天依"
+---
+
+# 对洛佬の发癫语录
+
+## 1.1
+
+洛佬😋，嘿嘿，佬🤤 ，嘿嘿，佬🤤 ...
+
+## 1.2
 
 ...
 ```
