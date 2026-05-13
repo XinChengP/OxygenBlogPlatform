@@ -239,6 +239,7 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
   const { containerStyle } = useBackgroundStyle('blog-detail');
   const [copiedCode, setCopiedCode] = useState<string>('');
   const [mounted, setMounted] = useState(false);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const iframeRefs = useRef<Array<HTMLIFrameElement | null>>([]);
 
   // 确保组件已挂载，避免 SSR 期间 theme 为 null
@@ -907,18 +908,34 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                         </a>
                       );
                     },
-                    // 图片 - 基础加载
+                    // 图片 - 基础加载，支持点击放大和智能尺寸检测
                     img({ src, alt, ...props }: any) {
                       // 处理 GitHub Pages 基础路径
                       const processedSrc = src ? getAssetPath(src) : src;
+                      const imgRef = useRef<HTMLImageElement>(null);
+                      const [isLandscape, setIsLandscape] = useState(false);
+                      
+                      useEffect(() => {
+                        const img = new Image();
+                        img.onload = () => {
+                          // 检测图片是否为横向（宽度大于高度）
+                          setIsLandscape(img.width > img.height);
+                        };
+                        img.src = processedSrc;
+                      }, [processedSrc]);
+                      
                       return (
                         // 使用 React.Fragment 避免添加额外元素，防止在 p 标签内嵌套块级元素
                         <>
                           <img
+                            ref={imgRef}
                             src={processedSrc}
                             alt={alt || '图片'}
-                            className="rounded-xl shadow-lg mx-auto max-w-full h-auto my-4"
+                            className={`rounded-xl shadow-lg mx-auto h-auto my-4 cursor-pointer hover:opacity-90 transition-opacity ${
+                              isLandscape ? 'max-w-full' : 'max-w-[400px]'
+                            }`}
                             loading="lazy"
+                            onClick={() => setLightboxImage(processedSrc)}
                             {...props}
                           />
                           {alt && (
@@ -927,6 +944,20 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                           )}
                         </>
                       );
+                    },
+                    // div - 支持自定义图片网格
+                    div({ className, children, ...props }: any) {
+                      const isImageGrid = className?.includes('image-grid');
+                      
+                      if (isImageGrid) {
+                        return (
+                          <div className={className} {...props}>
+                            {children}
+                          </div>
+                        );
+                      }
+                      
+                      return <div className={className} {...props}>{children}</div>;
                     },
                     // iframe 处理 - 增强错误处理和清理
                     iframe({ src, allowfullscreen, ...props }: any) {
@@ -1026,6 +1057,32 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
           </div>
         </div>
       </div>
+
+      {/* 图片灯箱组件 */}
+      {lightboxImage && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+          onClick={() => setLightboxImage(null)}
+        >
+          <button
+            className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors text-3xl font-bold"
+            onClick={() => setLightboxImage(null)}
+          >
+            ×
+          </button>
+          <motion.img
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+            src={lightboxImage}
+            alt="放大查看"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </motion.div>
+      )}
 
       {/* 浮动互动按钮 - 已移除 */}
 

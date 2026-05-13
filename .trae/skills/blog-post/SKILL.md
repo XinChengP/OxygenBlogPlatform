@@ -81,6 +81,139 @@ seoDescription: "SEO描述"  # 可选：自定义SEO描述
 
 图片存储在 `public/Blogabout/文章名/` 目录下。
 
+## 图片并排显示功能
+
+### 功能说明
+
+博客支持使用 HTML 标签实现图片并排显示，方便展示多张相关图片。
+
+### 使用方法
+
+在 Markdown 文章中使用 `<div>` 标签包裹需要并排显示的图片：
+
+```markdown
+<div class="image-grid image-grid-2-cols">
+![图片1](/Blogabout/文章名/图片1.webp)
+![图片2](/Blogabout/文章名/图片2.webp)
+</div>
+
+<div class="image-grid image-grid-3-cols">
+![图片1](/Blogabout/文章名/图片1.webp)
+![图片2](/Blogabout/文章名/图片2.webp)
+![图片3](/Blogabout/文章名/图片3.webp)
+</div>
+```
+
+### 可用的布局类名
+
+| 类名 | 说明 |
+|------|------|
+| `image-grid-2-cols` | 2列并排 |
+| `image-grid-3-cols` | 3列并排 |
+| `image-grid-4-cols` | 4列并排 |
+
+### 示例场景
+
+#### 周边展示（2列）
+
+```markdown
+<div class="image-grid image-grid-2-cols">
+![初心∞歌词本封面](/LTY_Picture/初心∞歌词本封面.webp)
+![初心∞歌词本内页](/LTY_Picture/初心∞歌词本内页.webp)
+</div>
+```
+
+#### 音乐专辑展示（3列）
+
+```markdown
+<div class="image-grid image-grid-3-cols">
+![专辑1](/LTY_Picture/专辑1.webp)
+![专辑2](/LTY_Picture/专辑2.webp)
+![专辑3](/LTY_Picture/专辑3.webp)
+</div>
+```
+
+#### 画廊展示（4列）
+
+```markdown
+<div class="image-grid image-grid-4-cols">
+![图片1](/Gallery/图片1.webp)
+![图片2](/Gallery/图片2.webp)
+![图片3](/Gallery/图片3.webp)
+![图片4](/Gallery/图片4.webp)
+</div>
+```
+
+### 功能特性
+
+- ✅ 支持 2、3、4 列布局
+- ✅ 响应式设计，移动端自动切换为单列
+- ✅ 点击图片可放大查看大图
+- ✅ 悬停时图片微微放大
+- ✅ 图片描述文字居中显示
+- ✅ 平板端自动调整布局
+
+### 高级布局（自定义比例）
+
+支持不等宽图片排列，适用于需要突出某张图片的场景：
+
+#### 1-2-1 布局（中间占2/4）
+
+```html
+<div class="image-grid image-grid-1-2-1">
+  <img src="/Blogabout/文章名/图片1.webp" alt="描述1" />
+  <img src="/Blogabout/文章名/图片2.webp" alt="描述2" />
+  <img src="/Blogabout/文章名/图片3.webp" alt="描述3" />
+</div>
+```
+
+**效果**：左侧1/4、中间2/4、右侧1/4
+
+#### 1-1-2 布局（右侧占2/3）
+
+```html
+<div class="image-grid image-grid-1-1-2">
+  <img src="/Blogabout/文章名/图片1.webp" alt="描述1" />
+  <img src="/Blogabout/文章名/图片2.webp" alt="描述2" />
+</div>
+```
+
+**效果**：左侧1/3、右侧2/3
+
+#### 2-1-1 布局（左侧占2/3）
+
+```html
+<div class="image-grid image-grid-2-1-1">
+  <img src="/Blogabout/文章名/图片1.webp" alt="描述1" />
+  <img src="/Blogabout/文章名/图片2.webp" alt="描述2" />
+</div>
+```
+
+**效果**：左侧2/3、右侧1/3
+
+### 统一高度布局
+
+对于需要整齐排列的图片组，添加 `image-grid-equal-height` 类：
+
+```html
+<div class="image-grid image-grid-2-cols image-grid-equal-height">
+  <img src="/Blogabout/文章名/图片1.webp" alt="描述1" />
+  <img src="/Blogabout/文章名/图片2.webp" alt="描述2" />
+</div>
+```
+
+**效果**：
+- 所有图片高度自动协调
+- 保持原始比例，内容完整显示
+- 最大高度限制为350px
+
+### 注意事项
+
+- 图片并排布局需要在 `<div class="image-grid ...">` 和 `</div>` 之间放置图片
+- 可以混合使用不同的列数布局
+- 图片会自动调整大小以填满网格单元格
+- 高级布局类名可以组合使用，如 `image-grid-2-cols image-grid-equal-height`
+
 ## 创建新文章步骤
 
 1. 确定文章文件名（使用英文，如 `my-new-post.md`）
