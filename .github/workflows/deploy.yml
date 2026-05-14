@@ -44,6 +44,19 @@ jobs:
           # 删除本地环境文件，避免覆盖 GitHub Actions 的环境变量
           rm -f .env.local
           
+          # 生成站点地图（确保在构建前生成到 public 目录）
+          echo "生成站点地图..."
+          npx tsx scripts/generate-sitemap.ts
+          
+          # 验证 sitemap.xml 是否生成
+          if [ -f "public/sitemap.xml" ]; then
+            echo "✓ 站点地图已生成"
+            head -20 public/sitemap.xml
+          else
+            echo "✗ 站点地图生成失败"
+            exit 1
+          fi
+          
           # 注意：不再创建 src/actions/index.ts 空实现文件
           # 因为 momentActions.ts、todoActions.ts、backupActions.ts 等文件
           # 已经内置了静态导出模式检测 (isStaticExport)，会自动返回空实现
