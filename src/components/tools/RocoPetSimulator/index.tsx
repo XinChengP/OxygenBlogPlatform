@@ -1019,7 +1019,8 @@ export default function RocoPetSimulator() {
     });
 
     return filtered;
-  }, [petsByMagic, searchQuery, magicFilter, showOnlyOwned]);
+  // 添加 currentAccount 到依赖项，确保切换账号时刷新宠物列表
+  }, [petsByMagic, searchQuery, magicFilter, showOnlyOwned, currentAccount]);
 
   // 是否有搜索结果
   const hasSearchResults = useMemo(() => {
