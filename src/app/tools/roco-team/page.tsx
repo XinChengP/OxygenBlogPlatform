@@ -83,7 +83,11 @@ export default function RocoPetSimulatorPage() {
               <ul className={`text-sm space-y-2 ${isDark ? 'text-[var(--color-muted-foreground)]' : 'text-gray-600'}`}>
                 <li className="flex items-start gap-2">
                   <span className="text-[var(--color-primary)] mt-0.5">•</span>
-                  <span>右键点击宠物可进行操作：加入/移出禁赛、加入/移出阵容、切换外观、选择血脉</span>
+                  <span>点击宠物头像添加到阵容，再次点击从阵容中移除</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[var(--color-primary)] mt-0.5">•</span>
+                  <span>右键点击宠物可进行操作：加入/移出禁赛、切换外观、选择血脉</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[var(--color-primary)] mt-0.5">•</span>

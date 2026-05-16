@@ -32,9 +32,9 @@
     // 发现篡改时的回调函数
     onTamperingDetected: null,
     // 关键元素选择器列表
-    // 注意：head 和 body 被排除，因为 React/Next.js 会在运行时动态修改它们
+    // 注意：head、body、title 被排除，因为 React/Next.js 会在运行时动态修改它们
+    // title 元素会在页面切换和hydration时被 React/Next.js 动态更新
     criticalSelectors: [
-      'title',
       'meta[charset]',
       'link[rel="canonical"]',
     ],
