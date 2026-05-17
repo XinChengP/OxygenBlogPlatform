@@ -13,11 +13,23 @@ export default function RocoPetSimulatorPage() {
   const { resolvedTheme } = useTheme();
   const { containerStyle } = useBackgroundStyle('tools');
   const [mounted, setMounted] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(false);
 
   // 确保组件已挂载
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // 检查是否首次访问，显示使用说明弹窗
+  useEffect(() => {
+    if (mounted) {
+      const hasSeenInstructions = localStorage.getItem('roco-simulator-instructions-seen');
+      if (!hasSeenInstructions) {
+        setShowInstructions(true);
+        localStorage.setItem('roco-simulator-instructions-seen', 'true');
+      }
+    }
+  }, [mounted]);
 
   // 页面浏览统计
   useEffect(() => {
@@ -61,50 +73,64 @@ export default function RocoPetSimulatorPage() {
           <RocoPetSimulator />
         </motion.div>
 
-        {/* 使用说明卡片 - 放在底部，风格与博客一致 */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className={`mt-8 rounded-xl p-5 backdrop-blur-sm ${
-            isDark
-              ? 'bg-[var(--color-card)]/80 border border-[var(--color-border)]'
-              : 'bg-white/80 border border-gray-200'
-          }`}
-        >
-          <div className="flex items-start gap-4">
-            <div className={`p-2 rounded-lg ${isDark ? 'bg-[var(--color-primary)]/20' : 'bg-blue-100'}`}>
-              <span className="text-xl">💡</span>
-            </div>
-            <div className="flex-1">
-              <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-[var(--color-foreground)]' : 'text-gray-900'}`}>
-                使用说明
-              </h3>
-              <ul className={`text-sm space-y-2 ${isDark ? 'text-[var(--color-muted-foreground)]' : 'text-gray-600'}`}>
-                <li className="flex items-start gap-2">
-                  <span className="text-[var(--color-primary)] mt-0.5">•</span>
-                  <span>点击宠物头像添加到阵容，再次点击从阵容中移除</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-[var(--color-primary)] mt-0.5">•</span>
-                  <span>右键点击宠物可进行操作：加入/移出禁赛、切换外观、选择血脉</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-[var(--color-primary)] mt-0.5">•</span>
-                  <span>阵容最多可容纳6只宠物，总魔力值不能超过16</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-[var(--color-primary)] mt-0.5">•</span>
-                  <span>部分宠物存在互斥关系，无法同时参赛</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-[var(--color-primary)] mt-0.5">•</span>
-                  <span>所有设置会自动保存到本地</span>
-                </li>
-              </ul>
-            </div>
+        {/* 使用说明弹窗 */}
+        {showInstructions && (
+          <div 
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+            onClick={() => setShowInstructions(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className={`rounded-xl p-6 max-w-md w-full backdrop-blur-sm ${
+                isDark
+                  ? 'bg-[var(--color-card)]/95 border border-[var(--color-border)]'
+                  : 'bg-white/95 border border-gray-200'
+              }`}
+              onClick={e => e.stopPropagation()}
+            >
+              <div>
+                <h3 className={`text-lg font-semibold mb-3 ${isDark ? 'text-[var(--color-foreground)]' : 'text-gray-900'}`}>
+                  使用说明
+                </h3>
+                  <ul className={`text-sm space-y-2 ${isDark ? 'text-[var(--color-muted-foreground)]' : 'text-gray-600'}`}>
+                    <li className="flex items-start gap-2">
+                      <span className="text-[var(--color-primary)] mt-0.5">•</span>
+                      <span>点击宠物头像添加到阵容，再次点击从阵容中移除</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-[var(--color-primary)] mt-0.5">•</span>
+                      <span>右键点击宠物可进行操作：加入/移出禁赛、切换外观、选择血脉</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-[var(--color-primary)] mt-0.5">•</span>
+                      <span>阵容最多可容纳6只宠物，总魔力值不能超过16</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-[var(--color-primary)] mt-0.5">•</span>
+                      <span>部分宠物存在互斥关系，无法同时参赛</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-[var(--color-primary)] mt-0.5">•</span>
+                      <span>所有设置会自动保存到本地</span>
+                    </li>
+                  </ul>
+              </div>
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={() => setShowInstructions(false)}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    isDark
+                      ? 'bg-[var(--color-primary)] hover:bg-[var(--color-primary)]/80 text-white'
+                      : 'bg-blue-500 hover:bg-blue-600 text-white'
+                  }`}
+                >
+                  我知道了
+                </button>
+              </div>
+            </motion.div>
           </div>
-        </motion.div>
+        )}
 
 
       </div>

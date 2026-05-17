@@ -267,7 +267,8 @@ export default function RocoPetSimulator() {
   // 账号管理状态
   const [accounts, setAccounts] = useState<AccountPets[]>([]);
   const [currentAccount, setCurrentAccount] = useState<string>('');
-  const [showOnlyOwned, setShowOnlyOwned] = useState(false);
+  // 宠物拥有状态筛选：'all' = 全部, 'owned' = 已拥有, 'unowned' = 未拥有
+  const [ownershipFilter, setOwnershipFilter] = useState<'all' | 'owned' | 'unowned'>('all');
   const [isBatchMode, setIsBatchMode] = useState(false);
   const [selectedBatchPets, setSelectedBatchPets] = useState<number[]>([]);
   const [showAccountDropdown, setShowAccountDropdown] = useState(false);
@@ -276,6 +277,14 @@ export default function RocoPetSimulator() {
   const [importExportModal, setImportExportModal] = useState<{ open: boolean; mode: 'import' | 'export' }>({ open: false, mode: 'import' });
   const [importText, setImportText] = useState('');
   const [exportFormat, setExportFormat] = useState<'id' | 'name'>('id');
+
+  // 自定义宠物状态
+  const [showCustomPetModal, setShowCustomPetModal] = useState(false);
+  const [customPetId, setCustomPetId] = useState('');
+  const [customPetName, setCustomPetName] = useState('');
+  const [customPetMagic, setCustomPetMagic] = useState(1);
+  // 存储已添加的自定义宠物信息（宠物ID -> {名称, 费用}）
+  const [customPets, setCustomPets] = useState<Record<number, { name: string; magic: number }>>({});
 
   // 批量操作栏拖拽状态
   const [batchPanelPos, setBatchPanelPos] = useState({ x: 16, y: 96 }); // 默认位置：左上角
@@ -678,6 +687,12 @@ export default function RocoPetSimulator() {
   // 从阵容移除
   const removeFromLineup = useCallback((petId: number) => {
     setLineup(prev => prev.filter(id => id !== petId));
+    // 如果是自定义宠物，删除其信息
+    setCustomPets(prev => {
+      const newCustomPets = { ...prev };
+      delete newCustomPets[petId];
+      return newCustomPets;
+    });
     Live2DMessageHelper.showRocoSimulatorMessage('REMOVE_FROM_LINEUP');
     showNotification('已从阵容移除');
   }, [showNotification]);
@@ -685,9 +700,59 @@ export default function RocoPetSimulator() {
   // 清空阵容
   const clearLineup = useCallback(() => {
     setLineup([]);
+    setCustomPets({}); // 清空自定义宠物信息
     Live2DMessageHelper.showRocoSimulatorMessage('CLEAR_LINEUP');
     showNotification('阵容已清空');
   }, [showNotification]);
+
+  // 添加自定义宠物到阵容
+  const addCustomPetToLineup = useCallback(() => {
+    const petId = parseInt(customPetId);
+    if (isNaN(petId) || petId <= 0) {
+      showNotification('请输入有效的宠物编号', 'error');
+      return;
+    }
+
+    if (lineup.length >= 6) {
+      showNotification('阵容已满，最多6只宠物', 'error');
+      return;
+    }
+
+    if (lineup.includes(petId)) {
+      showNotification('该宠物已在阵容中', 'error');
+      return;
+    }
+
+    // 检查互斥
+    for (const existingId of lineup) {
+      if (arePetsExclusive(petId, existingId)) {
+        const pet1Name = customPetName || `宠物#${petId}`;
+        const pet2 = getPetById(existingId);
+        showNotification(`${pet1Name} 与 ${pet2?.name || '未知宠物'} 互斥，无法同时参赛`, 'error');
+        return;
+      }
+    }
+
+    // 添加到阵容
+    setLineup(prev => [...prev, petId]);
+    
+    // 保存自定义宠物信息
+    setCustomPets(prev => ({
+      ...prev,
+      [petId]: {
+        name: customPetName || `宠物#${petId}`,
+        magic: customPetMagic,
+      },
+    }));
+    
+    showNotification(`已添加${customPetName || `宠物#${petId}`}到阵容`);
+    
+    // 重置输入并关闭模态框
+    setCustomPetId('');
+    setCustomPetName('');
+    setCustomPetMagic(1);
+    setShowCustomPetModal(false);
+  }, [customPetId, customPetName, customPetMagic, lineup, showNotification]);
 
   // 清空禁赛
   const clearBanned = useCallback(() => {
@@ -725,7 +790,7 @@ export default function RocoPetSimulator() {
 
   // 批量添加禁赛
   const batchAddBanned = useCallback(() => {
-    const inputs = batchInput.split(/[,，]/).map(item => item.trim()).filter(Boolean);
+    const inputs = batchInput.split(/[,，]/).map(item => item.trim().replace(/[.。]+$/, '')).filter(Boolean);
     let addedCount = 0;
     const notFound: string[] = [];
 
@@ -804,9 +869,14 @@ export default function RocoPetSimulator() {
   const totalMagic = useMemo(() => {
     return lineup.reduce((sum, petId) => {
       const pet = getPetById(petId);
-      return sum + (pet?.magic || 0);
+      if (pet) {
+        return sum + pet.magic;
+      }
+      // 对于自定义宠物，从 customPets 中获取费用
+      const customPet = customPets[petId];
+      return sum + (customPet?.magic || 1);
     }, 0);
-  }, [lineup]);
+  }, [lineup, customPets]);
 
   // 处理右键菜单
   const handleContextMenu = useCallback((e: React.MouseEvent, petId: number, context: 'list' | 'banned' | 'lineup') => {
@@ -1010,9 +1080,11 @@ export default function RocoPetSimulator() {
         }
         return true;
       }).filter(pet => {
-        // 只显示已有宠物筛选
-        if (showOnlyOwned) {
+        // 宠物拥有状态筛选
+        if (ownershipFilter === 'owned') {
           return accountManager.hasPet(pet.id);
+        } else if (ownershipFilter === 'unowned') {
+          return !accountManager.hasPet(pet.id);
         }
         return true;
       });
@@ -1020,7 +1092,7 @@ export default function RocoPetSimulator() {
 
     return filtered;
   // 添加 currentAccount 到依赖项，确保切换账号时刷新宠物列表
-  }, [petsByMagic, searchQuery, magicFilter, showOnlyOwned, currentAccount]);
+  }, [petsByMagic, searchQuery, magicFilter, ownershipFilter, currentAccount]);
 
   // 是否有搜索结果
   const hasSearchResults = useMemo(() => {
@@ -1075,6 +1147,13 @@ export default function RocoPetSimulator() {
                     +
                   </button>
                   <button
+                    onClick={() => setShowCustomPetModal(true)}
+                    className="px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors"
+                    title="自定义宠物"
+                  >
+                    自定义
+                  </button>
+                  <button
                     onClick={clearLineup}
                     className="px-2 py-1 text-xs bg-red-500 hover:bg-red-600 text-white rounded transition-colors"
                     title="清空"
@@ -1115,8 +1194,17 @@ export default function RocoPetSimulator() {
               ) : (
                 <div className="grid grid-cols-6 gap-1">
                   {lineup.map((petId, index) => {
-                    const pet = getPetById(petId);
-                    if (!pet) return null;
+                    // 尝试从数据中获取宠物，如果不存在则使用自定义宠物信息
+                    let pet = getPetById(petId);
+                    if (!pet) {
+                      // 使用已保存的自定义宠物信息，或创建默认对象
+                      const customPetInfo = customPets[petId];
+                      pet = {
+                        id: petId,
+                        name: customPetInfo?.name || `宠物#${petId}`,
+                        magic: customPetInfo?.magic || 1,
+                      };
+                    }
 
                     // 处理阵容宠物图片加载失败
                     const handleLineupPetImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
@@ -1225,7 +1313,7 @@ export default function RocoPetSimulator() {
               transition={{ delay: 0.3 }}
               className={`rounded-xl border-2 border-red-400/50 p-4 ${isDark ? 'bg-red-900/10' : 'bg-red-50/50'} backdrop-blur-sm`}
             >
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-2">
                 <h3 className={`text-lg font-bold ${isDark ? 'text-red-400' : 'text-red-600'}`}>
                   禁赛 ({bannedPets.length})
                 </h3>
@@ -1258,6 +1346,17 @@ export default function RocoPetSimulator() {
                   })}
                 </div>
               )}
+              {/* 官方每周更新链接 */}
+              <div className="mt-3 pt-3 border-t border-red-400/20 text-right">
+                <a
+                  href="https://roco.qq.com/webplat/info/news_version3/397/11016/11018/m8583/list_1.shtml"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`text-xs underline hover:no-underline ${isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}
+                >
+                  查看官方每周更新 →
+                </a>
+              </div>
             </motion.div>
           </div>
         </div>
@@ -1424,19 +1523,33 @@ export default function RocoPetSimulator() {
                 ))}
                 {/* 分隔线 */}
                 <div className={`w-px h-5 mx-1 ${isDark ? 'bg-gray-600' : 'bg-gray-300'}`} />
-                {/* 只显示已有开关 */}
+                {/* 宠物拥有状态筛选 - 已拥有 */}
                 <button
-                  onClick={() => setShowOnlyOwned(prev => !prev)}
+                  onClick={() => setOwnershipFilter(prev => prev === 'owned' ? 'all' : 'owned')}
                   className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${
-                    showOnlyOwned
+                    ownershipFilter === 'owned'
                       ? 'bg-green-500 text-white shadow-md'
                       : isDark
                       ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
-                  title={showOnlyOwned ? '显示全部宠物' : '只显示已拥有的宠物'}
+                  title={ownershipFilter === 'owned' ? '显示全部宠物' : '只显示已拥有的宠物'}
                 >
-                  {showOnlyOwned ? '✓ 已有' : '已有'}
+                  {ownershipFilter === 'owned' ? '✓ 已拥有' : '已拥有'}
+                </button>
+                {/* 宠物拥有状态筛选 - 未拥有 */}
+                <button
+                  onClick={() => setOwnershipFilter(prev => prev === 'unowned' ? 'all' : 'unowned')}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${
+                    ownershipFilter === 'unowned'
+                      ? 'bg-red-500 text-white shadow-md'
+                      : isDark
+                      ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                  title={ownershipFilter === 'unowned' ? '显示全部宠物' : '只显示未拥有的宠物'}
+                >
+                  {ownershipFilter === 'unowned' ? '✗ 未拥有' : '未拥有'}
                 </button>
                 {/* 批量选择按钮 */}
                 <button
@@ -1942,6 +2055,86 @@ export default function RocoPetSimulator() {
                 className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg"
               >
                 确认
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 自定义宠物模态框 */}
+      {showCustomPetModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowCustomPetModal(false)}>
+          <div className={`rounded-xl p-6 max-w-md w-full ${isDark ? 'bg-gray-800' : 'bg-white'}`} onClick={e => e.stopPropagation()}>
+            <h3 className={`text-xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>添加自定义宠物</h3>
+            <div className="space-y-4">
+              {/* 宠物编号 */}
+              <div>
+                <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                  宠物编号 <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  value={customPetId}
+                  onChange={(e) => setCustomPetId(e.target.value)}
+                  placeholder="请输入宠物编号"
+                  className={`w-full p-3 rounded-lg border ${
+                    isDark
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-500'
+                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
+                  }`}
+                />
+              </div>
+              {/* 宠物名称 */}
+              <div>
+                <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                  宠物名称 <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>(选填)</span>
+                </label>
+                <input
+                  type="text"
+                  value={customPetName}
+                  onChange={(e) => setCustomPetName(e.target.value)}
+                  placeholder="请输入宠物名称"
+                  className={`w-full p-3 rounded-lg border ${
+                    isDark
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-500'
+                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
+                  }`}
+                />
+              </div>
+              {/* 费用 */}
+              <div>
+                <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                  费用
+                </label>
+                <select
+                  value={customPetMagic}
+                  onChange={(e) => setCustomPetMagic(parseInt(e.target.value))}
+                  className={`w-full p-3 rounded-lg border ${
+                    isDark
+                      ? 'bg-gray-700 border-gray-600 text-white'
+                      : 'bg-white border-gray-300 text-gray-900'
+                  }`}
+                >
+                  <option value={1}>1费</option>
+                  <option value={2}>2费</option>
+                  <option value={3}>3费</option>
+                  <option value={4}>4费</option>
+                  <option value={5}>5费</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-6">
+              <button
+                onClick={() => setShowCustomPetModal(false)}
+                className={`px-4 py-2 rounded-lg ${isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+              >
+                取消
+              </button>
+              <button
+                onClick={addCustomPetToLineup}
+                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg"
+              >
+                添加
               </button>
             </div>
           </div>
