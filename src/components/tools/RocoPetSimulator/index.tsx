@@ -1015,7 +1015,7 @@ export default function RocoPetSimulator() {
             }`}
           />
           {/* 魔力值徽章 */}
-          <span className={`absolute -top-1 -right-1 w-4 h-4 rounded-full ${getMagicColor(pet.magic).bg} text-white text-[10px] flex items-center justify-center font-bold`}>
+          <span className={`absolute -top-1 -right-1 w-4 h-4 rounded-full ${getMagicColor(pet.magic).bg} ${isDark ? 'text-black' : 'text-white'} text-[10px] flex items-center justify-center font-bold`}>
             {pet.magic}
           </span>
           {/* 禁赛标记 */}
@@ -1260,7 +1260,7 @@ export default function RocoPetSimulator() {
                             className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg object-cover border-2 ${getMagicColor(pet.magic).border}`}
                           />
                           {/* 魔力值徽章 */}
-                          <span className={`absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full ${getMagicColor(pet.magic).bg} text-white text-[7px] flex items-center justify-center font-bold`}>
+                          <span className={`absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full ${getMagicColor(pet.magic).bg} ${isDark ? 'text-black' : 'text-white'} text-[7px] flex items-center justify-center font-bold`}>
                             {pet.magic}
                           </span>
                           {/* 血脉标记 */}
