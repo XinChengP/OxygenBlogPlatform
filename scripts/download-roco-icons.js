@@ -23,7 +23,8 @@ function extractPets() {
   const content = fs.readFileSync(rocoPetsPath, 'utf-8');
   
   // 匹配宠物定义行，包括 id 和可选的 imageId
-  const petMatches = content.match(/\{[^}]*id:\s*(\d+)[^}]*\}/g);
+  // 使用更严格的正则，确保匹配的是宠物对象（必须包含 name 属性）
+  const petMatches = content.match(/\{\s*id:\s*(\d+),\s*name:[^}]*\}/g);
   if (!petMatches) {
     console.error('无法从 rocoPets.ts 中提取宠物数据');
     return [];
@@ -70,6 +71,11 @@ function downloadImage(url, filepath) {
       // 处理重定向
       if (response.statusCode === 301 || response.statusCode === 302) {
         const redirectUrl = response.headers.location;
+        // 验证重定向 URL 协议安全性，只允许 HTTP 或 HTTPS
+        if (!redirectUrl || !(redirectUrl.startsWith('http://') || redirectUrl.startsWith('https://'))) {
+          reject(new Error(`不安全的重定向 URL: ${redirectUrl || '空'}`));
+          return;
+        }
         console.log(`  重定向到: ${redirectUrl}`);
         downloadImage(redirectUrl, filepath)
           .then(resolve)
@@ -91,7 +97,12 @@ function downloadImage(url, filepath) {
       });
       
       fileStream.on('error', (err) => {
-        fs.unlink(filepath, () => {});
+        // 删除临时文件，并记录删除失败的错误
+        fs.unlink(filepath, (unlinkErr) => {
+          if (unlinkErr) {
+            console.error(`删除临时文件失败: ${filepath}`, unlinkErr.message);
+          }
+        });
         reject(err);
       });
     });
