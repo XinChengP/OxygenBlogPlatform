@@ -109,6 +109,43 @@ contextBridge.exposeInMainWorld('electronAPI', {
    */
   createNewWindow: () => ipcRenderer.send('create-new-window'),
 
+  // ==================== 文件操作功能 ====================
+  /**
+   * 保存文件
+   * @param {string} filePath - 文件路径
+   * @param {string} content - 文件内容
+   */
+  saveFile: (filePath, content) => ipcRenderer.send('save-file', filePath, content),
+
+  /**
+   * 在外部编辑器中打开文件
+   * @param {string} filePath - 文件路径
+   */
+  openInExternal: (filePath) => ipcRenderer.send('open-in-external', filePath),
+
+  /**
+   * 监听文件保存结果
+   * @param {Function} callback - 回调函数，接收 {success, path, error} 参数
+   */
+  onFileSaved: (callback) => {
+    ipcRenderer.on('file-saved', (event, result) => callback(result))
+  },
+
+  /**
+   * 移除文件保存监听
+   */
+  removeFileSavedListener: () => {
+    ipcRenderer.removeAllListeners('file-saved')
+  },
+
+  // ==================== 自定义导航功能 ====================
+  /**
+   * 添加自定义导航项
+   * @param {string} name - 导航名称
+   * @param {string} url - 导航URL
+   */
+  addCustomNavItem: (name, url) => ipcRenderer.send('add-custom-nav-item', name, url),
+
   // ==================== 事件监听 ====================
   /**
    * 监听服务器重启事件
@@ -128,8 +165,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
 // 页面加载完成后的处理
 window.addEventListener('DOMContentLoaded', () => {
-  console.log('Electron Dev Preview loaded')
-  console.log('可用快捷键:')
+  console.log('%c🚀 Electron Dev Preview 已加载', 'color: #66ccff; font-size: 16px; font-weight: bold;')
+  console.log('%c新增功能:', 'color: #ff9966; font-weight: bold;')
+  console.log('%c  ✓ 窗口状态记忆 - 自动保存窗口位置和大小', 'color: #66ff99;')
+  console.log('%c  ✓ 自动更新检查 - 从 GitHub 检查新版本', 'color: #66ff99;')
+  console.log('%c  ✓ 拖拽打开文件 - 支持 Markdown/JSON/TXT 文件', 'color: #66ff99;')
+  console.log('%c  ✓ 自定义导航 - 添加常用网站快捷访问', 'color: #66ff99;')
+  console.log('')
+  console.log('%c可用快捷键:', 'color: #66ccff; font-weight: bold;')
   console.log('  F5 - 刷新页面')
   console.log('  Ctrl+Shift+R - 强制刷新')
   console.log('  Ctrl+Shift+N - 重启服务器')
@@ -138,4 +181,7 @@ window.addEventListener('DOMContentLoaded', () => {
   console.log('  Alt+End - 进入后台')
   console.log('  Alt+1~8 - 常用页面跳转')
   console.log('  Ctrl+/ - 查看完整快捷键列表')
+  console.log('')
+  console.log('%c提示: 你可以直接拖拽 Markdown/JSON/TXT 文件到窗口中打开', 'color: #ffcc00;')
+  console.log('%c提示: 使用 导航 → 自定义导航 添加常用网站', 'color: #ffcc00;')
 })
