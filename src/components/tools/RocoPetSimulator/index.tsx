@@ -263,6 +263,7 @@ export default function RocoPetSimulator() {
   const [magicFilter, setMagicFilter] = useState<string>('all');
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
 
   // 账号管理状态
   const [accounts, setAccounts] = useState<AccountPets[]>([]);
@@ -277,6 +278,25 @@ export default function RocoPetSimulator() {
   const [importExportModal, setImportExportModal] = useState<{ open: boolean; mode: 'import' | 'export' }>({ open: false, mode: 'import' });
   const [importText, setImportText] = useState('');
   const [exportFormat, setExportFormat] = useState<'id' | 'name'>('id');
+
+  // 阵容放大模态框状态
+  const [isLineupExpanded, setIsLineupExpanded] = useState(false);
+  // 放大模态框专用的右键菜单状态
+  const [expandedContextMenu, setExpandedContextMenu] = useState<{
+    visible: boolean;
+    x: number;
+    y: number;
+    petId: number | null;
+  }>({
+    visible: false,
+    x: 0,
+    y: 0,
+    petId: null,
+  });
+  // 拖拽排序状态
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [hasDragged, setHasDragged] = useState(false); // 标记是否真的发生了拖拽
 
   // 自定义宠物状态
   const [showCustomPetModal, setShowCustomPetModal] = useState(false);
@@ -382,6 +402,14 @@ export default function RocoPetSimulator() {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.showSkinButton, JSON.stringify(showSkinButton));
   }, [showSkinButton]);
+
+  // 搜索防抖 - 300ms延迟
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // 显示通知
   const showNotification = useCallback((message: string, type: 'success' | 'error' = 'success') => {
@@ -697,6 +725,48 @@ export default function RocoPetSimulator() {
     showNotification('已从阵容移除');
   }, [showNotification]);
 
+  // 拖拽排序 - 交换两个位置
+  const handleDragStart = useCallback((index: number) => {
+    setDraggedIndex(index);
+    setHasDragged(false); // 重置拖拽标志
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    setDragOverIndex(index);
+    setHasDragged(true); // 标记发生了拖拽
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === dropIndex) {
+      setDraggedIndex(null);
+      setDragOverIndex(null);
+      setHasDragged(false);
+      return;
+    }
+
+    // 交换位置
+    setLineup(prev => {
+      const newLineup = [...prev];
+      const temp = newLineup[draggedIndex];
+      newLineup[draggedIndex] = newLineup[dropIndex];
+      newLineup[dropIndex] = temp;
+      return newLineup;
+    });
+
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+    setHasDragged(false);
+    showNotification('位置已调整');
+  }, [draggedIndex, showNotification]);
+
+  const handleDragEnd = useCallback(() => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+    // 注意：不在此处重置 hasDragged，让 click 事件处理器读取它
+  }, []);
+
   // 清空阵容
   const clearLineup = useCallback(() => {
     setLineup([]);
@@ -827,23 +897,52 @@ export default function RocoPetSimulator() {
     setModals(prev => ({ ...prev, batchBan: false }));
   }, [batchInput, bannedPets, showNotification]);
 
-  // 批量添加阵容
+  // 批量添加阵容 - 带输入验证和去重
   const batchAddLineup = useCallback(() => {
+    // 解析输入并去重
     const inputs = batchInput.split(/[,，\n]/).map(item => item.trim()).filter(Boolean);
+    const uniqueInputs = [...new Set(inputs)]; // 去重
+
+    // 验证输入长度
+    if (uniqueInputs.length === 0) {
+      showNotification('请输入有效的宠物名称或编号', 'error');
+      return;
+    }
+
+    // 检查阵容是否已满
+    if (lineup.length >= 6) {
+      showNotification('阵容已满，无法添加更多宠物', 'error');
+      return;
+    }
+
     let addedCount = 0;
     const failed: string[] = [];
+    const alreadyInLineup: string[] = [];
 
-    inputs.forEach(input => {
+    uniqueInputs.forEach(input => {
+      // 检查是否已在阵容中
       const petId = parseInt(input);
+      if (!isNaN(petId) && lineup.includes(petId)) {
+        alreadyInLineup.push(input);
+        return;
+      }
+
       let pet: Pet | undefined;
 
       if (!isNaN(petId)) {
         pet = getPetById(petId);
       } else {
-        pet = pets.find(p => p.name.includes(input));
+        // 优先精确匹配，再模糊匹配
+        pet = pets.find(p => p.name === input) || pets.find(p => p.name.includes(input));
       }
 
       if (pet) {
+        // 再次检查是否已在阵容中（通过名称查找时）
+        if (lineup.includes(pet.id)) {
+          alreadyInLineup.push(input);
+          return;
+        }
+
         if (addToLineup(pet.id)) {
           addedCount++;
         } else {
@@ -854,16 +953,26 @@ export default function RocoPetSimulator() {
       }
     });
 
+    // 构建通知消息
+    const messages: string[] = [];
     if (addedCount > 0) {
-      showNotification(`成功添加 ${addedCount} 个宠物到阵容`);
+      messages.push(`成功添加 ${addedCount} 个宠物到阵容`);
+    }
+    if (alreadyInLineup.length > 0) {
+      messages.push(`${alreadyInLineup.length} 个宠物已在阵容中`);
     }
     if (failed.length > 0) {
-      showNotification(`以下宠物未添加成功: ${failed.join(', ')}`, 'error');
+      messages.push(`${failed.length} 个未找到: ${failed.join(', ')}`);
+    }
+
+    if (messages.length > 0) {
+      const hasError = failed.length > 0 || alreadyInLineup.length > 0;
+      showNotification(messages.join('；'), hasError ? 'error' : 'success');
     }
 
     setBatchInput('');
     setModals(prev => ({ ...prev, batchLineup: false }));
-  }, [batchInput, addToLineup, showNotification]);
+  }, [batchInput, addToLineup, showNotification, lineup, pets]);
 
   // 计算总魔力值
   const totalMagic = useMemo(() => {
@@ -878,13 +987,32 @@ export default function RocoPetSimulator() {
     }, 0);
   }, [lineup, customPets]);
 
-  // 处理右键菜单
+  // 处理右键菜单 - 带边界检测
   const handleContextMenu = useCallback((e: React.MouseEvent, petId: number, context: 'list' | 'banned' | 'lineup') => {
     e.preventDefault();
+
+    // 菜单尺寸估算
+    const menuWidth = 150;
+    const menuHeight = 200;
+
+    // 边界检测 - 确保菜单不会超出屏幕
+    let x = e.clientX;
+    let y = e.clientY;
+
+    // 如果右侧空间不足，菜单向左显示
+    if (x + menuWidth > window.innerWidth) {
+      x = x - menuWidth;
+    }
+
+    // 如果底部空间不足，菜单向上显示
+    if (y + menuHeight > window.innerHeight) {
+      y = y - menuHeight;
+    }
+
     setContextMenu({
       visible: true,
-      x: e.clientX,
-      y: e.clientY,
+      x,
+      y,
       petId,
       context,
     });
@@ -916,12 +1044,21 @@ export default function RocoPetSimulator() {
       markImageAsCached(img.src);
     };
 
-    // 处理宠物图片加载失败 - 切换到本地备用图片
+    // 处理宠物图片加载失败 - 切换到本地备用图片，最多重试2次
     const handlePetImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
       const img = e.currentTarget;
       const localUrl = getLocalPetImageUrl(pet);
-      if (img.src !== localUrl) {
+      // 获取重试次数
+      const retryCount = parseInt(img.dataset.retryCount || '0');
+
+      if (img.src !== localUrl && retryCount < 2) {
+        // 第一次失败，尝试本地备用图片
+        img.dataset.retryCount = String(retryCount + 1);
         img.src = localUrl;
+      } else if (retryCount >= 2) {
+        // 重试2次后仍然失败，显示占位符
+        img.classList.add('opacity-50');
+        img.alt = `${pet.name} (图片加载失败)`;
       }
     };
 
@@ -970,10 +1107,13 @@ export default function RocoPetSimulator() {
       addToLineup(pet.id);
     };
 
+    // 只有宠物列表（list 和 hidden 上下文）使用 layout 动画
+    const shouldUseLayout = context === 'list' || context === 'hidden';
+
     return (
       <motion.div
         key={`${context}-${pet.id}`}
-        layout
+        layout={shouldUseLayout}
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         whileHover={{ scale: 1.05 }}
@@ -1001,7 +1141,7 @@ export default function RocoPetSimulator() {
           </div>
         )}
         {/* 宠物图片 */}
-        <div className="relative flex-shrink-0">
+        <div className={`relative flex-shrink-0 ${imgSize} rounded-lg bg-gray-200 dark:bg-gray-700`}>
           <img
             src={getPetImageUrlWithCache(pet)}
             alt={pet.name}
@@ -1061,9 +1201,9 @@ export default function RocoPetSimulator() {
   // 按魔力值分组的宠物
   const petsByMagic = useMemo(() => getPetsByMagic(), []);
 
-  // 过滤后的宠物列表
+  // 过滤后的宠物列表 - 使用防抖后的搜索词
   const filteredPetsByMagic = useMemo(() => {
-    const query = searchQuery.toLowerCase();
+    const query = debouncedSearchQuery.toLowerCase();
     const filtered: typeof petsByMagic = { 1: [], 2: [], 3: [], 4: [], 5: [] };
 
     Object.entries(petsByMagic).forEach(([magic, magicPets]) => {
@@ -1073,8 +1213,8 @@ export default function RocoPetSimulator() {
       }
 
       filtered[parseInt(magic) as keyof typeof filtered] = magicPets.filter(pet => {
-        // 搜索筛选
-        if (searchQuery.trim()) {
+        // 搜索筛选 - 使用防抖后的搜索词
+        if (debouncedSearchQuery.trim()) {
           return pet.name.toLowerCase().includes(query) ||
                  pet.id.toString().includes(query);
         }
@@ -1092,7 +1232,7 @@ export default function RocoPetSimulator() {
 
     return filtered;
   // 添加 currentAccount 到依赖项，确保切换账号时刷新宠物列表
-  }, [petsByMagic, searchQuery, magicFilter, ownershipFilter, currentAccount]);
+  }, [petsByMagic, debouncedSearchQuery, magicFilter, ownershipFilter, currentAccount]);
 
   // 是否有搜索结果
   const hasSearchResults = useMemo(() => {
@@ -1139,6 +1279,18 @@ export default function RocoPetSimulator() {
                   阵容 ({lineup.length}/6)
                 </h3>
                 <div className="flex gap-1">
+                  {/* 放大按钮 */}
+                  <button
+                    onClick={() => setIsLineupExpanded(true)}
+                    className={`px-2 py-1 text-xs rounded transition-colors ${
+                      isDark
+                        ? 'bg-cyan-500/80 hover:bg-cyan-600 text-white'
+                        : 'bg-cyan-500 hover:bg-cyan-600 text-white'
+                    }`}
+                    title="放大查看阵容"
+                  >
+                    ⛶
+                  </button>
                   <button
                     onClick={() => setModals(prev => ({ ...prev, batchLineup: true }))}
                     className="px-2 py-1 text-xs bg-green-500 hover:bg-green-600 text-white rounded transition-colors"
@@ -1163,8 +1315,8 @@ export default function RocoPetSimulator() {
                 </div>
               </div>
 
-              {/* 魔力值统计 */}
-              <div className="mb-4">
+              {/* 魔力值统计 - 固定高度避免跳动 */}
+              <div className="mb-4 h-[72px] sm:h-[76px] flex flex-col justify-center">
                 <div className="flex items-center justify-center gap-2 text-lg font-bold">
                   <span className={totalMagic > 16 ? 'text-red-500' : 'text-green-500'}>{totalMagic}</span>
                   <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>/ 16</span>
@@ -1177,22 +1329,28 @@ export default function RocoPetSimulator() {
                     transition={{ duration: 0.3 }}
                   />
                 </div>
-                {totalMagic > 16 && (
-                  <p className="text-red-500 text-xs text-center mt-1">魔力值超限</p>
-                )}
+                <div className="h-5 mt-1 flex items-center justify-center">
+                  {totalMagic > 16 ? (
+                    <p className="text-red-500 text-xs">魔力值超限</p>
+                  ) : (
+                    <p className="text-transparent text-xs">占位</p>
+                  )}
+                </div>
               </div>
 
-              {/* 阵容列表 */}
+              {/* 阵容列表 - 固定高度避免跳动 */}
               {lineup.length === 0 ? (
-                <div className={`text-center py-6 rounded-lg border-2 border-dashed ${
+                <div className={`grid grid-cols-6 gap-1 min-h-[64px] sm:min-h-[72px] md:min-h-[80px] items-center justify-items-center rounded-lg border-2 border-dashed ${
                   isDark
                     ? 'border-gray-600 text-gray-400'
                     : 'border-gray-300 text-gray-500'
                 }`}>
-                  <p className="text-sm">点击宠物添加到阵容</p>
+                  <div className="col-span-6 text-center">
+                    <p className="text-sm">点击宠物添加到阵容</p>
+                  </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-6 gap-1">
+                <div className="grid grid-cols-6 gap-1 min-h-[64px] sm:min-h-[72px] md:min-h-[80px]">
                   {lineup.map((petId, index) => {
                     // 尝试从数据中获取宠物，如果不存在则使用自定义宠物信息
                     let pet = getPetById(petId);
@@ -1236,20 +1394,30 @@ export default function RocoPetSimulator() {
                       return `https://res.17roco.qq.com/res/combat/icons/${formattedId}-.png`;
                     };
                     
+                    const isLineupDragged = draggedIndex === index;
+                    const isLineupDragOver = dragOverIndex === index;
+
                     return (
                       <motion.div
                         key={`lineup-${pet.id}`}
-                        layout
-                        layoutId={`lineup-${pet.id}`}
                         whileHover={{ scale: 1.05 }}
-                        className={`relative flex flex-col items-center justify-center p-1 rounded-lg cursor-pointer transition-colors aspect-square ${
+                        draggable
+                        onDragStart={() => handleDragStart(index)}
+                        onDragOver={(e) => handleDragOver(e, index)}
+                        onDrop={(e) => handleDrop(e, index)}
+                        onDragEnd={handleDragEnd}
+                        className={`relative flex flex-col items-center justify-center p-1 rounded-lg cursor-move transition-all aspect-square ${
                           isDark ? 'hover:bg-gray-700/50' : 'hover:bg-gray-100/50'
-                        }`}
+                        } ${isLineupDragged ? 'opacity-60' : ''} ${isLineupDragOver ? 'ring-2 ring-green-400 bg-green-400/20' : ''}`}
                         onClick={() => {
-                          // 点击取消该宠物
-                          removeFromLineup(pet.id);
+                          // 只有没有发生拖拽时才移除宠物
+                          if (!hasDragged) {
+                            removeFromLineup(pet.id);
+                          }
+                          // 重置拖拽标志
+                          setHasDragged(false);
                         }}
-                        title="点击移除"
+                        title="点击移除，拖拽排序"
                       >
                         {/* 宠物图片 */}
                         <div className="relative flex-shrink-0">
@@ -1257,26 +1425,26 @@ export default function RocoPetSimulator() {
                             src={getLineupPetImageUrl()}
                             alt={pet.name}
                             onError={handleLineupPetImageError}
-                            className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg object-cover border-2 ${getMagicColor(pet.magic).border}`}
+                            className={`w-10 h-10 sm:w-11 sm:h-11 rounded-lg object-cover border-2 ${getMagicColor(pet.magic).border}`}
                           />
                           {/* 魔力值徽章 */}
-                          <span className={`absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full ${getMagicColor(pet.magic).bg} ${isDark ? 'text-black' : 'text-white'} text-[7px] flex items-center justify-center font-bold`}>
+                          <span className={`absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full ${getMagicColor(pet.magic).bg} ${isDark ? 'text-black' : 'text-white'} text-[8px] flex items-center justify-center font-bold`}>
                             {pet.magic}
                           </span>
                           {/* 血脉标记 */}
                           {selectedTalentId && selectedTalentId !== 0 && (
-                            <div className="absolute -bottom-0.5 -left-0.5 w-3 h-3 rounded-full bg-white dark:bg-gray-800 border border-orange-400 flex items-center justify-center">
+                            <div className="absolute -bottom-0.5 -left-0.5 w-4 h-4 rounded-full bg-white dark:bg-gray-800 border border-orange-400 flex items-center justify-center">
                               <img
                                 src={`https://res.17roco.qq.com/res/talent/${selectedTalentId}_small.png`}
                                 alt="血脉"
                                 onError={handleLineupTalentImageError}
-                                className="w-2 h-2 rounded-full"
+                                className="w-2.5 h-2.5 rounded-full"
                               />
                             </div>
                           )}
                         </div>
-                        {/* 宠物名称 - 强制一行显示，缩小字体确保完整显示 */}
-                        <span className={`mt-0.5 text-[7px] leading-tight text-center whitespace-nowrap w-full px-0.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                        {/* 宠物名称 */}
+                        <span className={`mt-1 text-[8px] sm:text-[9px] leading-tight text-center whitespace-nowrap w-full px-0.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                           {pet.name}
                         </span>
                       </motion.div>
@@ -1339,7 +1507,7 @@ export default function RocoPetSimulator() {
                   暂无禁赛宠物
                 </p>
               ) : (
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-4 gap-2">
                   {bannedPets.map(petId => {
                     const pet = getPetById(petId);
                     return pet ? renderPetCard(pet, 'banned') : null;
@@ -1585,7 +1753,6 @@ export default function RocoPetSimulator() {
             {/* 搜索结果提示 */}
             {searchQuery && !hasSearchResults && (
               <div className={`text-center py-8 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                <p className="text-lg mb-2">🔍</p>
                 <p>未找到匹配的宠物</p>
                 <p className="text-sm mt-1">请尝试其他关键词</p>
               </div>
@@ -1844,7 +2011,7 @@ export default function RocoPetSimulator() {
 
       {/* 外观选择模态框 */}
       {modals.skin && currentPetId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setModals(prev => ({ ...prev, skin: false }))}>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4" onClick={() => setModals(prev => ({ ...prev, skin: false }))}>
           <div className={`rounded-xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto ${isDark ? 'bg-gray-800' : 'bg-white'}`} onClick={e => e.stopPropagation()}>
             <h3 className={`text-xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>选择外观</h3>
             <div className="grid grid-cols-3 gap-4">
@@ -1899,7 +2066,7 @@ export default function RocoPetSimulator() {
 
       {/* 血脉选择模态框 */}
       {modals.talent && currentPetId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setModals(prev => ({ ...prev, talent: false }))}>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4" onClick={() => setModals(prev => ({ ...prev, talent: false }))}>
           <div className={`rounded-xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto ${isDark ? 'bg-gray-800' : 'bg-white'}`} onClick={e => e.stopPropagation()}>
             <h3 className={`text-xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>选择血脉</h3>
             <div className="space-y-3">
@@ -2138,6 +2305,261 @@ export default function RocoPetSimulator() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* 阵容放大模态框 */}
+      {isLineupExpanded && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          onClick={() => setIsLineupExpanded(false)}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className={`rounded-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto ${
+              isDark
+                ? 'bg-gray-800 border border-green-500/30'
+                : 'bg-white border border-green-400/30'
+            }`}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* 模态框标题 */}
+            <div className="flex items-center justify-between mb-6">
+              <h3 className={`text-2xl font-bold ${isDark ? 'text-green-400' : 'text-green-600'}`}>
+                阵容详情 ({lineup.length}/6)
+              </h3>
+              <button
+                onClick={() => setIsLineupExpanded(false)}
+                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                  isDark
+                    ? 'bg-gray-700 text-gray-400 hover:bg-gray-600 hover:text-white'
+                    : 'bg-gray-200 text-gray-500 hover:bg-gray-300 hover:text-gray-700'
+                }`}
+                title="关闭"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* 魔力值统计 - 放大版 */}
+            <div className="mb-8">
+              <div className="flex items-center justify-center gap-3 text-2xl font-bold">
+                <span className={totalMagic > 16 ? 'text-red-500' : 'text-green-500'}>
+                  {totalMagic}
+                </span>
+                <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>/ 16</span>
+              </div>
+              <div className={`h-4 rounded-full overflow-hidden mt-3 mx-auto max-w-md ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}>
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.min(100, (totalMagic / 16) * 100)}%` }}
+                  className={`h-full rounded-full ${totalMagic > 16 ? 'bg-red-500' : 'bg-green-500'}`}
+                  transition={{ duration: 0.5 }}
+                />
+              </div>
+              {totalMagic > 16 && (
+                <p className="text-red-500 text-sm text-center mt-2">⚠️ 魔力值超限</p>
+              )}
+            </div>
+
+            {/* 阵容宠物展示 - 固定1行6列布局 */}
+            {lineup.length === 0 ? (
+              <div className={`text-center py-12 rounded-xl border-2 border-dashed ${
+                isDark
+                  ? 'border-gray-600 text-gray-400'
+                  : 'border-gray-300 text-gray-500'
+              }`}>
+                <p className="text-base">阵容为空</p>
+                <p className="text-sm mt-1">点击宠物添加到阵容</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-6 gap-2 sm:gap-3 md:gap-4">
+                {lineup.map((petId, index) => {
+                  // 尝试从数据中获取宠物，如果不存在则使用自定义宠物信息
+                  let pet = getPetById(petId);
+                  if (!pet) {
+                    // 使用已保存的自定义宠物信息，或创建默认对象
+                    const customPetInfo = customPets[petId];
+                    pet = {
+                      id: petId,
+                      name: customPetInfo?.name || `宠物#${petId}`,
+                      magic: customPetInfo?.magic || 1,
+                    };
+                  }
+
+                  // 处理阵容宠物图片加载失败
+                  const handleLineupPetImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+                    const img = e.currentTarget;
+                    const localUrl = `/roco-icons/pets/${pet.imageId || pet.id}.png`;
+                    if (img.src !== localUrl) {
+                      img.src = localUrl;
+                    }
+                  };
+
+                  // 处理阵容宠物血脉图片加载失败
+                  const selectedTalentId = selectedTalents[pet.id];
+                  const handleLineupTalentImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+                    const img = e.currentTarget;
+                    const localUrl = `/roco-icons/talents/${selectedTalentId}.png`;
+                    if (img.src !== localUrl) {
+                      img.src = localUrl;
+                    }
+                  };
+
+                  // 获取宠物图片URL
+                  const getLineupPetImageUrl = () => {
+                    const skinIndex = selectedSkins[pet.id];
+                    const imageId = pet.imageId || pet.id;
+                    const formattedId = String(imageId).padStart(3, '0');
+                    if (skinIndex && skinIndex > 0 && skinPets[pet.id]) {
+                      return `https://res.17roco.qq.com/res/combat/icons/1${formattedId}${skinIndex - 1}-.png`;
+                    }
+                    return `https://res.17roco.qq.com/res/combat/icons/${formattedId}-.png`;
+                  };
+
+                  const isDragged = draggedIndex === index;
+                  const isDragOver = dragOverIndex === index;
+
+                  return (
+                    <motion.div
+                      key={`expanded-lineup-${pet.id}`}
+                      layout
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: index * 0.05 }}
+                      whileHover={{ scale: 1.05 }}
+                      draggable
+                      onDragStart={() => handleDragStart(index)}
+                      onDragOver={(e) => handleDragOver(e, index)}
+                      onDrop={(e) => handleDrop(e, index)}
+                      onDragEnd={handleDragEnd}
+                      className={`relative flex flex-col items-center justify-center p-1.5 sm:p-2 md:p-3 rounded-lg sm:rounded-xl cursor-move transition-all ${
+                        isDark ? 'hover:bg-gray-700/50' : 'hover:bg-gray-100/50'
+                      } ${isDragged ? 'opacity-60' : ''} ${isDragOver ? 'ring-2 ring-green-400 bg-green-400/20' : ''}`}
+                      onClick={() => {
+                        // 只有没有发生拖拽时才移除宠物
+                        if (!hasDragged) {
+                          removeFromLineup(pet.id);
+                        }
+                        // 重置拖拽标志
+                        setHasDragged(false);
+                      }}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        // 只有有外观或血脉的宠物才显示右键菜单
+                        if ((skinPets[pet.id] && skinPets[pet.id].length > 1) || getPetTalents(pet.id).length > 0) {
+                          // 菜单尺寸估算
+                          const menuWidth = 150;
+                          const menuHeight = 100;
+
+                          // 边界检测
+                          let x = e.clientX;
+                          let y = e.clientY;
+
+                          if (x + menuWidth > window.innerWidth) {
+                            x = x - menuWidth;
+                          }
+                          if (y + menuHeight > window.innerHeight) {
+                            y = y - menuHeight;
+                          }
+
+                          setExpandedContextMenu({
+                            visible: true,
+                            x,
+                            y,
+                            petId: pet.id,
+                          });
+                        }
+                      }}
+                      title="点击移除，右键切换外观/血脉，拖拽调整顺序"
+                    >
+                      {/* 宠物图片 - 放大版 */}
+                      <div className="relative flex-shrink-0">
+                        <img
+                          src={getLineupPetImageUrl()}
+                          alt={pet.name}
+                          onError={handleLineupPetImageError}
+                          className={`w-10 h-10 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-20 lg:h-20 rounded-lg sm:rounded-xl object-cover border-2 ${getMagicColor(pet.magic).border}`}
+                        />
+                        {/* 魔力值徽章 - 放大版 */}
+                        <span className={`absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 rounded-full ${getMagicColor(pet.magic).bg} ${isDark ? 'text-black' : 'text-white'} text-[8px] sm:text-[10px] md:text-xs flex items-center justify-center font-bold shadow-md`}>
+                          {pet.magic}
+                        </span>
+                        {/* 血脉标记 - 放大版 */}
+                        {selectedTalentId && selectedTalentId !== 0 && (
+                          <div className="absolute -bottom-0.5 -left-0.5 sm:-bottom-1 sm:-left-1 w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 rounded-full bg-white dark:bg-gray-800 border border-orange-400 flex items-center justify-center shadow-md">
+                            <img
+                              src={`https://res.17roco.qq.com/res/talent/${selectedTalentId}_small.png`}
+                              alt="血脉"
+                              onError={handleLineupTalentImageError}
+                              className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-3.5 md:h-3.5 rounded-full"
+                            />
+                          </div>
+                        )}
+                      </div>
+                      {/* 宠物名称 - 放大版 */}
+                      <span className={`mt-1 sm:mt-2 text-[10px] sm:text-xs md:text-sm font-medium text-center whitespace-nowrap w-full px-0.5 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+                        {pet.name}
+                      </span>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* 操作提示 */}
+            {lineup.length > 0 && (
+              <p className={`text-center text-sm mt-6 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                点击移除，右键菜单，拖拽调整顺序
+              </p>
+            )}
+
+            {/* 放大模态框专用的右键菜单 */}
+            {expandedContextMenu.visible && expandedContextMenu.petId && (
+              <>
+                <div
+                  className={`fixed z-[70] rounded-lg shadow-lg py-2 min-w-[150px] ${
+                    isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
+                  }`}
+                  style={{ left: expandedContextMenu.x, top: expandedContextMenu.y }}
+                >
+                  {/* 切换外观选项 */}
+                  {skinPets[expandedContextMenu.petId] && skinPets[expandedContextMenu.petId].length > 1 && (
+                    <button
+                      onClick={() => {
+                        setCurrentPetId(expandedContextMenu.petId);
+                        setModals(prev => ({ ...prev, skin: true }));
+                        setExpandedContextMenu(prev => ({ ...prev, visible: false }));
+                      }}
+                      className={`w-full px-4 py-2 text-left text-sm hover:bg-blue-500/10 text-blue-500`}
+                    >
+                      切换外观
+                    </button>
+                  )}
+                  {/* 选择血脉选项 */}
+                  {getPetTalents(expandedContextMenu.petId).length > 0 && (
+                    <button
+                      onClick={() => {
+                        setCurrentPetId(expandedContextMenu.petId);
+                        setModals(prev => ({ ...prev, talent: true }));
+                        setExpandedContextMenu(prev => ({ ...prev, visible: false }));
+                      }}
+                      className={`w-full px-4 py-2 text-left text-sm hover:bg-purple-500/10 text-purple-500`}
+                    >
+                      选择血脉
+                    </button>
+                  )}
+                </div>
+                {/* 点击其他地方隐藏右键菜单 */}
+                <div
+                  className="fixed inset-0 z-[65]"
+                  onClick={() => setExpandedContextMenu(prev => ({ ...prev, visible: false }))}
+                />
+              </>
+            )}
+          </motion.div>
         </div>
       )}
 

@@ -63,7 +63,7 @@ export default function PinyinConverter() {
     nonChinese: 'remove',
     replaceChar: '',
     outputFormat: 'full',
-    uFormat: 'ü'
+    uFormat: 'v'
   });
   const [isCustomMode, setIsCustomMode] = useState(false);
   const [showOnlyHeteronyms, setShowOnlyHeteronyms] = useState(false);

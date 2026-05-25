@@ -104,6 +104,10 @@ export default function RocoPetSimulatorPage() {
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-[var(--color-primary)] mt-0.5">•</span>
+                      <span>在阵容放大视图中，可拖拽宠物图标调整位置顺序</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-[var(--color-primary)] mt-0.5">•</span>
                       <span>阵容最多可容纳6只宠物，总魔力值不能超过16</span>
                     </li>
                     <li className="flex items-start gap-2">
