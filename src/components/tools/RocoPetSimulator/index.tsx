@@ -1190,8 +1190,13 @@ export default function RocoPetSimulator() {
             </button>
           )}
         </div>
-        {/* 宠物名称 - 强制一行显示，缩小字体确保完整显示 */}
-        <span className={`mt-1 text-[9px] leading-tight text-center whitespace-nowrap w-full px-0.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+        {/* 宠物名称 - 根据长度调整字体大小 */}
+        <span
+          className={`mt-1 leading-tight text-center whitespace-nowrap w-full px-0.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
+          style={{
+            fontSize: pet.name.length > 5 ? '8px' : pet.name.length > 3 ? '9px' : '10px'
+          }}
+        >
           {pet.name}
         </span>
       </motion.div>
@@ -1330,10 +1335,8 @@ export default function RocoPetSimulator() {
                   />
                 </div>
                 <div className="h-5 mt-1 flex items-center justify-center">
-                  {totalMagic > 16 ? (
+                  {totalMagic > 16 && (
                     <p className="text-red-500 text-xs">魔力值超限</p>
-                  ) : (
-                    <p className="text-transparent text-xs">占位</p>
                   )}
                 </div>
               </div>
@@ -1443,8 +1446,13 @@ export default function RocoPetSimulator() {
                             </div>
                           )}
                         </div>
-                        {/* 宠物名称 */}
-                        <span className={`mt-1 text-[8px] sm:text-[9px] leading-tight text-center whitespace-nowrap w-full px-0.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                        {/* 宠物名称 - 根据长度调整字体大小 */}
+                        <span
+                          className={`mt-1 leading-tight text-center whitespace-nowrap w-full px-0.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
+                          style={{
+                            fontSize: pet.name.length > 5 ? '7px' : pet.name.length > 3 ? '8px' : '9px'
+                          }}
+                        >
                           {pet.name}
                         </span>
                       </motion.div>
