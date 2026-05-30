@@ -242,9 +242,13 @@ export async function generateNewMomentId(): Promise<string> {
   if (isStaticExport) {
     return '000001';
   }
-  
+
   const files = await getMomentFiles();
-  const ids = files.map((file) => parseInt(extractIdFromFilename(file), 10));
+  // 只解析纯数字文件名，过滤掉无法解析为数字的文件名（如 first-moment.md）
+  const ids = files
+    .map((file) => parseInt(extractIdFromFilename(file), 10))
+    .filter((id) => !isNaN(id)); // 过滤掉 NaN，避免 Math.max 返回 NaN
+
   const maxId = ids.length > 0 ? Math.max(...ids) : 0;
   return (maxId + 1).toString().padStart(6, '0');
 }
@@ -347,7 +351,7 @@ export async function createMoment(data: MomentData): Promise<ActionResult<Momen
       message: 'Static export mode does not support this feature',
     };
   }
-  
+
   try {
     if (!data.content || data.content.trim() === '') {
       return {
@@ -364,6 +368,15 @@ export async function createMoment(data: MomentData): Promise<ActionResult<Momen
     }
 
     const id = await generateNewMomentId();
+
+    // 检查生成的 ID 是否已存在，防止覆盖已有文件
+    const existingMoment = await readMomentFile(id);
+    if (existingMoment) {
+      return {
+        success: false,
+        message: `ID ${id} 已存在，请重试或联系管理员`,
+      };
+    }
 
     const newMoment: Moment = {
       id,
