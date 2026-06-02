@@ -3,6 +3,54 @@ import path from 'path';
 import matter from 'gray-matter';
 import { formatBlogDate } from '@/lib/utils';
 import ClientArchivePage from '@/components/archive/ClientArchivePage';
+import type { Metadata } from 'next';
+
+/**
+ * 归档页面 SEO 元数据配置
+ *
+ * 功能说明：
+ * 1. 设置独立的页面标题和描述，利于搜索引擎收录
+ * 2. 配置 Open Graph 和 Twitter Card 用于社交媒体分享
+ * 3. 设置规范URL避免重复内容问题
+ */
+export const metadata: Metadata = {
+  /**
+   * 页面标题
+   * 使用模板格式：文章归档 | 心想事成的个人博客
+   */
+  title: '文章归档',
+
+  /**
+   * 页面描述
+   * 用于搜索引擎结果页展示
+   */
+  description: '浏览心想事成的所有博客文章，按年份和月份归档整理。包含技术分享、生活随笔、洛天依相关内容等多种分类。',
+
+  /**
+   * 关键词
+   * 帮助搜索引擎理解页面内容
+   */
+  keywords: ['文章归档', '博客归档', '历史文章', '心想事成', '技术博客'],
+
+  /**
+   * Open Graph 配置
+   * 用于社交媒体分享
+   */
+  openGraph: {
+    title: '文章归档 | 心想事成的个人博客',
+    description: '浏览心想事成的所有博客文章，按年份和月份归档整理。',
+    type: 'website',
+  },
+
+  /**
+   * Twitter Card 配置
+   */
+  twitter: {
+    card: 'summary',
+    title: '文章归档 | 心想事成的个人博客',
+    description: '浏览心想事成的所有博客文章，按年份和月份归档整理。',
+  },
+};
 
 /**
  * 博客文章接口

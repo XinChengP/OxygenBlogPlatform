@@ -1,292 +1,331 @@
-/**
- * 站点地图生成模块
- * 
- * 功能说明：
- * - 自动生成博客所有页面的站点地图
- * - 包含博客文章、动态、更新日志等所有公开页面
- * - 帮助搜索引擎快速发现和索引网站内容
- * - 支持静态导出模式（GitHub Pages部署）
- * 
- * 站点地图格式遵循 Google/Baidu 标准：
- * https://www.sitemaps.org/protocol.html
- */
-
 import { MetadataRoute } from 'next';
+import fs from 'fs';
+import path from 'path';
+import matter from 'gray-matter';
 
 /**
  * 静态导出配置
- * 强制使用静态生成模式，确保与 output: 'export' 兼容
+ * 用于支持 output: export 模式
  */
 export const dynamic = 'force-static';
-import { promises as fs } from 'fs';
-import path from 'path';
-import { parseFrontMatter } from '@/utils/frontMatterUtils';
 
 /**
- * 站点基础配置
- * 根据部署环境自动调整基础URL
+ * 站点基础URL配置
+ * 根据部署环境自动选择正确的域名
  */
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://blog.xinchengp.cn';
 
 /**
- * 博客文章元数据接口
- * 定义从 front matter 解析出的文章信息
+ * 博客文章前置元数据接口
  */
-interface BlogPost {
-  slug: string;           // 文章URL标识
-  title: string;          // 文章标题
-  date: string;           // 发布日期
-  updatedAt?: string;     // 更新日期（可选）
-  category?: string;      // 文章分类
-  tags?: string[];        // 文章标签
-  excerpt?: string;       // 文章摘要
+interface BlogFrontMatter {
+  title?: string;
+  date?: string;
+  updatedAt?: string;
+  hidden?: boolean;
 }
 
 /**
- * 动态元数据接口
- * 用于动态、更新日志等内容
+ * 递归扫描目录中的所有 .md 文件
+ *
+ * @param dir - 要扫描的目录路径
+ * @param baseDir - 基础目录路径，用于计算相对路径
+ * @returns 包含所有 .md 文件信息的数组
  */
-interface ContentItem {
-  slug: string;           // 内容URL标识
-  date: string;           // 发布日期
-}
+function scanMarkdownFiles(dir: string, baseDir: string): Array<{ filePath: string; relativePath: string; slug: string }> {
+  const results: Array<{ filePath: string; relativePath: string; slug: string }> = [];
 
-/**
- * 获取所有博客文章列表
- * 
- * 读取 src/content/blogs 目录下的所有 markdown 文件
- * 解析 front matter 获取文章元数据
- * 
- * @returns 博客文章列表，按日期倒序排列
- */
-async function getBlogPosts(): Promise<BlogPost[]> {
-  const blogsDir = path.join(process.cwd(), 'src', 'content', 'blogs');
-  
   try {
-    // 读取博客目录下的所有文件
-    const files = await fs.readdir(blogsDir);
-    
-    // 过滤出 markdown 文件并解析
-    const posts = await Promise.all(
-      files
-        .filter(file => file.endsWith('.md'))
-        .map(async (file) => {
-          const filePath = path.join(blogsDir, file);
-          const content = await fs.readFile(filePath, 'utf-8');
-          const { metadata } = parseFrontMatter(content);
-          
-          // 从文件名获取 slug（去掉 .md 后缀）
-          const slug = file.replace('.md', '');
-          
-          return {
-            slug,
-            title: (metadata.title as string) || slug,
-            date: (metadata.date as string) || new Date().toISOString(),
-            updatedAt: metadata.updatedAt as string | undefined,
-            category: metadata.category as string | undefined,
-            tags: metadata.tags as string[] | undefined,
-            excerpt: metadata.excerpt as string | undefined,
-          };
-        })
-    );
-    
-    // 按发布日期倒序排列（最新的在前）
-    return posts.sort((a, b) => 
-      new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
+    const items = fs.readdirSync(dir);
+
+    for (const item of items) {
+      const itemPath = path.join(dir, item);
+      const stat = fs.statSync(itemPath);
+
+      if (stat.isDirectory()) {
+        // 递归扫描子目录
+        const subResults = scanMarkdownFiles(itemPath, baseDir);
+        results.push(...subResults);
+      } else if (item.endsWith('.md')) {
+        // 找到 .md 文件
+        const relativePath = path.relative(baseDir, itemPath);
+        // 生成 slug：使用相对路径，去除 .md 扩展名，将路径分隔符替换为连字符
+        const slug = relativePath.replace(/\.md$/, '').replace(/[\/\\]/g, '-');
+
+        results.push({
+          filePath: itemPath,
+          relativePath,
+          slug,
+        });
+      }
+    }
   } catch (error) {
-    // 如果目录不存在或读取失败，返回空数组
-    console.error('读取博客文章失败:', error);
+    console.error(`扫描目录 ${dir} 时出错:`, error);
+  }
+
+  return results;
+}
+
+/**
+ * 获取所有博客文章的站点地图条目
+ *
+ * @returns 博客文章的站点地图条目数组
+ */
+function getBlogSitemapEntries(): MetadataRoute.Sitemap {
+  try {
+    const contentDir = path.join(process.cwd(), 'src/content/blogs');
+
+    if (!fs.existsSync(contentDir)) {
+      return [];
+    }
+
+    // 递归扫描所有 .md 文件
+    const markdownFiles = scanMarkdownFiles(contentDir, contentDir);
+    const entries: MetadataRoute.Sitemap = [];
+
+    for (const { filePath, slug } of markdownFiles) {
+      try {
+        const fileContent = fs.readFileSync(filePath, 'utf8');
+        const { data } = matter(fileContent);
+        const frontMatter = data as BlogFrontMatter;
+
+        // 跳过隐藏的博客文章
+        if (frontMatter.hidden === true) {
+          continue;
+        }
+
+        // 解析日期
+        const dateStr = frontMatter.updatedAt || frontMatter.date;
+        const lastModified = dateStr ? new Date(dateStr) : new Date();
+
+        entries.push({
+          url: `${BASE_URL}/blogs/${slug}/`,
+          lastModified,
+          changeFrequency: 'weekly',
+          priority: 0.8,
+        });
+      } catch (error) {
+        console.error(`读取博客文件 ${filePath} 时出错:`, error);
+      }
+    }
+
+    return entries;
+  } catch (error) {
+    console.error('获取博客站点地图条目时出错:', error);
     return [];
   }
 }
 
 /**
- * 获取所有动态（Moments）列表
- * 
- * 读取 src/content/moments 目录下的所有 markdown 文件
- * 
- * @returns 动态列表
+ * 获取所有个人动态的站点地图条目
+ *
+ * @returns 个人动态的站点地图条目数组
  */
-async function getMoments(): Promise<ContentItem[]> {
-  const momentsDir = path.join(process.cwd(), 'src', 'content', 'moments');
-  
+function getMomentsSitemapEntries(): MetadataRoute.Sitemap {
   try {
-    const files = await fs.readdir(momentsDir);
-    
-    const moments = await Promise.all(
-      files
-        .filter(file => file.endsWith('.md'))
-        .map(async (file) => {
-          const filePath = path.join(momentsDir, file);
-          const content = await fs.readFile(filePath, 'utf-8');
-          const { metadata } = parseFrontMatter(content);
-          
-          const slug = file.replace('.md', '');
-          
-          return {
-            slug,
-            date: (metadata.date as string) || new Date().toISOString(),
-          };
-        })
-    );
-    
-    return moments.sort((a, b) => 
-      new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
+    const momentsDir = path.join(process.cwd(), 'src/content/moments');
+
+    if (!fs.existsSync(momentsDir)) {
+      return [];
+    }
+
+    const entries: MetadataRoute.Sitemap = [];
+    const files = fs.readdirSync(momentsDir).filter(file => file.endsWith('.md'));
+
+    for (const file of files) {
+      try {
+        const filePath = path.join(momentsDir, file);
+        const fileContent = fs.readFileSync(filePath, 'utf8');
+        const { data } = matter(fileContent);
+
+        // 解析日期
+        const dateStr = data.time || data.date;
+        const lastModified = dateStr ? new Date(dateStr) : new Date();
+
+        entries.push({
+          url: `${BASE_URL}/moments/`,
+          lastModified,
+          changeFrequency: 'daily',
+          priority: 0.6,
+        });
+
+        // 只添加一次动态页面URL即可，因为所有动态都在同一个页面展示
+        break;
+      } catch (error) {
+        console.error(`读取动态文件 ${file} 时出错:`, error);
+      }
+    }
+
+    return entries;
   } catch (error) {
-    console.error('读取动态失败:', error);
+    console.error('获取动态站点地图条目时出错:', error);
     return [];
   }
 }
 
 /**
- * 获取所有更新日志列表
- * 
- * 读取 src/content/changelogs 目录下的所有 markdown 文件
- * 
- * @returns 更新日志列表
+ * 获取更新日志的站点地图条目
+ *
+ * @returns 更新日志的站点地图条目数组
  */
-async function getChangelogs(): Promise<ContentItem[]> {
-  const changelogsDir = path.join(process.cwd(), 'src', 'content', 'changelogs');
-  
+function getChangelogsSitemapEntries(): MetadataRoute.Sitemap {
   try {
-    const files = await fs.readdir(changelogsDir);
-    
-    const changelogs = await Promise.all(
-      files
-        .filter(file => file.endsWith('.md'))
-        .map(async (file) => {
-          const filePath = path.join(changelogsDir, file);
-          const content = await fs.readFile(filePath, 'utf-8');
-          const { metadata } = parseFrontMatter(content);
-          
-          const slug = file.replace('.md', '');
-          
-          return {
-            slug,
-            date: (metadata.date as string) || new Date().toISOString(),
-          };
-        })
-    );
-    
-    return changelogs.sort((a, b) => 
-      new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
+    const changelogsDir = path.join(process.cwd(), 'src/content/changelogs');
+
+    if (!fs.existsSync(changelogsDir)) {
+      return [];
+    }
+
+    const entries: MetadataRoute.Sitemap = [];
+    const files = fs.readdirSync(changelogsDir).filter(file => file.endsWith('.md'));
+
+    // 获取最新的更新日志日期
+    let latestDate = new Date(0);
+
+    for (const file of files) {
+      try {
+        const filePath = path.join(changelogsDir, file);
+        const fileContent = fs.readFileSync(filePath, 'utf8');
+        const { data } = matter(fileContent);
+
+        const dateStr = data.date;
+        if (dateStr) {
+          const date = new Date(dateStr);
+          if (date > latestDate) {
+            latestDate = date;
+          }
+        }
+      } catch (error) {
+        console.error(`读取更新日志文件 ${file} 时出错:`, error);
+      }
+    }
+
+    // 添加更新日志页面
+    entries.push({
+      url: `${BASE_URL}/changelogs/`,
+      lastModified: latestDate > new Date(0) ? latestDate : new Date(),
+      changeFrequency: 'daily',
+      priority: 0.5,
+    });
+
+    return entries;
   } catch (error) {
-    console.error('读取更新日志失败:', error);
+    console.error('获取更新日志站点地图条目时出错:', error);
     return [];
   }
 }
 
 /**
  * 生成站点地图
- * 
- * Next.js App Router 会自动处理这个函数
- * 在构建时生成 /sitemap.xml 文件
- * 
- * @returns 符合标准的站点地图数据
+ *
+ * 功能说明：
+ * 1. 自动生成所有页面的站点地图
+ * 2. 包含博客文章、个人动态、更新日志等动态内容
+ * 3. 支持静态导出模式，适用于 GitHub Pages 部署
+ * 4. 自动提取文章更新日期作为 lastModified
+ *
+ * @returns 站点地图数组
  */
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  // 获取所有内容
-  const [blogPosts, moments, changelogs] = await Promise.all([
-    getBlogPosts(),
-    getMoments(),
-    getChangelogs(),
-  ]);
-  
-  // 当前日期，用于静态页面
-  const currentDate = new Date().toISOString();
-  
-  /**
-   * 静态页面配置
-   * 
-   * priority: 页面优先级（0.0 - 1.0）
-   * - 首页: 1.0（最高优先级）
-   * - 博客列表: 0.9
-   * - 关于页面: 0.8
-   * - 其他页面: 0.7
-   * 
-   * changeFrequency: 更新频率
-   * - always: 实时更新
-   * - daily: 每日更新
-   * - weekly: 每周更新
-   * - monthly: 每月更新
-   */
-  const staticPages: MetadataRoute.Sitemap = [
+export default function sitemap(): MetadataRoute.Sitemap {
+  // 基础页面
+  const baseEntries: MetadataRoute.Sitemap = [
     {
       url: `${BASE_URL}/`,
-      lastModified: currentDate,
+      lastModified: new Date(),
       changeFrequency: 'daily',
       priority: 1.0,
     },
     {
-      url: `${BASE_URL}/blog/`,
-      lastModified: currentDate,
+      url: `${BASE_URL}/blogs/`,
+      lastModified: new Date(),
       changeFrequency: 'daily',
       priority: 0.9,
     },
     {
-      url: `${BASE_URL}/moments/`,
-      lastModified: currentDate,
-      changeFrequency: 'daily',
-      priority: 0.8,
-    },
-    {
-      url: `${BASE_URL}/changelog/`,
-      lastModified: currentDate,
-      changeFrequency: 'daily',
+      url: `${BASE_URL}/archive/`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
       priority: 0.7,
-    },
-    {
-      url: `${BASE_URL}/about/`,
-      lastModified: currentDate,
-      changeFrequency: 'monthly',
-      priority: 0.8,
     },
     {
       url: `${BASE_URL}/gallery/`,
-      lastModified: currentDate,
-      changeFrequency: 'weekly',
-      priority: 0.7,
-    },
-    {
-      url: `${BASE_URL}/music/`,
-      lastModified: currentDate,
+      lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.6,
     },
+    {
+      url: `${BASE_URL}/moments/`,
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 0.6,
+    },
+    {
+      url: `${BASE_URL}/changelogs/`,
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 0.5,
+    },
+    {
+      url: `${BASE_URL}/about/`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.5,
+    },
+    {
+      url: `${BASE_URL}/friends/`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.5,
+    },
+    {
+      url: `${BASE_URL}/guestbook/`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.5,
+    },
+    {
+      url: `${BASE_URL}/links/`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.4,
+    },
+    {
+      url: `${BASE_URL}/tools/`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.4,
+    },
+    {
+      url: `${BASE_URL}/tools/pinyin-converter/`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.4,
+    },
+    {
+      url: `${BASE_URL}/tools/markdown-editor/`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.4,
+    },
+    {
+      url: `${BASE_URL}/tools/roco-team/`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.4,
+    },
+    {
+      url: `${BASE_URL}/settings/`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.3,
+    },
   ];
-  
-  // 生成博客文章页面
-  const blogPages: MetadataRoute.Sitemap = blogPosts.map((post) => ({
-    url: `${BASE_URL}/blog/${post.slug}/`,
-    lastModified: post.updatedAt || post.date,
-    changeFrequency: 'monthly',
-    priority: 0.8,
-  }));
-  
-  // 生成动态页面
-  const momentPages: MetadataRoute.Sitemap = moments.map((moment) => ({
-    url: `${BASE_URL}/moments/${moment.slug}/`,
-    lastModified: moment.date,
-    changeFrequency: 'monthly',
-    priority: 0.6,
-  }));
-  
-  // 生成更新日志页面
-  const changelogPages: MetadataRoute.Sitemap = changelogs.map((changelog) => ({
-    url: `${BASE_URL}/changelog/${changelog.slug}/`,
-    lastModified: changelog.date,
-    changeFrequency: 'monthly',
-    priority: 0.5,
-  }));
-  
-  // 合并所有页面
+
+  // 合并所有条目
   return [
-    ...staticPages,
-    ...blogPages,
-    ...momentPages,
-    ...changelogPages,
+    ...baseEntries,
+    ...getBlogSitemapEntries(),
+    ...getMomentsSitemapEntries(),
+    ...getChangelogsSitemapEntries(),
   ];
 }

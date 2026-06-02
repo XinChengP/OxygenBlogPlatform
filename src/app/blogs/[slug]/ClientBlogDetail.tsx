@@ -1039,6 +1039,31 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
               )}
             </div>
 
+            {/* 最后更新时间提示 */}
+            <motion.div
+              className="mb-6 p-4 bg-card/50 backdrop-blur-sm rounded-lg border border-primary/20"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+            >
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>
+                  本文最后更新于：
+                  <span className="text-foreground font-medium">
+                    {blog.updatedAt || blog.date}
+                  </span>
+                  {blog.updatedAt && blog.updatedAt !== blog.date && (
+                    <span className="ml-2 text-xs">
+                      (原发布于：{blog.date})
+                    </span>
+                  )}
+                </span>
+              </div>
+            </motion.div>
+
             <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl p-6 mb-8">
               <p className="text-lg text-muted-foreground italic">{EndWord}</p>
             </div>

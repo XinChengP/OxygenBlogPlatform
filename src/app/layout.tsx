@@ -19,12 +19,12 @@ const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://blog.xinchengp.cn'
 
 /**
  * 全局元数据配置
- * 
+ *
  * 优化目标：
  * 1. 提升搜索引擎收录率
  * 2. 优化社交媒体分享效果
  * 3. 提供完整的站点信息
- * 
+ *
  * 支持的搜索引擎：
  * - 百度搜索
  * - Google搜索
@@ -38,50 +38,50 @@ export const metadata: Metadata = {
    * %s 会被替换为具体页面的标题
    */
   title: {
-    default: "\u5fc3\u60f3\u4e8b\u6210 \u7684 Blog",
-    template: "%s | \u5fc3\u60f3\u4e8b\u6210 \u7684 Blog",
+    default: "心想事成的个人博客 | 记录技术与生活",
+    template: "%s | 心想事成的个人博客",
   },
-  
+
   /**
    * 页面描述
    * 用于搜索引擎结果页展示，建议150字以内
    */
-  description: "\u5fc3\u60f3\u4e8b\u6210\u7684\u4e2a\u4eba\u535a\u5ba2\uff0c\u8bb0\u5f55\u53d1\u764d\u306e\u65e5\u5e38\uff08bushi\uff09",
-  
+  description: "心想事成的个人博客，以洛天依为主题，记录前端开发技术、VOCALOID相关内容、生活感悟与学习笔记。使用 Next.js 构建，支持 Live2D 看板娘、音乐播放器、主题切换等特色功能。",
+
   /**
    * 关键词
    * 帮助搜索引擎理解网站内容主题
    */
   keywords: [
-    "\u5fc3\u60f3\u4e8b\u6210",
-    "\u6d1b\u5929\u4f9d",
-    "\u4e2a\u4eba\u535a\u5ba2",
-    "\u6280\u672f\u535a\u5ba2",
+    "心想事成",
+    "洛天依",
+    "个人博客",
+    "技术博客",
     "Next.js",
     "React",
-    "\u7b80\u8c31",
+    "前端开发",
     "VOCALOID",
-    "\u751f\u6d3b\u8bb0\u5f55",
-    "\u524d\u7aef\u5f00\u53d1",
+    "锦依卫",
+    "生活记录",
   ],
-  
+
   /**
    * 作者信息
    */
   authors: [
-    { name: "\u5fc3\u60f3\u4e8b\u6210", url: BASE_URL },
+    { name: "心想事成", url: BASE_URL },
   ],
-  
+
   /**
    * 创建者信息
    */
-  creator: "\u5fc3\u60f3\u4e8b\u6210",
-  
+  creator: "心想事成",
+
   /**
    * 发布者信息
    */
-  publisher: "\u5fc3\u60f3\u4e8b\u6210",
-  
+  publisher: "心想事成",
+
   /**
    * 网站图标配置
    */
@@ -90,7 +90,7 @@ export const metadata: Metadata = {
     shortcut: '/favicon.ico',
     apple: '/favicon.ico',
   },
-  
+
   /**
    * 规范URL配置
    * 防止重复内容问题，告诉搜索引擎哪个是首选URL
@@ -98,7 +98,7 @@ export const metadata: Metadata = {
   alternates: {
     canonical: BASE_URL,
   },
-  
+
   /**
    * 机器人爬虫配置
    * 控制搜索引擎如何抓取和索引网站
@@ -114,7 +114,7 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
-  
+
   /**
    * Open Graph 配置
    * 用于社交媒体分享（微信、Facebook、LinkedIn等）
@@ -123,35 +123,35 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'zh_CN',
     url: BASE_URL,
-    siteName: "\u5fc3\u60f3\u4e8b\u6210 \u7684 Blog",
-    title: "\u5fc3\u60f3\u4e8b\u6210 \u7684 Blog",
-    description: "\u5fc3\u60f3\u4e8b\u6210\u7684\u4e2a\u4eba\u535a\u5ba2\uff0c\u8bb0\u5f55\u53d1\u764d\u306e\u65e5\u5e38\uff08bushi\uff09",
+    siteName: "心想事成的个人博客",
+    title: "心想事成的个人博客 | 记录技术与生活",
+    description: "心想事成的个人博客，以洛天依为主题，记录前端开发技术、VOCALOID相关内容、生活感悟与学习笔记。",
     images: [
       {
         url: `${BASE_URL}/LTY_Picture/og-image.png`,
         width: 1200,
         height: 630,
-        alt: "\u5fc3\u60f3\u4e8b\u6210 \u7684 Blog",
+        alt: "心想事成的个人博客",
       },
     ],
   },
-  
+
   /**
    * Twitter Card 配置
    * 用于 Twitter/X 平台分享
    */
   twitter: {
     card: 'summary_large_image',
-    title: "\u5fc3\u60f3\u4e8b\u6210 \u7684 Blog",
-    description: "\u5fc3\u60f3\u4e8b\u6210\u7684\u4e2a\u4eba\u535a\u5ba2\uff0c\u8bb0\u5f55\u53d1\u764d\u306e\u65e5\u5e38\uff08bushi\uff09",
+    title: "心想事成的个人博客 | 记录技术与生活",
+    description: "心想事成的个人博客，以洛天依为主题，记录前端开发技术、VOCALOID相关内容、生活感悟与学习笔记。",
     images: [`${BASE_URL}/LTY_Picture/og-image.png`],
     creator: "@xinchengp",
   },
-  
+
   /**
    * 搜索引擎验证配置
    * 用于百度、Google等搜索引擎的网站验证
-   * 
+   *
    * 使用方法：
    * 1. 在百度站长平台获取验证代码，替换 baidu-site-verification 的值
    * 2. 在 Google Search Console 获取验证代码，替换 google-site-verification 的值
@@ -161,7 +161,7 @@ export const metadata: Metadata = {
     // Google Search Console 验证
     // 获取地址：https://search.google.com/search-console
     google: 'XZMqWkzpBfk49Af2iDe-zp7x0Ff429Xf8gtb0teqRUM',
-    
+
     // 百度站长验证 + Bing Webmaster Tools 验证
     // 百度获取地址：https://ziyuan.baidu.com/site/index
     // Bing 获取地址：https://www.bing.com/webmasters
@@ -170,22 +170,22 @@ export const metadata: Metadata = {
       'msvalidate.01': '7F971987BE778887C6A2E389DD7DCF48',
     },
   },
-  
+
   /**
    * 分类和标签
    */
-  category: "\u4e2a\u4eba\u535a\u5ba2",
-  
+  category: "个人博客",
+
   /**
    * 其他元数据
    */
   other: {
     // 百度站长平台自动推送（可选）
     // 'baidu-site-verification': 'your-code',
-    
+
     // 360站长平台验证（可选）
     // '360-site-verification': 'your-code',
-    
+
     // 搜狗站长平台验证（可选）
     // 'sogou_site_verification': 'your-code',
   },
@@ -202,23 +202,23 @@ export default function RootLayout({
         {/* ============================================
             关键资源预加载 - 性能优化
             ============================================ */}
-        
+
         {/* 预连接到关键域名 - 提前建立连接减少延迟 */}
         <link rel="preconnect" href="https://fonts.googleapis.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://giscus.app" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://api.github.com" crossOrigin="anonymous" />
-        
+
         {/* DNS预解析 - 加速第三方资源加载 */}
         <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
         <link rel="dns-prefetch" href="https://giscus.app" />
-        
+
         {/* 注意：背景图片由 BackgroundLayer 组件动态加载，不预加载以避免浏览器警告
             BackgroundLayer 会在客户端挂载后根据主题设置加载图片，预加载可能导致资源浪费
         */}
-        
 
-        
+
+
         {/* 字体预加载 - 使用font-display: swap避免FOIT */}
         <style dangerouslySetInnerHTML={{__html:`
           /* 系统字体栈 - 确保快速渲染 */
@@ -227,19 +227,19 @@ export default function RootLayout({
             src: local('-apple-system'), local('BlinkMacSystemFont'), local('Segoe UI'), local('Roboto');
             font-display: swap;
           }
-          
+
           /* 关键CSS内联 - 避免额外请求 */
           :root {
             --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
           }
         `}} />
-        
+
         {/* 注意：移除不必要的预加载以避免浏览器警告
             - favicon.ico 不需要预加载，浏览器会自动请求
             - smooth-navigation.js 通过Script组件加载，不需要预加载
         */}
-        
+
         {/* 主题初始化脚本 */}
         <script
           dangerouslySetInnerHTML={{
@@ -249,24 +249,24 @@ export default function RootLayout({
                   var theme = localStorage.getItem('theme') || 'system';
                   var systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
                   var resolvedTheme = theme === 'system' ? systemTheme : theme;
-                  
+
                   if (resolvedTheme === 'dark') {
                     document.documentElement.classList.add('dark');
                   } else {
                     document.documentElement.classList.remove('dark');
                   }
-                  
+
                   // 立即应用blue主题色，避免闪烁
                   var isDark = resolvedTheme === 'dark';
                   var root = document.documentElement;
-                  
+
                   // blue主题配置
                   var themeColors = {
                     primary: "#66ccff",
                     secondary: "#1e40af", 
                     accent: "#06b6d4"
                   };
-                  
+
                   // 十六进制转RGB
                   function hexToRgb(hex) {
                     // 使用正则匹配十六进制颜色值，\d 表示数字，[a-f] 表示小写十六进制字母
@@ -277,28 +277,28 @@ export default function RootLayout({
                       b: parseInt(result[3], 16)
                     } : { r: 0, g: 0, b: 0 };
                   }
-                  
+
                   // 调整亮度
                   function adjustBrightness(hex, factor) {
                     var rgb = hexToRgb(hex);
                     var adjust = function(value) {
                       return Math.max(0, Math.min(255, Math.round(value * factor)));
                     };
-                    
+
                     var newR = adjust(rgb.r).toString(16);
                     var newG = adjust(rgb.g).toString(16);
                     var newB = adjust(rgb.b).toString(16);
-                    
+
                     // 确保十六进制字符串长度为2
                     newR = newR.length === 1 ? '0' + newR : newR;
                     newG = newG.length === 1 ? '0' + newG : newG;
                     newB = newB.length === 1 ? '0' + newB : newB;
-                    
+
                     return '#' + newR + newG + newB;
                   }
-                  
+
                   // 根据模式调整颜色
-                  var primaryColor = isDark 
+                  var primaryColor = isDark
                     ? adjustBrightness(themeColors.primary, 1.3)
                     : adjustBrightness(themeColors.primary, 0.8);
                   var accentColor = isDark
@@ -307,7 +307,7 @@ export default function RootLayout({
                   var secondaryColor = isDark
                     ? adjustBrightness(themeColors.secondary, 1.4)
                     : themeColors.secondary;
-                  
+
                   // 设置 CSS 变量
                   root.style.setProperty('--theme-primary', primaryColor);
                   root.style.setProperty('--theme-accent', accentColor);
@@ -318,7 +318,7 @@ export default function RootLayout({
                   root.style.setProperty('--accent-foreground', isDark ? '#0f0f0f' : '#ffffff');
                   root.style.setProperty('--secondary', secondaryColor);
                   root.style.setProperty('--secondary-foreground', isDark ? '#f0f0f0' : '#1f1f1f');
-                  
+
                   // 设置初始化标记
                   root.style.setProperty('--theme-initialized', '1');
                 } catch (e) {}
@@ -327,7 +327,7 @@ export default function RootLayout({
           }}
         />
         {/* 注意：Script组件不能在head中使用，已移动到body中 */}
-        
+
         {/* 动态标题脚本 - 使用普通script标签 */}
         <script dangerouslySetInnerHTML={{__html:`
           (function(){
