@@ -6,6 +6,7 @@ tags: ["腾讯应用宝", "安装", "第三方app", "技术", "app"]
 author: "歆橙"
 language: "zh-CN"
 excerpt: "万恶の资本家，要么就是不上架，要么就是有风险，****诗人吗"
+coverImage: "/Blogabout/qq-appstore-install/cover.webp"
 ---
 
 # 如何用腾讯应用宝安装第三方app
