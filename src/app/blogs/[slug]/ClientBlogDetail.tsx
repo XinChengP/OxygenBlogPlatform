@@ -655,6 +655,15 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                 border-bottom-color: rgba(255, 255, 255, 0.1);
               }
 
+              /* 强制代码块内容区域透明，覆盖 react-syntax-highlighter 主题和 prose 默认背景 */
+              /* 使用 :global() 突破 styled-jsx 作用域限制，确保能匹配到动态生成的代码元素 */
+              .prose :global(pre),
+              .prose :global(code),
+              .prose :global(pre code),
+              .prose :global(div code) {
+                background-color: transparent !important;
+                background: transparent !important;
+              }
             `}</style>
             <div className="bg-card/50 backdrop-blur-sm rounded-xl shadow-lg p-6 md:p-8">
               <div className="prose prose-lg dark:prose-invert max-w-none">
@@ -694,15 +703,21 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                               </motion.button>
                             </div>
                             {/* 代码内容区域 */}
-                            <div className="overflow-hidden">
+                            <div className="overflow-hidden !bg-transparent">
                               <SyntaxHighlighter
                                 style={syntaxTheme}
                                 language={language}
                                 PreTag="div"
+                                className="!bg-transparent"
                                 customStyle={{
                                   margin: 0,
                                   borderRadius: 0,
                                   background: 'transparent',
+                                }}
+                                codeTagProps={{
+                                  style: {
+                                    background: 'transparent',
+                                  }
                                 }}
                                 {...props}
                               >
@@ -736,6 +751,11 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                           {children}
                         </code>
                       );
+                    },
+                    // 覆盖默认 pre 标签，防止 react-markdown 给代码块包裹额外的 <pre> 元素
+                    // 避免 .prose pre 的默认背景色导致代码块出现白色/灰色背景
+                    pre({ children }: ComponentProps) {
+                      return <>{children}</>;
                     },
                     // 引用块 - 优化为玻璃态风格
                     blockquote({ children }: ComponentProps) {
@@ -1038,31 +1058,6 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                 </div>
               )}
             </div>
-
-            {/* 最后更新时间提示 */}
-            <motion.div
-              className="mb-6 p-4 bg-card/50 backdrop-blur-sm rounded-lg border border-primary/20"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-            >
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>
-                  本文最后更新于：
-                  <span className="text-foreground font-medium">
-                    {blog.updatedAt || blog.date}
-                  </span>
-                  {blog.updatedAt && blog.updatedAt !== blog.date && (
-                    <span className="ml-2 text-xs">
-                      (原发布于：{blog.date})
-                    </span>
-                  )}
-                </span>
-              </div>
-            </motion.div>
 
             <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl p-6 mb-8">
               <p className="text-lg text-muted-foreground italic">{EndWord}</p>

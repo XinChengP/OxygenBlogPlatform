@@ -156,13 +156,13 @@ export default function CodeBlock({
           style={syntaxTheme}
           language={language || 'text'}
           PreTag="div"
-          className="syntax-highlighter !m-0 !p-6 !bg-gray-50 dark:!bg-gray-950 !text-sm leading-relaxed"
+          className="syntax-highlighter !m-0 !p-6 !bg-transparent !text-sm leading-relaxed"
           customStyle={{
             margin: 0,
             padding: '1.5rem',
             fontSize: '0.875rem',
             lineHeight: '1.7',
-            backgroundColor: theme === 'dark' ? '#0a0a0a' : '#fafafa',
+            background: 'transparent',
             borderRadius: 0,
           }}
         >

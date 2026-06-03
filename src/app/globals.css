@@ -230,6 +230,25 @@ pre code {
   transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
+/* 强制博客文章代码块内容区域透明，覆盖 react-syntax-highlighter 主题和 prose 默认背景 */
+/* 覆盖 react-markdown 默认生成的 pre 标签和 prose 默认样式 */
+.prose pre,
+.prose code,
+.prose pre code,
+.prose div code {
+  background-color: transparent !important;
+  background: transparent !important;
+}
+
+/* 直接覆盖 react-syntax-highlighter 生成的带 language-* 类名的元素 */
+/* oneLight/oneDark 主题通过 code[class*="language-"] 和 pre[class*="language-"] 设置背景 */
+.prose [class*="language-"],
+.prose code[class*="language-"],
+.prose div[class*="language-"] {
+  background-color: transparent !important;
+  background: transparent !important;
+}
+
 /* 音乐播放器样式优化 */
 .aplayer-container {
   z-index: 9999 !important;
