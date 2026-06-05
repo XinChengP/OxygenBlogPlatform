@@ -2,8 +2,11 @@
 title: "首次上大师的感想"
 date: "2026-06-06"
 category: "随笔"
+author: 歆橙
+language: "zh-CN"
 tags: ["洛克王国", "天梯赛", "游戏", "大师", "感想"]
 excerpt: "——记第四十一届天梯赛冲大师之旅"
+coverImage: "/Blogabout/s41-master/cover.png"
 ---
 
 # 背景
