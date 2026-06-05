@@ -1,0 +1,522 @@
+Date : 2026-06-04 21:56:55
+Directory : w:\Web\004\OxygenBlogPlatform
+Total : 393 files,  78201 codes, 13202 comments, 10880 blanks, all 102283 lines
+
+Languages
++--------------------+------------+------------+------------+------------+------------+
+| language           | files      | code       | comment    | blank      | total      |
++--------------------+------------+------------+------------+------------+------------+
+| TypeScript JSX     |        112 |     29,417 |      5,085 |      3,499 |     38,001 |
+| TypeScript         |        102 |     19,628 |      6,270 |      3,548 |     29,446 |
+| JSON               |         10 |     10,448 |          0 |          3 |     10,451 |
+| Markdown           |        105 |      7,187 |          0 |      2,569 |      9,756 |
+| JavaScript         |         35 |      5,963 |      1,374 |        791 |      8,128 |
+| XML                |         18 |      3,016 |          5 |         11 |      3,032 |
+| CSS                |          5 |      2,219 |        447 |        407 |      3,073 |
+| Batch              |          1 |         97 |          3 |         20 |        120 |
+| HTML               |          3 |         95 |          2 |         15 |        112 |
+| YAML               |          1 |         80 |         16 |         16 |        112 |
+| JSON with Comments |          1 |         51 |          0 |          1 |         52 |
++--------------------+------------+------------+------------+------------+------------+
+
+Directories
++--------------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                                                                   | files      | code       | comment    | blank      | total      |
++--------------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                                                      |        393 |     78,201 |     13,202 |     10,880 |    102,283 |
+| . (Files)                                                                                              |         14 |     10,848 |         40 |        116 |     11,004 |
+| .backup                                                                                                |          7 |      1,183 |        189 |        154 |      1,526 |
+| .backup\actions                                                                                        |          7 |      1,183 |        189 |        154 |      1,526 |
+| .github                                                                                                |          1 |         80 |         16 |         16 |        112 |
+| .github\workflows                                                                                      |          1 |         80 |         16 |         16 |        112 |
+| .trae                                                                                                  |         11 |      2,770 |          0 |        822 |      3,592 |
+| .trae (Files)                                                                                          |          3 |      1,601 |          0 |        425 |      2,026 |
+| .trae\rules                                                                                            |          1 |        505 |          0 |        106 |        611 |
+| .trae\skills                                                                                           |          7 |        664 |          0 |        291 |        955 |
+| .trae\skills (Files)                                                                                   |          1 |        108 |          0 |         41 |        149 |
+| .trae\skills\caveman                                                                                   |          1 |         56 |          0 |         24 |         80 |
+| .trae\skills\diagnose                                                                                  |          1 |        124 |          0 |         75 |        199 |
+| .trae\skills\grill-me                                                                                  |          1 |         32 |          0 |         17 |         49 |
+| .trae\skills\grill-with-docs                                                                           |          1 |        124 |          0 |         45 |        169 |
+| .trae\skills\tdd                                                                                       |          1 |        119 |          0 |         54 |        173 |
+| .trae\skills\to-prd                                                                                    |          1 |        101 |          0 |         35 |        136 |
+| electron                                                                                               |          2 |      2,213 |        403 |        259 |      2,875 |
+| public                                                                                                 |         53 |      6,591 |      1,075 |        391 |      8,057 |
+| public (Files)                                                                                         |          5 |         10 |          0 |          1 |         11 |
+| public\Blogabout                                                                                       |          4 |      2,968 |          0 |          6 |      2,974 |
+| public\Blogabout\Xingqiubei                                                                            |          2 |      1,533 |          0 |          2 |      1,535 |
+| public\Blogabout\benou                                                                                 |          2 |      1,435 |          0 |          4 |      1,439 |
+| public\aplayer                                                                                         |          2 |          2 |          2 |          1 |          5 |
+| public\assets                                                                                          |          5 |         29 |          5 |          5 |         39 |
+| public\content                                                                                         |          1 |        103 |          0 |          1 |        104 |
+| public\js                                                                                              |          2 |        538 |        182 |        118 |        838 |
+| public\luotianyi-live2d-master                                                                         |         13 |      1,483 |        172 |        237 |      1,892 |
+| public\luotianyi-live2d-master (Files)                                                                 |          1 |         25 |          2 |          3 |         30 |
+| public\luotianyi-live2d-master\Poilive2d(v1.1.0)                                                       |          6 |        464 |          6 |         71 |        541 |
+| public\luotianyi-live2d-master\Poilive2d(v1.1.0)\live2d                                                |          6 |        464 |          6 |         71 |        541 |
+| public\luotianyi-live2d-master\Poilive2d(v1.1.0)\live2d (Files)                                        |          1 |         88 |          0 |          0 |         88 |
+| public\luotianyi-live2d-master\Poilive2d(v1.1.0)\live2d\css                                            |          1 |        222 |          4 |         57 |        283 |
+| public\luotianyi-live2d-master\Poilive2d(v1.1.0)\live2d\js                                             |          4 |        154 |          2 |         14 |        170 |
+| public\luotianyi-live2d-master\live2d                                                                  |          6 |        994 |        164 |        163 |      1,321 |
+| public\luotianyi-live2d-master\live2d (Files)                                                          |          1 |         88 |          0 |          0 |         88 |
+| public\luotianyi-live2d-master\live2d\css                                                              |          1 |        110 |          8 |         10 |        128 |
+| public\luotianyi-live2d-master\live2d\js                                                               |          3 |        795 |        156 |        153 |      1,104 |
+| public\luotianyi-live2d-master\live2d\model                                                            |          1 |          1 |          0 |          0 |          1 |
+| public\luotianyi-live2d-master\live2d\model\tianyi                                                     |          1 |          1 |          0 |          0 |          1 |
+| public\tools                                                                                           |         21 |      1,458 |        714 |         22 |      2,194 |
+| public\tools (Files)                                                                                   |          9 |        952 |        431 |         22 |      1,405 |
+| public\tools\esm                                                                                       |         12 |        506 |        283 |          0 |        789 |
+| scripts                                                                                                |         11 |      1,028 |        199 |        258 |      1,485 |
+| src                                                                                                    |        294 |     53,488 |     11,280 |      8,864 |     73,632 |
+| src\actions                                                                                            |          8 |      2,499 |        504 |        483 |      3,486 |
+| src\app                                                                                                |         34 |      8,284 |      1,677 |      1,062 |     11,023 |
+| src\app (Files)                                                                                        |          6 |      2,183 |        533 |        311 |      3,027 |
+| src\app\about                                                                                          |          2 |        296 |         65 |         28 |        389 |
+| src\app\api                                                                                            |          1 |         17 |          2 |          2 |         21 |
+| src\app\api\about.txt                                                                                  |          1 |         17 |          2 |          2 |         21 |
+| src\app\archive                                                                                        |          1 |        137 |         63 |         30 |        230 |
+| src\app\blogs                                                                                          |          5 |      2,265 |        402 |        253 |      2,920 |
+| src\app\blogs (Files)                                                                                  |          2 |      1,053 |        147 |        104 |      1,304 |
+| src\app\blogs\[slug]                                                                                   |          3 |      1,212 |        255 |        149 |      1,616 |
+| src\app\changelogs                                                                                     |          1 |         23 |         28 |          8 |         59 |
+| src\app\friends                                                                                        |          2 |        247 |         58 |         29 |        334 |
+| src\app\gallery                                                                                        |          6 |      1,193 |        161 |        142 |      1,496 |
+| src\app\gallery (Files)                                                                                |          2 |        355 |         82 |         53 |        490 |
+| src\app\gallery\components                                                                             |          4 |        838 |         79 |         89 |      1,006 |
+| src\app\guestbook                                                                                      |          2 |        105 |         43 |         18 |        166 |
+| src\app\links                                                                                          |          1 |         51 |         12 |          7 |         70 |
+| src\app\moments                                                                                        |          1 |         72 |         34 |         14 |        120 |
+| src\app\settings                                                                                       |          1 |        238 |         94 |         29 |        361 |
+| src\app\tools                                                                                          |          5 |      1,457 |        182 |        191 |      1,830 |
+| src\app\tools (Files)                                                                                  |          2 |        247 |         55 |         31 |        333 |
+| src\app\tools\markdown-editor                                                                          |          1 |        100 |          9 |         17 |        126 |
+| src\app\tools\pinyin-converter                                                                         |          1 |        988 |        110 |        129 |      1,227 |
+| src\app\tools\roco-team                                                                                |          1 |        122 |          8 |         14 |        144 |
+| src\assets                                                                                             |          5 |         10 |          0 |          0 |         10 |
+| src\components                                                                                         |         82 |     23,204 |      3,901 |      2,810 |     29,915 |
+| src\components (Files)                                                                                 |         33 |      8,175 |      1,585 |      1,269 |     11,029 |
+| src\components\admin                                                                                   |         15 |      4,530 |      1,065 |        417 |      6,012 |
+| src\components\archive                                                                                 |          1 |        462 |         40 |         41 |        543 |
+| src\components\changelogs                                                                              |          6 |      1,080 |        151 |         89 |      1,320 |
+| src\components\core                                                                                    |          3 |        335 |        102 |         50 |        487 |
+| src\components\magicui                                                                                 |          3 |        400 |         23 |         67 |        490 |
+| src\components\moments                                                                                 |          7 |      1,277 |        132 |        152 |      1,561 |
+| src\components\security                                                                                |          3 |        592 |        231 |        123 |        946 |
+| src\components\tools                                                                                   |          3 |      5,162 |        512 |        524 |      6,198 |
+| src\components\tools (Files)                                                                           |          2 |      2,886 |        276 |        330 |      3,492 |
+| src\components\tools\RocoPetSimulator                                                                  |          1 |      2,276 |        236 |        194 |      2,706 |
+| src\components\ui                                                                                      |          8 |      1,191 |         60 |         78 |      1,329 |
+| src\content                                                                                            |         95 |      4,233 |          0 |      1,694 |      5,927 |
+| src\content (Files)                                                                                    |          1 |         24 |          0 |          0 |         24 |
+| src\content\blogs                                                                                      |         11 |      1,226 |          0 |        786 |      2,012 |
+| src\content\changelogs                                                                                 |         71 |      2,856 |          0 |        893 |      3,749 |
+| src\content\moments                                                                                    |         12 |        127 |          0 |         15 |        142 |
+| src\contexts                                                                                           |          1 |         36 |          4 |          9 |         49 |
+| src\data                                                                                               |          1 |      1,660 |        217 |         81 |      1,958 |
+| src\hooks                                                                                              |         10 |      2,060 |        826 |        448 |      3,334 |
+| src\lib                                                                                                |          1 |        115 |         49 |         27 |        191 |
+| src\services                                                                                           |          3 |        993 |        375 |        176 |      1,544 |
+| src\setting                                                                                            |          9 |      1,381 |        248 |        111 |      1,740 |
+| src\types                                                                                              |          9 |        721 |        304 |        131 |      1,156 |
+| src\utils                                                                                              |         36 |      8,292 |      3,175 |      1,832 |     13,299 |
++--------------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++--------------------------------------------------------------------------------------------------------+--------------------+------------+------------+------------+------------+
+| filename                                                                                               | language           | code       | comment    | blank      | total      |
++--------------------------------------------------------------------------------------------------------+--------------------+------------+------------+------------+------------+
+| w:\Web\004\OxygenBlogPlatform\.backup\actions\backupActions.ts                                         | TypeScript         |        169 |         27 |         22 |        218 |
+| w:\Web\004\OxygenBlogPlatform\.backup\actions\blogActions.ts                                           | TypeScript         |        169 |         27 |         22 |        218 |
+| w:\Web\004\OxygenBlogPlatform\.backup\actions\galleryActions.ts                                        | TypeScript         |        169 |         27 |         22 |        218 |
+| w:\Web\004\OxygenBlogPlatform\.backup\actions\githubActions.ts                                         | TypeScript         |        169 |         27 |         22 |        218 |
+| w:\Web\004\OxygenBlogPlatform\.backup\actions\momentActions.ts                                         | TypeScript         |        169 |         27 |         22 |        218 |
+| w:\Web\004\OxygenBlogPlatform\.backup\actions\settingsActions.ts                                       | TypeScript         |        169 |         27 |         22 |        218 |
+| w:\Web\004\OxygenBlogPlatform\.backup\actions\todoActions.ts                                           | TypeScript         |        169 |         27 |         22 |        218 |
+| w:\Web\004\OxygenBlogPlatform\.github\workflows\deploy.yml                                             | YAML               |         80 |         16 |         16 |        112 |
+| w:\Web\004\OxygenBlogPlatform\.trae\CONTEXT.md                                                         | Markdown           |         55 |          0 |         23 |         78 |
+| w:\Web\004\OxygenBlogPlatform\.trae\rules\project_rules.md                                             | Markdown           |        505 |          0 |        106 |        611 |
+| w:\Web\004\OxygenBlogPlatform\.trae\skill-config.json                                                  | JSON               |          5 |          0 |          0 |          5 |
+| w:\Web\004\OxygenBlogPlatform\.trae\skills\README.md                                                   | Markdown           |        108 |          0 |         41 |        149 |
+| w:\Web\004\OxygenBlogPlatform\.trae\skills\caveman\SKILL.md                                            | Markdown           |         56 |          0 |         24 |         80 |
+| w:\Web\004\OxygenBlogPlatform\.trae\skills\diagnose\SKILL.md                                           | Markdown           |        124 |          0 |         75 |        199 |
+| w:\Web\004\OxygenBlogPlatform\.trae\skills\grill-me\SKILL.md                                           | Markdown           |         32 |          0 |         17 |         49 |
+| w:\Web\004\OxygenBlogPlatform\.trae\skills\grill-with-docs\SKILL.md                                    | Markdown           |        124 |          0 |         45 |        169 |
+| w:\Web\004\OxygenBlogPlatform\.trae\skills\tdd\SKILL.md                                                | Markdown           |        119 |          0 |         54 |        173 |
+| w:\Web\004\OxygenBlogPlatform\.trae\skills\to-prd\SKILL.md                                             | Markdown           |        101 |          0 |         35 |        136 |
+| w:\Web\004\OxygenBlogPlatform\.trae\项目完整说明文档.md                                                        | Markdown           |      1,541 |          0 |        402 |      1,943 |
+| w:\Web\004\OxygenBlogPlatform\README.md                                                                | Markdown           |        213 |          0 |         53 |        266 |
+| w:\Web\004\OxygenBlogPlatform\check-env.js                                                             | JavaScript         |         13 |          1 |          3 |         17 |
+| w:\Web\004\OxygenBlogPlatform\components.json                                                          | JSON               |         21 |          0 |          0 |         21 |
+| w:\Web\004\OxygenBlogPlatform\electron\main.js                                                         | JavaScript         |      2,154 |        303 |        230 |      2,687 |
+| w:\Web\004\OxygenBlogPlatform\electron\preload.js                                                      | JavaScript         |         59 |        100 |         29 |        188 |
+| w:\Web\004\OxygenBlogPlatform\eslint.config.mjs                                                        | JavaScript         |         48 |          8 |          4 |         60 |
+| w:\Web\004\OxygenBlogPlatform\index.html                                                               | HTML               |         69 |          0 |         11 |         80 |
+| w:\Web\004\OxygenBlogPlatform\next-env.d.ts                                                            | TypeScript         |          1 |          4 |          2 |          7 |
+| w:\Web\004\OxygenBlogPlatform\next.config.ts                                                           | TypeScript         |        154 |         20 |         17 |        191 |
+| w:\Web\004\OxygenBlogPlatform\package-lock.json                                                        | JSON               |     10,025 |          0 |          1 |     10,026 |
+| w:\Web\004\OxygenBlogPlatform\package.json                                                             | JSON               |         92 |          0 |          1 |         93 |
+| w:\Web\004\OxygenBlogPlatform\postcss.config.mjs                                                       | JavaScript         |          6 |          1 |          2 |          9 |
+| w:\Web\004\OxygenBlogPlatform\public\Blogabout\Xingqiubei\01.svg                                       | XML                |        814 |          0 |          1 |        815 |
+| w:\Web\004\OxygenBlogPlatform\public\Blogabout\Xingqiubei\02.svg                                       | XML                |        719 |          0 |          1 |        720 |
+| w:\Web\004\OxygenBlogPlatform\public\Blogabout\benou\1.svg                                             | XML                |        772 |          0 |          3 |        775 |
+| w:\Web\004\OxygenBlogPlatform\public\Blogabout\benou\2.svg                                             | XML                |        663 |          0 |          1 |        664 |
+| w:\Web\004\OxygenBlogPlatform\public\aplayer\APlayer.min.css                                           | CSS                |          1 |          1 |          1 |          3 |
+| w:\Web\004\OxygenBlogPlatform\public\aplayer\APlayer.min.js                                            | JavaScript         |          1 |          1 |          0 |          2 |
+| w:\Web\004\OxygenBlogPlatform\public\assets\bilibili.svg                                               | XML                |          1 |          0 |          0 |          1 |
+| w:\Web\004\OxygenBlogPlatform\public\assets\example.svg                                                | XML                |         21 |          5 |          5 |         31 |
+| w:\Web\004\OxygenBlogPlatform\public\assets\github.svg                                                 | XML                |          1 |          0 |          0 |          1 |
+| w:\Web\004\OxygenBlogPlatform\public\assets\mail.svg                                                   | XML                |          1 |          0 |          0 |          1 |
+| w:\Web\004\OxygenBlogPlatform\public\assets\vsqx.svg                                                   | XML                |          5 |          0 |          0 |          5 |
+| w:\Web\004\OxygenBlogPlatform\public\content\music.json                                                | JSON               |        103 |          0 |          1 |        104 |
+| w:\Web\004\OxygenBlogPlatform\public\google8317563cb772b963.html                                       | HTML               |          1 |          0 |          1 |          2 |
+| w:\Web\004\OxygenBlogPlatform\public\js\integrity-check.js                                             | JavaScript         |        416 |        150 |         90 |        656 |
+| w:\Web\004\OxygenBlogPlatform\public\js\smooth-navigation.js                                           | JavaScript         |        122 |         32 |         28 |        182 |
+| w:\Web\004\OxygenBlogPlatform\public\luotianyi-live2d-master\Poilive2d(v1.1.0)\live2d\css\live2d.css   | CSS                |        222 |          4 |         57 |        283 |
+| w:\Web\004\OxygenBlogPlatform\public\luotianyi-live2d-master\Poilive2d(v1.1.0)\live2d\js\jquery.min.js | JavaScript         |          1 |          1 |          1 |          3 |
+| w:\Web\004\OxygenBlogPlatform\public\luotianyi-live2d-master\Poilive2d(v1.1.0)\live2d\js\live2d.js     | JavaScript         |          1 |          0 |          0 |          1 |
+| w:\Web\004\OxygenBlogPlatform\public\luotianyi-live2d-master\Poilive2d(v1.1.0)\live2d\js\message.js    | JavaScript         |        140 |          1 |         12 |        153 |
+| w:\Web\004\OxygenBlogPlatform\public\luotianyi-live2d-master\Poilive2d(v1.1.0)\live2d\js\run_local.js  | JavaScript         |         12 |          0 |          1 |         13 |
+| w:\Web\004\OxygenBlogPlatform\public\luotianyi-live2d-master\Poilive2d(v1.1.0)\live2d\message.json     | JSON               |         88 |          0 |          0 |         88 |
+| w:\Web\004\OxygenBlogPlatform\public\luotianyi-live2d-master\live2d.html                               | HTML               |         25 |          2 |          3 |         30 |
+| w:\Web\004\OxygenBlogPlatform\public\luotianyi-live2d-master\live2d\css\live2d.css                     | CSS                |        110 |          8 |         10 |        128 |
+| w:\Web\004\OxygenBlogPlatform\public\luotianyi-live2d-master\live2d\js\live2d.js                       | JavaScript         |          1 |          0 |          0 |          1 |
+| w:\Web\004\OxygenBlogPlatform\public\luotianyi-live2d-master\live2d\js\message-fix.js                  | JavaScript         |        236 |         42 |         59 |        337 |
+| w:\Web\004\OxygenBlogPlatform\public\luotianyi-live2d-master\live2d\js\message.js                      | JavaScript         |        558 |        114 |         94 |        766 |
+| w:\Web\004\OxygenBlogPlatform\public\luotianyi-live2d-master\live2d\message.json                       | JSON               |         88 |          0 |          0 |         88 |
+| w:\Web\004\OxygenBlogPlatform\public\luotianyi-live2d-master\live2d\model\tianyi\model.json            | JSON               |          1 |          0 |          0 |          1 |
+| w:\Web\004\OxygenBlogPlatform\public\next.svg                                                          | XML                |          1 |          0 |          0 |          1 |
+| w:\Web\004\OxygenBlogPlatform\public\placeholder-album.svg                                             | XML                |          6 |          0 |          0 |          6 |
+| w:\Web\004\OxygenBlogPlatform\public\tools\converter.d.ts                                              | TypeScript         |         21 |         41 |          0 |         62 |
+| w:\Web\004\OxygenBlogPlatform\public\tools\data-loader.d.ts                                            | TypeScript         |         17 |         32 |          0 |         49 |
+| w:\Web\004\OxygenBlogPlatform\public\tools\esm\converter.d.ts                                          | TypeScript         |         21 |         41 |          0 |         62 |
+| w:\Web\004\OxygenBlogPlatform\public\tools\esm\converter.js                                            | JavaScript         |        157 |         45 |          0 |        202 |
+| w:\Web\004\OxygenBlogPlatform\public\tools\esm\data-loader.d.ts                                        | TypeScript         |         17 |         32 |          0 |         49 |
+| w:\Web\004\OxygenBlogPlatform\public\tools\esm\data-loader.js                                          | JavaScript         |        122 |         40 |          0 |        162 |
+| w:\Web\004\OxygenBlogPlatform\public\tools\esm\index.d.ts                                              | TypeScript         |          7 |         11 |          0 |         18 |
+| w:\Web\004\OxygenBlogPlatform\public\tools\esm\index.js                                                | JavaScript         |         24 |         15 |          0 |         39 |
+| w:\Web\004\OxygenBlogPlatform\public\tools\esm\pinyin-data.d.ts                                        | TypeScript         |          0 |          1 |          0 |          1 |
+| w:\Web\004\OxygenBlogPlatform\public\tools\esm\pinyin-data.js                                          | JavaScript         |          1 |          1 |          0 |          2 |
+| w:\Web\004\OxygenBlogPlatform\public\tools\esm\types.d.ts                                              | TypeScript         |         29 |         14 |          0 |         43 |
+| w:\Web\004\OxygenBlogPlatform\public\tools\esm\types.js                                                | JavaScript         |          1 |          4 |          0 |          5 |
+| w:\Web\004\OxygenBlogPlatform\public\tools\esm\utils.d.ts                                              | TypeScript         |         10 |         33 |          0 |         43 |
+| w:\Web\004\OxygenBlogPlatform\public\tools\esm\utils.js                                                | JavaScript         |        117 |         46 |          0 |        163 |
+| w:\Web\004\OxygenBlogPlatform\public\tools\index.d.ts                                                  | TypeScript         |          7 |         11 |          0 |         18 |
+| w:\Web\004\OxygenBlogPlatform\public\tools\pinyin-converter.esm.js                                     | JavaScript         |        414 |        143 |          5 |        562 |
+| w:\Web\004\OxygenBlogPlatform\public\tools\pinyin-converter.js                                         | JavaScript         |        453 |        155 |         16 |        624 |
+| w:\Web\004\OxygenBlogPlatform\public\tools\pinyin-converter.min.js                                     | JavaScript         |          1 |          1 |          1 |          3 |
+| w:\Web\004\OxygenBlogPlatform\public\tools\pinyin-data.d.ts                                            | TypeScript         |          0 |          1 |          0 |          1 |
+| w:\Web\004\OxygenBlogPlatform\public\tools\types.d.ts                                                  | TypeScript         |         29 |         14 |          0 |         43 |
+| w:\Web\004\OxygenBlogPlatform\public\tools\utils.d.ts                                                  | TypeScript         |         10 |         33 |          0 |         43 |
+| w:\Web\004\OxygenBlogPlatform\public\vercel.svg                                                        | XML                |          1 |          0 |          0 |          1 |
+| w:\Web\004\OxygenBlogPlatform\public\window.svg                                                        | XML                |          1 |          0 |          0 |          1 |
+| w:\Web\004\OxygenBlogPlatform\scripts\build-static.js                                                  | JavaScript         |         55 |         13 |         12 |         80 |
+| w:\Web\004\OxygenBlogPlatform\scripts\convertToWebp.js                                                 | JavaScript         |         99 |         14 |         22 |        135 |
+| w:\Web\004\OxygenBlogPlatform\scripts\deleteOriginalImages.js                                          | JavaScript         |         17 |          2 |          3 |         22 |
+| w:\Web\004\OxygenBlogPlatform\scripts\download-roco-icons.js                                           | JavaScript         |        128 |         20 |         29 |        177 |
+| w:\Web\004\OxygenBlogPlatform\scripts\generate-sitemap.ts                                              | TypeScript         |        180 |         32 |         43 |        255 |
+| w:\Web\004\OxygenBlogPlatform\scripts\install-electron-offline.js                                      | JavaScript         |         85 |         20 |         19 |        124 |
+| w:\Web\004\OxygenBlogPlatform\scripts\optimize-performance.js                                          | JavaScript         |        158 |         16 |         41 |        215 |
+| w:\Web\004\OxygenBlogPlatform\scripts\prepare-static-export.js                                         | JavaScript         |         79 |         21 |         25 |        125 |
+| w:\Web\004\OxygenBlogPlatform\scripts\serve-static.js                                                  | JavaScript         |         37 |          6 |          7 |         50 |
+| w:\Web\004\OxygenBlogPlatform\scripts\sync-theme-colors.js                                             | JavaScript         |        151 |         50 |         45 |        246 |
+| w:\Web\004\OxygenBlogPlatform\scripts\updateCoverImages.js                                             | JavaScript         |         39 |          5 |         12 |         56 |
+| w:\Web\004\OxygenBlogPlatform\src\actions\backupActions.ts                                             | TypeScript         |        443 |         27 |         89 |        559 |
+| w:\Web\004\OxygenBlogPlatform\src\actions\blogActions.ts                                               | TypeScript         |        489 |        113 |        107 |        709 |
+| w:\Web\004\OxygenBlogPlatform\src\actions\galleryActions.ts                                            | TypeScript         |        287 |         71 |         58 |        416 |
+| w:\Web\004\OxygenBlogPlatform\src\actions\githubActions.ts                                             | TypeScript         |        169 |         27 |         22 |        218 |
+| w:\Web\004\OxygenBlogPlatform\src\actions\index.static.ts                                              | TypeScript         |        188 |         30 |         25 |        243 |
+| w:\Web\004\OxygenBlogPlatform\src\actions\momentActions.ts                                             | TypeScript         |        552 |        141 |        101 |        794 |
+| w:\Web\004\OxygenBlogPlatform\src\actions\settingsActions.ts                                           | TypeScript         |        169 |         27 |         22 |        218 |
+| w:\Web\004\OxygenBlogPlatform\src\actions\todoActions.ts                                               | TypeScript         |        202 |         68 |         59 |        329 |
+| w:\Web\004\OxygenBlogPlatform\src\app\about\layout.tsx                                                 | TypeScript JSX     |         23 |         30 |          7 |         60 |
+| w:\Web\004\OxygenBlogPlatform\src\app\about\page.tsx                                                   | TypeScript JSX     |        273 |         35 |         21 |        329 |
+| w:\Web\004\OxygenBlogPlatform\src\app\api\about.txt\route.ts                                           | TypeScript         |         17 |          2 |          2 |         21 |
+| w:\Web\004\OxygenBlogPlatform\src\app\archive\page.tsx                                                 | TypeScript JSX     |        137 |         63 |         30 |        230 |
+| w:\Web\004\OxygenBlogPlatform\src\app\blogs\ClientBlogsPage.tsx                                        | TypeScript JSX     |        925 |         95 |         79 |      1,099 |
+| w:\Web\004\OxygenBlogPlatform\src\app\blogs\[slug]\BlogDetailWrapper.tsx                               | TypeScript JSX     |         40 |          7 |          6 |         53 |
+| w:\Web\004\OxygenBlogPlatform\src\app\blogs\[slug]\ClientBlogDetail.tsx                                | TypeScript JSX     |        902 |        119 |         93 |      1,114 |
+| w:\Web\004\OxygenBlogPlatform\src\app\blogs\[slug]\page.tsx                                            | TypeScript JSX     |        270 |        129 |         50 |        449 |
+| w:\Web\004\OxygenBlogPlatform\src\app\blogs\page.tsx                                                   | TypeScript JSX     |        128 |         52 |         25 |        205 |
+| w:\Web\004\OxygenBlogPlatform\src\app\changelogs\page.tsx                                              | TypeScript JSX     |         23 |         28 |          8 |         59 |
+| w:\Web\004\OxygenBlogPlatform\src\app\friends\layout.tsx                                               | TypeScript JSX     |         23 |         30 |          7 |         60 |
+| w:\Web\004\OxygenBlogPlatform\src\app\friends\page.tsx                                                 | TypeScript JSX     |        224 |         28 |         22 |        274 |
+| w:\Web\004\OxygenBlogPlatform\src\app\gallery\GalleryClient.tsx                                        | TypeScript JSX     |        326 |         52 |         43 |        421 |
+| w:\Web\004\OxygenBlogPlatform\src\app\gallery\components\CategoryFilter.tsx                            | TypeScript JSX     |        217 |         18 |         19 |        254 |
+| w:\Web\004\OxygenBlogPlatform\src\app\gallery\components\ImageCard.tsx                                 | TypeScript JSX     |        157 |         19 |         19 |        195 |
+| w:\Web\004\OxygenBlogPlatform\src\app\gallery\components\ImagePreview.tsx                              | TypeScript JSX     |        413 |         35 |         44 |        492 |
+| w:\Web\004\OxygenBlogPlatform\src\app\gallery\components\LoadingSkeleton.tsx                           | TypeScript JSX     |         51 |          7 |          7 |         65 |
+| w:\Web\004\OxygenBlogPlatform\src\app\gallery\page.tsx                                                 | TypeScript JSX     |         29 |         30 |         10 |         69 |
+| w:\Web\004\OxygenBlogPlatform\src\app\global-error.tsx                                                 | TypeScript JSX     |         88 |         12 |          5 |        105 |
+| w:\Web\004\OxygenBlogPlatform\src\app\globals.css                                                      | CSS                |        989 |        263 |        167 |      1,419 |
+| w:\Web\004\OxygenBlogPlatform\src\app\guestbook\layout.tsx                                             | TypeScript JSX     |         23 |         30 |          7 |         60 |
+| w:\Web\004\OxygenBlogPlatform\src\app\guestbook\page.tsx                                               | TypeScript JSX     |         82 |         13 |         11 |        106 |
+| w:\Web\004\OxygenBlogPlatform\src\app\layout.tsx                                                       | TypeScript JSX     |        260 |        104 |         29 |        393 |
+| w:\Web\004\OxygenBlogPlatform\src\app\links\page.tsx                                                   | TypeScript JSX     |         51 |         12 |          7 |         70 |
+| w:\Web\004\OxygenBlogPlatform\src\app\moments\page.tsx                                                 | TypeScript JSX     |         72 |         34 |         14 |        120 |
+| w:\Web\004\OxygenBlogPlatform\src\app\not-found.tsx                                                    | TypeScript JSX     |        555 |         84 |         65 |        704 |
+| w:\Web\004\OxygenBlogPlatform\src\app\page.tsx                                                         | TypeScript JSX     |         51 |         14 |          9 |         74 |
+| w:\Web\004\OxygenBlogPlatform\src\app\settings\page.tsx                                                | TypeScript JSX     |        238 |         94 |         29 |        361 |
+| w:\Web\004\OxygenBlogPlatform\src\app\sitemap.ts                                                       | TypeScript         |        240 |         56 |         36 |        332 |
+| w:\Web\004\OxygenBlogPlatform\src\app\tools\layout.tsx                                                 | TypeScript JSX     |         23 |         30 |          7 |         60 |
+| w:\Web\004\OxygenBlogPlatform\src\app\tools\markdown-editor\page.tsx                                   | TypeScript JSX     |        100 |          9 |         17 |        126 |
+| w:\Web\004\OxygenBlogPlatform\src\app\tools\page.tsx                                                   | TypeScript JSX     |        224 |         25 |         24 |        273 |
+| w:\Web\004\OxygenBlogPlatform\src\app\tools\pinyin-converter\page.tsx                                  | TypeScript JSX     |        988 |        110 |        129 |      1,227 |
+| w:\Web\004\OxygenBlogPlatform\src\app\tools\roco-team\page.tsx                                         | TypeScript JSX     |        122 |          8 |         14 |        144 |
+| w:\Web\004\OxygenBlogPlatform\src\assets\github.svg                                                    | XML                |          1 |          0 |          0 |          1 |
+| w:\Web\004\OxygenBlogPlatform\src\assets\mail.svg                                                      | XML                |          1 |          0 |          0 |          1 |
+| w:\Web\004\OxygenBlogPlatform\src\assets\moon.svg                                                      | XML                |          1 |          0 |          0 |          1 |
+| w:\Web\004\OxygenBlogPlatform\src\assets\sun.svg                                                       | XML                |          1 |          0 |          0 |          1 |
+| w:\Web\004\OxygenBlogPlatform\src\assets\system.svg                                                    | XML                |          6 |          0 |          0 |          6 |
+| w:\Web\004\OxygenBlogPlatform\src\components\Analytics.tsx                                             | TypeScript JSX     |        170 |         91 |         26 |        287 |
+| w:\Web\004\OxygenBlogPlatform\src\components\BackgroundLayer.tsx                                       | TypeScript JSX     |         55 |         15 |         12 |         82 |
+| w:\Web\004\OxygenBlogPlatform\src\components\BilibiliIframe.tsx                                        | TypeScript JSX     |        306 |         65 |         34 |        405 |
+| w:\Web\004\OxygenBlogPlatform\src\components\BrowserCompatibilityBanner.tsx                            | TypeScript JSX     |         64 |          4 |         11 |         79 |
+| w:\Web\004\OxygenBlogPlatform\src\components\BrowserCompatibilityWarning.tsx                           | TypeScript JSX     |         87 |          5 |         15 |        107 |
+| w:\Web\004\OxygenBlogPlatform\src\components\ClientRouterWrapper.tsx                                   | TypeScript JSX     |         20 |          4 |          5 |         29 |
+| w:\Web\004\OxygenBlogPlatform\src\components\CodeCopyButton.tsx                                        | TypeScript JSX     |        227 |         94 |         25 |        346 |
+| w:\Web\004\OxygenBlogPlatform\src\components\ConditionalComponents.tsx                                 | TypeScript JSX     |         49 |         11 |         10 |         70 |
+| w:\Web\004\OxygenBlogPlatform\src\components\CopyrightNotice.tsx                                       | TypeScript JSX     |        108 |         18 |         11 |        137 |
+| w:\Web\004\OxygenBlogPlatform\src\components\DarkModeFilters.tsx                                       | TypeScript JSX     |         43 |         17 |          8 |         68 |
+| w:\Web\004\OxygenBlogPlatform\src\components\DarkModeImage.tsx                                         | TypeScript JSX     |         93 |         27 |          9 |        129 |
+| w:\Web\004\OxygenBlogPlatform\src\components\Footer.tsx                                                | TypeScript JSX     |        107 |         30 |         19 |        156 |
+| w:\Web\004\OxygenBlogPlatform\src\components\FriendsLink.tsx                                           | TypeScript JSX     |        254 |         40 |         26 |        320 |
+| w:\Web\004\OxygenBlogPlatform\src\components\GiscusComments.tsx                                        | TypeScript JSX     |         47 |          6 |         11 |         64 |
+| w:\Web\004\OxygenBlogPlatform\src\components\GiscusGuestbookBoard.tsx                                  | TypeScript JSX     |         35 |          6 |          6 |         47 |
+| w:\Web\004\OxygenBlogPlatform\src\components\GitHubGuestbookBoard.tsx                                  | TypeScript JSX     |        542 |         32 |         49 |        623 |
+| w:\Web\004\OxygenBlogPlatform\src\components\GuestbookBoard.tsx                                        | TypeScript JSX     |        317 |         25 |         42 |        384 |
+| w:\Web\004\OxygenBlogPlatform\src\components\Lantern.tsx                                               | TypeScript JSX     |      1,006 |        142 |        180 |      1,328 |
+| w:\Web\004\OxygenBlogPlatform\src\components\LazyMarkdown.tsx                                          | TypeScript JSX     |        111 |         10 |         16 |        137 |
+| w:\Web\004\OxygenBlogPlatform\src\components\Live2DController.tsx                                      | TypeScript JSX     |         18 |          8 |          6 |         32 |
+| w:\Web\004\OxygenBlogPlatform\src\components\LuoTianyiLive2D.tsx                                       | TypeScript JSX     |        886 |        157 |        172 |      1,215 |
+| w:\Web\004\OxygenBlogPlatform\src\components\MusicPlayer.tsx                                           | TypeScript JSX     |        549 |        234 |        120 |        903 |
+| w:\Web\004\OxygenBlogPlatform\src\components\Navigation.tsx                                            | TypeScript JSX     |        353 |         82 |         49 |        484 |
+| w:\Web\004\OxygenBlogPlatform\src\components\NavigationWidget.tsx                                      | TypeScript JSX     |         36 |          4 |          6 |         46 |
+| w:\Web\004\OxygenBlogPlatform\src\components\Pagination.tsx                                            | TypeScript JSX     |        156 |         24 |         18 |        198 |
+| w:\Web\004\OxygenBlogPlatform\src\components\RelatedLinks.tsx                                          | TypeScript JSX     |        472 |         47 |         33 |        552 |
+| w:\Web\004\OxygenBlogPlatform\src\components\RootLayoutClient.tsx                                      | TypeScript JSX     |         26 |          9 |         10 |         45 |
+| w:\Web\004\OxygenBlogPlatform\src\components\ScrollToTop.tsx                                           | TypeScript JSX     |        463 |        115 |         97 |        675 |
+| w:\Web\004\OxygenBlogPlatform\src\components\SmoothScrollProvider.tsx                                  | TypeScript JSX     |         92 |         10 |         14 |        116 |
+| w:\Web\004\OxygenBlogPlatform\src\components\TableOfContents.tsx                                       | TypeScript JSX     |        320 |          4 |          5 |        329 |
+| w:\Web\004\OxygenBlogPlatform\src\components\ThemeProvider.tsx                                         | TypeScript JSX     |         78 |         36 |         28 |        142 |
+| w:\Web\004\OxygenBlogPlatform\src\components\ThemeToggle.tsx                                           | TypeScript JSX     |        188 |         42 |         24 |        254 |
+| w:\Web\004\OxygenBlogPlatform\src\components\admin\AdminButton.tsx                                     | TypeScript JSX     |        114 |         56 |         11 |        181 |
+| w:\Web\004\OxygenBlogPlatform\src\components\admin\AdminCard.tsx                                       | TypeScript JSX     |         52 |         25 |          6 |         83 |
+| w:\Web\004\OxygenBlogPlatform\src\components\admin\AdminConfirm.tsx                                    | TypeScript JSX     |        151 |         53 |         17 |        221 |
+| w:\Web\004\OxygenBlogPlatform\src\components\admin\AdminForm.tsx                                       | TypeScript JSX     |        402 |        106 |         28 |        536 |
+| w:\Web\004\OxygenBlogPlatform\src\components\admin\AdminInput.tsx                                      | TypeScript JSX     |        115 |         59 |         14 |        188 |
+| w:\Web\004\OxygenBlogPlatform\src\components\admin\AdminLayout.tsx                                     | TypeScript JSX     |        185 |         44 |         24 |        253 |
+| w:\Web\004\OxygenBlogPlatform\src\components\admin\AdminLoading.tsx                                    | TypeScript JSX     |        118 |         59 |         14 |        191 |
+| w:\Web\004\OxygenBlogPlatform\src\components\admin\AdminModal.tsx                                      | TypeScript JSX     |        116 |         47 |         14 |        177 |
+| w:\Web\004\OxygenBlogPlatform\src\components\admin\AdminSearchBar.tsx                                  | TypeScript JSX     |        236 |         72 |         25 |        333 |
+| w:\Web\004\OxygenBlogPlatform\src\components\admin\AdminSidebar.tsx                                    | TypeScript JSX     |        344 |         50 |         29 |        423 |
+| w:\Web\004\OxygenBlogPlatform\src\components\admin\AdminTable.tsx                                      | TypeScript JSX     |        327 |        103 |         36 |        466 |
+| w:\Web\004\OxygenBlogPlatform\src\components\admin\AdminToast.tsx                                      | TypeScript JSX     |        224 |         83 |         27 |        334 |
+| w:\Web\004\OxygenBlogPlatform\src\components\admin\BackupManager.tsx                                   | TypeScript JSX     |        881 |         97 |         64 |      1,042 |
+| w:\Web\004\OxygenBlogPlatform\src\components\admin\DashboardClient.tsx                                 | TypeScript JSX     |      1,241 |        179 |         93 |      1,513 |
+| w:\Web\004\OxygenBlogPlatform\src\components\admin\index.ts                                            | TypeScript         |         24 |         32 |         15 |         71 |
+| w:\Web\004\OxygenBlogPlatform\src\components\aplayer-theme.css                                         | CSS                |        897 |        171 |        172 |      1,240 |
+| w:\Web\004\OxygenBlogPlatform\src\components\archive\ClientArchivePage.tsx                             | TypeScript JSX     |        462 |         40 |         41 |        543 |
+| w:\Web\004\OxygenBlogPlatform\src\components\changelogs\ClientChangelogsPage.tsx                       | TypeScript JSX     |        198 |         50 |         18 |        266 |
+| w:\Web\004\OxygenBlogPlatform\src\components\changelogs\DayPartStatsWidget.tsx                         | TypeScript JSX     |         34 |          0 |          5 |         39 |
+| w:\Web\004\OxygenBlogPlatform\src\components\changelogs\TimeStatsChart.tsx                             | TypeScript JSX     |        428 |         56 |         26 |        510 |
+| w:\Web\004\OxygenBlogPlatform\src\components\changelogs\TimeStatsWidget.tsx                            | TypeScript JSX     |         68 |          0 |         10 |         78 |
+| w:\Web\004\OxygenBlogPlatform\src\components\changelogs\TypeStatsChart.tsx                             | TypeScript JSX     |        311 |         45 |         24 |        380 |
+| w:\Web\004\OxygenBlogPlatform\src\components\changelogs\TypeStatsWidget.tsx                            | TypeScript JSX     |         41 |          0 |          6 |         47 |
+| w:\Web\004\OxygenBlogPlatform\src\components\core\ImageGallery.tsx                                     | TypeScript JSX     |         81 |          0 |         11 |         92 |
+| w:\Web\004\OxygenBlogPlatform\src\components\core\OptimizedIcon.tsx                                    | TypeScript JSX     |         35 |          7 |          5 |         47 |
+| w:\Web\004\OxygenBlogPlatform\src\components\core\OptimizedImage.tsx                                   | TypeScript JSX     |        219 |         95 |         34 |        348 |
+| w:\Web\004\OxygenBlogPlatform\src\components\magicui\box-reveal.tsx                                    | TypeScript JSX     |         83 |         10 |          9 |        102 |
+| w:\Web\004\OxygenBlogPlatform\src\components\magicui\icon-cloud.tsx                                    | TypeScript JSX     |        263 |         11 |         51 |        325 |
+| w:\Web\004\OxygenBlogPlatform\src\components\magicui\meteors.tsx                                       | TypeScript JSX     |         54 |          2 |          7 |         63 |
+| w:\Web\004\OxygenBlogPlatform\src\components\moments\ClientMomentsPage.tsx                             | TypeScript JSX     |        284 |         17 |         21 |        322 |
+| w:\Web\004\OxygenBlogPlatform\src\components\moments\GalleryImageSelector.tsx                          | TypeScript JSX     |        179 |         19 |         18 |        216 |
+| w:\Web\004\OxygenBlogPlatform\src\components\moments\ImageGrid.tsx                                     | TypeScript JSX     |        192 |         21 |         34 |        247 |
+| w:\Web\004\OxygenBlogPlatform\src\components\moments\ImageUploader.tsx                                 | TypeScript JSX     |        161 |         13 |         25 |        199 |
+| w:\Web\004\OxygenBlogPlatform\src\components\moments\ImageViewer.tsx                                   | TypeScript JSX     |        198 |         18 |         23 |        239 |
+| w:\Web\004\OxygenBlogPlatform\src\components\moments\TimeProgressWidget.tsx                            | TypeScript JSX     |        126 |         21 |         16 |        163 |
+| w:\Web\004\OxygenBlogPlatform\src\components\moments\TodoWidget.tsx                                    | TypeScript JSX     |        137 |         23 |         15 |        175 |
+| w:\Web\004\OxygenBlogPlatform\src\components\security\HijackingProtector.tsx                           | TypeScript JSX     |        426 |        144 |         77 |        647 |
+| w:\Web\004\OxygenBlogPlatform\src\components\security\SecurityProvider.tsx                             | TypeScript JSX     |        161 |         77 |         42 |        280 |
+| w:\Web\004\OxygenBlogPlatform\src\components\security\index.ts                                         | TypeScript         |          5 |         10 |          4 |         19 |
+| w:\Web\004\OxygenBlogPlatform\src\components\tools\CodeBlock.tsx                                       | TypeScript JSX     |        131 |         33 |         11 |        175 |
+| w:\Web\004\OxygenBlogPlatform\src\components\tools\MarkdownEditor.tsx                                  | TypeScript JSX     |      2,755 |        243 |        319 |      3,317 |
+| w:\Web\004\OxygenBlogPlatform\src\components\tools\RocoPetSimulator\index.tsx                          | TypeScript JSX     |      2,276 |        236 |        194 |      2,706 |
+| w:\Web\004\OxygenBlogPlatform\src\components\ui\PageHeader.tsx                                         | TypeScript JSX     |        179 |         44 |         15 |        238 |
+| w:\Web\004\OxygenBlogPlatform\src\components\ui\button.tsx                                             | TypeScript JSX     |         37 |          0 |          3 |         40 |
+| w:\Web\004\OxygenBlogPlatform\src\components\ui\cover.tsx                                              | TypeScript JSX     |        216 |          0 |         11 |        227 |
+| w:\Web\004\OxygenBlogPlatform\src\components\ui\evervault-card.tsx                                     | TypeScript JSX     |        121 |          0 |         12 |        133 |
+| w:\Web\004\OxygenBlogPlatform\src\components\ui\sparkles.tsx                                           | TypeScript JSX     |        430 |          0 |          5 |        435 |
+| w:\Web\004\OxygenBlogPlatform\src\components\ui\textarea.tsx                                           | TypeScript JSX     |         20 |          0 |          3 |         23 |
+| w:\Web\004\OxygenBlogPlatform\src\components\ui\timeline.tsx                                           | TypeScript JSX     |         73 |          0 |          9 |         82 |
+| w:\Web\004\OxygenBlogPlatform\src\components\ui\typewriter.tsx                                         | TypeScript JSX     |        115 |         16 |         20 |        151 |
+| w:\Web\004\OxygenBlogPlatform\src\content\blogs\2025-summary.md                                        | Markdown           |         80 |          0 |         60 |        140 |
+| w:\Web\004\OxygenBlogPlatform\src\content\blogs\Rocokingdom-resource-guide.md                          | Markdown           |        128 |          0 |         34 |        162 |
+| w:\Web\004\OxygenBlogPlatform\src\content\blogs\benou-score.md                                         | Markdown           |         47 |          0 |         11 |         58 |
+| w:\Web\004\OxygenBlogPlatform\src\content\blogs\fadian-quotes.md                                       | Markdown           |        513 |          0 |        496 |      1,009 |
+| w:\Web\004\OxygenBlogPlatform\src\content\blogs\feixue-zhuxiangsi-score.md                             | Markdown           |         32 |          0 |         10 |         42 |
+| w:\Web\004\OxygenBlogPlatform\src\content\blogs\luolao-zhoubian.md                                     | Markdown           |         89 |          0 |         57 |        146 |
+| w:\Web\004\OxygenBlogPlatform\src\content\blogs\qq-appstore-install.md                                 | Markdown           |         61 |          0 |         30 |         91 |
+| w:\Web\004\OxygenBlogPlatform\src\content\blogs\seo-optimization-guide.md                              | Markdown           |        168 |          0 |         55 |        223 |
+| w:\Web\004\OxygenBlogPlatform\src\content\blogs\vocaloid6-guide.md                                     | Markdown           |         23 |          0 |          6 |         29 |
+| w:\Web\004\OxygenBlogPlatform\src\content\blogs\weimingming-docx-score.md                              | Markdown           |         34 |          0 |         13 |         47 |
+| w:\Web\004\OxygenBlogPlatform\src\content\blogs\xingqiubei-score.md                                    | Markdown           |         51 |          0 |         14 |         65 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2025-11-06.md                                     | Markdown           |         28 |          0 |          6 |         34 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2025-11-07.md                                     | Markdown           |         24 |          0 |          6 |         30 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2025-11-08.md                                     | Markdown           |         20 |          0 |          6 |         26 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2025-11-09.md                                     | Markdown           |         24 |          0 |          7 |         31 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2025-11-10.md                                     | Markdown           |         26 |          0 |          7 |         33 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2025-11-11.md                                     | Markdown           |         25 |          0 |          6 |         31 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2025-11-12.md                                     | Markdown           |         24 |          0 |          7 |         31 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2025-11-13.md                                     | Markdown           |         23 |          0 |          6 |         29 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2025-11-14.md                                     | Markdown           |         28 |          0 |          8 |         36 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2025-11-15.md                                     | Markdown           |         29 |          0 |          8 |         37 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2025-11-16.md                                     | Markdown           |         23 |          0 |          7 |         30 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2025-11-17.md                                     | Markdown           |         26 |          0 |          7 |         33 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2025-11-18.md                                     | Markdown           |         23 |          0 |          7 |         30 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2025-11-19.md                                     | Markdown           |         24 |          0 |          7 |         31 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2025-12-20.md                                     | Markdown           |         23 |          0 |          7 |         30 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2025-12-21.md                                     | Markdown           |         23 |          0 |          6 |         29 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2025-12-22.md                                     | Markdown           |         23 |          0 |          7 |         30 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2025-12-23.md                                     | Markdown           |         20 |          0 |          6 |         26 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2025-12-24.md                                     | Markdown           |         23 |          0 |          7 |         30 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2025-12-25.md                                     | Markdown           |         21 |          0 |          7 |         28 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2025-12-26.md                                     | Markdown           |         24 |          0 |          7 |         31 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2025-12-27.md                                     | Markdown           |         23 |          0 |          6 |         29 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2025-12-28.md                                     | Markdown           |         19 |          0 |          6 |         25 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2025-12-29.md                                     | Markdown           |         24 |          0 |          7 |         31 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2025-12-30.md                                     | Markdown           |         28 |          0 |          8 |         36 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2025-12-31.md                                     | Markdown           |         24 |          0 |          7 |         31 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-01-01.md                                     | Markdown           |         24 |          0 |          7 |         31 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-01-02.md                                     | Markdown           |         26 |          0 |          7 |         33 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-01-03.md                                     | Markdown           |         22 |          0 |          7 |         29 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-01-04.md                                     | Markdown           |         25 |          0 |          7 |         32 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-01-06.md                                     | Markdown           |         28 |          0 |          8 |         36 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-02-23.md                                     | Markdown           |         23 |          0 |          7 |         30 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-02-24.md                                     | Markdown           |         29 |          0 |          8 |         37 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-02-25.md                                     | Markdown           |         22 |          0 |          7 |         29 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-02-26.md                                     | Markdown           |         28 |          0 |          8 |         36 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-02-27.md                                     | Markdown           |         28 |          0 |          9 |         37 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-03-01.md                                     | Markdown           |         74 |          0 |         16 |         90 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-03-03.md                                     | Markdown           |         50 |          0 |         12 |         62 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-03-04.md                                     | Markdown           |         49 |          0 |         16 |         65 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-03-05.md                                     | Markdown           |         43 |          0 |         15 |         58 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-03-09.md                                     | Markdown           |         40 |          0 |         15 |         55 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-03-14.md                                     | Markdown           |         46 |          0 |         16 |         62 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-03-19.md                                     | Markdown           |         48 |          0 |         16 |         64 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-03-20.md                                     | Markdown           |         34 |          0 |         13 |         47 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-03-21.md                                     | Markdown           |         53 |          0 |         15 |         68 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-03-22.md                                     | Markdown           |         44 |          0 |         14 |         58 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-03-25.md                                     | Markdown           |         36 |          0 |         15 |         51 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-04-01.md                                     | Markdown           |         36 |          0 |         13 |         49 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-04-09.md                                     | Markdown           |         57 |          0 |         16 |         73 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-04-11.md                                     | Markdown           |         98 |          0 |         18 |        116 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-04-12.md                                     | Markdown           |        101 |          0 |         19 |        120 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-04-13.md                                     | Markdown           |        100 |          0 |         23 |        123 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-04-14.md                                     | Markdown           |         44 |          0 |         15 |         59 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-04-18.md                                     | Markdown           |         87 |          0 |         24 |        111 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-04-19.md                                     | Markdown           |         65 |          0 |         19 |         84 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-04-21.md                                     | Markdown           |         49 |          0 |         17 |         66 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-04-27.md                                     | Markdown           |         45 |          0 |         18 |         63 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-04-29.md                                     | Markdown           |         30 |          0 |         12 |         42 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-05-04.md                                     | Markdown           |         50 |          0 |         16 |         66 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-05-05.md                                     | Markdown           |        145 |          0 |         42 |        187 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-05-10.md                                     | Markdown           |         27 |          0 |         13 |         40 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-05-13.md                                     | Markdown           |         42 |          0 |         16 |         58 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-05-14.md                                     | Markdown           |         56 |          0 |         16 |         72 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-05-16.md                                     | Markdown           |         30 |          0 |         14 |         44 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-05-17.md                                     | Markdown           |         55 |          0 |         25 |         80 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-05-23.md                                     | Markdown           |         74 |          0 |         28 |        102 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-05-26.md                                     | Markdown           |         53 |          0 |         25 |         78 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-05-27.md                                     | Markdown           |         27 |          0 |         12 |         39 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-05-31.md                                     | Markdown           |         27 |          0 |         14 |         41 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\2026-06-03.md                                     | Markdown           |         46 |          0 |         15 |         61 |
+| w:\Web\004\OxygenBlogPlatform\src\content\changelogs\拼音转换器更新日志汇总.md                                    | Markdown           |        118 |          0 |         49 |        167 |
+| w:\Web\004\OxygenBlogPlatform\src\content\moments\000002.md                                            | Markdown           |          9 |          0 |          1 |         10 |
+| w:\Web\004\OxygenBlogPlatform\src\content\moments\000003.md                                            | Markdown           |          9 |          0 |          1 |         10 |
+| w:\Web\004\OxygenBlogPlatform\src\content\moments\000004.md                                            | Markdown           |         13 |          0 |          3 |         16 |
+| w:\Web\004\OxygenBlogPlatform\src\content\moments\000005.md                                            | Markdown           |         13 |          0 |          1 |         14 |
+| w:\Web\004\OxygenBlogPlatform\src\content\moments\000006.md                                            | Markdown           |          8 |          0 |          1 |          9 |
+| w:\Web\004\OxygenBlogPlatform\src\content\moments\000007.md                                            | Markdown           |          8 |          0 |          1 |          9 |
+| w:\Web\004\OxygenBlogPlatform\src\content\moments\000008.md                                            | Markdown           |          8 |          0 |          1 |          9 |
+| w:\Web\004\OxygenBlogPlatform\src\content\moments\000009.md                                            | Markdown           |         12 |          0 |          1 |         13 |
+| w:\Web\004\OxygenBlogPlatform\src\content\moments\000010.md                                            | Markdown           |          7 |          0 |          1 |          8 |
+| w:\Web\004\OxygenBlogPlatform\src\content\moments\000011.md                                            | Markdown           |         10 |          0 |          1 |         11 |
+| w:\Web\004\OxygenBlogPlatform\src\content\moments\000012.md                                            | Markdown           |          7 |          0 |          1 |          8 |
+| w:\Web\004\OxygenBlogPlatform\src\content\moments\first-moment.md                                      | Markdown           |         23 |          0 |          2 |         25 |
+| w:\Web\004\OxygenBlogPlatform\src\content\todo.json                                                    | JSON               |         24 |          0 |          0 |         24 |
+| w:\Web\004\OxygenBlogPlatform\src\contexts\NavigationVisibilityContext.tsx                             | TypeScript JSX     |         36 |          4 |          9 |         49 |
+| w:\Web\004\OxygenBlogPlatform\src\data\rocoPets.ts                                                     | TypeScript         |      1,660 |        217 |         81 |      1,958 |
+| w:\Web\004\OxygenBlogPlatform\src\hooks\useAdminBlogs.ts                                               | TypeScript         |        206 |         95 |         37 |        338 |
+| w:\Web\004\OxygenBlogPlatform\src\hooks\useAdminMoments.ts                                             | TypeScript         |        154 |         67 |         26 |        247 |
+| w:\Web\004\OxygenBlogPlatform\src\hooks\useBackgroundStyle.ts                                          | TypeScript         |        156 |          7 |         11 |        174 |
+| w:\Web\004\OxygenBlogPlatform\src\hooks\useDarkMode.ts                                                 | TypeScript         |         71 |         53 |         25 |        149 |
+| w:\Web\004\OxygenBlogPlatform\src\hooks\useGallery.ts                                                  | TypeScript         |        507 |        152 |         91 |        750 |
+| w:\Web\004\OxygenBlogPlatform\src\hooks\useGitHubPush.ts                                               | TypeScript         |         98 |        112 |         29 |        239 |
+| w:\Web\004\OxygenBlogPlatform\src\hooks\useLive2DOptimized.ts                                          | TypeScript         |        355 |         51 |         88 |        494 |
+| w:\Web\004\OxygenBlogPlatform\src\hooks\useMusicHistory.ts                                             | TypeScript         |        143 |        100 |         43 |        286 |
+| w:\Web\004\OxygenBlogPlatform\src\hooks\useMusicPlayer.ts                                              | TypeScript         |        237 |        161 |         65 |        463 |
+| w:\Web\004\OxygenBlogPlatform\src\hooks\useThemeOptimized.ts                                           | TypeScript         |        133 |         28 |         33 |        194 |
+| w:\Web\004\OxygenBlogPlatform\src\lib\utils.ts                                                         | TypeScript         |        115 |         49 |         27 |        191 |
+| w:\Web\004\OxygenBlogPlatform\src\services\blogPublish.ts                                              | TypeScript         |        108 |         21 |         15 |        144 |
+| w:\Web\004\OxygenBlogPlatform\src\services\githubApi.ts                                                | TypeScript         |        757 |        281 |        136 |      1,174 |
+| w:\Web\004\OxygenBlogPlatform\src\services\laStatsService.ts                                           | TypeScript         |        128 |         73 |         25 |        226 |
+| w:\Web\004\OxygenBlogPlatform\src\setting\AboutSetting.ts                                              | TypeScript         |        295 |         32 |         17 |        344 |
+| w:\Web\004\OxygenBlogPlatform\src\setting\FooterSetting.ts                                             | TypeScript         |          5 |          6 |          4 |         15 |
+| w:\Web\004\OxygenBlogPlatform\src\setting\HomeSetting.ts                                               | TypeScript         |         11 |          6 |          1 |         18 |
+| w:\Web\004\OxygenBlogPlatform\src\setting\HomeSetting.tsx                                              | TypeScript JSX     |         65 |         37 |         14 |        116 |
+| w:\Web\004\OxygenBlogPlatform\src\setting\NavigationSetting.ts                                         | TypeScript         |          2 |          2 |          1 |          5 |
+| w:\Web\004\OxygenBlogPlatform\src\setting\WebSetting.ts                                                | TypeScript         |         83 |         17 |         20 |        120 |
+| w:\Web\004\OxygenBlogPlatform\src\setting\blogSetting.ts                                               | TypeScript         |         58 |         11 |          4 |         73 |
+| w:\Web\004\OxygenBlogPlatform\src\setting\live2dMessages.ts                                            | TypeScript         |        762 |        132 |         46 |        940 |
+| w:\Web\004\OxygenBlogPlatform\src\setting\toolsSetting.ts                                              | TypeScript         |        100 |          5 |          4 |        109 |
+| w:\Web\004\OxygenBlogPlatform\src\types\admin.ts                                                       | TypeScript         |        183 |         49 |         17 |        249 |
+| w:\Web\004\OxygenBlogPlatform\src\types\analytics.d.ts                                                 | TypeScript         |         19 |         43 |          8 |         70 |
+| w:\Web\004\OxygenBlogPlatform\src\types\aplayer.d.ts                                                   | TypeScript         |        123 |         67 |         24 |        214 |
+| w:\Web\004\OxygenBlogPlatform\src\types\changelogTypes.ts                                              | TypeScript         |        201 |        108 |         49 |        358 |
+| w:\Web\004\OxygenBlogPlatform\src\types\chinese-lunar-calendar.d.ts                                    | TypeScript         |         12 |          7 |          2 |         21 |
+| w:\Web\004\OxygenBlogPlatform\src\types\gallery.ts                                                     | TypeScript         |         63 |         10 |          9 |         82 |
+| w:\Web\004\OxygenBlogPlatform\src\types\images.d.ts                                                    | TypeScript         |         24 |          1 |          6 |         31 |
+| w:\Web\004\OxygenBlogPlatform\src\types\modules.d.ts                                                   | TypeScript         |         71 |          1 |         10 |         82 |
+| w:\Web\004\OxygenBlogPlatform\src\types\todo.ts                                                        | TypeScript         |         25 |         18 |          6 |         49 |
+| w:\Web\004\OxygenBlogPlatform\src\utils\aboutPageUtils.ts                                              | TypeScript         |        123 |         31 |         13 |        167 |
+| w:\Web\004\OxygenBlogPlatform\src\utils\adminUtils.ts                                                  | TypeScript         |        842 |        246 |        199 |      1,287 |
+| w:\Web\004\OxygenBlogPlatform\src\utils\assetUtils.ts                                                  | TypeScript         |        113 |         42 |         30 |        185 |
+| w:\Web\004\OxygenBlogPlatform\src\utils\bilibiliUtils.ts                                               | TypeScript         |        117 |         56 |         31 |        204 |
+| w:\Web\004\OxygenBlogPlatform\src\utils\browserCompatibility.ts                                        | TypeScript         |        182 |         40 |         36 |        258 |
+| w:\Web\004\OxygenBlogPlatform\src\utils\changelogUtils.ts                                              | TypeScript         |        112 |         45 |         24 |        181 |
+| w:\Web\004\OxygenBlogPlatform\src\utils\clientApi.ts                                                   | TypeScript         |        181 |         34 |         26 |        241 |
+| w:\Web\004\OxygenBlogPlatform\src\utils\cn.ts                                                          | TypeScript         |          5 |         25 |          1 |         31 |
+| w:\Web\004\OxygenBlogPlatform\src\utils\cspConfig.ts                                                   | TypeScript         |        190 |        117 |         44 |        351 |
+| w:\Web\004\OxygenBlogPlatform\src\utils\editorImageUpload.ts                                           | TypeScript         |        103 |         23 |         15 |        141 |
+| w:\Web\004\OxygenBlogPlatform\src\utils\errorHandler.ts                                                | TypeScript         |         83 |         42 |         20 |        145 |
+| w:\Web\004\OxygenBlogPlatform\src\utils\fileOperations.ts                                              | TypeScript         |        214 |         67 |         39 |        320 |
+| w:\Web\004\OxygenBlogPlatform\src\utils\frontMatterUtils.ts                                            | TypeScript         |        130 |         47 |         22 |        199 |
+| w:\Web\004\OxygenBlogPlatform\src\utils\galleryClientUtils.ts                                          | TypeScript         |         69 |         36 |         16 |        121 |
+| w:\Web\004\OxygenBlogPlatform\src\utils\galleryUtils.ts                                                | TypeScript         |        650 |        216 |        117 |        983 |
+| w:\Web\004\OxygenBlogPlatform\src\utils\globalMusicPlayerManager.ts                                    | TypeScript         |        356 |        211 |         97 |        664 |
+| w:\Web\004\OxygenBlogPlatform\src\utils\imageUtils.ts                                                  | TypeScript         |        278 |         65 |         69 |        412 |
+| w:\Web\004\OxygenBlogPlatform\src\utils\index.ts                                                       | TypeScript         |         15 |         19 |         16 |         50 |
+| w:\Web\004\OxygenBlogPlatform\src\utils\live2dEventEmitter.ts                                          | TypeScript         |        325 |        103 |         66 |        494 |
+| w:\Web\004\OxygenBlogPlatform\src\utils\live2dInstanceManager.ts                                       | TypeScript         |        652 |        170 |        127 |        949 |
+| w:\Web\004\OxygenBlogPlatform\src\utils\live2dLoader.ts                                                | TypeScript         |        278 |         46 |         52 |        376 |
+| w:\Web\004\OxygenBlogPlatform\src\utils\live2dMessageManager.test.ts                                   | TypeScript         |         64 |         27 |         28 |        119 |
+| w:\Web\004\OxygenBlogPlatform\src\utils\live2dMessageManager.ts                                        | TypeScript         |        545 |        234 |        106 |        885 |
+| w:\Web\004\OxygenBlogPlatform\src\utils\live2dResourceManager.ts                                       | TypeScript         |        364 |         69 |         71 |        504 |
+| w:\Web\004\OxygenBlogPlatform\src\utils\loadScript.ts                                                  | TypeScript         |         83 |         29 |         17 |        129 |
+| w:\Web\004\OxygenBlogPlatform\src\utils\lunarDateUtils.ts                                              | TypeScript         |         24 |         17 |          8 |         49 |
+| w:\Web\004\OxygenBlogPlatform\src\utils\momentsUtils.ts                                                | TypeScript         |        168 |         65 |         44 |        277 |
+| w:\Web\004\OxygenBlogPlatform\src\utils\musicConfigManager.ts                                          | TypeScript         |        340 |        203 |         65 |        608 |
+| w:\Web\004\OxygenBlogPlatform\src\utils\musicPlayerPreloader.ts                                        | TypeScript         |        504 |        348 |        168 |      1,020 |
+| w:\Web\004\OxygenBlogPlatform\src\utils\musicPlayerVisibility.ts                                       | TypeScript         |         47 |         23 |         12 |         82 |
+| w:\Web\004\OxygenBlogPlatform\src\utils\performanceUtils.ts                                            | TypeScript         |        183 |        114 |         38 |        335 |
+| w:\Web\004\OxygenBlogPlatform\src\utils\safeMarked.ts                                                  | TypeScript         |        171 |         68 |         40 |        279 |
+| w:\Web\004\OxygenBlogPlatform\src\utils\scrollManager.ts                                               | TypeScript         |        177 |         78 |         42 |        297 |
+| w:\Web\004\OxygenBlogPlatform\src\utils\securityHeaders.ts                                             | TypeScript         |        197 |         92 |         46 |        335 |
+| w:\Web\004\OxygenBlogPlatform\src\utils\securityUtils.ts                                               | TypeScript         |        153 |         57 |         40 |        250 |
+| w:\Web\004\OxygenBlogPlatform\src\utils\wordCountUtils.ts                                              | TypeScript         |        254 |         70 |         47 |        371 |
+| w:\Web\004\OxygenBlogPlatform\start-dev.bat                                                            | Batch              |         97 |          3 |         20 |        120 |
+| w:\Web\004\OxygenBlogPlatform\tailwind.config.js                                                       | JavaScript         |         57 |          3 |          1 |         61 |
+| w:\Web\004\OxygenBlogPlatform\tsconfig.json                                                            | JSON with Comments |         51 |          0 |          1 |         52 |
+| w:\Web\004\OxygenBlogPlatform\tsconfig.tsbuildinfo                                                     | JSON               |          1 |          0 |          0 |          1 |
+| Total                                                                                                  |                    |     78,201 |     13,202 |     10,880 |    102,283 |
++--------------------------------------------------------------------------------------------------------+--------------------+------------+------------+------------+------------+

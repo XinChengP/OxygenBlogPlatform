@@ -3,10 +3,7 @@ title: "洛佬の周边"
 date: '2026-05-13'
 updatedAt: '2026-05-14'
 category: "洛天依"
-tags:
-  - 洛天依
-  - VOCALOID
-  - 周边
+tags: ["洛天依", "VOCALOID", "周边"]
 excerpt: "洛天依周边收藏记录与分享"
 author: "歆橙"
 language: "zh-CN"

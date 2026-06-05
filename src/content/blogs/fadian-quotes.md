@@ -3,10 +3,7 @@ title: 对洛佬の发癫语录
 date: '2025-11-16'
 updatedAt: '2026-04-28'
 category: 生活
-tags:
-  - 洛天依
-  - VOCALOID
-  - 发癫
+tags: ["洛天依", "VOCALOID", "发癫"]
 excerpt: 华风夏韵，洛水天依
 author: 歆橙
 seriesOrder: 1
