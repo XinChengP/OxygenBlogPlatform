@@ -1413,7 +1413,7 @@ const DashboardClient: React.FC<DashboardClientProps> = ({ stats }) => {
                 {/* 第四行：文章分类 + 标签总数 */}
                 <TrendCard
                   icon={Folder}
-                  value={stats.categoryStats.length}
+                  value={stats.categoryCount}
                   label="文章分类"
                   gradient="bg-indigo-100 dark:bg-indigo-900/30"
                   iconColor="text-indigo-500"

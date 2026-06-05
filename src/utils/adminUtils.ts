@@ -4,6 +4,7 @@
  */
 
 import { parseFrontMatter } from './frontMatterUtils';
+import { categories as presetCategories } from '../setting/blogSetting';
 
 /**
  * 管理后台配置接口
@@ -644,6 +645,8 @@ export interface DashboardStats {
   todoCompletedCount: number
   /** 分类统计 */
   categoryStats: { name: string; count: number }[]
+  /** 预设分类总数（用于仪表盘显示） */
+  categoryCount: number
   /** 标签统计 */
   tagStats: { name: string; count: number }[]
   /** 更新日志列表（用于统计图） */
@@ -954,6 +957,7 @@ export function getDashboardStats(): DashboardStats {
       todoCount: 0,
       todoCompletedCount: 0,
       categoryStats: [],
+      categoryCount: presetCategories.filter(c => c !== 'all').length,
       tagStats: [],
       changelogs: [],
       blogWordCount: 0,
@@ -1201,6 +1205,7 @@ export function getDashboardStats(): DashboardStats {
       todoCount,
       todoCompletedCount,
       categoryStats,
+      categoryCount: presetCategories.filter(c => c !== 'all').length,
       tagStats,
       changelogs,
       blogWordCount,
