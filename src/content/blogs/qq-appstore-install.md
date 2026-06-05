@@ -9,9 +9,7 @@ excerpt: "万恶の资本家，要么就是不上架，要么就是有风险，*
 coverImage: "/Blogabout/qq-appstore-install/cover.webp"
 ---
 
-# 如何用腾讯应用宝安装第三方app
-
-## 背景
+# 背景
 
 因为我穷的一批，~~买不起~~刚在Steam上上架的DL
 所以在今天，就打算把我手机上的~~DL学习版~~放到电脑上
@@ -23,7 +21,7 @@ coverImage: "/Blogabout/qq-appstore-install/cover.webp"
 
 ![忽略一下后面安装好了的DL（逃）](/Blogabout/qq-appstore-install/1.png)
 
-## 解决方案
+# 解决方案
 
 在网上搜了一圈，没找到有啥好的解决方案
 于是自己翻了翻应用宝的说明文档
@@ -85,6 +83,6 @@ Androws.exe --launch-pkg-name com.cmplay.dancingline # 注释：启动包名对�
 实在没有的话emmmm
 自己看应用宝说明文档去吧（逃）
 
-## 参考资料
+# 参考资料
 
 https://wikinew.open.qq.com/index.html#/iwiki/4009021799
