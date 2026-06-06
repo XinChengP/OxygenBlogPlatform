@@ -124,6 +124,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openInExternal: (filePath) => ipcRenderer.send('open-in-external', filePath),
 
   /**
+   * 打开本地文件夹
+   * @param {string} folderPath - 文件夹路径（相对于 public）
+   */
+  openLocalFolder: (folderPath) => ipcRenderer.send('open-local-folder', folderPath),
+
+  /**
    * 监听文件保存结果
    * @param {Function} callback - 回调函数，接收 {success, path, error} 参数
    */

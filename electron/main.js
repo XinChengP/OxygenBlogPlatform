@@ -2676,6 +2676,22 @@ ipcMain.on('open-in-external', (event, filePath) => {
   })
 })
 
+// 打开本地文件夹
+ipcMain.on('open-local-folder', (event, folderPath) => {
+  const fullPath = path.join(PROJECT_ROOT, 'public', folderPath)
+
+  if (fs.existsSync(fullPath)) {
+    shell.openPath(fullPath)
+  } else {
+    dialog.showMessageBox(mainWindow, {
+      type: 'warning',
+      title: '文件夹不存在',
+      message: `找不到文件夹: ${folderPath}`,
+      detail: `路径: ${fullPath}`
+    })
+  }
+})
+
 // 添加自定义导航项
 ipcMain.on('add-custom-nav-item', (event, name, url) => {
   const navList = loadCustomNav()

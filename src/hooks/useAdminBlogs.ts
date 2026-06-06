@@ -42,10 +42,6 @@ export interface FilterOptions {
  * Hook 选项接口
  */
 export interface UseAdminBlogsOptions {
-  /** 当前页码 */
-  page?: number;
-  /** 每页条数 */
-  pageSize?: number;
   /** 分类筛选 */
   category?: string;
   /** 标签筛选 */
@@ -116,8 +112,6 @@ export interface UseAdminBlogsReturn {
 export function useAdminBlogs(options: UseAdminBlogsOptions = {}): UseAdminBlogsReturn {
   // 默认选项
   const defaultOptions: UseAdminBlogsOptions = {
-    page: 1,
-    pageSize: 10,
     category: '',
     tag: '',
     search: '',
@@ -214,22 +208,16 @@ export function useAdminBlogs(options: UseAdminBlogsOptions = {}): UseAdminBlogs
       return currentFilters.sortOrder === 'desc' ? -comparison : comparison;
     });
 
-    // 计算分页
+    // 不再分页，直接返回全部筛选后的数据
     const total = result.length;
-    const pageSize = currentFilters.pageSize || 10;
-    const totalPages = Math.ceil(total / pageSize);
-    const currentPage = currentFilters.page || 1;
-    const startIndex = (currentPage - 1) * pageSize;
-    const endIndex = startIndex + pageSize;
-    const paginatedResult = result.slice(startIndex, endIndex);
 
     return {
-      filteredBlogs: paginatedResult,
+      filteredBlogs: result,
       pagination: {
-        current: currentPage,
-        pageSize,
+        current: 1,
+        pageSize: total,
         total,
-        totalPages,
+        totalPages: 1,
       },
     };
   }, [allBlogs, currentFilters]);
@@ -251,8 +239,6 @@ export function useAdminBlogs(options: UseAdminBlogsOptions = {}): UseAdminBlogs
     setCurrentFilters(prev => ({
       ...prev,
       ...filters,
-      // 如果更改了筛选条件（非页码），重置页码
-      page: filters.page !== undefined ? filters.page : 1,
     }));
   }, []);
 
@@ -265,8 +251,6 @@ export function useAdminBlogs(options: UseAdminBlogsOptions = {}): UseAdminBlogs
       ...options,
     }));
   }, [
-    options.page,
-    options.pageSize,
     options.category,
     options.tag,
     options.search,

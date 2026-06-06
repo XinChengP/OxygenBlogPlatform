@@ -145,10 +145,7 @@ function generateFrontMatter(data: BlogPostData & { slug: string; date: string }
   lines.push(`category: "${data.category}"`);
   
   if (data.tags && data.tags.length > 0) {
-    lines.push(`tags:`);
-    for (const tag of data.tags) {
-      lines.push(`  - ${tag}`);
-    }
+    lines.push(`tags: [${data.tags.map(tag => `"${tag}"`).join(', ')}]`);
   }
   
   if (data.excerpt) {

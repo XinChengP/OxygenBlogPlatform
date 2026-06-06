@@ -1,7 +1,7 @@
 ---
 title: "洛佬の周边"
-date: '2026-05-13'
-updatedAt: '2026-05-14'
+date: "2026-05-13"
+updatedAt: "2026-06-06"
 category: "洛天依"
 tags: ["洛天依", "VOCALOID", "周边"]
 excerpt: "洛天依周边收藏记录与分享"
@@ -99,6 +99,9 @@ ps：危险行为请勿模仿（bushi）
 公交卡刚买来没有外套，差点丢了，还好在雨中找到了，丢了真就裂开了，怒亏150大洋
 水杯！可爱！喝水！健康！吨吨吨吨吨······
 
+<div class="image-grid image-grid-2-cols image-grid-equal-height"><img src="/Blogabout/luoyao-zhoubian/痛包未拆封.png" alt="" /><img src="/Blogabout/luoyao-zhoubian/痛包.png" alt="痛包" /></div>
+
+痛包，其实背多了也还好，没那么痛了；这包比想象中大不少，肥肠方便嗷
 
 ### 好看的花瓶
 
@@ -132,6 +135,10 @@ ps：危险行为请勿模仿（bushi）
 
 以上是从某鱼上买的专辑小玩意，歌是没有的
 我是大冤种
+
+![给挂窗户上了](/Blogabout/luoyao-zhoubian/便宜痛包.png)
+
+超绝并夕夕上买的，不到一块钱这谁不心动，虽然买来完全用不了，但是丑萌丑萌的挂窗户上还真不错23333
 
 >今天 忘掉忧愁 忘掉悲伤 忘掉烦恼 一切都赖水星逆行  ——《水星逆行》
 
