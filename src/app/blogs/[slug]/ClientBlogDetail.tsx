@@ -2,8 +2,10 @@
 
 import { useState, lazy, Suspense, useEffect, useRef } from 'react';
 
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import LazyMarkdown from '../../../components/LazyMarkdown';
+import ImagePreview from '../../../app/gallery/components/ImagePreview';
+import { PreviewImage } from '../../../types/gallery';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { 
@@ -239,7 +241,10 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
   const { containerStyle } = useBackgroundStyle('blog-detail');
   const [copiedCode, setCopiedCode] = useState<string>('');
   const [mounted, setMounted] = useState(false);
-  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const [lightboxImage, setLightboxImage] = useState<PreviewImage | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const articleImagesRef = useRef<PreviewImage[]>([]);
+  const imageSrcSetRef = useRef<Set<string>>(new Set());
   const iframeRefs = useRef<Array<HTMLIFrameElement | null>>([]);
 
   // 确保组件已挂载，避免 SSR 期间 theme 为 null
@@ -934,7 +939,7 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                       const processedSrc = src ? getAssetPath(src) : src;
                       const imgRef = useRef<HTMLImageElement>(null);
                       const [isLandscape, setIsLandscape] = useState(false);
-                      
+
                       useEffect(() => {
                         const img = new Image();
                         img.onload = () => {
@@ -943,7 +948,17 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                         };
                         img.src = processedSrc;
                       }, [processedSrc]);
-                      
+
+                      // 收集文章中的图片到预览列表（按出现顺序）
+                      if (processedSrc && !imageSrcSetRef.current.has(processedSrc)) {
+                        imageSrcSetRef.current.add(processedSrc);
+                        articleImagesRef.current.push({
+                          id: `blog-img-${articleImagesRef.current.length}`,
+                          src: processedSrc,
+                          alt: alt || '图片',
+                        });
+                      }
+
                       return (
                         // 使用 React.Fragment 避免添加额外元素，防止在 p 标签内嵌套块级元素
                         <>
@@ -955,7 +970,17 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                               isLandscape ? 'max-w-full' : 'max-w-[400px]'
                             }`}
                             loading="lazy"
-                            onClick={() => setLightboxImage(processedSrc)}
+                            onClick={() => {
+                              // 从已收集的文章图片列表中找到当前点击的图片
+                              // 使用 id 匹配以确保 ImagePreview 能正确找到初始索引
+                              const existingImage = articleImagesRef.current.find(
+                                (img) => img.src === processedSrc
+                              );
+                              if (existingImage) {
+                                setLightboxImage(existingImage);
+                                setIsPreviewOpen(true);
+                              }
+                            }}
                             {...props}
                           />
                           {alt && (
@@ -1078,31 +1103,19 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
         </div>
       </div>
 
-      {/* 图片灯箱组件 */}
-      {lightboxImage && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
-          onClick={() => setLightboxImage(null)}
-        >
-          <button
-            className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors text-3xl font-bold"
-            onClick={() => setLightboxImage(null)}
-          >
-            ×
-          </button>
-          <motion.img
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
-            src={lightboxImage}
-            alt="放大查看"
-            onClick={(e) => e.stopPropagation()}
+      {/* 图片灯箱组件 - 使用画廊的 ImagePreview 组件，支持左右切换 */}
+      <AnimatePresence>
+        {isPreviewOpen && lightboxImage && (
+          <ImagePreview
+            images={articleImagesRef.current}
+            initialImage={lightboxImage}
+            onClose={() => {
+              setIsPreviewOpen(false);
+              setLightboxImage(null);
+            }}
           />
-        </motion.div>
-      )}
+        )}
+      </AnimatePresence>
 
       {/* 浮动互动按钮 - 已移除 */}
 

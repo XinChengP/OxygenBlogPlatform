@@ -124,7 +124,7 @@ export default function AboutPage() {
               <div className="px-6 pb-6">
                 {/* 使用 flex + justify-center 让社交图标整体居中 */}
                 <div className="flex justify-center">
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-5 gap-2">
                   {/* Email */}
                   <motion.a
                     href={`mailto:${mail}`}
@@ -190,6 +190,24 @@ export default function AboutPage() {
                     <OptimizedIcon
                       src="/assets/vsqx.svg?v=2"
                       alt="VSQX"
+                      className="text-foreground"
+                      width={18}
+                      height={18}
+                    />
+                  </motion.a>
+                  {/* 抖音 - 使用官方SVG矢量图标 */}
+                  <motion.a
+                    href="https://v.douyin.com/j0e2ZbjV_bM/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="flex items-center justify-center w-10 h-10 rounded-lg bg-background border border-border hover:border-primary/50 transition-all duration-300"
+                    title="抖音"
+                  >
+                    <OptimizedIcon
+                      src="/LogosTiktokIcon.svg"
+                      alt="抖音"
                       className="text-foreground"
                       width={18}
                       height={18}

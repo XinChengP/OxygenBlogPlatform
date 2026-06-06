@@ -92,19 +92,38 @@ function ClientMomentsPage({ moments, blogCount, blogTotalWordCount, blogs, cate
                 if (item.type === 'moment') {
                   const moment = item.data as { id: string; time: string; content: string; tags: string[]; images?: string[]; pinned?: boolean; filePath: string };
                   return (
-                    <div 
-                      key={moment.id} 
-                      className="p-4 rounded-lg border transition-all duration-300 backdrop-blur-md bg-card/90 border-border shadow-md supports-[backdrop-filter]:bg-card/75"
+                    <div
+                      key={moment.id}
+                      className="p-5 rounded-xl border transition-all duration-300 backdrop-blur-md bg-card/90 border-border shadow-md supports-[backdrop-filter]:bg-card/75 hover:shadow-lg"
                     >
-                      <div className="flex justify-between items-center mb-2 pb-2 border-b border-border/30">
-                        <span className="text-muted-foreground text-xs">{moment.time}</span>
+                      {/* 社交媒体风格头部：头像 + 昵称 + 时间 + 置顶标签 */}
+                      <div className="flex items-center justify-between mb-3 pb-3 border-b border-border/30">
+                        <div className="flex items-center gap-3">
+                          {/* 用户头像 */}
+                          <img
+                            src={getAvatarPath()}
+                            alt={name}
+                            className="w-10 h-10 rounded-full object-cover border border-border/50 shadow-sm"
+                          />
+                          <div className="flex flex-col">
+                            {/* 用户昵称 */}
+                            <span className="text-sm font-semibold text-foreground">{name}</span>
+                            {/* 发布时间 */}
+                            <span className="text-xs text-muted-foreground">{moment.time}</span>
+                          </div>
+                        </div>
+                        {/* 置顶标签 */}
                         {moment.pinned && (
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary font-medium">
+                          <span className="text-xs px-2 py-1 rounded-full bg-primary/15 text-primary font-medium flex items-center gap-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M16 12V4H17V2H7V4H8V12L6 14V16H11.2V22H12.8V16H18V14L16 12Z" />
+                            </svg>
                             置顶
                           </span>
                         )}
                       </div>
-                      <div className="text-foreground text-sm">
+                      {/* 动态内容区域 */}
+                      <div className="text-foreground text-sm leading-relaxed">
                         <ReactMarkdown
                           remarkPlugins={[remarkGfm, remarkEmoji, remarkBreaks]}
                           rehypePlugins={[rehypeHighlight, rehypeRaw]}
@@ -190,11 +209,34 @@ function ClientMomentsPage({ moments, blogCount, blogTotalWordCount, blogs, cate
                   return (
                     <div
                       key={blog.id}
-                      className="p-4 rounded-lg border transition-all duration-300 backdrop-blur-md bg-card/90 border-border shadow-md supports-[backdrop-filter]:bg-card/75"
+                      className="rounded-xl border transition-all duration-300 backdrop-blur-md bg-card/90 border-border shadow-md supports-[backdrop-filter]:bg-card/75 hover:shadow-lg overflow-hidden"
                     >
-                      <div className="text-foreground text-sm">
-                        {/* 使用 blog.date 显示发布时间，而非 updatedAt */}
-                        <p>在【{blog.date}】发布了<a href={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/blogs/${encodeURIComponent(blog.id)}`} className="text-primary hover:underline">《{blog.title}》</a></p>
+                      {/* 博客发布记录卡片：左侧彩色边条区分，更丰富的样式 */}
+                      <div className="flex">
+                        {/* 左侧彩色边条 */}
+                        <div className="w-1.5 bg-gradient-to-b from-primary/80 to-primary/40 flex-shrink-0"></div>
+                        {/* 内容区域 */}
+                        <div className="p-4 flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            {/* 文章图标 */}
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                              <polyline points="14 2 14 8 20 8"></polyline>
+                              <line x1="16" y1="13" x2="8" y2="13"></line>
+                              <line x1="16" y1="17" x2="8" y2="17"></line>
+                              <polyline points="10 9 9 9 8 9"></polyline>
+                            </svg>
+                            {/* 发布提示 */}
+                            <span className="text-xs text-muted-foreground">{blog.date} 发布了新文章</span>
+                          </div>
+                          {/* 文章标题链接 */}
+                          <a
+                            href={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/blogs/${encodeURIComponent(blog.id)}`}
+                            className="text-foreground font-semibold hover:text-primary transition-colors duration-200 line-clamp-2"
+                          >
+                            {blog.title}
+                          </a>
+                        </div>
                       </div>
                     </div>
                   );

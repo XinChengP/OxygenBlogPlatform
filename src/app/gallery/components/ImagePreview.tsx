@@ -2,17 +2,17 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GalleryImage } from '../../../types/gallery';
+import { PreviewImage } from '../../../types/gallery';
 import { useNavigationVisibility } from '@/contexts/NavigationVisibilityContext';
-import { 
-  X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Maximize2, 
+import {
+  X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Maximize2,
   Move, Keyboard, Info, Tag
 } from 'lucide-react';
 
 // ImagePreview组件属性
 interface ImagePreviewProps {
-  images: GalleryImage[];
-  initialImage: GalleryImage;
+  images: PreviewImage[];
+  initialImage: PreviewImage;
   onClose: () => void;
 }
 
@@ -199,12 +199,14 @@ const ImagePreview = ({ images, initialImage, onClose }: ImagePreviewProps) => {
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.3, delay: 0.1 }}
       >
-        {/* 左侧：图片计数 */}
-        <div className="flex items-center gap-2 text-white/80">
-          <span className="text-sm font-medium">
-            {currentIndex + 1} / {images.length}
-          </span>
-        </div>
+        {/* 左侧：图片计数（仅在有多张图片时显示） */}
+        {images.length > 1 && (
+          <div className="flex items-center gap-2 text-white/80">
+            <span className="text-sm font-medium">
+              {currentIndex + 1} / {images.length}
+            </span>
+          </div>
+        )}
         
         {/* 中间：缩放控制 */}
         <div className="flex items-center gap-1 bg-white/10 rounded-full px-2 py-1 backdrop-blur-sm">
@@ -279,32 +281,36 @@ const ImagePreview = ({ images, initialImage, onClose }: ImagePreviewProps) => {
         </div>
       </motion.div>
       
-      {/* 左右切换按钮 */}
-      <motion.button
-        className="absolute left-4 z-10 p-3 text-white/60 hover:text-white bg-white/10 hover:bg-white/20 rounded-full backdrop-blur-sm transition-colors"
-        onClick={handlePrev}
-        initial={{ x: -50, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        transition={{ duration: 0.3, delay: 0.2 }}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-        aria-label="上一张"
-      >
-        <ChevronLeft className="w-6 h-6" />
-      </motion.button>
-      
-      <motion.button
-        className="absolute right-4 z-10 p-3 text-white/60 hover:text-white bg-white/10 hover:bg-white/20 rounded-full backdrop-blur-sm transition-colors"
-        onClick={handleNext}
-        initial={{ x: 50, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        transition={{ duration: 0.3, delay: 0.2 }}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-        aria-label="下一张"
-      >
-        <ChevronRight className="w-6 h-6" />
-      </motion.button>
+      {/* 左右切换按钮（仅在有多张图片时显示） */}
+      {images.length > 1 && (
+        <>
+          <motion.button
+            className="absolute left-4 z-10 p-3 text-white/60 hover:text-white bg-white/10 hover:bg-white/20 rounded-full backdrop-blur-sm transition-colors"
+            onClick={handlePrev}
+            initial={{ x: -50, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ duration: 0.3, delay: 0.2 }}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            aria-label="上一张"
+          >
+            <ChevronLeft className="w-6 h-6" />
+          </motion.button>
+
+          <motion.button
+            className="absolute right-4 z-10 p-3 text-white/60 hover:text-white bg-white/10 hover:bg-white/20 rounded-full backdrop-blur-sm transition-colors"
+            onClick={handleNext}
+            initial={{ x: 50, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ duration: 0.3, delay: 0.2 }}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            aria-label="下一张"
+          >
+            <ChevronRight className="w-6 h-6" />
+          </motion.button>
+        </>
+      )}
       
       {/* 图片容器 */}
       <motion.div 
@@ -352,13 +358,15 @@ const ImagePreview = ({ images, initialImage, onClose }: ImagePreviewProps) => {
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.3, delay: 0.1 }}
       >
-        <div className="flex items-center justify-between">
-          <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-center">
+          <div className="text-center">
             <p className="text-white text-lg font-medium truncate">{currentImage.alt}</p>
-            <div className="flex items-center gap-2 mt-1">
-              <Tag className="w-3 h-3 text-primary" />
-              <span className="text-white/70 text-sm">{currentImage.category}</span>
-            </div>
+            {currentImage.category && (
+              <div className="flex items-center justify-center gap-2 mt-1">
+                <Tag className="w-3 h-3 text-primary" />
+                <span className="text-white/70 text-sm">{currentImage.category}</span>
+              </div>
+            )}
           </div>
         </div>
       </motion.div>
@@ -382,14 +390,18 @@ const ImagePreview = ({ images, initialImage, onClose }: ImagePreviewProps) => {
                 <span className="text-white/60">描述</span>
                 <span className="text-white truncate max-w-[120px]">{currentImage.alt}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-white/60">分类</span>
-                <span className="text-primary">{currentImage.category}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-white/60">索引</span>
-                <span>{currentIndex + 1} / {images.length}</span>
-              </div>
+              {currentImage.category && (
+                <div className="flex justify-between">
+                  <span className="text-white/60">分类</span>
+                  <span className="text-primary">{currentImage.category}</span>
+                </div>
+              )}
+              {images.length > 1 && (
+                <div className="flex justify-between">
+                  <span className="text-white/60">索引</span>
+                  <span>{currentIndex + 1} / {images.length}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-white/60">缩放</span>
                 <span>{Math.round(scale * 100)}%</span>
@@ -451,39 +463,41 @@ const ImagePreview = ({ images, initialImage, onClose }: ImagePreviewProps) => {
         )}
       </AnimatePresence>
       
-      {/* 缩略图导航 */}
-      <motion.div 
-        className="absolute bottom-20 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 bg-black/50 backdrop-blur-sm rounded-full px-3 py-2"
-        initial={{ y: 50, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.3, delay: 0.3 }}
-      >
-        {images.slice(Math.max(0, currentIndex - 2), Math.min(images.length, currentIndex + 3)).map((img, idx) => {
-          const actualIndex = Math.max(0, currentIndex - 2) + idx;
-          return (
-            <motion.button
-              key={img.id}
-              className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all ${
-                actualIndex === currentIndex 
-                  ? 'border-primary scale-110' 
-                  : 'border-white/20 opacity-50 hover:opacity-80'
-              }`}
-              onClick={() => {
-                setCurrentIndex(actualIndex);
-                resetTransform();
-              }}
-              whileHover={{ scale: actualIndex === currentIndex ? 1.1 : 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <img 
-                src={img.src} 
-                alt={img.alt}
-                className="w-full h-full object-cover"
-              />
-            </motion.button>
-          );
-        })}
-      </motion.div>
+      {/* 缩略图导航（仅在有多张图片时显示） */}
+      {images.length > 1 && (
+        <motion.div
+          className="absolute bottom-20 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 bg-black/50 backdrop-blur-sm rounded-full px-3 py-2"
+          initial={{ y: 50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.3, delay: 0.3 }}
+        >
+          {images.slice(Math.max(0, currentIndex - 2), Math.min(images.length, currentIndex + 3)).map((img, idx) => {
+            const actualIndex = Math.max(0, currentIndex - 2) + idx;
+            return (
+              <motion.button
+                key={img.id}
+                className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all ${
+                  actualIndex === currentIndex
+                    ? 'border-primary scale-110'
+                    : 'border-white/20 opacity-50 hover:opacity-80'
+                }`}
+                onClick={() => {
+                  setCurrentIndex(actualIndex);
+                  resetTransform();
+                }}
+                whileHover={{ scale: actualIndex === currentIndex ? 1.1 : 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <img
+                  src={img.src}
+                  alt={img.alt}
+                  className="w-full h-full object-cover"
+                />
+              </motion.button>
+            );
+          })}
+        </motion.div>
+      )}
     </motion.div>
   );
 };

@@ -6,13 +6,18 @@ export enum ImageSource {
   Remote = 'remote'
 }
 
-// 图片信息类型
-export interface GalleryImage {
+// 通用预览图片类型（用于博客文章等非画廊场景）
+export interface PreviewImage {
   id: string; // 唯一标识符
-  src: string; // 主图片URL（jsDelivr加速）
-  fallbackSrc?: string; // 备用图片URL（原始GitHub URL，用于保底）
-  thumbnail?: string; // 缩略图URL（可选）
+  src: string; // 图片URL
   alt: string; // 图片描述
+  category?: string; // 分类名称（可选）
+  thumbnail?: string; // 缩略图URL（可选）
+}
+
+// 图片信息类型
+export interface GalleryImage extends PreviewImage {
+  fallbackSrc?: string; // 备用图片URL（原始GitHub URL，用于保底）
   source: ImageSource; // 图片来源
   category: string; // 主分类名称（用于显示在标签页上）
   subCategory?: string; // 子分类名称（可选，用于更细粒度的分类）

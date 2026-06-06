@@ -142,28 +142,37 @@ export interface BlogPost {
 
 /**
  * 服务器端：获取博客文章数量
- * @returns 博客文章数量
+ * @returns 博客文章数量（不含隐藏文章）
  */
 export function getBlogCount(): number {
   try {
     // 动态导入fs和path模块
     const fs = require('fs');
     const path = require('path');
-    
+
     const blogsDir = path.join(process.cwd(), 'src', 'content', 'blogs');
-    
+
     // 检查目录是否存在
     if (!fs.existsSync(blogsDir) || !fs.statSync(blogsDir).isDirectory()) {
       return 0;
     }
-    
+
     // 读取目录中的所有文件
     const files = fs.readdirSync(blogsDir);
-    
+
     // 过滤出markdown文件
     const mdFiles = files.filter((file: string) => file.endsWith('.md'));
-    
-    return mdFiles.length;
+
+    // 过滤隐藏的文章，与 getServerBlogs 保持一致
+    const visibleCount = mdFiles.filter((file: string) => {
+      const filePath = path.join(blogsDir, file);
+      const content = fs.readFileSync(filePath, 'utf8');
+      const { metadata } = parseFrontMatter(content);
+      const hidden = metadata.hidden === 'true' || metadata.hidden === true;
+      return !hidden;
+    }).length;
+
+    return visibleCount;
   } catch (error) {
     console.error('读取博客文件失败:', error);
     return 0;
@@ -235,39 +244,43 @@ export function getServerBlogs(): BlogPost[] {
 
 /**
  * 服务器端：计算所有博客文章的总字数
- * @returns 博客总字数
+ * @returns 博客总字数（不含隐藏文章）
  */
 export function getBlogTotalWordCount(): number {
   try {
     // 动态导入fs和path模块
     const fs = require('fs');
     const path = require('path');
-    
+
     const blogsDir = path.join(process.cwd(), 'src', 'content', 'blogs');
-    
+
     // 检查目录是否存在
     if (!fs.existsSync(blogsDir) || !fs.statSync(blogsDir).isDirectory()) {
       return 0;
     }
-    
+
     // 读取目录中的所有文件
     const files = fs.readdirSync(blogsDir);
-    
+
     // 过滤出markdown文件
     const mdFiles = files.filter((file: string) => file.endsWith('.md'));
-    
+
     let totalWords = 0;
-    
-    // 读取和解析每个文件，计算字数
+
+    // 读取和解析每个文件，计算字数（过滤隐藏文章）
     mdFiles.forEach((file: string) => {
       const filePath = path.join(blogsDir, file);
       const content = fs.readFileSync(filePath, 'utf8');
-      const { content: body } = parseFrontMatter(content);
-      
+      const { metadata, content: body } = parseFrontMatter(content);
+
+      // 跳过隐藏文章，与 getServerBlogs 保持一致
+      const hidden = metadata.hidden === 'true' || metadata.hidden === true;
+      if (hidden) return;
+
       const wordCount = advancedWordCount(body);
       totalWords += wordCount.totalWords;
     });
-    
+
     return totalWords;
   } catch (error) {
     console.error('计算博客字数失败:', error);
