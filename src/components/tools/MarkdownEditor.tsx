@@ -1623,7 +1623,8 @@ seoDescription: "${blogMetadata.seoDescription}"
 
         try {
           const formData = new FormData();
-          formData.append('image', file);
+          // 修复：字段名必须与服务端 galleryActions.ts 中 formData.get('file') 保持一致
+          formData.append('file', file);
 
           const targetDir = getTargetDir();
           const result = await uploadEditorImage(formData, targetDir);
@@ -1679,7 +1680,8 @@ seoDescription: "${blogMetadata.seoDescription}"
 
         try {
           const formData = new FormData();
-          formData.append('image', file);
+          // 修复：字段名必须与服务端 galleryActions.ts 中 formData.get('file') 保持一致
+          formData.append('file', file);
 
           const targetDir = getTargetDir();
           const result = await uploadEditorImage(formData, targetDir);
