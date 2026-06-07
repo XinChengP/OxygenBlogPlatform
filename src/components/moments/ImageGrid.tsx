@@ -40,47 +40,6 @@ export default function ImageGrid({ images, className = '' }: ImageGridProps) {
     setCurrentIndex(index);
   };
 
-  // 键盘事件处理
-  useEffect(() => {
-    if (!viewerOpen) return;
-    
-    const handleKeyDown = (e: KeyboardEvent) => {
-      switch (e.key) {
-        case 'ArrowLeft':
-          e.preventDefault();
-          // 切换到上一张图片
-          if (currentIndex > 0) {
-            handleIndexChange(currentIndex - 1);
-          }
-          break;
-        case 'ArrowRight':
-          e.preventDefault();
-          // 切换到下一张图片
-          if (currentIndex < images.length - 1) {
-            handleIndexChange(currentIndex + 1);
-          }
-          break;
-      }
-    };
-    
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [viewerOpen, currentIndex, images.length]);
-
-  // 切换到上一张图片
-  const handlePrevImage = () => {
-    if (currentIndex > 0) {
-      handleIndexChange(currentIndex - 1);
-    }
-  };
-
-  // 切换到下一张图片
-  const handleNextImage = () => {
-    if (currentIndex < images.length - 1) {
-      handleIndexChange(currentIndex + 1);
-    }
-  };
-
   // 轮播控制函数
   const handleCarouselPrev = () => {
     if (carouselStartIndex > 0) {
@@ -185,62 +144,14 @@ export default function ImageGrid({ images, className = '' }: ImageGridProps) {
 
       </div>
 
-      {/* 图片查看器 - 在九个图片下面显示 */}
-      {viewerOpen && (
-        <div className="mt-4">
-          {/* 图片预览区域 */}
-          <div className="relative border rounded-lg p-4">
-            {/* 图片容器，支持点击左右半边翻页 */}
-            <div 
-              className="relative w-full" 
-              style={{ maxHeight: '600px' }}
-            >
-              {/* 左半边点击区域 */}
-              {currentIndex > 0 && (
-                <div
-                  onClick={handlePrevImage}
-                  className="absolute left-0 top-0 h-full w-1/3 cursor-pointer"
-                  aria-label="上一张"
-                />
-              )}
-              
-              {/* 右半边点击区域 */}
-              {currentIndex < images.length - 1 && (
-                <div
-                  onClick={handleNextImage}
-                  className="absolute right-0 top-0 h-full w-1/3 cursor-pointer"
-                  aria-label="下一张"
-                />
-              )}
-              
-              {/* 图片 */}
-              <img
-                src={images[currentIndex]}
-                alt={`图片 ${currentIndex + 1}`}
-                className="w-full object-contain"
-                style={{ maxHeight: '600px' }}
-              />
-            </div>
-          </div>
-          
-          {/* 图片导航 */}
-          {images.length > 1 && (
-            <div className="mt-2 flex justify-center space-x-2">
-              {images.map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => handleIndexChange(idx)}
-                  className={`w-2 h-2 rounded-full transition-all ${
-                    idx === currentIndex ? 'bg-primary scale-110' : 'bg-muted-foreground hover:bg-foreground'
-                  }`}
-                />
-              ))}
-            </div>
-          )}
-          
-
-        </div>
-      )}
+      {/* 复用 ImageViewer 组件，消除内嵌查看器的重复实现 */}
+      <ImageViewer
+        images={images}
+        currentIndex={currentIndex}
+        isOpen={viewerOpen}
+        onClose={handleCloseViewer}
+        onIndexChange={handleIndexChange}
+      />
     </div>
   );
 }

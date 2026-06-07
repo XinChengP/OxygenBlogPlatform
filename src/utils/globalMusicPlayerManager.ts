@@ -50,6 +50,39 @@ interface HistoryUpdateEventDetail {
   action: 'add' | 'clear';
 }
 
+// ==================== 公共工具函数 ====================
+
+/**
+ * 为 APlayer 重新生成随机播放顺序数组
+ * 消除 useMusicPlayer.ts 与 globalMusicPlayerManager.ts 中的重复洗牌逻辑
+ * @param player - APlayer 实例
+ * @param context - 调用上下文标识，用于日志输出
+ */
+export function regenerateRandomOrder(player: APlayerNS.APlayer, context: string): void {
+  const audioCount = player.list && player.list.list ? player.list.list.length : 0;
+  if (audioCount <= 0) return;
+
+  // @ts-ignore - APlayer 内部方法
+  const shuffleFn = (window as any).APlayer?.default?.randomOrder ||
+                   (player as any).constructor?.randomOrder;
+
+  if (shuffleFn && typeof shuffleFn === 'function') {
+    // @ts-ignore
+    player.randomOrder = shuffleFn(audioCount);
+    console.log(`[${context}] 已重新生成随机顺序数组`);
+  } else {
+    // 备用方案：手动使用 Fisher-Yates 洗牌算法生成随机顺序
+    const indices = Array.from({ length: audioCount }, (_, i) => i);
+    for (let i = indices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+    // @ts-ignore
+    player.randomOrder = indices;
+    console.log(`[${context}] 已手动生成随机顺序数组`);
+  }
+}
+
 // ==================== 全局音乐播放器管理器类 ====================
 
 /**
@@ -249,31 +282,8 @@ class GlobalMusicPlayerManager {
     if (this.player && this.player.options) {
       if (mode === 'random') {
         this.player.options.order = 'random';
-        
-        // 关键修复：重新生成随机顺序数组
-        const audioCount = this.player.list && this.player.list.list ? this.player.list.list.length : 0;
-        if (audioCount > 0) {
-          // @ts-ignore - APlayer 内部方法
-          const shuffleFn = (window as any).APlayer?.default?.randomOrder || 
-                           (this.player as any).constructor?.randomOrder;
-          
-          if (shuffleFn && typeof shuffleFn === 'function') {
-            // @ts-ignore
-            this.player.randomOrder = shuffleFn(audioCount);
-            console.log('[GlobalMusicPlayer] 已重新生成随机顺序数组');
-          } else {
-            // 备用方案：手动生成随机顺序
-            const indices = Array.from({ length: audioCount }, (_, i) => i);
-            // Fisher-Yates 洗牌算法
-            for (let i = indices.length - 1; i > 0; i--) {
-              const j = Math.floor(Math.random() * (i + 1));
-              [indices[i], indices[j]] = [indices[j], indices[i]];
-            }
-            // @ts-ignore
-            this.player.randomOrder = indices;
-            console.log('[GlobalMusicPlayer] 已手动生成随机顺序数组');
-          }
-        }
+        // 复用公共工具函数生成随机顺序，消除与 useMusicPlayer.ts 的重复洗牌逻辑
+        regenerateRandomOrder(this.player, 'GlobalMusicPlayer');
       } else {
         this.player.options.order = 'list';
       }

@@ -92,38 +92,6 @@ export function useDarkMode() {
     };
   }, [theme, mounted]);
 
-  /**
-   * 获取图片在暗黑模式下的样式
-   * 用于给图片添加暗色滤镜
-   * 
-   * @param intensity - 滤镜强度 (0-1)
-   * @returns CSS样式对象
-   */
-  const getImageDarkModeStyle = useCallback((intensity: number = 0.8) => {
-    if (!isDark) return {};
-    
-    return {
-      filter: `brightness(${intensity}) contrast(1.1)`,
-      transition: 'filter 0.5s ease',
-    };
-  }, [isDark]);
-
-  /**
-   * 获取内容在暗黑模式下的样式
-   * 用于给内容区域添加暗色滤镜
-   * 
-   * @param intensity - 滤镜强度 (0-1)
-   * @returns CSS样式对象
-   */
-  const getContentDarkModeStyle = useCallback((intensity: number = 0.9) => {
-    if (!isDark) return {};
-    
-    return {
-      filter: `brightness(${intensity})`,
-      transition: 'filter 0.5s ease',
-    };
-  }, [isDark]);
-
   return {
     // 状态
     isDark,
@@ -133,15 +101,11 @@ export function useDarkMode() {
     systemTheme,
     mounted,
     isTransitioning,
-    
+
     // 控制函数
     toggle,
     toggleTheme,
     setTheme: toggleTheme,
-    
-    // 样式工具
-    getImageDarkModeStyle,
-    getContentDarkModeStyle,
   };
 }
 

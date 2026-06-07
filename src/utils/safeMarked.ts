@@ -96,6 +96,57 @@ function safeRepeat(this: string, count: number): string {
 // 替换String.prototype.repeat
 String.prototype.repeat = safeRepeat;
 
+/**
+ * 生成统一的代码块 HTML 结构
+ * 消除 safeMarkdownToHtml 与 fallbackMarkdownToHtml 中的重复模板代码
+ * @param code - 代码内容
+ * @param language - 编程语言（可选）
+ * @returns 完整的代码块 HTML 字符串
+ */
+function generateCodeBlockHtml(code: string, language?: string): string {
+  const codeId = `code-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+
+  // 标准化语言显示名称
+  let displayLanguage = '代码';
+  if (language) {
+    const normalized = language.toLowerCase().trim();
+    const languageMap: Record<string, string> = {
+      javascript: 'JavaScript',
+      typescript: 'TypeScript',
+      python: 'Python',
+      java: 'Java',
+      cpp: 'C++',
+      'c++': 'C++',
+      html: 'HTML',
+      css: 'CSS',
+    };
+    displayLanguage = languageMap[normalized] || normalized.charAt(0).toUpperCase() + normalized.slice(1);
+  }
+
+  return `<div class="my-8 rounded-xl border-2 border-gray-200 dark:border-gray-700 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden bg-white dark:bg-gray-900" data-code-id="${codeId}">
+    <div class="flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 px-6 py-3 border-b-2 border-blue-200 dark:border-gray-600">
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2">
+          <span class="w-3 h-3 bg-red-400 rounded-full"></span>
+          <span class="w-3 h-3 bg-yellow-400 rounded-full"></span>
+          <span class="w-3 h-3 bg-green-400 rounded-full"></span>
+        </div>
+        <span class="text-sm font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide">${displayLanguage}</span>
+      </div>
+      <button class="copy-button inline-flex items-center justify-center rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105 bg-blue-500 hover:bg-blue-600 text-white shadow-sm hover:shadow-md px-4 py-2" title="复制代码">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 h-4 w-4">
+          <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+          <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+        </svg>
+        复制代码
+      </button>
+    </div>
+    <div class="p-6 bg-gray-50 dark:bg-gray-950">
+      <pre class="text-sm leading-relaxed"><code>${code}</code></pre>
+    </div>
+  </div>`;
+}
+
 // 直接配置marked选项
 marked.setOptions({
   breaks: true,
@@ -132,32 +183,8 @@ export async function safeMarkdownToHtml(markdown: string): Promise<string> {
     // 匹配带或不带class属性的pre>code结构
     const codeBlockRegex = /<pre(?:\s+class="[^"]*")?><code(?:\s+class="[^"]*")?>([\s\S]*?)<\/code><\/pre>/g;
     html = html.replace(codeBlockRegex, (match: string, code: string) => {
-      // 生成唯一的代码块ID，使用更高效的生成方式
-      const codeId = `code-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
-      
-      // 返回增强的HTML结构 - 更明显的代码块
-      return `<div class="my-8 rounded-xl border-2 border-gray-200 dark:border-gray-700 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden bg-white dark:bg-gray-900" data-code-id="${codeId}">
-        <div class="flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 px-6 py-3 border-b-2 border-blue-200 dark:border-gray-600">
-          <div class="flex items-center gap-3">
-            <div class="flex items-center gap-2">
-              <span class="w-3 h-3 bg-red-400 rounded-full"></span>
-              <span class="w-3 h-3 bg-yellow-400 rounded-full"></span>
-              <span class="w-3 h-3 bg-green-400 rounded-full"></span>
-            </div>
-            <span class="text-sm font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide">代码</span>
-          </div>
-          <button class="copy-button inline-flex items-center justify-center rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105 bg-blue-500 hover:bg-blue-600 text-white shadow-sm hover:shadow-md px-4 py-2" title="复制代码">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 h-4 w-4">
-              <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
-              <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
-            </svg>
-            复制代码
-          </button>
-        </div>
-        <div class="p-6 bg-gray-50 dark:bg-gray-950">
-          <pre class="text-sm leading-relaxed"><code>${code}</code></pre>
-        </div>
-      </div>`;
+      // 复用统一的代码块 HTML 生成函数，消除与 fallbackMarkdownToHtml 的重复模板
+      return generateCodeBlockHtml(code);
     });
     
     // 处理行内代码样式 - 简洁的视觉样式
@@ -189,45 +216,12 @@ function fallbackMarkdownToHtml(markdown: string): string {
     // 代码块 - 使用与博客一致的风格
     html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, language, code) => {
       let cleanCode = language ? code.split('\n').slice(1).join('\n') : code;
-      
+
       // 移除开头的换行符
       cleanCode = cleanCode.replace(/^\n/, '');
-      
-      // 标准化语言名称
-      const normalizedLanguage = language ? language.toLowerCase().trim() : '';
-      const displayLanguage = normalizedLanguage ? 
-        (normalizedLanguage === 'javascript' ? 'JavaScript' :
-         normalizedLanguage === 'typescript' ? 'TypeScript' :
-         normalizedLanguage === 'python' ? 'Python' :
-         normalizedLanguage === 'java' ? 'Java' :
-         normalizedLanguage === 'cpp' || normalizedLanguage === 'c++' ? 'C++' :
-         normalizedLanguage === 'html' ? 'HTML' :
-         normalizedLanguage === 'css' ? 'CSS' :
-         normalizedLanguage.charAt(0).toUpperCase() + normalizedLanguage.slice(1)) : '';
-      
-      // 返回增强的HTML结构 - 更明显的代码块
-      return `<div class="my-8 rounded-xl border-2 border-gray-200 dark:border-gray-700 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden bg-white dark:bg-gray-900" data-code-id="code-${Date.now()}-${Math.random().toString(36).substr(2, 9)}">
-        <div class="flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 px-6 py-3 border-b-2 border-blue-200 dark:border-gray-600">
-          <div class="flex items-center gap-3">
-            <div class="flex items-center gap-2">
-              <span class="w-3 h-3 bg-red-400 rounded-full"></span>
-              <span class="w-3 h-3 bg-yellow-400 rounded-full"></span>
-              <span class="w-3 h-3 bg-green-400 rounded-full"></span>
-            </div>
-            <span class="text-sm font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide">${displayLanguage || '代码'}</span>
-          </div>
-          <button class="copy-button inline-flex items-center justify-center rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105 bg-blue-500 hover:bg-blue-600 text-white shadow-sm hover:shadow-md px-4 py-2" title="复制代码">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 h-4 w-4">
-              <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
-              <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
-            </svg>
-            复制代码
-          </button>
-        </div>
-        <div class="p-6 bg-gray-50 dark:bg-gray-950">
-          <pre class="text-sm leading-relaxed"><code>${cleanCode}</code></pre>
-        </div>
-      </div>`;
+
+      // 复用统一的代码块 HTML 生成函数，消除与 safeMarkdownToHtml 的重复模板
+      return generateCodeBlockHtml(cleanCode, language);
     });
     
     // 标题

@@ -66,6 +66,7 @@ export interface ActionResult<T = unknown> {
 import { promises as fs } from 'fs';
 import path from 'path';
 import { revalidatePath } from 'next/cache';
+import { parseFrontMatter } from '@/utils/frontMatterUtils';
 
 // 博客文章存储目录
 const BLOGS_DIR = path.join(process.cwd(), 'src', 'content', 'blogs');
@@ -79,52 +80,6 @@ async function ensureBlogsDir(): Promise<void> {
   } catch {
     await fs.mkdir(BLOGS_DIR, { recursive: true });
   }
-}
-
-/**
- * 解析 frontmatter
- * @param content Markdown 文件内容
- * @returns 解析后的 frontmatter 和正文
- */
-function parseFrontMatter(content: string): { frontmatter: Record<string, unknown>; body: string } {
-  const frontmatterRegex = /^---\s*\n([\s\S]*?)\n---\s*\n([\s\S]*)$/;
-  const match = content.match(frontmatterRegex);
-
-  if (!match) {
-    return { frontmatter: {}, body: content };
-  }
-
-  const frontmatterText = match[1];
-  const body = match[2];
-  const frontmatter: Record<string, unknown> = {};
-
-  const lines = frontmatterText.split('\n');
-  for (const line of lines) {
-    const colonIndex = line.indexOf(':');
-    if (colonIndex > 0) {
-      const key = line.slice(0, colonIndex).trim();
-      let value: unknown = line.slice(colonIndex + 1).trim();
-
-      if (typeof value === 'string') {
-        value = value.replace(/^["']|["']$/g, '');
-
-        if ((value as string).startsWith('[') && (value as string).endsWith(']')) {
-          try {
-            value = JSON.parse((value as string).replace(/'/g, '"'));
-          } catch {
-            // 保持原字符串
-          }
-        }
-
-        if (value === 'true') value = true;
-        if (value === 'false') value = false;
-      }
-
-      frontmatter[key] = value;
-    }
-  }
-
-  return { frontmatter, body };
 }
 
 /**
@@ -239,32 +194,33 @@ async function readBlogFile(slug: string): Promise<BlogPost | null> {
   try {
     const filePath = path.join(BLOGS_DIR, `${slug}.md`);
     const content = await fs.readFile(filePath, 'utf-8');
-    const { frontmatter, body } = parseFrontMatter(content);
+    // 复用 frontMatterUtils.ts 中的 parseFrontMatter，消除内嵌的简易解析器
+    const { metadata, content: body } = parseFrontMatter(content);
 
     const wordCount = body.trim().split(/\s+/).length;
 
     return {
       id: slug,
       slug,
-      title: (frontmatter.title as string) || '',
-      date: (frontmatter.date as string) || '',
-      category: (frontmatter.category as string) || '',
-      tags: (frontmatter.tags as string[]) || [],
-      excerpt: (frontmatter.excerpt as string) || '',
+      title: (metadata.title as string) || '',
+      date: (metadata.date as string) || '',
+      category: (metadata.category as string) || '',
+      tags: (metadata.tags as string[]) || [],
+      excerpt: (metadata.excerpt as string) || '',
       content: body.trim(),
-      coverImage: (frontmatter.coverImage as string),
+      coverImage: (metadata.coverImage as string),
       readingTime: calculateReadingTime(body),
       wordCount,
-      updatedAt: (frontmatter.updatedAt as string),
-      hidden: (frontmatter.hidden as boolean) || false,
-      pinned: (frontmatter.pinned as boolean) || false,
-      pinnedAt: (frontmatter.pinnedAt as string),
+      updatedAt: (metadata.updatedAt as string),
+      hidden: (metadata.hidden as boolean) || false,
+      pinned: (metadata.pinned as boolean) || false,
+      pinnedAt: (metadata.pinnedAt as string),
       filePath: `src/content/blogs/${slug}.md`,
-      author: (frontmatter.author as string),
-      seriesOrder: (frontmatter.seriesOrder as number),
-      language: (frontmatter.language as string),
-      seoTitle: (frontmatter.seoTitle as string),
-      seoDescription: (frontmatter.seoDescription as string),
+      author: (metadata.author as string),
+      seriesOrder: (metadata.seriesOrder as number),
+      language: (metadata.language as string),
+      seoTitle: (metadata.seoTitle as string),
+      seoDescription: (metadata.seoDescription as string),
     };
   } catch {
     return null;
