@@ -12,6 +12,7 @@
 | 测试驱动开发 | `/tdd` | 红-绿-重构循环开发，确保代码质量 |
 | 系统化调试 | `/diagnose` | 困难 bug 的规范诊断流程 |
 | 生成 PRD | `/to-prd` | 将讨论结果沉淀为产品需求文档 |
+| 更新日志 | `/changelog` | 按项目规范创建和管理更新日志 |
 
 ### 生产力类 (Productivity)
 
@@ -67,7 +68,16 @@ AI: [复现 → 假设 → 插桩 → 修复 → 回归测试]
 AI: [生成 PRD 并发布到 GitHub Issues]
 ```
 
-### 6. 极简沟通
+### 6. 记录更新日志
+
+当完成开发需要记录变更：
+
+```
+你: /changelog 记录今天的图片预览重构和社交链接扩展
+AI: [按项目规范生成更新日志文件]
+```
+
+### 7. 极简沟通
 
 当你想减少 token 消耗：
 
@@ -91,7 +101,8 @@ AI: Inline obj prop -> new ref -> re-render. useMemo.
 │   │   ├── grill-with-docs/
 │   │   ├── tdd/
 │   │   ├── diagnose/
-│   │   └── to-prd/
+│   │   ├── to-prd/
+│   │   └── changelog/      # 更新日志管理
 │   └── productivity/       # 生产力技能
 │       ├── grill-me/
 │       └── caveman/
@@ -139,7 +150,8 @@ RED→GREEN: test2→impl2
 2. **核心功能用 `/tdd`** —— 确保代码质量
 3. **困难 bug 用 `/diagnose`** —— 系统化调试
 4. **沉淀文档用 `/to-prd`** —— 与团队协作
-5. **token 紧张用 `/caveman`** —— 快速沟通
+5. **记录变更用 `/changelog`** —— 按规范生成更新日志
+6. **token 紧张用 `/caveman`** —— 快速沟通
 
 ## 参考
 

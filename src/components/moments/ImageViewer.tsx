@@ -6,10 +6,11 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  XMarkIcon, 
-  ChevronLeftIcon, 
+import {
+  XMarkIcon,
+  ChevronLeftIcon,
   ChevronRightIcon
 } from '@heroicons/react/24/outline';
 
@@ -31,8 +32,14 @@ export default function ImageViewer({
   const [index, setIndex] = useState(currentIndex);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const imageRef = useRef<HTMLImageElement>(null);
-  
+
+  // 确保只在客户端挂载后才使用 document.body 进行 Portal 渲染
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // 同步外部索引
   useEffect(() => {
     setIndex(currentIndex);
@@ -101,9 +108,11 @@ export default function ImageViewer({
     }
   };
   
-  if (!isOpen || images.length === 0) return null;
-  
-  return (
+  if (images.length === 0 || !mounted) return null;
+
+  // 使用 Portal 将 Modal 渲染到 document.body，跳出父元素的层叠上下文
+  // 修复：父元素的 backdrop-blur 等属性会截断 fixed 定位的子元素
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <motion.div
@@ -127,7 +136,7 @@ export default function ImageViewer({
         >
           {/* 背景遮罩 */}
           <div className="absolute inset-0 bg-black bg-opacity-90" />
-          
+
           {/* 关闭按钮 */}
           <button
             onClick={onClose}
@@ -135,7 +144,7 @@ export default function ImageViewer({
           >
             <XMarkIcon className="w-6 h-6" />
           </button>
-          
+
           {/* 导航按钮 */}
           {images.length > 1 && (
             <>
@@ -146,7 +155,7 @@ export default function ImageViewer({
               >
                 <ChevronLeftIcon className="w-6 h-6" />
               </button>
-              
+
               <button
                 onClick={() => navigateImage('next')}
                 disabled={index === images.length - 1}
@@ -156,7 +165,7 @@ export default function ImageViewer({
               </button>
             </>
           )}
-          
+
           {/* 图片容器 */}
           <div className="relative w-full h-full flex items-center justify-center p-4">
             <motion.div
@@ -176,7 +185,7 @@ export default function ImageViewer({
                   </div>
                 </div>
               )}
-              
+
               {/* 错误状态 */}
               {loadError && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 rounded-lg">
@@ -194,7 +203,7 @@ export default function ImageViewer({
                   </div>
                 </div>
               )}
-              
+
               <img
                 ref={imageRef}
                 src={images[index]}
@@ -212,7 +221,7 @@ export default function ImageViewer({
               />
             </motion.div>
           </div>
-          
+
           {/* 图片指示器 */}
           {images.length > 1 && (
             <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
@@ -234,6 +243,7 @@ export default function ImageViewer({
           )}
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

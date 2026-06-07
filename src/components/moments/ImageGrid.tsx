@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import ImageViewer from './ImageViewer';
 
 interface ImageGridProps {
   images: string[];
@@ -22,9 +21,8 @@ export default function ImageGrid({ images, className = '' }: ImageGridProps) {
   }
 
   const handleImageClick = (index: number) => {
-    console.log('Image clicked at index:', index);
-    // 如果预览已经打开，再次点击关闭预览
-    if (viewerOpen) {
+    // 内嵌查看器逻辑：点击打开，再次点击同一张关闭
+    if (viewerOpen && currentIndex === index) {
       setViewerOpen(false);
     } else {
       setCurrentIndex(index);
@@ -32,12 +30,47 @@ export default function ImageGrid({ images, className = '' }: ImageGridProps) {
     }
   };
 
-  const handleCloseViewer = () => {
-    setViewerOpen(false);
-  };
-
   const handleIndexChange = (index: number) => {
     setCurrentIndex(index);
+  };
+
+  // 键盘事件处理
+  useEffect(() => {
+    if (!viewerOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      switch (e.key) {
+        case 'ArrowLeft':
+          e.preventDefault();
+          if (currentIndex > 0) {
+            handleIndexChange(currentIndex - 1);
+          }
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          if (currentIndex < images.length - 1) {
+            handleIndexChange(currentIndex + 1);
+          }
+          break;
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [viewerOpen, currentIndex, images.length]);
+
+  // 切换到上一张图片
+  const handlePrevImage = () => {
+    if (currentIndex > 0) {
+      handleIndexChange(currentIndex - 1);
+    }
+  };
+
+  // 切换到下一张图片
+  const handleNextImage = () => {
+    if (currentIndex < images.length - 1) {
+      handleIndexChange(currentIndex + 1);
+    }
   };
 
   // 轮播控制函数
@@ -53,13 +86,11 @@ export default function ImageGrid({ images, className = '' }: ImageGridProps) {
     }
   };
 
-
-
   // 拖拽处理函数
   const handleDragStart = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
     setIsDragging(true);
     setStartIndex(carouselStartIndex);
-    
+
     // 处理鼠标和触摸事件
     if ('touches' in e) {
       setStartX(e.touches[0].clientX);
@@ -70,16 +101,16 @@ export default function ImageGrid({ images, className = '' }: ImageGridProps) {
 
   const handleDragMove = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
     if (!isDragging) return;
-    
+
     // 处理鼠标和触摸事件
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     const deltaX = clientX - startX;
-    
+
     // 根据拖拽距离计算新的起始索引
     // 每张图片的宽度约为容器宽度的1/9
     const imageWidth = (carouselRef.current?.offsetWidth || 0) / 9;
     const indexDelta = Math.round(deltaX / imageWidth);
-    
+
     const newIndex = Math.max(0, Math.min(images.length - 9, startIndex - indexDelta));
     setCarouselStartIndex(newIndex);
   };
@@ -96,7 +127,7 @@ export default function ImageGrid({ images, className = '' }: ImageGridProps) {
     <div className={`mt-4 ${className}`}>
       <div className="relative">
         {/* 图片网格 - 支持拖拽 */}
-        <div 
+        <div
           ref={carouselRef}
           className="grid grid-cols-9 gap-1 cursor-grab active:cursor-grabbing"
           style={{
@@ -128,30 +159,74 @@ export default function ImageGrid({ images, className = '' }: ImageGridProps) {
                 onClick={() => handleImageClick(actualIndex)}
                 style={{ cursor: 'pointer' }}
               >
-              <img
-                src={image}
-                alt={`图片 ${actualIndex + 1}`}
-                className={`w-full h-full object-cover transition-all duration-300 ${
-                  isActive ? 'scale-105 brightness-105' : 'group-hover:scale-105'
-                }`}
-                loading="lazy"
-              />
-            </div>
-          );
-        })}
+                <img
+                  src={image}
+                  alt={`图片 ${actualIndex + 1}`}
+                  className={`w-full h-full object-cover transition-all duration-300 ${
+                    isActive ? 'scale-105 brightness-105' : 'group-hover:scale-105'
+                  }`}
+                  loading="lazy"
+                />
+              </div>
+            );
+          })}
         </div>
-        
-
       </div>
 
-      {/* 复用 ImageViewer 组件，消除内嵌查看器的重复实现 */}
-      <ImageViewer
-        images={images}
-        currentIndex={currentIndex}
-        isOpen={viewerOpen}
-        onClose={handleCloseViewer}
-        onIndexChange={handleIndexChange}
-      />
+      {/* 内嵌图片查看器 - 在九个图片下方展开，左右顶满卡片 */}
+      {viewerOpen && (
+        <div className="mt-4">
+          {/* 图片预览区域 */}
+          <div className="relative border rounded-lg p-4">
+            {/* 图片容器，支持点击左右半边翻页 */}
+            <div
+              className="relative w-full"
+              style={{ maxHeight: '600px' }}
+            >
+              {/* 左半边点击区域 */}
+              {currentIndex > 0 && (
+                <div
+                  onClick={handlePrevImage}
+                  className="absolute left-0 top-0 h-full w-1/3 cursor-pointer z-10"
+                  aria-label="上一张"
+                />
+              )}
+
+              {/* 右半边点击区域 */}
+              {currentIndex < images.length - 1 && (
+                <div
+                  onClick={handleNextImage}
+                  className="absolute right-0 top-0 h-full w-1/3 cursor-pointer z-10"
+                  aria-label="下一张"
+                />
+              )}
+
+              {/* 图片 */}
+              <img
+                src={images[currentIndex]}
+                alt={`图片 ${currentIndex + 1}`}
+                className="w-full object-contain"
+                style={{ maxHeight: '600px' }}
+              />
+            </div>
+          </div>
+
+          {/* 图片导航 */}
+          {images.length > 1 && (
+            <div className="mt-2 flex justify-center space-x-2">
+              {images.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handleIndexChange(idx)}
+                  className={`w-2 h-2 rounded-full transition-all ${
+                    idx === currentIndex ? 'bg-primary scale-110' : 'bg-muted-foreground hover:bg-foreground'
+                  }`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
