@@ -134,6 +134,17 @@ function ExchangeCard({ isDark }: { isDark: boolean }) {
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   {myInfo.description}
                 </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  头像链接：
+                  <a
+                    href={myInfo.avatar}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline break-all"
+                  >
+                    {myInfo.avatar}
+                  </a>
+                </p>
               </div>
             </motion.div>
           </div>
