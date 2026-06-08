@@ -24,9 +24,12 @@ const loadPlugins = async () => {
   };
 };
 
+// 使用 ReactMarkdown 的 props 类型来推断 components 和 plugins 的正确类型
+type ReactMarkdownProps = React.ComponentProps<typeof ReactMarkdown>;
+
 interface LazyMarkdownProps {
   content: string;
-  components?: any;
+  components?: ReactMarkdownProps['components'];
 }
 
 // 加载骨架屏组件
@@ -35,27 +38,27 @@ function MarkdownSkeleton() {
     <div className="animate-pulse space-y-4">
       {/* 标题骨架 */}
       <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-      
+
       {/* 段落骨架 */}
       <div className="space-y-3">
         <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
         <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
         <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-4/5"></div>
       </div>
-      
+
       {/* 代码块骨架 */}
       <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
-      
+
       {/* 更多段落骨架 */}
       <div className="space-y-3">
         <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
         <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
         <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
       </div>
-      
+
       {/* 图片骨架 */}
       <div className="h-48 bg-gray-200 dark:bg-gray-700 rounded"></div>
-      
+
       {/* 列表骨架 */}
       <div className="space-y-2">
         <div className="flex items-center space-x-2">
@@ -75,8 +78,18 @@ function MarkdownSkeleton() {
   );
 }
 
+// 插件集合类型
+type MarkdownPlugins = {
+  remarkPlugins: ReactMarkdownProps['remarkPlugins'];
+  rehypePlugins: ReactMarkdownProps['rehypePlugins'];
+};
+
 // 优化后的ReactMarkdown渲染组件
-const MarkdownRenderer = memo(({ content, components, plugins }: { content: string; components?: any; plugins: any }) => {
+const MarkdownRenderer = memo(({ content, components, plugins }: {
+  content: string;
+  components?: ReactMarkdownProps['components'];
+  plugins: MarkdownPlugins;
+}) => {
   return (
     <ReactMarkdown
       remarkPlugins={plugins.remarkPlugins}
@@ -90,8 +103,8 @@ const MarkdownRenderer = memo(({ content, components, plugins }: { content: stri
 
 export default memo(function LazyMarkdown({ content, components }: LazyMarkdownProps) {
   const [plugins, setPlugins] = useState<{
-    remarkPlugins: any[];
-    rehypePlugins: any[];
+    remarkPlugins: ReactMarkdownProps['remarkPlugins'];
+    rehypePlugins: ReactMarkdownProps['rehypePlugins'];
   } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 

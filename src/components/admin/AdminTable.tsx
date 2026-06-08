@@ -13,6 +13,7 @@ interface Column<T> {
   /** 列标题 */
   title: string;
   /** 自定义渲染函数 */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   render?: (value: any, record: T, index: number) => React.ReactNode;
   /** 是否可排序 */
   sortable?: boolean;
@@ -123,13 +124,13 @@ function AdminTable<T extends Record<string, any>>({
    * @param key - 列键
    * @returns 单元格值
    */
-  const getCellValue = (record: T, key: keyof T | string): any => {
+  const getCellValue = (record: T, key: keyof T | string): unknown => {
     // 支持嵌套路径，如 'user.name'
     if (typeof key === 'string' && key.includes('.')) {
       const keys = key.split('.');
-      let value: any = record;
+      let value: unknown = record;
       for (const k of keys) {
-        value = value?.[k];
+        value = (value as Record<string, unknown>)?.[k];
       }
       return value;
     }
@@ -378,7 +379,7 @@ function AdminTable<T extends Record<string, any>>({
                       >
                         {column.render
                           ? column.render(getCellValue(record, column.key), record, index)
-                          : <span className="inline-block max-w-xs truncate">{getCellValue(record, column.key)}</span>}
+                          : <span className="inline-block max-w-xs truncate">{String(getCellValue(record, column.key) ?? '')}</span>}
                       </td>
                     ))}
                   </tr>

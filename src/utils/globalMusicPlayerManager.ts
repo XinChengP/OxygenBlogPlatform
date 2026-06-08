@@ -69,7 +69,6 @@ export function regenerateRandomOrder(player: APlayerNS.APlayer, context: string
   if (shuffleFn && typeof shuffleFn === 'function') {
     // @ts-ignore
     player.randomOrder = shuffleFn(audioCount);
-    console.log(`[${context}] 已重新生成随机顺序数组`);
   } else {
     // 备用方案：手动使用 Fisher-Yates 洗牌算法生成随机顺序
     const indices = Array.from({ length: audioCount }, (_, i) => i);
@@ -79,7 +78,6 @@ export function regenerateRandomOrder(player: APlayerNS.APlayer, context: string
     }
     // @ts-ignore
     player.randomOrder = indices;
-    console.log(`[${context}] 已手动生成随机顺序数组`);
   }
 }
 

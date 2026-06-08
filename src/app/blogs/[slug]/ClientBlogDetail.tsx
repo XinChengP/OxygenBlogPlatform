@@ -183,8 +183,21 @@ const getLanguageDisplayName = (language: string): string => {
   return displayNameMap[language] || language.charAt(0).toUpperCase() + language.slice(1);
  };
 
+// react-markdown 组件回调的通用额外属性
+interface MarkdownExtraProps {
+  node?: unknown;
+}
+
+// Markdown 各标签组件属性类型
+type MarkdownCodeProps = React.ComponentPropsWithoutRef<'code'> & MarkdownExtraProps & { inline?: boolean };
+type MarkdownImgProps = React.ComponentPropsWithoutRef<'img'> & MarkdownExtraProps;
+type MarkdownDivProps = React.ComponentPropsWithoutRef<'div'> & MarkdownExtraProps;
+type MarkdownIframeProps = React.ComponentPropsWithoutRef<'iframe'> & MarkdownExtraProps & { allowfullscreen?: boolean | string };
+
+// 通用 Markdown 组件属性（用于不需要额外解构的组件）
 interface ComponentProps {
   children?: React.ReactNode;
+  className?: string;
   [key: string]: any;
 }
 
@@ -676,7 +689,7 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                   content={blog.content}
                   components={{
                     // 代码块渲染 - 优化为玻璃态风格
-                    code({ inline, className, children, ...props }: any) {
+                    code({ inline, className, children, ...props }: MarkdownCodeProps) {
                       const match = /language-(\w+)/.exec(className || '');
                       const language = match ? normalizeLanguage(match[1]) : '';
                       const childrenString = String(children || '').replace(/\n$/, '');
@@ -710,7 +723,7 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                             {/* 代码内容区域 */}
                             <div className="overflow-hidden !bg-transparent">
                               <SyntaxHighlighter
-                                style={syntaxTheme}
+                                style={syntaxTheme as any}
                                 language={language}
                                 PreTag="div"
                                 className="!bg-transparent"
@@ -855,7 +868,7 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                         </h2>
                       );
                     },
-                    h3({ children }: { children: React.ReactNode }) {
+                    h3({ children }: { children?: React.ReactNode }) {
                       const id = typeof children === 'string' ? 
                         children.toLowerCase().replace(/[^\w\u4e00-\u9fff\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') :
                         (Array.isArray(children) ? children : [children]).map(child => 
@@ -870,7 +883,7 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                         </h3>
                       );
                     },
-                    h4({ children }: { children: React.ReactNode }) {
+                    h4({ children }: { children?: React.ReactNode }) {
                       const id = typeof children === 'string' ? 
                         children.toLowerCase().replace(/[^\w\u4e00-\u9fff\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') :
                         (Array.isArray(children) ? children : [children]).map(child => 
@@ -921,7 +934,7 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                       );
                     },
                     // 链接
-                    a({ href, children }: { href?: string; children: React.ReactNode }) {
+                    a({ href, children }: { href?: string; children?: React.ReactNode }) {
                       return (
                         <a 
                           href={href} 
@@ -934,13 +947,14 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                       );
                     },
                     // 图片 - 基础加载，支持点击放大和智能尺寸检测
-                    img({ src, alt, ...props }: any) {
+                    img({ src, alt, ...props }: MarkdownImgProps) {
                       // 处理 GitHub Pages 基础路径
-                      const processedSrc = src ? getAssetPath(src) : src;
+                      const processedSrc = typeof src === 'string' && src ? getAssetPath(src) : src;
                       const imgRef = useRef<HTMLImageElement>(null);
                       const [isLandscape, setIsLandscape] = useState(false);
 
                       useEffect(() => {
+                        if (typeof processedSrc !== 'string') return;
                         const img = new Image();
                         img.onload = () => {
                           // 检测图片是否为横向（宽度大于高度）
@@ -950,7 +964,7 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                       }, [processedSrc]);
 
                       // 收集文章中的图片到预览列表（按出现顺序）
-                      if (processedSrc && !imageSrcSetRef.current.has(processedSrc)) {
+                      if (typeof processedSrc === 'string' && processedSrc && !imageSrcSetRef.current.has(processedSrc)) {
                         imageSrcSetRef.current.add(processedSrc);
                         articleImagesRef.current.push({
                           id: `blog-img-${articleImagesRef.current.length}`,
@@ -991,7 +1005,7 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                       );
                     },
                     // div - 支持自定义图片网格
-                    div({ className, children, ...props }: any) {
+                    div({ className, children, ...props }: MarkdownDivProps) {
                       const isImageGrid = className?.includes('image-grid');
                       
                       if (isImageGrid) {
@@ -1005,14 +1019,14 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                       return <div className={className} {...props}>{children}</div>;
                     },
                     // iframe 处理 - 增强错误处理和清理
-                    iframe({ src, allowfullscreen, ...props }: any) {
+                    iframe({ src, allowfullscreen, ...props }: MarkdownIframeProps) {
                       // 将字符串 "true" 转换为布尔值 true，确保传递布尔值给React属性
                       const shouldAllowFullScreen = allowfullscreen === "true" || allowfullscreen === true;
                       
                       // B站视频特殊处理 - 使用专用组件处理
                       const isBilibiliVideo = src?.includes('player.bilibili.com');
                       
-                      if (isBilibiliVideo) {
+                      if (isBilibiliVideo && src) {
                         return (
                           <Suspense fallback={
                             <div className="my-8 rounded-xl overflow-hidden shadow-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center h-64 md:h-96">
@@ -1022,9 +1036,9 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                               </div>
                             </div>
                           }>
-                            <BilibiliIframe 
-                              src={src} 
-                              allowFullScreen={shouldAllowFullScreen} 
+                            <BilibiliIframe
+                              src={src}
+                              allowFullScreen={shouldAllowFullScreen}
                             />
                           </Suspense>
                         );

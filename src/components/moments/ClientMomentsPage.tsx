@@ -16,6 +16,10 @@ import PageHeader from '@/components/ui/PageHeader';
 import { getAssetPath } from '@/utils/assetUtils';
 import { Live2DMessageHelper } from '@/utils/live2dMessageManager';
 
+// react-markdown 组件回调的额外属性
+type MarkdownExtraProps = { node?: unknown };
+type MarkdownCodeProps = React.ComponentPropsWithoutRef<'code'> & MarkdownExtraProps & { inline?: boolean };
+
 interface ClientMomentsPageProps {
   moments: Array<{ id: string; time: string; content: string; tags: string[]; images?: string[]; pinned?: boolean; filePath: string }>;
   blogCount: number;
@@ -167,7 +171,7 @@ function ClientMomentsPage({ moments, blogCount, blogTotalWordCount, blogs, cate
                                 />
                               );
                             },
-                            code: ({ node, className, children, ...props }: any) => {
+                            code: ({ node, className, children, ...props }: MarkdownCodeProps) => {
                               const match = /language-(\w+)/.exec(className || '');
                               const inline = !match;
                               if (inline) {
