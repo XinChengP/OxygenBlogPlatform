@@ -48,6 +48,8 @@ export interface BlogPostData {
   coverImage?: string;
   slug?: string;
   hidden?: boolean;
+  pinned?: boolean;        // 置顶状态，防止编辑后丢失
+  pinnedAt?: string;       // 置顶时间，防止编辑后丢失
   author?: string;
   seriesOrder?: number;
   language?: string;
@@ -66,7 +68,7 @@ export interface ActionResult<T = unknown> {
 import { promises as fs } from 'fs';
 import path from 'path';
 import { revalidatePath } from 'next/cache';
-import { parseFrontMatter } from '@/utils/frontMatterUtils';
+import matter from 'gray-matter';
 
 // 博客文章存储目录
 const BLOGS_DIR = path.join(process.cwd(), 'src', 'content', 'blogs');
@@ -85,54 +87,83 @@ async function ensureBlogsDir(): Promise<void> {
 /**
  * 生成 frontmatter 字符串
  * @param data 博客数据
+ * @param existingData 原始 frontmatter 数据（更新模式时传入，用于保留未知字段）
  * @returns frontmatter 字符串
  */
-function generateFrontMatter(data: BlogPostData & { slug: string; date: string }): string {
+function generateFrontMatter(data: BlogPostData & { slug: string; date: string }, existingData?: Record<string, unknown>): string {
   const lines = ['---'];
 
   lines.push(`title: "${data.title}"`);
   lines.push(`date: "${data.date}"`);
-  
+
   if (data.updatedAt) {
     lines.push(`updatedAt: "${data.updatedAt}"`);
   }
-  
+
   lines.push(`category: "${data.category}"`);
-  
+
   if (data.tags && data.tags.length > 0) {
     lines.push(`tags: [${data.tags.map(tag => `"${tag}"`).join(', ')}]`);
   }
-  
+
   if (data.excerpt) {
     lines.push(`excerpt: "${data.excerpt}"`);
   }
-  
+
   if (data.author) {
     lines.push(`author: "${data.author}"`);
   }
-  
+
   if (data.seriesOrder) {
     lines.push(`seriesOrder: ${data.seriesOrder}`);
   }
-  
+
   if (data.language) {
     lines.push(`language: "${data.language}"`);
   }
-  
+
   if (data.seoTitle) {
     lines.push(`seoTitle: "${data.seoTitle}"`);
   }
-  
+
   if (data.seoDescription) {
     lines.push(`seoDescription: "${data.seoDescription}"`);
   }
-  
+
   if (data.coverImage) {
     lines.push(`coverImage: "${data.coverImage}"`);
   }
-  
+
+  // 处理 pinned：true 时保留，false 时删除
+  if (data.pinned) {
+    lines.push('pinned: true');
+  }
+
+  // 处理 hidden：true 时保留，false 时删除
   if (data.hidden) {
     lines.push('hidden: true');
+  }
+
+  // 保留原始 frontmatter 中的未知字段
+  if (existingData) {
+    const knownKeys = new Set([
+      'title', 'date', 'updatedAt', 'category', 'tags', 'excerpt',
+      'author', 'seriesOrder', 'language', 'seoTitle', 'seoDescription',
+      'coverImage', 'pinned', 'hidden'
+    ]);
+    for (const [key, value] of Object.entries(existingData)) {
+      if (knownKeys.has(key)) continue;
+
+      if (typeof value === 'string') {
+        lines.push(`${key}: "${value}"`);
+      } else if (typeof value === 'number' || typeof value === 'boolean') {
+        lines.push(`${key}: ${value}`);
+      } else if (Array.isArray(value)) {
+        lines.push(`${key}: [${value.map((v) => typeof v === 'string' ? `"${v}"` : v).join(', ')}]`);
+      } else {
+        lines.push(`${key}: ${JSON.stringify(value)}`);
+      }
+    }
   }
 
   lines.push('---');
@@ -183,6 +214,7 @@ async function getBlogFiles(): Promise<string[]> {
 
 /**
  * 读取博客文件内容
+ * 使用 gray-matter 正确解析 YAML frontmatter，支持多行数组等复杂格式
  * @param slug 博客 slug
  * @returns 博客数据
  */
@@ -190,37 +222,37 @@ async function readBlogFile(slug: string): Promise<BlogPost | null> {
   if (isStaticExport) {
     return null;
   }
-  
+
   try {
     const filePath = path.join(BLOGS_DIR, `${slug}.md`);
     const content = await fs.readFile(filePath, 'utf-8');
-    // 复用 frontMatterUtils.ts 中的 parseFrontMatter，消除内嵌的简易解析器
-    const { metadata, content: body } = parseFrontMatter(content);
+    const parsed = matter(content);
+    const body = parsed.content;
 
     const wordCount = body.trim().split(/\s+/).length;
 
     return {
       id: slug,
       slug,
-      title: (metadata.title as string) || '',
-      date: (metadata.date as string) || '',
-      category: (metadata.category as string) || '',
-      tags: (metadata.tags as string[]) || [],
-      excerpt: (metadata.excerpt as string) || '',
+      title: (parsed.data.title as string) || '',
+      date: (parsed.data.date as string) || '',
+      category: (parsed.data.category as string) || '',
+      tags: (parsed.data.tags as string[]) || [],
+      excerpt: (parsed.data.excerpt as string) || '',
       content: body.trim(),
-      coverImage: (metadata.coverImage as string),
+      coverImage: (parsed.data.coverImage as string),
       readingTime: calculateReadingTime(body),
       wordCount,
-      updatedAt: (metadata.updatedAt as string),
-      hidden: (metadata.hidden as boolean) || false,
-      pinned: (metadata.pinned as boolean) || false,
-      pinnedAt: (metadata.pinnedAt as string),
+      updatedAt: (parsed.data.updatedAt as string),
+      hidden: parsed.data.hidden === true || parsed.data.hidden === 'true',
+      pinned: parsed.data.pinned === true || parsed.data.pinned === 'true',
+      pinnedAt: (parsed.data.pinnedAt as string),
       filePath: `src/content/blogs/${slug}.md`,
-      author: (metadata.author as string),
-      seriesOrder: (metadata.seriesOrder as number),
-      language: (metadata.language as string),
-      seoTitle: (metadata.seoTitle as string),
-      seoDescription: (metadata.seoDescription as string),
+      author: (parsed.data.author as string),
+      seriesOrder: (parsed.data.seriesOrder as number),
+      language: (parsed.data.language as string),
+      seoTitle: (parsed.data.seoTitle as string),
+      seoDescription: (parsed.data.seoDescription as string),
     };
   } catch {
     return null;
@@ -231,15 +263,24 @@ async function readBlogFile(slug: string): Promise<BlogPost | null> {
  * 写入博客文件
  * @param slug 博客 slug
  * @param data 博客数据
+ * @param existingContent 原始文件内容（更新模式时传入，用于保留未知字段）
  */
-async function writeBlogFile(slug: string, data: BlogPostData & { date: string }): Promise<void> {
+async function writeBlogFile(slug: string, data: BlogPostData & { date: string }, existingContent?: string): Promise<void> {
   if (isStaticExport) {
     return;
   }
-  
+
   await ensureBlogsDir();
   const filePath = path.join(BLOGS_DIR, `${slug}.md`);
-  const frontmatter = generateFrontMatter({ ...data, slug });
+
+  let existingData: Record<string, unknown> | undefined;
+  if (existingContent) {
+    // 更新模式：使用 gray-matter 解析原始 frontmatter，提取未知字段
+    const parsed = matter(existingContent);
+    existingData = parsed.data as Record<string, unknown>;
+  }
+
+  const frontmatter = generateFrontMatter({ ...data, slug }, existingData);
   const content = `${frontmatter}\n\n${data.content}`;
   await fs.writeFile(filePath, content, 'utf-8');
 }
@@ -374,13 +415,17 @@ export async function updateBlog(
   if (isStaticExport) {
     return { success: false, message: 'Static export mode does not support this feature' };
   }
-  
+
   try {
     const existingBlog = await readBlogFile(slug);
 
     if (!existingBlog) {
       return { success: false, message: 'Blog not found' };
     }
+
+    // 读取原始文件内容，用于保留 frontmatter 中的未知字段和格式
+    const filePath = path.join(BLOGS_DIR, `${slug}.md`);
+    const existingContent = await fs.readFile(filePath, 'utf-8');
 
     const updatedData: BlogPostData & { date: string; updatedAt?: string } = {
       title: data.title ?? existingBlog.title,
@@ -391,6 +436,8 @@ export async function updateBlog(
       excerpt: data.excerpt ?? existingBlog.excerpt,
       coverImage: data.coverImage ?? existingBlog.coverImage,
       hidden: data.hidden ?? existingBlog.hidden,
+      pinned: data.pinned ?? existingBlog.pinned,           // 保留置顶状态
+      pinnedAt: data.pinnedAt ?? existingBlog.pinnedAt,     // 保留置顶时间
       author: data.author ?? existingBlog.author,
       seriesOrder: data.seriesOrder ?? existingBlog.seriesOrder,
       language: data.language ?? existingBlog.language,
@@ -399,7 +446,7 @@ export async function updateBlog(
       updatedAt: new Date().toISOString().split('T')[0],
     };
 
-    await writeBlogFile(slug, updatedData);
+    await writeBlogFile(slug, updatedData, existingContent);
 
     const updatedBlog = await readBlogFile(slug);
     if (!updatedBlog) {
@@ -490,7 +537,7 @@ export async function batchUpdateBlogCategory(slugs: string[], category: string)
   if (isStaticExport) {
     return { success: false, message: 'Static export mode does not support this feature' };
   }
-  
+
   try {
     if (!slugs || slugs.length === 0) {
       return { success: false, message: 'No blogs selected' };
@@ -498,8 +545,10 @@ export async function batchUpdateBlogCategory(slugs: string[], category: string)
 
     let updatedCount = 0;
     for (const slug of slugs) {
-      const existingBlog = await readBlogFile(slug);
-      if (existingBlog) {
+      const filePath = path.join(BLOGS_DIR, `${slug}.md`);
+      const existingContent = await fs.readFile(filePath, 'utf-8').catch(() => null);
+      const existingBlog = existingContent ? await readBlogFile(slug) : null;
+      if (existingBlog && existingContent) {
         await writeBlogFile(slug, {
           title: existingBlog.title,
           content: existingBlog.content,
@@ -509,7 +558,14 @@ export async function batchUpdateBlogCategory(slugs: string[], category: string)
           excerpt: existingBlog.excerpt,
           coverImage: existingBlog.coverImage,
           hidden: existingBlog.hidden,
-        });
+          pinned: existingBlog.pinned,
+          pinnedAt: existingBlog.pinnedAt,
+          author: existingBlog.author,
+          seriesOrder: existingBlog.seriesOrder,
+          language: existingBlog.language,
+          seoTitle: existingBlog.seoTitle,
+          seoDescription: existingBlog.seoDescription,
+        }, existingContent);
         updatedCount++;
       }
     }
@@ -559,13 +615,17 @@ export async function saveBlogMarkdown(slug: string, content: string): Promise<A
   if (isStaticExport) {
     return { success: false, message: 'Static export mode does not support this feature' };
   }
-  
+
   try {
     const existingBlog = await readBlogFile(slug);
 
     if (!existingBlog) {
       return { success: false, message: 'Blog not found' };
     }
+
+    // 读取原始文件内容，用于保留 frontmatter 中的未知字段
+    const filePath = path.join(BLOGS_DIR, `${slug}.md`);
+    const existingContent = await fs.readFile(filePath, 'utf-8');
 
     await writeBlogFile(slug, {
       title: existingBlog.title,
@@ -576,7 +636,14 @@ export async function saveBlogMarkdown(slug: string, content: string): Promise<A
       excerpt: existingBlog.excerpt,
       coverImage: existingBlog.coverImage,
       hidden: existingBlog.hidden,
-    });
+      pinned: existingBlog.pinned,
+      pinnedAt: existingBlog.pinnedAt,
+      author: existingBlog.author,
+      seriesOrder: existingBlog.seriesOrder,
+      language: existingBlog.language,
+      seoTitle: existingBlog.seoTitle,
+      seoDescription: existingBlog.seoDescription,
+    }, existingContent);
 
     revalidatePath('/admin/blogs');
     revalidatePath('/blogs');
@@ -626,7 +693,7 @@ export async function batchToggleBlogHidden(slugs: string[], hidden: boolean): P
   if (isStaticExport) {
     return { success: false, message: 'Static export mode does not support this feature' };
   }
-  
+
   try {
     if (!slugs || slugs.length === 0) {
       return { success: false, message: 'No blogs selected' };
@@ -634,8 +701,10 @@ export async function batchToggleBlogHidden(slugs: string[], hidden: boolean): P
 
     let updatedCount = 0;
     for (const slug of slugs) {
-      const existingBlog = await readBlogFile(slug);
-      if (existingBlog) {
+      const filePath = path.join(BLOGS_DIR, `${slug}.md`);
+      const existingContent = await fs.readFile(filePath, 'utf-8').catch(() => null);
+      const existingBlog = existingContent ? await readBlogFile(slug) : null;
+      if (existingBlog && existingContent) {
         await writeBlogFile(slug, {
           title: existingBlog.title,
           content: existingBlog.content,
@@ -645,7 +714,14 @@ export async function batchToggleBlogHidden(slugs: string[], hidden: boolean): P
           excerpt: existingBlog.excerpt,
           coverImage: existingBlog.coverImage,
           hidden,
-        });
+          pinned: existingBlog.pinned,
+          pinnedAt: existingBlog.pinnedAt,
+          author: existingBlog.author,
+          seriesOrder: existingBlog.seriesOrder,
+          language: existingBlog.language,
+          seoTitle: existingBlog.seoTitle,
+          seoDescription: existingBlog.seoDescription,
+        }, existingContent);
         updatedCount++;
       }
     }
