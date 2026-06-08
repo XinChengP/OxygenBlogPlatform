@@ -2,6 +2,7 @@ import React from 'react';
 import fs from 'fs';
 import path from 'path';
 import { getServerMoments, getBlogCount, getServerBlogs, getBlogTotalWordCount } from '@/utils/momentsUtils';
+import { parseFrontMatter } from '@/utils/frontMatterUtils';
 import ClientMomentsPage from '@/components/moments/ClientMomentsPage';
 import type { TodoConfig } from '@/types/todo';
 import type { Metadata } from 'next';
@@ -58,24 +59,37 @@ const blogCount = getBlogCount();
 const blogTotalWordCount = getBlogTotalWordCount();
 const blogs = getServerBlogs();
 
-// 计算分类和标签数量
+// 计算分类和标签数量（基于所有文章，包括隐藏文章）
 const calculateStats = () => {
   const categories = new Set<string>();
   const tags = new Set<string>();
 
-  blogs.forEach(blog => {
-    // 计算分类
-    if (blog.category) {
-      categories.add(blog.category);
-    }
-    
-    // 计算标签
-    if (blog.tags && Array.isArray(blog.tags)) {
-      blog.tags.forEach(tag => {
-        tags.add(tag);
-      });
-    }
-  });
+  // 直接读取所有博客文件进行统计，避免 getServerBlogs 过滤隐藏文章导致分类数不准确
+  const blogsDir = path.join(process.cwd(), 'src', 'content', 'blogs');
+
+  if (fs.existsSync(blogsDir) && fs.statSync(blogsDir).isDirectory()) {
+    const files = fs.readdirSync(blogsDir).filter((file: string) => file.endsWith('.md'));
+
+    files.forEach((file: string) => {
+      const filePath = path.join(blogsDir, file);
+      const content = fs.readFileSync(filePath, 'utf8');
+      const { metadata } = parseFrontMatter(content);
+
+      // 统计分类
+      if (metadata.category && typeof metadata.category === 'string') {
+        categories.add(metadata.category.trim());
+      }
+
+      // 统计标签
+      if (metadata.tags && Array.isArray(metadata.tags)) {
+        metadata.tags.forEach((tag: string) => {
+          if (tag && typeof tag === 'string') {
+            tags.add(tag);
+          }
+        });
+      }
+    });
+  }
 
   return {
     categoryCount: categories.size,

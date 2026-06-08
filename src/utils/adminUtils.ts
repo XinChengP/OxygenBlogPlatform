@@ -1034,10 +1034,6 @@ export function getDashboardStats(): DashboardStats {
         if (metadata.category && typeof metadata.category === 'string') {
           const category = metadata.category.trim()
           categoryMap.set(category, (categoryMap.get(category) || 0) + 1)
-          // 调试日志：输出每个文件提取到的分类
-          console.log(`[DEBUG] 文件: ${file}, 分类: "${category}"`)
-        } else {
-          console.log(`[DEBUG] 文件: ${file}, 分类提取失败, metadata.category:`, metadata.category)
         }
 
         // 提取标签 —— 使用 parseFrontMatter 的 metadata
@@ -1214,7 +1210,7 @@ export function getDashboardStats(): DashboardStats {
       todoCount,
       todoCompletedCount,
       categoryStats,
-      categoryCount: categoryMap.size,
+      categoryCount: categoryMap.size + 1,
       tagStats,
       totalTagCount: tagMap.size,
       changelogs,

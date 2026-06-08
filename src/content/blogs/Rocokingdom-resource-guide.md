@@ -1,7 +1,7 @@
 ---
 title: "洛克王国资源提取"
 date: "2026-01-05"
-updatedAt: "2026-04-18"
+updatedAt: "2026-06-08"
 author: 歆橙
 category: "技术"
 tags: ["游戏", "资源提取", "洛克王国","教程"]
@@ -117,6 +117,10 @@ ps：一个宠物可能有多个皮肤，具体皮肤编号可在洛克数据库
 |---------|------|------|
 | 活动链接 | `https://res.17roco.qq.com/activity/编号/ui编号.swf` | 2024/4/20 当前编号为3674 |
 | 小游戏 | `https://res.17roco.qq.com/res/game/编号/game.swf` | 编号范围：2000-2200 |
+
+### 提取软件资源
+
+- **蓝奏云资源包**：[点击下载](https://wwbrx.lanzout.com/iZlSy3rfhkfi) （密码：<span id="password-roco" style="cursor: pointer; background-color: var(--password-bg, transparent); color: var(--password-text, inherit); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--password-border, transparent); transition: all 0.2s ease;" data-password="roco">roco</span>）
 
 ## 贰仨仨仨仨、 经典小作文
 <div style="text-align: center;">
