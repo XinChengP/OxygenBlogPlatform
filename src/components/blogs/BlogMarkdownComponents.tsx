@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense, lazy, useRef, useState, useEffect, useMemo, useCallback } from 'react';
+import React, { Suspense, lazy, useState, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -437,18 +437,7 @@ export function useBlogMarkdownComponents(options: {
     img({ src, alt, ...props }: MarkdownImgProps) {
       // 处理 GitHub Pages 基础路径
       const processedSrc = typeof src === 'string' && src ? getAssetPath(src) : src;
-      const imgRef = useRef<HTMLImageElement>(null);
       const [isLandscape, setIsLandscape] = useState(false);
-
-      useEffect(() => {
-        if (typeof processedSrc !== 'string') return;
-        const img = new Image();
-        img.onload = () => {
-          // 检测图片是否为横向（宽度大于高度）
-          setIsLandscape(img.width > img.height);
-        };
-        img.src = processedSrc;
-      }, [processedSrc]);
 
       // 收集文章中的图片到预览列表（按出现顺序）
       if (typeof processedSrc === 'string' && processedSrc && !imageSrcSetRef.current.has(processedSrc)) {
@@ -464,13 +453,17 @@ export function useBlogMarkdownComponents(options: {
         // 使用 React.Fragment 避免添加额外元素，防止在 p 标签内嵌套块级元素
         <>
           <img
-            ref={imgRef}
             src={processedSrc}
             alt={alt || '图片'}
             className={`rounded-xl shadow-lg mx-auto h-auto my-4 cursor-pointer hover:opacity-90 transition-opacity ${
               isLandscape ? 'max-w-full' : 'max-w-[400px]'
             }`}
             loading="lazy"
+            // 使用 img 标签自身的 onLoad 事件获取自然尺寸，避免 new Image() 产生额外预加载请求
+            onLoad={(e) => {
+              const target = e.currentTarget;
+              setIsLandscape(target.naturalWidth > target.naturalHeight);
+            }}
             onClick={() => {
               // 从已收集的文章图片列表中找到当前点击的图片
               const existingImage = articleImagesRef.current.find(

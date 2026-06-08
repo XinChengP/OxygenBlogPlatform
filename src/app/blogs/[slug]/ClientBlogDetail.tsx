@@ -91,6 +91,12 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
     setMounted(true);
   }, []);
 
+  // 组件挂载时清空图片收集列表，防止路由切换或热更新后残留旧数据
+  useEffect(() => {
+    imageSrcSetRef.current.clear();
+    articleImagesRef.current = [];
+  }, []);
+
   // 在挂载前使用默认主题
   const currentTheme = (mounted ? resolvedTheme : 'light') || 'light';
   
