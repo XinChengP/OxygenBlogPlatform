@@ -8,15 +8,16 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from 'next-themes';
-import { 
-  Globe, 
-  Link2, 
-  Heart, 
-  Mail, 
+import {
+  Globe,
+  Link2,
+  Heart,
+  Mail,
   MessageCircle,
   MessageSquare,
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  User
 } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
@@ -24,26 +25,35 @@ import FriendsLink from '@/components/FriendsLink';
 
 /**
  * 交换友链说明卡片组件
+ * 合并展示我的信息、申请要求和联系方式
  */
 function ExchangeCard({ isDark }: { isDark: boolean }) {
   const primaryColor = '#66ccff';
-  
+
   const requirements = [
     { icon: <Globe className="w-4 h-4" />, text: '网站名称和描述' },
     { icon: <Link2 className="w-4 h-4" />, text: '网站链接' },
     { icon: <Heart className="w-4 h-4" />, text: '头像链接（可选）' },
   ];
 
+  // 本站友链信息数据
+  const myInfo = {
+    name: '心想事成 的 Blog',
+    url: 'https://blog.xinchengp.cn',
+    description: '开开心心每一天',
+    avatar: 'https://avatars.githubusercontent.com/u/107662142?v=4'
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, delay: 0.4 }}
+      transition={{ duration: 0.6, delay: 0.3 }}
       className="relative overflow-hidden rounded-2xl border border-gray-200/50 dark:border-gray-700/50
                  bg-white/80 dark:bg-gray-800/80 backdrop-blur-md shadow-lg"
     >
       {/* 顶部装饰条 */}
-      <div 
+      <div
         className="absolute top-0 left-0 right-0 h-1"
         style={{
           background: `linear-gradient(90deg, ${primaryColor} 0%, #06b6d4 50%, ${primaryColor} 100%)`,
@@ -53,7 +63,7 @@ function ExchangeCard({ isDark }: { isDark: boolean }) {
 
       {/* 背景装饰 */}
       <div className="absolute top-0 right-0 w-64 h-64 opacity-5 pointer-events-none">
-        <div 
+        <div
           className="w-full h-full rounded-full blur-3xl"
           style={{ background: `radial-gradient(circle, ${primaryColor} 0%, transparent 70%)` }}
         />
@@ -65,7 +75,7 @@ function ExchangeCard({ isDark }: { isDark: boolean }) {
           <motion.div
             initial={{ scale: 0, rotate: -180 }}
             animate={{ scale: 1, rotate: 0 }}
-            transition={{ duration: 0.6, delay: 0.5, type: "spring" }}
+            transition={{ duration: 0.6, delay: 0.4, type: 'spring' }}
             className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0"
             style={{
               background: `linear-gradient(135deg, ${primaryColor} 0%, #06b6d4 100%)`,
@@ -74,7 +84,7 @@ function ExchangeCard({ isDark }: { isDark: boolean }) {
           >
             <Heart className="w-7 h-7 text-white" />
           </motion.div>
-          
+
           <div>
             <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-1">
               交换友链
@@ -85,9 +95,50 @@ function ExchangeCard({ isDark }: { isDark: boolean }) {
           </div>
         </div>
 
-        {/* 说明内容 */}
-        <div className="grid md:grid-cols-2 gap-8">
-          {/* 左侧：申请要求 - 使用列表风格 */}
+        {/* 说明内容：三栏布局 */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {/* 左侧：我的信息 */}
+          <div>
+            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2">
+              <User className="w-4 h-4 text-primary" />
+              我的信息
+            </h4>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.5 }}
+              className="flex items-start gap-3"
+            >
+              <div
+                className="w-14 h-14 rounded-xl overflow-hidden shadow-lg flex-shrink-0"
+                style={{ boxShadow: `0 4px 20px ${primaryColor}30` }}
+              >
+                <img
+                  src={myInfo.avatar}
+                  alt={myInfo.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="space-y-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-800 dark:text-white truncate">
+                  {myInfo.name}
+                </p>
+                <a
+                  href={myInfo.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-primary hover:underline break-all block"
+                >
+                  {myInfo.url}
+                </a>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {myInfo.description}
+                </p>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* 中间：申请要求 - 使用列表风格 */}
           <div>
             <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-primary" />
@@ -99,10 +150,10 @@ function ExchangeCard({ isDark }: { isDark: boolean }) {
                   key={index}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.4, delay: 0.6 + index * 0.1 }}
+                  transition={{ duration: 0.4, delay: 0.5 + index * 0.1 }}
                   className="flex items-center gap-3 text-gray-600 dark:text-gray-300"
                 >
-                  <span 
+                  <span
                     className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
                     style={{ backgroundColor: `${primaryColor}15`, color: primaryColor }}
                   >
@@ -125,13 +176,13 @@ function ExchangeCard({ isDark }: { isDark: boolean }) {
                 href="mailto:2574386537@qq.com"
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.4, delay: 0.6 }}
+                transition={{ duration: 0.4, delay: 0.5 }}
                 whileHover={{ scale: 1.02, x: 5 }}
-                className="flex items-center gap-3 p-4 rounded-xl bg-white dark:bg-gray-700/50 
+                className="flex items-center gap-3 p-4 rounded-xl bg-white dark:bg-gray-700/50
                            border border-gray-200 dark:border-gray-600 shadow-sm
                            hover:shadow-md hover:border-primary/30 transition-all group"
               >
-                <span 
+                <span
                   className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                   style={{ background: `linear-gradient(135deg, ${primaryColor}20 0%, ${primaryColor}40 100%)`, color: primaryColor }}
                 >
@@ -148,13 +199,13 @@ function ExchangeCard({ isDark }: { isDark: boolean }) {
                 href="https://blog.xinchengp.cn/guestbook"
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.4, delay: 0.8 }}
+                transition={{ duration: 0.4, delay: 0.7 }}
                 whileHover={{ scale: 1.02, x: 5 }}
-                className="flex items-center gap-3 p-4 rounded-xl bg-white dark:bg-gray-700/50 
+                className="flex items-center gap-3 p-4 rounded-xl bg-white dark:bg-gray-700/50
                            border border-gray-200 dark:border-gray-600 shadow-sm
                            hover:shadow-md hover:border-primary/30 transition-all group"
               >
-                <span 
+                <span
                   className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                   style={{ background: `linear-gradient(135deg, ${primaryColor}20 0%, ${primaryColor}40 100%)`, color: primaryColor }}
                 >
@@ -232,7 +283,7 @@ export default function FriendsPage() {
             <FriendsLink />
           </section>
 
-          {/* 交换友链说明 */}
+          {/* 交换友链说明 - 包含我的信息、申请要求和联系方式 */}
           <section>
             <ExchangeCard isDark={isDark} />
           </section>

@@ -143,19 +143,6 @@ function FriendCard({ link, index }: { link: FriendLink; index: number }) {
               )}
             </div>
             
-            {/* 在线状态指示器 */}
-            <motion.div 
-              className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-green-500 border-2 border-white dark:border-gray-800"
-              animate={{ 
-                scale: [1, 1.2, 1],
-                opacity: [1, 0.8, 1]
-              }}
-              transition={{ 
-                duration: 2, 
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
-            />
           </motion.div>
 
           {/* 名称和描述 */}
