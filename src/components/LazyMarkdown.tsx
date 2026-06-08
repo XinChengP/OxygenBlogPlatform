@@ -25,7 +25,7 @@ const loadPlugins = async () => {
 };
 
 // 使用 ReactMarkdown 的 props 类型来推断 components 和 plugins 的正确类型
-type ReactMarkdownProps = React.ComponentProps<typeof ReactMarkdown>;
+export type ReactMarkdownProps = React.ComponentProps<typeof ReactMarkdown>;
 
 interface LazyMarkdownProps {
   content: string;
