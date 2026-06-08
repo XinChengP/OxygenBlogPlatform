@@ -1421,7 +1421,7 @@ const DashboardClient: React.FC<DashboardClientProps> = ({ stats }) => {
                 />
                 <TrendCard
                   icon={Tag}
-                  value={stats.tagStats.length}
+                  value={stats.totalTagCount}
                   label="标签总数"
                   gradient="bg-teal-100 dark:bg-teal-900/30"
                   iconColor="text-teal-500"

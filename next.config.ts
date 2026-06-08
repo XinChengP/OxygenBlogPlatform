@@ -19,6 +19,9 @@ const repoName = process.env.NEXT_PUBLIC_GITHUB_REPO_NAME || 'OxygenBlogPlatform
 const baseConfig = {
   reactStrictMode: true,
 
+  // 禁用左下角 Next.js 开发者指示器（Turbopack 浮层）
+  devIndicators: false,
+
   // 允许的开发环境来源 - 解决跨域问题
   allowedDevOrigins: ['100.143.40.229', 'localhost'],
 

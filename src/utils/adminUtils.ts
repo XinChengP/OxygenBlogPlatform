@@ -647,8 +647,10 @@ export interface DashboardStats {
   categoryStats: { name: string; count: number }[]
   /** 预设分类总数（用于仪表盘显示） */
   categoryCount: number
-  /** 标签统计 */
+  /** 标签统计（截断前10个，用于标签云展示） */
   tagStats: { name: string; count: number }[]
+  /** 标签总数（实际所有不同标签的数量） */
+  totalTagCount: number
   /** 更新日志列表（用于统计图） */
   changelogs: { date: string; type: string; title: string }[]
   /** 文章总字数 */
@@ -957,8 +959,9 @@ export function getDashboardStats(): DashboardStats {
       todoCount: 0,
       todoCompletedCount: 0,
       categoryStats: [],
-      categoryCount: presetCategories.filter(c => c !== 'all').length,
+      categoryCount: 0,
       tagStats: [],
+      totalTagCount: 0,
       changelogs: [],
       blogWordCount: 0,
       momentWordCount: 0,
@@ -997,21 +1000,27 @@ export function getDashboardStats(): DashboardStats {
         const filePath = path.join(blogsDir, file)
         const content = fs.readFileSync(filePath, 'utf8')
 
-        // 解析 front matter 获取正文内容
-        const { content: body } = parseFrontMatter(content)
+        // 统一使用 parseFrontMatter 解析 frontmatter，避免正则和解析器结果不一致
+        const { metadata, content: body } = parseFrontMatter(content)
 
         // 统计文章字数
         const wordCount = advancedWordCount(body)
         blogWordCount += wordCount.totalWords
 
-        // 简单提取日期字段
-        const dateMatch = content.match(/date:\s*["']?(\d{4}-\d{2}-\d{2})/)
-        const titleMatch = content.match(/title:\s*["']?([^"'\n]+)/)
-        const date = dateMatch ? dateMatch[1] : ''
-        let title = titleMatch ? titleMatch[1].trim() : file.replace('.md', '')
-        // 移除标题末尾的引号
-        title = title.replace(/["']$/, '')
-        
+        // 从解析后的 metadata 中提取日期
+        let date = ''
+        if (metadata.date) {
+          const dateStr = String(metadata.date)
+          const dateMatch = dateStr.match(/(\d{4}-\d{2}-\d{2})/)
+          date = dateMatch ? dateMatch[1] : dateStr
+        }
+
+        // 从解析后的 metadata 中提取标题
+        let title = file.replace('.md', '')
+        if (metadata.title && typeof metadata.title === 'string') {
+          title = metadata.title.trim()
+        }
+
         if (date) {
           const dateObj = new Date(date)
           if (dateObj.getMonth() === currentMonth && dateObj.getFullYear() === currentYear) {
@@ -1021,16 +1030,17 @@ export function getDashboardStats(): DashboardStats {
           blogDates.push(date)
         }
 
-        // 提取分类
-        const categoryMatch = content.match(/category:\s*["']?([^"'\n]+)/)
-        if (categoryMatch) {
-          const category = categoryMatch[1].trim()
+        // 提取分类 —— 统一使用 parseFrontMatter 的 metadata
+        if (metadata.category && typeof metadata.category === 'string') {
+          const category = metadata.category.trim()
           categoryMap.set(category, (categoryMap.get(category) || 0) + 1)
+          // 调试日志：输出每个文件提取到的分类
+          console.log(`[DEBUG] 文件: ${file}, 分类: "${category}"`)
+        } else {
+          console.log(`[DEBUG] 文件: ${file}, 分类提取失败, metadata.category:`, metadata.category)
         }
 
-        // 提取标签 - 使用 parseFrontMatter 函数统一处理
-        // 支持单行数组格式和多行YAML格式
-        const { metadata } = parseFrontMatter(content)
+        // 提取标签 —— 使用 parseFrontMatter 的 metadata
         if (metadata.tags && Array.isArray(metadata.tags)) {
           metadata.tags.forEach((tag: string) => {
             if (tag && typeof tag === 'string') {
@@ -1171,17 +1181,16 @@ export function getDashboardStats(): DashboardStats {
       imageCount = countImages(publicDir)
     }
 
-    // 转换分类统计为数组并排序
+    // 转换分类统计为数组并排序（不再截断，显示全部分类）
     const categoryStats = Array.from(categoryMap.entries())
       .map(([name, count]) => ({ name, count }))
       .sort((a, b) => b.count - a.count)
-      .slice(0, 5) // 只取前5个
 
-    // 转换标签统计为数组并排序
+    // 转换标签统计为数组并排序（截断前10个用于标签云展示）
     const tagStats = Array.from(tagMap.entries())
       .map(([name, count]) => ({ name, count }))
       .sort((a, b) => b.count - a.count)
-      .slice(0, 10) // 只取前10个
+      .slice(0, 10) // 只取前10个用于标签云展示
 
     // 计算文章和动态的时间统计
     const blogTimeStats = {
@@ -1205,8 +1214,9 @@ export function getDashboardStats(): DashboardStats {
       todoCount,
       todoCompletedCount,
       categoryStats,
-      categoryCount: presetCategories.filter(c => c !== 'all').length,
+      categoryCount: categoryMap.size,
       tagStats,
+      totalTagCount: tagMap.size,
       changelogs,
       blogWordCount,
       momentWordCount,
