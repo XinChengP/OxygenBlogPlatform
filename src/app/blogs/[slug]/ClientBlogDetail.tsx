@@ -460,7 +460,7 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
 
             {/* 目录导航 */}
             <div className="mb-8">
-              <Suspense fallback={<div className="h-32 bg-gray-200 dark:bg-gray-700 animate-pulse rounded-lg"></div>}>
+              <Suspense fallback={<div className="h-32 bg-muted animate-pulse rounded-xl"></div>}>
                 <LazyTableOfContents content={blog.content} />
               </Suspense>
             </div>
@@ -562,14 +562,14 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
             </div>
 
             {/* 版权声明 */}
-          <Suspense fallback={<div className="h-24 bg-gray-200 dark:bg-gray-700 animate-pulse rounded-lg"></div>}>
+          <Suspense fallback={<div className="h-24 bg-muted animate-pulse rounded-xl"></div>}>
             <LazyCopyrightNotice title={blog.title} publishDate={blog.date} slug={blog.slug} reference={blog.reference} />
           </Suspense>
           </div>
 
           {/* 评论区 */}
           <div className="mt-12">
-            <Suspense fallback={<div className="h-64 bg-gray-200 dark:bg-gray-700 animate-pulse rounded-lg"></div>}>
+            <Suspense fallback={<div className="h-64 bg-muted animate-pulse rounded-xl"></div>}>
               <LazyGiscusComments id={blog.slug} title={blog.title} />
             </Suspense>
           </div>

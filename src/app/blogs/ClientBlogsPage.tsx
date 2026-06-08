@@ -644,7 +644,7 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* 桌面端左侧边栏 */}
           <aside className="hidden lg:block lg:col-span-1">
-            <div className={getGlassStyle("rounded-lg shadow-md p-6 sticky top-24 border")}>
+            <div className={getGlassStyle("rounded-xl shadow-lg p-6 sticky top-24 border")}>
               <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
                 <Filter className="w-4 h-4" />
                 分类筛选
@@ -771,7 +771,7 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
                             ></motion.div>
                             <div className="absolute top-3 left-3 flex items-center gap-2">
                               {post.pinned && (
-                                <span className="bg-cyan-500 text-white px-2 py-1 rounded-full text-xs sm:text-sm font-medium backdrop-blur-sm shadow-lg flex items-center gap-1">
+                                <span className="bg-primary text-primary-foreground px-2 py-1 rounded-full text-xs sm:text-sm font-medium backdrop-blur-sm shadow-lg flex items-center gap-1">
                                   <Pin className="w-3 h-3" />
                                   置顶
                                 </span>
@@ -793,8 +793,8 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
                               whileHover={{ opacity: 1 }}
                               transition={{ duration: 0.4 }}
                             >
-                              <motion.div 
-                                className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium text-gray-800 dark:text-gray-200 shadow-lg"
+                              <motion.div
+                                className="bg-card/90 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium text-foreground shadow-lg"
                                 whileHover={{ scale: 1.05 }}
                                 transition={{ duration: 0.4 }}
                               >
@@ -817,7 +817,7 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
                             </div>
                             <div className="absolute top-3 left-3">
                               {post.pinned && (
-                                <span className="bg-cyan-500 text-white px-2 py-1 rounded-full text-xs sm:text-sm font-medium backdrop-blur-sm shadow-lg flex items-center gap-1">
+                                <span className="bg-primary text-primary-foreground px-2 py-1 rounded-full text-xs sm:text-sm font-medium backdrop-blur-sm shadow-lg flex items-center gap-1">
                                   <Pin className="w-3 h-3" />
                                   置顶
                                 </span>
@@ -835,8 +835,8 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
                               whileHover={{ opacity: 1 }}
                               transition={{ duration: 0.4 }}
                             >
-                              <motion.div 
-                                className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium text-gray-800 dark:text-gray-200 shadow-lg"
+                              <motion.div
+                                className="bg-card/90 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium text-foreground shadow-lg"
                                 whileHover={{ scale: 1.05 }}
                                 transition={{ duration: 0.4 }}
                               >
@@ -873,7 +873,7 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
                               {post.tags.slice(0, 3).map((tag) => (
                                 <span
                                   key={tag}
-                                  className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded-full text-xs font-medium border border-gray-200 dark:border-gray-600"
+                                  className="bg-muted text-muted-foreground px-2 py-1 rounded-full text-xs font-medium border border-border"
                                 >
                                   {tag}
                                 </span>
@@ -930,7 +930,7 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
                 {paginationData.currentPosts.map((post) => (
                   <motion.article
                     key={post.id}
-                    className={`${getGlassStyle("rounded-md shadow-sm p-2.5 cursor-pointer group relative")} border border-transparent`}
+                    className={`${getGlassStyle("rounded-xl shadow-lg p-2.5 cursor-pointer group relative")} border border-transparent`}
                     initial={{ opacity: 1, y: 0 }}
                     whileHover={{ 
                       y: -2, 
@@ -962,7 +962,7 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
                               <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent"></div>
                               <div className="absolute top-1 left-1 flex items-center gap-1">
                                 {post.pinned && (
-                                  <span className="bg-cyan-500 text-white px-1.5 py-0.5 rounded text-xs font-medium backdrop-blur-sm leading-none flex items-center gap-0.5">
+                                  <span className="bg-primary text-primary-foreground px-1.5 py-0.5 rounded text-xs font-medium backdrop-blur-sm leading-none flex items-center gap-0.5">
                                     <Pin className="w-2.5 h-2.5" />
                                     置顶
                                   </span>
@@ -977,7 +977,7 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
                               {!post.coverImage && post.pinned && (
-                                <span className="bg-cyan-500 text-white px-1.5 py-0.5 rounded text-xs font-medium backdrop-blur-sm leading-none flex items-center gap-0.5">
+                                <span className="bg-primary text-primary-foreground px-1.5 py-0.5 rounded text-xs font-medium backdrop-blur-sm leading-none flex items-center gap-0.5">
                                   <Pin className="w-2.5 h-2.5" />
                                   置顶
                                 </span>

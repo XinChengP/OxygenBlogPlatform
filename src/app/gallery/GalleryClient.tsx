@@ -270,7 +270,7 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
           >
             <button
               onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-              className={getGlassStyle("w-full px-4 py-3 rounded-lg border flex items-center justify-between")}
+              className={getGlassStyle("w-full px-4 py-3 rounded-xl border flex items-center justify-between")}
             >
               <span className="flex items-center gap-2">
                 <Filter className="w-4 h-4 text-primary" />
@@ -315,7 +315,7 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
           >
             {/* 图片统计 - 优化样式 */}
             <motion.div 
-              className={getGlassStyle("mb-6 px-4 py-3 rounded-lg border flex items-center justify-between")}
+              className={getGlassStyle("mb-6 px-4 py-3 rounded-xl border flex items-center justify-between")}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.3 }}
@@ -374,7 +374,7 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
             ) : (
               /* 空状态设计 */
               <motion.div 
-                className={getGlassStyle("text-center py-20 rounded-lg border")}
+                className={getGlassStyle("text-center py-20 rounded-xl border")}
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5 }}

@@ -20,6 +20,84 @@ import { Live2DMessageHelper } from '@/utils/live2dMessageManager';
 type MarkdownExtraProps = { node?: unknown };
 type MarkdownCodeProps = React.ComponentPropsWithoutRef<'code'> & MarkdownExtraProps & { inline?: boolean };
 
+// 通用 Markdown 组件属性
+type MarkdownComponentProps = {
+  children?: React.ReactNode;
+  className?: string;
+  [key: string]: any;
+};
+
+/**
+ * 个人动态页面的 Markdown 渲染组件配置
+ * 提取为模块级常量，避免每次渲染都创建新的组件引用
+ * 防止 react-markdown 因 components 引用变化而重新构建组件树
+ */
+const momentsMarkdownComponents: React.ComponentProps<typeof ReactMarkdown>['components'] = {
+  h1: ({ node, ...props }: MarkdownComponentProps) => <h1 className="text-2xl font-bold mb-4 text-foreground" {...props} />,
+  h2: ({ node, ...props }: MarkdownComponentProps) => <h2 className="text-xl font-semibold mb-3 text-foreground" {...props} />,
+  h3: ({ node, ...props }: MarkdownComponentProps) => <h3 className="text-lg font-medium mb-2 text-foreground" {...props} />,
+  h4: ({ node, ...props }: MarkdownComponentProps) => <h4 className="text-base font-medium mb-2 text-foreground" {...props} />,
+  p: ({ node, ...props }: MarkdownComponentProps) => <p className="mb-3 leading-relaxed" {...props} />,
+  ul: ({ node, ...props }: MarkdownComponentProps) => <ul className="list-disc pl-6 mb-3 space-y-1" {...props} />,
+  ol: ({ node, ...props }: MarkdownComponentProps) => <ol className="list-decimal pl-6 mb-3 space-y-1" {...props} />,
+  li: ({ node, ...props }: MarkdownComponentProps) => <li className="mb-1" {...props} />,
+  blockquote: ({ node, ...props }: MarkdownComponentProps) => (
+    <blockquote className="border-l-4 border-primary/50 bg-primary/5 pl-4 py-2 italic mb-3 rounded-r-lg" {...props} />
+  ),
+  strong: ({ node, ...props }: MarkdownComponentProps) => <strong className="font-bold text-foreground" {...props} />,
+  em: ({ node, ...props }: MarkdownComponentProps) => <em className="italic" {...props} />,
+  del: ({ node, ...props }: MarkdownComponentProps) => <del className="line-through text-muted-foreground" {...props} />,
+  hr: ({ node, ...props }: MarkdownComponentProps) => <hr className="my-4 border-border" {...props} />,
+  a: ({ href, children, ...props }: { href?: string; children?: React.ReactNode; [key: string]: any }) => (
+    <a
+      href={href}
+      className="text-primary hover:text-primary/80 underline decoration-wavy hover:decoration-solid transition-all duration-200"
+      target={href?.startsWith('http') ? '_blank' : undefined}
+      rel={href?.startsWith('http') ? 'noopener noreferrer' : undefined}
+      {...props}
+    >
+      {children}
+    </a>
+  ),
+  img: ({ src, alt, ...props }: React.ComponentPropsWithoutRef<'img'> & MarkdownExtraProps) => {
+    const processedSrc = typeof src === 'string' ? (src ? getAssetPath(src) : src) : src;
+    return (
+      <img
+        src={processedSrc}
+        alt={alt || ''}
+        className="max-w-full h-auto rounded-lg my-2"
+        loading="lazy"
+        {...props}
+      />
+    );
+  },
+  code: ({ node, className, children, ...props }: MarkdownCodeProps) => {
+    const match = /language-(\w+)/.exec(className || '');
+    const inline = !match;
+    if (inline) {
+      return <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono" {...props}>{children}</code>;
+    }
+    return (
+      <pre className="bg-muted p-3 rounded-lg overflow-x-auto mb-3 text-sm">
+        <code className={className} {...props}>{children}</code>
+      </pre>
+    );
+  },
+  pre: ({ node, children, ...props }: MarkdownComponentProps) => (
+    <pre className="bg-muted p-3 rounded-lg overflow-x-auto mb-3 text-sm" {...props}>{children}</pre>
+  ),
+  table: ({ node, ...props }: MarkdownComponentProps) => (
+    <div className="overflow-x-auto my-3">
+      <table className="min-w-full border-collapse border border-border rounded-lg" {...props} />
+    </div>
+  ),
+  thead: ({ node, ...props }: MarkdownComponentProps) => <thead className="bg-muted/50" {...props} />,
+  tbody: ({ node, ...props }: MarkdownComponentProps) => <tbody className="divide-y divide-border" {...props} />,
+  tr: ({ node, ...props }: MarkdownComponentProps) => <tr className="hover:bg-muted/30 transition-colors" {...props} />,
+  th: ({ node, ...props }: MarkdownComponentProps) => <th className="px-3 py-2 text-left text-sm font-medium border-b border-border" {...props} />,
+  td: ({ node, ...props }: MarkdownComponentProps) => <td className="px-3 py-2 text-sm border-b border-border" {...props} />,
+};
+
 interface ClientMomentsPageProps {
   moments: Array<{ id: string; time: string; content: string; tags: string[]; images?: string[]; pinned?: boolean; filePath: string }>;
   blogCount: number;
@@ -131,72 +209,7 @@ function ClientMomentsPage({ moments, blogCount, blogTotalWordCount, blogs, cate
                         <ReactMarkdown
                           remarkPlugins={[remarkGfm, remarkEmoji, remarkBreaks]}
                           rehypePlugins={[rehypeHighlight, rehypeRaw]}
-                          components={{
-                            h1: ({ node, ...props }) => <h1 className="text-2xl font-bold mb-4 text-foreground" {...props} />,
-                            h2: ({ node, ...props }) => <h2 className="text-xl font-semibold mb-3 text-foreground" {...props} />,
-                            h3: ({ node, ...props }) => <h3 className="text-lg font-medium mb-2 text-foreground" {...props} />,
-                            h4: ({ node, ...props }) => <h4 className="text-base font-medium mb-2 text-foreground" {...props} />,
-                            p: ({ node, ...props }) => <p className="mb-3 leading-relaxed" {...props} />,
-                            ul: ({ node, ...props }) => <ul className="list-disc pl-6 mb-3 space-y-1" {...props} />,
-                            ol: ({ node, ...props }) => <ol className="list-decimal pl-6 mb-3 space-y-1" {...props} />,
-                            li: ({ node, ...props }) => <li className="mb-1" {...props} />,
-                            blockquote: ({ node, ...props }) => (
-                              <blockquote className="border-l-4 border-primary/50 bg-primary/5 pl-4 py-2 italic mb-3 rounded-r-lg" {...props} />
-                            ),
-                            strong: ({ node, ...props }) => <strong className="font-bold text-foreground" {...props} />,
-                            em: ({ node, ...props }) => <em className="italic" {...props} />,
-                            del: ({ node, ...props }) => <del className="line-through text-muted-foreground" {...props} />,
-                            hr: ({ node, ...props }) => <hr className="my-4 border-border" {...props} />,
-                            a: ({ href, children, ...props }) => (
-                              <a 
-                                href={href} 
-                                className="text-primary hover:text-primary/80 underline decoration-wavy hover:decoration-solid transition-all duration-200"
-                                target={href?.startsWith('http') ? '_blank' : undefined}
-                                rel={href?.startsWith('http') ? 'noopener noreferrer' : undefined}
-                                {...props}
-                              >
-                                {children}
-                              </a>
-                            ),
-                            img: ({ src, alt, ...props }) => {
-                              // 处理 src 可能是 Blob 类型的情况
-                              const processedSrc = typeof src === 'string' ? (src ? getAssetPath(src) : src) : src;
-                              return (
-                                <img 
-                                  src={processedSrc} 
-                                  alt={alt || ''} 
-                                  className="max-w-full h-auto rounded-lg my-2"
-                                  loading="lazy"
-                                  {...props} 
-                                />
-                              );
-                            },
-                            code: ({ node, className, children, ...props }: MarkdownCodeProps) => {
-                              const match = /language-(\w+)/.exec(className || '');
-                              const inline = !match;
-                              if (inline) {
-                                return <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono" {...props}>{children}</code>;
-                              }
-                              return (
-                                <pre className="bg-muted p-3 rounded-lg overflow-x-auto mb-3 text-sm">
-                                  <code className={className} {...props}>{children}</code>
-                                </pre>
-                              );
-                            },
-                            pre: ({ node, children, ...props }) => (
-                              <pre className="bg-muted p-3 rounded-lg overflow-x-auto mb-3 text-sm" {...props}>{children}</pre>
-                            ),
-                            table: ({ node, ...props }) => (
-                              <div className="overflow-x-auto my-3">
-                                <table className="min-w-full border-collapse border border-border rounded-lg" {...props} />
-                              </div>
-                            ),
-                            thead: ({ node, ...props }) => <thead className="bg-muted/50" {...props} />,
-                            tbody: ({ node, ...props }) => <tbody className="divide-y divide-border" {...props} />,
-                            tr: ({ node, ...props }) => <tr className="hover:bg-muted/30 transition-colors" {...props} />,
-                            th: ({ node, ...props }) => <th className="px-3 py-2 text-left text-sm font-medium border-b border-border" {...props} />,
-                            td: ({ node, ...props }) => <td className="px-3 py-2 text-sm border-b border-border" {...props} />,
-                          }}
+                          components={momentsMarkdownComponents}
                         >
                           {moment.content}
                         </ReactMarkdown>

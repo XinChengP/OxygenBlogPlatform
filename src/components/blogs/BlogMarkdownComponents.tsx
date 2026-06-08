@@ -507,10 +507,10 @@ export function useBlogMarkdownComponents(options: {
       if (isBilibiliVideo && src) {
         return (
           <Suspense fallback={
-            <div className="my-8 rounded-xl overflow-hidden shadow-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center h-64 md:h-96">
+            <div className="my-8 rounded-xl overflow-hidden shadow-lg bg-muted flex items-center justify-center h-64 md:h-96">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
-                <p className="text-gray-600 dark:text-gray-400">B站视频加载中...</p>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+                <p className="text-muted-foreground">B站视频加载中...</p>
               </div>
             </div>
           }>

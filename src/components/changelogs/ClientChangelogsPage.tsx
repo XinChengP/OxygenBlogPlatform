@@ -18,6 +18,53 @@ import TimeStatsChart from './TimeStatsChart';
 import TypeStatsChart from './TypeStatsChart';
 import { Live2DMessageHelper } from '@/utils/live2dMessageManager';
 
+// 通用 Markdown 组件属性
+type MarkdownComponentProps = {
+  children?: React.ReactNode;
+  className?: string;
+  [key: string]: any;
+};
+
+/**
+ * 开发日志页面的 Markdown 渲染组件配置
+ * 提取为模块级常量，避免每次渲染都创建新的组件引用
+ * 防止 react-markdown 因 components 引用变化而重新构建组件树
+ */
+const changelogsMarkdownComponents: React.ComponentProps<typeof ReactMarkdown>['components'] = {
+  // 标题样式 - 添加自动换行
+  h1: ({ node, ...props }: MarkdownComponentProps) => <h1 className="text-2xl font-bold mb-4 break-words whitespace-normal" {...props} />,
+  h2: ({ node, ...props }: MarkdownComponentProps) => <h2 className="text-xl font-semibold mb-3 break-words whitespace-normal" {...props} />,
+  h3: ({ node, ...props }: MarkdownComponentProps) => <h3 className="text-lg font-medium mb-2 break-words whitespace-normal" {...props} />,
+  h4: ({ node, ...props }: MarkdownComponentProps) => <h4 className="text-base font-medium mb-2 break-words whitespace-normal" {...props} />,
+  h5: ({ node, ...props }: MarkdownComponentProps) => <h5 className="text-sm font-medium mb-1 break-words whitespace-normal" {...props} />,
+  h6: ({ node, ...props }: MarkdownComponentProps) => <h6 className="text-xs font-medium mb-1 break-words whitespace-normal" {...props} />,
+  // 段落样式 - 强制自动换行
+  p: ({ node, ...props }: MarkdownComponentProps) => <p className="mb-2 break-words whitespace-normal overflow-wrap-anywhere" {...props} />,
+  // 列表样式
+  ul: ({ node, ...props }: MarkdownComponentProps) => <ul className="list-disc pl-6 mb-2 break-words" {...props} />,
+  ol: ({ node, ...props }: MarkdownComponentProps) => <ol className="list-decimal pl-6 mb-2 break-words" {...props} />,
+  li: ({ node, ...props }: MarkdownComponentProps) => <li className="mb-1 break-words whitespace-normal" {...props} />,
+  // 引用样式
+  blockquote: ({ node, ...props }: MarkdownComponentProps) => <blockquote className="border-l-4 border-primary pl-4 italic mb-2 break-words whitespace-normal" {...props} />,
+  // 强调样式
+  strong: ({ node, ...props }: MarkdownComponentProps) => <strong className="font-bold break-words" {...props} />,
+  em: ({ node, ...props }: MarkdownComponentProps) => <em className="italic break-words" {...props} />,
+  // 链接样式
+  a: ({ node, ...props }: MarkdownComponentProps) => <a className="text-primary hover:underline break-words" {...props} />,
+  // 代码样式
+  code: ({ node, className, children, ...props }: MarkdownComponentProps) => {
+    const inline = !className || !className.includes('language-');
+    if (inline) {
+      return <code className="bg-muted px-1 rounded break-words whitespace-normal" {...props}>{children}</code>;
+    }
+    return <pre className="bg-muted p-3 rounded overflow-x-auto mb-2" {...props}><code>{children}</code></pre>;
+  },
+  // 表格样式
+  table: ({ node, ...props }: MarkdownComponentProps) => <div className="overflow-x-auto mb-2"><table className="w-full border-collapse" {...props} /></div>,
+  th: ({ node, ...props }: MarkdownComponentProps) => <th className="border border-border px-2 py-1 text-left break-words" {...props} />,
+  td: ({ node, ...props }: MarkdownComponentProps) => <td className="border border-border px-2 py-1 break-words" {...props} />,
+};
+
 /**
  * 时间统计项接口
  */
@@ -187,40 +234,7 @@ function ClientChangelogsPage({ changelogs, blogTimeStats, momentTimeStats }: Cl
                               <ReactMarkdown
                                 remarkPlugins={[remarkGfm, remarkEmoji]}
                                 rehypePlugins={[rehypeHighlight]}
-                                components={{
-                                  // 标题样式 - 添加自动换行
-                                  h1: ({ node, ...props }) => <h1 className="text-2xl font-bold mb-4 break-words whitespace-normal" {...props} />,
-                                  h2: ({ node, ...props }) => <h2 className="text-xl font-semibold mb-3 break-words whitespace-normal" {...props} />,
-                                  h3: ({ node, ...props }) => <h3 className="text-lg font-medium mb-2 break-words whitespace-normal" {...props} />,
-                                  h4: ({ node, ...props }) => <h4 className="text-base font-medium mb-2 break-words whitespace-normal" {...props} />,
-                                  h5: ({ node, ...props }) => <h5 className="text-sm font-medium mb-1 break-words whitespace-normal" {...props} />,
-                                  h6: ({ node, ...props }) => <h6 className="text-xs font-medium mb-1 break-words whitespace-normal" {...props} />,
-                                  // 段落样式 - 强制自动换行
-                                  p: ({ node, ...props }) => <p className="mb-2 break-words whitespace-normal overflow-wrap-anywhere" {...props} />,
-                                  // 列表样式
-                                  ul: ({ node, ...props }) => <ul className="list-disc pl-6 mb-2 break-words" {...props} />,
-                                  ol: ({ node, ...props }) => <ol className="list-decimal pl-6 mb-2 break-words" {...props} />,
-                                  li: ({ node, ...props }) => <li className="mb-1 break-words whitespace-normal" {...props} />,
-                                  // 引用样式
-                                  blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-primary pl-4 italic mb-2 break-words whitespace-normal" {...props} />,
-                                  // 强调样式
-                                  strong: ({ node, ...props }) => <strong className="font-bold break-words" {...props} />,
-                                  em: ({ node, ...props }) => <em className="italic break-words" {...props} />,
-                                  // 链接样式
-                                  a: ({ node, ...props }) => <a className="text-primary hover:underline break-words" {...props} />,
-                                  // 代码样式
-                                  code: ({ node, className, children, ...props }: any) => {
-                                    const inline = !className || !className.includes('language-');
-                                    if (inline) {
-                                      return <code className="bg-muted px-1 rounded break-words whitespace-normal" {...props}>{children}</code>;
-                                    }
-                                    return <pre className="bg-muted p-3 rounded overflow-x-auto mb-2" {...props}><code>{children}</code></pre>;
-                                  },
-                                  // 表格样式
-                                  table: ({ node, ...props }) => <div className="overflow-x-auto mb-2"><table className="w-full border-collapse" {...props} /></div>,
-                                  th: ({ node, ...props }) => <th className="border border-border px-2 py-1 text-left break-words" {...props} />,
-                                  td: ({ node, ...props }) => <td className="border border-border px-2 py-1 break-words" {...props} />,
-                                }}
+                                components={changelogsMarkdownComponents}
                               >
                                 {changelog.content}
                               </ReactMarkdown>

@@ -47,6 +47,7 @@ export interface ActionResult<T = unknown> {
 import { promises as fs } from 'fs';
 import path from 'path';
 import { revalidatePath } from 'next/cache';
+import matter from 'gray-matter';
 
 // 动态文件存储目录
 const MOMENTS_DIR = path.join(process.cwd(), 'src', 'content', 'moments');
@@ -63,69 +64,22 @@ async function ensureMomentsDir(): Promise<void> {
 }
 
 /**
- * 解析 frontmatter
- * @param content Markdown 文件内容
- * @returns 解析后的 frontmatter 和正文
- */
-function parseFrontMatter(content: string): { frontmatter: Record<string, unknown>; body: string } {
-  const frontmatterRegex = /^---\s*\n([\s\S]*?)\n---\s*\n([\s\S]*)$/;
-  const match = content.match(frontmatterRegex);
-
-  if (!match) {
-    return { frontmatter: {}, body: content };
-  }
-
-  const frontmatterText = match[1];
-  const body = match[2];
-  const frontmatter: Record<string, unknown> = {};
-
-  // 解析 YAML 格式的 frontmatter
-  const lines = frontmatterText.split('\n');
-  for (const line of lines) {
-    const colonIndex = line.indexOf(':');
-    if (colonIndex > 0) {
-      const key = line.slice(0, colonIndex).trim();
-      let value: unknown = line.slice(colonIndex + 1).trim();
-
-      // 移除引号
-      if (typeof value === 'string') {
-        value = value.replace(/^["']|["']$/g, '');
-
-        // 解析数组格式
-        if ((value as string).startsWith('[') && (value as string).endsWith(']')) {
-          try {
-            value = JSON.parse((value as string).replace(/'/g, '"'));
-          } catch {
-            // 保持原字符串
-          }
-        }
-
-        // 解析布尔值
-        if (value === 'true') value = true;
-        if (value === 'false') value = false;
-      }
-
-      frontmatter[key] = value;
-    }
-  }
-
-  return { frontmatter, body };
-}
-
-/**
  * 生成 frontmatter 字符串
  * @param data 动态数据
+ * @param existingData 原始 frontmatter 数据（更新模式时传入，用于保留未知字段如 id 等）
  * @returns frontmatter 字符串
  */
-function generateFrontMatter(data: MomentData): string {
+function generateFrontMatter(data: MomentData, existingData?: Record<string, unknown>): string {
   const lines = ['---'];
 
   lines.push(`time: "${data.time}"`);
 
+  // 处理 pinned：true 时保留，false 时删除，保持与现有文件风格一致
   if (data.pinned) {
     lines.push('pinned: true');
   }
 
+  // 处理 hidden：true 时保留，false 时删除
   if (data.hidden) {
     lines.push('hidden: true');
   }
@@ -136,6 +90,24 @@ function generateFrontMatter(data: MomentData): string {
 
   if (data.images && data.images.length > 0) {
     lines.push(`images: [${data.images.map((img) => `"${img}"`).join(', ')}]`);
+  }
+
+  // 保留原始 frontmatter 中的未知字段（如 id 等用户自定义字段）
+  if (existingData) {
+    const knownKeys = new Set(['time', 'pinned', 'hidden', 'tags', 'images']);
+    for (const [key, value] of Object.entries(existingData)) {
+      if (knownKeys.has(key)) continue;
+
+      if (typeof value === 'string') {
+        lines.push(`${key}: "${value}"`);
+      } else if (typeof value === 'number' || typeof value === 'boolean') {
+        lines.push(`${key}: ${value}`);
+      } else if (Array.isArray(value)) {
+        lines.push(`${key}: [${value.map((v) => typeof v === 'string' ? `"${v}"` : v).join(', ')}]`);
+      } else {
+        lines.push(`${key}: ${JSON.stringify(value)}`);
+      }
+    }
   }
 
   lines.push('---');
@@ -173,6 +145,7 @@ function extractIdFromFilename(filename: string): string {
 
 /**
  * 读取动态文件内容
+ * 使用 gray-matter 正确解析 YAML frontmatter，支持多行数组等复杂格式
  * @param id 动态 ID
  * @returns 动态数据
  */
@@ -181,20 +154,20 @@ async function readMomentFile(id: string): Promise<Moment | null> {
   if (isStaticExport) {
     return null;
   }
-  
+
   try {
     const filePath = path.join(MOMENTS_DIR, `${id}.md`);
     const content = await fs.readFile(filePath, 'utf-8');
-    const { frontmatter, body } = parseFrontMatter(content);
+    const parsed = matter(content);
 
     return {
       id,
-      time: (frontmatter.time as string) || '',
-      content: body.trim(),
-      tags: (frontmatter.tags as string[]) || [],
-      images: (frontmatter.images as string[]) || [],
-      pinned: (frontmatter.pinned as boolean) || false,
-      hidden: (frontmatter.hidden as boolean) || false,
+      time: (parsed.data.time as string) || '',
+      content: parsed.content.trim(),
+      tags: (parsed.data.tags as string[]) || [],
+      images: (parsed.data.images as string[]) || [],
+      pinned: parsed.data.pinned === true || parsed.data.pinned === 'true',
+      hidden: parsed.data.hidden === true || parsed.data.hidden === 'true',
     };
   } catch {
     return null;
@@ -205,16 +178,25 @@ async function readMomentFile(id: string): Promise<Moment | null> {
  * 写入动态文件
  * @param id 动态 ID
  * @param data 动态数据
+ * @param existingContent 原始文件内容（更新模式时传入，用于保留未知字段和原始格式）
  */
-async function writeMomentFile(id: string, data: MomentData): Promise<void> {
+async function writeMomentFile(id: string, data: MomentData, existingContent?: string): Promise<void> {
   // 静态导出模式下不执行写入
   if (isStaticExport) {
     return;
   }
-  
+
   await ensureMomentsDir();
   const filePath = path.join(MOMENTS_DIR, `${id}.md`);
-  const frontmatter = generateFrontMatter(data);
+
+  let existingData: Record<string, unknown> | undefined;
+  if (existingContent) {
+    // 更新模式：使用 gray-matter 解析原始 frontmatter，提取未知字段
+    const parsed = matter(existingContent);
+    existingData = parsed.data as Record<string, unknown>;
+  }
+
+  const frontmatter = generateFrontMatter(data, existingData);
   const content = `${frontmatter}\n\n${data.content}`;
   await fs.writeFile(filePath, content, 'utf-8');
 }
@@ -432,7 +414,7 @@ export async function updateMoment(
       message: 'Static export mode does not support this feature',
     };
   }
-  
+
   try {
     const existingMoment = await readMomentFile(id);
 
@@ -443,6 +425,10 @@ export async function updateMoment(
       };
     }
 
+    // 读取原始文件内容，用于保留 frontmatter 中的未知字段和格式
+    const filePath = path.join(MOMENTS_DIR, `${id}.md`);
+    const existingContent = await fs.readFile(filePath, 'utf-8');
+
     const updatedData: MomentData = {
       time: data.time ?? existingMoment.time,
       content: data.content ?? existingMoment.content,
@@ -452,7 +438,7 @@ export async function updateMoment(
       hidden: data.hidden ?? existingMoment.hidden,
     };
 
-    await writeMomentFile(id, updatedData);
+    await writeMomentFile(id, updatedData, existingContent);
 
     const updatedMoment: Moment = {
       id,
@@ -625,7 +611,7 @@ export async function batchToggleMomentPinned(
       message: 'Static export mode does not support this feature',
     };
   }
-  
+
   try {
     if (!ids || ids.length === 0) {
       return {
@@ -636,8 +622,10 @@ export async function batchToggleMomentPinned(
 
     let updatedCount = 0;
     for (const id of ids) {
-      const existingMoment = await readMomentFile(id);
-      if (existingMoment) {
+      const filePath = path.join(MOMENTS_DIR, `${id}.md`);
+      const existingContent = await fs.readFile(filePath, 'utf-8').catch(() => null);
+      const existingMoment = existingContent ? await readMomentFile(id) : null;
+      if (existingMoment && existingContent) {
         await writeMomentFile(id, {
           time: existingMoment.time,
           content: existingMoment.content,
@@ -645,7 +633,7 @@ export async function batchToggleMomentPinned(
           images: existingMoment.images,
           pinned,
           hidden: existingMoment.hidden,
-        });
+        }, existingContent);
         updatedCount++;
       }
     }
@@ -751,7 +739,7 @@ export async function batchToggleMomentHidden(
       message: 'Static export mode does not support this feature',
     };
   }
-  
+
   try {
     if (!ids || ids.length === 0) {
       return {
@@ -762,8 +750,10 @@ export async function batchToggleMomentHidden(
 
     let updatedCount = 0;
     for (const id of ids) {
-      const existingMoment = await readMomentFile(id);
-      if (existingMoment) {
+      const filePath = path.join(MOMENTS_DIR, `${id}.md`);
+      const existingContent = await fs.readFile(filePath, 'utf-8').catch(() => null);
+      const existingMoment = existingContent ? await readMomentFile(id) : null;
+      if (existingMoment && existingContent) {
         await writeMomentFile(id, {
           time: existingMoment.time,
           content: existingMoment.content,
@@ -771,7 +761,7 @@ export async function batchToggleMomentHidden(
           images: existingMoment.images,
           pinned: existingMoment.pinned,
           hidden,
-        });
+        }, existingContent);
         updatedCount++;
       }
     }
