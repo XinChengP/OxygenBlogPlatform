@@ -34,9 +34,10 @@ export default function SmoothScrollProvider({ children }: SmoothScrollProviderP
 
     // 页面切换时的额外处理
     const handleRouteChange = () => {
-      // 检查音乐播放器是否正在播放
-      const isMusicPlaying = !globalManager.getPlayer()?.paused;
-      
+      // 检查音乐播放器是否正在播放（若播放器尚未加载则跳过）
+      const player = globalManager.getPlayer();
+      const isMusicPlaying = player && !player.paused;
+
       if (isMusicPlaying) {
         // 如果音乐正在播放，添加特殊类来禁用过渡效果
         document.documentElement.classList.add('aplayer-active');
@@ -44,10 +45,10 @@ export default function SmoothScrollProvider({ children }: SmoothScrollProviderP
         // 移除特殊类，允许正常过渡
         document.documentElement.classList.remove('aplayer-active');
       }
-      
+
       // 添加页面过渡效果
       document.documentElement.classList.add('page-transitioning');
-      
+
       // 移除过渡效果
       setTimeout(() => {
         document.documentElement.classList.remove('page-transitioning');
@@ -56,61 +57,6 @@ export default function SmoothScrollProvider({ children }: SmoothScrollProviderP
 
     handleRouteChange();
   }, [pathname, isInitialized]);
-
-  // 添加CSS过渡样式
-  useEffect(() => {
-    const style = document.createElement('style');
-    style.textContent = `
-      /* 页面过渡效果 - 排除音乐播放器 */
-      html.page-transitioning:not(.aplayer-active) {
-        opacity: 0.95;
-        transition: opacity 0.15s ease-in-out;
-      }
-      
-      /* 当音乐播放器活动时禁用页面过渡 */
-      html.aplayer-active {
-        opacity: 1 !important;
-        transition: none !important;
-      }
-      
-      /* 平滑滚动 */
-      html {
-        scroll-behavior: smooth;
-      }
-      
-      /* 减少运动偏好的用户设置 */
-      @media (prefers-reduced-motion: reduce) {
-        html {
-          scroll-behavior: auto;
-        }
-        
-        html.page-transitioning {
-          transition: none;
-        }
-      }
-      
-      /* 页面加载时的淡入效果 - 排除音乐播放器 */
-      body:not(.aplayer-active) {
-        animation: pageFadeIn 0.2s ease-out;
-      }
-      
-      @keyframes pageFadeIn {
-        from {
-          opacity: 0.8;
-        }
-        to {
-          opacity: 1;
-        }
-      }
-    `;
-    document.head.appendChild(style);
-
-    return () => {
-      if (style.parentNode) {
-        style.parentNode.removeChild(style);
-      }
-    };
-  }, []);
 
   return <>{children}</>;
 }

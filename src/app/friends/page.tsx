@@ -40,7 +40,7 @@ function ExchangeCard({ isDark }: { isDark: boolean }) {
   const myInfo = {
     name: '心想事成 的 Blog',
     url: 'https://blog.xinchengp.cn',
-    description: '开开心心每一天',
+    description: '一个记录日常的小窝',
     avatar: 'https://avatars.githubusercontent.com/u/107662142?v=4'
   };
 

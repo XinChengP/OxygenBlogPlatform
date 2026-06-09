@@ -961,6 +961,36 @@ html .no-transition *::after {
 }
 
 /* ============================================
+   页面过渡与淡入效果（从 SmoothScrollProvider 移入，避免运行时注入）
+   ============================================ */
+
+/* 页面过渡效果 - 排除音乐播放器 */
+html.page-transitioning:not(.aplayer-active) {
+  opacity: 0.95;
+  transition: opacity 0.15s ease-in-out;
+}
+
+/* 当音乐播放器活动时禁用页面过渡 */
+html.aplayer-active {
+  opacity: 1 !important;
+  transition: none !important;
+}
+
+/* 页面加载时的淡入效果 - 排除音乐播放器 */
+body:not(.aplayer-active) {
+  animation: pageFadeIn 0.2s ease-out;
+}
+
+@keyframes pageFadeIn {
+  from {
+    opacity: 0.8;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ============================================
    性能优化样式 - Performance Optimizations
    ============================================ */
 

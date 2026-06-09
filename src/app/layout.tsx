@@ -6,7 +6,7 @@ import BackgroundLayer from "@/components/BackgroundLayer";
 import ConditionalComponents from "@/components/ConditionalComponents";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import SmoothScrollProvider from "@/components/SmoothScrollProvider";
-import ClientRouterWrapper from "@/components/ClientRouterWrapper";
+
 import { NavigationVisibilityProvider } from "@/contexts/NavigationVisibilityContext";
 import Analytics from "@/components/Analytics";
 import SecurityProvider from "@/components/security/SecurityProvider";
@@ -370,17 +370,15 @@ export default function RootLayout({
             storageKey="theme"
           >
             <NavigationVisibilityProvider>
-              <ClientRouterWrapper>
-                <SmoothScrollProvider>
-                  <BackgroundLayer />
-                  <Navigation />
-                  <main className="min-h-screen transition-colors duration-300 relative">
-                    {children}
-                  </main>
-                  <Footer />
-                  <ConditionalComponents />
-                </SmoothScrollProvider>
-              </ClientRouterWrapper>
+              <SmoothScrollProvider>
+                <BackgroundLayer />
+                <Navigation />
+                <main className="min-h-screen transition-colors duration-300 relative">
+                  {children}
+                </main>
+                <Footer />
+                <ConditionalComponents />
+              </SmoothScrollProvider>
             </NavigationVisibilityProvider>
           </ThemeProvider>
         </SecurityProvider>

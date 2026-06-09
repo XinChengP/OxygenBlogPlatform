@@ -2,12 +2,15 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { usePathname } from 'next/navigation';
-import MusicPlayer from './MusicPlayer';
-import Live2DController from './Live2DController';
+import dynamic from 'next/dynamic';
 import ScrollToTop from './ScrollToTop';
-import Lantern from './Lantern';
 import { getMusicPlayerVisibility, onMusicPlayerVisibilityChange } from '@/utils/musicPlayerVisibility';
 import { isLanternDisplayPeriod } from '@/utils/lunarDateUtils';
+
+// 动态导入重型组件，减少首屏 bundle 体积和 hydration 开销
+const MusicPlayer = dynamic(() => import('./MusicPlayer'), { ssr: false });
+const Live2DController = dynamic(() => import('./Live2DController'), { ssr: false });
+const Lantern = dynamic(() => import('./Lantern'), { ssr: false });
 
 // 使用React.memo减少不必要的渲染
 export default React.memo(function ConditionalComponents() {

@@ -14,7 +14,7 @@
 
 'use client';
 
-import React, { useEffect, useState, ReactNode } from 'react';
+import React, { useEffect, ReactNode } from 'react';
 import { generateCSPString, getCurrentCSP } from '@/utils/cspConfig';
 import { useHijackingProtection } from './HijackingProtector';
 
@@ -106,39 +106,6 @@ function IntegrityCheckLoader(): null {
 }
 
 /**
- * 安全初始化Hook
- * 执行各种安全初始化操作
- */
-function useSecurityInit(): { initialized: boolean; error: Error | null } {
-  const [state, setState] = useState<{ initialized: boolean; error: Error | null }>({
-    initialized: false,
-    error: null,
-  });
-  
-  useEffect(() => {
-    try {
-      // 安全检查：确保在HTTPS环境下运行（生产环境）
-      if (typeof window !== 'undefined' && window.location.protocol === 'http:' && window.location.hostname !== 'localhost') {
-        console.warn('[安全] 建议在生产环境使用HTTPS');
-      }
-      
-      // 禁用一些危险的JavaScript功能
-      if (typeof window !== 'undefined') {
-        // 阻止通过eval执行代码（如果可能）
-        // 注意：某些库可能需要eval，谨慎使用
-        // window.eval = () => { throw new Error('eval is disabled for security'); };
-      }
-      
-      setState({ initialized: true, error: null });
-    } catch (error) {
-      setState({ initialized: false, error: error instanceof Error ? error : new Error(String(error)) });
-    }
-  }, []);
-  
-  return state;
-}
-
-/**
  * 安全状态监控组件
  * 监控安全相关状态变化
  */
@@ -156,13 +123,6 @@ function SecurityMonitor(): null {
       });
       
       // 可以在这里添加上报逻辑
-      if (typeof window !== 'undefined' && (window as unknown as Record<string, unknown>).gtag) {
-        (window as unknown as Record<string, (type: string, name: string, params: Record<string, unknown>) => void>).gtag('event', 'csp_violation', {
-          event_category: 'security',
-          event_label: event.violatedDirective,
-          blocked_uri: event.blockedURI,
-        });
-      }
     };
     
     document.addEventListener('securitypolicyviolation', handleSecurityPolicyViolation);
@@ -199,15 +159,12 @@ export default function SecurityProvider({
   enableIntegrityCheck = true,
   customCSP,
 }: SecurityProviderProps): React.ReactElement {
-  // 安全初始化
-  const { initialized, error } = useSecurityInit();
-  
   // 获取CSP内容
   const cspContent = customCSP || generateCSPString(getCurrentCSP());
-  
+
   // 判断是否在开发环境
   const isDev = isDevelopment();
-  
+
   // 启动防劫持保护（开发环境下降低监控频率）
   useHijackingProtection({
     enableIframeEscape: true,
@@ -221,26 +178,10 @@ export default function SecurityProvider({
         console.log(`[安全] 检测到潜在问题: ${type}`, details);
         return;
       }
-      
+
       console.error(`[安全] 检测到劫持行为: ${type}`, details);
-      
-      // 上报到分析服务
-      if (typeof window !== 'undefined' && (window as unknown as Record<string, unknown>).gtag) {
-        (window as unknown as Record<string, (type: string, name: string, params: Record<string, unknown>) => void>).gtag('event', 'security_hijacking', {
-          event_category: 'security',
-          event_label: type,
-          custom_parameter_1: JSON.stringify(details),
-        });
-      }
     },
   });
-  
-  // 如果初始化出错，记录错误
-  useEffect(() => {
-    if (error) {
-      console.error('[安全] 初始化失败:', error);
-    }
-  }, [error]);
   
   return (
     <>

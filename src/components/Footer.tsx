@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { name, aWord } from '@/setting/FooterSetting';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -35,7 +35,7 @@ function Footer() {
 
   // 网站上线时间 - 使用 useMemo 缓存
   const launchDate = useMemo(() => new Date('2025-11-06T20:00:00'), []);
-  const [runTime, setRunTime] = useState('');
+  const runTimeRef = useRef<HTMLSpanElement>(null);
 
   // 计算版权年份，格式为 "2025 - 【当前年份】"
   const copyrightYear = useMemo(() => {
@@ -43,7 +43,7 @@ function Footer() {
     return currentYear === 2025 ? "2025" : `2025 - ${currentYear}`;
   }, []);
 
-  // 实时更新运行时间 - 使用 requestAnimationFrame 优化性能
+  // 实时更新运行时间 - 使用 ref 直接操作 DOM，避免 React re-render
   useEffect(() => {
     let animationFrameId: number;
     let lastUpdateTime = 0;
@@ -54,10 +54,10 @@ function Footer() {
       if (currentTime - lastUpdateTime >= UPDATE_INTERVAL) {
         const now = new Date();
         const diff = now.getTime() - launchDate.getTime();
-        if (diff < 0) {
-          setRunTime(`距离上线还有 ${formatTime(-diff)}`);
-        } else {
-          setRunTime(`已稳定运行: ${formatTime(diff)}`);
+        if (runTimeRef.current) {
+          runTimeRef.current.textContent = diff < 0
+            ? `距离上线还有 ${formatTime(-diff)}`
+            : `已稳定运行: ${formatTime(diff)}`;
         }
         lastUpdateTime = currentTime;
       }
@@ -111,8 +111,8 @@ function Footer() {
 
         {/* 第二行：运行时间、技术栈和备案信息 */}
         <p className="flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground/70">
-          {/* 网站运行时间 */}
-          <span>{runTime}</span>
+          {/* 网站运行时间 - 使用 ref 直接更新，避免触发 React re-render */}
+          <span ref={runTimeRef} />
 
           {/* 技术栈信息 */}
           <span className="mx-1.5">·</span>
