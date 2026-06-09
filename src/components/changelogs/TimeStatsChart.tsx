@@ -226,7 +226,7 @@ export default function TimeStatsChart({ changelogs, blogTimeStats, momentTimeSt
       <div className="w-full flex justify-center" style={{ height: '280px', minWidth: '200px' }}>
         <div className="w-full max-w-lg" style={{ minWidth: '200px' }}>
           {filteredData.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={200}>
               {chartType === 'area' ? (
                 <AreaChart
                   data={filteredData}
