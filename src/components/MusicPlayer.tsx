@@ -391,96 +391,18 @@ const MusicPlayerComponent = function MusicPlayer({
       globalManager.savePlayState();
     };
 
-    // 标志位：防止重复触发歌曲结束处理
-    let isEndingHandled = false;
-
     /**
      * 播放进度更新事件处理
-     * 用于检测歌曲是否即将结束，作为 ended 事件的备用机制
+     * 使用节流控制 savePlayState 调用频率，避免高频 localStorage 写入
      */
+    let lastSaveTime = 0;
+    const SAVE_THROTTLE_MS = 5000; // 每5秒最多保存一次状态
+    
     const handleTimeUpdate = () => {
-      globalManager.savePlayState();
-      
-      // 检测歌曲是否即将结束（剩余时间小于 1 秒）
-      // 这是为了处理 ended 事件可能不被触发的情况
-      if (player.audio && player.duration > 0) {
-        const currentTime = player.audio.currentTime;
-        const duration = player.duration;
-        const remainingTime = duration - currentTime;
-        
-        // 重置标志位：如果歌曲回到开头或切换了歌曲，重置标志位
-        if (currentTime < 1) {
-          isEndingHandled = false;
-        }
-        
-        // 如果剩余时间小于 1 秒且接近结束，且未处理过，手动触发下一首
-        if (remainingTime < 1 && remainingTime > 0 && !player.paused && !isEndingHandled) {
-          isEndingHandled = true; // 设置标志位，防止重复触发
-          console.log('[MusicPlayer] 检测到歌曲即将结束，准备切换下一首');
-          
-          // 延迟 1.2 秒后检查并切换
-          setTimeout(() => {
-            // 使用全局管理器获取最新的播放器实例，避免闭包问题
-            const currentPlayer = globalManager.getPlayer();
-            if (!currentPlayer) {
-              console.warn('[MusicPlayer] 无法获取播放器实例');
-              isEndingHandled = false;
-              return;
-            }
-            
-            // 再次检查，确保歌曲已经结束（播放器暂停或时间接近结束）
-            const isEnded = currentPlayer.paused || 
-              (currentPlayer.audio && currentPlayer.audio.currentTime >= duration - 0.5);
-            
-            if (isEnded) {
-              const currentMode = playModeRef.current;
-              console.log('[MusicPlayer] 歌曲已结束，当前模式:', currentMode);
-              
-              if (currentMode === 'single') {
-                // 单曲循环
-                console.log('[MusicPlayer] 单曲循环：重新播放');
-                currentPlayer.seek(0);
-                currentPlayer.play();
-              } else if (currentMode === 'list' || currentMode === 'random') {
-                // 列表循环或随机播放模式
-                console.log(`[MusicPlayer] ${currentMode}模式：切换到下一首`);
-                
-                // 关键修复：正确访问 APlayer 的 list 对象
-                // APlayer 的 list 属性包含 list（数组）和 index（当前索引）
-                if (!currentPlayer.list) {
-                  console.warn('[MusicPlayer] currentPlayer.list 为 null/undefined');
-                } else {
-                  // APlayer 正确的列表结构：currentPlayer.list.list 是音频数组
-                  const audioList = currentPlayer.list.list;
-                  
-                  if (Array.isArray(audioList) && audioList.length > 0) {
-                    const currentIndex = currentPlayer.list.index || 0;
-                    const nextIndex = (currentIndex + 1) % audioList.length;
-                    console.log(`[MusicPlayer] 从索引 ${currentIndex} 切换到 ${nextIndex}，列表长度: ${audioList.length}`);
-                    
-                    // 切换到下一首
-                    currentPlayer.list.switch(nextIndex);
-                    
-                    // 确保切换后自动播放
-                    setTimeout(() => {
-                      if (currentPlayer.paused) {
-                        currentPlayer.play();
-                      }
-                    }, 300);
-                  } else {
-                    console.warn('[MusicPlayer] 无法获取有效的音频列表');
-                  }
-                }
-              }
-            } else {
-              console.log('[MusicPlayer] 歌曲未真正结束，取消切换');
-            }
-            // 切换完成后重置标志位（延迟一点，确保切换完成）
-            setTimeout(() => {
-              isEndingHandled = false;
-            }, 500);
-          }, 1200);
-        }
+      const now = Date.now();
+      if (now - lastSaveTime >= SAVE_THROTTLE_MS) {
+        globalManager.savePlayState();
+        lastSaveTime = now;
       }
     };
 
@@ -577,18 +499,22 @@ const MusicPlayerComponent = function MusicPlayer({
     // 注册 APlayer 事件监听器
     player.on('play', handlePlayStart);
     player.on('pause', handlePause);
-    // 使用 handleTimeUpdate 替代 handlePlayerEvent，包含播放结束检测逻辑
     player.on('timeupdate', handleTimeUpdate);
     player.on('volumechange', handlePlayerEvent);
     player.on('listswitch', handleListSwitch);
-    // ended 事件可能不被触发，所以使用 timeupdate 作为备用机制
     player.on('ended', handleEnded);
     player.on('error', handleError);
 
-    // 注意：APlayer 没有 off 方法，事件监听器会在播放器销毁时自动清理
-    // 由于播放器是全局单例，不需要手动移除监听器
-    // 使用 highlightArtistNames 作为唯一依赖，因为 playMode 通过 ref 获取
-    return () => {};
+    // 返回真正的事件清理函数，防止页面切换后事件监听器重复绑定
+    return () => {
+      player.off('play', handlePlayStart);
+      player.off('pause', handlePause);
+      player.off('timeupdate', handleTimeUpdate);
+      player.off('volumechange', handlePlayerEvent);
+      player.off('listswitch', handleListSwitch);
+      player.off('ended', handleEnded);
+      player.off('error', handleError);
+    };
   }, [highlightArtistNames]);
 
   /**
@@ -770,27 +696,44 @@ const MusicPlayerComponent = function MusicPlayer({
         
         // 检查 APlayer 是否已加载
         if (!(window as any).APlayer) {
-          // 动态加载 APlayer 样式
-          const link = document.createElement('link');
-          link.rel = 'stylesheet';
-          link.href = getAssetPath('/aplayer/APlayer.min.css');
-          document.head.appendChild(link);
+          const cssUrl = getAssetPath('/aplayer/APlayer.min.css');
+          const jsUrl = getAssetPath('/aplayer/APlayer.min.js');
+          
+          // 辅助函数：检查样式表是否已加载，避免重复注入
+          const isStyleLoaded = (href: string) => !!document.querySelector(`link[href="${href}"]`);
+          // 辅助函数：检查脚本是否已加载，避免重复注入
+          const isScriptLoaded = (src: string) => !!document.querySelector(`script[src="${src}"]`);
+          
+          // 动态加载 APlayer 样式（去重检查）
+          if (!isStyleLoaded(cssUrl)) {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = cssUrl;
+            document.head.appendChild(link);
+          }
 
-          // 动态加载 APlayer 脚本
-          const script = document.createElement('script');
-          script.src = getAssetPath('/aplayer/APlayer.min.js');
-          
-          script.onload = () => {
-            initializePlayer();
-          };
-          
-          script.onerror = () => {
-            console.error('[MusicPlayer] 加载 APlayer 脚本失败');
-            setConfigLoadError(true);
-            setIsLoading(false); // 加载失败，隐藏加载状态
-          };
-          
-          document.head.appendChild(script);
+          // 动态加载 APlayer 脚本（去重检查）
+          if (!isScriptLoaded(jsUrl)) {
+            const script = document.createElement('script');
+            script.src = jsUrl;
+            
+            script.onload = () => {
+              initializePlayer();
+            };
+            
+            script.onerror = () => {
+              console.error('[MusicPlayer] 加载 APlayer 脚本失败');
+              setConfigLoadError(true);
+              setIsLoading(false); // 加载失败，隐藏加载状态
+            };
+            
+            document.head.appendChild(script);
+          } else {
+            // 脚本已加载但 APlayer 全局对象可能还在初始化中，延迟执行
+            setTimeout(() => {
+              initializePlayer();
+            }, 100);
+          }
         } else {
           initializePlayer();
         }

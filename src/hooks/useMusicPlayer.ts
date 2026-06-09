@@ -120,9 +120,6 @@ export function useMusicPlayer(): UseMusicPlayerReturn {
   
   /** 歌词显示状态 */
   const [lyricsVisible, setLyricsVisible] = useState(false);
-  
-  /** 状态更新定时器引用，用于清理 */
-  const updateIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // ==================== 状态同步函数 ====================
   
@@ -150,16 +147,6 @@ export function useMusicPlayer(): UseMusicPlayerReturn {
     // 同步歌词显示状态
     const globalManager = GlobalMusicPlayerManager.getInstance();
     setLyricsVisible(globalManager.isLyricsVisible());
-    
-    // 同步播放模式（从 localStorage 读取）
-    try {
-      const savedMode = localStorage.getItem('musicPlayMode');
-      if (savedMode && PLAY_MODE_ORDER.includes(savedMode as PlayMode)) {
-        setPlayModeState(savedMode as PlayMode);
-      }
-    } catch {
-      // localStorage 访问失败时忽略
-    }
   }, []);
 
   // ==================== 播放器初始化 ====================
@@ -174,6 +161,9 @@ export function useMusicPlayer(): UseMusicPlayerReturn {
      * 初始化播放器引用和事件监听
      * @param player APlayer 实例
      */
+    // 存储事件处理器引用，用于组件卸载时清理
+    const eventHandlers: Array<{ event: string; handler: () => void }> = [];
+    
     const initPlayer = (player: APlayerNS.APlayer) => {
       playerRef.current = player;
       setIsInitialized(true);
@@ -181,32 +171,34 @@ export function useMusicPlayer(): UseMusicPlayerReturn {
       // 初始同步状态
       syncStateFromPlayer();
       
-      // 设置事件监听器，监听播放器状态变化
       // 播放事件：更新暂停状态
-      player.on('play', () => {
+      const handlePlay = () => {
         setIsPaused(false);
         setCurrentIndex(player.list.index);
-      });
+      };
+      player.on('play', handlePlay);
+      eventHandlers.push({ event: 'play', handler: handlePlay });
       
       // 暂停事件：更新暂停状态
-      player.on('pause', () => {
+      const handlePause = () => {
         setIsPaused(true);
-      });
+      };
+      player.on('pause', handlePause);
+      eventHandlers.push({ event: 'pause', handler: handlePause });
       
       // 列表切换事件：更新当前索引
-      player.on('listswitch', () => {
+      const handleListSwitch = () => {
         setCurrentIndex(player.list.index);
-      });
+      };
+      player.on('listswitch', handleListSwitch);
+      eventHandlers.push({ event: 'listswitch', handler: handleListSwitch });
       
       // 音量变化事件：更新音量状态
-      player.on('volumechange', () => {
+      const handleVolumeChange = () => {
         setVolumeState(player.volume);
-      });
-      
-      // 设置定时器定期同步状态（处理一些可能遗漏的事件）
-      updateIntervalRef.current = setInterval(() => {
-        syncStateFromPlayer();
-      }, 1000);
+      };
+      player.on('volumechange', handleVolumeChange);
+      eventHandlers.push({ event: 'volumechange', handler: handleVolumeChange });
     };
     
     // 检查播放器是否已初始化
@@ -222,12 +214,15 @@ export function useMusicPlayer(): UseMusicPlayerReturn {
       });
     }
     
-    // 清理函数：移除定时器
+    // 清理函数：移除所有事件监听器
     return () => {
-      if (updateIntervalRef.current) {
-        clearInterval(updateIntervalRef.current);
-        updateIntervalRef.current = null;
+      const player = playerRef.current;
+      if (player) {
+        eventHandlers.forEach(({ event, handler }) => {
+          player.off(event, handler);
+        });
       }
+      eventHandlers.length = 0;
     };
   }, [syncStateFromPlayer]);
 
