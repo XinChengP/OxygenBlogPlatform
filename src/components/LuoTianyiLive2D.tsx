@@ -35,6 +35,7 @@ export default function LuoTianyiLive2D() {
     const [messageOpacity, setMessageOpacity] = useState(1);
     const [isLoading, setIsLoading] = useState(true);
     const [loadProgress, setLoadProgress] = useState(0);
+    const [isModelReady, setIsModelReady] = useState(false); // 模型内部数据初始化完成才允许点击，防止 hitTest 报错
     const pageStartTimeRef = useRef(Date.now());
 
     // 自动淡出功能 - 必须在updateMessage之前定义
@@ -591,6 +592,14 @@ export default function LuoTianyiLive2D() {
                 const stats = getLoaderStats();
                 console.log('[LuoTianyiLive2D] 加载统计:', stats);
             }, 800);
+            
+            // 额外延迟2秒后标记模型就绪，确保 hitTest 内部数据完全初始化
+            setTimeout(() => {
+                if (isMountedRef.current) {
+                    setIsModelReady(true);
+                    console.log('[LuoTianyiLive2D] 模型交互已启用');
+                }
+            }, 2000);
 
         } catch (error) {
             console.error('[LuoTianyiLive2D] 加载Live2D失败:', error);
@@ -686,6 +695,18 @@ export default function LuoTianyiLive2D() {
             console.error('[LuoTianyiLive2D] loadLive2D failed:', error);
         }
         
+        // 全局错误捕获：静默处理 live2d.js 内部 hitTest 的非致命错误，避免控制台报错
+        const handleGlobalError = (event: ErrorEvent) => {
+            if (
+                event.filename && event.filename.includes('live2d.js') &&
+                event.message && event.message.includes("Cannot read properties of undefined (reading '0')")
+            ) {
+                event.preventDefault();
+                console.warn('[LuoTianyiLive2D] 已拦截 live2d.js 内部 hitTest 错误（非致命）');
+            }
+        };
+        window.addEventListener('error', handleGlobalError);
+        
         // 返回清理函数
         return () => {
             // 清理添加的事件监听器
@@ -696,6 +717,7 @@ export default function LuoTianyiLive2D() {
                     document.removeEventListener(type, listener);
                 }
             });
+            window.removeEventListener('error', handleGlobalError);
         };
     }, [loadLive2D]); // 添加loadLive2D依赖
 
@@ -1096,15 +1118,16 @@ export default function LuoTianyiLive2D() {
                     {message || ''}
                 </div>
                 
-                <canvas 
+                <canvas
                     ref={canvasRef}
-                    id="live2d" 
-                    width="280" 
-                    height="250" 
+                    id="live2d"
+                    width="280"
+                    height="250"
                     className="live2d"
                     style={{
                         opacity: isLoading ? 0.3 : 1,
-                        transition: 'opacity 0.3s ease-in-out'
+                        transition: 'opacity 0.3s ease-in-out',
+                        pointerEvents: isModelReady ? 'auto' : 'none',
                     }}
                 />
                 
