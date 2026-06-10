@@ -165,6 +165,11 @@ export function useMusicPlayer(): UseMusicPlayerReturn {
     const eventHandlers: Array<{ event: string; handler: () => void }> = [];
     
     const initPlayer = (player: APlayerNS.APlayer) => {
+      // APlayer v1.10.1 实际没有 off 方法，动态添加空函数防止报错
+      if (!player.off) {
+        (player as any).off = () => {};
+      }
+
       playerRef.current = player;
       setIsInitialized(true);
       
@@ -215,12 +220,17 @@ export function useMusicPlayer(): UseMusicPlayerReturn {
     }
     
     // 清理函数：移除所有事件监听器
+    // 注意：APlayer v1.10.1 实际没有 off 方法，调用前需检查
     return () => {
-      const player = playerRef.current;
-      if (player) {
-        eventHandlers.forEach(({ event, handler }) => {
-          player.off(event, handler);
-        });
+      try {
+        const player = playerRef.current;
+        if (player && typeof player.off === 'function') {
+          eventHandlers.forEach(({ event, handler }) => {
+            player.off(event, handler);
+          });
+        }
+      } catch (e) {
+        // 忽略清理过程中的非致命错误
       }
       eventHandlers.length = 0;
     };

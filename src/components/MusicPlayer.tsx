@@ -338,9 +338,14 @@ const MusicPlayerComponent = function MusicPlayer({
    * @param globalManager 全局播放器管理器
    */
   const setupPlayerEventListeners = useCallback((
-    player: APlayerNS.APlayer, 
+    player: APlayerNS.APlayer,
     globalManager: GlobalMusicPlayerManager
   ) => {
+    // APlayer v1.10.1 实际没有 off 方法，动态添加空函数防止报错
+    if (!player.off) {
+      (player as any).off = () => {};
+    }
+
     // ==================== 播放事件处理 ====================
     
     /**
@@ -506,14 +511,17 @@ const MusicPlayerComponent = function MusicPlayer({
     player.on('error', handleError);
 
     // 返回真正的事件清理函数，防止页面切换后事件监听器重复绑定
+    // 注意：APlayer v1.10.1 实际没有 off 方法，调用前需检查
     return () => {
-      player.off('play', handlePlayStart);
-      player.off('pause', handlePause);
-      player.off('timeupdate', handleTimeUpdate);
-      player.off('volumechange', handlePlayerEvent);
-      player.off('listswitch', handleListSwitch);
-      player.off('ended', handleEnded);
-      player.off('error', handleError);
+      if (typeof player.off === 'function') {
+        player.off('play', handlePlayStart);
+        player.off('pause', handlePause);
+        player.off('timeupdate', handleTimeUpdate);
+        player.off('volumechange', handlePlayerEvent);
+        player.off('listswitch', handleListSwitch);
+        player.off('ended', handleEnded);
+        player.off('error', handleError);
+      }
     };
   }, [highlightArtistNames]);
 
@@ -551,13 +559,21 @@ const MusicPlayerComponent = function MusicPlayer({
         }
         
         // 重新设置事件监听器（页面切换后需要重新绑定）
+        // 必须保存清理函数，否则组件卸载时无法清理，导致事件监听器重复堆积
         if (player) {
-          setupPlayerEventListeners(player, globalManager);
+          const cleanupEventListeners = setupPlayerEventListeners(player, globalManager);
+          cleanupRef.current = () => {
+            try {
+              cleanupEventListeners();
+            } catch (e) {
+              // 忽略清理过程中的非致命错误
+            }
+          };
         }
-        
+
         setIsInitialized(true);
         playerInstanceRef.current = player;
-        
+
         // 加载完成，隐藏加载状态提示
         setIsLoading(false);
       }
@@ -677,7 +693,11 @@ const MusicPlayerComponent = function MusicPlayer({
       cleanupRef.current = () => {
         window.removeEventListener('beforeunload', saveStateBeforeUnload);
         document.removeEventListener('visibilitychange', handleVisibilityChange);
-        cleanupEventListeners();
+        try {
+          cleanupEventListeners();
+        } catch (e) {
+          // 忽略清理过程中的非致命错误（如 APlayer 不支持 off 方法）
+        }
       };
     };
 
@@ -749,7 +769,11 @@ const MusicPlayerComponent = function MusicPlayer({
     // 清理函数
     return () => {
       if (cleanupRef.current) {
-        cleanupRef.current();
+        try {
+          cleanupRef.current();
+        } catch (e) {
+          // 忽略清理过程中的非致命错误
+        }
         cleanupRef.current = null;
       }
     };
