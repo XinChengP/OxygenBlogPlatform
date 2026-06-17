@@ -42,17 +42,17 @@ const Meteors = ({
   return (
     <>
       {[...meteorStyles].map((style, idx) => (
-        // 流星头部 - 应用性能优化类
-        <span
-          key={idx}
-          style={{ ...style }}
-          className={cn(
-            "pointer-events-none absolute size-0.5 rotate-[var(--angle)] animate-meteor rounded-full bg-zinc-500 shadow-[0_0_0_1px_#ffffff10] meteor-optimized",
-            className,
-          )}
-        >
-          {/* 流星尾部 - 应用性能优化 */}
-          <div className="pointer-events-none absolute top-1/2 -z-10 h-px w-[50px] -translate-y-1/2 bg-gradient-to-r from-zinc-500 to-transparent gpu-accelerated" />
+        // 流星头部 - 使用天依蓝主题色，与网站整体色调保持一致
+          <span
+            key={idx}
+            style={{ ...style }}
+            className={cn(
+              "pointer-events-none absolute size-0.5 rotate-[var(--angle)] animate-meteor rounded-full bg-primary/60 shadow-[0_0_0_1px_rgba(102,204,255,0.15)] meteor-optimized",
+              className,
+            )}
+          >
+            {/* 流星尾部 - 使用主题色渐变拖尾，增强视觉连贯性 */}
+            <div className="pointer-events-none absolute top-1/2 -z-10 h-px w-[50px] -translate-y-1/2 bg-gradient-to-r from-primary/50 to-transparent gpu-accelerated" />
         </span>
       ))}
     </>

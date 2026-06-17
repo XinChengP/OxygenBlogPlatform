@@ -1,7 +1,7 @@
-//主标题
-export const mainTitle = "歆橙 的 Blog";
-//主题色装饰字
-export const mainTitleBlueDecoration = ".";
+// 主标题：使用博客作者名作为视觉重心
+export const mainTitle = "歆橙";
+// 主题色装饰字：承接主标题，用天依蓝突出"博客"属性
+export const mainTitleBlueDecoration = " 的 Blog";
 //副标题
 export const subTitle = "一个普普通通的 ";
 //副标题主题色装饰字
