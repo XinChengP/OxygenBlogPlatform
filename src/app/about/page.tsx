@@ -192,45 +192,9 @@ function StarField({ count = 12, className = '' }: { count?: number; className?:
 }
 
 /**
- * 鼠标跟随光晕组件
- * 在容器内跟随鼠标移动显示柔和光晕，增强手风琴区域的视觉层次
- */
-function MouseGlow({ x, y }: { x: number; y: number }) {
-  return (
-    <div className="absolute inset-0 pointer-events-none overflow-hidden z-20">
-      <div
-        className="absolute w-80 h-80 rounded-full bg-primary/15 blur-3xl transition-all duration-100 ease-out"
-        style={{ left: x - 160, top: y - 160 }}
-      />
-    </div>
-  );
-}
-
-/**
- * 扫描线组件
- * 在面板内创建一条缓慢上下移动的细线，营造科技感
- */
-function ScanLine() {
-  return (
-    <div className="absolute inset-0 pointer-events-none overflow-hidden z-10">
-      <motion.div
-        className="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent"
-        initial={{ top: '0%' }}
-        animate={{ top: '100%' }}
-        transition={{
-          duration: 4,
-          repeat: Infinity,
-          ease: 'linear',
-        }}
-      />
-    </div>
-  );
-}
-
-/**
  * 解析垂直位置配置
  * 支持百分比字符串和关键字（top/center/bottom），返回 0-100 的数字
- * 0 表示最上方，100% 表示最下方
+ * 0 表示最上方，100 表示最下方
  */
 function parseVerticalPosition(position?: string): number {
   if (!position) return 50;
@@ -308,10 +272,8 @@ function HorizontalAccordionPanel({
             </div>
             {/* 渐变遮罩 - 确保标题可读 */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/10" />
-            {/* 扫描线效果 */}
-            <ScanLine />
             {/* 横向标题 - 放置在面板底部 */}
-            <div className="absolute inset-0 flex items-end justify-center p-4 z-20">
+            <div className="absolute inset-0 flex items-end justify-center p-4">
               <div className="flex items-center gap-2 text-white drop-shadow-lg whitespace-nowrap">
                 {IconComponent && <IconComponent className="w-5 h-5" />}
                 <h3 className="text-base font-semibold">{section.title}</h3>
@@ -326,17 +288,15 @@ function HorizontalAccordionPanel({
         {isActive && (
           <motion.div
             key="expanded"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.35, delay: 0.1 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3, delay: 0.1 }}
             className="relative h-full flex flex-col p-6 overflow-y-auto"
             onClick={(event) => event.stopPropagation()}
           >
             {/* 星空粒子背景 */}
             <StarField count={12} className="z-0" />
-            {/* 扫描线效果 */}
-            <ScanLine />
 
             {/* 面板头部标题 */}
             <div className="relative z-10 flex items-center gap-2 mb-4 shrink-0">
@@ -424,24 +384,10 @@ export default function AboutPage() {
   const [currentSlogan, setCurrentSlogan] = useState(slogan);
   // 横向手风琴当前展开的区块索引，默认展开第一个（关于我）
   const [activeSection, setActiveSection] = useState(0);
-  // 鼠标跟随光晕的位置
-  const [glowPos, setGlowPos] = useState({ x: 0, y: 0 });
 
   // 确保组件已挂载，避免主题/动画相关的水合不匹配
   useEffect(() => {
     setMounted(true);
-  }, []);
-
-  /**
-   * 更新鼠标跟随光晕位置
-   * 基于手风琴容器内的鼠标坐标计算
-   */
-  const handleGlowMove = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    setGlowPos({
-      x: event.clientX - rect.left,
-      y: event.clientY - rect.top,
-    });
   }, []);
 
   /**
@@ -676,11 +622,8 @@ export default function AboutPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-100px' }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              onMouseMove={handleGlowMove}
-              className="relative hidden md:flex h-[520px] gap-4 mb-6"
+              className="hidden md:flex h-[520px] gap-4 mb-6"
             >
-              {/* 鼠标跟随光晕 */}
-              <MouseGlow x={glowPos.x} y={glowPos.y} />
               {aboutSections.map((section, index) => (
                 <HorizontalAccordionPanel
                   key={section.id}
