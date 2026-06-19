@@ -131,6 +131,36 @@ export const aboutSections: AboutSectionConfig[] = [
   }
 ];
 
+// MBTI 配置
+// 展示个人 MBTI 类型和卡片主题色
+export interface MBTIConfig {
+  type: string; // MBTI 四字母类型，例如 'INTP'
+  color: string; // 卡片主题色，用于高亮和装饰
+}
+
+export const mbti: MBTIConfig = {
+  type: 'INTP',
+  color: '#66ccff',
+};
+
+// 个人歌单配置
+// 用于在关于页面展示外部音乐平台歌单入口
+export interface MusicPlaylistConfig {
+  name: string; // 歌单名称
+  description: string; // 歌单简介
+  coverImage: string; // 封面图片路径，相对于 public 目录
+  url: string; // 外部歌单链接
+  buttonText: string; // 跳转按钮文案
+}
+
+export const musicPlaylist: MusicPlaylistConfig = {
+  name: '华风夏韵，洛水天依',
+  description: '任天地之间，吟游四方\n《歌行四方》夯爆了，入坑曲好吧，必须排在第一个',
+  coverImage: '/aboutme/musiclistcover/gexingsifang.jpg',
+  url: 'https://music.163.com/playlist?id=14349636887&uct2=U2FsdGVkX19EskAPIF87AMNeAZEiTZ6kJr8vlF0T/og=',
+  buttonText: '去听听',
+};
+
 // 兴趣爱好配置
 // 每个兴趣关联一个Lucide图标标识，在页面中映射为具体图标组件
 export interface HobbyConfig {
@@ -142,10 +172,111 @@ export const hobbies: HobbyConfig[] = [
   { name: '洛天依', icon: 'Music' },
   { name: '乒乓球', icon: 'Dribbble' },
   { name: '围棋', icon: 'CircleDot' },
-  { name: 'Video', icon: 'Video' },
-  { name: 'Minecraft', icon: 'Box' },
-  { name: 'Genshin Impact', icon: 'Gamepad2' },
-  { name: 'Roco kingdom', icon: 'Crown' }
+  { name: '做视频', icon: 'Video' },
+  { name: '打游戏', icon: 'Gamepad2' },
+  { name: '瞎捣鼓', icon: 'Box' }
+];
+
+// 游戏库配置
+// 用于在关于页面以手风琴形式展示个人游戏库
+export interface GameConfig {
+  id: string; // 唯一标识
+  name: string; // 游戏名称
+  coverImage: string; // 封面图片路径，相对于 public 目录
+  description: string; // 一句话简介或评价
+  coverHorizontalPosition?: string; // 封面水平位置，默认居中，例如 '40%'
+  coverVerticalPosition?: string; // 封面垂直位置，默认居中，例如 '30%'
+  coverSize?: string; // 封面图片缩放比例，默认 '120%'
+}
+
+// 常玩游戏
+export const frequentGames: GameConfig[] = [
+  {
+    id: 'rocokingdom',
+    name: '洛克王国',
+    coverHorizontalPosition: '45%',
+    coverVerticalPosition: '50%',
+    coverSize: '120%',
+    coverImage: '/aboutme/games/Rocokingdom.jpg',
+    description: '十五年牢玩家在此，天天天梯坐牢啊',
+  },
+  {
+    id: 'minecraft',
+    name: 'Minecraft',
+    coverHorizontalPosition: '25%',
+    coverVerticalPosition: '50%',
+    coverSize: '120%',
+    coverImage: '/aboutme/games/Minecraft.jpg',
+    description: '味大无需多盐',
+  },
+  {
+    id: 'genshin',
+    name: '原神',
+    coverHorizontalPosition: '52%',
+    coverVerticalPosition: '50%',
+    coverSize: '120%',
+    coverImage: '/aboutme/games/Genshinimpact.jpg',
+    description: '原神，启动！',
+  },
+];
+
+// 偶尔玩/通关
+export const occasionalGames: GameConfig[] = [
+
+  {
+    id: 'dancingline',
+    name: '跳舞的线',
+    coverHorizontalPosition: '55%',
+    coverVerticalPosition: '50%',
+    coverSize: '120%',
+    coverImage: '/aboutme/games/Dancingline.jpg',
+    description: '第一个也是唯一一个接触的（亚）音游',
+  },
+  {
+    id: 'ittakestwo',
+    name: '双人成行',
+    coverHorizontalPosition: '70%',
+    coverVerticalPosition: '50%',
+    coverSize: '120%',
+    coverImage: '/aboutme/games/ittakestwo.jpg',
+    description: '神作',
+  },
+  {
+    id: 'untitledgoose',
+    name: '大鹅模拟器',
+    coverHorizontalPosition: '60%',
+    coverVerticalPosition: '50%',
+    coverSize: '100%',
+    coverImage: '/aboutme/games/UntitledGoose.jpg',
+    description: '这集神了',
+  },
+  {
+    id: 'biped',
+    name: '知只大冒险',
+    coverHorizontalPosition: '76%',
+    coverVerticalPosition: '50%',
+    coverSize: '100%',
+    coverImage: '/aboutme/games/Biped.jpg',
+    description: '确实有意思嗷',
+  },
+  {
+    id: 'whmx',
+    name: '物华弥新',
+    coverHorizontalPosition: '40%',
+    coverVerticalPosition: '50%',
+    coverSize: '120%',
+    coverImage: '/aboutme/games/whmx.jpg',
+    description: '“心动的故事，这里应有尽有”',
+  },
+  {
+    id: 'deliverme',
+    name: '妄想症',
+    coverHorizontalPosition: '64%',
+    coverVerticalPosition: '50%',
+    coverSize: '100%',
+    coverImage: '/aboutme/games/deliverme.jpg',
+    description: '“比十年更早之前，我便歌颂着明天”',
+  },
 ];
 
 //关于我页面一二三段（保留以兼容旧用法，建议后续使用 aboutSections 配置）
@@ -156,7 +287,7 @@ export const aboutMeP3 = "（成分复杂）";
 //联系我页面配置
 export const mainContactMeDescription =
   "如果你对我的文章感兴趣，欢迎与我联系！"; //联系我页面主描述
-export const subContactMeDescription = "我会尽快回复你的消息 ✨"; //联系我页面补充描述
+export const subContactMeDescription = "我会尽快回复你的消息"; //联系我页面补充描述
 export const mail = "2574386537@qq.com"; //邮箱配置
 export const github = "https://github.com/XinChengP"; //github网站配置
 export const bilibili = "https://space.bilibili.com/522845412?spm_id_from=333.1007.0.0";

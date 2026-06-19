@@ -25,6 +25,7 @@ import {
 import { Cover } from '@/components/ui/cover';
 import { EvervaultCard, Icon } from '@/components/ui/evervault-card';
 import OptimizedIcon from '@/components/core/OptimizedIcon';
+import OptimizedImage from '@/components/core/OptimizedImage';
 import PageHeader from '@/components/ui/PageHeader';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 import { getAssetPath } from '@/utils/assetUtils';
@@ -42,8 +43,15 @@ import {
   isBorder,
   aboutSections,
   hobbies,
+  mbti,
+  musicPlaylist,
+  frequentGames,
+  occasionalGames,
   type AboutSectionConfig,
   type HobbyConfig,
+  type MBTIConfig,
+  type MusicPlaylistConfig,
+  type GameConfig,
 } from '@/setting/AboutSetting';
 
 /**
@@ -86,6 +94,159 @@ function HobbyTag({ hobby, index }: { hobby: HobbyConfig; index: number }) {
       {IconComponent && <IconComponent className="w-3.5 h-3.5" />}
       {hobby.name}
     </motion.span>
+  );
+}
+
+/**
+ * MBTI 人格类型卡片组件（简约版）
+ * 仅展示类型大字母、中文名与一句简短描述
+ */
+function MBTICard({ config }: { config: MBTIConfig }) {
+  return (
+    // 窄卡片内垂直居中，让类型字母和说明在视觉上居中
+    <div className="flex flex-col items-center text-center justify-start gap-6 h-full">
+      {/* 卡片小标题 - 参考手风琴展开标题风格 */}
+      <div className="flex items-center gap-2 mb-1">
+        <User className="w-5 h-5 text-primary" />
+        <h3 className="text-xl font-semibold text-foreground">我的 MBTI</h3>
+      </div>
+
+      {/* 大字母类型 - 略微放大，居中显示，蓝色系渐变流动效果 */}
+      <span
+        className="text-6xl font-bold tracking-tight leading-none bg-gradient-to-r from-blue-500 via-sky-400 via-cyan-400 via-blue-400 to-blue-600 bg-clip-text text-transparent drop-shadow-lg bg-[length:300%_300%] animate-[gradientShift_2s_ease-in-out_infinite] text-gradient-animate"
+      >
+        {config.type.toUpperCase()}
+      </span>
+
+      {/* 简要中文说明 - 置于类型下方 */}
+      <span className="text-base text-muted-foreground font-medium">
+        逻辑宅、脑洞专家、行动废
+      </span>
+    </div>
+  );
+}
+
+/**
+ * 个人歌单卡片组件
+ * 左侧展示歌单名称、简介和跳转按钮，右侧展示正方形封面图
+ */
+function MusicPlaylistCard({ config }: { config: MusicPlaylistConfig }) {
+  return (
+    <div className="flex flex-col sm:flex-row items-start gap-5 h-full">
+      {/* 左侧：歌单信息 */}
+      <div className="flex-1 flex flex-col justify-start gap-3 order-2 sm:order-1">
+        {/* 卡片小标题 - 参考手风琴展开标题风格 */}
+        <div className="flex items-center gap-2">
+          <Music className="w-5 h-5 text-primary" />
+          <h3 className="text-xl font-semibold text-foreground">我的歌单</h3>
+        </div>
+
+        <h3 className="text-xl font-semibold text-foreground">{config.name}</h3>
+        <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+          {config.description}
+        </p>
+        <a
+          href={config.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center justify-center sm:justify-start gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors duration-200"
+        >
+          <span className="px-4 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors duration-200">
+            {config.buttonText}
+          </span>
+        </a>
+      </div>
+
+      {/* 右侧：正方形封面，固定尺寸控制整体卡片高度 */}
+      <div className="h-44 w-44 shrink-0 rounded-xl overflow-hidden shadow-md order-1 sm:order-2">
+        <OptimizedImage
+          src={config.coverImage}
+          alt={config.name}
+          width={176}
+          height={176}
+          className="w-full h-full"
+          objectFit="cover"
+          borderRadius="0.75rem"
+          loading="lazy"
+        />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 游戏库横向手风琴面板组件
+ * 桌面端多个面板水平排列，点击后展开显示游戏详情，其他面板收缩只显示封面和名称
+ * 使用 Framer Motion layout 动画实现平滑的宽度过渡
+ */
+function GameLibraryAccordionPanel({
+  game,
+  isActive,
+  onClick,
+  isBackgroundEnabled,
+  collapsedFlex = 1,
+}: {
+  game: GameConfig;
+  isActive: boolean;
+  onClick: () => void;
+  isBackgroundEnabled: boolean;
+  collapsedFlex?: number;
+}) {
+  // 根据背景模式返回基础样式
+  const glassClass = isBackgroundEnabled
+    ? 'backdrop-blur-md bg-card/90 border-border shadow-lg supports-[backdrop-filter]:bg-card/75'
+    : 'bg-card border-border';
+
+  return (
+    <motion.div
+      layout
+      onClick={onClick}
+      initial={false}
+      animate={{
+        flex: isActive ? 3 : collapsedFlex,
+      }}
+      transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
+      className={`relative overflow-hidden rounded-2xl border cursor-pointer ${glassClass} transition-all duration-300 ${isActive ? 'shadow-2xl shadow-primary/20' : 'shadow-lg'}`}
+    >
+      {/* 共享的封面背景层 - 始终存在于 DOM 中，避免 AnimatePresence 卸载挂载导致闪烁 */}
+      <div className="absolute inset-0 overflow-hidden">
+        <img
+          src={getAssetPath(game.coverImage)}
+          alt={game.name}
+          className="absolute left-0 w-full object-cover transition-all duration-500 ease-out"
+          style={{
+            height: game.coverSize || '120%',
+            top: `${-(parseVerticalPosition(game.coverVerticalPosition) / 100) * (parseInt(game.coverSize || '120', 10) - 100)}%`,
+            objectPosition: `${game.coverHorizontalPosition || 'center'} center`
+          }}
+          loading="lazy"
+        />
+      </div>
+
+      {/* 收缩状态遮罩与标题 - 通过 opacity 过渡，避免卸载 */}
+      <div
+        className="absolute inset-0 flex flex-col justify-end p-4 transition-opacity duration-300"
+        style={{ opacity: isActive ? 0 : 1, pointerEvents: isActive ? 'none' : 'auto' }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/10" />
+        <div className="relative z-10 text-center">
+          <h3 className="text-sm font-semibold text-white drop-shadow-lg whitespace-nowrap">
+            {game.name}
+          </h3>
+        </div>
+      </div>
+
+      {/* 展开状态遮罩与描述 - 通过 opacity 过渡，避免卸载 */}
+      <div
+        className="absolute inset-0 flex flex-col justify-end p-3 transition-opacity duration-300"
+        style={{ opacity: isActive ? 1 : 0, pointerEvents: isActive ? 'auto' : 'none' }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/30" />
+        <p className="relative z-10 text-sm text-white/90 leading-relaxed drop-shadow-md">
+          {game.description}
+        </p>
+      </div>
+    </motion.div>
   );
 }
 
@@ -384,6 +545,10 @@ export default function AboutPage() {
   const [currentSlogan, setCurrentSlogan] = useState(slogan);
   // 横向手风琴当前展开的区块索引，默认展开第一个（关于我）
   const [activeSection, setActiveSection] = useState(0);
+  // 常玩游戏手风琴当前展开的游戏索引，默认展开第一个
+  const [activeFrequentGame, setActiveFrequentGame] = useState(0);
+  // 偶尔玩/通关游戏手风琴当前展开的游戏索引，默认展开妄想症（索引5）
+  const [activeOccasionalGame, setActiveOccasionalGame] = useState(5);
 
   // 确保组件已挂载，避免主题/动画相关的水合不匹配
   useEffect(() => {
@@ -612,6 +777,7 @@ export default function AboutPage() {
                 ))}
               </div>
             </motion.div>
+
           </motion.aside>
 
           {/* 右侧主内容区 - 横向手风琴展示三个区块 */}
@@ -683,19 +849,206 @@ export default function AboutPage() {
               ))}
             </div>
 
-            {/* 最后的最后 - 简洁的结尾卡片 */}
+            {/* MBTI 与歌单卡片并排区域 */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-100px' }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              className={getGlassStyle("rounded-2xl p-6 border text-center")}
+              transition={{ duration: 0.6, delay: 0.35 }}
+              className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6"
             >
-              <p className="text-muted-foreground leading-relaxed">
-                ·最后的最后，感谢你看到这里，听一个自我内耗大学生的碎碎念awa
-              </p>
+              {/* MBTI 卡片 */}
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: 0.4 }}
+                className={getGlassStyle("rounded-2xl p-6 border md:col-span-1")}
+              >
+                <MBTICard config={mbti} />
+              </motion.div>
+
+              {/* 个人歌单卡片 */}
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: 0.45 }}
+                className={getGlassStyle("rounded-2xl p-6 border md:col-span-2")}
+              >
+                <MusicPlaylistCard config={musicPlaylist} />
+              </motion.div>
             </motion.div>
+
           </main>
+
+          {/* 我的游戏库 - 横跨整个页面宽度 */}
+          <div className="col-span-full lg:col-span-4">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-100px' }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+              className={`${getGlassStyle("rounded-2xl p-6 border")} mb-6`}
+            >
+              {/* 区块标题 */}
+              <div className="flex items-center gap-2 mb-5">
+                <Gamepad2 className="w-5 h-5 text-primary" />
+                <h3 className="text-xl font-semibold text-foreground">我的游戏库</h3>
+              </div>
+
+              {/* 常玩游戏 - 桌面端横向手风琴 */}
+              <div className="hidden md:flex h-[400px] gap-4 mb-4">
+                {frequentGames.map((game, index) => (
+                  <GameLibraryAccordionPanel
+                    key={game.id}
+                    game={game}
+                    isActive={activeFrequentGame === index}
+                    onClick={() => setActiveFrequentGame(activeFrequentGame === index ? 0 : index)}
+                    isBackgroundEnabled={isBackgroundEnabled}
+                  />
+                ))}
+              </div>
+
+              {/* 偶尔玩/通关 - 桌面端横向手风琴 */}
+              <div className="hidden md:flex h-[400px] gap-4">
+                {occasionalGames.map((game, index) => (
+                  <GameLibraryAccordionPanel
+                    key={game.id}
+                    game={game}
+                    isActive={activeOccasionalGame === index}
+                    onClick={() => setActiveOccasionalGame(activeOccasionalGame === index ? 0 : index)}
+                    isBackgroundEnabled={isBackgroundEnabled}
+                    collapsedFlex={0.5}
+                  />
+                ))}
+              </div>
+
+              {/* 移动端纵向折叠面板 - 常玩 */}
+              <div className="md:hidden space-y-4 mb-4">
+                <h4 className="text-sm font-medium text-muted-foreground mb-2">常玩</h4>
+                {frequentGames.map((game, index) => (
+                  <motion.div
+                    key={game.id}
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: '-100px' }}
+                    transition={{ duration: 0.6, delay: 0.1 + index * 0.1 }}
+                    className={`${getGlassStyle("rounded-2xl border shadow-lg overflow-hidden")} transition-all duration-300`}
+                  >
+                    <button
+                      onClick={() => setActiveFrequentGame(activeFrequentGame === index ? -1 : index)}
+                      className="w-full flex items-center justify-between p-4 text-left"
+                      aria-expanded={activeFrequentGame === index}
+                    >
+                      <h3 className="text-lg font-semibold text-foreground">{game.name}</h3>
+                      <motion.div
+                        animate={{ rotate: activeFrequentGame === index ? 180 : 0 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <span className="text-primary text-lg">▼</span>
+                      </motion.div>
+                    </button>
+                    <AnimatePresence initial={false}>
+                      {activeFrequentGame === index && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.3 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="p-4 pt-0">
+                            <div className="flex flex-col sm:flex-row items-start gap-4">
+                              <div className="flex-1 flex flex-col gap-2 order-2 sm:order-1">
+                                <p className="text-sm text-muted-foreground leading-relaxed">
+                                  {game.description}
+                                </p>
+                              </div>
+                              <div className="h-28 w-28 shrink-0 rounded-xl overflow-hidden shadow-md order-1 sm:order-2">
+                                <OptimizedImage
+                                  src={game.coverImage}
+                                  alt={game.name}
+                                  width={112}
+                                  height={112}
+                                  className="w-full h-full"
+                                  objectFit="cover"
+                                  borderRadius="0.75rem"
+                                  loading="lazy"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* 移动端纵向折叠面板 - 偶尔玩/通关 */}
+              <div className="md:hidden space-y-4">
+                <h4 className="text-sm font-medium text-muted-foreground mb-2">偶尔玩/通关</h4>
+                {occasionalGames.map((game, index) => (
+                  <motion.div
+                    key={game.id}
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: '-100px' }}
+                    transition={{ duration: 0.6, delay: 0.1 + index * 0.1 }}
+                    className={`${getGlassStyle("rounded-2xl border shadow-lg overflow-hidden")} transition-all duration-300`}
+                  >
+                    <button
+                      onClick={() => setActiveOccasionalGame(activeOccasionalGame === index ? -1 : index)}
+                      className="w-full flex items-center justify-between p-4 text-left"
+                      aria-expanded={activeOccasionalGame === index}
+                    >
+                      <h3 className="text-lg font-semibold text-foreground">{game.name}</h3>
+                      <motion.div
+                        animate={{ rotate: activeOccasionalGame === index ? 180 : 0 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <span className="text-primary text-lg">▼</span>
+                      </motion.div>
+                    </button>
+                    <AnimatePresence initial={false}>
+                      {activeOccasionalGame === index && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.3 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="p-4 pt-0">
+                            <div className="flex flex-col sm:flex-row items-start gap-4">
+                              <div className="flex-1 flex flex-col gap-2 order-2 sm:order-1">
+                                <p className="text-sm text-muted-foreground leading-relaxed">
+                                  {game.description}
+                                </p>
+                              </div>
+                              <div className="h-28 w-28 shrink-0 rounded-xl overflow-hidden shadow-md order-1 sm:order-2">
+                                <OptimizedImage
+                                  src={game.coverImage}
+                                  alt={game.name}
+                                  width={112}
+                                  height={112}
+                                  className="w-full h-full"
+                                  objectFit="cover"
+                                  borderRadius="0.75rem"
+                                  loading="lazy"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          </div>
         </div>
       </div>
 
