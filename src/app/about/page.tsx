@@ -158,12 +158,12 @@ function MusicPlaylistCard({ config }: { config: MusicPlaylistConfig }) {
       </div>
 
       {/* 右侧：正方形封面，固定尺寸控制整体卡片高度 */}
-      <div className="h-44 w-44 shrink-0 rounded-xl overflow-hidden shadow-md order-1 sm:order-2">
+      <div className="h-49 w-49 shrink-0 rounded-xl overflow-hidden shadow-md order-1 sm:order-2">
         <OptimizedImage
           src={config.coverImage}
           alt={config.name}
-          width={176}
-          height={176}
+          width={196}
+          height={196}
           className="w-full h-full"
           objectFit="cover"
           borderRadius="0.75rem"
@@ -241,7 +241,7 @@ function GameLibraryAccordionPanel({
         className="absolute inset-0 flex flex-col justify-end p-3 transition-opacity duration-300"
         style={{ opacity: isActive ? 1 : 0, pointerEvents: isActive ? 'auto' : 'none' }}
       >
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/30" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/25 to-black/5" />
         <p className="relative z-10 text-sm text-white/90 leading-relaxed drop-shadow-md">
           {game.description}
         </p>
@@ -883,7 +883,7 @@ export default function AboutPage() {
           </main>
 
           {/* 我的游戏库 - 横跨整个页面宽度 */}
-          <div className="col-span-full lg:col-span-4">
+          <div className="col-span-full lg:col-span-4 -mt-8">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -904,7 +904,7 @@ export default function AboutPage() {
                     key={game.id}
                     game={game}
                     isActive={activeFrequentGame === index}
-                    onClick={() => setActiveFrequentGame(activeFrequentGame === index ? 0 : index)}
+                    onClick={() => setActiveFrequentGame(index)}
                     isBackgroundEnabled={isBackgroundEnabled}
                   />
                 ))}
@@ -917,7 +917,7 @@ export default function AboutPage() {
                     key={game.id}
                     game={game}
                     isActive={activeOccasionalGame === index}
-                    onClick={() => setActiveOccasionalGame(activeOccasionalGame === index ? 0 : index)}
+                    onClick={() => setActiveOccasionalGame(index)}
                     isBackgroundEnabled={isBackgroundEnabled}
                     collapsedFlex={0.5}
                   />
@@ -937,7 +937,7 @@ export default function AboutPage() {
                     className={`${getGlassStyle("rounded-2xl border shadow-lg overflow-hidden")} transition-all duration-300`}
                   >
                     <button
-                      onClick={() => setActiveFrequentGame(activeFrequentGame === index ? -1 : index)}
+                      onClick={() => setActiveFrequentGame(index)}
                       className="w-full flex items-center justify-between p-4 text-left"
                       aria-expanded={activeFrequentGame === index}
                     >
@@ -999,7 +999,7 @@ export default function AboutPage() {
                     className={`${getGlassStyle("rounded-2xl border shadow-lg overflow-hidden")} transition-all duration-300`}
                   >
                     <button
-                      onClick={() => setActiveOccasionalGame(activeOccasionalGame === index ? -1 : index)}
+                      onClick={() => setActiveOccasionalGame(index)}
                       className="w-full flex items-center justify-between p-4 text-left"
                       aria-expanded={activeOccasionalGame === index}
                     >
