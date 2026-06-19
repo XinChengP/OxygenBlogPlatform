@@ -4,6 +4,100 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import { name, aWord } from '@/setting/FooterSetting';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { getAssetPath } from '@/utils/assetUtils';
+
+/**
+ * 动态加载外部脚本工具函数
+ * @param src 脚本地址
+ * @returns Promise，加载成功 resolve，失败 reject
+ */
+function loadScript(src: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    // 检查脚本是否已经存在，避免重复加载
+    const existingScript = document.querySelector(`script[src="${src}"]`);
+    if (existingScript) {
+      resolve();
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = src;
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error(`加载脚本失败: ${src}`));
+    document.body.appendChild(script);
+  });
+}
+
+/**
+ * 底部小鱼特效组件
+ * 效果来源：是羊驼吖 博客园
+ * 参考：https://www.cnblogs.com/elkyo/
+ *
+ * 实现说明：
+ * 1. 将 fish.js 和 jQuery 下载到本地 public/js 目录
+ * 2. 通过 getAssetPath 处理 GitHub Pages 的 basePath
+ * 3. 先加载 jQuery，再加载 fish.js，确保依赖关系正确
+ * 4. 使用 ref 标记加载状态，避免 React Strict Mode 双重挂载导致重复初始化
+ * 5. 移动端默认隐藏，避免影响触控操作
+ */
+function FlyingFish() {
+  // 标记是否已经加载过脚本，防止 Strict Mode 下重复加载
+  const isLoadedRef = useRef(false);
+
+  // 页面加载完成后按顺序加载 jQuery 和 fish.js
+  useEffect(() => {
+    // 只在客户端执行
+    if (typeof window === 'undefined') return;
+
+    // 如果已经加载过，不再重复加载
+    if (isLoadedRef.current) return;
+
+    // 获取本地脚本路径，自动适配 GitHub Pages basePath
+    const jqueryPath = getAssetPath('/js/jquery.min.js');
+    const fishPath = getAssetPath('/js/fish.js');
+
+    // 先加载 jQuery，再加载 fish.js
+    loadScript(jqueryPath)
+      .then(() => loadScript(fishPath))
+      .then(() => {
+        isLoadedRef.current = true;
+        console.log('小鱼特效加载成功');
+      })
+      .catch((error) => {
+        console.error('小鱼特效加载失败:', error);
+      });
+
+    // 注意：小鱼特效脚本只需要加载一次
+    // 清理函数留空，避免 React Strict Mode 双重挂载导致重复加载和初始化
+  }, []);
+
+  return (
+    <>
+      {/* 小鱼特效容器 - 作为页脚内容的一部分，随页面滚动显示 */}
+      <div id="jsi-flying-fish-container" className="jsi-flying-fish-container" />
+      {/* 小鱼特效样式 - 响应式适配移动端 */}
+      <style jsx>{`
+        .jsi-flying-fish-container {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          z-index: 0;
+          overflow: hidden;
+          /* 使用主题色的低透明度版本作为绘制颜色，更淡雅 */
+          color: color-mix(in srgb, var(--primary) 50%, transparent);
+        }
+        @media only screen and (max-width: 767px) {
+          .jsi-flying-fish-container {
+            display: none;
+          }
+        }
+      `}</style>
+    </>
+  );
+}
 
 /**
  * 格式化时间差为天时分秒
@@ -80,10 +174,12 @@ function Footer() {
   }
 
   return (
-    <footer className="backdrop-blur-md bg-background/60 border-t border-border/30 py-4 supports-[backdrop-filter]:bg-background/40">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-3">
+    <footer className="relative min-h-[160px] border-t border-border/30">
+      {/* 底部小鱼特效 - 作为页脚背景 */}
+      <FlyingFish />
+      <div className="relative z-10 flex flex-col justify-end min-h-[160px] max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 text-center space-y-3">
         {/* 第一行：版权、自定义文案、洛天依链接 */}
-        <p className="flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground/70">
+        <p className="flex flex-wrap items-center justify-center gap-2 text-xs text-white drop-shadow-sm">
           {/* 版权信息 */}
           <span>&copy; {copyrightYear} {name}</span>
 
@@ -98,7 +194,7 @@ function Footer() {
         </p>
 
         {/* 第二行：运行时间、技术栈和备案信息 */}
-        <p className="flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground/70">
+        <p className="flex flex-wrap items-center justify-center gap-2 text-xs text-white drop-shadow-sm">
           {/* 网站运行时间 - 使用 ref 直接更新，避免触发 React re-render */}
           <span ref={runTimeRef} />
 
@@ -109,7 +205,7 @@ function Footer() {
             href="https://nextjs.org/"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-muted-foreground/70 hover:text-primary transition-colors duration-200 underline-offset-4 hover:underline nav-link"
+            className="text-white hover:text-white/80 transition-colors duration-200 underline-offset-4 hover:underline nav-link"
           >
             Next.js
           </Link>
@@ -118,7 +214,7 @@ function Footer() {
             href="https://pages.github.com/"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-muted-foreground/70 hover:text-primary transition-colors duration-200 underline-offset-4 hover:underline nav-link"
+            className="text-white hover:text-white/80 transition-colors duration-200 underline-offset-4 hover:underline nav-link"
           >
             GitHub Pages
           </Link>
@@ -129,7 +225,7 @@ function Footer() {
             href="https://beian.miit.gov.cn/"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-muted-foreground/70 hover:text-primary transition-colors duration-200 underline-offset-4 hover:underline nav-link"
+            className="text-white hover:text-white/80 transition-colors duration-200 underline-offset-4 hover:underline nav-link"
           >
             津ICP备2025041817号
           </Link>
