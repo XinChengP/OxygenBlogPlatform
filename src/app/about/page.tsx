@@ -283,7 +283,7 @@ function AboutSection({
       )}
 
       {/* 段落内容 */}
-      <div className="text-muted-foreground leading-relaxed space-y-3 text-sm">
+      <div className="text-muted-foreground leading-relaxed space-y-3 text-base">
         {section.paragraphs.map((paragraph, index) => (
           <p key={index} className="indent-8">
             {paragraph}
@@ -294,8 +294,8 @@ function AboutSection({
       {/* 引用/比喻区块 */}
       {section.quote && (
         <div className="my-4 p-4 bg-primary/5 rounded-lg border border-primary/10">
-          <p className="text-sm text-muted-foreground/80 mb-2">{section.quote.intro}</p>
-          <p className="italic whitespace-pre-line">{section.quote.text}</p>
+          <p className="text-base text-muted-foreground/80 mb-2">{section.quote.intro}</p>
+          <p className="italic whitespace-pre-line text-base">{section.quote.text}</p>
         </div>
       )}
 
@@ -437,7 +437,7 @@ function HorizontalAccordionPanel({
             <div className="absolute inset-0 flex items-end justify-center p-4">
               <div className="flex items-center gap-2 text-white drop-shadow-lg whitespace-nowrap">
                 {IconComponent && <IconComponent className="w-5 h-5" />}
-                <h3 className="text-base font-semibold">{section.title}</h3>
+                <h3 className="text-lg font-semibold">{section.title}</h3>
               </div>
             </div>
           </motion.div>
@@ -704,10 +704,11 @@ export default function AboutPage() {
                 </div>
               </div>
 
-              {/* 社交链接 */}
+              {/* 社交链接 - 分两行显示，每行四个 */}
               <div className="px-6 pb-6">
-                <div className="flex justify-center">
-                  <div className="grid grid-cols-5 gap-2">
+                <div className="flex flex-col items-center gap-3">
+                  {/* 第一行 */}
+                  <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-4 w-full justify-items-center gap-2">
                     {/* 邮箱：点击复制，复制成功显示勾选图标 */}
                     <motion.button
                       onClick={handleCopyEmail}
@@ -743,12 +744,22 @@ export default function AboutPage() {
                       src="/assets/vsqx.svg?v=2"
                       alt="VSQX"
                     />
+                  </div>
+                  {/* 第二行 */}
+                  <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-4 w-full justify-items-center gap-2">
                     {/* 抖音 */}
                     <SocialLink
                       href="https://v.douyin.com/j0e2ZbjV_bM/"
                       title="抖音"
                       src="/LogosTiktokIcon.svg"
                       alt="抖音"
+                    />
+                    {/* 微博 */}
+                    <SocialLink
+                      href="https://weibo.com/7415729999"
+                      title="微博"
+                      src="/assets/weibo.svg"
+                      alt="微博"
                     />
                   </div>
                 </div>
@@ -788,7 +799,7 @@ export default function AboutPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-100px' }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="hidden md:flex h-[520px] gap-4 mb-6"
+              className="hidden md:flex h-[580px] gap-4 mb-6"
             >
               {aboutSections.map((section, index) => (
                 <HorizontalAccordionPanel
@@ -883,7 +894,7 @@ export default function AboutPage() {
           </main>
 
           {/* 我的游戏库 - 横跨整个页面宽度 */}
-          <div className="col-span-full lg:col-span-4 -mt-8">
+          <div className="col-span-full lg:col-span-4 mt-0">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
