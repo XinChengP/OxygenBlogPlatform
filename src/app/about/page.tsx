@@ -547,7 +547,7 @@ export default function AboutPage() {
   const [activeSection, setActiveSection] = useState(0);
   // 常玩游戏手风琴当前展开的游戏索引，默认展开第一个
   const [activeFrequentGame, setActiveFrequentGame] = useState(0);
-  // 偶尔玩/通关游戏手风琴当前展开的游戏索引，默认展开妄想症（索引5）
+  // 偶尔玩/通关游戏手风琴当前展开的游戏索引，默认妄想症（索引5）
   const [activeOccasionalGame, setActiveOccasionalGame] = useState(5);
 
   // 确保组件已挂载，避免主题/动画相关的水合不匹配

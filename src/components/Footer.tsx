@@ -127,15 +127,15 @@ function formatTime(milliseconds: number): string {
 function Footer() {
   const pathname = usePathname();
 
-  // 网站上线时间 - 使用 useMemo 缓存
-  const launchDate = useMemo(() => new Date('2025-11-06T20:00:00'), []);
-  const runTimeRef = useRef<HTMLSpanElement>(null);
-
   // 计算版权年份，格式为 "2025 - 【当前年份】"
   const copyrightYear = useMemo(() => {
     const currentYear = new Date().getFullYear();
     return currentYear === 2025 ? "2025" : `2025 - ${currentYear}`;
   }, []);
+
+  // 网站上线时间 - 使用 useMemo 缓存
+  const launchDate = useMemo(() => new Date('2025-11-06T20:00:00'), []);
+  const runTimeRef = useRef<HTMLSpanElement>(null);
 
   // 实时更新运行时间 - 使用 ref 直接操作 DOM，避免 React re-render
   useEffect(() => {
@@ -151,7 +151,7 @@ function Footer() {
         if (runTimeRef.current) {
           runTimeRef.current.textContent = diff < 0
             ? `距离上线还有 ${formatTime(-diff)}`
-            : `已稳定运行: ${formatTime(diff)}`;
+            : `本站已存活：${formatTime(diff)}`;
         }
         lastUpdateTime = currentTime;
       }
@@ -191,36 +191,13 @@ function Footer() {
             </>
           )}
 
+          {/* 网站运行时间 - 使用 ref 直接更新，避免触发 React re-render */}
+          <span className="mx-1.5">·</span>
+          <span ref={runTimeRef} />
         </p>
 
-        {/* 第二行：运行时间、技术栈和备案信息 */}
+        {/* 第二行：备案信息 */}
         <p className="flex flex-wrap items-center justify-center gap-2 text-xs text-white drop-shadow-sm">
-          {/* 网站运行时间 - 使用 ref 直接更新，避免触发 React re-render */}
-          <span ref={runTimeRef} />
-
-          {/* 技术栈信息 */}
-          <span className="mx-1.5">·</span>
-          <span>Powered by</span>
-          <Link
-            href="https://nextjs.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-white hover:text-white/80 transition-colors duration-200 underline-offset-4 hover:underline nav-link"
-          >
-            Next.js
-          </Link>
-          <span>&</span>
-          <Link
-            href="https://pages.github.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-white hover:text-white/80 transition-colors duration-200 underline-offset-4 hover:underline nav-link"
-          >
-            GitHub Pages
-          </Link>
-
-          {/* 备案信息 */}
-          <span className="mx-1.5">·</span>
           <Link
             href="https://beian.miit.gov.cn/"
             target="_blank"
@@ -239,6 +216,23 @@ function Footer() {
           >
             萌ICP备20261099号
           </Link>
+
+          {/* 魔ICP备案信息 */}
+          <span className="mx-1.5">·</span>
+          <a
+            href="https://www.moicp.cn/keyword.php?type=魔ICP备2026849076号-1"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-white hover:text-white/80 transition-colors duration-200 underline-offset-4 hover:underline nav-link"
+          >
+            <img
+              src="https://www.moicp.cn/static/image/moicp_icon.png"
+              alt="魔ICP备案图标"
+              style={{ width: '20px', height: '20px' }}
+              className="hidden"
+            />
+            魔ICP备2026849076号-1
+          </a>
         </p>
       </div>
     </footer>
