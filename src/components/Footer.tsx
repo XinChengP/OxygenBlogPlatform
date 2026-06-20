@@ -229,6 +229,16 @@ function Footer() {
           >
             津ICP备2025041817号
           </Link>
+          {/* 萌ICP备案信息 */}
+          <span className="mx-1.5">·</span>
+          <Link
+            href="https://icp.gov.moe/?keyword=20261099"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-white hover:text-white/80 transition-colors duration-200 underline-offset-4 hover:underline nav-link"
+          >
+            萌ICP备20261099号
+          </Link>
         </p>
       </div>
     </footer>
