@@ -13,6 +13,7 @@ build/
 *password*
 *.pem
 .admin_password.json
+*.bak
 
 # Admin 相关文件（不上传到 GitHub）
 admin-*

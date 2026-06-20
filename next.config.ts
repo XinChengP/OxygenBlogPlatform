@@ -173,18 +173,8 @@ const staticConfig = {
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL || '',
     CUSTOM_DOMAIN: process.env.CUSTOM_DOMAIN || 'false',
   },
-  // 使用 Turbopack 别名配置替换 actions 为静态导出版本
-  turbopack: {
-    resolveAlias: {
-      '@/actions': './src/actions/index.static.ts',
-      '@/actions/todoActions': './src/actions/index.static.ts',
-      '@/actions/settingsActions': './src/actions/index.static.ts',
-      '@/actions/githubActions': './src/actions/index.static.ts',
-      '@/actions/backupActions': './src/actions/index.static.ts',
-      '@/actions/momentActions': './src/actions/index.static.ts',
-      '@/actions/galleryActions': './src/actions/index.static.ts',
-    },
-  },
+  // 静态导出使用 webpack 构建，避免 Turbopack 生产构建偶发缺失 chunk 的问题
+  // actions 的替换由 prepare-static-export.js 脚本在构建前完成
 };
 
 // 根据环境选择配置
