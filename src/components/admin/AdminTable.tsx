@@ -13,7 +13,7 @@ interface Column<T> {
   /** 列标题 */
   title: string;
   /** 自定义渲染函数 */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   render?: (value: any, record: T, index: number) => React.ReactNode;
   /** 是否可排序 */
   sortable?: boolean;

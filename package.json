@@ -11,11 +11,11 @@
   "scripts": {
     "dev": "next dev -p 7120",
     "build": "npm run sync-theme && next build",
-    "build:pages": "node scripts/prepare-static-export.js prepare && npm run sync-theme && set NODE_OPTIONS=--max-old-space-size=8192 && next build && node scripts/prepare-static-export.js restore",
+    "build:pages": "node scripts/prepare-static-export.js prepare && npm run sync-theme && next build && node scripts/prepare-static-export.js restore",
     "build:static": "node scripts/prepare-static-export.js prepare && npm run sync-theme && next build && node scripts/prepare-static-export.js restore",
     "start": "next start",
     "serve": "node scripts/serve-static.js",
-    "lint": "next lint",
+    "lint": "eslint src",
     "sync-theme": "node scripts/sync-theme-colors.js",
     "generate-gallery": "npx tsx scripts/generate-gallery-data.ts",
     "export": "next build",

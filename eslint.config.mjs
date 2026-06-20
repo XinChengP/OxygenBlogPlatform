@@ -1,6 +1,7 @@
 import { dirname } from "path";
 import { fileURLToPath } from "url";
 import typescriptParser from "@typescript-eslint/parser";
+import typescriptPlugin from "@typescript-eslint/eslint-plugin";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -18,6 +19,9 @@ const eslintConfig = [
         tsconfigRootDir: __dirname,
       },
     },
+    plugins: {
+      "@typescript-eslint": typescriptPlugin,
+    },
     rules: {
       // 禁止隐式 any，但允许显式 any
       "@typescript-eslint/no-unsafe-argument": "off",
@@ -28,8 +32,6 @@ const eslintConfig = [
       "@typescript-eslint/no-explicit-any": "off",
       // 关闭强制 const 规则
       "prefer-const": "off",
-      // 允许使用 img 标签（禁用 Next.js 的 img 元素警告）
-      "@next/next/no-img-element": "off",
       // 关闭未使用变量警告（暂时保持宽松）
       "@typescript-eslint/no-unused-vars": "off",
       // 关闭 require 警告
@@ -49,6 +51,7 @@ const eslintConfig = [
       "scripts/**",
       "public/**",
       "electron/**",
+      "admin-backup/**",
       "*.config.*",
       "**/*.test.ts",
       "src/setting/**",

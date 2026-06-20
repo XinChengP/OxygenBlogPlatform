@@ -540,6 +540,5 @@ export function useBlogMarkdownComponents(options: {
         </div>
       );
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [currentTheme, syntaxTheme, imageSrcSetRef, articleImagesRef, onImageClick, iframeRefs]);
 }

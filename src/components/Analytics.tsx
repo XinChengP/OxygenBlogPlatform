@@ -59,14 +59,14 @@ function initAnalytics(): void {
       
       // 开发环境下输出日志
       if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
+         
         console.log('[51la] 统计 SDK 初始化成功');
       }
     }
   } catch (error) {
     // 开发环境下输出错误日志
     if (process.env.NODE_ENV === 'development') {
-      // eslint-disable-next-line no-console
+       
       console.error('[51la] 统计 SDK 初始化失败:', error);
     }
   }
@@ -84,7 +84,7 @@ export function trackPageView(
 ): void {
   if (!isLAReady()) {
     if (process.env.NODE_ENV === 'development') {
-      // eslint-disable-next-line no-console
+       
       console.warn('[51la] SDK 未就绪，无法追踪页面浏览:', pageName);
     }
     return;
@@ -99,12 +99,12 @@ export function trackPageView(
     });
     
     if (process.env.NODE_ENV === 'development') {
-      // eslint-disable-next-line no-console
+       
       console.log('[51la] 页面浏览追踪:', pageName, extraData);
     }
   } catch (error) {
     if (process.env.NODE_ENV === 'development') {
-      // eslint-disable-next-line no-console
+       
       console.error('[51la] 页面浏览追踪失败:', error);
     }
   }
@@ -126,7 +126,7 @@ export function trackArticleView(
 ): void {
   if (!isLAReady()) {
     if (process.env.NODE_ENV === 'development') {
-      // eslint-disable-next-line no-console
+       
       console.warn('[51la] SDK 未就绪，无法追踪文章浏览:', title);
     }
     return;
@@ -142,12 +142,12 @@ export function trackArticleView(
     });
     
     if (process.env.NODE_ENV === 'development') {
-      // eslint-disable-next-line no-console
+       
       console.log('[51la] 文章浏览追踪:', title, { slug, category });
     }
   } catch (error) {
     if (process.env.NODE_ENV === 'development') {
-      // eslint-disable-next-line no-console
+       
       console.error('[51la] 文章浏览追踪失败:', error);
     }
   }
@@ -167,7 +167,7 @@ export function trackToolView(
 ): void {
   if (!isLAReady()) {
     if (process.env.NODE_ENV === 'development') {
-      // eslint-disable-next-line no-console
+       
       console.warn('[51la] SDK 未就绪，无法追踪小工具浏览:', toolName);
     }
     return;
@@ -183,12 +183,12 @@ export function trackToolView(
     });
     
     if (process.env.NODE_ENV === 'development') {
-      // eslint-disable-next-line no-console
+       
       console.log('[51la] 小工具浏览追踪:', toolName, { category });
     }
   } catch (error) {
     if (process.env.NODE_ENV === 'development') {
-      // eslint-disable-next-line no-console
+       
       console.error('[51la] 小工具浏览追踪失败:', error);
     }
   }
@@ -206,7 +206,7 @@ export function trackEvent(
 ): void {
   if (!isLAReady()) {
     if (process.env.NODE_ENV === 'development') {
-      // eslint-disable-next-line no-console
+       
       console.warn('[51la] SDK 未就绪，无法追踪事件:', eventName);
     }
     return;
@@ -220,12 +220,12 @@ export function trackEvent(
     });
     
     if (process.env.NODE_ENV === 'development') {
-      // eslint-disable-next-line no-console
+       
       console.log('[51la] 事件追踪:', eventName, data);
     }
   } catch (error) {
     if (process.env.NODE_ENV === 'development') {
-      // eslint-disable-next-line no-console
+       
       console.error('[51la] 事件追踪失败:', error);
     }
   }
@@ -257,7 +257,7 @@ export default function Analytics(): React.ReactElement | null {
    */
   const handleScriptError = useCallback(() => {
     if (process.env.NODE_ENV === 'development') {
-      // eslint-disable-next-line no-console
+       
       console.warn('[51la] SDK 脚本加载失败，统计功能将不可用');
     }
   }, []);

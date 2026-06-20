@@ -66,6 +66,7 @@ jobs:
         env:
           # 设置GitHub Actions环境变量 - 使用 env 块确保变量被正确传递
           NODE_ENV: production
+          NODE_OPTIONS: --max-old-space-size=8192
           NEXT_PUBLIC_GITHUB_REPO_NAME: ${{ github.event.repository.name }}
           NEXT_PRIVATE_STATIC_EXPORT: "true"
           STATIC_EXPORT: "true"
