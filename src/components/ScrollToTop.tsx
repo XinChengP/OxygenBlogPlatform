@@ -33,10 +33,20 @@ export default function ScrollToTop() {
   const [isAtTop, setIsAtTop] = useState(true);
   const [showThemeButton, setShowThemeButton] = useState(false);
   const [musicPlayerVisible, setMusicPlayerVisible] = useState(false);
+  // 用于标记组件是否已在客户端挂载
+  // next-themes 在服务端无法获取用户真实主题，直接读取 theme 会导致服务端与客户端首次渲染结果不一致（水合不匹配）
+  // 挂载完成后再根据真实主题更新图标、title 等无法通过 CSS 控制的属性
+  const [mounted, setMounted] = useState(false);
 
   // 初始化音乐播放器可见性状态
   useEffect(() => {
     setMusicPlayerVisible(getMusicPlayerVisibility());
+  }, []);
+
+  // 组件挂载完成后再根据真实主题渲染图标和 title
+  // 保证服务端输出与客户端首次水合输出一致，避免 React 水合警告
+  useEffect(() => {
+    setMounted(true);
   }, []);
 
   // 监听滚动事件 - 使用节流优化
@@ -557,7 +567,7 @@ export default function ScrollToTop() {
         >
           <button
             onClick={playNext}
-            className={`p-3 ${theme === 'dark' ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'} rounded-lg shadow-lg transition-all duration-300 transform hover:scale-110`}
+            className={`p-3 bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 rounded-lg shadow-lg transition-all duration-300 transform hover:scale-110`}
             aria-label="下一首歌曲"
             title="下一首歌曲"
           >
@@ -570,7 +580,8 @@ export default function ScrollToTop() {
         {/* 音乐播放器控制按钮 - 条件显示，在主题切换按钮上方 */}
         <button
           onClick={toggleMusicPlayer}
-          className={`p-3 ${musicPlayerVisible ? 'bg-primary text-primary-foreground hover:bg-primary/90' : theme === 'dark' ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'} rounded-lg shadow-lg transition-all duration-300 transform hover:scale-110 ${showThemeButton ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-5 scale-95 pointer-events-none'}`}
+          // 主题相关样式使用 Tailwind dark: 前缀，避免服务端与客户端 className 不一致
+          className={`p-3 ${musicPlayerVisible ? 'bg-primary text-primary-foreground hover:bg-primary/90' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600'} rounded-lg shadow-lg transition-all duration-300 transform hover:scale-110 ${showThemeButton ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-5 scale-95 pointer-events-none'}`}
           style={{
             transitionDelay: showThemeButton ? '0.1s' : '0s',
             display: showThemeButton ? 'flex' : 'none'
@@ -581,7 +592,7 @@ export default function ScrollToTop() {
           <MusicalNoteIcon className={`h-5 w-5 ${!musicPlayerVisible ? 'opacity-50' : ''}`} />
           {!musicPlayerVisible && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className={`w-6 h-0.5 ${theme === 'dark' ? 'bg-gray-400' : 'bg-gray-600'} transform rotate-45`}></div>
+              <div className="w-6 h-0.5 bg-gray-600 dark:bg-gray-400 transform rotate-45"></div>
             </div>
           )}
         </button>
@@ -589,7 +600,8 @@ export default function ScrollToTop() {
         {/* 放烟花按钮 - 条件显示，在音乐播放器下面，主题切换上面 */}
         <button
           onClick={startFireworks}
-          className={`p-3 ${theme === 'dark' ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'} rounded-lg shadow-lg transition-all duration-300 transform hover:scale-110 ${showThemeButton ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-5 scale-95 pointer-events-none'}`}
+          // 主题相关样式使用 Tailwind dark: 前缀，避免服务端与客户端 className 不一致
+          className={`p-3 bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 rounded-lg shadow-lg transition-all duration-300 transform hover:scale-110 ${showThemeButton ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-5 scale-95 pointer-events-none'}`}
           style={{
             transitionDelay: showThemeButton ? '0.15s' : '0s',
             display: showThemeButton ? 'flex' : 'none'
@@ -603,21 +615,24 @@ export default function ScrollToTop() {
         {/* 主题切换按钮 - 条件显示 */}
         <button
           onClick={toggleTheme}
-          className={`p-3 ${theme === 'dark' ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'} rounded-lg shadow-lg transition-all duration-300 transform hover:scale-110 ${showThemeButton ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-5 scale-95 pointer-events-none'}`}
+          // 主题相关样式使用 Tailwind dark: 前缀，避免服务端与客户端 className 不一致
+          // title 和图标在客户端挂载后再按真实主题渲染，避免水合时文本/图标不一致
+          className={`p-3 bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 rounded-lg shadow-lg transition-all duration-300 transform hover:scale-110 ${showThemeButton ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-5 scale-95 pointer-events-none'}`}
           style={{
             transitionDelay: showThemeButton ? '0.2s' : '0s',
             display: showThemeButton ? 'flex' : 'none'
           }}
           aria-label="切换主题"
-          title={theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
+          title={mounted ? (theme === 'dark' ? '切换到浅色模式' : '切换到深色模式') : '切换到深色模式'}
         >
-          {theme === 'dark' ? <MoonIcon className="h-5 w-5" /> : <SunIcon className="h-5 w-5" />}
+          {mounted ? (theme === 'dark' ? <MoonIcon className="h-5 w-5" /> : <SunIcon className="h-5 w-5" />) : <SunIcon className="h-5 w-5" />}
         </button>
         
         {/* 设置按钮 - 方形风格 */}
         <button
           onClick={toggleThemeButton}
-          className={`p-3 ${theme === 'dark' ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'} rounded-lg shadow-lg transition-all duration-300 transform hover:scale-110`}
+          // 主题相关样式使用 Tailwind dark: 前缀，避免服务端与客户端 className 不一致
+          className={`p-3 bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 rounded-lg shadow-lg transition-all duration-300 transform hover:scale-110`}
           aria-label="设置"
           title="设置"
         >
@@ -638,7 +653,8 @@ export default function ScrollToTop() {
         {/* 转到页底按钮 - 方形风格 */}
         <button
           onClick={scrollToBottom}
-          className={`p-3 ${theme === 'dark' ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'} rounded-lg shadow-lg transition-all duration-300 transform hover:scale-110 ${isAtBottom ? 'opacity-50 cursor-not-allowed' : ''}`}
+          // 主题相关样式使用 Tailwind dark: 前缀，避免服务端与客户端 className 不一致
+          className={`p-3 bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 rounded-lg shadow-lg transition-all duration-300 transform hover:scale-110 ${isAtBottom ? 'opacity-50 cursor-not-allowed' : ''}`}
           aria-label="转到页底"
           title="转到页底"
           disabled={isAtBottom}
@@ -651,7 +667,7 @@ export default function ScrollToTop() {
           onClick={togglePlayPause}
           onMouseEnter={() => setIsHoveringPlayButton(true)}
           onMouseLeave={() => setIsHoveringPlayButton(false)}
-          className={`relative p-3 ${currentSong ? 'bg-primary text-primary-foreground hover:bg-primary/90' : theme === 'dark' ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'} rounded-lg shadow-lg transition-all duration-300 transform hover:scale-110 ${!currentSong ? 'opacity-50 cursor-not-allowed' : ''}`}
+          className={`relative p-3 ${currentSong ? 'bg-primary text-primary-foreground hover:bg-primary/90' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600'} rounded-lg shadow-lg transition-all duration-300 transform hover:scale-110 ${!currentSong ? 'opacity-50 cursor-not-allowed' : ''}`}
           aria-label={isPlaying ? "暂停音乐" : "播放音乐"}
           title={isPlaying ? "暂停音乐" : "播放音乐"}
           disabled={!currentSong}
