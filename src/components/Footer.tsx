@@ -174,7 +174,7 @@ function Footer() {
   }
 
   return (
-    <footer className="relative min-h-[160px] border-t border-border/30">
+    <footer className="relative min-h-[160px]">
       {/* 底部小鱼特效 - 作为页脚背景 */}
       <FlyingFish />
       <div className="relative z-10 flex flex-col justify-end min-h-[160px] max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 text-center space-y-3">
