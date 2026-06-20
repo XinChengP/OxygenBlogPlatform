@@ -21,7 +21,8 @@ interface OptimizedImageProps {
   blurDataURL?: string;
   /**
    * 是否启用WebP格式自动转换
-   * 默认启用
+   * 默认不启用：静态导出到 GitHub Pages 后不会自动生成 .webp，
+   * 贸然改写扩展名会导致请求不存在的资源
    */
   enableWebP?: boolean;
   /**
@@ -40,7 +41,7 @@ interface OptimizedImageProps {
  * 核心功能：
  * 1. 智能懒加载 - 使用 Intersection Observer 实现精确的图片进入视口检测
  * 2. 模糊占位符 - 支持渐进式加载，先显示模糊小图再过渡到清晰大图
- * 3. WebP自动转换 - 自动检测浏览器支持并转换图片格式
+ * 3. WebP自动转换 - 默认关闭，仅在传入 enableWebP=true 且存在对应 .webp 资源时启用
  * 4. 加载状态管理 - 优雅的加载动画和错误处理
  * 5. 性能优化 - 减少重绘重排，使用GPU加速
  * 
@@ -59,7 +60,7 @@ export default function OptimizedImage({
   quality = 80,
   onClick,
   blurDataURL,
-  enableWebP = true,
+  enableWebP = false,
   objectFit = 'cover',
   borderRadius,
 }: OptimizedImageProps) {
