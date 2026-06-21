@@ -86,6 +86,12 @@ coverImage: "/Blogabout/blogs-crash-diary/cover.jpg"
   .cd-level-sky {
     background: rgba(102, 245, 255, 0.3);
   }
+  .cd-level-pink {
+    background: rgba(255, 102, 179, 0.3);
+  }
+  .cd-level-gray {
+    background: rgba(82, 65, 73, 0.34);
+  }
 
   /* "正在玩" 状态标签 */
   .cd-playing {
@@ -199,7 +205,7 @@ coverImage: "/Blogabout/blogs-crash-diary/cover.jpg"
 `XinchengP:炮✌️出G，只为正E！`
 
 ---
----
+
 <br>
 <div class="cd-header">
     <div class="cd-avatar">
@@ -355,7 +361,7 @@ XinchengP 回复 123fjj：终于知道当年为啥会被删评论了233
     </div>
 </div><br>
 
-&emsp;&emsp;图一是整加速的时候看的，当时没仔细看，之后我删的时候只把后面的 **.cnd巴拉巴拉** 的删了，然后就没管，继续和ai对线修博客去了（埋下伏笔*2）
+&emsp;&emsp;图一是整加速的时候看的，当时没仔细看，之后我删的时候只把后面的 **.cdn巴拉巴拉** 的删了，然后就没管，继续和ai对线修博客去了（埋下伏笔*2）
 
 <div class="image-grid image-grid-3-cols"><img src="/Blogabout/blogs-crash-diary/7.png" loading="lazy" decoding="async" alt="" /><img src="/Blogabout/blogs-crash-diary/8.png" loading="lazy" decoding="async" alt="" /></div>
 
@@ -447,7 +453,7 @@ XinchengP 回复 123fjj：LZ也只是个大一屌丝TAT
 </div>
 
 <div class="cd-meta">
-    <small>&emsp;2026-06-20 21:39:46</small>
+    <small>&emsp;2026-06-20 21:39:46&emsp;发布自QQ群</small>
     <span>11楼&emsp;&emsp;</span>
 </div>
 
@@ -510,7 +516,7 @@ Eiheir 回复 XinchengP：会赢的！
 &emsp;&emsp;***度娘又吞我楼(╬ﾟдﾟ)▄︻┻┳═一
 &emsp;&emsp;总而言之言而总之，不要对万恶的资本家抱有任何幻想，你可能小赚，但他们永远不亏
 &emsp;&emsp;闹麻了直接给我干到下周去了
-&emsp;&emsp;话说猜一猜LZ有几个马甲？
+&emsp;&emsp;话说猜一猜LZ有几个马甲？（为什么总感觉忘了点啥）
 
 <div class="image-grid image-grid-3-cols"><img src="/Blogabout/blogs-crash-diary/20.png" loading="lazy" decoding="async" alt="" /></div>
 
@@ -524,5 +530,155 @@ Eiheir 回复 XinchengP：会赢的！
 Eiheir 回复 123fjj：我不到啊
 XinchengP 回复 123fjj：我不到啊
 ```
+
+---
+
+<br>
+<div class="cd-header">
+    <div class="cd-avatar">
+        <img src="/Blogabout/blogs-crash-diary/allenwdk.jpg" loading="lazy" decoding="async" alt="">
+    </div>
+    <div class="cd-header-main">
+        <div class="cd-user-info">
+            <span class="cd-username">Allenwdk</span>
+            <span class="cd-level cd-level-sky"> Lv.233 </span>
+        </div>
+        <span class="cd-likes">3 点赞&emsp;&emsp;&emsp;</span>
+    </div>
+</div><br>
+
+&emsp;&emsp;话说这给我干哪来了，这还是博客吗。看完感觉这辈子到头了（
+
+<div class="cd-sllh">
+    <img src="/Blogabout/blogs-crash-diary/sllh.gif" loading="lazy" decoding="async" alt="">
+</div>
+
+<div class="cd-meta">
+    <small>&emsp;2026-06-21 16:25:51&emsp;</small>
+    <span>15楼&emsp;&emsp;</span>
+</div>
+
+`XinchengP：这辈子有了（`
+
+---
+
+<br>
+<div class="cd-header">
+    <div class="cd-avatar">
+        <img src="/Blogabout/blogs-crash-diary/touxiang4.png" loading="lazy" decoding="async" alt="">
+    </div>
+    <div class="cd-header-main">
+        <div class="cd-user-info">
+            <span class="cd-username">Cay_Jir</span>
+            <span class="cd-level cd-level-pink"> Lv.250 </span>
+        </div>
+        <span class="cd-likes">6 点赞&emsp;&emsp;&emsp;</span>
+    </div>
+</div><br>
+
+&emsp;&emsp;听好了，菜鷄！XinchengP在这周六发了一个超癫的贴吧，所有人都会参加，但你猜，谁没收到邀请？
+&emsp;&emsp;没错，就是你~~~
+&emsp;&emsp; ጿ ኈ ቼ ዽ ጿ ኈ ቼ ዽ ጿ ኈ ቼ ዽ ጿ ኈ ቼ ዽ ጿ ኈ ቼ ዽ ጿ ኈ ቼ ዽ ጿ ኈ ቼ ዽ ጿ ኈ ቼ ዽ ጿ ኈ ቼ ዽ ጿ ኈ ቼ ዽ ጿ ኈ ቼ ዽ ጿ ኈ ቼ ዽ ጿ ኈ ቼ ዽ ጿ ኈ ቼ ዽ ጿ ኈ ቼ ዽ ጿ ኈ ቼ ዽ ጿ ኈ ቼ ዽ（一段抽象的街舞）
+
+<div class="image-grid image-grid-3-cols"><img src="/Blogabout/blogs-crash-diary/21.webp" loading="lazy" decoding="async" alt="" /></div>
+
+<div class="cd-meta">
+    <small>&emsp;2026-06-21 17:21:00</small>
+    <span>16楼&emsp;&emsp;</span>
+</div>
+
+<div class="cd-sllh">
+
+方块树上方块果，方块树下你和我。此生无悔入MC，来世还做方块人。
+
+```
+XinchengP：原来是把你给忘了233333
+各自安好：hhhhhh
+Cay_Jir 回复 XinchengP：我感觉我被123fjj夺舍了（¯﹃¯）
+Eiheir 回复 Cay_Jir：濧233
+```
+---
+
+<br>
+<div class="cd-header">
+    <div class="cd-avatar">
+        <img src="/Blogabout/blogs-crash-diary/byd.jpg" loading="lazy" decoding="async" alt="">
+    </div>
+    <div class="cd-header-main">
+        <div class="cd-user-info">
+            <span class="cd-username">1tan√10</span>
+            <span class="cd-level cd-level-gray"> Lv.0 </span>
+        </div>
+        <span class="cd-likes">0 点赞&emsp;&emsp;&emsp;</span>
+    </div>
+</div><br>
+
+&emsp;&emsp;菜
+
+<div class="image-grid image-grid-3-cols"><img src="/Blogabout/blogs-crash-diary/22.jpg" loading="lazy" decoding="async" alt="" /></div>
+
+<div class="cd-meta">
+    <small>&emsp;2026-06-21 18:11:11</small>
+    <span>17楼&emsp;&emsp;</span>
+</div>
+
+```
+XinchengP：byd别狗叫
+UNbearab1e(yjs爸爸)：yjs你先别急，我还要嘲笑你呢
+1tan√10：hyw
+```
+
+---
+
+<br>
+<div class="cd-header">
+    <div class="cd-avatar">
+        <img src="/Blogabout/blogs-crash-diary/yyr.jpg" loading="lazy" decoding="async" alt="">
+    </div>
+    <div class="cd-header-main">
+        <div class="cd-user-info">
+            <span class="cd-username">UNbearab1e(yjs爸爸)</span>
+            <span class="cd-level cd-level-gray"> Lv.1 </span>
+        </div>
+        <span class="cd-likes">1 点赞&emsp;&emsp;&emsp;</span>
+    </div>
+</div><br>
+
+&emsp;&emsp;楼主我命令你立刻把测绘画完拿来给我一观
+
+<div class="image-grid image-grid-3-cols"><img src="/Blogabout/blogs-crash-diary/23.gif" loading="lazy" decoding="async" alt="" /></div>
+
+<div class="cd-meta">
+    <small>&emsp;2026-06-21 18:32:23</small>
+    <span>18楼&emsp;&emsp;</span>
+</div>
+
+
+`XinchengP：疜佽ㄚ𝕚錠（手动滑稽）`
+
+---
+
+<br>
+<div class="cd-header">
+    <div class="cd-avatar">
+        <img src="/Blogabout/blogs-crash-diary/byd.jpg" loading="lazy" decoding="async" alt="">
+    </div>
+    <div class="cd-header-main">
+        <div class="cd-user-info">
+            <span class="cd-username">1tan√10</span>
+            <span class="cd-level cd-level-gray"> Lv.0 </span>
+        </div>
+        <span class="cd-likes">1 点赞&emsp;&emsp;&emsp;</span>
+    </div>
+</div><br>
+
+&emsp;&emsp;马上就星期爻了。来杯好茶🍵摇一摇😘摇一摇😆摇一摇😆吉星高照爻一爻🥰爻一爻😍爻一爻😍茶香绕😉推个牌☺️接财到🤩来财🤑来财🤑来🤑上签在手😘举杯共饮😋皆吉兆🥰来杯好茶摇一摇😎摇一摇😙摇一摇😙寰宇好友友邀一邀😏邀一邀😄邀一邀😄团雀闹🤪好事近🥳上眉梢😌吃好😋睡好😋好😋心海无垠😆与君乐饮☺️易逍遥🥳将军☀️请喝茶🥰🥰🥰
+
+<div class="cd-meta">
+    <small>&emsp;2026-06-21 19:19:19</small>
+    <span>19楼&emsp;&emsp;</span>
+</div>
+
+`XinchengP：hyw`
 
 ---
