@@ -220,21 +220,29 @@ var FISH = function(renderer){
 };
 FISH.prototype = {
 	GRAVITY : 0.4,
-	
+	// 小鱼整体运动速度倍率（0~1，值越小运动越慢）
+	// 要让运动变慢而空间轨迹（跳跃高度、水平距离、路径形状）保持不变：
+	//   - 速度是一阶量，缩放为 SPEED_RATE 倍
+	//   - 加速度是二阶量，缩放为 SPEED_RATE * SPEED_RATE 倍
+	// 这样时间轴被拉长，但 y 关于 x 的函数关系不变。
+	SPEED_RATE : 0.5,
+
 	init : function(){
 		this.direction = Math.random() < 0.5;
 		this.x = this.direction ? (this.renderer.width + this.renderer.THRESHOLD) : -this.renderer.THRESHOLD;
 		this.previousY = this.y;
-		this.vx = this.getRandomValue(4, 10) * (this.direction ? -1 : 1);
-		
+		// 水平速度乘以速度倍率，只降低游过屏幕的快慢，不改变起点到终点的水平距离
+		this.vx = this.getRandomValue(4 * this.SPEED_RATE, 10 * this.SPEED_RATE) * (this.direction ? -1 : 1);
+
 		if(this.renderer.reverse){
 			this.y = this.getRandomValue(this.renderer.height * 1 / 10, this.renderer.height * 4 / 10);
-			this.vy = this.getRandomValue(2, 5);
-			this.ay = this.getRandomValue(0.05, 0.2);
+			// 垂直速度是一阶量，按 SPEED_RATE 缩放；加速度是二阶量，按 SPEED_RATE 的平方缩放
+			this.vy = this.getRandomValue(2 * this.SPEED_RATE, 5 * this.SPEED_RATE);
+			this.ay = this.getRandomValue(0.05 * this.SPEED_RATE * this.SPEED_RATE, 0.2 * this.SPEED_RATE * this.SPEED_RATE);
 		}else{
 			this.y = this.getRandomValue(this.renderer.height * 6 / 10, this.renderer.height * 9 / 10);
-			this.vy = this.getRandomValue(-5, -2);
-			this.ay = this.getRandomValue(-0.2, -0.05);
+			this.vy = this.getRandomValue(-5 * this.SPEED_RATE, -2 * this.SPEED_RATE);
+			this.ay = this.getRandomValue(-0.2 * this.SPEED_RATE * this.SPEED_RATE, -0.05 * this.SPEED_RATE * this.SPEED_RATE);
 		}
 		this.isOut = false;
 		this.theta = 0;
@@ -252,24 +260,26 @@ FISH.prototype = {
 		this.x += this.vx;
 		this.y += this.vy;
 		this.vy += this.ay;
-		
+
 		if(this.renderer.reverse){
 			if(this.y > this.renderer.height * this.renderer.INIT_HEIGHT_RATE){
-				this.vy -= this.GRAVITY;
+				// 重力是加速度，按 SPEED_RATE 的平方缩放，保持下落和回弹轨迹不变
+				this.vy -= this.GRAVITY * this.SPEED_RATE * this.SPEED_RATE;
 				this.isOut = true;
 			}else{
 				if(this.isOut){
-					this.ay = this.getRandomValue(0.05, 0.2);
+					this.ay = this.getRandomValue(0.05 * this.SPEED_RATE * this.SPEED_RATE, 0.2 * this.SPEED_RATE * this.SPEED_RATE);
 				}
 				this.isOut = false;
 			}
 		}else{
 			if(this.y < this.renderer.height * this.renderer.INIT_HEIGHT_RATE){
-				this.vy += this.GRAVITY;
+				// 重力是加速度，按 SPEED_RATE 的平方缩放，保持上升和下落轨迹不变
+				this.vy += this.GRAVITY * this.SPEED_RATE * this.SPEED_RATE;
 				this.isOut = true;
 			}else{
 				if(this.isOut){
-					this.ay = this.getRandomValue(-0.2, -0.05);
+					this.ay = this.getRandomValue(-0.2 * this.SPEED_RATE * this.SPEED_RATE, -0.05 * this.SPEED_RATE * this.SPEED_RATE);
 				}
 				this.isOut = false;
 			}

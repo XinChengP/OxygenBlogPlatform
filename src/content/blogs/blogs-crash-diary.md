@@ -587,9 +587,11 @@ XinchengP 回复 123fjj：我不到啊
     <span>16楼&emsp;&emsp;</span>
 </div>
 
-<div class="cd-sllh">
-
-方块树上方块果，方块树下你和我。此生无悔入MC，来世还做方块人。
+<div style="width:85%; margin:18px auto; height:1px; background:#cccccc;"></div>
+<div style="text-align:center; color:#666; letter-spacing:2px; font-size:14px;">
+方块树上方块果，方块树下你和我。<br>
+此生无悔入M C，来世还做方块人。
+</div>
 
 ```
 XinchengP：原来是把你给忘了233333
@@ -597,6 +599,7 @@ XinchengP：原来是把你给忘了233333
 Cay_Jir 回复 XinchengP：我感觉我被123fjj夺舍了（¯﹃¯）
 Eiheir 回复 Cay_Jir：濧233
 ```
+
 ---
 
 <br>
