@@ -117,22 +117,55 @@ export default function NotFound() {
     
     // 设置body类
     document.body.classList.add('not-found', 'live2d-hidden');
-    
+
+    // 强制锁定页面滚动：同时锁定 html 和 body，确保桌面端和移动端都无法滚动
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalBodyTouchAction = document.body.style.touchAction;
+    const originalHtmlTouchAction = document.documentElement.style.touchAction;
+
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.touchAction = 'none';
+    document.body.style.touchAction = 'none';
+
+    // 阻止移动端的 touchmove 滚动行为（包括弹性滚动）
+    const preventScroll = (e: TouchEvent) => {
+      e.preventDefault();
+    };
+    document.addEventListener('touchmove', preventScroll, { passive: false });
+
+    // 阻止鼠标滚轮滚动
+    const preventWheel = (e: WheelEvent) => {
+      e.preventDefault();
+    };
+    document.addEventListener('wheel', preventWheel, { passive: false });
+
     // 监听Live2D组件挂载并隐藏
     const observer = new MutationObserver(() => {
       hideLive2DContainer();
     });
-    
-    observer.observe(document.body, { 
-      childList: true, 
-      subtree: true 
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
     });
-    
-    // 清理函数
+
+    // 清理函数：离开404页面时恢复滚动能力
     return () => {
       observer.disconnect();
       delete window.hideLive2D;
       window.removeEventListener('themechange', handleThemeChange);
+
+      // 恢复 html 和 body 的滚动样式
+      document.documentElement.style.overflow = originalHtmlOverflow;
+      document.body.style.overflow = originalBodyOverflow;
+      document.documentElement.style.touchAction = originalHtmlTouchAction;
+      document.body.style.touchAction = originalBodyTouchAction;
+
+      // 移除滚动事件监听
+      document.removeEventListener('touchmove', preventScroll);
+      document.removeEventListener('wheel', preventWheel);
     };
   }, []);
 
