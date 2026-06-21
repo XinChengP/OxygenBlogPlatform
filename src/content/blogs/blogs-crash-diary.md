@@ -242,7 +242,7 @@ XinchengP 回复 123fjj：终于知道当年为啥会被删评论了233
     </div>
 </div><br>
 
-&emsp;&emsp;ok啊中间历经千辛万苦，又双叒叕给免费额度干没了，~~不过我感觉kimi-k2.7 code降智挺严重的，成渣渣了干啥都干不好，前两天还聪明的离谱~~，怒给梁文峰叔叔充了十块钱，迅速给我定位到了问题所在之处~~（迅速：指烧了百万词元）~~，心疼的不得了（虽然只有几毛钱），然后找了个白嫖词元的ai，自己有捣鼓了一下怎么导进来，前前后后折腾了半天，烧完了GLM5.2的200w词元，胜利就在眼前的时候，直接拉了个大的，要给我回档到5个月以前（王德发幸亏我警觉及时备份了），！？区区？！
+&emsp;&emsp;ok啊中间历经千辛万苦，又双叒叕给免费额度干没了，~~不过我感觉kimi-k2.7 code降智挺严重的，成渣渣了干啥都干不好，前两天还聪明的离谱~~，怒给梁文峰叔叔充了十块钱，迅速给我定位到了问题所在之处~~（迅速：指烧了百万词元）~~，心疼的不得了（虽然只有几毛钱），然后找了个白嫖词元的ai，自己又捣鼓了一下怎么导进来，前前后后折腾了半天，烧完了GLM5.2的200w词元，胜利就在眼前的时候，直接拉了个大的，要给我回档到5个月以前（王德发幸亏我警觉及时备份了），！？区区？！
 
 <div class="image-grid image-grid-3-cols"><img src="/Blogabout/blogs-crash-diary/9.jpg" alt="" /><img src="/Blogabout/blogs-crash-diary/10.png" alt="" /><img src="/Blogabout/blogs-crash-diary/11.png" alt="" /></div>
 
@@ -295,7 +295,7 @@ XinchengP 回复 123fjj：LZ也只是个大一屌丝TAT
     </div>
     <div style="display: flex; justify-content: space-between; align-items: center; flex: 1;">
         <div style="display: flex; align-items: center; gap: 20px;">
-            <span style="font-size: 25px; font-weight: bold;">Allewdk</span>
+            <span style="font-size: 25px; font-weight: bold;">Allenwdk</span>
             <span style="background: rgba(102, 245, 255, 0.3); color: #ffffff; padding: 4px 4px; border-radius: 9px; font-size: 15px;"> Lv.233 </span>
         </div>
         <span style="font-size: 10px; opacity:0.8;">2 点赞&emsp;&emsp;&emsp;</span>
@@ -347,9 +347,11 @@ Eiheir 回复 XinchengP：会赢的！
 
 ---
 
-`
-本层楼因楼主语言过激而被折叠
-`
+<br>
+<div style="padding:12px 18px; background:#eee; border-radius:8px; margin:12px 0; color:#707070; font-size:15px;">
+本层已被折叠，点点点击查看原因
+<span style="color:#eee;">楼主语言过激</span>
+</div><br>
 
 ---
 
