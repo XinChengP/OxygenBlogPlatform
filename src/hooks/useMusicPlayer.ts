@@ -380,7 +380,7 @@ export function useMusicPlayer(): UseMusicPlayerReturn {
         // 随机播放模式下需要重新生成随机顺序
         // 复用公共工具函数，消除与 globalMusicPlayerManager.ts 的重复洗牌逻辑
         if (mode === 'random') {
-          regenerateRandomOrder(player, 'useMusicPlayer');
+          regenerateRandomOrder(player);
         }
       }
       
