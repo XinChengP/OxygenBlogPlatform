@@ -56,9 +56,8 @@ interface HistoryUpdateEventDetail {
  * 为 APlayer 重新生成随机播放顺序数组
  * 消除 useMusicPlayer.ts 与 globalMusicPlayerManager.ts 中的重复洗牌逻辑
  * @param player - APlayer 实例
- * @param context - 调用上下文标识，用于日志输出
  */
-export function regenerateRandomOrder(player: APlayerNS.APlayer, context: string): void {
+export function regenerateRandomOrder(player: APlayerNS.APlayer): void {
   const audioCount = player.list && player.list.list ? player.list.list.length : 0;
   if (audioCount <= 0) return;
 
@@ -100,9 +99,6 @@ class GlobalMusicPlayerManager {
 
   /** 初始化回调队列 */
   private initCallbacks: ((player: APlayerNS.APlayer) => void)[] = [];
-
-  /** 是否正在页面切换中 */
-  private isPageTransitioning = false;
 
   /** 监听器是否已设置 */
   private listenersSetup = false;
@@ -150,7 +146,12 @@ class GlobalMusicPlayerManager {
 
   /**
    * 设置页面切换监听器
-   * 监听页面可见性变化、页面卸载、路由变化等事件
+   * 监听页面可见性变化和页面卸载事件，用于保存播放状态
+   *
+   * 说明：
+   * - 播放器已移到全局 layout 中始终挂载，因此不需要监听 Next.js 路由变化
+   * - visibilitychange 在标签页切换时保存状态
+   * - beforeunload 在页面关闭或刷新前保存状态
    */
   private setupPageTransitionListeners() {
     // 确保监听器只设置一次，且仅在客户端环境执行
@@ -163,37 +164,13 @@ class GlobalMusicPlayerManager {
       if (document.visibilityState === 'hidden') {
         // 页面隐藏时保存状态
         this.savePlayState();
-      } else {
-        // 页面重新可见时，延迟重置状态
-        setTimeout(() => {
-          this.isPageTransitioning = false;
-        }, 100);
       }
     });
 
     // 监听页面卸载
     window.addEventListener('beforeunload', () => {
-      this.isPageTransitioning = true;
       this.savePlayState();
     });
-
-    // 监听路由变化（Next.js 特有）
-    try {
-      if (typeof window !== 'undefined' && (window as any).next?.router?.events) {
-        (window as any).next.router.events.on('routeChangeStart', () => {
-          this.isPageTransitioning = true;
-          this.savePlayState();
-        });
-
-        (window as any).next.router.events.on('routeChangeComplete', () => {
-          setTimeout(() => {
-            this.isPageTransitioning = false;
-          }, 100);
-        });
-      }
-    } catch (error) {
-      console.warn('设置 Next.js 路由监听器失败:', error);
-    }
   }
 
   // ==================== 播放器初始化与获取 ====================
@@ -246,14 +223,6 @@ class GlobalMusicPlayerManager {
   }
 
   /**
-   * 检查是否正在页面切换
-   * @returns 是否正在页面切换
-   */
-  isPageInTransition(): boolean {
-    return this.isPageTransitioning;
-  }
-
-  /**
    * 当播放器初始化后执行回调
    * @param callback - 初始化完成后执行的回调函数
    */
@@ -275,16 +244,25 @@ class GlobalMusicPlayerManager {
     const previousMode = this.playMode;
     this.playMode = mode;
 
-    // 同步到 APlayer 的 order 配置
-    // 注意：APlayer 只支持 'list' 和 'random'，'single' 需要特殊处理
+    // 同步到 APlayer 的 order 和 loop 配置
+    // 注意：APlayer 只支持 'list' 和 'random' 两种 order，'single' 需要配合 loop 模拟
     if (this.player && this.player.options) {
       if (mode === 'random') {
         this.player.options.order = 'random';
-        // 复用公共工具函数生成随机顺序，消除与 useMusicPlayer.ts 的重复洗牌逻辑
-        regenerateRandomOrder(this.player, 'GlobalMusicPlayer');
+        // 复用公共工具函数生成随机顺序，消除重复洗牌逻辑
+        regenerateRandomOrder(this.player);
       } else {
         this.player.options.order = 'list';
       }
+      // 单曲循环通过 loop 属性模拟
+      this.player.options.loop = mode === 'single';
+    }
+
+    // 同步到 localStorage，保持与 MusicPlayer 初始化恢复一致
+    try {
+      localStorage.setItem('musicPlayMode', mode);
+    } catch {
+      // 忽略 localStorage 写入失败
     }
 
     // 触发播放模式变化事件

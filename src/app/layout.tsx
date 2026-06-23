@@ -11,6 +11,7 @@ import { NavigationVisibilityProvider } from "@/contexts/NavigationVisibilityCon
 import Analytics from "@/components/Analytics";
 import SecurityProvider from "@/components/security/SecurityProvider";
 import Live2DDynamicLoader from "@/components/Live2DDynamicLoader";
+import MusicPlayerController from "@/components/MusicPlayerController";
 
 /**
  * 站点基础URL配置
@@ -47,7 +48,7 @@ export const metadata: Metadata = {
    * 页面描述
    * 用于搜索引擎结果页展示，建议150字以内
    */
-  description: "心想事成的个人博客，以洛天依为主题，记录前端开发技术、VOCALOID相关内容、生活感悟与学习笔记。使用 Next.js 构建，支持 Live2D 看板娘、音乐播放器、主题切换等特色功能。",
+  description: "心想事成的个人博客，记录前端开发技术、VOCALOID相关内容、生活感悟与学习笔记。（反正就是日常发癫）",
 
   /**
    * 关键词
@@ -93,11 +94,15 @@ export const metadata: Metadata = {
   },
 
   /**
-   * 规范URL配置
+   * 规范URL配置和替代格式
    * 防止重复内容问题，告诉搜索引擎哪个是首选URL
+   * 同时提供RSS订阅地址
    */
   alternates: {
     canonical: BASE_URL,
+    types: {
+      'application/rss+xml': `${BASE_URL}/rss.xml`,
+    },
   },
 
   /**
@@ -213,6 +218,9 @@ export default function RootLayout({
         {/* DNS预解析 - 加速第三方资源加载 */}
         <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
         <link rel="dns-prefetch" href="https://giscus.app" />
+
+        {/* RSS订阅自动发现 - 让浏览器和RSS阅读器能够发现博客订阅 */}
+        <link rel="alternate" type="application/rss+xml" title="歆橙的博客 RSS" href={`${BASE_URL}/rss.xml`} />
 
         {/* 注意：背景图片由 BackgroundLayer 组件动态加载，不预加载以避免浏览器警告
             BackgroundLayer 会在客户端挂载后根据主题设置加载图片，预加载可能导致资源浪费
@@ -387,6 +395,8 @@ export default function RootLayout({
         <Analytics />
         {/* Live2D 看板娘 - 放在 layout 中保持跨页面挂载 */}
         <Live2DDynamicLoader />
+        {/* 音乐播放器 - 放在 layout 中保持跨页面挂载 */}
+        <MusicPlayerController />
       </body>
     </html>
   );

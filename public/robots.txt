@@ -21,6 +21,13 @@ Disallow: /temp/
 # 站点地图地址 - 帮助搜索引擎发现所有页面
 Sitemap: https://blog.xinchengp.cn/sitemap.xml
 
+# 针对 Bing 爬虫的特殊配置
+User-agent: bingbot
+Allow: /
+Disallow: /admin
+Disallow: /api/
+Crawl-delay: 1
+
 # ============================================
 # 主要搜索引擎爬虫说明：
 # - Baiduspider: 百度爬虫

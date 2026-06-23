@@ -13,15 +13,15 @@ const STORAGE_KEY = 'music-player-visibility';
  */
 export function getMusicPlayerVisibility(): boolean {
   if (typeof window === 'undefined') {
-    return true; // 服务器端默认显示
+    return false; // 服务器端默认隐藏
   }
   
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : true; // 默认显示
+    return stored ? JSON.parse(stored) : false; // 默认隐藏，由按钮控制显示
   } catch (error) {
     console.warn('Failed to get music player visibility:', error);
-    return true;
+    return false;
   }
 }
 

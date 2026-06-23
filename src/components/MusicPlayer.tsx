@@ -7,6 +7,7 @@ import { musicConfigManager, ProcessedAudioItem } from '@/utils/musicConfigManag
 import type { APlayerNS, PlayMode } from '@/types/aplayer';
 import { emitMusicEvent } from '@/utils/live2dEventEmitter';
 import { getAssetPath } from '@/utils/assetUtils';
+import { getMusicPlayerVisibility, onMusicPlayerVisibilityChange } from '@/utils/musicPlayerVisibility';
 
 /**
  * 音乐播放器组件 Props 接口
@@ -16,6 +17,8 @@ interface MusicPlayerProps {
   autoPlay?: boolean;
   /** 是否循环播放，默认 false（由播放模式控制） */
   loop?: boolean;
+  /** 是否隐藏播放器（用于路由级控制），默认 false */
+  hidden?: boolean;
 }
 
 /**
@@ -57,9 +60,10 @@ const PLAY_MODE_NAMES: Record<PlayMode, string> = {
  * @param props 组件属性
  * @returns 音乐播放器组件
  */
-const MusicPlayerComponent = function MusicPlayer({ 
+const MusicPlayerComponent = function MusicPlayer({
   autoPlay = false,
-  loop = false 
+  loop = false,
+  hidden = false
 }: MusicPlayerProps) {
   // ==================== 状态定义 ====================
   
@@ -93,10 +97,31 @@ const MusicPlayerComponent = function MusicPlayer({
   /** 清理函数引用（用于组件卸载时清理） */
   const cleanupRef = useRef<(() => void) | null>(null);
 
+  /** 用户手动设置的播放器可见性 */
+  const [userVisible, setUserVisible] = useState(true);
+
+  /** 标记是否已经启动过播放器加载 */
+  const hasLoadedRef = useRef(false);
+
+  // 最终是否隐藏：路由级隐藏 或 用户手动关闭
+  const isHidden = hidden || !userVisible;
+
   // ==================== 客户端挂载检测 ====================
   
   useEffect(() => {
     setIsClient(true);
+
+    // 读取用户手动设置的播放器可见性
+    setUserVisible(getMusicPlayerVisibility());
+
+    // 监听用户手动切换可见性
+    const unsubscribe = onMusicPlayerVisibilityChange((visible) => {
+      setUserVisible(visible);
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   // ==================== SubTask 5.1: 从配置文件加载音乐列表 ====================
@@ -121,10 +146,8 @@ const MusicPlayerComponent = function MusicPlayer({
         if (processedList && processedList.length > 0) {
           setAudioList(processedList);
           setConfigLoadError(false);
-          console.log(`[MusicPlayer] 成功加载 ${processedList.length} 首歌曲`);
         } else {
           // 配置为空，使用默认配置
-          console.warn('[MusicPlayer] 配置文件歌曲列表为空，使用默认配置');
           const defaultList = musicConfigManager.getProcessedAudioList();
           setAudioList(defaultList);
           setConfigLoadError(false);
@@ -133,7 +156,7 @@ const MusicPlayerComponent = function MusicPlayer({
         // 加载失败，使用默认配置作为降级方案
         console.error('[MusicPlayer] 加载音乐配置失败:', error);
         setConfigLoadError(true);
-        
+
         // 使用默认配置
         const defaultList = musicConfigManager.getProcessedAudioList();
         setAudioList(defaultList);
@@ -169,35 +192,29 @@ const MusicPlayerComponent = function MusicPlayer({
    */
   const applyPlayMode = useCallback((player: APlayerNS.APlayer, mode: PlayMode) => {
     if (!player || !player.options) return;
-    
-    console.log('[MusicPlayer] 应用播放模式:', mode);
-    
+
     // 设置 APlayer 的 order 配置
     player.options.order = PLAY_MODE_TO_ORDER[mode];
-    
+
     // 处理单曲循环模式
     // APlayer 没有原生的单曲循环模式，需要通过设置 loop 属性来模拟
     if (mode === 'single') {
       player.options.loop = true;
-      console.log('[MusicPlayer] 启用单曲循环模式');
     } else {
       // 列表循环和随机播放模式下，loop 应该为 false
       player.options.loop = false;
       if (mode === 'random') {
-        console.log('[MusicPlayer] 启用随机播放模式，order:', player.options.order);
-        
         // 关键修复：重新生成随机顺序数组
         // APlayer 的 randomOrder 在初始化时只生成一次，切换模式时需要重新生成
         const audioCount = player.list && player.list.list ? player.list.list.length : 0;
         if (audioCount > 0) {
           // @ts-ignore - APlayer 内部方法
-          const shuffleFn = (window as any).APlayer?.default?.randomOrder || 
+          const shuffleFn = (window as any).APlayer?.default?.randomOrder ||
                            (player as any).constructor?.randomOrder;
-          
+
           if (shuffleFn && typeof shuffleFn === 'function') {
             // @ts-ignore
             player.randomOrder = shuffleFn(audioCount);
-            console.log('[MusicPlayer] 已重新生成随机顺序数组');
           } else {
             // 备用方案：手动生成随机顺序
             const indices = Array.from({ length: audioCount }, (_, i) => i);
@@ -208,17 +225,11 @@ const MusicPlayerComponent = function MusicPlayer({
             }
             // @ts-ignore
             player.randomOrder = indices;
-            console.log('[MusicPlayer] 已手动生成随机顺序数组');
           }
-        }
-        
-        // 随机模式下，确保列表已正确初始化
-        if (player.list && player.list.list) {
-          console.log('[MusicPlayer] 当前歌曲数量:', player.list.list.length);
         }
       }
     }
-    
+
     // 保存到 localStorage
     try {
       localStorage.setItem('musicPlayMode', mode);
@@ -233,7 +244,6 @@ const MusicPlayerComponent = function MusicPlayer({
    */
   useEffect(() => {
     playModeRef.current = playMode;
-    console.log('[MusicPlayer] 播放模式更新:', playMode);
   }, [playMode]);
 
   /**
@@ -428,24 +438,19 @@ const MusicPlayerComponent = function MusicPlayer({
     const handleEnded = () => {
       // 使用 ref 获取最新的播放模式，避免闭包问题
       const currentMode = playModeRef.current;
-      
-      console.log('[MusicPlayer] 歌曲播放结束，当前模式:', currentMode);
-      
+
       // 单曲循环模式下，重新播放当前歌曲
       if (currentMode === 'single') {
-        console.log('[MusicPlayer] 单曲循环：重新播放当前歌曲');
         player.seek(0);
         player.play();
-      } 
+      }
       // 随机播放模式下，APlayer 会自动选择下一首随机歌曲
       else if (currentMode === 'random') {
-        console.log('[MusicPlayer] 随机播放模式：等待 APlayer 自动选择下一首');
         // 验证 APlayer 的随机列表是否已正确初始化
         if (player.list && player.list.list) {
           // APlayer 应该自动处理，但如果没有自动切换，手动触发
           setTimeout(() => {
             if (player.paused) {
-              console.log('[MusicPlayer] 随机模式未自动播放，手动切换到下一首');
               const nextIndex = (player.list.index + 1) % player.list.list.length;
               player.list.switch(nextIndex);
               // 确保切换后自动播放
@@ -460,11 +465,9 @@ const MusicPlayerComponent = function MusicPlayer({
       }
       // 列表循环模式下，手动切换到下一首
       else if (currentMode === 'list') {
-        console.log('[MusicPlayer] 列表循环模式：切换到下一首');
         if (player.list && player.list.list && player.list.list.length > 0) {
           const currentIndex = player.list.index;
           const nextIndex = (currentIndex + 1) % player.list.list.length;
-          console.log(`[MusicPlayer] 从索引 ${currentIndex} 切换到 ${nextIndex}`);
           player.list.switch(nextIndex);
           // 确保切换后自动播放
           setTimeout(() => {
@@ -643,20 +646,6 @@ const MusicPlayerComponent = function MusicPlayer({
       // 设置事件监听器并获取清理函数
       const cleanupEventListeners = setupPlayerEventListeners(ap, globalManager);
 
-      // 页面卸载前保存状态
-      const saveStateBeforeUnload = () => {
-        globalManager.savePlayState();
-      };
-      window.addEventListener('beforeunload', saveStateBeforeUnload);
-
-      // 页面可见性变化监听
-      const handleVisibilityChange = () => {
-        if (document.visibilityState === 'hidden') {
-          globalManager.savePlayState();
-        }
-      };
-      document.addEventListener('visibilitychange', handleVisibilityChange);
-
       // 设置播放器实例到全局管理器
       // 使用 initPlayer 而不是 setPlayer，确保 isInitialized 被正确设置
       globalManager.initPlayer(ap);
@@ -691,8 +680,6 @@ const MusicPlayerComponent = function MusicPlayer({
 
       // 保存清理函数引用
       cleanupRef.current = () => {
-        window.removeEventListener('beforeunload', saveStateBeforeUnload);
-        document.removeEventListener('visibilitychange', handleVisibilityChange);
         try {
           cleanupEventListeners();
         } catch (e) {
@@ -706,13 +693,28 @@ const MusicPlayerComponent = function MusicPlayer({
      */
     const initAPlayer = async () => {
       if (typeof window === 'undefined' || !aplayerRef.current) return;
-      
+
       try {
-        // 检查是否已有全局播放器实例
+        // 如果全局已经有播放器实例，直接复用（处理 React 严格模式或组件重建）
         if (globalManager.isPlayerInitialized()) {
+          // 即使复用已有实例，也要检查是否应该隐藏
+          if (isHidden) {
+            return;
+          }
           useExistingPlayer();
           return;
         }
+
+        // 隐藏状态下不启动加载，避免在首页/404 等页面初始化播放器
+        if (isHidden) {
+          return;
+        }
+
+        // 已经尝试创建过实例但未成功（且全局没有实例），不再重复创建
+        if (hasLoadedRef.current) {
+          return;
+        }
+        hasLoadedRef.current = true;
         
         // 检查 APlayer 是否已加载
         if (!(window as any).APlayer) {
@@ -778,14 +780,15 @@ const MusicPlayerComponent = function MusicPlayer({
       }
     };
   }, [
-    isClient, 
-    audioList, 
-    isInitialized, 
-    autoPlay, 
-    loop, 
-    restorePlayMode, 
-    setupPlayerEventListeners, 
-    highlightArtistNames
+    isClient,
+    audioList,
+    isInitialized,
+    autoPlay,
+    loop,
+    restorePlayMode,
+    setupPlayerEventListeners,
+    highlightArtistNames,
+    isHidden
   ]);
 
   // ==================== SubTask 8.2: 重试加载播放器 ====================
@@ -805,7 +808,10 @@ const MusicPlayerComponent = function MusicPlayer({
   // ==================== 渲染 ====================
 
   return (
-    <div className="aplayer-container">
+    <div
+      className="aplayer-container"
+      style={{ display: isHidden ? 'none' : 'block' }}
+    >
       {/* APlayer 播放器容器 */}
       <div ref={aplayerRef} />
       
