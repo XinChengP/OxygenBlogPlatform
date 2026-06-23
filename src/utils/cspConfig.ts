@@ -118,6 +118,8 @@ export const productionCSP: CSPDirectives = {
     'https://v6.51.la',
     'https://sdk.51.la',
     'https://collect-v6.51.la',  // 51la 数据收集
+    // 一言API（Live2D看板娘随机句子）
+    'https://v1.hitokoto.cn',
     // Google Analytics
     'https://www.google-analytics.com',
     // 本地开发
