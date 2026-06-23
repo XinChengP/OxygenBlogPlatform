@@ -1,17 +1,10 @@
+'use server';
+
 /**
  * GitHub 推送功能的后端逻辑
  * 提供 Git 仓库操作、状态检查和推送到 GitHub 的功能
  * 使用 simple-git 库执行 Git 操作
- * 
- * 注意：此文件支持两种运行模式
- * 1. 本地开发模式（NEXT_PRIVATE_STATIC_EXPORT !== 'true'）：使用真实的 Git 操作
- * 2. 静态导出模式（NEXT_PRIVATE_STATIC_EXPORT === 'true'）：返回空实现，用于 GitHub Pages 构建
  */
-
-'use server';
-
-// 检测是否在静态导出模式 - 必须在任何导入之前检测
-const isStaticExport = process.env.NEXT_PRIVATE_STATIC_EXPORT === 'true' || process.env.STATIC_EXPORT === 'true';
 
 import simpleGit, { SimpleGit } from 'simple-git';
 import { exec } from 'child_process';
@@ -93,16 +86,6 @@ export async function initGitRepo(): Promise<{
   isRepo: boolean;
   hasRemote: boolean;
 }> {
-  // 静态导出模式下返回空实现
-  if (isStaticExport) {
-    return {
-      success: false,
-      message: '静态导出模式不支持此功能',
-      isRepo: false,
-      hasRemote: false,
-    };
-  }
-
   try {
     const repoPath = getRepoPath();
 
@@ -159,20 +142,6 @@ export async function initGitRepo(): Promise<{
  * @returns 返回 GitStatus 对象，描述当前 Git 仓库状态
  */
 export async function getGitStatus(): Promise<GitStatus> {
-  // 静态导出模式下返回空实现
-  if (isStaticExport) {
-    return {
-      isRepo: false,
-      hasRemote: false,
-      currentBranch: '',
-      hasUncommittedChanges: false,
-      uncommittedFiles: [],
-      hasPushable: false,
-      aheadCount: 0,
-      behindCount: 0,
-    };
-  }
-
   try {
     const repoPath = getRepoPath();
     const isRepo = await isGitRepository(repoPath);
@@ -274,11 +243,6 @@ export async function getGitStatus(): Promise<GitStatus> {
  * @returns 如果有未提交的更改返回 true，否则返回 false
  */
 export async function hasUncommittedChanges(): Promise<boolean> {
-  // 静态导出模式下返回空实现
-  if (isStaticExport) {
-    return false;
-  }
-
   try {
     const repoPath = getRepoPath();
     const isRepo = await isGitRepository(repoPath);
@@ -304,11 +268,6 @@ export async function hasUncommittedChanges(): Promise<boolean> {
  * @returns 如果有领先提交返回 true，否则返回 false
  */
 export async function isAheadOfRemote(): Promise<boolean> {
-  // 静态导出模式下返回空实现
-  if (isStaticExport) {
-    return false;
-  }
-
   try {
     const repoPath = getRepoPath();
     const isRepo = await isGitRepository(repoPath);
@@ -339,11 +298,6 @@ export async function getUncommittedFiles(): Promise<{
   deleted: string[];
   renamed: string[];
 }> {
-  // 静态导出模式下返回空实现
-  if (isStaticExport) {
-    return { modified: [], added: [], deleted: [], renamed: [] };
-  }
-
   try {
     const repoPath = getRepoPath();
     const isRepo = await isGitRepository(repoPath);
@@ -375,14 +329,6 @@ export async function getUncommittedFiles(): Promise<{
  * @returns 返回 GitPushResult，描述推送操作的结果
  */
 export async function pushToGitHub(message?: string): Promise<GitPushResult> {
-  // 静态导出模式下返回空实现
-  if (isStaticExport) {
-    return {
-      success: false,
-      message: '静态导出模式不支持此功能',
-    };
-  }
-
   try {
     const repoPath = getRepoPath();
 
@@ -549,14 +495,6 @@ export async function buildAndPush(
   buildMessage?: string,
   pushMessage?: string
 ): Promise<GitPushResult> {
-  // 静态导出模式下返回空实现
-  if (isStaticExport) {
-    return {
-      success: false,
-      message: '静态导出模式不支持此功能',
-    };
-  }
-
   try {
     const repoPath = getRepoPath();
 
@@ -628,14 +566,6 @@ export async function addRemote(
   success: boolean;
   message: string;
 }> {
-  // 静态导出模式下返回空实现
-  if (isStaticExport) {
-    return {
-      success: false,
-      message: '静态导出模式不支持此功能',
-    };
-  }
-
   try {
     const repoPath = getRepoPath();
 
@@ -685,11 +615,6 @@ export async function getRemoteList(): Promise<Array<{
   name: string;
   url: string;
 }>> {
-  // 静态导出模式下返回空实现
-  if (isStaticExport) {
-    return [];
-  }
-
   try {
     const repoPath = getRepoPath();
 
@@ -725,11 +650,6 @@ export async function getCommitHistory(
   date: string;
   author: string;
 }>> {
-  // 静态导出模式下返回空实现
-  if (isStaticExport) {
-    return [];
-  }
-
   try {
     const repoPath = getRepoPath();
 

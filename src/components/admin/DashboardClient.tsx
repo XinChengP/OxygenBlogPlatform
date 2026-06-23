@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 import AdminCard from './AdminCard';
 import { cn } from '../../utils/cn';
-import type { DashboardStats } from '../../utils/adminUtils';
+import type { DashboardStats } from '../../utils/server/adminStats';
 import { Changelog, ChangelogType, getTypeStats, getChangelogTypeLabel, getMonthStats, getQuarterStats, getYearStats } from '../../types/changelogTypes';
 import { PieChart, Pie, Cell, Tooltip as ReTooltip, ResponsiveContainer, Sector, LineChart, Line, XAxis, YAxis, CartesianGrid, Legend, AreaChart, Area } from 'recharts';
 import { themeColors } from '../../setting/WebSetting';
