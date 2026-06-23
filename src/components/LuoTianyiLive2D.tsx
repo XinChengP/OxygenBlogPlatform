@@ -34,6 +34,9 @@ export default function LuoTianyiLive2D({ hidden = false }: LuoTianyiLive2DProps
     const hiddenRef = useRef<boolean>(hidden);
     hiddenRef.current = hidden;
 
+    // 标记是否已经启动过 Live2D 加载，确保首次进入非隐藏页面后，后续切回隐藏页面不会卸载
+    const hasLoadedRef = useRef<boolean>(false);
+
     const [isVisible, setIsVisible] = useState(true);
     const [isMobileDevice, setIsMobileDevice] = useState(false);
     const [message, setMessage] = useState('');
@@ -94,21 +97,33 @@ export default function LuoTianyiLive2D({ hidden = false }: LuoTianyiLive2DProps
         }
     }, [triggerFadeOut]);
 
+    // 监听 hidden 变化，进入隐藏页面时清空当前消息，避免切回时闪现旧消息
+    useEffect(() => {
+        if (hidden) {
+            setMessage('');
+            setMessageOpacity(0);
+            if (fadeTimeoutRef.current) {
+                clearTimeout(fadeTimeoutRef.current);
+                fadeTimeoutRef.current = null;
+            }
+        }
+    }, [hidden]);
+
     // 组件挂载和卸载清理
     useEffect(() => {
-        // 组件挂载时设置为true
+        // 组件挂载时设置为 true
         isMountedRef.current = true;
-        
+
         // 清理所有定时器和事件监听器
         return () => {
             // 标记组件已卸载
             isMountedRef.current = false;
-            
+
             // 清理所有定时器
             if (fadeTimeoutRef.current) {
                 clearTimeout(fadeTimeoutRef.current);
             }
-            
+
             // 清理消息系统事件监听器
             if (messageAbortRef.current) {
                 messageAbortRef.current.abort();
@@ -564,6 +579,17 @@ export default function LuoTianyiLive2D({ hidden = false }: LuoTianyiLive2DProps
 
     // 主要的 Live2D 初始化 useEffect
     useEffect(() => {
+        // 隐藏页面不启动加载，避免在首页/404 等页面初始化 Live2D
+        if (hidden) {
+            return;
+        }
+
+        // 已经加载过则不再重复加载，保证切回隐藏页面再切出时不会重新加载
+        if (hasLoadedRef.current) {
+            return;
+        }
+        hasLoadedRef.current = true;
+
         // 检查是否为移动设备
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
@@ -632,7 +658,7 @@ export default function LuoTianyiLive2D({ hidden = false }: LuoTianyiLive2DProps
                 }
             });
         };
-    }, [loadLive2D]);
+    }, [loadLive2D, hidden]);
 
 
 

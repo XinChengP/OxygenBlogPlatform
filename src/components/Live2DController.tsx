@@ -16,6 +16,10 @@ export default function Live2DController() {
 
   // 计算当前是否需要隐藏 Live2D
   const isHidden = useMemo(() => {
+    // 路径未确定时默认隐藏，避免水合前闪现
+    if (pathname === null) {
+      return true;
+    }
     // 首页、404 页面、不存在的路由以及后台管理页面都隐藏 Live2D
     return (
       pathname === '/' ||

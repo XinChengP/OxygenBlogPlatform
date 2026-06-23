@@ -94,13 +94,11 @@ class Live2DMessageManager {
     
     // 更严格的重复消息检测
     if (isSimilarMessage && timeSinceLastMessage < this.MESSAGE_COOLDOWN * 2) {
-      console.log('相似消息跳过显示:', message);
       return;
     }
-    
+
     // 防止消息洪水 - 限制短时间内消息数量
     if (timeSinceLastMessage < 500 && priority < 3) {
-      console.log('消息过于频繁，跳过:', message);
       return;
     }
 
@@ -108,14 +106,12 @@ class Live2DMessageManager {
     if (this.isDisplayingMessage) {
       // 高优先级消息可以中断当前消息
       if (priority > this.currentPriority) {
-        console.log(`高优先级消息(${priority})中断当前消息(${this.currentPriority}):`, message);
         this.interruptCurrentMessage();
         this.displayMessage(message, duration, priority);
         return;
       }
-      
+
       // 低优先级消息加入队列
-      console.log('消息队列中添加消息:', message);
       this.messageQueue.push({ message, duration, priority });
       // 按优先级排序队列
       this.messageQueue.sort((a, b) => b.priority - a.priority);
@@ -135,19 +131,16 @@ class Live2DMessageManager {
     this.lastMessageTime = Date.now();
     this.currentPriority = priority;
 
-    console.log(`显示Live2D消息(优先级${priority}):`, message);
-
     // 清除之前的超时
     if (this.currentTimeout) {
       clearTimeout(this.currentTimeout);
     }
 
-    // 检查是否有showMessage函数（无论是否被重写）
+    // 检查是否有 showMessage 函数（无论是否被重写）
     if (typeof (window as any).showMessage === 'function') {
-      console.log('使用window.showMessage发送消息');
       (window as any).showMessage(message, duration);
     } else {
-      // 降级处理 - 直接操作DOM
+      // 降级处理 - 直接操作 DOM
       this.displayMessageDirectly(message);
     }
 
@@ -158,32 +151,24 @@ class Live2DMessageManager {
   }
 
   /**
-   * 直接操作DOM显示消息 - 已废弃，不再直接操作DOM
+   * 直接操作 DOM 显示消息 - 已废弃，不再直接操作 DOM
    */
   private displayMessageDirectly(message: string): void {
-    // 不再直接操作DOM，而是通过事件或状态管理
-    console.log('displayMessageDirectly已废弃，不再直接操作DOM');
-    
-    // 如果window.showMessage存在，使用它
+    // 不再直接操作 DOM，而是通过事件或状态管理
+    // 如果 window.showMessage 存在，使用它
     if (typeof (window as any).showMessage === 'function') {
       (window as any).showMessage(message, 3000);
-    } else {
-      console.warn('Live2D消息系统未初始化，消息无法显示:', message);
     }
   }
 
   /**
-   * 直接显示消息（内部方法） - 已废弃，不再直接操作DOM
+   * 直接显示消息（内部方法） - 已废弃，不再直接操作 DOM
    */
   private showMessageDirectly(message: string): void {
-    // 不再直接操作DOM
-    console.log('showMessageDirectly已废弃，不再直接操作DOM');
-    
-    // 如果window.showMessage存在，使用它
+    // 不再直接操作 DOM
+    // 如果 window.showMessage 存在，使用它
     if (typeof (window as any).showMessage === 'function') {
       (window as any).showMessage(message, 3000);
-    } else {
-      console.warn('Live2D消息系统未初始化，消息无法显示:', message);
     }
   }
 
@@ -221,8 +206,6 @@ class Live2DMessageManager {
     
     // 进入彩蛋模式
     this.isEasterEggMode = true;
-    
-    console.log('[Live2D] 进入彩蛋模式');
   }
 
   /**
@@ -231,7 +214,6 @@ class Live2DMessageManager {
    */
   private exitEasterEggMode(): void {
     this.isEasterEggMode = false;
-    console.log('[Live2D] 退出彩蛋模式，恢复正常消息处理');
   }
 
   /**
@@ -245,7 +227,6 @@ class Live2DMessageManager {
     this.interruptCurrentMessage();
     // 进入烟花模式
     this.isFireworksMode = true;
-    console.log('[Live2D] 进入烟花模式，阻塞所有消息');
   }
 
   /**
@@ -254,7 +235,6 @@ class Live2DMessageManager {
    */
   exitFireworksMode(): void {
     this.isFireworksMode = false;
-    console.log('[Live2D] 退出烟花模式，恢复消息处理');
   }
 
   /**
@@ -284,21 +264,19 @@ class Live2DMessageManager {
 
     this.isDisplayingMessage = false;
     this.currentPriority = 0;
-    
-    // 不再直接操作DOM，让React组件自己处理隐藏动画
+
+    // 不再直接操作 DOM，让 React 组件自己处理隐藏动画
     // this.fadeOutMessage();
-    
+
     // 烟花模式下不处理队列中的消息
     if (this.isFireworksMode) {
-      console.log('[Live2D] 烟花模式中，跳过队列消息处理');
       return;
     }
-    
+
     // 检查队列中是否有待显示的消息
     if (this.messageQueue.length > 0) {
       const nextMessage = this.messageQueue.shift();
       if (nextMessage) {
-        console.log('从队列中取出下一条消息:', nextMessage.message);
         // 延迟一点时间再显示下一条消息，避免消息闪烁
         setTimeout(() => {
           this.displayMessage(nextMessage.message, nextMessage.duration, nextMessage.priority);
@@ -355,7 +333,6 @@ class Live2DMessageManager {
 
     // 检查当前消息的优先级，只有低优先级消息才允许被隐藏
     if (this.currentPriority > maxPriority) {
-      console.log(`当前消息优先级${this.currentPriority}高于最大允许优先级${maxPriority}，不执行隐藏操作`);
       return;
     }
 
@@ -417,7 +394,6 @@ class Live2DMessageManager {
    */
   clearMessageQueue(): void {
     this.messageQueue = [];
-    console.log('消息队列已清空');
   }
 
   /**
@@ -430,20 +406,18 @@ class Live2DMessageManager {
       clearTimeout(this.currentTimeout);
       this.currentTimeout = null;
     }
-    
+
     // 退出彩蛋模式
     if (this.isEasterEggMode) {
       this.exitEasterEggMode();
     }
-    
+
     // 重置所有状态
     this.isDisplayingMessage = false;
     this.currentPriority = 0;
     this.messageQueue = [];
     this.lastMessage = '';
     this.lastMessageTime = 0;
-    
-    console.log('[Live2D] 消息管理器状态已强制重置');
   }
 
   /**

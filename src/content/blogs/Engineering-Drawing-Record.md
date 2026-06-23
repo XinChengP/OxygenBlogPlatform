@@ -51,9 +51,15 @@ excerpt: "——记工程制图课绘图两三事"
 
 <div class="image-grid image-grid-2-cols"><img src="/Blogabout/Engineering-Drawing-Record/7.jpg" alt="上午领菜板和锤子（" /><img src="/Blogabout/Engineering-Drawing-Record/6.jpg" alt="下午画图" /></div>
 
-## 似、
+## 似、了
 
-前方正在施工...（每天一更）
+> 今天的事~明天做，（反正本来就是昨天的）&emsp;&emsp;——《脑壳疼》
+
+&emsp;&emsp;今天没画图，纯预习线代了，本来打算晚上去的，结果吃完饭就不想动了23333
+
+## 呜、
+
+前方施工ing。。。
 
 ## 救、气笑了
 
