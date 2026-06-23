@@ -9,7 +9,6 @@ import { isLanternDisplayPeriod } from '@/utils/lunarDateUtils';
 
 // 动态导入重型组件，减少首屏 bundle 体积和 hydration 开销
 const MusicPlayer = dynamic(() => import('./MusicPlayer'), { ssr: false });
-const Live2DController = dynamic(() => import('./Live2DController'), { ssr: false });
 const Lantern = dynamic(() => import('./Lantern'), { ssr: false });
 
 // 使用React.memo减少不必要的渲染
@@ -37,17 +36,17 @@ export default React.memo(function ConditionalComponents() {
     };
   }, []);
   
-  // 计算是否需要隐藏Live2D和音乐播放器
-  const hideLive2DAndMusic = useMemo(() => {
+  // 计算是否需要隐藏音乐播放器（Live2D 已移至 layout.tsx 独立管理）
+  const hideMusicPlayer = useMemo(() => {
     return pathname === '/' || pathname === '/404' || pathname.startsWith('/_not-found') || pathname.startsWith('/admin');
   }, [pathname]);
-  
-  // 使用suppressHydrationWarning避免水合警告
+
+  // 使用 suppressHydrationWarning 避免水合警告
   const containerClassName = useMemo(() => {
-    return isClient 
-      ? (hideLive2DAndMusic || !musicPlayerVisible ? 'aplayer-container hidden' : 'aplayer-container')
+    return isClient
+      ? (hideMusicPlayer || !musicPlayerVisible ? 'aplayer-container hidden' : 'aplayer-container')
       : 'aplayer-container';
-  }, [isClient, hideLive2DAndMusic, musicPlayerVisible]);
+  }, [isClient, hideMusicPlayer, musicPlayerVisible]);
   
   // 计算是否需要显示ScrollToTop组件
   const showScrollToTop = useMemo(() => {
@@ -64,8 +63,6 @@ export default React.memo(function ConditionalComponents() {
           <MusicPlayer />
         </div>
       )}
-      {/* 使用Live2DController进行智能路径控制 - 后台页面不显示 */}
-      {!pathname.startsWith('/admin') && <Live2DController />}
       {/* ScrollToTop组件 - 除首页外所有页面显示 - 后台页面不显示 */}
       {showScrollToTop && !pathname.startsWith('/admin') && <ScrollToTop />}
     </>

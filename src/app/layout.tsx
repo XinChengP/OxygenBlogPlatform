@@ -10,6 +10,7 @@ import SmoothScrollProvider from "@/components/SmoothScrollProvider";
 import { NavigationVisibilityProvider } from "@/contexts/NavigationVisibilityContext";
 import Analytics from "@/components/Analytics";
 import SecurityProvider from "@/components/security/SecurityProvider";
+import Live2DDynamicLoader from "@/components/Live2DDynamicLoader";
 
 /**
  * 站点基础URL配置
@@ -384,6 +385,8 @@ export default function RootLayout({
         </SecurityProvider>
         {/* 51la 网站统计 - 用于追踪访客数据 */}
         <Analytics />
+        {/* Live2D 看板娘 - 放在 layout 中保持跨页面挂载 */}
+        <Live2DDynamicLoader />
       </body>
     </html>
   );

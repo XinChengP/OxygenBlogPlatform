@@ -5,22 +5,27 @@ import React, { useMemo } from 'react';
 import LuoTianyiLive2D from './LuoTianyiLive2D';
 
 /**
- * Live2D控制器组件
- * 根据当前路径条件渲染LuoTianyiLive2D组件
+ * Live2D 控制器组件
+ *
+ * 为了实现在页面切换时不重新加载 Live2D，本组件始终保持挂载，
+ * 仅通过 CSS 控制显示/隐藏。被隐藏的页面（首页、404、后台）中，
+ * Live2D 仍然存在于 DOM 中，只是不可见且不显示消息。
  */
 export default function Live2DController() {
   const pathname = usePathname();
 
-  // 显示逻辑：只在首页和404页面隐藏，其他页面都显示
-  const shouldShowLive2D = useMemo(() => {
-    // 只在首页(/)、404页面和不存在的路由隐藏Live2D
-    // 所有其他页面（包括动态页面）都显示Live2D
-    return pathname !== '/' && pathname !== '/404' && pathname !== '/not-found' && pathname !== '/_not-found/page';
+  // 计算当前是否需要隐藏 Live2D
+  const isHidden = useMemo(() => {
+    // 首页、404 页面、不存在的路由以及后台管理页面都隐藏 Live2D
+    return (
+      pathname === '/' ||
+      pathname === '/404' ||
+      pathname === '/not-found' ||
+      pathname === '/_not-found/page' ||
+      pathname.startsWith('/admin')
+    );
   }, [pathname]);
 
-  if (!shouldShowLive2D) {
-    return null;
-  }
-
-  return <LuoTianyiLive2D />;
+  // 始终渲染 LuoTianyiLive2D，通过 hidden 属性控制显隐
+  return <LuoTianyiLive2D hidden={isHidden} />;
 }

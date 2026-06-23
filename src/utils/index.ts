@@ -21,14 +21,8 @@ export { default as GlobalMusicPlayerManager } from './globalMusicPlayerManager'
 // Live2D事件发射器
 export * from './live2dEventEmitter';
 
-// Live2D实例管理器
-export * from './live2dInstanceManager';
-
 // Live2D消息管理器
 export * from './live2dMessageManager';
-
-// Live2D资源管理器
-export * from './live2dResourceManager';
 
 // 脚本加载工具
 export * from './loadScript';

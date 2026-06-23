@@ -4,31 +4,36 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { getAssetPath, getBasePath } from '../utils/assetUtils';
 import { live2dEventEmitter } from '../utils/live2dEventEmitter';
 import live2dMessageManager, { Live2DMessageHelper } from '../utils/live2dMessageManager';
-import { 
-  InteractionMessages, 
-  WelcomeMessages, 
-  getRandomMessage, 
-  renderMessageTemplate 
+import {
+  InteractionMessages
 } from '../setting/live2dMessages';
-import { 
-  loadScriptWithRetry, 
-  loadWithRetry, 
+import {
+  loadScriptWithRetry,
+  loadWithRetry,
   createProgressTracker,
-  getLoaderStats,
   checkResourceExists,
   type LoadResult
 } from '../utils/live2dLoader';
 
 /**
- * 洛天依Live2D看板娘组件
- * 基于stevenjoezhang/live2d-widget和unsignedzhang/luotianyi-live2d实现
+ * 洛天依 Live2D 看板娘组件
+ * 基于 stevenjoezhang/live2d-widget 和 unsignedzhang/luotianyi-live2d 实现
  */
-export default function LuoTianyiLive2D() {
+interface LuoTianyiLive2DProps {
+    // 是否处于隐藏状态（用于首页/404/后台等页面），隐藏时仍保持挂载
+    hidden?: boolean;
+}
+
+export default function LuoTianyiLive2D({ hidden = false }: LuoTianyiLive2DProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const fadeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const isMountedRef = useRef<boolean>(true); // 用于跟踪组件挂载状态
     const messageAbortRef = useRef<AbortController | null>(null); // 用于清理消息系统事件监听器
-    
+
+    // hidden 由路由控制，每次渲染时同步到 ref，供事件回调读取
+    const hiddenRef = useRef<boolean>(hidden);
+    hiddenRef.current = hidden;
+
     const [isVisible, setIsVisible] = useState(true);
     const [isMobileDevice, setIsMobileDevice] = useState(false);
     const [message, setMessage] = useState('');
@@ -51,35 +56,38 @@ export default function LuoTianyiLive2D() {
 
     // 消息更新函数 - 必须在其他使用它的函数之前定义
     const updateMessage = useCallback((newMessage: string, type: 'normal' | 'interaction' | 'fireworks' = 'normal') => {
-        // 修复：确保newMessage是有效的字符串，避免undefined导致的错误
+        // 隐藏状态下不显示任何消息，避免在首页/404 等页面后台刷屏
+        if (hiddenRef.current) {
+            return;
+        }
+
+        // 确保 newMessage 是有效的字符串，避免 undefined 导致的错误
         if (!newMessage || typeof newMessage !== 'string' || newMessage.trim() === '') {
             return;
         }
-        
+
         // 烟花模式下不显示消息（除非是烟花消息）
         if (type !== 'fireworks' && live2dMessageManager.isInFireworksMode()) {
-            console.log('[LuoTianyiLive2D] 烟花模式中，跳过消息显示:', newMessage);
             return;
         }
-        
-        // 修复：改进消息过滤逻辑，只过滤特定的默认问候语，允许彩蛋消息显示
+
+        // 过滤特定的默认问候语，允许其他正常消息和彩蛋消息显示
         const isDefaultMessage = newMessage.includes('你好') && newMessage.includes('洛天依') && newMessage.includes('！');
-        const isGenericGreeting = newMessage === '你好～我是洛天依！' || 
+        const isGenericGreeting = newMessage === '你好～我是洛天依！' ||
                                  newMessage === '你好~我是洛天依！';
-        
-        // 只过滤掉特定的默认问候语，允许其他正常消息和彩蛋消息显示
+
         if (isDefaultMessage || isGenericGreeting) {
             return;
         }
-        
+
         setMessage(newMessage);
         setMessageOpacity(1);
         triggerFadeOut();
-        
-        // 确保live2dMessageManager的显示状态与实际消息显示状态同步
+
+        // 确保 live2dMessageManager 的显示状态与实际消息显示状态同步
         if (typeof window !== 'undefined' && (window as any).live2dMessageManager) {
             const manager = (window as any).live2dMessageManager;
-            // 重置isDisplayingMessage状态，确保后续消息能正常显示
+            // 重置 isDisplayingMessage 状态，确保后续消息能正常显示
             if (typeof manager.isDisplayingMessage !== 'undefined') {
                 manager.isDisplayingMessage = false;
             }
@@ -123,7 +131,7 @@ export default function LuoTianyiLive2D() {
     // 资源预加载函数 - 使用增强加载器
     const preloadLive2DResources = useCallback(async () => {
         const basePath = getAssetPath('/luotianyi-live2d-master');
-        
+
         // 定义关键资源
         const criticalResources = [
             { url: `${basePath}/live2d/js/live2d.js`, type: 'script' as const },
@@ -131,12 +139,11 @@ export default function LuoTianyiLive2D() {
             { url: `${basePath}/live2d/model/tianyi/model.json`, type: 'json' as const },
         ];
 
-        // 创建进度追踪器
+        // 创建进度追踪器，仅更新加载进度，不再输出调试日志
         const progressTracker = createProgressTracker(
             criticalResources.length,
-            (progress, loaded, failed) => {
+            (progress) => {
                 setLoadProgress(Math.round(progress));
-                console.log(`[Live2D] 加载进度: ${progress.toFixed(1)}% (${loaded}/${criticalResources.length})`);
             }
         );
 
@@ -144,18 +151,18 @@ export default function LuoTianyiLive2D() {
         const loadPromises = criticalResources.map(async ({ url, type }) => {
             try {
                 if (type === 'script') {
-                    const result = await loadScriptWithRetry(url, { 
-                        retryCount: 3, 
+                    const result = await loadScriptWithRetry(url, {
+                        retryCount: 3,
                         timeout: 30000,
-                        retryDelay: 1000 
+                        retryDelay: 1000
                     });
                     progressTracker.onItemLoaded(result.success);
                     return result.success;
                 } else {
-                    const result = await loadWithRetry(url, { 
-                        retryCount: 3, 
+                    const result = await loadWithRetry(url, {
+                        retryCount: 3,
                         cache: true,
-                        timeout: 20000 
+                        timeout: 20000
                     });
                     progressTracker.onItemLoaded(result.success);
                     return result.success;
@@ -168,9 +175,7 @@ export default function LuoTianyiLive2D() {
 
         const results = await Promise.all(loadPromises);
         const successCount = results.filter(r => r).length;
-        
-        console.log(`[Live2D] 资源预加载完成: ${successCount}/${criticalResources.length}`);
-        
+
         // 如果关键资源加载失败，记录错误
         if (successCount < criticalResources.length) {
             const failedResources = criticalResources
@@ -178,7 +183,7 @@ export default function LuoTianyiLive2D() {
                 .map(r => r.url);
             console.error('[Live2D] 以下资源加载失败:', failedResources);
         }
-        
+
         return successCount === criticalResources.length;
     }, []);
 
@@ -259,47 +264,34 @@ export default function LuoTianyiLive2D() {
 
     // 组件加载确认
     useEffect(() => {
-        console.log('[LuoTianyiLive2D] 组件开始加载');
         if (typeof window !== 'undefined') {
-            console.log('[LuoTianyiLive2D] 在浏览器环境中运行');
-            window.console.log('[LuoTianyiLive2D] 浏览器控制台日志测试');
-            
             // 获取当前页面信息并显示智能提示 - 增加延迟，避免与欢迎消息冲突
             setTimeout(() => {
                 showSmartPageMessage();
-            }, 3000); // 从1.5秒增加到3秒
+            }, 3000); // 从 1.5 秒增加到 3 秒
         }
-    }, [updateMessage, showSmartPageMessage]);
+    }, [showSmartPageMessage]);
 
 
 
     // 处理主题切换事件（使用新的消息系统）
     const handleThemeChange = useCallback((event: any) => {
-        console.log(`[LuoTianyiLive2D] 收到主题切换事件:`, event);
-        console.log(`[LuoTianyiLive2D] 事件数据:`, event.data);
-        
         if (!event.data) {
-            console.log(`[LuoTianyiLive2D] 警告: 事件数据为空`);
             return;
         }
-        
-        const { newTheme, previousTheme } = event.data;
-        
+
+        const { newTheme } = event.data;
+
         // 添加防抖机制，避免短时间内重复触发
         const now = Date.now();
         const lastThemeChangeTime = (window as any).__lastThemeChangeTime || 0;
         if (now - lastThemeChangeTime < 1000) {
-            console.log(`[LuoTianyiLive2D] 主题切换被防抖过滤: ${previousTheme} -> ${newTheme}`);
             return;
         }
         (window as any).__lastThemeChangeTime = now;
-        
-        console.log(`[LuoTianyiLive2D] 新主题: ${newTheme}, 旧主题: ${previousTheme}`);
-        
+
         // 使用新的消息系统显示主题消息
         Live2DMessageHelper.showThemeMessage(newTheme as 'light' | 'dark' | 'system');
-        
-        console.log(`[LuoTianyiLive2D] 主题切换完成: ${previousTheme} -> ${newTheme}`);
     }, []);
 
 
@@ -319,22 +311,19 @@ export default function LuoTianyiLive2D() {
         // pathname === '/blogs' 是博客导航页面，应该禁用
         // pathname.startsWith('/blogs/') 是具体文章页面，应该启用
         if (typeof window === 'undefined') return;
-        
+
         const currentPath = window.location.pathname;
         const isBlogPostPage = currentPath.startsWith('/blogs/') && currentPath !== '/blogs';
-        
+
         if (!isBlogPostPage) {
-            console.log('[LuoTianyiLive2D] 当前不是博客文章页面，禁用阅读进度检测:', currentPath);
             return;
         }
-        
-        console.log('[LuoTianyiLive2D] 当前是博客文章页面，启用阅读进度检测:', currentPath);
 
         let lastProgressMessage = 0; // 记录最后一条进度消息的时间，避免重复
         const handleScroll = () => {
             const now = Date.now();
-            if (now - lastProgressMessage < 10000) return; // 10秒内不重复显示进度消息
-            
+            if (now - lastProgressMessage < 10000) return; // 10 秒内不重复显示进度消息
+
             detectReadingProgress();
             lastProgressMessage = now;
         };
@@ -374,33 +363,25 @@ export default function LuoTianyiLive2D() {
             marker.setAttribute('data-live2d-copy-handled', 'true');
             marker.style.display = 'none';
             document.body.appendChild(marker);
-            
+
             // 延迟检查，确保复制操作已完成
             setTimeout(() => {
                 const selection = window.getSelection()?.toString();
                 const clipboardData = event.clipboardData?.getData('text/plain');
                 const copiedContent = selection || clipboardData || '';
-                
-                console.log('React复制事件检测:', {
-                    selection: selection?.substring(0, 50) + '...',
-                    clipboardData: clipboardData?.substring(0, 50) + '...',
-                    length: copiedContent.length,
-                    timestamp: Date.now()
-                });
-                
+
                 if (copiedContent.length > 10) {
                     // 使用新的消息系统显示复制消息
                     Live2DMessageHelper.showCopyMessage();
-                    console.log('React显示复制消息');
                 }
-                
+
                 // 清理标记
                 setTimeout(() => {
                     if (marker.parentNode) {
                         marker.parentNode.removeChild(marker);
                     }
                 }, 1000);
-            }, 100); // 100ms延迟确保复制操作完成
+            }, 100); // 100ms 延迟确保复制操作完成
         };
 
         if (typeof document !== 'undefined') {
@@ -413,63 +394,42 @@ export default function LuoTianyiLive2D() {
     const loadLive2D = useCallback(async () => {
         // 检查组件是否仍然挂载
         if (!isMountedRef.current) {
-            console.log('[LuoTianyiLive2D] 组件已卸载，取消加载');
             return;
         }
-        
-        console.log('[LuoTianyiLive2D] 开始加载Live2D资源...');
+
         const startTime = performance.now();
-        
+
         try {
             // 第一步：预加载资源
-            console.log('[LuoTianyiLive2D] 📦 开始预加载资源...');
             const preloadSuccess = await preloadLive2DResources();
-            
+
             if (!preloadSuccess) {
                 console.warn('[LuoTianyiLive2D] 部分资源预加载失败，尝试继续加载...');
             }
 
-            // 使用工具函数获取基础路径，确保在GitHub Pages环境下正确加载
-            const basePath = getBasePath();
-            
-            // 设置全局变量供message.js使用 - 必须在脚本加载之前设置
+            // 设置全局变量供 message.js 使用 - 必须在脚本加载之前设置
             if (typeof window !== 'undefined') {
                 (window as any).message_Path = getAssetPath('/luotianyi-live2d-master/live2d/');
                 (window as any).home_Path = window.location.origin;
-                
-                console.log('[LuoTianyiLive2D] 路径调试信息:', {
-                    basePath: basePath,
-                    message_Path: getAssetPath('/luotianyi-live2d-master/live2d/'),
-                    currentPath: window.location.pathname,
-                    hostname: window.location.hostname
-                });
             }
-            
-            // 使用assetUtils中的getAssetPath函数处理路径
+
+            // 使用 assetUtils 中的 getAssetPath 函数处理路径
             const live2dPath = getAssetPath('/luotianyi-live2d-master/live2d');
             const messagePath = live2dPath;
-            
-            console.log('[LuoTianyiLive2D] 构建的脚本路径:', {
-                live2dPath: live2dPath,
-                messagePath: messagePath,
-                expectedLive2dJs: `${live2dPath}/js/live2d.js`,
-                expectedMessageJs: `${messagePath}/js/message.js`
-            });
-            
+            const basePath = getBasePath();
+
             // 检查关键资源是否存在
             const live2dJsUrl = `${live2dPath}/js/live2d.js`;
             const messageJsUrl = `${messagePath}/js/message.js`;
-            
-            const [live2dExists, messageExists] = await Promise.all([
+
+            const [live2dExists] = await Promise.all([
                 checkResourceExists(live2dJsUrl),
                 checkResourceExists(messageJsUrl)
             ]);
-            
+
             if (!live2dExists) {
                 throw new Error(`核心脚本不存在: ${live2dJsUrl}`);
             }
-            
-            console.log('[LuoTianyiLive2D] 开始加载Live2D脚本...');
 
             // 辅助函数：检查脚本是否已加载，避免重复注入
             const isScriptLoaded = (src: string) => !!document.querySelector(`script[src="${src}"]`);
@@ -499,149 +459,121 @@ export default function LuoTianyiLive2D() {
             if (!messageResult.success) {
                 console.warn('[LuoTianyiLive2D] 消息脚本加载失败，继续加载模型...');
             }
-            
-            console.log('[LuoTianyiLive2D] 核心脚本加载完成');
 
-            // 等待DOM准备，增加重试机制
+            // 等待 DOM 准备，增加重试机制
             let retries = 0;
             const maxRetries = 10;
             while (!canvasRef.current && retries < maxRetries && isMountedRef.current) {
                 await new Promise(resolve => setTimeout(resolve, 100));
                 retries++;
             }
-            
+
             // 再次检查组件是否仍然挂载
             if (!isMountedRef.current) {
-                console.log('[LuoTianyiLive2D] 等待DOM期间组件已卸载，取消加载');
                 return;
             }
-            
+
             if (!canvasRef.current) {
-                console.error('[LuoTianyiLive2D] Canvas元素未找到，重试次数:', retries);
+                console.error('[LuoTianyiLive2D] Canvas 元素未找到，重试次数:', retries);
                 // 不抛出错误，而是优雅地处理，显示友好的提示
                 setMessage('天依初始化中，请稍后再试～');
                 setMessageOpacity(1);
                 setIsLoading(false);
                 return; // 提前返回，避免后续代码执行出错
             }
-            
+
             if (!window.loadlive2d) {
-                throw new Error('Live2D库未正确加载');
+                throw new Error('Live2D 库未正确加载');
             }
-            
+
             // 加载模型
             const modelPath = getAssetPath('/luotianyi-live2d-master/live2d/model/tianyi/model.json');
-            console.log('[LuoTianyiLive2D] 开始加载模型:', modelPath);
-            
+
             // 先检查模型文件是否存在
             const modelExists = await checkResourceExists(modelPath);
             if (!modelExists) {
                 throw new Error(`模型文件不存在: ${modelPath}`);
             }
-            
+
             // 加载模型（带超时）
             const modelLoadPromise = new Promise<void>((resolve, reject) => {
                 const timeoutId = setTimeout(() => {
                     reject(new Error('模型加载超时'));
                 }, 30000);
-                
+
                 try {
                     (window as any).loadlive2d("live2d", modelPath);
-                    
+
                     // 检查模型是否成功加载
                     const checkInterval = setInterval(() => {
-                        // 如果Live2D对象存在，说明加载成功
+                        // 如果 Live2D 对象存在，说明加载成功
                         if ((window as any).Live2D) {
                             clearInterval(checkInterval);
                             clearTimeout(timeoutId);
                             resolve();
                         }
                     }, 100);
-                    
-                    // 5秒后如果还没检测到，也认为是成功的
+
+                    // 5 秒后如果还没检测到，也认为是成功的
                     setTimeout(() => {
                         clearInterval(checkInterval);
                         clearTimeout(timeoutId);
                         resolve();
                     }, 5000);
-                    
+
                 } catch (error) {
                     clearTimeout(timeoutId);
                     reject(error);
                 }
             });
-            
+
             await modelLoadPromise;
-            
-            console.log('[LuoTianyiLive2D] 模型加载成功');
-            
+
             // 设置消息显示（传入 AbortController 以便组件卸载时清理事件监听器）
             if (messageAbortRef.current) {
                 messageAbortRef.current.abort();
             }
             messageAbortRef.current = new AbortController();
             setupMessageSystem(basePath, messageAbortRef.current.signal);
-            
+
             // 延迟隐藏加载状态，确保模型完全渲染
             setTimeout(() => {
                 setIsLoading(false);
-                const totalTime = performance.now() - startTime;
-                console.log(`[LuoTianyiLive2D] Live2D加载完成，总耗时: ${totalTime.toFixed(2)}ms`);
-                
-                // 输出加载统计
-                const stats = getLoaderStats();
-                console.log('[LuoTianyiLive2D] 加载统计:', stats);
             }, 800);
-            
-            // 额外延迟2秒后标记模型就绪，确保 hitTest 内部数据完全初始化
+
+            // 额外延迟 2 秒后标记模型就绪，确保 hitTest 内部数据完全初始化
             setTimeout(() => {
                 if (isMountedRef.current) {
                     setIsModelReady(true);
-                    console.log('[LuoTianyiLive2D] 模型交互已启用');
                 }
             }, 2000);
 
         } catch (error) {
-            console.error('[LuoTianyiLive2D] 加载Live2D失败:', error);
-            
+            console.error('[LuoTianyiLive2D] 加载 Live2D 失败:', error);
+
             // 显示友好的错误消息
             setMessage('天依加载失败了，刷新页面试试～');
             setMessageOpacity(1);
-            
+
             // 延迟隐藏加载状态
             setTimeout(() => {
                 setIsLoading(false);
             }, 2000);
-            
-            // 输出详细的错误信息
-            if (error instanceof Error) {
-                console.error('[LuoTianyiLive2D] 错误详情:', {
-                    message: error.message,
-                    stack: error.stack,
-                    name: error.name
-                });
-            }
         }
     }, [preloadLive2DResources]);
 
-    // 主要的Live2D初始化useEffect
+    // 主要的 Live2D 初始化 useEffect
     useEffect(() => {
-        console.log('[LuoTianyiLive2D] 开始初始化...');
-        
         // 检查是否为移动设备
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        
-        console.log('[LuoTianyiLive2D] 设备检测:', { isMobile, userAgent: navigator.userAgent.substring(0, 50) });
-        
+
         setIsMobileDevice(isMobile);
-        
+
         if (isMobile) {
-            console.log('[LuoTianyiLive2D] 移动设备 detected, 隐藏Live2D');
             setIsVisible(false);
             return;
         }
 
-        console.log('[LuoTianyiLive2D] 非移动设备, 开始加载Live2D...');
         setIsVisible(true);
 
         // 用于存储事件监听器，以便在卸载时清理
@@ -651,62 +583,44 @@ export default function LuoTianyiLive2D() {
         const initLive2D = () => {
             // 检查组件是否仍然挂载
             if (!isMountedRef.current) {
-                console.log('[LuoTianyiLive2D] 组件已卸载，跳过初始化');
                 return;
             }
-            
+
             // 确保页面完全加载后再初始化
             if (document.readyState === 'complete') {
-                console.log('[LuoTianyiLive2D] 页面已完全加载，立即初始化');
                 loadLive2D();
             } else if (document.readyState === 'interactive') {
-                // DOM已加载，但资源还在加载中
-                console.log('[LuoTianyiLive2D] DOM已加载，等待资源加载完成');
+                // DOM 已加载，但资源还在加载中
                 const loadHandler = () => {
                     setTimeout(() => {
                         if (isMountedRef.current) {
                             loadLive2D();
                         }
-                    }, 300); // 延迟300ms确保其他关键资源加载
+                    }, 300); // 延迟 300ms 确保其他关键资源加载
                 };
                 window.addEventListener('load', loadHandler);
                 eventListeners.push({ type: 'load', listener: loadHandler });
             } else {
                 // 页面还在加载中
-                console.log('[LuoTianyiLive2D] 页面加载中，等待DOMContentLoaded');
                 const domContentLoadedHandler = () => {
                     setTimeout(() => {
                         if (isMountedRef.current) {
                             loadLive2D();
                         }
-                    }, 500); // 延迟500ms确保DOM完全就绪
+                    }, 500); // 延迟 500ms 确保 DOM 完全就绪
                 };
                 document.addEventListener('DOMContentLoaded', domContentLoadedHandler);
                 eventListeners.push({ type: 'DOMContentLoaded', listener: domContentLoadedHandler });
             }
         };
 
-        // 强制触发loadLive2D
+        // 触发 Live2D 加载
         try {
-            console.log('[LuoTianyiLive2D] 调用loadLive2D函数...');
             initLive2D();
-            console.log('[LuoTianyiLive2D] loadLive2D调用完成');
         } catch (error) {
             console.error('[LuoTianyiLive2D] loadLive2D failed:', error);
         }
-        
-        // 全局错误捕获：静默处理 live2d.js 内部 hitTest 的非致命错误，避免控制台报错
-        const handleGlobalError = (event: ErrorEvent) => {
-            if (
-                event.filename && event.filename.includes('live2d.js') &&
-                event.message && event.message.includes("Cannot read properties of undefined (reading '0')")
-            ) {
-                event.preventDefault();
-                console.warn('[LuoTianyiLive2D] 已拦截 live2d.js 内部 hitTest 错误（非致命）');
-            }
-        };
-        window.addEventListener('error', handleGlobalError);
-        
+
         // 返回清理函数
         return () => {
             // 清理添加的事件监听器
@@ -717,68 +631,32 @@ export default function LuoTianyiLive2D() {
                     document.removeEventListener(type, listener);
                 }
             });
-            window.removeEventListener('error', handleGlobalError);
         };
-    }, [loadLive2D]); // 添加loadLive2D依赖
+    }, [loadLive2D]);
 
 
 
-    // 监听Live2D事件
+    // 监听 Live2D 事件
     useEffect(() => {
-        console.log(`[LuoTianyiLive2D] 订阅主题变化事件`);
         const unsubscribeTheme = live2dEventEmitter.on('theme-change', handleThemeChange);
-        console.log(`[LuoTianyiLive2D] 主题变化事件订阅成功`);
-        
+
         // 监听自定义消息事件
-        console.log(`[LuoTianyiLive2D] 订阅自定义消息事件`);
         const unsubscribeCustom = live2dEventEmitter.on('custom-message', (event: any) => {
-            console.log(`[LuoTianyiLive2D] 收到自定义消息事件:`, event);
-            // 处理事件数据，可能是字符串或包含message属性的对象
+            // 处理事件数据，可能是字符串或包含 message 属性的对象
             const message = typeof event === 'string' ? event : (event?.message || event?.data?.message || '收到消息啦～');
-            console.log(`[LuoTianyiLive2D] 提取的消息内容:`, message);
             updateMessage(message);
         });
-        console.log(`[LuoTianyiLive2D] 自定义消息事件订阅成功`);
 
         // 监听音乐播放事件（使用新的消息系统）
-        console.log(`[LuoTianyiLive2D] 订阅音乐播放事件`);
-        const unsubscribeMusicPlay = live2dEventEmitter.on('music-play', (event: any) => {
-            console.log(`[LuoTianyiLive2D] 收到音乐播放事件:`, event);
+        const unsubscribeMusicPlay = live2dEventEmitter.on('music-play', () => {
             Live2DMessageHelper.showMusicMessage('PLAY');
         });
 
-        const unsubscribeMusicPause = live2dEventEmitter.on('music-pause', (event: any) => {
-            console.log(`[LuoTianyiLive2D] 收到音乐暂停事件:`, event);
+        const unsubscribeMusicPause = live2dEventEmitter.on('music-pause', () => {
             Live2DMessageHelper.showMusicMessage('PAUSE');
         });
-        console.log(`[LuoTianyiLive2D] 音乐播放事件订阅成功`);
-        
-        // 测试事件系统状态 - 仅记录日志，不触发实际事件
-        setTimeout(() => {
-            console.log(`[LuoTianyiLive2D] 事件系统状态检查:`, {
-                hasThemeListeners: live2dEventEmitter.listenerCount('theme-change') > 0,
-                themeListenerCount: live2dEventEmitter.listenerCount('theme-change'),
-                hasCustomListeners: live2dEventEmitter.listenerCount('custom-message') > 0,
-                customListenerCount: live2dEventEmitter.listenerCount('custom-message')
-            });
-            
-            // 移除初始欢迎消息，减少加载时的消息数量
-            // if (!(window as any).__luotianyiWelcomeShown) {
-            //     console.log(`[LuoTianyiLive2D] 显示欢迎消息`);
-            //     // 使用较低优先级，避免与页面相关消息冲突
-            //     if (typeof window !== 'undefined' && (window as any).live2dMessageManager) {
-            //         (window as any).live2dMessageManager.showMessage('天依已上线！很高兴见到你～', 3000, 1);
-            //     } else {
-            //         updateMessage('天依已上线！很高兴见到你～');
-            //     }
-            //     (window as any).__luotianyiWelcomeShown = true;
-            // } else {
-            //     console.log(`[LuoTianyiLive2D] 欢迎消息已显示过，跳过`);
-            // }
-        }, 5000); // 增加到5秒延迟
-        
+
         return () => {
-            console.log(`[LuoTianyiLive2D] 取消订阅所有事件`);
             unsubscribeTheme();
             unsubscribeCustom();
             unsubscribeMusicPlay();
@@ -794,12 +672,10 @@ export default function LuoTianyiLive2D() {
 
         // 确保消息系统只初始化一次
         if ((window as any).messageSystemInitialized) {
-            console.log('[LuoTianyiLive2D] 消息系统已初始化，跳过重复初始化');
             return;
         }
 
         (window as any).messageSystemInitialized = true;
-        console.log('[LuoTianyiLive2D] 开始初始化消息系统');
 
         // 设置洛天依的消息系统，适配网站主题
         // 重写消息显示函数以支持自动淡出
@@ -810,23 +686,23 @@ export default function LuoTianyiLive2D() {
             click: new Map<string, number>()
         };
 
-        const THROTTLE_DELAY = 2000; // 2秒内只允许触发一次
+        const THROTTLE_DELAY = 2000; // 2 秒内只允许触发一次
 
-        // 修复：确保window.showMessage与live2dMessageManager状态同步
-        (window as any).showMessage = (msg: string, timeout?: number) => {
-            // 调用updateMessage显示消息
-            // 确保只传递有效的字符串，避免undefined
+        // 确保 window.showMessage 与 live2dMessageManager 状态同步
+        (window as any).showMessage = (msg: string) => {
+            // 调用 updateMessage 显示消息
+            // 确保只传递有效的字符串，避免 undefined
             if (msg && typeof msg === 'string' && msg.trim() !== '') {
-                // 检查是否在烟花模式下，如果是，传递'fireworks'类型
+                // 检查是否在烟花模式下，如果是，传递 'fireworks' 类型
                 const isFireworksMode = live2dMessageManager.isInFireworksMode();
                 const messageType = isFireworksMode ? 'fireworks' : 'normal';
                 updateMessage(msg, messageType);
             }
 
-            // 重置live2dMessageManager的显示状态，确保后续消息能正常显示
+            // 重置 live2dMessageManager 的显示状态，确保后续消息能正常显示
             if (typeof window !== 'undefined' && (window as any).live2dMessageManager) {
                 const manager = (window as any).live2dMessageManager;
-                // 如果manager有isDisplayingMessage属性，重置它
+                // 如果 manager 有 isDisplayingMessage 属性，重置它
                 if (typeof manager.isDisplayingMessage !== 'undefined') {
                     manager.isDisplayingMessage = false;
                 }
@@ -985,22 +861,20 @@ export default function LuoTianyiLive2D() {
      * 重新加载模型和脚本
      */
     const refreshLive2D = useCallback(async () => {
-        console.log('[LuoTianyiLive2D] 用户触发刷新，重新加载 Live2D...');
-        
         // 防止重复点击
         if (isLoading) {
-            console.log('[LuoTianyiLive2D] 正在加载中，忽略刷新请求');
             return;
         }
-        
+
         // 显示刷新提示消息
         setMessage('天依正在重新加载～');
         setMessageOpacity(1);
-        
+
         // 重置加载状态
         setIsLoading(true);
         setLoadProgress(0);
-        
+        setIsModelReady(false);
+
         try {
             // 清除可能存在的旧 Live2D 实例
             if (typeof window !== 'undefined') {
@@ -1012,8 +886,8 @@ export default function LuoTianyiLive2D() {
                 if (live2DInstance && live2DInstance.dispose) {
                     try {
                         live2DInstance.dispose();
-                    } catch (e) {
-                        console.log('[LuoTianyiLive2D] 清理旧实例时出错:', e);
+                    } catch {
+                        // 清理旧实例时出错，忽略
                     }
                 }
             }
@@ -1029,8 +903,7 @@ export default function LuoTianyiLive2D() {
 
             // 重新加载 Live2D
             await loadLive2D();
-            
-            console.log('[LuoTianyiLive2D] 刷新完成');
+
             setMessage('天依已重新加载！');
             setMessageOpacity(1);
             triggerFadeOut();
@@ -1045,14 +918,17 @@ export default function LuoTianyiLive2D() {
 
 
 
-    if (!isVisible) {
-        return null;
-    }
-
     return (
         <>
             <Live2DStyles />
-            <div id="landlord" className={`landlord ${getCurrentThemeClass()}`}>
+            <div
+                id="landlord"
+                className={`landlord ${getCurrentThemeClass()}`}
+                style={{
+                    // 路由隐藏或用户主动隐藏时都不显示，但保持组件挂载
+                    display: (hidden || !isVisible) ? 'none' : 'block',
+                }}
+            >
                 {/* 加载进度指示器 - 取消阴影效果 */}
                 {isLoading && (
                     <div 
