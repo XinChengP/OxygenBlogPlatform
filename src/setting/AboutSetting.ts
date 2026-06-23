@@ -564,5 +564,13 @@ export const relatedLinks: RelatedLink[] = [
     category: 'ui',
     icon: "image",
     tags: ['图片', '灯箱', '画廊']
+  },
+  {
+    name: "页脚小鱼特效",
+    url: "https://www.cnblogs.com/zhangshuhao1116/p/14913926.html",
+    description: "为博客页脚添加可爱的小鱼游动特效，增加页面互动性",
+    category: 'tutorial',
+    icon: "fish",
+    tags: ['特效', '动画', '页脚']
   }
 ];

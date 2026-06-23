@@ -18,7 +18,8 @@ import {
   Wrench,
   BookOpen,
   FolderGit2,
-  X
+  X,
+  Fish
 } from 'lucide-react';
 import {
   relatedLinks,
@@ -36,7 +37,8 @@ const categoryIcons: Record<RelatedLinkCategory, React.ReactNode> = {
   tool: <Wrench className="w-4 h-4" />,
   ui: <Palette className="w-4 h-4" />,
   tutorial: <BookOpen className="w-4 h-4" />,
-  project: <FolderGit2 className="w-4 h-4" />
+  project: <FolderGit2 className="w-4 h-4" />,
+  fish: <Fish className="w-4 h-4" />
 };
 
 /**
