@@ -43,11 +43,11 @@ export const productionSecurityHeaders: SecurityHeaders = {
   // 内容安全策略 - 防止XSS和数据注入
   'Content-Security-Policy': [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://giscus.app https://v6.51.la https://sdk.51.la",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://giscus.app https://v6.51.la https://sdk.51.la https://static.cloudflareinsights.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://giscus.app",
     "img-src 'self' data: blob: https: http:",
     "font-src 'self' https://fonts.gstatic.com data:",
-    "connect-src 'self' https://api.github.com https://giscus.app https://v6.51.la https://sdk.51.la https://v1.hitokoto.cn",
+    "connect-src 'self' https://api.github.com https://giscus.app https://v6.51.la https://sdk.51.la https://collect-v6.51.la https://v1.hitokoto.cn https://cloudflareinsights.com",
     "media-src 'self' https: http:",
     "object-src 'none'",
     "frame-src https://giscus.app https://*.github.com https://player.bilibili.com",

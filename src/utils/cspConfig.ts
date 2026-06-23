@@ -73,6 +73,8 @@ export const productionCSP: CSPDirectives = {
     // Google Analytics（可选）
     'https://www.google-analytics.com',
     'https://www.googletagmanager.com',
+    // Cloudflare Web Analytics
+    'https://static.cloudflareinsights.com',
   ],
   
   // 样式来源控制
@@ -120,6 +122,8 @@ export const productionCSP: CSPDirectives = {
     'https://collect-v6.51.la',  // 51la 数据收集
     // 一言API（Live2D看板娘随机句子）
     'https://v1.hitokoto.cn',
+    // Cloudflare Web Analytics数据上报
+    'https://cloudflareinsights.com',
     // Google Analytics
     'https://www.google-analytics.com',
     // 本地开发
