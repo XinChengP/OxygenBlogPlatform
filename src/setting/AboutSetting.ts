@@ -334,7 +334,7 @@ export const friendsLinks: FriendLink[] = [
 ];
 
 // 相关链接分类定义
-export type RelatedLinkCategory = 'framework' | 'tool' | 'ui' | 'tutorial' | 'project';
+export type RelatedLinkCategory = 'framework' | 'tool' | 'ui' | 'tutorial' | 'project' | 'fish';
 
 // 分类显示名称映射
 export const categoryLabels: Record<RelatedLinkCategory, string> = {
@@ -342,7 +342,8 @@ export const categoryLabels: Record<RelatedLinkCategory, string> = {
   tool: '开发工具',
   ui: 'UI组件',
   tutorial: '教程资源',
-  project: '项目源码'
+  project: '项目源码',
+  fish: '摸鱼教程'
 };
 
 // 分类颜色映射
@@ -351,7 +352,8 @@ export const categoryColors: Record<RelatedLinkCategory, string> = {
   tool: '#10b981',      // 绿色
   ui: '#8b5cf6',        // 紫色
   tutorial: '#f59e0b',  // 橙色
-  project: '#ec4899'    // 粉色
+  project: '#ec4899',   // 粉色
+  fish: '#06b6d4'       // 青色（水/鱼主题）
 };
 
 // 相关链接配置
