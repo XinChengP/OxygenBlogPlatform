@@ -174,7 +174,7 @@ const staticConfig = {
     CUSTOM_DOMAIN: process.env.CUSTOM_DOMAIN || 'false',
   },
   // 静态导出使用 webpack 构建，避免 Turbopack 生产构建偶发缺失 chunk 的问题
-  // actions 的替换由 prepare-static-export.js 脚本在构建前完成
+  // actions 文件内部已通过 isStaticExport 判断处理静态导出模式，无需额外替换脚本
 };
 
 // 根据环境选择配置
