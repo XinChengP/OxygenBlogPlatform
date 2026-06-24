@@ -233,6 +233,23 @@ function Footer() {
             />
             魔ICP备2026849076号-1
           </a>
+
+          {/* 悦ICP备案信息 */}
+          <span className="mx-1.5">·</span>
+          <a
+            href="https://icp.250gov.cn/2026/1099"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-white hover:text-white/80 transition-colors duration-200 underline-offset-4 hover:underline nav-link"
+          >
+            <img
+              src="https://icp.250gov.cn/icon.png"
+              alt="悦ICP备案图标"
+              style={{ width: '20px', height: '20px' }}
+              className="hidden"
+            />
+            悦ICP备20261099号
+          </a>
         </p>
       </div>
     </footer>
