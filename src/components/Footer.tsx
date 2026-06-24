@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef } from 'react';
-import { name, aWord } from '@/setting/FooterSetting';
-import Link from 'next/link';
+import { name, aWord, year } from '@/setting/FooterSetting';
 import { usePathname } from 'next/navigation';
 import { getAssetPath } from '@/utils/assetUtils';
+import { motion } from 'framer-motion';
 
 /**
  * 动态加载外部脚本工具函数
@@ -47,13 +47,14 @@ function FlyingFish() {
 
   // 页面加载完成后按顺序加载 jQuery 和 fish.js
   useEffect(() => {
-    // 只在客户端执行
     if (typeof window === 'undefined') return;
-
-    // 如果已经加载过，不再重复加载
     if (isLoadedRef.current) return;
 
-    // 获取本地脚本路径，自动适配 GitHub Pages basePath
+    const container = document.getElementById('jsi-flying-fish-container');
+    if (container) {
+      container.addEventListener('click', (e) => e.stopPropagation(), true);
+    }
+
     const jqueryPath = getAssetPath('/js/jquery.min.js');
     const fishPath = getAssetPath('/js/fish.js');
 
@@ -88,6 +89,10 @@ function FlyingFish() {
           overflow: hidden;
           /* 使用主题色的低透明度版本作为绘制颜色，更淡雅 */
           color: color-mix(in srgb, var(--primary) 50%, transparent);
+        }
+        .jsi-flying-fish-container :global(canvas) {
+          width: 100% !important;
+          height: 100% !important;
         }
         @media only screen and (max-width: 767px) {
           .jsi-flying-fish-container {
@@ -174,84 +179,102 @@ function Footer() {
   }
 
   return (
-    <footer className="relative min-h-[160px]">
+    <footer className="relative min-h-[300px] flex flex-col justify-end !border-none">
       {/* 底部小鱼特效 - 作为页脚背景 */}
       <FlyingFish />
-      <div className="relative z-10 flex flex-col justify-end min-h-[160px] max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 text-center space-y-3">
-        {/* 第一行：版权、自定义文案、洛天依链接 */}
-        <p className="flex flex-wrap items-center justify-center gap-2 text-xs text-white drop-shadow-sm">
-          {/* 版权信息 */}
-          <span>&copy; {copyrightYear} {name}</span>
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        viewport={{ once: true }}
+        className="relative z-10 mx-auto px-4 sm:px-6 lg:px-8 py-8"
+      >
+        {/* 两栏布局 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-96">
+          {/* 第一栏：站点信息 */}
+          <div className="text-center md:text-left">
+            <h3 className="text-lg text-white drop-shadow-sm mb-2">
+              &copy; {copyrightYear} {name}
+            </h3>
+            {aWord && (
+              <p className="text-sm text-white/70 italic mb-3">{aWord}</p>
+            )}
+            <p className="text-xs text-white/60">
+              <span ref={runTimeRef} />
+            </p>
+          </div>
 
-          {/* 自定义文案 */}
-          {aWord && (
-            <>
-              <span className="mx-1.5">·</span>
-              <span>{aWord}</span>
-            </>
-          )}
-
-          {/* 网站运行时间 - 使用 ref 直接更新，避免触发 React re-render */}
-          <span className="mx-1.5">·</span>
-          <span ref={runTimeRef} />
-        </p>
-
-        {/* 第二行：备案信息 */}
-        <p className="flex flex-wrap items-center justify-center gap-2 text-xs text-white drop-shadow-sm">
-          <Link
-            href="https://beian.miit.gov.cn/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-white hover:text-white/80 transition-colors duration-200 underline-offset-4 hover:underline nav-link"
-          >
-            津ICP备2025041817号
-          </Link>
-          {/* 萌ICP备案信息 */}
-          <span className="mx-1.5">·</span>
-          <Link
-            href="https://icp.gov.moe/?keyword=20261099"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-white hover:text-white/80 transition-colors duration-200 underline-offset-4 hover:underline nav-link"
-          >
-            萌ICP备20261099号
-          </Link>
-
-          {/* 魔ICP备案信息 */}
-          <span className="mx-1.5">·</span>
-          <a
-            href="https://www.moicp.cn/keyword.php?type=魔ICP备2026849076号-1"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-white hover:text-white/80 transition-colors duration-200 underline-offset-4 hover:underline nav-link"
-          >
-            <img
-              src="https://www.moicp.cn/static/image/moicp_icon.png"
-              alt="魔ICP备案图标"
-              style={{ width: '20px', height: '20px' }}
-              className="hidden"
-            />
-            魔ICP备2026849076号-1
-          </a>
-
-          {/* 悦ICP备案信息 */}
-          <span className="mx-1.5">·</span>
-          <a
-            href="https://icp.250gov.cn/2026/1099"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-white hover:text-white/80 transition-colors duration-200 underline-offset-4 hover:underline nav-link"
-          >
-            <img
-              src="https://icp.250gov.cn/icon.png"
-              alt="悦ICP备案图标"
-              style={{ width: '20px', height: '20px' }}
-              className="hidden"
-            />
-            悦ICP备20261099号
-          </a>
-        </p>
-      </div>
+          {/* 第二栏：备案信息 + 链接 */}
+          <div className="text-center md:text-right">
+            <div className="flex items-center justify-center md:justify-end gap-3 mb-3">
+              <a
+                href="/rss.xml"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-white/60 hover:text-white transition-colors duration-200"
+                title="RSS 订阅"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 11a9 9 0 0 1 9 9" />
+                  <path d="M4 4a16 16 0 0 1 16 16" />
+                  <circle cx="5" cy="19" r="1" />
+                </svg>
+              </a>
+              <a
+                href="/sitemap.xml"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-white/60 hover:text-white transition-colors duration-200"
+                title="站点地图"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="7" height="7" />
+                  <rect x="14" y="3" width="7" height="7" />
+                  <rect x="14" y="14" width="7" height="7" />
+                  <rect x="3" y="14" width="7" height="7" />
+                </svg>
+              </a>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <a
+                href="https://beian.miit.gov.cn/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-white/70 hover:text-white transition-colors duration-200 underline-offset-4 hover:underline"
+              >
+                津ICP备2025041817号
+              </a>
+              <p className="flex flex-wrap items-center justify-end gap-x-2 gap-y-1">
+                <a
+                  href="https://icp.gov.moe/?keyword=20261099"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-white/50 hover:text-white transition-colors duration-200 underline-offset-4 hover:underline"
+                >
+                  萌ICP备20261099号
+                </a>
+                <span className="text-white/30">·</span>
+                <a
+                  href="https://www.moicp.cn/keyword.php?type=魔ICP备2026849076号-1"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-white/50 hover:text-white transition-colors duration-200 underline-offset-4 hover:underline"
+                >
+                  魔ICP备2026849076号-1
+                </a>
+              </p>
+              <a
+                href="https://icp.250gov.cn/2026/1099"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-white/50 hover:text-white transition-colors duration-200 underline-offset-4 hover:underline"
+              >
+                悦ICP备20261099号
+              </a>
+            </div>
+          </div>
+        </div>
+      </motion.div>
     </footer>
   );
 }

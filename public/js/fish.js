@@ -84,7 +84,6 @@ var RENDERER = {
 		this.$window.on('resize', this.watchWindowSize);
 		this.$container.on('mouseenter', this.startEpicenter);
 		this.$container.on('mousemove', this.moveEpicenter);
-		this.$container.on('click', this.reverseVertical);
 	},
 	getAxis : function(event){
 		var offset = this.$container.offset();
@@ -169,10 +168,10 @@ var SURFACE_POINT = function(renderer, x){
 	this.init();
 };
 SURFACE_POINT.prototype = {
-	SPRING_CONSTANT : 0.03,
-	SPRING_FRICTION : 0.9,
-	WAVE_SPREAD : 0.3,
-	ACCELARATION_RATE : 0.01,
+	SPRING_CONSTANT : 0.005,
+	SPRING_FRICTION : 0.97,
+	WAVE_SPREAD : 0.08,
+	ACCELARATION_RATE : 0.002,
 	
 	init : function(){
 		this.initHeight = this.renderer.height * this.renderer.INIT_HEIGHT_RATE;
