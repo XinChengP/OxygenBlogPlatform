@@ -52,13 +52,16 @@ interface UseMusicPlayerReturn {
 const PLAY_MODE_ORDER: PlayMode[] = ['list', 'random', 'single'];
 
 /**
- * 播放模式对应的 APlayer order 值
- * APlayer 原生只支持 list 和 random，single 需要特殊处理
+ * 播放模式对应的 APlayer loop 值
+ * APlayer 原生支持 'all'、'one'、'none' 三种循环模式
+ * - all: 列表循环（播完最后一首回到第一首）
+ * - one: 单曲循环
+ * - none: 不循环（播完最后一首停止）
  */
-const PLAY_MODE_TO_ORDER: Record<PlayMode, 'list' | 'random'> = {
-  list: 'list',
-  random: 'random',
-  single: 'list', // 单曲循环使用 list 模式，配合 loop 属性实现
+const PLAY_MODE_TO_LOOP: Record<PlayMode, 'all' | 'one' | 'none'> = {
+  list: 'all',
+  random: 'all',
+  single: 'one',
 };
 
 /**
@@ -367,22 +370,12 @@ export function useMusicPlayer(): UseMusicPlayerReturn {
     if (!player || !player.options) return;
     
     try {
-      // 更新 APlayer 的 order 配置
-      player.options.order = PLAY_MODE_TO_ORDER[mode];
-      
-      // 处理单曲循环模式
-      // APlayer 没有原生的单曲循环模式，需要通过设置 loop 属性来模拟
-      if (mode === 'single') {
-        player.options.loop = true;
-      } else {
-        player.options.loop = false;
-        
-        // 随机播放模式下需要重新生成随机顺序
-        // 复用公共工具函数，消除与 globalMusicPlayerManager.ts 的重复洗牌逻辑
-        if (mode === 'random') {
-          regenerateRandomOrder(player);
-        }
-      }
+      // APlayer v1.10.1 的 loop 参数是字符串 ('all' | 'one' | 'none')，不是布尔值
+      // 设置正确的 loop 值，让 APlayer 原生处理自动切换
+      player.options.loop = PLAY_MODE_TO_LOOP[mode];
+
+      // 设置播放顺序：列表循环用 'list'，随机播放用 'random'
+      player.options.order = mode === 'random' ? 'random' : 'list';
       
       // 更新状态
       setPlayModeState(mode);

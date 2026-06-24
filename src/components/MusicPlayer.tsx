@@ -28,13 +28,16 @@ interface MusicPlayerProps {
 const PLAY_MODE_ORDER: PlayMode[] = ['list', 'random', 'single'];
 
 /**
- * 播放模式对应的 APlayer order 值
- * APlayer 原生只支持 list 和 random，single 需要特殊处理
+ * 播放模式对应的 APlayer loop 值
+ * APlayer 原生支持 'all'、'one'、'none' 三种循环模式
+ * - all: 列表循环（播完最后一首回到第一首）
+ * - one: 单曲循环
+ * - none: 不循环（播完最后一首停止）
  */
-const PLAY_MODE_TO_ORDER: Record<PlayMode, 'list' | 'random'> = {
-  list: 'list',
-  random: 'random',
-  single: 'list', // 单曲循环使用 list 模式，配合 loop 属性实现
+const PLAY_MODE_TO_LOOP: Record<PlayMode, 'all' | 'one' | 'none'> = {
+  list: 'all',
+  random: 'all',
+  single: 'one',
 };
 
 /**
@@ -193,42 +196,12 @@ const MusicPlayerComponent = function MusicPlayer({
   const applyPlayMode = useCallback((player: APlayerNS.APlayer, mode: PlayMode) => {
     if (!player || !player.options) return;
 
-    // 设置 APlayer 的 order 配置
-    player.options.order = PLAY_MODE_TO_ORDER[mode];
+    // APlayer v1.10.1 的 loop 参数是字符串 ('all' | 'one' | 'none')，不是布尔值
+    // 设置正确的 loop 值，让 APlayer 原生处理自动切换
+    player.options.loop = PLAY_MODE_TO_LOOP[mode];
 
-    // 处理单曲循环模式
-    // APlayer 没有原生的单曲循环模式，需要通过设置 loop 属性来模拟
-    if (mode === 'single') {
-      player.options.loop = true;
-    } else {
-      // 列表循环和随机播放模式下，loop 应该为 false
-      player.options.loop = false;
-      if (mode === 'random') {
-        // 关键修复：重新生成随机顺序数组
-        // APlayer 的 randomOrder 在初始化时只生成一次，切换模式时需要重新生成
-        const audioCount = player.list && player.list.list ? player.list.list.length : 0;
-        if (audioCount > 0) {
-          // @ts-ignore - APlayer 内部方法
-          const shuffleFn = (window as any).APlayer?.default?.randomOrder ||
-                           (player as any).constructor?.randomOrder;
-
-          if (shuffleFn && typeof shuffleFn === 'function') {
-            // @ts-ignore
-            player.randomOrder = shuffleFn(audioCount);
-          } else {
-            // 备用方案：手动生成随机顺序
-            const indices = Array.from({ length: audioCount }, (_, i) => i);
-            // Fisher-Yates 洗牌算法
-            for (let i = indices.length - 1; i > 0; i--) {
-              const j = Math.floor(Math.random() * (i + 1));
-              [indices[i], indices[j]] = [indices[j], indices[i]];
-            }
-            // @ts-ignore
-            player.randomOrder = indices;
-          }
-        }
-      }
-    }
+    // 设置播放顺序：列表循环用 'list'，随机播放用 'random'
+    player.options.order = mode === 'random' ? 'random' : 'list';
 
     // 保存到 localStorage
     try {
@@ -236,7 +209,7 @@ const MusicPlayerComponent = function MusicPlayer({
     } catch (error) {
       console.warn('[MusicPlayer] 保存播放模式失败:', error);
     }
-  }, [loop]);
+  }, []);
 
   /**
    * 同步 playMode 到 ref
@@ -434,50 +407,13 @@ const MusicPlayerComponent = function MusicPlayer({
 
     /**
      * 播放结束事件处理
-     * 用于处理单曲循环、列表循环和随机播放模式
+     * APlayer 原生会根据 loop 和 order 配置自动切换歌曲，
+     * 这里只需要保存播放状态，不需要手动处理切换逻辑。
+     * 之前手动处理切换反而可能和 APlayer 原生逻辑冲突，导致无法自动切换。
      */
     const handleEnded = () => {
-      // 使用 ref 获取最新的播放模式，避免闭包问题
-      const currentMode = playModeRef.current;
-
-      // 单曲循环模式下，重新播放当前歌曲
-      if (currentMode === 'single') {
-        player.seek(0);
-        player.play();
-      }
-      // 随机播放模式下，APlayer 会自动选择下一首随机歌曲
-      else if (currentMode === 'random') {
-        // 验证 APlayer 的随机列表是否已正确初始化
-        if (player.list && player.list.list) {
-          // APlayer 应该自动处理，但如果没有自动切换，手动触发
-          setTimeout(() => {
-            if (player.paused) {
-              const nextIndex = (player.list.index + 1) % player.list.list.length;
-              player.list.switch(nextIndex);
-              // 确保切换后自动播放
-              setTimeout(() => {
-                if (player.paused) {
-                  player.play();
-                }
-              }, 300);
-            }
-          }, 500);
-        }
-      }
-      // 列表循环模式下，手动切换到下一首
-      else if (currentMode === 'list') {
-        if (player.list && player.list.list && player.list.list.length > 0) {
-          const currentIndex = player.list.index;
-          const nextIndex = (currentIndex + 1) % player.list.list.length;
-          player.list.switch(nextIndex);
-          // 确保切换后自动播放
-          setTimeout(() => {
-            if (player.paused) {
-              player.play();
-            }
-          }, 300);
-        }
-      }
+      // 保存播放状态
+      globalManager.savePlayState();
     };
 
     /**
@@ -613,18 +549,20 @@ const MusicPlayerComponent = function MusicPlayer({
         audio: audioList, // 音频列表已由 musicConfigManager 处理路径
         fixed: true, // 吸底模式
         autoplay: autoPlay,
-        // loop 属性控制单曲循环，列表循环由 APlayer 内部处理
-        // 单曲循环时设为 true，其他模式设为 false
-        loop: restoredMode === 'single',
+        // loop 参数控制循环模式，APlayer 原生支持 'all'、'one'、'none'
+        // - all: 列表循环（播完最后一首回到第一首）
+        // - one: 单曲循环
+        // - none: 不循环（播完最后一首停止）
+        loop: PLAY_MODE_TO_LOOP[restoredMode],
         preload: 'metadata',
         volume: initialVolume,
         mutex: true, // 阻止其他播放器同时播放
-        lrcType: 2, // 启用歌词显示，使用歌词文件路径（lrc 字段是 URL）
+        lrcType: 3, // 歌词类型：3 表示 LRC 文件方式，audio.lrc 是歌词文件的 URL 路径
         listFolded: true, // 折叠列表
         listMaxHeight: 400, // 列表最大高度
         storageName: 'musicPlayer', // 本地存储名称
         theme: '#1DA1F2', // 主题色
-        order: PLAY_MODE_TO_ORDER[restoredMode], // 播放顺序
+        order: restoredMode === 'random' ? 'random' : 'list', // 播放顺序
       });
 
       // 保存播放器实例引用

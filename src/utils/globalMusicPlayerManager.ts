@@ -245,17 +245,12 @@ class GlobalMusicPlayerManager {
     this.playMode = mode;
 
     // 同步到 APlayer 的 order 和 loop 配置
-    // 注意：APlayer 只支持 'list' 和 'random' 两种 order，'single' 需要配合 loop 模拟
+    // APlayer 原生支持 loop: 'all' | 'one' | 'none'，不是布尔值
     if (this.player && this.player.options) {
-      if (mode === 'random') {
-        this.player.options.order = 'random';
-        // 复用公共工具函数生成随机顺序，消除重复洗牌逻辑
-        regenerateRandomOrder(this.player);
-      } else {
-        this.player.options.order = 'list';
-      }
-      // 单曲循环通过 loop 属性模拟
-      this.player.options.loop = mode === 'single';
+      // 设置循环模式
+      this.player.options.loop = mode === 'single' ? 'one' : 'all';
+      // 设置播放顺序
+      this.player.options.order = mode === 'random' ? 'random' : 'list';
     }
 
     // 同步到 localStorage，保持与 MusicPlayer 初始化恢复一致

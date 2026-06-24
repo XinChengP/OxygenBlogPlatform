@@ -4,19 +4,21 @@
 declare namespace APlayerNS {
   interface APlayerOptions {
     container?: HTMLElement | string;
-    audio?: APlayerAudio | APlayerAudio[];
     fixed?: boolean;
+    mini?: boolean;
     autoplay?: boolean;
-    loop?: boolean;
+    theme?: string;
+    loop?: 'all' | 'one' | 'none';
     order?: 'list' | 'random';
     preload?: 'none' | 'metadata' | 'auto';
     volume?: number;
+    audio?: APlayerAudio | APlayerAudio[];
+    customAudioType?: Record<string, (audioElement: HTMLAudioElement, audio: APlayerAudio, player: APlayer) => void>;
     mutex?: boolean;
     lrcType?: 0 | 1 | 2 | 3;
     listFolded?: boolean;
     listMaxHeight?: string | number;
     storageName?: string;
-    audio?: APlayerAudio[];
   }
 
   interface APlayerAudio {
@@ -25,22 +27,37 @@ declare namespace APlayerNS {
     url: string;
     cover?: string;
     lrc?: string;
+    theme?: string;
     type?: 'auto' | 'hls' | 'normal';
     /** 音乐来源（可选） */
     source?: 'local' | 'netease';
   }
 
   interface APlayerAudioList {
+    /** 切换到指定索引的歌曲 */
     switch: (index: number) => void;
-    add: (audio: APlayerAudio, index?: number) => void;
+    /** 添加歌曲到播放列表 */
+    add: (audio: APlayerAudio | APlayerAudio[], index?: number) => void;
+    /** 移除指定索引的歌曲 */
     remove: (index: number) => void;
+    /** 清空播放列表 */
+    clear: () => void;
+    /** 显示播放列表 */
     show: () => void;
+    /** 隐藏播放列表 */
     hide: () => void;
+    /** 切换播放列表显示/隐藏 */
     toggle: () => void;
+    /** 当前播放歌曲的索引 */
     index: number;
+    /** 当前播放的歌曲 */
     current: APlayerAudio | null;
+    /** 播放列表数组 */
     list: APlayerAudio[];
+    /** 主题色 */
     theme: string;
+    /** 歌曲音频数据 */
+    audios: APlayerAudio[];
   }
 
   interface APlayerEvents {

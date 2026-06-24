@@ -34,7 +34,7 @@
 /* 深色模式 */
 .dark .aplayer {
   --aplayer-bg: #0f172a;
-  --aplayer-fg: #3c3d3f;
+  --aplayer-fg: #e2e8f0; /* 暗色模式文字必须是浅色 */
   --aplayer-border: #1e293b;
   --aplayer-highlight: #60a5fa;
   --aplayer-shadow: rgba(0, 0, 0, 0.7);
@@ -54,6 +54,20 @@
   --aplayer-error-border: #f87171;
   --aplayer-error-bg: rgba(248, 113, 113, 0.15);
   --aplayer-error-fg: #fca5a5;
+  /* 深色模式：进度条相关变量 */
+  --aplayer-bar-bg: rgba(148, 163, 184, 0.2);
+  --aplayer-bar-loaded: rgba(96, 165, 250, 0.3);
+  /* 深色模式：音量条相关变量 */
+  --aplayer-volume-bar-bg: rgba(148, 163, 184, 0.2);
+  /* 深色模式：通知提示相关变量 */
+  --aplayer-notice-bg: #1e293b;
+  --aplayer-notice-fg: #e2e8f0;
+  /* 深色模式：时间文字相关变量 */
+  --aplayer-time-fg: #94a3b8;
+  /* 深色模式：标题文字相关变量 */
+  --aplayer-title-fg: #e2e8f0;
+  /* 深色模式：歌手文字相关变量 */
+  --aplayer-author-fg: #94a3b8;
 }
 
 /* ============================================
@@ -1236,4 +1250,306 @@
   .aplayer .aplayer-bar {
     border: 1px solid var(--aplayer-border);
   }
+}
+
+/* ============================================
+   第十四部分：暗色模式完整适配
+   ============================================ */
+
+/* 暗色模式下播放器信息区域 - 标题颜色 */
+.dark .aplayer .aplayer-info .aplayer-music .aplayer-title {
+  color: var(--aplayer-title-fg) !important;
+}
+
+/* 暗色模式下播放器信息区域 - 歌手颜色 */
+.dark .aplayer .aplayer-info .aplayer-music .aplayer-author {
+  color: var(--aplayer-author-fg) !important;
+}
+
+/* 暗色模式下时间文字颜色 */
+.dark .aplayer .aplayer-info .aplayer-time {
+  color: var(--aplayer-time-fg) !important;
+}
+
+.dark .aplayer .aplayer-info .aplayer-time .aplayer-time-inner {
+  color: var(--aplayer-time-fg) !important;
+}
+
+/* 暗色模式下进度条背景 */
+.dark .aplayer .aplayer-bar {
+  background: var(--aplayer-bar-bg) !important;
+}
+
+/* 暗色模式下进度条已加载部分 */
+.dark .aplayer .aplayer-bar .aplayer-bar-loaded {
+  background: var(--aplayer-bar-loaded) !important;
+}
+
+/* 暗色模式下音量条背景 */
+.dark .aplayer .aplayer-volume-wrap .aplayer-volume-bar-wrap {
+  background: var(--aplayer-volume-bar-bg) !important;
+}
+
+.dark .aplayer .aplayer-volume-wrap .aplayer-volume-bar {
+  background: var(--aplayer-volume-bar-bg) !important;
+}
+
+/* 暗色模式下通知提示框 */
+.dark .aplayer .aplayer-notice {
+  background: var(--aplayer-notice-bg) !important;
+  color: var(--aplayer-notice-fg) !important;
+  border-color: var(--aplayer-border) !important;
+}
+
+/* 暗色模式下列表 - 确保背景正确 */
+.dark .aplayer .aplayer-list {
+  background: var(--aplayer-bg) !important;
+  border-color: var(--aplayer-border) !important;
+}
+
+.dark .aplayer .aplayer-list ol {
+  background: var(--aplayer-bg) !important;
+}
+
+/* 暗色模式下列表项文字 */
+.dark .aplayer .aplayer-list .aplayer-list-item .aplayer-list-item-content .aplayer-list-title {
+  color: var(--aplayer-fg) !important;
+}
+
+.dark .aplayer .aplayer-list .aplayer-list-item .aplayer-list-item-content .aplayer-list-author {
+  color: var(--aplayer-info-fg) !important;
+}
+
+/* 暗色模式下列表项序号 */
+.dark .aplayer .aplayer-list .aplayer-list-item .aplayer-list-index {
+  color: var(--aplayer-info-fg) !important;
+}
+
+/* 暗色模式下当前播放歌曲的序号颜色 */
+.dark .aplayer .aplayer-list .aplayer-list-light .aplayer-list-index {
+  color: var(--aplayer-highlight) !important;
+}
+
+/* 暗色模式下当前播放歌曲的文字颜色 */
+.dark .aplayer .aplayer-list .aplayer-list-light .aplayer-list-item-content {
+  color: var(--aplayer-fg) !important;
+}
+
+.dark .aplayer .aplayer-list .aplayer-list-light .aplayer-list-title {
+  color: var(--aplayer-fg) !important;
+}
+
+/* 暗色模式下控制器区域背景 */
+.dark .aplayer .aplayer-controller {
+  background: var(--aplayer-bg) !important;
+  border-top-color: var(--aplayer-border) !important;
+}
+
+/* 暗色模式下信息区域背景 */
+.dark .aplayer .aplayer-info {
+  background: var(--aplayer-bg) !important;
+}
+
+/* 暗色模式下播放器主体背景 */
+.dark .aplayer .aplayer-body {
+  background: var(--aplayer-bg) !important;
+}
+
+/* 暗色模式下按钮图标颜色 */
+.dark .aplayer .aplayer-icon {
+  fill: var(--aplayer-button-fg) !important;
+}
+
+.dark .aplayer .aplayer-icon path {
+  fill: var(--aplayer-button-fg) !important;
+}
+
+/* 暗色模式下播放/暂停按钮的特殊处理 - 确保图标为白色 */
+.dark .aplayer .aplayer-icon.aplayer-icon-play,
+.dark .aplayer .aplayer-icon.aplayer-icon-pause {
+  fill: #ffffff !important;
+}
+
+.dark .aplayer .aplayer-icon.aplayer-icon-play path,
+.dark .aplayer .aplayer-icon.aplayer-icon-pause path {
+  fill: #ffffff !important;
+}
+
+/* 暗色模式下歌词区域 - 完全透明背景
+   歌词内容容器、渐变遮罩全部设为透明，只显示文字 */
+.dark .aplayer .aplayer-lrc {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+.dark .aplayer .aplayer-lrc p {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+.dark .aplayer .aplayer-lrc p.aplayer-lrc-current {
+  background: transparent !important;
+  background-color: transparent !important;
+  opacity: 1 !important;
+}
+
+/* 歌词上下渐变遮罩也设为透明，完全看不见 */
+.dark .aplayer .aplayer-lrc::before,
+.dark .aplayer .aplayer-lrc:before {
+  background: transparent !important;
+  background: none !important;
+}
+
+.dark .aplayer .aplayer-lrc::after,
+.dark .aplayer .aplayer-lrc:after {
+  background: transparent !important;
+  background: none !important;
+}
+
+/* 歌词内容容器也设为透明 */
+.dark .aplayer .aplayer-lrc-contents,
+.dark .aplayer .aplayer-lrc-content {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* 吸底模式下歌词区域也透明 */
+.dark .aplayer.aplayer-fixed .aplayer-lrc {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+.dark .aplayer.aplayer-fixed .aplayer-lrc::before,
+.dark .aplayer.aplayer-fixed .aplayer-lrc:before {
+  background: transparent !important;
+  background: none !important;
+}
+
+.dark .aplayer.aplayer-fixed .aplayer-lrc::after,
+.dark .aplayer.aplayer-fixed .aplayer-lrc:after {
+  background: transparent !important;
+  background: none !important;
+}
+
+/* 暗色模式下音量条内部已填充部分 */
+.dark .aplayer .aplayer-volume-wrap .aplayer-volume-bar .aplayer-volume-bar-inner {
+  background: var(--aplayer-highlight) !important;
+}
+
+/* 暗色模式下播放列表折叠按钮 */
+.dark .aplayer .aplayer-info .aplayer-time .aplayer-icon.aplayer-icon-menu {
+  fill: var(--aplayer-button-fg) !important;
+}
+
+.dark .aplayer .aplayer-info .aplayer-time .aplayer-icon.aplayer-icon-menu path {
+  fill: var(--aplayer-button-fg) !important;
+}
+
+/* 暗色模式下音量图标 */
+.dark .aplayer .aplayer-info .aplayer-time .aplayer-icon.aplayer-icon-volume {
+  fill: var(--aplayer-button-fg) !important;
+}
+
+.dark .aplayer .aplayer-info .aplayer-time .aplayer-icon.aplayer-icon-volume path {
+  fill: var(--aplayer-button-fg) !important;
+}
+
+/* 暗色模式下上一首/下一首按钮 */
+.dark .aplayer .aplayer-info .aplayer-controller .aplayer-back,
+.dark .aplayer .aplayer-info .aplayer-controller .aplayer-forward {
+  fill: var(--aplayer-button-fg) !important;
+}
+
+.dark .aplayer .aplayer-info .aplayer-controller .aplayer-back path,
+.dark .aplayer .aplayer-info .aplayer-controller .aplayer-forward path {
+  fill: var(--aplayer-button-fg) !important;
+}
+
+/* 暗色模式下吸底模式的背景 */
+.dark .aplayer.aplayer-fixed {
+  background: var(--aplayer-bg) !important;
+  border-top: 1px solid var(--aplayer-border) !important;
+}
+
+/* 暗色模式下迷你模式 */
+.dark .aplayer.aplayer-mini {
+  background: var(--aplayer-bg) !important;
+}
+
+/* 暗色模式下进度条手柄 */
+.dark .aplayer .aplayer-bar .aplayer-bar-handle {
+  background: var(--aplayer-highlight) !important;
+  border-color: rgba(255, 255, 255, 0.9) !important;
+  box-shadow: 0 2px 8px rgba(96, 165, 250, 0.4) !important;
+}
+
+/* 暗色模式下列表项悬停效果加强 */
+.dark .aplayer .aplayer-list .aplayer-list-item:hover {
+  background: rgba(96, 165, 250, 0.1) !important;
+}
+
+/* 暗色模式下当前播放歌曲高亮 */
+.dark .aplayer .aplayer-list .aplayer-list-light {
+  background: rgba(96, 165, 250, 0.15) !important;
+}
+
+/* 暗色模式下按钮悬停背景 */
+.dark .aplayer .aplayer-icon:hover {
+  background: var(--aplayer-button-bg-hover) !important;
+}
+
+/* 暗色模式下播放模式指示器 */
+.dark .aplayer .aplayer-mode-indicator {
+  background: var(--aplayer-mode-bg) !important;
+}
+
+.dark .aplayer .aplayer-mode-icon {
+  color: var(--aplayer-mode-icon-fg) !important;
+}
+
+.dark .aplayer .aplayer-mode-icon.active {
+  color: var(--aplayer-mode-active-fg) !important;
+}
+
+/* 暗色模式下播放模式文字提示 */
+.dark .aplayer .aplayer-mode-text {
+  color: var(--aplayer-mode-active-fg) !important;
+}
+
+/* ============================================
+   第十五部分：响应式暗色模式适配
+   ============================================ */
+
+/* 平板端暗色模式 */
+@media (min-width: 640px) and (max-width: 1024px) {
+  .dark .aplayer .aplayer-list {
+    background: var(--aplayer-bg) !important;
+  }
+}
+
+/* 移动端暗色模式 */
+@media (max-width: 640px) {
+  .dark .aplayer .aplayer-list {
+    background: var(--aplayer-bg) !important;
+  }
+}
+
+/* ============================================
+   第十六部分：主题切换过渡增强
+   ============================================ */
+
+/* 确保所有颜色相关属性都有过渡效果 */
+.dark .aplayer,
+.dark .aplayer *,
+.dark .aplayer *::before,
+.dark .aplayer *::after {
+  transition-property:
+    background-color,
+    color,
+    fill,
+    border-color,
+    box-shadow,
+    opacity;
+  transition-duration: var(--aplayer-transition-speed);
+  transition-timing-function: var(--aplayer-transition-timing);
 }
