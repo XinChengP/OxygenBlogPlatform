@@ -18,7 +18,7 @@ export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [isDark, setIsDark] = useState(false);
-  const [musicPlayerVisible, setMusicPlayerVisible] = useState(true);
+  const [musicPlayerVisible, setMusicPlayerVisible] = useState(false);
   // 音乐播放器相关状态已完全移除
   // const [playlists, setPlaylists] = useState<Playlist[]>([]);
   // const [showMusicConfig, setShowMusicConfig] = useState(false);

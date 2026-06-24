@@ -100,8 +100,8 @@ const MusicPlayerComponent = function MusicPlayer({
   /** 清理函数引用（用于组件卸载时清理） */
   const cleanupRef = useRef<(() => void) | null>(null);
 
-  /** 用户手动设置的播放器可见性 */
-  const [userVisible, setUserVisible] = useState(true);
+  /** 用户手动设置的播放器可见性，默认隐藏，由右下角按钮控制显示 */
+  const [userVisible, setUserVisible] = useState(false);
 
   /** 标记是否已经启动过播放器加载 */
   const hasLoadedRef = useRef(false);
