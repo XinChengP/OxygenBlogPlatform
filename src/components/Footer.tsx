@@ -156,7 +156,7 @@ function Footer() {
         if (runTimeRef.current) {
           runTimeRef.current.textContent = diff < 0
             ? `距离上线还有 ${formatTime(-diff)}`
-            : `本站已存活：${formatTime(diff)}`;
+            : `已陪你走下去：${formatTime(diff)}`;
         }
         lastUpdateTime = currentTime;
       }
@@ -190,7 +190,7 @@ function Footer() {
         className="relative z-10 mx-auto px-4 sm:px-6 lg:px-8 py-8"
       >
         {/* 两栏布局 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-96">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-108">
           {/* 第一栏：站点信息 */}
           <div className="text-center md:text-left">
             <h3 className="text-lg text-white drop-shadow-sm mb-2">
