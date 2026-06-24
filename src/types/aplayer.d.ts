@@ -27,7 +27,7 @@ declare namespace APlayerNS {
     lrc?: string;
     type?: 'auto' | 'hls' | 'normal';
     /** 音乐来源（可选） */
-    source?: 'local';
+    source?: 'local' | 'netease';
   }
 
   interface APlayerAudioList {
@@ -208,6 +208,32 @@ export interface MusicConfig {
   lastUpdated: string;
   /** 歌曲列表 */
   songs: MusicConfigSong[];
+}
+
+/**
+ * 音乐来源类型
+ * - local: 本地音乐文件
+ * - netease: 网易云音乐（通过 Meting API 加载）
+ */
+export type MusicSource = 'local' | 'netease';
+
+/**
+ * 处理后的音频项接口
+ * 用于 APlayer 播放器，所有路径已处理为可直接播放的完整 URL
+ */
+export interface ProcessedAudioItem {
+  /** 歌曲名称 */
+  name: string;
+  /** 歌手名称 */
+  artist: string;
+  /** 处理后的音频文件完整路径或 URL */
+  url: string;
+  /** 处理后的封面图片完整路径或 URL（可选） */
+  cover?: string;
+  /** 处理后的歌词文件完整路径或 URL（可选） */
+  lrc?: string;
+  /** 音乐来源 */
+  source?: MusicSource;
 }
 
 // 导出类型定义

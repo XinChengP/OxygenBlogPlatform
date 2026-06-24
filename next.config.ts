@@ -122,7 +122,7 @@ const devConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://giscus.app",
               "img-src 'self' data: blob: https: http:",
               "font-src 'self' https://fonts.gstatic.com data:",
-              "connect-src 'self' https://api.github.com https://giscus.app https://v6.51.la https://sdk.51.la https://collect-v6.51.la https://v1.hitokoto.cn https://cloudflareinsights.com https://www.google-analytics.com",
+              "connect-src 'self' https://api.github.com https://giscus.app https://v6.51.la https://sdk.51.la https://collect-v6.51.la https://v1.hitokoto.cn https://cloudflareinsights.com https://www.google-analytics.com https://api.i-meto.com",
               "media-src 'self' https: http:",
               "object-src 'none'",
               "frame-src https://giscus.app https://*.github.com https://player.bilibili.com",

@@ -378,8 +378,9 @@ const MusicPlayerComponent = function MusicPlayer({
         });
         
         // 添加到播放历史
+        // ID 使用歌名 + 歌手 + 来源组合，避免不同来源的同名歌曲冲突
         globalManager.addToHistory({
-          id: currentAudio.name || '',
+          id: `${currentAudio.name || ''}-${currentAudio.artist || ''}-${currentAudio.source || 'local'}`,
           name: currentAudio.name || '',
           artist: currentAudio.artist || '',
           playedAt: Date.now()

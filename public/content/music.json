@@ -1,11 +1,17 @@
 {
-  "version": "3.0",
-  "lastUpdated": "2026-05-07",
-  "description": "洛天依主题博客音乐播放列表配置文件（仅本地音乐）",
+  "version": "3.1",
+  "lastUpdated": "2026-06-24",
+  "description": "洛天依主题博客音乐播放列表配置文件（本地音乐 + 网易云音乐歌单）",
   "sources": {
     "local": {
       "enabled": true,
       "description": "本地音乐文件"
+    },
+    "netease": {
+      "enabled": true,
+      "playlistId": "14349636887",
+      "api": "https://api.i-meto.com/meting/api",
+      "description": "网易云音乐歌单（通过 Meting API 加载）"
     }
   },
   "songs": [
