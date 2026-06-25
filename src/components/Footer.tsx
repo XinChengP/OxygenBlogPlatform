@@ -179,7 +179,7 @@ function Footer() {
   }
 
   return (
-    <footer className="relative min-h-[300px] flex flex-col justify-end !border-none">
+    <footer className="relative min-h-[300px] flex flex-col justify-end !border-none overflow-hidden">
       {/* 底部小鱼特效 - 作为页脚背景 */}
       <FlyingFish />
       <motion.div
