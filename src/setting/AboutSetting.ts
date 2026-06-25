@@ -90,7 +90,7 @@ export const aboutSections: AboutSectionConfig[] = [
     coverImage: '/aboutme/1.jpg',
     coverHorizontalPosition: '51%',
     coverVerticalPosition: '0%',
-    coverSize: '120%',
+    coverSize: '100%',
     paragraphs: [
       '天津工业大学机械工程专业就读，预计2029年毕业。',
       '一个机械工程专业的25级大学牲。总想搞一些东西，总是在焦虑之中，总爱碎碎念。。。'
