@@ -57,9 +57,11 @@ excerpt: "——记工程制图课绘图两三事"
 
 &emsp;&emsp;今天没画图，纯预习线代了，本来打算晚上去的，结果吃完饭就不想动了23333
 
-## 呜、
+## 呜、呜呜呜呜
 
-前方施工ing。。。
+&emsp;&emsp;哼哼哼啊啊啊啊，下午考完线代，吃了俩汉堡（豪赤！），然后就吭哧吭哧去绘图教室画图了
+
+<div class="image-grid image-grid-3-cols"><img src="/Blogabout/Engineering-Drawing-Record/8.jpg" alt="事已至此先吃饭吧" /><img src="/Blogabout/Engineering-Drawing-Record/9.jpg" alt="" /><img src="/Blogabout/Engineering-Drawing-Record/10.jpg" alt="" /></div>
 
 ## 救、气笑了
 
