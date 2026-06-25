@@ -6,7 +6,7 @@
  */
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   User,
@@ -29,6 +29,7 @@ import {
   Keyboard,
   Mouse,
   Headphones,
+  Tv,
 } from 'lucide-react';
 import { Cover } from '@/components/ui/cover';
 import { EvervaultCard, Icon } from '@/components/ui/evervault-card';
@@ -56,12 +57,14 @@ import {
   frequentGames,
   occasionalGames,
   devices,
+  animeList,
   type AboutSectionConfig,
   type HobbyConfig,
   type MBTIConfig,
   type MusicPlaylistConfig,
   type GameConfig,
   type DeviceConfig,
+  type AnimeConfig,
 } from '@/setting/AboutSetting';
 
 /**
@@ -269,6 +272,81 @@ function MusicPlaylistCard({ config }: { config: MusicPlaylistConfig }) {
           loading="lazy"
         />
         <div className="absolute inset-0 rounded-xl pointer-events-none" style={{ boxShadow: 'inset 0 0 12px 8px rgba(0,0,0,0.25)' }} />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 我追的番卡片组件
+ * 使用 CSS Scroll Snap 实现竖直滚动分页效果，图片铺满整个容器
+ */
+function AnimeCard({ animeList }: { animeList: AnimeConfig[] }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const handleScroll = useCallback(() => {
+    const target = scrollRef.current;
+    if (!target) return;
+    const scrollTop = target.scrollTop;
+    const height = target.clientHeight;
+    const index = Math.round(scrollTop / height);
+    setActiveIndex(index);
+  }, []);
+
+  return (
+    <div className="relative w-full h-full overflow-hidden">
+      {/* 竖直滚动容器 - 铺满整个父容器 */}
+      <div
+        ref={scrollRef}
+        className="overflow-y-auto snap-y snap-mandatory h-full w-full"
+        style={{ scrollBehavior: 'smooth', scrollbarWidth: 'none' }}
+        onScroll={handleScroll}
+      >
+        {animeList.map((anime) => (
+          <div
+            key={anime.id}
+            className="snap-start w-full h-full relative"
+          >
+            {/* 封面铺满 */}
+            <img
+              src={anime.coverImage}
+              alt={anime.name}
+              className="absolute inset-0 w-full h-full object-cover"
+              loading="lazy"
+            />
+            {/* 遮罩层 */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+            {/* 信息叠加在底部 */}
+            <div className="absolute bottom-0 left-0 right-0 p-4 flex flex-col gap-1">
+              <div className="flex items-center gap-2">
+                <h4 className="text-lg font-bold text-white drop-shadow-lg">{anime.name}</h4>
+                <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-primary/80 text-primary-foreground">
+                  {anime.status}
+                </span>
+              </div>
+              <p className="text-sm text-white/80 line-clamp-2">{anime.description}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* 标题 - 左上角叠加 */}
+      <div className="absolute top-3 left-4 flex items-center gap-2 z-10">
+        <Tv className="w-5 h-5 text-white drop-shadow-lg" />
+        <h3 className="text-xl font-semibold text-white drop-shadow-lg">我追的番</h3>
+      </div>
+
+      {/* 滚动指示器 - 右下角叠加 */}
+      <div className="absolute bottom-3 right-4 flex items-center gap-1.5 z-10">
+        {animeList.map((_, index) => (
+          <div
+            key={index}
+            className={`w-2 h-2 rounded-full transition-all duration-300 ${
+              activeIndex === index ? 'bg-white w-4' : 'bg-white/50'
+            }`}
+          />
+        ))}
       </div>
     </div>
   );
@@ -1162,10 +1240,10 @@ export default function AboutPage() {
             </motion.div>
           </div>
 
-          {/* 页底区域 - 设备卡片放在左侧 */}
+          {/* 页底区域 */}
           <div className="col-span-full lg:col-span-4 mt-0">
             <div className="grid grid-cols-1 lg:grid-cols-[3fr_7fr] gap-6">
-              {/* 左侧 - 我的设备卡片 */}
+              {/* 左侧 - 我的设备卡片 30% */}
               <motion.div
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -1176,14 +1254,17 @@ export default function AboutPage() {
                 <DeviceCard devices={devices} />
               </motion.div>
 
-              {/* 右列 - 预留 */}
+              {/* 右列 - 我追的番 70%，锁定4:3 */}
               <motion.div
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: '-100px' }}
                 transition={{ duration: 0.6, delay: 0.65 }}
-                className={`${getGlassStyle("rounded-2xl p-6 border")}`}
-              ></motion.div>
+                className="relative rounded-2xl border overflow-hidden"
+                style={{ aspectRatio: '4/3' }}
+              >
+                <AnimeCard animeList={animeList} />
+              </motion.div>
             </div>
           </div>
         </div>

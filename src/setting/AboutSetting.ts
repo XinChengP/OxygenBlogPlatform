@@ -287,6 +287,53 @@ export interface DeviceConfig {
   backContent?: string[]; // 可选：背面显示的内容，每行一个配置项
 }
 
+// 我追的番配置
+export interface AnimeConfig {
+  id: string;
+  name: string;
+  coverImage: string;
+  description: string;
+  status: string;
+}
+
+export const animeList: AnimeConfig[] = [
+  {
+    id: 'anime1',
+    name: '某科学の超电磁炮',
+    coverImage: '/aboutme/anime/railgun1.jpg',
+    description: '学园都市Lv5第三位·御坂美琴的日常故事',
+    status: '已追完',
+  },
+  {
+    id: 'anime2',
+    name: '某科学の超电磁炮S',
+    coverImage: '/aboutme/anime/railgunS.jpg',
+    description: 'Level Upper篇与妹妹篇，超电磁炮系列的巅峰之作',
+    status: '已追完',
+  },
+  {
+    id: 'anime3',
+    name: '某科学の超电磁炮T',
+    coverImage: '/aboutme/anime/railgunT.jpg',
+    description: '大霸星祭与幻想御手篇，御坂美琴的故事还在继续',
+    status: '已追完',
+  },
+  {
+    id: 'anime4',
+    name: '我的三体罗辑传',
+    coverImage: '/aboutme/anime/wosan-logic.webp',
+    description: '面壁者罗辑的执剑人生涯，黑暗森林法则的践行者',
+    status: '已追完',
+  },
+  {
+    id: 'anime5',
+    name: '我的三体章北海传',
+    coverImage: '/aboutme/anime/zhangbeihai.jpg',
+    description: '自然选择，前进四！北海的故事远比想象中沉重',
+    status: '已追完',
+  },
+];
+
 export const devices: DeviceConfig[] = [
   {
     id: 'desktop',
