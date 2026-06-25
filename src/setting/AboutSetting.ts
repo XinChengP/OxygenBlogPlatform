@@ -155,7 +155,7 @@ export interface MusicPlaylistConfig {
 
 export const musicPlaylist: MusicPlaylistConfig = {
   name: '华风夏韵，洛水天依',
-  description: '任天地之间，吟游四方\n《歌行四方》夯爆了，入坑曲好吧，必须排在第一个',
+  description: '任天地之间，吟游四方\n《歌行四方》夯爆了，入坑曲好吧\n （歌单也可以在左下播放器里播放）',
   coverImage: '/aboutme/musiclistcover/gexingsifang.jpg',
   url: 'https://music.163.com/playlist?id=14349636887&uct2=U2FsdGVkX19EskAPIF87AMNeAZEiTZ6kJr8vlF0T/og=',
   buttonText: '去听听',

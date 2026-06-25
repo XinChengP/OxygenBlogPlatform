@@ -257,7 +257,7 @@ function MusicPlaylistCard({ config }: { config: MusicPlaylistConfig }) {
       </div>
 
       {/* 右侧：正方形封面，固定尺寸控制整体卡片高度 */}
-      <div className="h-49 w-49 shrink-0 rounded-xl overflow-hidden shadow-md order-1 sm:order-2">
+      <div className="h-49 w-49 shrink-0 rounded-xl shadow-md order-1 sm:order-2 relative">
         <OptimizedImage
           src={config.coverImage}
           alt={config.name}
@@ -268,6 +268,7 @@ function MusicPlaylistCard({ config }: { config: MusicPlaylistConfig }) {
           borderRadius="0.75rem"
           loading="lazy"
         />
+        <div className="absolute inset-0 rounded-xl pointer-events-none" style={{ boxShadow: 'inset 0 0 12px 8px rgba(0,0,0,0.25)' }} />
       </div>
     </div>
   );
@@ -966,7 +967,7 @@ export default function AboutPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-100px' }}
               transition={{ duration: 0.6, delay: 0.35 }}
-              className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6"
+              className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-6"
             >
               {/* MBTI 卡片 */}
               <motion.div
@@ -974,7 +975,7 @@ export default function AboutPage() {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: 0.4 }}
-                className={getGlassStyle("rounded-2xl p-6 border md:col-span-1")}
+                className={getGlassStyle("rounded-2xl p-6 border md:col-span-2")}
               >
                 <MBTICard config={mbti} />
               </motion.div>
@@ -985,7 +986,7 @@ export default function AboutPage() {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: 0.45 }}
-                className={getGlassStyle("rounded-2xl p-6 border md:col-span-2")}
+                className={getGlassStyle("rounded-2xl p-6 border md:col-span-3")}
               >
                 <MusicPlaylistCard config={musicPlaylist} />
               </motion.div>
@@ -1161,9 +1162,9 @@ export default function AboutPage() {
             </motion.div>
           </div>
 
-          {/* 页底334布局区域 - 设备卡片放在左侧 */}
+          {/* 页底区域 - 设备卡片放在左侧 */}
           <div className="col-span-full lg:col-span-4 mt-0">
-            <div className="grid grid-cols-1 lg:grid-cols-[3fr_3fr_4fr] gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-[3fr_7fr] gap-6">
               {/* 左侧 - 我的设备卡片 */}
               <motion.div
                 initial={{ opacity: 0, y: 30 }}
@@ -1175,21 +1176,12 @@ export default function AboutPage() {
                 <DeviceCard devices={devices} />
               </motion.div>
 
-              {/* 中列 - 预留 */}
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-100px' }}
-                transition={{ duration: 0.6, delay: 0.65 }}
-                className={`${getGlassStyle("rounded-2xl p-6 border")}`}
-              ></motion.div>
-
               {/* 右列 - 预留 */}
               <motion.div
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: '-100px' }}
-                transition={{ duration: 0.6, delay: 0.7 }}
+                transition={{ duration: 0.6, delay: 0.65 }}
                 className={`${getGlassStyle("rounded-2xl p-6 border")}`}
               ></motion.div>
             </div>
