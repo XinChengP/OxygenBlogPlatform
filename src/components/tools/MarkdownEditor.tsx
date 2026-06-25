@@ -2581,7 +2581,7 @@ seoDescription: "${blogMetadata.seoDescription}"
             {blogMetadata.series && (
               <div className="mt-4 p-3 bg-[#66ccff]/10 dark:bg-[#66ccff]/20 border-l-4 border-[#66ccff] rounded">
                 <p className="text-sm text-[#66ccff] dark:text-[#66ccff]">
-                  📚 系列文章: {blogMetadata.series}
+                  系列文章: {blogMetadata.series}
                   {blogMetadata.seriesOrder > 1 && (
                     <span className="ml-2 text-[#55bbee] dark:text-[#55bbee]">
                       (第{blogMetadata.seriesOrder}篇)

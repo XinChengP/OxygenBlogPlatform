@@ -21,6 +21,14 @@ import {
   Crown,
   Check,
   Mail,
+  Laptop,
+  Monitor,
+  Smartphone,
+  Tablet,
+  Watch,
+  Keyboard,
+  Mouse,
+  Headphones,
 } from 'lucide-react';
 import { Cover } from '@/components/ui/cover';
 import { EvervaultCard, Icon } from '@/components/ui/evervault-card';
@@ -47,11 +55,13 @@ import {
   musicPlaylist,
   frequentGames,
   occasionalGames,
+  devices,
   type AboutSectionConfig,
   type HobbyConfig,
   type MBTIConfig,
   type MusicPlaylistConfig,
   type GameConfig,
+  type DeviceConfig,
 } from '@/setting/AboutSetting';
 
 /**
@@ -69,6 +79,10 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Box,
   Gamepad2,
   Crown,
+  Laptop,
+  Keyboard,
+  Mouse,
+  Headphones,
 };
 
 /**
@@ -122,6 +136,91 @@ function MBTICard({ config }: { config: MBTIConfig }) {
       <span className="text-base text-muted-foreground font-medium">
         逻辑宅、脑洞专家、行动废
       </span>
+    </div>
+  );
+}
+
+/**
+ * 设备卡片组件
+ * 展示个人使用的设备列表，正面显示设备图标，鼠标悬停后原地翻转到背面显示设备名称
+ * 参考标准 CSS 翻牌实现：外层设置 perspective，内层设置 transform-style: preserve-3d，
+ * 正面背面都设置 backface-visibility: hidden，背面默认旋转 180 度
+ */
+function DeviceCard({ devices }: { devices: DeviceConfig[] }) {
+  // 设备图标映射表
+  const deviceIconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+    laptop: Laptop,
+    desktop: Monitor,
+    phone: Smartphone,
+    tablet: Tablet,
+    keyboard: Keyboard,
+    mouse: Mouse,
+    watch: Watch,
+    headphones: Headphones,
+  };
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* 卡片小标题 */}
+      <div className="flex items-center gap-2 mb-4">
+        <Laptop className="w-5 h-5 text-primary" />
+        <h3 className="text-xl font-semibold text-foreground">我的设备</h3>
+      </div>
+
+      {/* 设备列表 - 每个设备都是一张翻牌卡片 */}
+      <div className="grid grid-cols-2 gap-3 flex-1">
+        {devices.map((device, index) => {
+          const IconComponent = deviceIconMap[device.id];
+          // 每张卡片独立记录悬停状态，让外层容器作为稳定的鼠标判定区域
+          const [isHovered, setIsHovered] = useState(false);
+
+          return (
+            // 外层容器：负责入场动画、鼠标事件检测和 3D 透视效果
+            // 只有鼠标离开整个卡片区域时才会触发翻转回去，避免内部绝对定位面影响判定
+            <motion.div
+              key={device.id}
+              initial={{ opacity: 0, scale: 0.8, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.3 + index * 0.08, type: 'spring', stiffness: 200 }}
+              onHoverStart={() => setIsHovered(true)}
+              onHoverEnd={() => setIsHovered(false)}
+              className="cursor-pointer"
+              style={{ perspective: '1000px' }}
+            >
+              {/* 翻转容器：根据外层悬停状态旋转 180 度 */}
+              <motion.div
+                className="relative w-full h-full min-h-[100px]"
+                style={{ transformStyle: 'preserve-3d' }}
+                animate={{ rotateY: isHovered ? 180 : 0 }}
+                transition={{ duration: 0.5 }}
+              >
+                {/* 正面 - 显示设备图标和设备名称 */}
+                <div
+                  className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-4 rounded-xl border border-primary/20 bg-primary/10 text-primary shadow-sm transition-colors duration-300"
+                  style={{ backfaceVisibility: 'hidden' }}
+                >
+                  {IconComponent && <IconComponent className="w-8 h-8" />}
+                  <span className="text-sm font-medium text-center">{device.name}</span>
+                </div>
+
+                {/* 背面 - 翻转后显示设备配置信息，没有配置时保持空白 */}
+                <div
+                  className="absolute inset-0 flex flex-col items-center justify-center gap-1 p-4 rounded-xl border border-primary/20 bg-primary text-primary-foreground shadow-sm"
+                  style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+                >
+                  {device.backContent ? (
+                    device.backContent.map((line, lineIndex) => (
+                      <span key={lineIndex} className="text-xs font-medium text-center">
+                        {line}
+                      </span>
+                    ))
+                  ) : null}
+                </div>
+              </motion.div>
+            </motion.div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -368,18 +467,18 @@ function parseVerticalPosition(position?: string): number {
 
 /**
  * 横向手风琴面板组件
- * 桌面端三个面板水平排列，点击后展开显示内容，其他面板收缩只显示标题
- * 使用 Framer Motion layout 动画实现平滑的宽度过渡
+ * 桌面端三个面板水平排列，鼠标悬停后展开显示内容，其他面板收缩只显示标题
+ * 参考颜色调色板悬停动画：默认均分，悬停项展开，过渡 0.3s ease-out
  */
 function HorizontalAccordionPanel({
   section,
   isActive,
-  onClick,
+  onHoverStart,
   isBackgroundEnabled,
 }: {
   section: AboutSectionConfig;
   isActive: boolean;
-  onClick: () => void;
+  onHoverStart: () => void;
   isBackgroundEnabled: boolean;
 }) {
   // 根据区块 id 选择对应图标
@@ -398,12 +497,12 @@ function HorizontalAccordionPanel({
   return (
     <motion.div
       layout
-      onClick={onClick}
+      onHoverStart={onHoverStart}
       initial={false}
       animate={{
         flex: isActive ? 3 : 1,
       }}
-      transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
       className={`relative overflow-hidden rounded-2xl border cursor-pointer ${glassClass} transition-all duration-300 ${isActive ? 'shadow-2xl shadow-primary/20' : 'shadow-lg'}`}
     >
       {/* 收缩状态下的封面背景 + 垂直标题 */}
@@ -543,8 +642,8 @@ export default function AboutPage() {
   const [copied, setCopied] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
   const [currentSlogan, setCurrentSlogan] = useState(slogan);
-  // 横向手风琴当前展开的区块索引，默认展开第一个（关于我）
-  const [activeSection, setActiveSection] = useState(0);
+  // 横向手风琴当前展开的区块索引，默认全部收起（-1 表示无展开项）
+  const [activeSection, setActiveSection] = useState(-1);
   // 常玩游戏手风琴当前展开的游戏索引，默认展开第一个
   const [activeFrequentGame, setActiveFrequentGame] = useState(0);
   // 偶尔玩/通关游戏手风琴当前展开的游戏索引，默认妄想症（索引5）
@@ -793,20 +892,21 @@ export default function AboutPage() {
 
           {/* 右侧主内容区 - 横向手风琴展示三个区块 */}
           <main className="lg:col-span-3">
-            {/* 桌面端横向手风琴 - 三个面板水平排列 */}
+            {/* 桌面端横向手风琴 - 三个面板水平排列，鼠标悬停展开 */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-100px' }}
               transition={{ duration: 0.6, delay: 0.1 }}
               className="hidden md:flex h-[580px] gap-4 mb-6"
+              onMouseLeave={() => setActiveSection(-1)}
             >
               {aboutSections.map((section, index) => (
                 <HorizontalAccordionPanel
                   key={section.id}
                   section={section}
                   isActive={activeSection === index}
-                  onClick={() => setActiveSection(activeSection === index ? 0 : index)}
+                  onHoverStart={() => setActiveSection(index)}
                   isBackgroundEnabled={isBackgroundEnabled}
                 />
               ))}
@@ -1059,6 +1159,40 @@ export default function AboutPage() {
                 ))}
               </div>
             </motion.div>
+          </div>
+
+          {/* 页底334布局区域 - 设备卡片放在左侧 */}
+          <div className="col-span-full lg:col-span-4 mt-0">
+            <div className="grid grid-cols-1 lg:grid-cols-[3fr_3fr_4fr] gap-6">
+              {/* 左侧 - 我的设备卡片 */}
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-100px' }}
+                transition={{ duration: 0.6, delay: 0.6 }}
+                className={`${getGlassStyle("rounded-2xl p-6 border")}`}
+              >
+                <DeviceCard devices={devices} />
+              </motion.div>
+
+              {/* 中列 - 预留 */}
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-100px' }}
+                transition={{ duration: 0.6, delay: 0.65 }}
+                className={`${getGlassStyle("rounded-2xl p-6 border")}`}
+              ></motion.div>
+
+              {/* 右列 - 预留 */}
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-100px' }}
+                transition={{ duration: 0.6, delay: 0.7 }}
+                className={`${getGlassStyle("rounded-2xl p-6 border")}`}
+              ></motion.div>
+            </div>
           </div>
         </div>
       </div>

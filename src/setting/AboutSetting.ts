@@ -90,7 +90,7 @@ export const aboutSections: AboutSectionConfig[] = [
     coverImage: '/aboutme/1.jpg',
     coverHorizontalPosition: '51%',
     coverVerticalPosition: '0%',
-    coverSize: '100%',
+    coverSize: '120%',
     paragraphs: [
       '天津工业大学机械工程专业就读，预计2029年毕业。',
       '一个机械工程专业的25级大学牲。总想搞一些东西，总是在焦虑之中，总爱碎碎念。。。'
@@ -276,6 +276,73 @@ export const occasionalGames: GameConfig[] = [
     coverSize: '100%',
     coverImage: '/aboutme/games/deliverme.jpg',
     description: '“比十年更早之前，我便歌颂着明天”',
+  },
+];
+
+// 我的设备配置
+// 用于在关于页面展示个人使用的设备
+export interface DeviceConfig {
+  id: string; // 唯一标识
+  name: string; // 设备名称
+  backContent?: string[]; // 可选：背面显示的内容，每行一个配置项
+}
+
+export const devices: DeviceConfig[] = [
+  {
+    id: 'desktop',
+    name: '台式机',
+    backContent: [
+      'CPU：i5-9400f',
+      'GPU：GTX 1660s',
+      '内存：8G * 2',
+    ],
+  },
+  { id: 'laptop',
+    name: '游戏本',
+    backContent: [
+      '华硕天选6Pro魔幻青',
+      'CPU：i7-14650HX',
+      'GPU：GTX 5060',
+      '内存：16G * 2',
+    ],
+  },
+  { id: 'phone', 
+    name: '手机',
+    backContent: [
+      '现用：荣耀X50',
+      '吃灰：荣耀500Pro',
+    ],
+  },
+  { id: 'tablet', 
+    name: 'iPad',
+    backContent: [
+      'iPad（第 8 代）',
+    ],
+  },
+  { id: 'keyboard',
+    name: '键盘',
+    backContent: [
+      '双飞燕FGK3',
+    ],
+  },
+  { id: 'mouse', 
+    name: '鼠标',
+    backContent: [
+      '前行者X23SE',
+    ],
+  },
+  { id: 'watch',
+    name: '手表',
+    backContent: [
+      '华为Watch4',
+    ],
+  },
+  { id: 'headphones',
+    name: '耳机',
+    backContent: [
+      '头戴式：iKF-T3',
+      '蓝牙：荣耀亲选耳夹式耳机2pro',
+    ],
   },
 ];
 
