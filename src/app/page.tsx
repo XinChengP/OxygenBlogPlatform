@@ -21,14 +21,14 @@ export default function Home() {
       <div className="absolute inset-0 flex items-center justify-center z-[1] pointer-events-none select-none">
         <span
           className="text-[30vw] sm:text-[24vw] md:text-[20vw] lg:text-[16vw] font-black leading-none tracking-tighter gpu-accelerated"
-          style={{ color: 'rgba(255,255,255,0.08)' }}
+          style={{ color: 'rgba(255,255,255,0.08)', fontFamily: "'Ma Shan Zheng', serif" }}
         >
           {mainTitle}
         </span>
       </div>
 
       {/* 内容区 */}
-      <section className={`${sectionStyle.className} min-h-screen flex flex-col items-center justify-center pb-24 relative z-10`} style={sectionStyle.style}>
+      <section className={`${sectionStyle.className} min-h-screen flex flex-col items-center justify-center pb-32 relative z-10`} style={sectionStyle.style}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center flex flex-col items-center hero-optimized">
 
           {/* 主标题 - 白色描边文字 */}
