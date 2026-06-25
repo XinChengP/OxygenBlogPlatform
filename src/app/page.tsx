@@ -3,69 +3,88 @@ import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { mainTitle, mainTitleBlueDecoration, subTitle, subTitleBlueDecoration, subTitleBlueDecorationClass, TypewriterTexts} from '@/setting/HomeSetting'
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
+import { motion } from 'framer-motion';
 
-// 动态导入动画组件，禁用SSR以避免hydration不匹配
 const BoxReveal = dynamic(() => import('@/components/magicui/box-reveal'), { ssr: false });
 import Meteors from '@/components/magicui/meteors';
 import Typewriter from '@/components/ui/typewriter';
 
-/**
- * 首页组件
- * 应用性能优化：GPU加速、CSS动画替代JS动画、will-change优化
- */
 export default function Home() {
   const router = useRouter();
   const { containerStyle, sectionStyle } = useBackgroundStyle('home');
 
   return (
-    <div className={`${containerStyle.className} hero-optimized`} style={containerStyle.style}>
-      {/* 流星背景动画 - 使用优化后的类名 */}
+    <div className={`${containerStyle.className} hero-optimized relative overflow-hidden`} style={containerStyle.style}>
       <Meteors />
-      {/* 欢迎部分 - 应用性能优化类 */}
-      <section className={`${sectionStyle.className} min-h-screen flex items-center justify-center pb-32`} style={sectionStyle.style}>
-       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center flex flex-col items-center relative z-10 hero-optimized">
 
-            {/* 主标题 - 应用GPU加速 */}
-            <BoxReveal boxColor={"var(--primary)"} duration={0.5}>
-              <p className="text-5xl sm:text-6xl lg:text-[5.5rem] font-semibold leading-tight title gpu-accelerated">
-              {mainTitle}<span className="text-primary">{mainTitleBlueDecoration}</span>
-              </p>
-            </BoxReveal>
- 
-            {/* 副标题 - 应用GPU加速 */}
-            <BoxReveal boxColor={"var(--primary)"} duration={0.5}>
-              <h2 className="mt-1 sm:mt-[.5rem] text-xl sm:text-2xl lg:text-[2rem] title gpu-accelerated">
-                {subTitle}
-              {/* 锦依卫文字 - 应用渐变动画优化 */}
-              <span className={`${subTitleBlueDecorationClass} text-gradient-animate`}>{subTitleBlueDecoration}</span>
-              </h2>
-            </BoxReveal>
+      {/* 巨型水印名字 */}
+      <div className="absolute inset-0 flex items-center justify-center z-[1] pointer-events-none select-none">
+        <span
+          className="text-[30vw] sm:text-[24vw] md:text-[20vw] lg:text-[16vw] font-black leading-none tracking-tighter gpu-accelerated"
+          style={{ color: 'rgba(255,255,255,0.08)' }}
+        >
+          {mainTitle}
+        </span>
+      </div>
 
-         {/* 打字机效果 - 应用GPU加速 */}
-         <div className="mt-1 sm:mt-2 text-lg sm:text-xl lg:text-[1.3rem] gpu-accelerated">
-            <Typewriter texts={TypewriterTexts} delay={0.5} ></Typewriter>
-         </div>
-         
-         {/* 按钮组 - 使用CSS动画优化替代transform */}
-         <BoxReveal boxColor={"var(--primary)"} duration={0.5}>
-           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mt-4 sm:mt-6 lg:mt-8 w-full sm:w-auto py-4 sm:py-6 px-4 sm:px-6">
-                {/* 主要按钮：天依蓝背景 + 悬停光晕，仅保留文字 */}
-                <button
-                  className="bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-lg font-medium btn-hover-lift shadow-lg shadow-primary/25 hover:shadow-primary/40 nav-link"
-                  onClick={() => router.push('/blogs')}
-                >
-                  浏览文章
-                </button>
-                {/* 次要按钮：描边样式 + 悬停光晕，仅保留文字 */}
-                <button
-                  className="bg-transparent hover:bg-primary/10 text-primary border-2 border-primary hover:border-primary/80 px-8 py-3 rounded-lg font-medium btn-hover-lift shadow-lg shadow-primary/10 hover:shadow-primary/25 nav-link"
-                  onClick={() => router.push('/about')}
-                >
-                  了解更多
-                </button>
-             </div>
-         </BoxReveal>
-         
+      {/* 内容区 */}
+      <section className={`${sectionStyle.className} min-h-screen flex flex-col items-center justify-center pb-24 relative z-10`} style={sectionStyle.style}>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center flex flex-col items-center hero-optimized">
+
+          {/* 主标题 - 白色描边文字 */}
+          <BoxReveal boxColor={"var(--primary)"} duration={0.5}>
+            <h1
+              className="text-5xl sm:text-6xl lg:text-[5.5rem] font-bold leading-tight title gpu-accelerated"
+              style={{
+                color: 'white',
+                WebkitTextStroke: '1.5px rgba(0,0,0,0.25)',
+                paintOrder: 'stroke fill',
+              }}
+            >
+              {mainTitle}
+              <span
+                className="text-primary"
+                style={{ WebkitTextStroke: '0px' }}
+              >
+                {mainTitleBlueDecoration}
+              </span>
+            </h1>
+          </BoxReveal>
+
+          {/* 副标题 */}
+          <BoxReveal boxColor={"var(--primary)"} duration={0.5}>
+            <h2 className="mt-3 text-lg sm:text-xl lg:text-[1.6rem] font-light text-white/90 tracking-wide title gpu-accelerated">
+              {subTitle}
+              <span className={`${subTitleBlueDecorationClass} text-gradient-animate font-semibold`}>{subTitleBlueDecoration}</span>
+            </h2>
+          </BoxReveal>
+
+          {/* 打字机 */}
+          <div className="mt-3 text-sm sm:text-base text-white/60 gpu-accelerated">
+            <Typewriter texts={TypewriterTexts} delay={0.5} />
+          </div>
+
+          {/* 按钮组 */}
+          <BoxReveal boxColor={"var(--primary)"} duration={0.5}>
+            <div className="flex gap-3 sm:gap-4 justify-center mt-8">
+              <button
+                className="bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-xl font-semibold text-sm
+                           shadow-lg shadow-primary/30 hover:shadow-primary/50 nav-link transition-all duration-300"
+                onClick={() => router.push('/blogs')}
+              >
+                浏览文章
+              </button>
+              <button
+                className="text-white font-semibold text-sm px-8 py-3 rounded-xl
+                           border border-white/30 hover:border-white/60 hover:bg-white/10
+                           nav-link transition-all duration-300"
+                onClick={() => router.push('/about')}
+              >
+                了解更多
+              </button>
+            </div>
+          </BoxReveal>
+
         </div>
       </section>
     </div>
