@@ -353,48 +353,82 @@ function DeviceCard({ devices }: { devices: DeviceConfig[] }) {
  */
 function MusicPlaylistCard({ config }: { config: MusicPlaylistConfig }) {
   const [isImageHovered, setIsImageHovered] = useState(false);
+  const [isCardHovered, setIsCardHovered] = useState(false);
 
   return (
-    <div className="relative flex flex-col sm:flex-row items-start gap-5 h-full">
-
+    <motion.div
+      className="relative flex flex-col sm:flex-row items-start gap-5 h-full"
+      onMouseEnter={() => setIsCardHovered(true)}
+      onMouseLeave={() => setIsCardHovered(false)}
+    >
       {/* 左侧：歌单信息 */}
       <div className="relative z-10 flex-1 flex flex-col justify-start gap-3 order-2 sm:order-1">
-        {/* 卡片小标题 */}
+        {/* 卡片小标题 - 悬停时跳动 */}
         <div className="flex items-center gap-2">
           <motion.div
-            animate={{ rotate: [0, 15, -15, 0] }}
-            transition={{ duration: 2, repeat: Infinity, repeatDelay: 5 }}
+            animate={isCardHovered ? { rotate: [0, 15, -15, 0], y: [0, -3, 0] } : { rotate: [0, 15, -15, 0] }}
+            transition={{ duration: isCardHovered ? 0.6 : 2, repeat: Infinity, repeatDelay: isCardHovered ? 0.2 : 5 }}
           >
             <Music className="w-5 h-5 text-primary" />
           </motion.div>
           <h3 className="text-xl font-semibold text-foreground">我的歌单</h3>
         </div>
 
-        <h3 className="text-xl font-semibold text-foreground">{config.name}</h3>
-        <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
-          {config.description}
-        </p>
+        {/* 歌单名称 - 悬停时轻微弹跳 */}
+        <motion.h3
+          className="text-xl font-semibold text-foreground"
+          animate={isCardHovered ? { x: [0, 2, -2, 0] } : {}}
+          transition={{ duration: 0.5 }}
+        >
+          {config.name}
+        </motion.h3>
+
+        {/* 歌单描述 - 交错逐行入场 */}
+        <div className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+          {config.description.split('\n').map((line, i) => (
+            <motion.p
+              key={i}
+              initial={{ opacity: 0, x: -10 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: 0.3 + i * 0.1 }}
+            >
+              {line}
+            </motion.p>
+          ))}
+        </div>
+
+        {/* 跳转按钮 - 悬停时脉冲光环 + 点击涟漪 */}
         <motion.a
           href={config.url}
           target="_blank"
           rel="noopener noreferrer"
           whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="inline-flex items-center justify-center sm:justify-start gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors duration-200"
+          whileTap={{ scale: 0.92 }}
+          className="relative inline-flex items-center justify-center sm:justify-start gap-2 text-sm font-medium text-primary"
         >
           <span className="relative px-4 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 transition-all duration-300 overflow-hidden group">
             <span className="relative z-10">{config.buttonText}</span>
+            {/* 光泽扫过 */}
             <motion.span
-              className="absolute inset-0 bg-primary/5"
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
               initial={{ x: '-100%' }}
               whileHover={{ x: '100%' }}
               transition={{ duration: 0.6 }}
             />
+            {/* 脉冲光环 */}
+            {isCardHovered && (
+              <motion.span
+                className="absolute inset-0 rounded-lg border border-primary/30"
+                animate={{ scale: [1, 1.15, 1], opacity: [0.5, 0, 0.5] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              />
+            )}
           </span>
         </motion.a>
       </div>
 
-      {/* 右侧：正方形封面，悬停缩放 + 旋转效果 */}
+      {/* 右侧：正方形封面 */}
       <motion.div
         className="h-49 w-49 shrink-0 rounded-xl shadow-md order-1 sm:order-2 relative overflow-hidden cursor-pointer"
         onMouseEnter={() => setIsImageHovered(true)}
@@ -408,33 +442,41 @@ function MusicPlaylistCard({ config }: { config: MusicPlaylistConfig }) {
           alt={config.name}
           width={196}
           height={196}
-          className="w-full h-full transition-transform duration-500"
+          className="w-full h-full"
           objectFit="cover"
           borderRadius="0.75rem"
           loading="lazy"
         />
         <div className="absolute inset-0 rounded-xl pointer-events-none" style={{ boxShadow: 'inset 0 0 12px 8px rgba(0,0,0,0.25)' }} />
-        {/* 悬停时显示音乐波形效果 */}
+
+        {/* 悬停时：唱片旋转角标 + 音乐波形 */}
         <AnimatePresence>
           {isImageHovered && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-xl"
+              className="absolute inset-0 bg-black/30 rounded-xl flex flex-col items-center justify-center gap-3"
             >
-              <div className="flex items-end gap-0.5 h-8">
-                {[0.6, 1, 0.4, 0.8, 0.5].map((height, i) => (
+              {/* 唱片旋转角标 */}
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+                className="w-10 h-10 rounded-full border-2 border-white/30 border-t-white/80"
+              />
+              {/* 音乐波形 */}
+              <div className="flex items-end gap-0.5 h-6">
+                {[0.6, 1, 0.4, 0.8, 0.5, 0.7, 0.3].map((height, i) => (
                   <motion.div
                     key={i}
-                    className="w-1 bg-white rounded-full"
+                    className="w-0.5 bg-white rounded-full"
                     animate={{
-                      height: [`${height * 100}%`, '40%', `${height * 100}%`],
+                      height: [`${height * 100}%`, '30%', `${height * 100}%`],
                     }}
                     transition={{
-                      duration: 0.8,
+                      duration: 0.7,
                       repeat: Infinity,
-                      delay: i * 0.1,
+                      delay: i * 0.08,
                       ease: 'easeInOut',
                     }}
                   />
@@ -443,8 +485,15 @@ function MusicPlaylistCard({ config }: { config: MusicPlaylistConfig }) {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* 悬停时封面发光边框 */}
+        <motion.div
+          className="absolute inset-0 rounded-xl pointer-events-none"
+          animate={isImageHovered ? { boxShadow: '0 0 20px 2px rgba(102,204,255,0.25)' } : { boxShadow: '0 0 0px 0px rgba(102,204,255,0)' }}
+          transition={{ duration: 0.3 }}
+        />
       </motion.div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -466,18 +515,7 @@ function AnimeCard({ animeList }: { animeList: AnimeConfig[] }) {
     const height = target.clientHeight;
     const index = Math.round(scrollTop / height);
     setActiveIndex(index);
-
-    // 循环：滚到底部时跳回第一张
-    if (index === animeList.length - 1 && scrollTop > 0) {
-      const atBottom = scrollTop + height >= target.scrollHeight - 5;
-      if (atBottom) {
-        setTimeout(() => {
-          target.scrollTo({ top: 0, behavior: 'instant' });
-          setActiveIndex(0);
-        }, 400);
-      }
-    }
-  }, [animeList.length]);
+  }, []);
 
   // 自动滚动到下一个
   const scrollToNext = useCallback(() => {
@@ -951,7 +989,7 @@ function HorizontalAccordionPanel({
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.25 }}
-              className="relative z-10 flex-1 min-h-0 text-[13px] leading-relaxed space-y-2"
+              className="relative z-10 flex-1 min-h-0 text-sm leading-relaxed space-y-2"
             >
               <AboutSection section={section} hideTitle />
             </motion.div>
