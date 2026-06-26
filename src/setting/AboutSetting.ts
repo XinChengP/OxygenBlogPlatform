@@ -89,7 +89,7 @@ export const aboutSections: AboutSectionConfig[] = [
     title: '关于我',
     coverImage: '/aboutme/1.jpg',
     coverHorizontalPosition: '51%',
-    coverVerticalPosition: '0%',
+    coverVerticalPosition: '50%',
     coverSize: '100%',
     paragraphs: [
       '天津工业大学机械工程专业就读，预计2029年毕业。',
@@ -294,44 +294,73 @@ export interface AnimeConfig {
   coverImage: string;
   description: string;
   status: string;
+  coverHorizontalPosition?: string; // 封面水平位置，默认 'center'
+  coverVerticalPosition?: string; // 封面垂直位置，默认 'center'
+  coverSize?: string; // 封面缩放比例，默认 '100%'
 }
 
 export const animeList: AnimeConfig[] = [
-  {
-    id: 'anime1',
-    name: '某科学の超电磁炮',
-    coverImage: '/aboutme/anime/railgun1.jpg',
-    description: '学园都市Lv5第三位·御坂美琴的日常故事',
+    {
+    id: 'anime',
+    name: '我的三体罗辑传',
+    coverImage: '/aboutme/anime/wosan-logic.webp',
+    description: '“面壁者罗辑，我是你的破壁人”',
     status: '已追完',
+    coverHorizontalPosition: '50%',
+    coverVerticalPosition: '30%',
+    coverSize: '100%',
   },
   {
     id: 'anime2',
-    name: '某科学の超电磁炮S',
-    coverImage: '/aboutme/anime/railgunS.jpg',
-    description: 'Level Upper篇与妹妹篇，超电磁炮系列的巅峰之作',
+    name: '我的三体章北海传',
+    coverImage: '/aboutme/anime/zhangbeihai.jpg',
+    description: '致以第五位面壁者章北海最高敬意',
     status: '已追完',
+    coverHorizontalPosition: '50%',
+    coverVerticalPosition: '30%',
+    coverSize: '100%',
   },
   {
     id: 'anime3',
-    name: '某科学の超电磁炮T',
-    coverImage: '/aboutme/anime/railgunT.jpg',
-    description: '大霸星祭与幻想御手篇，御坂美琴的故事还在继续',
+    name: '某科学の超电磁炮',
+    coverImage: '/aboutme/anime/railgun1.jpg',
+    description: '入站必看（确信',
     status: '已追完',
+    coverHorizontalPosition: '50%',
+    coverVerticalPosition: '25%',
+    coverSize: '100%',
   },
   {
     id: 'anime4',
-    name: '我的三体罗辑传',
-    coverImage: '/aboutme/anime/wosan-logic.webp',
-    description: '面壁者罗辑的执剑人生涯，黑暗森林法则的践行者',
+    name: '某科学の超电磁炮S',
+    coverImage: '/aboutme/anime/railgunS.jpg',
+    description: '放电妹（bushi）',
     status: '已追完',
+    coverHorizontalPosition: '50%',
+    coverVerticalPosition: '38%',
+    coverSize: '100%',
   },
   {
     id: 'anime5',
-    name: '我的三体章北海传',
-    coverImage: '/aboutme/anime/zhangbeihai.jpg',
-    description: '自然选择，前进四！北海的故事远比想象中沉重',
+    name: '某科学の超电磁炮T',
+    coverImage: '/aboutme/anime/railgunT.jpg',
+    description: '原来炮姐咋这么强的吗，感觉前两季没表现出来',
     status: '已追完',
+    coverHorizontalPosition: '50%',
+    coverVerticalPosition: '40%',
+    coverSize: '100%',
   },
+  {
+    id: 'anime6',
+    name: '命运拳台',
+    coverImage: '/aboutme/anime/Myqt.webp',
+    description: '差点忘了看过这个（话说第二季啥时候出）\n画风和配音都很有特点，以及还有模糊的三次元回忆杀；梗是真的多，刀也是真的刀。爱看',
+    status: '已追完',
+    coverHorizontalPosition: '50%',
+    coverVerticalPosition: '40%',
+    coverSize: '100%',
+  },
+
 ];
 
 export const devices: DeviceConfig[] = [

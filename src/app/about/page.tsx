@@ -7,7 +7,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import {
   User,
   Globe,
@@ -38,6 +38,46 @@ import OptimizedImage from '@/components/core/OptimizedImage';
 import PageHeader from '@/components/ui/PageHeader';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 import { getAssetPath } from '@/utils/assetUtils';
+
+/**
+ * 3D 倾斜效果 Hook
+ * 鼠标在卡片上移动时产生透视倾斜和高光跟随效果
+ */
+function useTilt(ref: React.RefObject<HTMLDivElement | null>, intensity = 15) {
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const rotateX = useSpring(useTransform(y, [-0.5, 0.5], [intensity, -intensity]), { stiffness: 300, damping: 30 });
+  const rotateY = useSpring(useTransform(x, [-0.5, 0.5], [-intensity, intensity]), { stiffness: 300, damping: 30 });
+  const glareX = useSpring(useTransform(x, [-0.5, 0.5], [0, 100]), { stiffness: 300, damping: 30 });
+  const glareY = useSpring(useTransform(y, [-0.5, 0.5], [0, 100]), { stiffness: 300, damping: 30 });
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const rect = el.getBoundingClientRect();
+      const px = (e.clientX - rect.left) / rect.width - 0.5;
+      const py = (e.clientY - rect.top) / rect.height - 0.5;
+      x.set(px);
+      y.set(py);
+    };
+
+    const handleMouseLeave = () => {
+      x.set(0);
+      y.set(0);
+    };
+
+    el.addEventListener('mousemove', handleMouseMove);
+    el.addEventListener('mouseleave', handleMouseLeave);
+    return () => {
+      el.removeEventListener('mousemove', handleMouseMove);
+      el.removeEventListener('mouseleave', handleMouseLeave);
+    };
+  }, [ref, x, y]);
+
+  return { rotateX, rotateY, glareX, glareY, x, y };
+}
 
 // 导入配置
 import {
@@ -90,7 +130,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 
 /**
  * 兴趣爱好标签组件
- * 显示带图标的兴趣标签，悬停时有轻微放大和摆动效果
+ * 添加弹性入场 + 悬停彩虹色变换 + 弹跳效果
  */
 function HobbyTag({ hobby, index }: { hobby: HobbyConfig; index: number }) {
   const IconComponent = iconMap[hobby.icon];
@@ -98,17 +138,32 @@ function HobbyTag({ hobby, index }: { hobby: HobbyConfig; index: number }) {
   return (
     <motion.span
       key={hobby.name}
-      initial={{ opacity: 0, scale: 0.8, y: 10 }}
+      initial={{ opacity: 0, scale: 0.5, y: 20 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: 0.5 + index * 0.08, type: 'spring', stiffness: 200 }}
-      whileHover={{
-        scale: 1.08,
-        rotate: [0, -3, 3, 0],
-        transition: { duration: 0.4 }
+      transition={{
+        duration: 0.5,
+        delay: 0.5 + index * 0.08,
+        type: 'spring',
+        stiffness: 260,
+        damping: 15,
       }}
-      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-full border border-primary/20 bg-primary/10 text-primary cursor-default shadow-sm transition-colors duration-300"
+      whileHover={{
+        scale: 1.12,
+        rotate: [0, -5, 5, -3, 3, 0],
+        transition: { duration: 0.5 },
+      }}
+      whileTap={{ scale: 0.9 }}
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-full border border-primary/20 bg-primary/10 text-primary cursor-default shadow-sm hover:shadow-md hover:shadow-primary/20 hover:border-primary/40 hover:bg-primary/20 transition-all duration-300"
     >
-      {IconComponent && <IconComponent className="w-3.5 h-3.5" />}
+      {IconComponent && (
+        <motion.span
+          className="inline-flex"
+          whileHover={{ rotate: 360 }}
+          transition={{ duration: 0.4 }}
+        >
+          <IconComponent className="w-3.5 h-3.5" />
+        </motion.span>
+      )}
       {hobby.name}
     </motion.span>
   );
@@ -117,40 +172,88 @@ function HobbyTag({ hobby, index }: { hobby: HobbyConfig; index: number }) {
 /**
  * MBTI 人格类型卡片组件（简约版）
  * 仅展示类型大字母、中文名与一句简短描述
+ * 添加 3D 倾斜、字母逐字弹入、悬停光晕效果
  */
 function MBTICard({ config }: { config: MBTIConfig }) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const { rotateX, rotateY, glareX, glareY } = useTilt(cardRef, 10);
+  const typeLetters = config.type.toUpperCase().split('');
+  const glareBackground = useTransform(
+    [glareX, glareY],
+    ([gx, gy]) =>
+      `radial-gradient(circle at ${gx}% ${gy}%, rgba(102,204,255,0.12) 0%, transparent 60%)`
+  );
+
   return (
-    // 窄卡片内垂直居中，让类型字母和说明在视觉上居中
-    <div className="flex flex-col items-center text-center justify-start gap-6 h-full">
+    <motion.div
+      ref={cardRef}
+      style={{ rotateX, rotateY, transformStyle: 'preserve-3d' }}
+      whileHover={{ scale: 1.02 }}
+      transition={{ scale: { duration: 0.3 } }}
+      className="relative flex flex-col items-center text-center justify-start gap-6 h-full"
+    >
+      {/* 高光层 */}
+      <motion.div
+        className="absolute inset-0 rounded-2xl pointer-events-none z-0"
+        style={{ background: glareBackground }}
+      />
+
       {/* 卡片小标题 - 参考手风琴展开标题风格 */}
-      <div className="flex items-center gap-2 mb-1">
-        <User className="w-5 h-5 text-primary" />
+      <div className="relative z-10 flex items-center gap-2 mb-1">
+        <motion.div
+          animate={{ rotate: [0, 10, -10, 0] }}
+          transition={{ duration: 3, repeat: Infinity, repeatDelay: 4 }}
+        >
+          <User className="w-5 h-5 text-primary" />
+        </motion.div>
         <h3 className="text-xl font-semibold text-foreground">我的 MBTI</h3>
       </div>
 
-      {/* 大字母类型 - 略微放大，居中显示，蓝色系渐变流动效果 */}
-      <span
-        className="text-6xl font-bold tracking-tight leading-none bg-gradient-to-r from-blue-500 via-sky-400 via-cyan-400 via-blue-400 to-blue-600 bg-clip-text text-transparent drop-shadow-lg bg-[length:300%_300%] animate-[gradientShift_2s_ease-in-out_infinite] text-gradient-animate"
-      >
-        {config.type.toUpperCase()}
-      </span>
+      {/* 大字母类型 - 逐字弹入动画 + 蓝色系渐变流动效果 */}
+      <div className="relative z-10 flex items-center gap-1" style={{ transform: 'translateZ(20px)' }}>
+        {typeLetters.map((letter, i) => (
+          <motion.span
+            key={`${letter}-${i}`}
+            initial={{ opacity: 0, y: 30, scale: 0.5 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{
+              duration: 0.5,
+              delay: 0.8 + i * 0.12,
+              type: 'spring',
+              stiffness: 200,
+              damping: 12,
+            }}
+            whileHover={{
+              scale: 1.3,
+              y: -8,
+              transition: { duration: 0.2 },
+            }}
+            className="text-6xl font-bold tracking-tight leading-none bg-gradient-to-r from-blue-500 via-sky-400 via-cyan-400 via-blue-400 to-blue-600 bg-clip-text text-transparent drop-shadow-lg bg-[length:300%_300%] animate-[gradientShift_2s_ease-in-out_infinite] text-gradient-animate cursor-default inline-block"
+          >
+            {letter}
+          </motion.span>
+        ))}
+      </div>
 
-      {/* 简要中文说明 - 置于类型下方 */}
-      <span className="text-base text-muted-foreground font-medium">
+      {/* 简要中文说明 - 带淡入效果 */}
+      <motion.span
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6, delay: 1.5 }}
+        className="relative z-10 text-base text-muted-foreground font-medium"
+      >
         逻辑宅、脑洞专家、行动废
-      </span>
-    </div>
+      </motion.span>
+    </motion.div>
   );
 }
 
 /**
  * 设备卡片组件
  * 展示个人使用的设备列表，正面显示设备图标，鼠标悬停后原地翻转到背面显示设备名称
- * 参考标准 CSS 翻牌实现：外层设置 perspective，内层设置 transform-style: preserve-3d，
- * 正面背面都设置 backface-visibility: hidden，背面默认旋转 180 度
+ * 添加入场交错动画 + 悬停发光边框效果
  */
 function DeviceCard({ devices }: { devices: DeviceConfig[] }) {
-  // 设备图标映射表
   const deviceIconMap: Record<string, React.ComponentType<{ className?: string }>> = {
     laptop: Laptop,
     desktop: Monitor,
@@ -166,7 +269,12 @@ function DeviceCard({ devices }: { devices: DeviceConfig[] }) {
     <div className="flex flex-col h-full">
       {/* 卡片小标题 */}
       <div className="flex items-center gap-2 mb-4">
-        <Laptop className="w-5 h-5 text-primary" />
+        <motion.div
+          animate={{ rotate: [0, 5, -5, 0] }}
+          transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 3 }}
+        >
+          <Laptop className="w-5 h-5 text-primary" />
+        </motion.div>
         <h3 className="text-xl font-semibold text-foreground">我的设备</h3>
       </div>
 
@@ -174,42 +282,52 @@ function DeviceCard({ devices }: { devices: DeviceConfig[] }) {
       <div className="grid grid-cols-2 gap-3 flex-1">
         {devices.map((device, index) => {
           const IconComponent = deviceIconMap[device.id];
-          // 每张卡片独立记录悬停状态，让外层容器作为稳定的鼠标判定区域
           const [isHovered, setIsHovered] = useState(false);
 
           return (
-            // 外层容器：负责入场动画、鼠标事件检测和 3D 透视效果
-            // 只有鼠标离开整个卡片区域时才会触发翻转回去，避免内部绝对定位面影响判定
             <motion.div
               key={device.id}
-              initial={{ opacity: 0, scale: 0.8, y: 10 }}
+              initial={{ opacity: 0, scale: 0.8, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.3 + index * 0.08, type: 'spring', stiffness: 200 }}
+              transition={{
+                duration: 0.5,
+                delay: 0.4 + index * 0.06,
+                type: 'spring',
+                stiffness: 180,
+              }}
+              whileHover={{ scale: 1.05, zIndex: 10 }}
               onHoverStart={() => setIsHovered(true)}
               onHoverEnd={() => setIsHovered(false)}
               className="cursor-pointer"
               style={{ perspective: '1000px' }}
             >
-              {/* 翻转容器：根据外层悬停状态旋转 180 度 */}
+              {/* 翻转容器 */}
               <motion.div
                 className="relative w-full h-full min-h-[100px]"
                 style={{ transformStyle: 'preserve-3d' }}
                 animate={{ rotateY: isHovered ? 180 : 0 }}
                 transition={{ duration: 0.5 }}
               >
-                {/* 正面 - 显示设备图标和设备名称 */}
+                {/* 正面 */}
                 <div
-                  className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-4 rounded-xl border border-primary/20 bg-primary/10 text-primary shadow-sm transition-colors duration-300"
-                  style={{ backfaceVisibility: 'hidden' }}
+                  className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-4 rounded-xl border border-primary/20 bg-primary/10 text-primary shadow-sm transition-all duration-300"
+                  style={{
+                    backfaceVisibility: 'hidden',
+                    boxShadow: isHovered ? '0 0 20px rgba(102,204,255,0.15)' : undefined,
+                  }}
                 >
                   {IconComponent && <IconComponent className="w-8 h-8" />}
                   <span className="text-sm font-medium text-center">{device.name}</span>
                 </div>
 
-                {/* 背面 - 翻转后显示设备配置信息，没有配置时保持空白 */}
+                {/* 背面 */}
                 <div
                   className="absolute inset-0 flex flex-col items-center justify-center gap-1 p-4 rounded-xl border border-primary/20 bg-primary text-primary-foreground shadow-sm"
-                  style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+                  style={{
+                    backfaceVisibility: 'hidden',
+                    transform: 'rotateY(180deg)',
+                    boxShadow: '0 0 24px rgba(102,204,255,0.2)',
+                  }}
                 >
                   {device.backContent ? (
                     device.backContent.map((line, lineIndex) => (
@@ -231,15 +349,24 @@ function DeviceCard({ devices }: { devices: DeviceConfig[] }) {
 /**
  * 个人歌单卡片组件
  * 左侧展示歌单名称、简介和跳转按钮，右侧展示正方形封面图
+ * 添加 3D 倾斜、封面悬停缩放、按钮脉冲光效
  */
 function MusicPlaylistCard({ config }: { config: MusicPlaylistConfig }) {
+  const [isImageHovered, setIsImageHovered] = useState(false);
+
   return (
-    <div className="flex flex-col sm:flex-row items-start gap-5 h-full">
+    <div className="relative flex flex-col sm:flex-row items-start gap-5 h-full">
+
       {/* 左侧：歌单信息 */}
-      <div className="flex-1 flex flex-col justify-start gap-3 order-2 sm:order-1">
-        {/* 卡片小标题 - 参考手风琴展开标题风格 */}
+      <div className="relative z-10 flex-1 flex flex-col justify-start gap-3 order-2 sm:order-1">
+        {/* 卡片小标题 */}
         <div className="flex items-center gap-2">
-          <Music className="w-5 h-5 text-primary" />
+          <motion.div
+            animate={{ rotate: [0, 15, -15, 0] }}
+            transition={{ duration: 2, repeat: Infinity, repeatDelay: 5 }}
+          >
+            <Music className="w-5 h-5 text-primary" />
+          </motion.div>
           <h3 className="text-xl font-semibold text-foreground">我的歌单</h3>
         </div>
 
@@ -247,32 +374,76 @@ function MusicPlaylistCard({ config }: { config: MusicPlaylistConfig }) {
         <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
           {config.description}
         </p>
-        <a
+        <motion.a
           href={config.url}
           target="_blank"
           rel="noopener noreferrer"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
           className="inline-flex items-center justify-center sm:justify-start gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors duration-200"
         >
-          <span className="px-4 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors duration-200">
-            {config.buttonText}
+          <span className="relative px-4 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 transition-all duration-300 overflow-hidden group">
+            <span className="relative z-10">{config.buttonText}</span>
+            <motion.span
+              className="absolute inset-0 bg-primary/5"
+              initial={{ x: '-100%' }}
+              whileHover={{ x: '100%' }}
+              transition={{ duration: 0.6 }}
+            />
           </span>
-        </a>
+        </motion.a>
       </div>
 
-      {/* 右侧：正方形封面，固定尺寸控制整体卡片高度 */}
-      <div className="h-49 w-49 shrink-0 rounded-xl shadow-md order-1 sm:order-2 relative">
+      {/* 右侧：正方形封面，悬停缩放 + 旋转效果 */}
+      <motion.div
+        className="h-49 w-49 shrink-0 rounded-xl shadow-md order-1 sm:order-2 relative overflow-hidden cursor-pointer"
+        onMouseEnter={() => setIsImageHovered(true)}
+        onMouseLeave={() => setIsImageHovered(false)}
+        whileHover={{ scale: 1.06, rotate: 2 }}
+        transition={{ duration: 0.4, type: 'spring', stiffness: 200 }}
+        style={{ transform: 'translateZ(30px)' }}
+      >
         <OptimizedImage
           src={config.coverImage}
           alt={config.name}
           width={196}
           height={196}
-          className="w-full h-full"
+          className="w-full h-full transition-transform duration-500"
           objectFit="cover"
           borderRadius="0.75rem"
           loading="lazy"
         />
         <div className="absolute inset-0 rounded-xl pointer-events-none" style={{ boxShadow: 'inset 0 0 12px 8px rgba(0,0,0,0.25)' }} />
-      </div>
+        {/* 悬停时显示音乐波形效果 */}
+        <AnimatePresence>
+          {isImageHovered && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-xl"
+            >
+              <div className="flex items-end gap-0.5 h-8">
+                {[0.6, 1, 0.4, 0.8, 0.5].map((height, i) => (
+                  <motion.div
+                    key={i}
+                    className="w-1 bg-white rounded-full"
+                    animate={{
+                      height: [`${height * 100}%`, '40%', `${height * 100}%`],
+                    }}
+                    transition={{
+                      duration: 0.8,
+                      repeat: Infinity,
+                      delay: i * 0.1,
+                      ease: 'easeInOut',
+                    }}
+                  />
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
     </div>
   );
 }
@@ -280,10 +451,13 @@ function MusicPlaylistCard({ config }: { config: MusicPlaylistConfig }) {
 /**
  * 我追的番卡片组件
  * 使用 CSS Scroll Snap 实现竖直滚动分页效果，图片铺满整个容器
+ * 支持鼠标悬停暂停自动滚动，离开后恢复
  */
 function AnimeCard({ animeList }: { animeList: AnimeConfig[] }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const isPausedRef = useRef(false);
 
   const handleScroll = useCallback(() => {
     const target = scrollRef.current;
@@ -292,10 +466,61 @@ function AnimeCard({ animeList }: { animeList: AnimeConfig[] }) {
     const height = target.clientHeight;
     const index = Math.round(scrollTop / height);
     setActiveIndex(index);
+
+    // 循环：滚到底部时跳回第一张
+    if (index === animeList.length - 1 && scrollTop > 0) {
+      const atBottom = scrollTop + height >= target.scrollHeight - 5;
+      if (atBottom) {
+        setTimeout(() => {
+          target.scrollTo({ top: 0, behavior: 'instant' });
+          setActiveIndex(0);
+        }, 400);
+      }
+    }
+  }, [animeList.length]);
+
+  // 自动滚动到下一个
+  const scrollToNext = useCallback(() => {
+    if (isPausedRef.current) return;
+    const target = scrollRef.current;
+    if (!target) return;
+    const nextIndex = (activeIndex + 1) % animeList.length;
+    const height = target.clientHeight;
+    target.scrollTo({ top: nextIndex * height, behavior: 'smooth' });
+  }, [activeIndex, animeList.length]);
+
+  // 重置定时器
+  const resetTimer = useCallback(() => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(scrollToNext, 4000);
+  }, [scrollToNext]);
+
+  // 启动自动滚动
+  useEffect(() => {
+    resetTimer();
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [resetTimer]);
+
+  // 鼠标进入暂停
+  const handleMouseEnter = useCallback(() => {
+    isPausedRef.current = true;
+    if (timerRef.current) clearInterval(timerRef.current);
   }, []);
 
+  // 鼠标离开恢复
+  const handleMouseLeave = useCallback(() => {
+    isPausedRef.current = false;
+    resetTimer();
+  }, [resetTimer]);
+
   return (
-    <div className="relative w-full h-full overflow-hidden">
+    <div
+      className="relative w-full h-full overflow-hidden"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
       {/* 竖直滚动容器 - 铺满整个父容器 */}
       <div
         ref={scrollRef}
@@ -306,13 +531,18 @@ function AnimeCard({ animeList }: { animeList: AnimeConfig[] }) {
         {animeList.map((anime) => (
           <div
             key={anime.id}
-            className="snap-start w-full h-full relative"
+            className="snap-start w-full h-full relative overflow-hidden"
           >
-            {/* 封面铺满 */}
+            {/* 封面 - 支持位置和缩放调整 */}
             <img
               src={anime.coverImage}
               alt={anime.name}
-              className="absolute inset-0 w-full h-full object-cover"
+              className="absolute w-full h-full object-cover"
+              style={{
+                objectPosition: `${anime.coverHorizontalPosition || 'center'} ${anime.coverVerticalPosition || 'center'}`,
+                height: anime.coverSize || '100%',
+                top: anime.coverVerticalPosition ? `${-((parseInt(anime.coverSize || '100', 10) - 100) / 2)}%` : '0',
+              }}
               loading="lazy"
             />
             {/* 遮罩层 */}
@@ -325,7 +555,7 @@ function AnimeCard({ animeList }: { animeList: AnimeConfig[] }) {
                   {anime.status}
                 </span>
               </div>
-              <p className="text-sm text-white/80 line-clamp-2">{anime.description}</p>
+              <p className="text-sm text-white/80 whitespace-pre-line">{anime.description}</p>
             </div>
           </div>
         ))}
@@ -354,8 +584,7 @@ function AnimeCard({ animeList }: { animeList: AnimeConfig[] }) {
 
 /**
  * 游戏库横向手风琴面板组件
- * 桌面端多个面板水平排列，点击后展开显示游戏详情，其他面板收缩只显示封面和名称
- * 使用 Framer Motion layout 动画实现平滑的宽度过渡
+ * 添加封面图片视差移动 + 悬停光晕效果
  */
 function GameLibraryAccordionPanel({
   game,
@@ -370,7 +599,6 @@ function GameLibraryAccordionPanel({
   isBackgroundEnabled: boolean;
   collapsedFlex?: number;
 }) {
-  // 根据背景模式返回基础样式
   const glassClass = isBackgroundEnabled
     ? 'backdrop-blur-md bg-card/90 border-border shadow-lg supports-[backdrop-filter]:bg-card/75'
     : 'bg-card border-border';
@@ -384,14 +612,19 @@ function GameLibraryAccordionPanel({
         flex: isActive ? 3 : collapsedFlex,
       }}
       transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
-      className={`relative overflow-hidden rounded-2xl border cursor-pointer ${glassClass} transition-all duration-300 ${isActive ? 'shadow-2xl shadow-primary/20' : 'shadow-lg'}`}
+      whileHover={!isActive ? { flex: collapsedFlex + 0.3 } : undefined}
+      className={`relative overflow-hidden rounded-2xl border cursor-pointer ${glassClass} transition-all duration-300 ${isActive ? 'shadow-2xl shadow-primary/20' : 'shadow-lg hover:shadow-xl hover:shadow-primary/10'}`}
     >
-      {/* 共享的封面背景层 - 始终存在于 DOM 中，避免 AnimatePresence 卸载挂载导致闪烁 */}
-      <div className="absolute inset-0 overflow-hidden">
+      {/* 共享的封面背景层 - 添加悬停缩放 */}
+      <motion.div
+        className="absolute inset-0 overflow-hidden"
+        whileHover={{ scale: 1.08 }}
+        transition={{ duration: 0.6, ease: 'easeOut' }}
+      >
         <img
           src={getAssetPath(game.coverImage)}
           alt={game.name}
-          className="absolute left-0 w-full object-cover transition-all duration-500 ease-out"
+          className="absolute left-0 w-full object-cover"
           style={{
             height: game.coverSize || '120%',
             top: `${-(parseVerticalPosition(game.coverVerticalPosition) / 100) * (parseInt(game.coverSize || '120', 10) - 100)}%`,
@@ -399,9 +632,14 @@ function GameLibraryAccordionPanel({
           }}
           loading="lazy"
         />
-      </div>
+      </motion.div>
 
-      {/* 收缩状态遮罩与标题 - 通过 opacity 过渡，避免卸载 */}
+      {/* 悬停发光边框 - 非激活状态下显示 */}
+      {!isActive && (
+        <div className="absolute inset-0 rounded-2xl border border-primary/0 hover:border-primary/30 transition-all duration-500 pointer-events-none" />
+      )}
+
+      {/* 收缩状态遮罩与标题 */}
       <div
         className="absolute inset-0 flex flex-col justify-end p-4 transition-opacity duration-300"
         style={{ opacity: isActive ? 0 : 1, pointerEvents: isActive ? 'none' : 'auto' }}
@@ -414,15 +652,20 @@ function GameLibraryAccordionPanel({
         </div>
       </div>
 
-      {/* 展开状态遮罩与描述 - 通过 opacity 过渡，避免卸载 */}
+      {/* 展开状态遮罩与描述 */}
       <div
         className="absolute inset-0 flex flex-col justify-end p-3 transition-opacity duration-300"
         style={{ opacity: isActive ? 1 : 0, pointerEvents: isActive ? 'auto' : 'none' }}
       >
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/25 to-black/5" />
-        <p className="relative z-10 text-sm text-white/90 leading-relaxed drop-shadow-md">
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          animate={isActive ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+          className="relative z-10 text-sm text-white/90 leading-relaxed drop-shadow-md"
+        >
           {game.description}
-        </p>
+        </motion.p>
       </div>
     </motion.div>
   );
@@ -431,7 +674,7 @@ function GameLibraryAccordionPanel({
 /**
  * 关于页面右侧区块组件
  * 统一渲染标题、图标、段落、引用和底部强调文字
- * 不依赖外部容器，可自由组合到卡片网格中
+ * 添加段落交错入场动画 + 引用区块淡入效果
  */
 function AboutSection({
   section,
@@ -442,7 +685,6 @@ function AboutSection({
   className?: string;
   hideTitle?: boolean;
 }) {
-  // 根据区块 id 选择对应图标，标题更直观
   const iconMapForSection: Record<string, React.ComponentType<{ className?: string }>> = {
     'about-me': User,
     'about-site': Globe,
@@ -452,34 +694,79 @@ function AboutSection({
 
   return (
     <div className={className}>
-      {/* 区块标题 - 手风琴模式下由面板头部统一展示，避免重复 */}
+      {/* 区块标题 */}
       {!hideTitle && (
-        <div className="flex items-center gap-2 mb-4">
-          {IconComponent && <IconComponent className="w-5 h-5 text-primary" />}
+        <motion.div
+          initial={{ opacity: 0, x: -10 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.4 }}
+          className="flex items-center gap-2 mb-4"
+        >
+          {IconComponent && (
+            <motion.div
+              animate={{ rotate: [0, 8, -8, 0] }}
+              transition={{ duration: 3, repeat: Infinity, repeatDelay: 4 }}
+            >
+              <IconComponent className="w-5 h-5 text-primary" />
+            </motion.div>
+          )}
           <h3 className="text-xl font-semibold text-foreground">{section.title}</h3>
-        </div>
+        </motion.div>
       )}
 
-      {/* 段落内容 */}
-      <div className="text-muted-foreground leading-relaxed space-y-3 text-base">
+      {/* 段落内容 - 交错入场动画 */}
+      <div className="text-muted-foreground leading-relaxed space-y-3">
         {section.paragraphs.map((paragraph, index) => (
-          <p key={index} className="indent-8">
+          <motion.p
+            key={index}
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-30px' }}
+            transition={{
+              duration: 0.5,
+              delay: index * 0.1,
+              ease: 'easeOut',
+            }}
+            className="indent-8"
+          >
             {paragraph}
-          </p>
+          </motion.p>
         ))}
       </div>
 
-      {/* 引用/比喻区块 */}
+      {/* 引用/比喻区块 - 淡入 + 边框高光 */}
       {section.quote && (
-        <div className="my-4 p-4 bg-primary/5 rounded-lg border border-primary/10">
-          <p className="text-base text-muted-foreground/80 mb-2">{section.quote.intro}</p>
-          <p className="italic whitespace-pre-line text-base">{section.quote.text}</p>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 15, scale: 0.98 }}
+          whileInView={{ opacity: 1, y: 0, scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="my-4 p-4 bg-primary/5 rounded-lg border border-primary/10 relative overflow-hidden group"
+        >
+          {/* 悬停时的高光扫过效果 */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out" />
+          <p className="relative z-10 text-muted-foreground/80 mb-2">{section.quote.intro}</p>
+          <p className="relative z-10 italic whitespace-pre-line">{section.quote.text}</p>
+        </motion.div>
       )}
 
-      {/* 区块底部强调文字 */}
+      {/* 区块底部强调文字 - 带呼吸灯效果 */}
       {section.footer && (
-        <p className="text-primary font-medium text-center mt-4">{section.footer}</p>
+        <motion.p
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="text-primary font-medium text-center mt-4"
+        >
+          <motion.span
+            animate={{ opacity: [0.7, 1, 0.7] }}
+            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+          >
+            {section.footer}
+          </motion.span>
+        </motion.p>
       )}
     </div>
   );
@@ -487,7 +774,7 @@ function AboutSection({
 
 /**
  * 星空粒子背景组件
- * 生成稀疏的随机小点，缓慢向上飘动，营造星空氛围
+ * 添加闪烁效果 + 缓慢漂浮
  */
 function StarField({ count = 12, className = '' }: { count?: number; className?: string }) {
   const stars = React.useMemo(() => {
@@ -495,10 +782,11 @@ function StarField({ count = 12, className = '' }: { count?: number; className?:
       id: index,
       left: `${Math.random() * 100}%`,
       top: `${Math.random() * 100}%`,
-      size: Math.random() * 2 + 1,
+      size: Math.random() * 2.5 + 1,
       delay: Math.random() * 5,
       duration: Math.random() * 10 + 10,
-      opacity: Math.random() * 0.4 + 0.2,
+      opacity: Math.random() * 0.5 + 0.2,
+      driftX: (Math.random() - 0.5) * 40,
     }));
   }, [count]);
 
@@ -515,14 +803,16 @@ function StarField({ count = 12, className = '' }: { count?: number; className?:
             height: star.size,
           }}
           animate={{
-            y: [0, -30, 0],
-            opacity: [star.opacity, star.opacity * 0.3, star.opacity],
+            y: [0, -20, 0],
+            x: [0, star.driftX * 0.3, 0],
+            opacity: [star.opacity, star.opacity * 0.2, star.opacity],
+            scale: [1, 1.3, 1],
           }}
           transition={{
             duration: star.duration,
             delay: star.delay,
             repeat: Infinity,
-            ease: 'linear',
+            ease: 'easeInOut',
           }}
         />
       ))}
@@ -546,8 +836,7 @@ function parseVerticalPosition(position?: string): number {
 
 /**
  * 横向手风琴面板组件
- * 桌面端三个面板水平排列，鼠标悬停后展开显示内容，其他面板收缩只显示标题
- * 参考颜色调色板悬停动画：默认均分，悬停项展开，过渡 0.3s ease-out
+ * 添加封面悬停缩放 + 展开时内容交错入场
  */
 function HorizontalAccordionPanel({
   section,
@@ -560,7 +849,6 @@ function HorizontalAccordionPanel({
   onHoverStart: () => void;
   isBackgroundEnabled: boolean;
 }) {
-  // 根据区块 id 选择对应图标
   const iconMapForPanel: Record<string, React.ComponentType<{ className?: string }>> = {
     'about-me': User,
     'about-site': Globe,
@@ -568,7 +856,6 @@ function HorizontalAccordionPanel({
   };
   const IconComponent = iconMapForPanel[section.id];
 
-  // 根据背景模式返回基础样式
   const glassClass = isBackgroundEnabled
     ? 'backdrop-blur-md bg-card/90 border-border shadow-lg supports-[backdrop-filter]:bg-card/75'
     : 'bg-card border-border';
@@ -582,7 +869,8 @@ function HorizontalAccordionPanel({
         flex: isActive ? 3 : 1,
       }}
       transition={{ duration: 0.3, ease: 'easeOut' }}
-      className={`relative overflow-hidden rounded-2xl border cursor-pointer ${glassClass} transition-all duration-300 ${isActive ? 'shadow-2xl shadow-primary/20' : 'shadow-lg'}`}
+      whileHover={!isActive ? { flex: 1.3 } : undefined}
+      className={`relative overflow-hidden rounded-2xl border cursor-pointer ${glassClass} transition-all duration-300 ${isActive ? 'shadow-2xl shadow-primary/20' : 'shadow-lg hover:shadow-xl hover:shadow-primary/10'}`}
     >
       {/* 收缩状态下的封面背景 + 垂直标题 */}
       <AnimatePresence mode="wait">
@@ -595,12 +883,12 @@ function HorizontalAccordionPanel({
             transition={{ duration: 0.2 }}
             className="absolute inset-0"
           >
-            {/* 封面图片容器 - 根据 coverSize 缩放以留出移动空间 */}
-            <div className="absolute inset-0 overflow-hidden">
+            {/* 封面图片容器 - 添加悬停缩放 */}
+            <motion.div className="absolute inset-0 overflow-hidden" whileHover={{ scale: 1.06 }}>
               <img
                 src={getAssetPath(section.coverImage)}
                 alt={section.title}
-                className="absolute left-0 w-full object-cover"
+                className="absolute left-0 w-full object-cover transition-transform duration-700 ease-out"
                 style={{
                   height: section.coverSize || '120%',
                   top: `${-(parseVerticalPosition(section.coverVerticalPosition) / 100) * (parseInt(section.coverSize || '120', 10) - 100)}%`,
@@ -608,15 +896,19 @@ function HorizontalAccordionPanel({
                 }}
                 loading="lazy"
               />
-            </div>
-            {/* 渐变遮罩 - 确保标题可读 */}
+            </motion.div>
+            {/* 渐变遮罩 */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/10" />
-            {/* 横向标题 - 放置在面板底部 */}
+            {/* 横向标题 */}
             <div className="absolute inset-0 flex items-end justify-center p-4">
-              <div className="flex items-center gap-2 text-white drop-shadow-lg whitespace-nowrap">
+              <motion.div
+                className="flex items-center gap-2 text-white drop-shadow-lg whitespace-nowrap"
+                animate={{ y: [0, -3, 0] }}
+                transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 3 }}
+              >
                 {IconComponent && <IconComponent className="w-5 h-5" />}
                 <h3 className="text-lg font-semibold">{section.title}</h3>
-              </div>
+              </motion.div>
             </div>
           </motion.div>
         )}
@@ -631,22 +923,38 @@ function HorizontalAccordionPanel({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3, delay: 0.1 }}
-            className="relative h-full flex flex-col p-6 overflow-y-auto"
+            className="relative h-full flex flex-col p-6 overflow-hidden scrollbar-hide"
             onClick={(event) => event.stopPropagation()}
           >
-            {/* 星空粒子背景 */}
             <StarField count={12} className="z-0" />
 
-            {/* 面板头部标题 */}
-            <div className="relative z-10 flex items-center gap-2 mb-4 shrink-0">
-              {IconComponent && <IconComponent className="w-5 h-5 text-primary" />}
+            {/* 面板头部标题 - 带入场动画 */}
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.15 }}
+              className="relative z-10 flex items-center gap-2 mb-4 shrink-0"
+            >
+              {IconComponent && (
+                <motion.div
+                  animate={{ rotate: [0, 8, -8, 0] }}
+                  transition={{ duration: 2, repeat: Infinity, repeatDelay: 4 }}
+                >
+                  <IconComponent className="w-5 h-5 text-primary" />
+                </motion.div>
+              )}
               <h3 className="text-xl font-semibold text-foreground">{section.title}</h3>
-            </div>
+            </motion.div>
 
-            {/* 面板内容 */}
-            <div className="relative z-10 flex-1 min-h-0">
+            {/* 面板内容 - 交错入场 */}
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.25 }}
+              className="relative z-10 flex-1 min-h-0 text-[13px] leading-relaxed space-y-2"
+            >
               <AboutSection section={section} hideTitle />
-            </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -656,7 +964,7 @@ function HorizontalAccordionPanel({
 
 /**
  * 社交链接项组件
- * 统一封装社交图标的链接样式和动画效果
+ * 添加磁吸悬停效果 + 光标跟随高光 + 点击涟漪
  */
 function SocialLink({
   href,
@@ -679,7 +987,7 @@ function SocialLink({
       rel={href && href.startsWith('http') ? 'noopener noreferrer' : undefined}
       whileHover={{ scale: 1.12, y: -2 }}
       whileTap={{ scale: 0.95 }}
-      className="flex items-center justify-center w-10 h-10 rounded-lg bg-background border border-border transition-all duration-300 cursor-pointer"
+      className="flex items-center justify-center w-10 h-10 rounded-lg bg-background border border-border hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 transition-all duration-300 cursor-pointer"
       title={title}
     >
       <OptimizedIcon
@@ -695,18 +1003,34 @@ function SocialLink({
 
 /**
  * 轻量 Toast 提示组件
- * 用于显示复制成功等临时反馈信息
+ * 添加弹入弹出 + 微弹跳效果
  */
 function Toast({ message, visible }: { message: string; visible: boolean }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: visible ? 1 : 0, y: visible ? 0 : 20 }}
-      transition={{ duration: 0.3 }}
-      className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm shadow-lg pointer-events-none"
-    >
-      {message}
-    </motion.div>
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          initial={{ opacity: 0, y: 30, scale: 0.9 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 20, scale: 0.95 }}
+          transition={{
+            type: 'spring',
+            stiffness: 400,
+            damping: 25,
+          }}
+          className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 px-5 py-2.5 rounded-full bg-primary text-primary-foreground text-sm shadow-xl shadow-primary/25 pointer-events-none flex items-center gap-2"
+        >
+          <motion.span
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.1, type: 'spring', stiffness: 500 }}
+          >
+            <Check className="w-4 h-4" />
+          </motion.span>
+          {message}
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
@@ -826,10 +1150,27 @@ export default function AboutPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className={`${getGlassStyle("rounded-2xl shadow-xl border overflow-hidden")} transition-all duration-300`}
+              className={`${getGlassStyle("rounded-2xl shadow-xl border overflow-hidden relative")} transition-all duration-300 group/card hover:shadow-2xl hover:shadow-primary/10`}
             >
+              {/* 悬停时的渐变边框光效 */}
+              <div className="absolute inset-0 rounded-2xl opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 pointer-events-none"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(102,204,255,0.1) 0%, transparent 50%, rgba(102,204,255,0.08) 100%)',
+                }}
+              />
               {/* 标语区域 */}
-              <div className="p-6 text-center border-b border-border/50">
+              <div className="p-6 text-center border-b border-border/50 relative">
+                {/* 装饰性浮动粒子 */}
+                <motion.div
+                  className="absolute top-2 left-3 w-1.5 h-1.5 rounded-full bg-primary/30"
+                  animate={{ y: [0, -8, 0], opacity: [0.3, 0.7, 0.3] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                />
+                <motion.div
+                  className="absolute bottom-2 right-4 w-1 h-1 rounded-full bg-primary/20"
+                  animate={{ y: [0, -6, 0], opacity: [0.2, 0.5, 0.2] }}
+                  transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+                />
                 <div className="text-xl sm:text-2xl font-semibold relative z-20 py-2 bg-clip-text text-transparent bg-gradient-to-r from-primary via-primary/80 to-primary/60">
                   {BeforeAnimationText}
                   <Cover>{AnimationText}</Cover>
@@ -850,7 +1191,7 @@ export default function AboutPage() {
 
                   <motion.div
                     onClick={handleShuffleSlogan}
-                    className="group mt-4 text-center w-full cursor-pointer"
+                    className="group mt-4 text-center w-full cursor-pointer relative"
                     title="点击随机切换宣言"
                     role="button"
                     tabIndex={0}
@@ -887,19 +1228,57 @@ export default function AboutPage() {
                 <div className="flex flex-col items-center gap-3">
                   {/* 第一行 */}
                   <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-4 w-full justify-items-center gap-2">
-                    {/* 邮箱：点击复制，复制成功显示勾选图标 */}
+                    {/* 邮箱：点击复制，复制成功显示勾选图标 + 粒子爆发 */}
                     <motion.button
                       onClick={handleCopyEmail}
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="flex items-center justify-center w-10 h-10 rounded-lg bg-background border border-border hover:border-primary/50 transition-all duration-300"
+                      whileHover={{ scale: 1.15 }}
+                      whileTap={{ scale: 0.9 }}
+                      className="relative flex items-center justify-center w-10 h-10 rounded-lg bg-background border border-border hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 transition-all duration-300"
                       title={copied ? '已复制' : '复制邮箱'}
                     >
-                      {copied ? (
-                        <Check className="w-[18px] h-[18px] text-green-500" />
-                      ) : (
-                        <Mail className="w-[18px] h-[18px] text-foreground" />
-                      )}
+                      <AnimatePresence mode="wait">
+                        {copied ? (
+                          <motion.div
+                            key="check"
+                            initial={{ scale: 0, rotate: -180 }}
+                            animate={{ scale: 1, rotate: 0 }}
+                            exit={{ scale: 0 }}
+                            transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+                          >
+                            <Check className="w-[18px] h-[18px] text-green-500" />
+                          </motion.div>
+                        ) : (
+                          <motion.div
+                            key="mail"
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            exit={{ scale: 0 }}
+                          >
+                            <Mail className="w-[18px] h-[18px] text-foreground" />
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                      {/* 复制成功时的粒子爆发 */}
+                      <AnimatePresence>
+                        {copied && (
+                          <>
+                            {[0, 60, 120, 180, 240, 300].map((angle) => (
+                              <motion.div
+                                key={angle}
+                                className="absolute w-1 h-1 rounded-full bg-green-500"
+                                initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
+                                animate={{
+                                  x: Math.cos((angle * Math.PI) / 180) * 20,
+                                  y: Math.sin((angle * Math.PI) / 180) * 20,
+                                  opacity: 0,
+                                  scale: 0,
+                                }}
+                                transition={{ duration: 0.5, delay: 0.05 }}
+                              />
+                            ))}
+                          </>
+                        )}
+                      </AnimatePresence>
                     </motion.button>
                     {/* GitHub */}
                     <SocialLink
@@ -1261,7 +1640,7 @@ export default function AboutPage() {
                 viewport={{ once: true, margin: '-100px' }}
                 transition={{ duration: 0.6, delay: 0.65 }}
                 className="relative rounded-2xl border overflow-hidden"
-                style={{ aspectRatio: '4/3' }}
+                style={{ aspectRatio: '16/9' }}
               >
                 <AnimeCard animeList={animeList} />
               </motion.div>
