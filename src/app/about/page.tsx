@@ -517,7 +517,6 @@ function AnimeCard({ animeList }: { animeList: AnimeConfig[] }) {
     setActiveIndex(index);
   }, []);
 
-  // 自动滚动到下一个
   const scrollToNext = useCallback(() => {
     if (isPausedRef.current) return;
     const target = scrollRef.current;
@@ -527,13 +526,11 @@ function AnimeCard({ animeList }: { animeList: AnimeConfig[] }) {
     target.scrollTo({ top: nextIndex * height, behavior: 'smooth' });
   }, [activeIndex, animeList.length]);
 
-  // 重置定时器
   const resetTimer = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(scrollToNext, 4000);
   }, [scrollToNext]);
 
-  // 启动自动滚动
   useEffect(() => {
     resetTimer();
     return () => {
@@ -541,13 +538,11 @@ function AnimeCard({ animeList }: { animeList: AnimeConfig[] }) {
     };
   }, [resetTimer]);
 
-  // 鼠标进入暂停
   const handleMouseEnter = useCallback(() => {
     isPausedRef.current = true;
     if (timerRef.current) clearInterval(timerRef.current);
   }, []);
 
-  // 鼠标离开恢复
   const handleMouseLeave = useCallback(() => {
     isPausedRef.current = false;
     resetTimer();
@@ -555,57 +550,69 @@ function AnimeCard({ animeList }: { animeList: AnimeConfig[] }) {
 
   return (
     <div
-      className="relative w-full h-full overflow-hidden"
+      className="relative w-full h-full overflow-hidden group"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* 竖直滚动容器 - 铺满整个父容器 */}
       <div
         ref={scrollRef}
         className="overflow-y-auto snap-y snap-mandatory h-full w-full"
         style={{ scrollBehavior: 'smooth', scrollbarWidth: 'none' }}
         onScroll={handleScroll}
       >
-        {animeList.map((anime) => (
-          <div
-            key={anime.id}
-            className="snap-start w-full h-full relative overflow-hidden"
-          >
-            {/* 封面 - 支持位置和缩放调整 */}
-            <img
-              src={anime.coverImage}
-              alt={anime.name}
-              className="absolute w-full h-full object-cover"
-              style={{
-                objectPosition: `${anime.coverHorizontalPosition || 'center'} ${anime.coverVerticalPosition || 'center'}`,
-                height: anime.coverSize || '100%',
-                top: anime.coverVerticalPosition ? `${-((parseInt(anime.coverSize || '100', 10) - 100) / 2)}%` : '0',
-              }}
-              loading="lazy"
-            />
-            {/* 遮罩层 */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-            {/* 信息叠加在底部 */}
-            <div className="absolute bottom-0 left-0 right-0 p-4 flex flex-col gap-1">
-              <div className="flex items-center gap-2">
-                <h4 className="text-lg font-bold text-white drop-shadow-lg">{anime.name}</h4>
-                <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-primary/80 text-primary-foreground">
-                  {anime.status}
-                </span>
+        {animeList.map((anime) => {
+          const content = (
+            <div
+              key={anime.id}
+              className={`snap-start w-full h-full relative overflow-hidden ${anime.link ? 'cursor-pointer' : ''}`}
+            >
+              <img
+                src={anime.coverImage}
+                alt={anime.name}
+                className="absolute w-full h-full object-cover"
+                style={{
+                  objectPosition: `${anime.coverHorizontalPosition || 'center'} ${anime.coverVerticalPosition || 'center'}`,
+                  height: anime.coverSize || '100%',
+                  top: anime.coverVerticalPosition ? `${-((parseInt(anime.coverSize || '100', 10) - 100) / 2)}%` : '0',
+                }}
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 p-4 flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-lg font-bold text-white drop-shadow-lg">{anime.name}</h4>
+                  <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-primary/80 text-primary-foreground group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300 group-hover:shadow-lg group-hover:shadow-primary/30">
+                    {anime.status}
+                  </span>
+                </div>
+                <p className="text-sm text-white/80 whitespace-pre-line">{anime.description}</p>
               </div>
-              <p className="text-sm text-white/80 whitespace-pre-line">{anime.description}</p>
             </div>
-          </div>
-        ))}
+          );
+
+          if (anime.link) {
+            return (
+              <a
+                key={anime.id}
+                href={anime.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="block w-full h-full"
+              >
+                {content}
+              </a>
+            );
+          }
+          return content;
+        })}
       </div>
 
-      {/* 标题 - 左上角叠加 */}
       <div className="absolute top-3 left-4 flex items-center gap-2 z-10">
         <Tv className="w-5 h-5 text-white drop-shadow-lg" />
         <h3 className="text-xl font-semibold text-white drop-shadow-lg">我追的番</h3>
       </div>
 
-      {/* 滚动指示器 - 右下角叠加 */}
       <div className="absolute bottom-3 right-4 flex items-center gap-1.5 z-10">
         {animeList.map((_, index) => (
           <div

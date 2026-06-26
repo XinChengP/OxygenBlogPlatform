@@ -294,6 +294,7 @@ export interface AnimeConfig {
   coverImage: string;
   description: string;
   status: string;
+  link?: string; // 番剧链接，点击图片可跳转
   coverHorizontalPosition?: string; // 封面水平位置，默认 'center'
   coverVerticalPosition?: string; // 封面垂直位置，默认 'center'
   coverSize?: string; // 封面缩放比例，默认 '100%'
@@ -304,8 +305,9 @@ export const animeList: AnimeConfig[] = [
     id: 'anime',
     name: '我的三体罗辑传',
     coverImage: '/aboutme/anime/wosan-logic.jpg',
-    description: '“面壁者罗辑，我是你的破壁人”',
+    description: '"面壁者罗辑，我是你的破壁人"',
     status: '已追完',
+    link: 'https://www.bilibili.com/bangumi/media/md28223558',
     coverHorizontalPosition: '50%',
     coverVerticalPosition: '30%',
     coverSize: '100%',
@@ -316,6 +318,7 @@ export const animeList: AnimeConfig[] = [
     coverImage: '/aboutme/anime/zbhz.jpg',
     description: '致以第五位面壁者章北海最高敬意',
     status: '已追完',
+    link: 'https://www.bilibili.com/bangumi/media/md28223066',
     coverHorizontalPosition: '50%',
     coverVerticalPosition: '30%',
     coverSize: '100%',
@@ -326,6 +329,7 @@ export const animeList: AnimeConfig[] = [
     coverImage: '/aboutme/anime/railgun.jpg',
     description: '入站必看（确信',
     status: '已追完',
+    link: 'https://www.bilibili.com/bangumi/media/md425',
     coverHorizontalPosition: '50%',
     coverVerticalPosition: '15%',
     coverSize: '100%',
@@ -336,6 +340,7 @@ export const animeList: AnimeConfig[] = [
     coverImage: '/aboutme/anime/railgunS.jpg',
     description: '放电妹（bushi）',
     status: '已追完',
+    link: 'https://www.bilibili.com/bangumi/media/md427',
     coverHorizontalPosition: '50%',
     coverVerticalPosition: '29%',
     coverSize: '100%',
@@ -346,6 +351,7 @@ export const animeList: AnimeConfig[] = [
     coverImage: '/aboutme/anime/railgunT.jpg',
     description: '原来炮姐咋这么强的吗，感觉前两季没表现出来',
     status: '已追完',
+    link: 'https://www.bilibili.com/bangumi/media/md28224095',
     coverHorizontalPosition: '50%',
     coverVerticalPosition: '10%',
     coverSize: '100%',
@@ -356,6 +362,7 @@ export const animeList: AnimeConfig[] = [
     coverImage: '/aboutme/anime/Myqt.webp',
     description: '差点忘了看过这个（话说第二季啥时候出）\n画风和配音都很有特点，以及模糊的三次元回忆杀（初见给我惊艳到了）；梗是真的多，刀也是真的刀。爱看',
     status: '已追完',
+    link: 'https://www.bilibili.com/bangumi/media/md28235362',
     coverHorizontalPosition: '50%',
     coverVerticalPosition: '22.5%',
     coverSize: '100%',
