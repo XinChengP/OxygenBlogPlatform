@@ -354,10 +354,10 @@ export const animeList: AnimeConfig[] = [
     id: 'anime6',
     name: '命运拳台',
     coverImage: '/aboutme/anime/Myqt.webp',
-    description: '差点忘了看过这个（话说第二季啥时候出）\n画风和配音都很有特点，以及还有模糊的三次元回忆杀；梗是真的多，刀也是真的刀。爱看',
+    description: '差点忘了看过这个（话说第二季啥时候出）\n画风和配音都很有特点，以及模糊的三次元回忆杀（初见给我惊艳到了）；梗是真的多，刀也是真的刀。爱看',
     status: '已追完',
     coverHorizontalPosition: '50%',
-    coverVerticalPosition: '25%',
+    coverVerticalPosition: '22.5%',
     coverSize: '100%',
   },
 
