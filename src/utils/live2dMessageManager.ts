@@ -28,8 +28,10 @@ import {
   getTimeGreetingConfig,
   getPageMessageConfig,
   getHolidayMessageConfig,
-  renderMessageTemplate
+  renderMessageTemplate,
+  getContextAwareMessageConfig
 } from '../setting/live2dMessages';
+import { live2dContextTracker, type BehaviorContext } from './live2dContextTracker';
 
 class Live2DMessageManager {
   private static instance: Live2DMessageManager;
@@ -503,6 +505,48 @@ class Live2DMessageManager {
           resolve(false);
         }
       }, 100);
+    });
+  }
+
+  /**
+   * 显示上下文感知消息
+   * 根据用户行为和上下文智能选择消息
+   */
+  showContextAwareMessage(context: BehaviorContext): void {
+    // 隐藏状态下不显示消息
+    if (typeof window !== 'undefined' && (window as any).__live2dHidden) {
+      return;
+    }
+    
+    const config = getContextAwareMessageConfig(context);
+    if (config) {
+      const message = getRandomMessage(config);
+      this.showMessage(message, config.duration, config.priority);
+    }
+  }
+  
+  /**
+   * 启动上下文监听
+   * 自动根据用户行为显示智能消息
+   */
+  startContextListening(): void {
+    let lastMessageTime = 0;
+    const MESSAGE_COOLDOWN = 30000; // 30秒冷却
+    
+    live2dContextTracker.onBehaviorChange((context) => {
+      const now = Date.now();
+      if (now - lastMessageTime < MESSAGE_COOLDOWN) {
+        return;
+      }
+      
+      // 只在有明显行为变化时显示消息
+      if (context.isInactive || 
+          context.scrollSpeed === 'fast' || 
+          context.returnVisits > 2 ||
+          (context.isLateNight && context.timeOnPage > 60)) {
+        this.showContextAwareMessage(context);
+        lastMessageTime = now;
+      }
     });
   }
 }
