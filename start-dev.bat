@@ -90,7 +90,7 @@ echo Starting Electron Dev Preview...
 echo.
 
 REM Check if electron.exe exists
-if not exist "node_modules\electron\electron.exe" (
+if not exist "node_modules\electron\dist\electron.exe" (
     echo Electron binary not found. Please check Electron installation.
     echo You may need to manually extract the Electron package.
     pause
@@ -99,7 +99,7 @@ if not exist "node_modules\electron\electron.exe" (
 
 REM Start Electron app directly with warnings suppressed
 set ELECTRON_DISABLE_SECURITY_WARNINGS=true
-start "" "node_modules\electron\electron.exe" .
+start "" "node_modules\electron\dist\electron.exe" .
 
 echo.
 echo ========================================

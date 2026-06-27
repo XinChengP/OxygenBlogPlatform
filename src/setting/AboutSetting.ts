@@ -287,6 +287,119 @@ export interface DeviceConfig {
   backContent?: string[]; // 可选：背面显示的内容，每行一个配置项
 }
 
+// 旅行地图配置
+export type TravelCategory = 'travel' | 'living' | 'want-to-go';
+
+export interface TravelLocation {
+  id: string;
+  city: string;
+  province?: string;
+  date: string;
+  coordinates: [number, number];
+  category: TravelCategory;
+  description: string;
+}
+
+// 分类配置
+export const travelCategoryConfig: Record<TravelCategory, { label: string; color: string }> = {
+  travel: { label: '旅游', color: '#22dfa3ff' },
+  living: { label: '居住', color: '#66ccff' },
+  'want-to-go': { label: '想去', color: '#eaff00ff' },
+};
+
+export const travelLocations: TravelLocation[] = [
+  {
+    id: 'linyi',
+    city: '临沂',
+    province: '山东省',
+    date: '注册~2019',
+    coordinates: [35.0517, 118.3565],
+    category: 'living',
+    description: '额滴故乡',
+  },
+  {
+    id: 'tianjin',
+    city: '天津',
+    province: '天津市',
+    date: '2019~至今',
+    coordinates: [39.0842, 117.2010],
+    category: 'living',
+    description: '来到了天津卫~嘛也没学会。。。',
+  },
+  {
+    id: 'beijing',
+    city: '北京',
+    province: '北京市',
+    date: '2018、2024、2026',
+    coordinates: [39.9042, 116.4074],
+    category: 'travel',
+    description: '去好几次了，以后还',
+  },
+  {
+    id: 'xian',
+    city: '西安',
+    province: '陕西省',
+    date: '2026',
+    coordinates: [34.3416, 108.9398],
+    category: 'travel',
+    description: '十三朝古都就是有底蕴嗷',
+  },
+  {
+    id: 'qingdao',
+    city: '青岛',
+    province: '山东省',
+    date: '忘了啥时候去的了',
+    coordinates: [36.0671, 120.3826],
+    category: 'travel',
+    description: '印象里路的坡度很大',
+  },
+  {
+    id: 'taian',
+    city: '泰安',
+    province: '山东省',
+    date: '2025',
+    coordinates: [36.1947, 117.0755],
+    category: 'travel',
+    description: '爬泰山，超绝29小时不合眼特种兵旅行（',
+  },
+  {
+    id: 'wuxi',
+    city: '无锡',
+    province: '江苏省',
+    date: '2018',
+    coordinates: [31.4912, 120.3119],
+    category: 'travel',
+    description: '是个伤心地（大悲），不过米饭真好吃qwq',
+  },
+  {
+    id: 'rizhao',
+    city: '日照',
+    province: '山东省',
+    date: '2019',
+    coordinates: [35.3826, 119.5267],
+    category: 'travel',
+    description: '见到柯洁了（',
+  },
+  {
+    id: 'zibo',
+    city: '淄博',
+    province: '山东省',
+    date: '2019',
+    coordinates: [36.8135, 118.0550],
+    category: 'travel',
+    description: '终于不桑心了',
+  },
+  {
+    id: 'heze',
+    city: '菏泽',
+    province: '山东省',
+    date: '2017',
+    coordinates: [35.2333, 115.4413],
+    category: 'travel',
+    description: '感觉好穷（bushi）',
+  },
+];
+
 // 我追的番配置
 export interface AnimeConfig {
   id: string;

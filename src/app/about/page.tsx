@@ -30,6 +30,7 @@ import {
   Mouse,
   Headphones,
   Tv,
+  MapPin,
 } from 'lucide-react';
 import { Cover } from '@/components/ui/cover';
 import { EvervaultCard, Icon } from '@/components/ui/evervault-card';
@@ -38,6 +39,17 @@ import OptimizedImage from '@/components/core/OptimizedImage';
 import PageHeader from '@/components/ui/PageHeader';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 import { getAssetPath } from '@/utils/assetUtils';
+import dynamic from 'next/dynamic';
+
+// 动态导入 Leaflet 地图组件（避免 SSR 问题）
+const TravelMap = dynamic(() => import('@/components/about/TravelMap'), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-[450px] rounded-2xl border border-border bg-muted/20 animate-pulse flex items-center justify-center">
+      <span className="text-muted-foreground text-sm">加载地图中...</span>
+    </div>
+  ),
+});
 
 /**
  * 3D 倾斜效果 Hook
@@ -98,6 +110,7 @@ import {
   occasionalGames,
   devices,
   animeList,
+  travelLocations,
   type AboutSectionConfig,
   type HobbyConfig,
   type MBTIConfig,
@@ -1673,22 +1686,45 @@ export default function AboutPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: '-100px' }}
                 transition={{ duration: 0.6, delay: 0.6 }}
-                className={`${getGlassStyle("rounded-2xl p-6 border")}`}
+                className={`${getGlassStyle("rounded-2xl p-6 border")} self-start`}
               >
                 <DeviceCard devices={devices} />
               </motion.div>
 
-              {/* 右列 - 我追的番 70%，锁定4:3 */}
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-100px' }}
-                transition={{ duration: 0.6, delay: 0.65 }}
-                className="relative rounded-2xl border overflow-hidden"
-                style={{ aspectRatio: '16/9' }}
-              >
-                <AnimeCard animeList={animeList} />
-              </motion.div>
+              {/* 右列 - 我追的番 + 旅行足迹 70% */}
+              <div className="flex flex-col gap-6">
+                {/* 我追的番 */}
+                <motion.div
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '-100px' }}
+                  transition={{ duration: 0.6, delay: 0.65 }}
+                  className="relative rounded-2xl border overflow-hidden"
+                  style={{ aspectRatio: '16/9' }}
+                >
+                  <AnimeCard animeList={animeList} />
+                </motion.div>
+
+                {/* 旅行足迹 - 占右列50%，即全局35%，靠右对齐 */}
+                <motion.div
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '-100px' }}
+                  transition={{ duration: 0.6, delay: 0.7 }}
+                  className={`${getGlassStyle("rounded-2xl p-6 border")} w-1/2 ml-auto`}
+                >
+                  <div className="flex items-center gap-2 mb-4">
+                    <motion.div
+                      animate={{ rotate: [0, 10, -10, 0] }}
+                      transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                    >
+                      <MapPin className="w-5 h-5 text-primary" />
+                    </motion.div>
+                    <h3 className="text-xl font-semibold text-foreground">旅行足迹</h3>
+                  </div>
+                  <TravelMap locations={travelLocations} />
+                </motion.div>
+              </div>
             </div>
           </div>
         </div>

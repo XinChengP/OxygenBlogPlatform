@@ -1426,3 +1426,73 @@ body:not(.aplayer-active) {
   opacity: 1;
 }
 
+/* Leaflet 地图样式 */
+@import "leaflet/dist/leaflet.css";
+
+.leaflet-container {
+  font-family: inherit;
+  border-radius: 0.75rem;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 1rem;
+  padding: 0;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  transition: box-shadow 0.3s ease;
+}
+
+.dark .leaflet-popup-content-wrapper {
+  background: rgba(30, 41, 59, 0.85);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.leaflet-popup-content {
+  margin: 10px 12px;
+  margin-right: 28px;
+  line-height: 1.5;
+}
+
+.leaflet-popup-tip {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: none;
+}
+
+.dark .leaflet-popup-tip {
+  background: rgba(30, 41, 59, 0.85);
+}
+
+.leaflet-popup-close-button {
+  color: #666 !important;
+  font-size: 16px !important;
+  width: 20px !important;
+  height: 20px !important;
+  padding: 2px !important;
+  top: 8px !important;
+  right: 8px !important;
+  z-index: 10;
+}
+
+.dark .leaflet-popup-close-button {
+  color: #999 !important;
+}
+
+.leaflet-popup-close-button:hover {
+  color: #333 !important;
+}
+
+.dark .leaflet-popup-close-button:hover {
+  color: #fff !important;
+}
+
+.custom-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
