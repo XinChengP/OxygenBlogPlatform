@@ -1,5 +1,10 @@
 # Live2D 场景联动增强 Implementation Plan
 
+> [!NOTE]
+> This document may not reflect the current implementation.
+> See the final report for up-to-date state:
+> [Final Report](../reports/live2d-scene-enhancement.md)
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use compose:subagent (recommended) or compose:execute to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 增强 Live2D 看板娘的互动功能，添加新的触发条件和更智能的消息选择逻辑
