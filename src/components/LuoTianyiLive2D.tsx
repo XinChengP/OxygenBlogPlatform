@@ -589,6 +589,9 @@ export default function LuoTianyiLive2D({ hidden = false }: LuoTianyiLive2DProps
             return;
         }
         hasLoadedRef.current = true;
+        
+        // 启动上下文感知消息监听
+        live2dMessageManager.startContextListening();
 
         // 检查是否为移动设备
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
