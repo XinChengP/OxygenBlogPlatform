@@ -806,9 +806,165 @@ export const HiddenTagEasterEggMessages = {
       '天依会把这份回忆好好珍藏起来的～'
     ],
     duration: MessageDuration.NORMAL,
-    priority: 10 // 彩蛋消息优先级
+    priority: MessagePriority.MEDIUM
   }
 } as const;
+
+/**
+ * 上下文感知消息配置
+ * 根据时间、页面、用户行为组合生成更自然的对话
+ */
+export const ContextAwareMessages = {
+  // 快速滚动消息
+  FAST_SCROLL: {
+    messages: [
+      '哇，你看得好快呀～',
+      '慢一点嘛，天依都跟不上了～',
+      '这么着急吗？内容不会跑掉的～',
+      '哇塞，一目十行呢！'
+    ],
+    duration: MessageDuration.SHORT,
+    priority: MessagePriority.LOW
+  },
+  
+  // 长时间无操作消息
+  INACTIVE: {
+    messages: [
+      '天依要睡着了...zzZ',
+      '还在吗？天依一个人好无聊～',
+      '咦？怎么不动了？',
+      '天依在等你回来～'
+    ],
+    duration: MessageDuration.NORMAL,
+    priority: MessagePriority.LOW
+  },
+  
+  // 频繁返回消息
+  FREQUENT_RETURN: {
+    messages: [
+      '你在找什么呢？天依帮你～',
+      '又回来了？果然很喜欢这里呢～',
+      '迷路了吗？天依帮你导航～'
+    ],
+    duration: MessageDuration.SHORT,
+    priority: MessagePriority.LOW
+  },
+  
+  // 深夜访问消息
+  LATE_NIGHT: {
+    messages: [
+      '这么晚了还在看博客？要注意休息哦～',
+      '夜深了，天依陪你一起熬夜～',
+      '凌晨了呢，早点休息吧～',
+      '晚安前再看一眼吗？'
+    ],
+    duration: MessageDuration.NORMAL,
+    priority: MessagePriority.MEDIUM
+  },
+  
+  // 重复访问消息
+  REPEAT_VISIT: {
+    messages: [
+      '又来看这篇文章？果然很喜欢呢～',
+      '这篇文章一定很精彩，看了还想看～',
+      '天依知道你很喜欢这篇！'
+    ],
+    duration: MessageDuration.SHORT,
+    priority: MessagePriority.LOW
+  },
+  
+  // 长时间阅读消息
+  LONG_READ: {
+    messages: [
+      '这篇文章真的很吸引人呢～',
+      '读了这么久，一定很有收获吧？',
+      '天依也想看看你在读什么～'
+    ],
+    duration: MessageDuration.NORMAL,
+    priority: MessagePriority.LOW
+  },
+  
+  // 时间+页面组合消息
+  MORNING_BLOG: {
+    messages: [
+      '早上好！这么早就来阅读了？',
+      '新的一天从阅读开始～',
+      '早安！今天想读点什么呢？'
+    ],
+    duration: MessageDuration.NORMAL,
+    priority: MessagePriority.LOW
+  },
+  
+  EVENING_GALLERY: {
+    messages: [
+      '晚上来看画廊？夜色中的图片别有风味～',
+      '夜晚的画廊更安静呢～',
+      '晚安前欣赏一下美图吧～'
+    ],
+    duration: MessageDuration.NORMAL,
+    priority: MessagePriority.LOW
+  },
+  
+  NIGHT_TOOLS: {
+    messages: [
+      '深夜还在用工具？真是勤奋呢～',
+      '这么晚了还在工作？要注意休息哦～',
+      '天依陪你一起熬夜～'
+    ],
+    duration: MessageDuration.NORMAL,
+    priority: MessagePriority.LOW
+  }
+} as const;
+
+/**
+ * 根据上下文获取智能消息配置
+ */
+export function getContextAwareMessageConfig(context: {
+  timeOfDay: string;
+  isLateNight: boolean;
+  currentPage: string;
+  scrollSpeed: string;
+  isInactive: boolean;
+  returnVisits: number;
+  timeOnPage: number;
+}): MessageConfig | null {
+  // 优先级：无操作 > 快速滚动 > 深夜 > 频繁返回 > 长时间阅读 > 时间+页面组合
+  
+  if (context.isInactive) {
+    return ContextAwareMessages.INACTIVE;
+  }
+  
+  if (context.scrollSpeed === 'fast') {
+    return ContextAwareMessages.FAST_SCROLL;
+  }
+  
+  if (context.isLateNight) {
+    return ContextAwareMessages.LATE_NIGHT;
+  }
+  
+  if (context.returnVisits > 2) {
+    return ContextAwareMessages.FREQUENT_RETURN;
+  }
+  
+  if (context.timeOnPage > 300) { // 5分钟
+    return ContextAwareMessages.LONG_READ;
+  }
+  
+  // 时间+页面组合
+  if (context.timeOfDay === 'morning' && context.currentPage.startsWith('/blogs')) {
+    return ContextAwareMessages.MORNING_BLOG;
+  }
+  
+  if (context.timeOfDay === 'evening' && context.currentPage.startsWith('/gallery')) {
+    return ContextAwareMessages.EVENING_GALLERY;
+  }
+  
+  if (context.timeOfDay === 'night' && context.currentPage.startsWith('/tools')) {
+    return ContextAwareMessages.NIGHT_TOOLS;
+  }
+  
+  return null;
+}
 
 /**
  * 洛克王国宠物模拟器消息配置
