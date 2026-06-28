@@ -65,6 +65,13 @@ interface BlogPost {
   hidden?: boolean;
 }
 
+interface SeriesArticle {
+  title: string;
+  slug: string;
+  seriesOrder: number;
+  date: string;
+}
+
 /**
  * Markdown 文件前置元数据（Front Matter）的类型定义
  * 用于 gray-matter 解析 Markdown 文件头部的 YAML 数据
@@ -367,12 +374,59 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
   if (!blogData) {
     notFound();
   }
+
+  // 如果文章属于系列，获取同系列的其他文章
+  let seriesArticles: SeriesArticle[] = [];
+  if (blogData.series) {
+    seriesArticles = await getSeriesArticles(blogData.series, decodedSlug);
+  }
   
-  return <BlogDetailWrapper blog={blogData} />;
+  return <BlogDetailWrapper blog={blogData} seriesArticles={seriesArticles} />;
 }
 
 // 禁用动态参数，只允许预生成的路由
 export const dynamicParams = false;
+
+/**
+ * 获取同系列的所有文章（排除当前文章）
+ */
+async function getSeriesArticles(series: string, currentSlug: string): Promise<SeriesArticle[]> {
+  try {
+    const contentDir = path.join(process.cwd(), 'src/content/blogs');
+    const markdownFiles = scanMarkdownFiles(contentDir, contentDir);
+    
+    const seriesArticles: SeriesArticle[] = [];
+    
+    for (const file of markdownFiles) {
+      if (file.slug === currentSlug) continue;
+      
+      try {
+        const fileContent = fs.readFileSync(file.filePath, 'utf8');
+        const { data } = matter(fileContent);
+        const frontMatter = data as BlogFrontMatter;
+        
+        if (frontMatter.series === series && !frontMatter.hidden) {
+          seriesArticles.push({
+            title: frontMatter.title || path.basename(file.filePath, '.md'),
+            slug: file.slug,
+            seriesOrder: frontMatter.seriesOrder || 0,
+            date: formatBlogDate(frontMatter.date),
+          });
+        }
+      } catch {
+        // 跳过无法读取的文件
+      }
+    }
+    
+    // 按 seriesOrder 排序
+    seriesArticles.sort((a, b) => a.seriesOrder - b.seriesOrder);
+    
+    return seriesArticles;
+  } catch (error) {
+    console.error('Error getting series articles:', error);
+    return [];
+  }
+}
 
 /**
  * 生成静态参数函数

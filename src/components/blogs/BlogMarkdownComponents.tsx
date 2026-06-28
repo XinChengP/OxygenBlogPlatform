@@ -189,15 +189,15 @@ export function useBlogMarkdownComponents(options: {
       // 多行代码块（有语言指定）
       if (!inline && language) {
         return (
-          <div className="relative my-6 rounded-xl overflow-hidden shadow-lg border border-border/30">
+          <div className="relative my-6 rounded-2xl overflow-hidden shadow-lg border border-border/30">
             {/* 代码块头部 - 玻璃态风格 */}
-            <div className="flex justify-between items-center bg-gradient-to-r from-card/80 to-card/60 backdrop-blur-md px-4 py-3 text-sm border-b border-border/30">
+            <div className="flex justify-between items-center bg-gradient-to-r from-card/90 to-card/70 backdrop-blur-md px-4 py-3 text-sm border-b border-border/30">
               <div className="flex items-center gap-3">
                 {/* 窗口控制点装饰 */}
                 <div className="flex gap-1.5">
-                  <span className="w-3 h-3 rounded-full bg-red-400/80"></span>
-                  <span className="w-3 h-3 rounded-full bg-yellow-400/80"></span>
-                  <span className="w-3 h-3 rounded-full bg-green-400/80"></span>
+                  <span className="w-3 h-3 rounded-full bg-red-400/80 shadow-sm"></span>
+                  <span className="w-3 h-3 rounded-full bg-yellow-400/80 shadow-sm"></span>
+                  <span className="w-3 h-3 rounded-full bg-green-400/80 shadow-sm"></span>
                 </div>
                 <span className="font-medium text-foreground/80 ml-2">{getLanguageDisplayName(language)}</span>
               </div>
@@ -266,7 +266,7 @@ export function useBlogMarkdownComponents(options: {
     // 引用块 - 优化为玻璃态风格
     blockquote({ children }: ComponentProps) {
       return (
-        <blockquote className="relative my-6 rounded-xl overflow-hidden shadow-lg border border-primary/20 bg-gradient-to-br from-primary/10 via-card/50 to-primary/5 backdrop-blur-md">
+        <blockquote className="relative my-6 rounded-2xl overflow-hidden shadow-lg border border-primary/20 bg-gradient-to-br from-primary/10 via-card/50 to-primary/5 backdrop-blur-md">
           {/* 左侧装饰条 */}
           <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-primary via-primary/60 to-primary"></div>
           <div className="p-6 pl-8">
@@ -283,7 +283,7 @@ export function useBlogMarkdownComponents(options: {
     // 表格 - 优化为玻璃态风格
     table({ children }: ComponentProps) {
       return (
-        <div className="overflow-x-auto my-8 rounded-xl shadow-lg">
+        <div className="overflow-x-auto my-8 rounded-2xl shadow-lg border border-border/30">
           <table className="min-w-full border-collapse">
             {children}
           </table>
@@ -350,7 +350,7 @@ export function useBlogMarkdownComponents(options: {
       return (
         <h2
           id={id}
-          className="text-2xl font-semibold mt-8 mb-4 pb-2 border-b border-primary/20 text-foreground no-underline"
+          className="text-2xl font-semibold mt-8 mb-4 pb-2 border-b border-primary/15 text-foreground no-underline"
         >
           {children}
         </h2>
@@ -425,7 +425,7 @@ export function useBlogMarkdownComponents(options: {
       return (
         <a
           href={href}
-          className="text-primary hover:text-primary/80 underline decoration-wavy hover:decoration-solid transition-all duration-200"
+          className="text-primary hover:text-primary/80 underline decoration-primary/30 underline-offset-4 hover:decoration-primary/60 transition-all duration-200"
           target={href?.startsWith('http') ? '_blank' : undefined}
           rel={href?.startsWith('http') ? 'noopener noreferrer' : undefined}
         >

@@ -6,6 +6,7 @@ author: 歆橙
 language: "zh-CN"
 tags: ["日常", "期末", "工程制图"]
 excerpt: "——记工程制图课绘图两三事"
+coverImage: "/Blogabout/Engineering-Drawing-Record/cover.png"
 ---
 
 # 论期末周还要画图纸这件事

@@ -52,28 +52,32 @@ export default function CopyrightNotice({
     : reference;
   
   return (
-    <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+    <div className="mt-8 pt-6 border-t border-border/30">
       {/* Reference 引用信息 */}
       {reference && reference.length > 0 && (
-        <div className="mb-4 p-3 bg-primary/5 rounded-lg border-l-4 border-primary">
-          <h4 className="text-sm font-medium text-primary mb-2 flex items-center">
-            📖 Reference
+        <div className="mb-5 p-4 bg-primary/5 rounded-2xl border border-primary/15">
+          <h4 className="text-sm font-medium text-primary mb-3 flex items-center gap-2">
+            <span className="text-base">📖</span>
+            <span>Reference</span>
           </h4>
           
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             {displayReferences?.map((ref, index) => (
-              <div key={index} className="text-sm">
-                <span className="text-primary font-medium mr-2">
-                  {ref.description}:
-                </span>
-                <a 
-                  href={ref.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:text-primary/80 underline break-all transition-colors"
-                >
-                  {ref.link}
-                </a>
+              <div key={index} className="text-sm flex items-start gap-2">
+                <span className="text-primary/60 mt-0.5">•</span>
+                <div>
+                  <span className="text-foreground/80 font-medium mr-2">
+                    {ref.description}
+                  </span>
+                  <a 
+                    href={ref.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:text-primary/80 underline decoration-primary/30 underline-offset-4 hover:decoration-primary/60 break-all transition-colors"
+                  >
+                    {ref.link}
+                  </a>
+                </div>
               </div>
             ))}
           </div>
@@ -82,7 +86,7 @@ export default function CopyrightNotice({
           {shouldCollapse && (
             <button
               onClick={() => setIsExpanded(!isExpanded)}
-              className="mt-3 flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50 rounded px-1 py-0.5"
+              className="mt-3 flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/30 rounded-lg px-2 py-1"
             >
               {isExpanded ? (
                 <>
@@ -102,30 +106,30 @@ export default function CopyrightNotice({
       
       {/* CC 转载声明 */}
       {copyrightConfig.showCopyright && (
-        <div className="text-sm text-gray-600 dark:text-gray-400">
+        <div className="bg-card/60 backdrop-blur-sm rounded-2xl border border-border/40 p-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
               <span>© {copyrightYear} {copyrightConfig.author}</span>
-              <span className="hidden sm:inline">•</span>
+              <span className="text-border">•</span>
               <Link 
                 href={licenseInfo.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-primary hover:text-primary/80 hover:underline transition-colors"
+                className="text-primary hover:text-primary/80 underline decoration-primary/30 underline-offset-4 hover:decoration-primary/60 transition-colors"
               >
                 {licenseInfo.name}
               </Link>
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-500 sm:text-right">
+            <div className="text-xs text-muted-foreground/70 sm:text-right">
               {licenseInfo.description}
             </div>
           </div>
           
-          <div className="mt-2 text-xs text-gray-500 dark:text-gray-500 text-left">
+          <div className="mt-2.5 pt-2.5 border-t border-border/20 text-xs text-muted-foreground/70 text-left">
             <span>本文链接：</span>
             <Link 
               href={articleUrl}
-              className="text-primary hover:text-primary/80 hover:underline ml-1 break-all transition-colors"
+              className="text-primary hover:text-primary/80 underline decoration-primary/30 underline-offset-4 hover:decoration-primary/60 ml-1 break-all transition-colors"
             >
               {articleUrl}
             </Link>

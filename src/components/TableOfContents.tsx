@@ -156,7 +156,7 @@ export default function TableOfContents({ content }: TableOfContentsProps) {
           className={getGlassStyle("fixed bottom-6 right-4 z-50 w-12 h-12 rounded-full shadow-lg border flex items-center justify-center transition-all duration-200 hover:shadow-xl")}
         >
           <svg
-            className="w-5 h-5 text-gray-600 dark:text-gray-300"
+            className="w-5 h-5 text-foreground/70"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -223,11 +223,14 @@ export default function TableOfContents({ content }: TableOfContentsProps) {
       >
         {/* 侧边栏头部 */}
         {isMobile ? (
-          <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800">
-            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">文章大纲</h3>
+          <div className="flex items-center justify-between p-4 border-b border-border/30">
+            <div className="flex items-center gap-2">
+              <div className="w-1 h-4 bg-primary rounded-full"></div>
+              <h3 className="text-sm font-medium text-foreground">文章大纲</h3>
+            </div>
             <button
               onClick={() => setIsOpen(false)}
-              className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              className="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                 <path
@@ -239,11 +242,14 @@ export default function TableOfContents({ content }: TableOfContentsProps) {
             </button>
           </div>
         ) : (
-          <div className="flex items-center justify-between p-3 border-b border-gray-100/50 dark:border-gray-800/50">
-            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">文章大纲</h3>
+          <div className="flex items-center justify-between p-3 border-b border-border/30">
+            <div className="flex items-center gap-2">
+              <div className="w-1 h-3.5 bg-primary rounded-full"></div>
+              <h3 className="text-sm font-medium text-foreground">文章大纲</h3>
+            </div>
             <button
               onClick={() => setIsCollapsed(!isCollapsed)}
-              className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              className="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
               title={isCollapsed ? '展开目录' : '收起目录'}
             >
               <svg 
@@ -278,10 +284,10 @@ export default function TableOfContents({ content }: TableOfContentsProps) {
                     if (isMobile) setIsOpen(false);
                   }}
                   className={`
-                    w-full text-left px-3 py-2 rounded-md text-sm transition-all duration-200 relative group cursor-pointer
+                    w-full text-left px-3 py-2 rounded-xl text-sm transition-all duration-200 relative group cursor-pointer
                     ${isActive
-                      ? 'bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800'
+                      ? 'bg-primary/10 text-primary font-medium'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                     }
                     ${heading.level === 1 ? 'font-medium' : ''}
                     ${heading.level === 2 ? 'font-normal' : ''}
@@ -291,13 +297,13 @@ export default function TableOfContents({ content }: TableOfContentsProps) {
                 >
                   {/* 活跃指示器 */}
                   {isActive && (
-                    <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-0.5 h-4 bg-primary rounded-r" />
+                    <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-0.5 h-4 bg-primary rounded-full" />
                   )}
                   
                   {/* 层级点 */}
                   {heading.level > 1 && (
                     <span 
-                      className="absolute w-1 h-1 bg-gray-300 dark:bg-gray-600 rounded-full group-hover:bg-primary transition-colors"
+                      className="absolute w-1 h-1 bg-border rounded-full group-hover:bg-primary transition-colors"
                       style={{ left: `${levelIndent}px`, top: '50%', transform: 'translateY(-50%)' }}
                     />
                   )}
@@ -312,17 +318,15 @@ export default function TableOfContents({ content }: TableOfContentsProps) {
         </div>
 
         {/* 底部统计 */}
-        {(
-          <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-800">
-            <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center justify-between">
-              <span>共 {headings.length} 个章节</span>
-              <div className="flex items-center space-x-1">
-                <div className="w-1 h-1 bg-green-500 rounded-full" />
-                <span>已同步</span>
-              </div>
+        <div className="px-4 py-3 border-t border-border/30">
+          <div className="text-xs text-muted-foreground flex items-center justify-between">
+            <span>共 {headings.length} 个章节</span>
+            <div className="flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
+              <span>已同步</span>
             </div>
           </div>
-        )}
+        </div>
       </div>
     </>
   );

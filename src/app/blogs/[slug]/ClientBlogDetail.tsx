@@ -6,12 +6,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import LazyMarkdown from '../../../components/LazyMarkdown';
 import ImagePreview from '../../../app/gallery/components/ImagePreview';
 import { PreviewImage } from '../../../types/gallery';
+import Link from 'next/link';
 import { 
   CalendarIcon,
   TagIcon,
   UserIcon,
   GlobeAltIcon,
-  BookOpenIcon
+  BookOpenIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon
 } from '@heroicons/react/24/outline';
 
 
@@ -50,8 +53,16 @@ interface BlogPost {
   hidden?: boolean;
 }
 
+interface SeriesArticle {
+  title: string;
+  slug: string;
+  seriesOrder: number;
+  date: string;
+}
+
 interface ClientBlogDetailProps {
   blog: BlogPost;
+  seriesArticles: SeriesArticle[];
 }
 
 // 互动功能Hook - 已移除点赞、收藏、分享、浏览统计功能
@@ -76,7 +87,7 @@ interface ClientBlogDetailProps {
  * @param blog - 博客文章数据
  * @returns JSX 元素
  */
-export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
+export default function ClientBlogDetail({ blog, seriesArticles }: ClientBlogDetailProps) {
   const { theme, resolvedTheme } = useTheme();
   const { containerStyle } = useBackgroundStyle('blog-detail');
   const [mounted, setMounted] = useState(false);
@@ -371,7 +382,7 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
           <header className="mb-10">
             {/* 封面图片 */}
             {blog.coverImage && (
-              <div className="mb-6 rounded-xl overflow-hidden shadow-2xl">
+              <div className="mb-6 rounded-2xl overflow-hidden shadow-2xl">
                 <img
                   src={blog.coverImage}
                   alt={blog.title}
@@ -384,69 +395,89 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
             
             {/* 文章标题 */}
             <motion.h1 
-              className="text-3xl md:text-5xl font-bold text-foreground mb-6 leading-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent"
+              className="text-3xl md:text-5xl font-bold text-foreground mb-6 leading-tight"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
             >
-              {blog.title}
+              <span className="bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent dark:from-primary dark:via-primary/90 dark:to-primary/70">
+                {blog.title}
+              </span>
             </motion.h1>
 
             {/* 文章摘要 - 移动到标题下方 */}
             {blog.excerpt && (
               <motion.div 
-                className="mb-8 p-6 bg-card/50 backdrop-blur-sm rounded-xl border-l-4 border-primary shadow-sm"
+                className="mb-8 relative"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.3 }}
               >
-                <p className="text-muted-foreground italic text-lg leading-relaxed">{blog.excerpt}</p>
+                <div className="bg-gradient-to-br from-muted/60 to-muted/30 backdrop-blur-sm rounded-2xl border border-border/50 p-6 relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-primary via-primary/60 to-primary/30 rounded-r" />
+                  <p className="text-muted-foreground italic text-lg leading-relaxed pl-3">{blog.excerpt}</p>
+                </div>
               </motion.div>
             )}
 
             {/* 文章元信息 */}
             <motion.div 
-              className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground bg-card/50 backdrop-blur-sm rounded-lg p-4 mb-6"
+              className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground bg-card/60 backdrop-blur-sm rounded-xl px-4 py-2.5 border border-border/40 shadow-sm mb-6"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.3 }}
             >
-              <div className="flex items-center gap-1">
-                <CalendarIcon className="h-4 w-4" />
+              <div className="flex items-center gap-1.5">
+                <CalendarIcon className="h-4 w-4 text-primary/70" />
                 <span>发布于 {blog.date}</span>
               </div>
               {blog.updatedAt && (
-                <div className="flex items-center gap-1">
-                  <CalendarIcon className="h-4 w-4" />
-                  <span>更新于 {blog.updatedAt}</span>
-                </div>
+                <>
+                  <span className="text-border">·</span>
+                  <div className="flex items-center gap-1.5">
+                    <CalendarIcon className="h-4 w-4 text-primary/70" />
+                    <span>更新于 {blog.updatedAt}</span>
+                  </div>
+                </>
               )}
-              <div className="flex items-center gap-1">
-                <TagIcon className="h-4 w-4" />
+              <span className="text-border">·</span>
+              <div className="flex items-center gap-1.5">
+                <TagIcon className="h-4 w-4 text-primary/70" />
                 <span>{blog.category}</span>
               </div>
-              <div className="flex items-center gap-1">
-                <BookOpenIcon className="h-4 w-4" />
-                <span>预计阅读时间{blog.readTime}分钟</span>
+              <span className="text-border">·</span>
+              <div className="flex items-center gap-1.5">
+                <BookOpenIcon className="h-4 w-4 text-primary/70" />
+                <span>{blog.readTime} 分钟阅读</span>
               </div>
               {blog.author && (
-                <div className="flex items-center gap-1">
-                  <UserIcon className="h-4 w-4" />
-                  <span>{blog.author}</span>
-                </div>
+                <>
+                  <span className="text-border">·</span>
+                  <div className="flex items-center gap-1.5">
+                    <UserIcon className="h-4 w-4 text-primary/70" />
+                    <span>{blog.author}</span>
+                  </div>
+                </>
               )}
               {blog.language && (
-                <div className="flex items-center gap-1">
-                  <GlobeAltIcon className="h-4 w-4" />
-                  <span>{blog.language}</span>
-                </div>
+                <>
+                  <span className="text-border">·</span>
+                  <div className="flex items-center gap-1.5">
+                    <GlobeAltIcon className="h-4 w-4 text-primary/70" />
+                    <span>{blog.language}</span>
+                  </div>
+                </>
               )}
             </motion.div>
             
             {/* 文章时效性说明 - 仅技术分类显示 */}
             {articleAgeInfo && blog.category === '技术' && (
               <motion.div 
-                className={`mt-4 mb-8 p-4 bg-card/50 backdrop-blur-sm rounded-lg shadow-sm border-l-4 ${articleAgeInfo.type === 'warning' ? 'border-amber-400' : 'border-primary'}`}
+                className={`mt-4 mb-8 p-4 rounded-2xl backdrop-blur-sm border ${
+                  articleAgeInfo.type === 'warning' 
+                    ? 'bg-amber-50/80 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800/50' 
+                    : 'bg-card/60 border-border/40'
+                }`}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.4 }}
@@ -460,7 +491,19 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
 
             {/* 目录导航 */}
             <div className="mb-8">
-              <Suspense fallback={<div className="h-32 bg-muted animate-pulse rounded-xl"></div>}>
+              <Suspense fallback={
+                <div className="bg-card/60 backdrop-blur-sm rounded-2xl border border-border/40 p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-1 h-4 bg-primary/40 rounded-full"></div>
+                    <div className="h-3.5 bg-muted/60 rounded w-16"></div>
+                  </div>
+                  <div className="space-y-2.5 pl-3">
+                    <div className="h-3 bg-muted/50 rounded w-1/2"></div>
+                    <div className="h-3 bg-muted/40 rounded w-2/3"></div>
+                    <div className="h-3 bg-muted/40 rounded w-1/3"></div>
+                  </div>
+                </div>
+              }>
                 <LazyTableOfContents content={blog.content} />
               </Suspense>
             </div>
@@ -517,7 +560,7 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
                 background: transparent !important;
               }
             `}</style>
-            <div className="bg-card/50 backdrop-blur-sm rounded-xl shadow-lg p-6 md:p-8">
+            <div className="bg-card/60 backdrop-blur-sm rounded-2xl shadow-lg p-6 md:p-10">
               <div className="prose prose-lg dark:prose-invert max-w-none">
                 <LazyMarkdown
                   content={blog.content}
@@ -528,15 +571,15 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
           </article>
 
           {/* 文章结尾 */}
-          <div className="mt-12 text-center">
+          <div className="mt-12">
             {/* 标签和系列信息 - 移动到文章后面 */}
             <div className="flex flex-wrap items-start gap-4 mb-8">
               {blog.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2 bg-card/50 backdrop-blur-sm rounded-xl p-4 border-l-4 border-primary shadow-sm">
+                <div className="flex flex-wrap gap-2 bg-card/60 backdrop-blur-sm rounded-2xl p-4 border border-border/40 shadow-sm">
                   {blog.tags.map((tag, index) => (
                     <span 
                       key={index} 
-                      className="px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium hover:bg-primary/20 transition-colors cursor-pointer"
+                      className="px-3.5 py-1.5 bg-primary/10 text-primary rounded-full text-xs font-medium hover:bg-primary/20 transition-colors cursor-pointer"
                     >
                       {tag}
                     </span>
@@ -545,8 +588,8 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
               )}
               
               {blog.series && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground bg-card/50 backdrop-blur-sm px-4 py-3 rounded-xl border-l-4 border-primary shadow-sm">
-                  <BookOpenIcon className="h-4 w-4" />
+                <div className="flex items-center gap-2 text-sm text-muted-foreground bg-card/60 backdrop-blur-sm px-4 py-3 rounded-2xl border border-border/40 shadow-sm">
+                  <BookOpenIcon className="h-4 w-4 text-primary/70" />
                   <span>系列: {blog.series}</span>
                   {blog.seriesOrder && (
                     <span className="px-2 py-0.5 bg-primary/20 text-primary rounded-full text-xs">
@@ -557,18 +600,54 @@ export default function ClientBlogDetail({ blog }: ClientBlogDetailProps) {
               )}
             </div>
 
-            <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl p-6 mb-8">
-              <p className="text-lg text-muted-foreground italic">{EndWord}</p>
+            {/* 系列文章导航 */}
+            {blog.series && seriesArticles.length > 0 && (
+              <div className="mb-8 bg-card/60 backdrop-blur-sm rounded-2xl border border-border/40 shadow-sm p-5">
+                <div className="flex items-center gap-2 mb-4">
+                  <BookOpenIcon className="h-4 w-4 text-primary/70" />
+                  <span className="text-sm font-medium text-foreground">{blog.series} 系列</span>
+                  <span className="text-xs text-muted-foreground">（共 {seriesArticles.length + 1} 篇）</span>
+                </div>
+                
+                {/* 当前文章 */}
+                <div className="mb-3 px-3 py-2.5 bg-primary/10 rounded-xl border border-primary/20">
+                  <span className="text-xs text-primary font-medium">当前阅读</span>
+                  <p className="text-sm font-medium text-foreground mt-0.5">
+                    {blog.seriesOrder && <span className="text-primary/70 mr-1">#{blog.seriesOrder}</span>}
+                    {blog.title}
+                  </p>
+                </div>
+                
+                {/* 系列其他文章 */}
+                <div className="space-y-1.5">
+                  {seriesArticles.map((article) => (
+                    <Link
+                      key={article.slug}
+                      href={`/blogs/${encodeURIComponent(article.slug)}`}
+                      className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors group"
+                    >
+                      <span className="text-xs text-primary/60 font-mono w-5">#{article.seriesOrder}</span>
+                      <span className="flex-1 truncate group-hover:text-primary transition-colors">{article.title}</span>
+                      <ChevronRightIcon className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 结束语 */}
+            <div className="rounded-2xl p-6 mb-8 bg-gradient-to-r from-primary/10 to-primary/5">
+              <p className="text-lg text-muted-foreground italic leading-relaxed">{EndWord}</p>
             </div>
 
             {/* 版权声明 */}
-          <Suspense fallback={<div className="h-24 bg-muted animate-pulse rounded-xl"></div>}>
+          <Suspense fallback={<div className="h-24 bg-card/60 animate-pulse rounded-2xl border border-border/40"></div>}>
             <LazyCopyrightNotice title={blog.title} publishDate={blog.date} slug={blog.slug} reference={blog.reference} />
           </Suspense>
           </div>
 
           {/* 评论区 */}
-          <div className="mt-12">
+          <div className="mt-12 pt-8 border-t border-border/30">
             <Suspense fallback={<div className="h-64 bg-muted animate-pulse rounded-xl"></div>}>
               <LazyGiscusComments id={blog.slug} title={blog.title} />
             </Suspense>

@@ -37,8 +37,16 @@ interface BlogPost {
   hidden?: boolean;
 }
 
+interface SeriesArticle {
+  title: string;
+  slug: string;
+  seriesOrder: number;
+  date: string;
+}
+
 interface BlogDetailWrapperProps {
   blog: BlogPost;
+  seriesArticles: SeriesArticle[];
 }
 
 /**
@@ -47,6 +55,6 @@ interface BlogDetailWrapperProps {
  * 这是一个客户端组件，用于包装 ClientBlogDetail 组件
  * 使用动态导入禁用 SSR，以避免 Next.js 16 + React 19 的 useContext 错误
  */
-export default function BlogDetailWrapper({ blog }: BlogDetailWrapperProps) {
-  return <ClientBlogDetail blog={blog} />;
+export default function BlogDetailWrapper({ blog, seriesArticles }: BlogDetailWrapperProps) {
+  return <ClientBlogDetail blog={blog} seriesArticles={seriesArticles} />;
 }
