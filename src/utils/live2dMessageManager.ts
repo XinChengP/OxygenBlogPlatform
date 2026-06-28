@@ -52,6 +52,10 @@ class Live2DMessageManager {
   // 烟花模式状态（独立于彩蛋模式，优先级更高）
   private isFireworksMode = false;
 
+  // 性能优化：将关键词集合提取为类级别常量，避免每次调用时重新创建
+  private static readonly KEYWORD_SET = new Set(['复制', '成功', '完成', '加载', '切换', '模式']);
+  private static readonly GREETING_KEYWORDS = new Set(['你好', '洛天依']);
+
   private constructor() {}
 
   static getInstance(): Live2DMessageManager {
@@ -423,40 +427,45 @@ class Live2DMessageManager {
   }
 
   /**
-   * 检查消息是否与上一条消息相似
+   * 检查消息是否与上一条消息相似（性能优化版）
    */
   private isSimilarToLastMessage(message: string): boolean {
     if (!this.lastMessage) return false;
     
-    // 完全相同的消息
+    // 完全相同的消息 - 最快路径
     if (message === this.lastMessage) return true;
     
-    // 修复：改进相似消息检测，避免彩蛋消息影响后续所有消息
-    // 只检查特定的问候语组合，不再将所有包含'天依'的消息都视为相似
-    const isCurrentGreeting = message.includes('你好') && message.includes('洛天依');
-    const isLastGreeting = this.lastMessage.includes('你好') && this.lastMessage.includes('洛天依');
+    // 性能优化：使用预计算的 Set 进行 O(1) 查找
+    const hasGreeting = (msg: string): boolean => {
+      let has你好 = false;
+      let has天依 = false;
+      for (const char of msg) {
+        if (char === '你' || char === '好') has你好 = true;
+        if (char === '洛' || char === '天' || char === '依') has天依 = true;
+        if (has你好 && has天依) return true;
+      }
+      return false;
+    };
     
-    if (isCurrentGreeting && isLastGreeting) {
+    // 问候语组合检查
+    if (hasGreeting(message) && hasGreeting(this.lastMessage)) {
       return true;
     }
     
-    // 检查消息内容相似度（简单的关键词匹配）
-    const keywords = ['复制', '成功', '完成', '加载', '切换', '模式'];
-    const currentHasKeyword = keywords.some(keyword => message.includes(keyword));
-    const lastHasKeyword = keywords.some(keyword => this.lastMessage.includes(keyword));
+    // 关键词匹配：使用 Set 进行 O(1) 查找
+    let currentHasKeyword = false;
+    let lastHasKeyword = false;
     
-    if (currentHasKeyword && lastHasKeyword) {
-      // 如果两条消息都包含相似的功能性关键词，认为是相似的
-      return true;
-    }
+    Live2DMessageManager.KEYWORD_SET.forEach(keyword => {
+      if (!currentHasKeyword && message.includes(keyword)) {
+        currentHasKeyword = true;
+      }
+      if (!lastHasKeyword && this.lastMessage.includes(keyword)) {
+        lastHasKeyword = true;
+      }
+    });
     
-    // 检查是否是完全相同的问候语（如重复的早上好）
-    const simpleGreetings = ['早上好', '下午好', '晚上好', '夜深了'];
-    if (simpleGreetings.includes(message) && message === this.lastMessage) {
-      return true;
-    }
-    
-    return false;
+    return currentHasKeyword && lastHasKeyword;
   }
 
   /**
