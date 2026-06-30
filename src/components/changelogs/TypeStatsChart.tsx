@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { Changelog, getTypeStats, getChangelogTypeLabel, ChangelogType } from '@/types/changelogTypes';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Sector } from 'recharts';
 import { motion } from 'framer-motion';
+import { containerVariants } from '@/utils/animationVariants';
 
 /**
  * 时间统计项接口
@@ -42,21 +43,6 @@ const TYPE_COLORS: Record<ChangelogType, string> = {
   docs: '#ff9966',      // 文档 - 橙色
   style: '#ccff66',     // 样式 - 黄绿色
   refactor: '#66ff99',  // 重构 - 绿色
-};
-
-/**
- * 动画变体配置
- */
-const containerVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.6,
-      ease: [0.25, 0.46, 0.45, 0.94] as const,
-    },
-  },
 };
 
 /**

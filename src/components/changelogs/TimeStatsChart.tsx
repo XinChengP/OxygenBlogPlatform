@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Changelog, getMonthStats, getQuarterStats, getYearStats } from '@/types/changelogTypes';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, AreaChart, Area } from 'recharts';
 import { motion } from 'framer-motion';
+import { containerVariants } from '@/utils/animationVariants';
 import { themeColors } from '@/setting/WebSetting';
 
 /**
@@ -36,21 +37,6 @@ interface TimeStatsChartProps {
   blogTimeStats?: TimeStats;  // 文章时间统计（后台使用）
   momentTimeStats?: TimeStats;  // 动态时间统计（后台使用）
 }
-
-/**
- * 动画变体配置
- */
-const containerVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.6,
-      ease: [0.25, 0.46, 0.45, 0.94] as const,
-    },
-  },
-};
 
 /**
  * 时间统计图表组件

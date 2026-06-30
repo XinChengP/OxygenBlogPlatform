@@ -32,7 +32,6 @@ const baseConfig = {
   compiler: {
     reactRemoveProperties: isStaticExport,
     removeConsole: isStaticExport ? { exclude: ['error'] } : false,
-    emotion: true,
   },
 
   // 性能优化配置

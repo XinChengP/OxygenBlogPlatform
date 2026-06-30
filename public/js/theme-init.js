@@ -14,10 +14,10 @@
     var root = document.documentElement;
 
     var themeColors = {
-      primary: "#66ccff",
-      secondary: "#1e40af",
-      accent: "#06b6d4"
-    };
+                    primary: "#66ccff",
+                    secondary: "#1e40af", 
+                    accent: "#06b6d4"
+                  };
 
     function hexToRgb(hex) {
       var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);

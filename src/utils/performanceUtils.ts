@@ -119,7 +119,7 @@ export const performanceMonitor = {
       performance.measure(label, `${label}-start`, `${label}-end`);
       
       const measure = performance.getEntriesByName(label)[0];
-      if (measure) {
+      if (measure && process.env.NODE_ENV === 'development') {
         console.log(`[Performance] ${label}: ${measure.duration.toFixed(2)}ms`);
       }
     }

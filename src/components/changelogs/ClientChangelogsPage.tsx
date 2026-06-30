@@ -14,8 +14,10 @@ import {
   sortAchievementsByPriority
 } from '@/types/changelogTypes';
 import PageHeader from '@/components/ui/PageHeader';
-import TimeStatsChart from './TimeStatsChart';
-import TypeStatsChart from './TypeStatsChart';
+import dynamic from 'next/dynamic';
+
+const TimeStatsChart = dynamic(() => import('./TimeStatsChart'), { ssr: false });
+const TypeStatsChart = dynamic(() => import('./TypeStatsChart'), { ssr: false });
 import { Live2DMessageHelper } from '@/utils/live2dMessageManager';
 
 // 通用 Markdown 组件属性

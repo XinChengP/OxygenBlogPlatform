@@ -34,124 +34,31 @@ interface ComponentProps {
  * 标准化编程语言名称，解决大小写敏感问题
  */
 const normalizeLanguage = (language: string): string => {
-  const languageMap: Record<string, string> = {
-    // JavaScript 相关
-    'javascript': 'javascript',
-    'js': 'javascript',
-    'jsx': 'jsx',
-    'typescript': 'typescript',
-    'ts': 'typescript',
-    'tsx': 'tsx',
-    // Python 相关
-    'python': 'python',
-    'py': 'python',
-    'python3': 'python',
-    // Java 相关
-    'java': 'java',
-    // C/C++ 相关
-    'c': 'c',
-    'cpp': 'cpp',
-    'c++': 'cpp',
-    'cxx': 'cpp',
-    // Web 相关
-    'html': 'html',
-    'css': 'css',
-    'scss': 'scss',
-    'sass': 'sass',
-    'less': 'less',
-    // Shell 相关
-    'bash': 'bash',
-    'sh': 'bash',
-    'shell': 'bash',
-    'zsh': 'bash',
-    // 数据格式
-    'json': 'json',
-    'xml': 'xml',
-    'yaml': 'yaml',
-    'yml': 'yaml',
-    'toml': 'toml',
-    // 数据库
-    'sql': 'sql',
-    'mysql': 'sql',
-    'postgresql': 'sql',
-    'sqlite': 'sql',
-    // 其他常用语言
-    'go': 'go',
-    'golang': 'go',
-    'rust': 'rust',
-    'php': 'php',
-    'ruby': 'ruby',
-    'swift': 'swift',
-    'kotlin': 'kotlin',
-    'dart': 'dart',
-    'r': 'r',
-    'matlab': 'matlab',
-    'perl': 'perl',
-    'lua': 'lua',
-    'scala': 'scala',
-    'clojure': 'clojure',
-    'haskell': 'haskell',
-    'elixir': 'elixir',
-    'erlang': 'erlang',
-    'markdown': 'markdown',
-    'latex': 'latex',
-    'dockerfile': 'dockerfile',
-    'makefile': 'makefile',
-    'text': 'text'
+  const aliases: Record<string, string> = {
+    js: 'javascript', jsx: 'jsx', ts: 'typescript', tsx: 'tsx',
+    py: 'python', python3: 'python',
+    cxx: 'cpp', 'c++': 'cpp',
+    sh: 'bash', shell: 'bash', zsh: 'bash',
+    yml: 'yaml',
+    mysql: 'sql', postgresql: 'sql', sqlite: 'sql',
+    golang: 'go',
   };
-
   const normalized = language.toLowerCase().trim();
-  return languageMap[normalized] || normalized;
+  return aliases[normalized] || normalized;
 };
 
 /**
  * 获取编程语言的显示名称
  */
 const getLanguageDisplayName = (language: string): string => {
-  const displayNameMap: Record<string, string> = {
-    'javascript': 'JavaScript',
-    'typescript': 'TypeScript',
-    'jsx': 'JSX',
-    'tsx': 'TSX',
-    'python': 'Python',
-    'java': 'Java',
-    'cpp': 'C++',
-    'c': 'C',
-    'html': 'HTML',
-    'css': 'CSS',
-    'scss': 'SCSS',
-    'sass': 'Sass',
-    'less': 'Less',
-    'bash': 'Bash',
-    'json': 'JSON',
-    'xml': 'XML',
-    'yaml': 'YAML',
-    'toml': 'TOML',
-    'sql': 'SQL',
-    'go': 'Go',
-    'rust': 'Rust',
-    'php': 'PHP',
-    'ruby': 'Ruby',
-    'swift': 'Swift',
-    'kotlin': 'Kotlin',
-    'dart': 'Dart',
-    'r': 'R',
-    'matlab': 'MATLAB',
-    'perl': 'Perl',
-    'lua': 'Lua',
-    'scala': 'Scala',
-    'clojure': 'Clojure',
-    'haskell': 'Haskell',
-    'elixir': 'Elixir',
-    'erlang': 'Erlang',
-    'markdown': 'Markdown',
-    'latex': 'LaTeX',
-    'dockerfile': 'Dockerfile',
-    'makefile': 'Makefile',
-    'text': 'Text'
+  const displayNames: Record<string, string> = {
+    javascript: 'JavaScript', typescript: 'TypeScript', jsx: 'JSX', tsx: 'TSX',
+    python: 'Python', cpp: 'C++', c: 'C', html: 'HTML', css: 'CSS',
+    scss: 'SCSS', sass: 'Sass', bash: 'Bash', yaml: 'YAML',
+    dockerfile: 'Dockerfile', makefile: 'Makefile', markdown: 'Markdown',
+    latex: 'LaTeX', matlab: 'MATLAB', r: 'R',
   };
-
-  return displayNameMap[language] || language.charAt(0).toUpperCase() + language.slice(1);
+  return displayNames[language] || language.charAt(0).toUpperCase() + language.slice(1);
 };
 
 /**

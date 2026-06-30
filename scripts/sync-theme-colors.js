@@ -182,18 +182,14 @@ function updateGlobalsCss(colors) {
 
 /**
  * 更新 layout.tsx 中的内联脚本，使用正确的主题色
+ * 注意：内联脚本已提取到 public/js/theme-init.js，需同步更新
  * @param {Object} colors - 主题色配置
  */
 function updateLayoutScript(colors) {
   try {
-    const layoutPath = path.join(__dirname, '../src/app/layout.tsx');
-    let content = fs.readFileSync(layoutPath, 'utf8');
-    
-    // 更新注释
-    content = content.replace(
-      /\/\/ 立即应用.*主题色，避免闪烁/,
-      `// 立即应用${colors.themeName}主题色，避免闪烁`
-    );
+    // 更新 public/js/theme-init.js 中的主题色配置
+    const themeInitPath = path.join(__dirname, '../public/js/theme-init.js');
+    let content = fs.readFileSync(themeInitPath, 'utf8');
     
     // 更新主题配置注释
     content = content.replace(
@@ -211,11 +207,11 @@ function updateLayoutScript(colors) {
     
     content = content.replace(themeColorsRegex, newThemeConfig);
     
-    fs.writeFileSync(layoutPath, content, 'utf8');
-    console.log('✅ layout.tsx 内联脚本已更新');
+    fs.writeFileSync(themeInitPath, content, 'utf8');
+    console.log('✅ public/js/theme-init.js 内联脚本已更新');
     
   } catch (error) {
-    console.error('❌ 更新 layout.tsx 失败:', error.message);
+    console.error('❌ 更新 theme-init.js 失败:', error.message);
     // 这个不是致命错误，继续执行
   }
 }

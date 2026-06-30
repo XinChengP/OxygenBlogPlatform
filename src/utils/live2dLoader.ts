@@ -326,7 +326,9 @@ export function resetLoaderStats(): void {
  */
 export function clearResourceCache(): void {
   resourceCache.clear();
-  console.log('[Live2DLoader] 资源缓存已清除');
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[Live2DLoader] 资源缓存已清除');
+  }
 }
 
 /**
