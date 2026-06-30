@@ -1,6 +1,7 @@
 'use client';
 
 import type { APlayerNS, PlayMode, MusicHistoryItem, MusicPlayerState } from '@/types/aplayer';
+import { PLAY_MODE_ORDER } from '@/types/playMode';
 
 // ==================== 常量定义 ====================
 
@@ -14,9 +15,6 @@ const STORAGE_KEYS = {
 
 /** 播放历史最大保存数量 */
 const MAX_HISTORY_ITEMS = 50;
-
-/** 播放模式循环顺序 */
-const PLAY_MODE_ORDER: PlayMode[] = ['list', 'random', 'single'];
 
 // ==================== 自定义事件类型定义 ====================
 

@@ -34,9 +34,7 @@ declare module '@/hooks/useBackgroundStyle' {
   export function useBackgroundStyle(pageType: PageType): {
     containerStyle: StyleConfig;
     sectionStyle: StyleConfig;
-    buttonStyle: StyleConfig;
     navigationStyle: StyleConfig;
-    footerStyle: StyleConfig;
     isBackgroundEnabled: boolean;
   };
 }

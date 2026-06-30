@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
-import { formatBlogDate } from '@/lib/utils';
+import { formatBlogDate } from '@/utils';
 import ClientArchivePage from '@/components/archive/ClientArchivePage';
 import type { Metadata } from 'next';
 

@@ -5,6 +5,7 @@ import DOMPurify from 'dompurify';
 import GlobalMusicPlayerManager from '@/utils/globalMusicPlayerManager';
 import { musicConfigManager, ProcessedAudioItem } from '@/utils/musicConfigManager';
 import type { APlayerNS, PlayMode } from '@/types/aplayer';
+import { PLAY_MODE_ORDER } from '@/types/playMode';
 import { emitMusicEvent } from '@/utils/live2dEventEmitter';
 import { getAssetPath } from '@/utils/assetUtils';
 import { getMusicPlayerVisibility, onMusicPlayerVisibilityChange } from '@/utils/musicPlayerVisibility';
@@ -20,12 +21,6 @@ interface MusicPlayerProps {
   /** 是否隐藏播放器（用于路由级控制），默认 false */
   hidden?: boolean;
 }
-
-/**
- * 播放模式循环顺序
- * 按照列表循环 -> 随机播放 -> 单曲循环的顺序循环切换
- */
-const PLAY_MODE_ORDER: PlayMode[] = ['list', 'random', 'single'];
 
 /**
  * 播放模式对应的 APlayer loop 值

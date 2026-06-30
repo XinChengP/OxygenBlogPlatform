@@ -7,7 +7,7 @@
 
 import { useState, useEffect } from 'react';
 import { live2DBrowserCompatibility } from '../utils/browserCompatibility';
-import { cn } from '@/lib/utils';
+import { cn } from '@/utils/cn';
 
 interface BrowserCompatibilityBannerProps {
   className?: string;

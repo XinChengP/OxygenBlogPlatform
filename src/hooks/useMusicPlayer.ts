@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import GlobalMusicPlayerManager, { regenerateRandomOrder } from '@/utils/globalMusicPlayerManager';
 import type { PlayMode, MusicPlayerState, APlayerNS } from '@/types/aplayer';
+import { PLAY_MODE_ORDER } from '@/types/playMode';
 
 /**
  * useMusicPlayer Hook 返回值接口
@@ -44,12 +45,6 @@ interface UseMusicPlayerReturn {
   /** 切换歌词显示/隐藏 */
   toggleLyrics: () => void;
 }
-
-/**
- * 播放模式循环顺序
- * 按照列表循环 -> 随机播放 -> 单曲循环的顺序循环切换
- */
-const PLAY_MODE_ORDER: PlayMode[] = ['list', 'random', 'single'];
 
 /**
  * 播放模式对应的 APlayer loop 值

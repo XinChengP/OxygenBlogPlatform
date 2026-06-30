@@ -1,0 +1,210 @@
+/* Live2D 看板娘样式 */
+
+#landlord {
+  user-select: none;
+  position: fixed;
+  right: 80px;
+  bottom: 0;
+  width: 280px;
+  height: 250px;
+  z-index: 10000;
+  font-size: 0;
+  transition: all .3s ease-in-out;
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+#live2d {
+  position: relative;
+}
+
+.message {
+  opacity: 1;
+  width: 250px;
+  height: auto;
+  margin: auto;
+  padding: 7px;
+  top: 10px;
+  right: 0;
+  text-align: center;
+  border: 1px solid rgba(255,255,255,.6);
+  border-radius: 12px;
+  background-color: rgba(255,255,255,.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 3px 15px 2px rgba(0,0,0,.15);
+  font-size: 13px;
+  font-weight: 400;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  overflow: hidden;
+  position: absolute;
+  z-index: 10001;
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.hide-button {
+  position: absolute;
+  top: 75px;
+  left: 0;
+  display: none;
+  overflow: hidden;
+  width: 60px;
+  height: 20px;
+  border: 1px solid rgba(102,204,255,.4);
+  border-radius: 12px;
+  background: rgba(102,204,255,.2);
+  box-shadow: 0 3px 15px 2px rgba(102,204,255,.4);
+  text-align: center;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+#landlord:hover .hide-button {
+  display: block;
+}
+
+#landlord:hover .refresh-button {
+  display: flex;
+}
+
+.hide-button:hover {
+  border: 1px solid rgba(102,204,255,.6);
+  background: rgba(102,204,255,.6);
+}
+
+.refresh-button {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  overflow: hidden;
+  width: 60px;
+  height: 20px;
+  border: 1px solid rgba(102,204,255,.4);
+  border-radius: 12px;
+  background: rgba(102,204,255,.2);
+  box-shadow: 0 3px 15px 2px rgba(102,204,255,.4);
+  text-align: center;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: inherit;
+  position: absolute;
+  top: 100px;
+  left: 0;
+  z-index: 10000;
+}
+
+.refresh-button:hover {
+  border: 1px solid rgba(102,204,255,.6);
+  background: rgba(102,204,255,.6);
+}
+
+.refresh-button.loading {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.refresh-button.loading .refresh-icon {
+  animation: refresh-spin 1s linear infinite;
+}
+
+@keyframes refresh-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(-360deg); }
+}
+
+.refresh-button.luotianyi-theme {
+  border-color: rgba(var(--primary), 0.4);
+  background: rgba(var(--primary), 0.2);
+  box-shadow: 0 3px 15px 2px rgba(var(--primary), 0.4);
+}
+
+.refresh-button.luotianyi-theme:hover {
+  border-color: rgba(var(--primary), 0.6);
+  background: rgba(var(--primary), 0.6);
+}
+
+@media (max-width: 860px) {
+  #landlord {
+    display: none;
+  }
+}
+
+.message.luotianyi-theme {
+  border-color: rgba(255,255,255,.6);
+  background-color: rgba(255,255,255,.85);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  box-shadow: 0 3px 15px 2px rgba(0,0,0,.15);
+}
+
+.hide-button.luotianyi-theme {
+  border-color: rgba(var(--primary), 0.4);
+  background: rgba(var(--primary), 0.2);
+  box-shadow: 0 3px 15px 2px rgba(var(--primary), 0.4);
+}
+
+.hide-button.luotianyi-theme:hover {
+  border-color: rgba(var(--primary), 0.6);
+  background: rgba(var(--primary), 0.6);
+}
+
+/* Live2D 消息容器样式 */
+.live2d-message-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.live2d-message {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 12px 16px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  font-size: 14px;
+  line-height: 1.4;
+  max-width: 250px;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.live2d-message.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.live2d-message .message-tail {
+  position: absolute;
+  bottom: -8px;
+  left: 20px;
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid #764ba2;
+}
+
+.live2d-message .message-content {
+  word-wrap: break-word;
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}

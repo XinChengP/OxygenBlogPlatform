@@ -1,0 +1,70 @@
+(function() {
+  try {
+    var theme = localStorage.getItem('theme') || 'system';
+    var systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    var resolvedTheme = theme === 'system' ? systemTheme : theme;
+
+    if (resolvedTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+
+    var isDark = resolvedTheme === 'dark';
+    var root = document.documentElement;
+
+    var themeColors = {
+      primary: "#66ccff",
+      secondary: "#1e40af",
+      accent: "#06b6d4"
+    };
+
+    function hexToRgb(hex) {
+      var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+      } : { r: 0, g: 0, b: 0 };
+    }
+
+    function adjustBrightness(hex, factor) {
+      var rgb = hexToRgb(hex);
+      var adjust = function(value) {
+        return Math.max(0, Math.min(255, Math.round(value * factor)));
+      };
+
+      var newR = adjust(rgb.r).toString(16);
+      var newG = adjust(rgb.g).toString(16);
+      var newB = adjust(rgb.b).toString(16);
+
+      newR = newR.length === 1 ? '0' + newR : newR;
+      newG = newG.length === 1 ? '0' + newG : newG;
+      newB = newB.length === 1 ? '0' + newB : newB;
+
+      return '#' + newR + newG + newB;
+    }
+
+    var primaryColor = isDark
+      ? adjustBrightness(themeColors.primary, 1.3)
+      : adjustBrightness(themeColors.primary, 0.8);
+    var accentColor = isDark
+      ? adjustBrightness(themeColors.accent, 1.2)
+      : adjustBrightness(themeColors.accent, 0.9);
+    var secondaryColor = isDark
+      ? adjustBrightness(themeColors.secondary, 1.4)
+      : themeColors.secondary;
+
+    root.style.setProperty('--theme-primary', primaryColor);
+    root.style.setProperty('--theme-accent', accentColor);
+    root.style.setProperty('--theme-secondary', secondaryColor);
+    root.style.setProperty('--primary', primaryColor);
+    root.style.setProperty('--primary-foreground', isDark ? '#0f0f0f' : '#ffffff');
+    root.style.setProperty('--accent', accentColor);
+    root.style.setProperty('--accent-foreground', isDark ? '#0f0f0f' : '#ffffff');
+    root.style.setProperty('--secondary', secondaryColor);
+    root.style.setProperty('--secondary-foreground', isDark ? '#f0f0f0' : '#1f1f1f');
+
+    root.style.setProperty('--theme-initialized', '1');
+  } catch (e) {}
+})();

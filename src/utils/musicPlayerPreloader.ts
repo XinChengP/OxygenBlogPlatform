@@ -1,16 +1,9 @@
 'use client';
 
 import { getAssetPath } from './assetUtils';
+import type { PlayMode } from '@/types/aplayer';
 
 // ==================== 类型定义 ====================
-
-/**
- * 播放模式类型
- * - list: 列表循环播放
- * - random: 随机播放
- * - single: 单曲循环播放
- */
-export type PlayMode = 'list' | 'random' | 'single';
 
 /**
  * 预加载优先级枚举

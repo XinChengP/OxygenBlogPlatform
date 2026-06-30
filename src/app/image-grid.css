@@ -1,0 +1,213 @@
+/* 图片网格样式 */
+
+.image-grid {
+  display: grid !important;
+  gap: 0.75rem !important;
+  margin: 1rem 0 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.image-grid-2-cols {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.image-grid-3-cols {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+.image-grid-4-cols {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+}
+
+.image-grid-item {
+  position: relative !important;
+  overflow: hidden !important;
+  border-radius: 0.5rem !important;
+  cursor: pointer !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.image-grid-item img,
+.image-grid img {
+  width: 100% !important;
+  height: 100% !important;
+  display: block !important;
+  transition: transform 0.3s ease, filter 0.3s ease !important;
+  border-radius: 0.5rem !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  float: none !important;
+  clear: none !important;
+  object-fit: cover !important;
+}
+
+.image-grid-equal-height {
+  align-items: start !important;
+}
+
+.image-grid-equal-height img {
+  width: 100% !important;
+  height: auto !important;
+  max-height: 350px !important;
+  object-fit: contain !important;
+  display: block !important;
+}
+
+.prose img:not(.image-grid img) {
+  width: 100% !important;
+  height: auto !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  display: block !important;
+}
+
+.image-grid-item:hover img,
+.image-grid img:hover {
+  transform: scale(1.02) !important;
+}
+
+.image-grid em {
+  display: none !important;
+}
+
+.image-grid-item::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.image-grid-item:hover::after {
+  opacity: 1;
+}
+
+@media (max-width: 640px) {
+  .image-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.5rem !important;
+  }
+
+  .image-grid-2-cols,
+  .image-grid-3-cols,
+  .image-grid-4-cols,
+  .image-grid-1-2-1 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .image-grid-1-2-1 img:nth-child(2) {
+    grid-column: span 1 !important;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .image-grid-4-cols {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+.image-grid-custom,
+.image-grid {
+  display: grid !important;
+  gap: 0.75rem !important;
+  margin: 1rem 0 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.image-grid-1-2 {
+  grid-template-columns: 1fr 2fr !important;
+}
+
+.image-grid-2-1 {
+  grid-template-columns: 2fr 1fr !important;
+}
+
+.image-grid-1-1-2 {
+  grid-template-columns: 1fr 1fr 1fr !important;
+}
+
+.image-grid-1-1-2 img:nth-child(2) {
+  grid-column: span 2 !important;
+}
+
+.image-grid-2-1-1 {
+  grid-template-columns: 1fr 1fr 1fr !important;
+}
+
+.image-grid-2-1-1 img:nth-child(1) {
+  grid-column: span 2 !important;
+}
+
+.image-grid-1-2-1 {
+  grid-template-columns: 1fr 2fr 1fr !important;
+  grid-template-rows: 1fr !important;
+}
+
+.image-grid-1-2-1 img:nth-child(2) {
+  grid-column: span 1 !important;
+}
+
+.image-grid-1-2-1 img,
+.image-grid-1-2-1 .image-grid-item img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.image-lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  cursor: pointer;
+  animation: fadeIn 0.2s ease;
+}
+
+.image-lightbox-overlay img {
+  max-width: 90vw;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: 0.5rem;
+  cursor: default;
+}
+
+.image-lightbox-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  color: white;
+  font-size: 2rem;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.image-lightbox-close:hover {
+  opacity: 0.8;
+}
+
+.image-grid-item figcaption {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0.5rem;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+  color: white;
+  font-size: 0.875rem;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.image-grid-item:hover figcaption {
+  opacity: 1;
+}

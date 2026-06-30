@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
-import { formatBlogDate, calculateReadingTime } from '@/lib/utils';
+import { formatBlogDate, calculateReadingTime } from '@/utils';
 import { getBlogTotalWordCount } from '@/utils/momentsUtils';
 import ClientBlogsPage from './ClientBlogsPage';
 

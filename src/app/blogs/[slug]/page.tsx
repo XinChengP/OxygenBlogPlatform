@@ -3,7 +3,7 @@ import path from 'path';
 import matter from 'gray-matter';
 import BlogDetailWrapper from '@/app/blogs/[slug]/BlogDetailWrapper';
 import 'highlight.js/styles/github-dark.css';
-import { formatBlogDate, calculateReadingTime } from '@/lib/utils';
+import { formatBlogDate, calculateReadingTime } from '@/utils';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 

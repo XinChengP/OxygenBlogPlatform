@@ -39,5 +39,8 @@ export * from './scrollManager';
 // 字数统计工具
 export * from './wordCountUtils';
 
+// 博客工具函数
+export { formatBlogDate, calculateReadingTime } from '../lib/utils';
+
 // 导出所有工具函数的类型
 export type { BrowserCompatibility } from './browserCompatibility';
