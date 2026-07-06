@@ -83,7 +83,7 @@ export default function Live2DBubble({
           borderRadius: '12px',
           border: '1px solid rgba(102,204,255,.4)',
           boxShadow: '0 3px 15px 2px rgba(102,204,255,.4)',
-          color: 'var(--aplayer-fg)',
+          color: 'var(--foreground)',
           fontSize: '13px',
           maxWidth: '300px',
           wordWrap: 'break-word',

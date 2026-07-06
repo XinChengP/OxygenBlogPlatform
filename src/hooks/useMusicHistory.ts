@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import GlobalMusicPlayerManager from '@/utils/globalMusicPlayerManager';
-import type { MusicHistoryItem, MusicHistory, APlayerNS } from '@/types/aplayer';
+import type { MusicHistoryItem, MusicHistory } from '@/types/music';
 
 /**
  * useMusicHistory Hook 返回值接口
@@ -31,22 +31,22 @@ const DEFAULT_MAX_ITEMS = 50;
 
 /**
  * 音乐播放历史 Hook
- * 
+ *
  * 提供播放历史的访问和管理能力，包括：
  * - 获取播放历史列表
  * - 清除历史记录
  * - 播放历史歌曲
  * - 删除指定历史记录
- * 
+ *
  * 播放历史会自动记录每次播放的歌曲，并持久化到 localStorage。
- * 
+ *
  * @returns 播放历史控制对象和状态
- * 
+ *
  * @example
  * ```tsx
  * function HistoryPanel() {
  *   const { history, count, clearHistory, playHistoryItem } = useMusicHistory();
- *   
+ *
  *   return (
  *     <div>
  *       <h3>播放历史 ({count} 首)</h3>
@@ -65,21 +65,21 @@ const DEFAULT_MAX_ITEMS = 50;
  */
 export function useMusicHistory(): UseMusicHistoryReturn {
   // ==================== 状态定义 ====================
-  
+
   /** 播放历史列表 */
   const [history, setHistory] = useState<MusicHistoryItem[]>([]);
-  
+
   /** 最大历史记录数量 */
   const [maxItems, setMaxItems] = useState(DEFAULT_MAX_ITEMS);
-  
-  /** 播放器实例引用 */
-  const playerRef = useRef<APlayerNS.APlayer | null>(null);
-  
+
+  /** 播放器管理器引用 */
+  const managerRef = useRef<ReturnType<typeof GlobalMusicPlayerManager.getInstance> | null>(null);
+
   /** 是否已初始化 */
   const isInitializedRef = useRef(false);
 
   // ==================== 本地存储操作 ====================
-  
+
   /**
    * 从 localStorage 加载播放历史
    * @returns 播放历史对象，如果不存在或解析失败则返回默认值
@@ -89,20 +89,20 @@ export function useMusicHistory(): UseMusicHistoryReturn {
     if (typeof window === 'undefined') {
       return { items: [], maxItems: DEFAULT_MAX_ITEMS };
     }
-    
+
     try {
       const stored = localStorage.getItem(HISTORY_STORAGE_KEY);
       if (!stored) {
         return { items: [], maxItems: DEFAULT_MAX_ITEMS };
       }
-      
+
       const parsed = JSON.parse(stored) as MusicHistory;
-      
+
       // 验证数据结构
       if (!parsed || !Array.isArray(parsed.items)) {
         return { items: [], maxItems: DEFAULT_MAX_ITEMS };
       }
-      
+
       return {
         items: parsed.items,
         maxItems: typeof parsed.maxItems === 'number' ? parsed.maxItems : DEFAULT_MAX_ITEMS,
@@ -112,7 +112,7 @@ export function useMusicHistory(): UseMusicHistoryReturn {
       return { items: [], maxItems: DEFAULT_MAX_ITEMS };
     }
   }, []);
-  
+
   /**
    * 保存播放历史到 localStorage
    * @param historyData 要保存的播放历史对象
@@ -120,7 +120,7 @@ export function useMusicHistory(): UseMusicHistoryReturn {
   const saveHistoryToStorage = useCallback((historyData: MusicHistory) => {
     // 确保在客户端环境
     if (typeof window === 'undefined') return;
-    
+
     try {
       localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(historyData));
     } catch (error) {
@@ -129,16 +129,16 @@ export function useMusicHistory(): UseMusicHistoryReturn {
   }, []);
 
   // ==================== 历史记录管理方法 ====================
-  
+
   /**
    * 添加歌曲到播放历史
    * @param song 歌曲信息
    */
-  const addToHistory = useCallback((song: { name: string; artist: string; url: string }) => {
+  const addToHistory = useCallback((song: { name: string; artist: string; url?: string }) => {
     setHistory(prevHistory => {
-      // 生成唯一 ID（使用 URL 的哈希或时间戳）
+      // 生成唯一 ID（使用名称、歌手和时间戳）
       const id = `${song.name}_${song.artist}_${Date.now()}`;
-      
+
       // 创建新的历史项
       const newItem: MusicHistoryItem = {
         id,
@@ -146,22 +146,22 @@ export function useMusicHistory(): UseMusicHistoryReturn {
         artist: song.artist,
         playedAt: Date.now(),
       };
-      
+
       // 移除重复项（相同名称和歌手的歌曲只保留最新的）
       const filteredHistory = prevHistory.filter(
         item => !(item.name === song.name && item.artist === song.artist)
       );
-      
+
       // 将新项添加到开头，并限制最大数量
       const newHistory = [newItem, ...filteredHistory].slice(0, maxItems);
-      
+
       // 保存到 localStorage
       saveHistoryToStorage({ items: newHistory, maxItems });
-      
+
       return newHistory;
     });
   }, [maxItems, saveHistoryToStorage]);
-  
+
   /**
    * 清除所有播放历史
    */
@@ -169,7 +169,7 @@ export function useMusicHistory(): UseMusicHistoryReturn {
     setHistory([]);
     saveHistoryToStorage({ items: [], maxItems });
   }, [maxItems, saveHistoryToStorage]);
-  
+
   /**
    * 从历史记录中删除指定歌曲
    * @param id 要删除的歌曲 ID
@@ -181,89 +181,84 @@ export function useMusicHistory(): UseMusicHistoryReturn {
       return newHistory;
     });
   }, [maxItems, saveHistoryToStorage]);
-  
+
   /**
    * 播放指定历史歌曲
    * @param id 歌曲 ID
    */
   const playHistoryItem = useCallback((id: string) => {
-    const player = playerRef.current;
-    if (!player || !player.list) {
+    const manager = managerRef.current;
+    if (!manager) {
       console.warn('播放器未初始化，无法播放历史歌曲');
       return;
     }
-    
-    // 在播放列表中查找匹配的歌曲
+
+    // 在历史记录中查找匹配的歌曲
     const historyItem = history.find(item => item.id === id);
     if (!historyItem) {
       console.warn('未找到指定的历史记录');
       return;
     }
-    
+
     // 在播放列表中查找对应歌曲
-    const songIndex = player.list.list.findIndex(
+    const playlist = manager.getPlaylist();
+    const songIndex = playlist.findIndex(
       audio => audio.name === historyItem.name && audio.artist === historyItem.artist
     );
-    
+
     if (songIndex !== -1) {
-      // 找到歌曲，切换并播放
-      player.list.switch(songIndex);
-      player.play();
+      // 找到歌曲，切换到该歌曲并播放
+      manager.init(playlist, { initialIndex: songIndex, autoPlay: true });
     } else {
       console.warn(`在播放列表中未找到歌曲: ${historyItem.name} - ${historyItem.artist}`);
     }
   }, [history]);
 
   // ==================== 初始化和事件监听 ====================
-  
+
   useEffect(() => {
     // 确保在客户端环境
     if (typeof window === 'undefined') return;
-    
+
     // 防止重复初始化
     if (isInitializedRef.current) return;
     isInitializedRef.current = true;
-    
+
     // 加载历史记录
     const savedHistory = loadHistoryFromStorage();
     setHistory(savedHistory.items);
     setMaxItems(savedHistory.maxItems);
-    
-    const globalManager = GlobalMusicPlayerManager.getInstance();
-    
+
+    const manager = GlobalMusicPlayerManager.getInstance();
+    managerRef.current = manager;
+
     /**
      * 设置播放事件监听，自动记录播放历史
-     * @param player APlayer 实例
      */
-    const setupPlayerListeners = (player: APlayerNS.APlayer) => {
-      playerRef.current = player;
-      
+    const setupPlayerListeners = () => {
       // 监听播放事件，记录到历史
-      player.on('play', () => {
-        const currentAudio = player.list.list?.[player.list.index];
-        if (currentAudio) {
+      manager.addEventListener('play', () => {
+        const currentSong = manager.getCurrentSong();
+        if (currentSong) {
           addToHistory({
-            name: currentAudio.name,
-            artist: currentAudio.artist,
-            url: currentAudio.url,
+            name: currentSong.name,
+            artist: currentSong.artist,
+            url: currentSong.url,
           });
         }
       });
     };
-    
+
     // 检查播放器是否已初始化
-    if (globalManager.isPlayerInitialized()) {
-      const player = globalManager.getPlayer();
-      if (player) {
-        setupPlayerListeners(player);
-      }
+    if (manager.isPlayerInitialized()) {
+      setupPlayerListeners();
     } else {
       // 等待播放器初始化完成
-      globalManager.onInit((player) => {
-        setupPlayerListeners(player);
+      manager.onInit(() => {
+        setupPlayerListeners();
       });
     }
-    
+
     // 清理函数
     return () => {
       isInitializedRef.current = false;
@@ -271,7 +266,7 @@ export function useMusicHistory(): UseMusicHistoryReturn {
   }, [loadHistoryFromStorage, addToHistory]);
 
   // ==================== 返回值 ====================
-  
+
   return {
     history,
     count: history.length,

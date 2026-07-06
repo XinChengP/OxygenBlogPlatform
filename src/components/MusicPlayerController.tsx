@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import dynamic from 'next/dynamic';
 
 // 动态导入播放器组件，避免 SSR 水合问题
-// APlayer 需要浏览器环境
+// Howler.js 需要浏览器环境
 const MusicPlayer = dynamic(() => import('@/components/MusicPlayer'), {
   ssr: false,
 });

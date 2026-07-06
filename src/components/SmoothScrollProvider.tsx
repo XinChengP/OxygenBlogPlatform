@@ -35,15 +35,14 @@ export default function SmoothScrollProvider({ children }: SmoothScrollProviderP
     // 页面切换时的额外处理
     const handleRouteChange = () => {
       // 检查音乐播放器是否正在播放（若播放器尚未加载则跳过）
-      const player = globalManager.getPlayer();
-      const isMusicPlaying = player && !player.paused;
+      const isMusicPlaying = globalManager.isPlayingState();
 
       if (isMusicPlaying) {
         // 如果音乐正在播放，添加特殊类来禁用过渡效果
-        document.documentElement.classList.add('aplayer-active');
+        document.documentElement.classList.add('music-player-active');
       } else {
         // 移除特殊类，允许正常过渡
-        document.documentElement.classList.remove('aplayer-active');
+        document.documentElement.classList.remove('music-player-active');
       }
 
       // 添加页面过渡效果

@@ -255,65 +255,6 @@ pre code {
   background: transparent !important;
 }
 
-/* 音乐播放器样式优化 */
-.aplayer-container {
-  z-index: 9999 !important;
-  /* 确保播放器在最上层 */
-}
-
-/* 确保音乐播放器在隐藏状态下也能继续播放 */
-.aplayer-container.hidden {
-  position: absolute;
-  visibility: hidden;
-  pointer-events: none;
-  /* 不影响音乐播放 */
-}
-
-/* 优化APlayer列表显示 */
-.aplayer .aplayer-list {
-  max-height: 300px !important;
-  overflow-y: auto !important;
-}
-
-/* 确保列表项在所有设备上都能正常显示 */
-.aplayer .aplayer-list ol li {
-  min-height: 40px !important;
-  display: flex !important;
-  align-items: center !important;
-}
-
-/* 优化滚动条样式 */
-.aplayer .aplayer-list::-webkit-scrollbar {
-  width: 6px !important;
-}
-
-.aplayer .aplayer-list::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.1) !important;
-  border-radius: 3px !important;
-}
-
-.aplayer .aplayer-list::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.3) !important;
-  border-radius: 3px !important;
-}
-
-.aplayer .aplayer-list::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.5) !important;
-}
-
-/* 暗色主题下的滚动条 */
-.dark .aplayer .aplayer-list::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.1) !important;
-}
-
-.dark .aplayer .aplayer-list::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.3) !important;
-}
-
-.dark .aplayer .aplayer-list::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.5) !important;
-}
-
 @layer base {
   * {
     @apply border-border;
@@ -353,9 +294,6 @@ pre code {
 .scrollbar-hide::-webkit-scrollbar {
   display: none; /* Chrome, Safari and Opera */
 }
-
-/* 导入APlayer主题样式 */
-@import '../components/aplayer-theme.css';
 
 /* 自定义滚动条样式 */
 /* Chrome, Safari and Opera */
@@ -594,11 +532,11 @@ html .no-transition *::after {
 /**
  * 按钮暗黑模式优化
  */
-.dark button:not(.no-dark-filter):not(.aplayer-button) {
+.dark button:not(.no-dark-filter) {
   transition: all 0.3s ease;
 }
 
-.dark button:not(.no-dark-filter):not(.aplayer-button):hover {
+.dark button:not(.no-dark-filter):hover {
   filter: brightness(1.1);
   transform: translateY(-1px);
 }
@@ -726,19 +664,19 @@ html .no-transition *::after {
    ============================================ */
 
 /* 页面过渡效果 - 排除音乐播放器 */
-html.page-transitioning:not(.aplayer-active) {
+html.page-transitioning:not(.music-player-active) {
   opacity: 0.95;
   transition: opacity 0.15s ease-in-out;
 }
 
 /* 当音乐播放器活动时禁用页面过渡 */
-html.aplayer-active {
+html.music-player-active {
   opacity: 1 !important;
   transition: none !important;
 }
 
 /* 页面加载时的淡入效果 - 排除音乐播放器 */
-body:not(.aplayer-active) {
+html:not(.music-player-active) body {
   animation: pageFadeIn 0.2s ease-out;
 }
 

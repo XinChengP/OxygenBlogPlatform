@@ -13,7 +13,7 @@
  */
 
 import { getAssetPath } from '@/utils/assetUtils';
-import type { MusicSource, ProcessedAudioItem } from '@/types/aplayer';
+import type { MusicSource, ProcessedAudioItem } from '@/types/music';
 import { neteasePlaylistService } from '@/services/neteasePlaylistService';
 
 // 重新导出共享类型，保持向后兼容
@@ -515,7 +515,7 @@ class MusicConfigManager {
 
   /**
    * 获取处理后的音频列表
-   * 所有资源路径已通过 getAssetPath 处理，可直接用于 APlayer
+   * 所有资源路径已通过 getAssetPath 处理，可直接用于 Howler.js 播放器
    * 根据配置决定是否包含本地音乐和网易云音乐
    * 当前配置：仅显示网易云音乐，隐藏本地音乐
    * 

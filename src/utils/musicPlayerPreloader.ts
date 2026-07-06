@@ -1,7 +1,7 @@
 'use client';
 
 import { getAssetPath } from './assetUtils';
-import type { PlayMode } from '@/types/aplayer';
+import type { PlayMode } from '@/types/music';
 
 // ==================== 类型定义 ====================
 
@@ -268,24 +268,15 @@ class MusicPlayerPreloader {
   // ==================== 基础预加载方法 ====================
 
   /**
-   * 预加载APlayer资源（CSS和JS）
-   * @param basePath - 基础路径
+   * 预加载播放器关键资源
+   * Howler.js 通过 npm 依赖引入，无需动态加载外部 CSS/JS，
+   * 此方法保留空实现以兼容旧代码调用。
+   * @param basePath - 基础路径（保留参数以兼容旧调用）
    */
-  async preloadAPlayerResources(basePath: string = ''): Promise<void> {
-    if (this.isPreloading) return;
-
-    const resources = [
-      getAssetPath(`${basePath}/aplayer/APlayer.min.css`),
-      getAssetPath(`${basePath}/aplayer/APlayer.min.js`)
-    ];
-
-    this.isPreloading = true;
-
-    try {
-      await Promise.all(resources.map(url => this.preloadResource(url)));
-    } finally {
-      this.isPreloading = false;
-    }
+  async preloadPlayerResources(basePath: string = ''): Promise<void> {
+    // Howler.js 通过 npm 依赖引入，无需动态加载外部 CSS/JS
+    // 此方法保留空实现以兼容旧代码调用
+    return Promise.resolve();
   }
 
   /**
@@ -836,8 +827,8 @@ class MusicPlayerPreloader {
     // 设置播放列表
     this.setupPlaylist(musicList);
 
-    // 预加载APlayer资源
-    await this.preloadAPlayerResources(basePath);
+    // 预加载播放器基础资源
+    await this.preloadPlayerResources(basePath);
 
     // 提取音频和封面URL
     const audioUrls = musicList.map(item => item.url).filter(Boolean);
@@ -911,14 +902,14 @@ export class PreloadManager {
 
   /**
    * 立即预加载关键资源
-   * 优先加载APlayer资源和前几首歌曲
+   * 优先加载播放器基础资源和前几首歌曲
    * @param musicList - 音乐列表
    * @param basePath - 基础路径
    */
   async preloadCriticalResources(musicList: MusicResource[], basePath: string = ''): Promise<void> {
     try {
-      // 预加载APlayer资源
-      await this.preloader.preloadAPlayerResources(basePath);
+      // 预加载播放器基础资源
+      await this.preloader.preloadPlayerResources(basePath);
 
       // 设置播放列表
       this.preloader.setupPlaylist(musicList);

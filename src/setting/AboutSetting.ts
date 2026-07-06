@@ -655,11 +655,11 @@ export const relatedLinks: RelatedLink[] = [
     tags: ['动画', '交互', '洛天依']
   },
   {
-    name: "APlayer",
-    url: "https://github.com/DIYgod/APlayer",
-    description: "漂亮的HTML5音乐播放器，支持歌词显示",
+    name: "Howler.js",
+    url: "https://github.com/goldfire/howler.js",
+    description: "现代 Web 音频库，本站音乐播放器的音频引擎",
     category: 'ui',
-    icon: "aplayer",
+    icon: "music",
     tags: ['音乐', '播放器', '音频']
   },
   {

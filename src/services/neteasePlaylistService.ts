@@ -3,12 +3,12 @@
  * 
  * 功能说明：
  * 1. 通过 Meting API 获取网易云音乐歌单数据
- * 2. 将 Meting API 返回的数据格式转换为 APlayer 可用的音频列表格式
+ * 2. 将 Meting API 返回的数据格式转换为播放器可用的音频列表格式
  * 3. 提供错误处理和降级机制
  * 4. 支持自定义 Meting API 地址
  * 
  * 实现思路参考 MetingJS：
- * - MetingJS 本质上是通过 Meting API 解析平台歌单，再用 APlayer 播放
+ * - MetingJS 本质上是通过 Meting API 解析平台歌单，再用第三方播放器播放
  * - 本项目不直接引入 MetingJS 库，而是借鉴其数据获取逻辑
  * - 这样可以将网易云歌单与现有的本地音乐配置无缝融合
  * 
@@ -17,7 +17,7 @@
  * @date 2026-06-24
  */
 
-import type { ProcessedAudioItem } from '@/types/aplayer';
+import type { ProcessedAudioItem } from '@/types/music';
 
 // ==================== 类型定义 ====================
 

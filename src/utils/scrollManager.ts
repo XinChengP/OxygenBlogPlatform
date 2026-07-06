@@ -134,7 +134,15 @@ export class AdvancedScrollManager {
     this.navigationHistory.push(this.currentPath);
     this.currentPath = newPath;
 
-    const isMusicPlaying = (window as any).globalAPlayer && !(window as any).globalAPlayer.paused;
+    // 使用 Howler 播放器管理器判断音乐是否正在播放
+    // scrollManager 是纯工具类，通过动态导入避免循环依赖
+    let isMusicPlaying = false;
+    try {
+      const { default: GlobalMusicPlayerManager } = require('./globalMusicPlayerManager');
+      isMusicPlaying = GlobalMusicPlayerManager.getInstance().isPlayingState();
+    } catch {
+      isMusicPlaying = false;
+    }
 
     if (!isMusicPlaying) {
       document.documentElement.classList.add('page-transitioning');
