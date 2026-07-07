@@ -909,47 +909,6 @@ const MusicPlayerComponent = function MusicPlayer({
                   <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
                 </svg>
               </button>
-
-              {/* 定位按钮：将当前播放歌曲滚动到播放列表可视区域；无歌曲时禁用 */}
-              <button
-                onClick={handleLocateCurrentSong}
-                disabled={audioList.length === 0}
-                className={`p-1.5 rounded-full transition-colors ${
-                  audioList.length === 0
-                    ? 'text-slate-300 dark:text-slate-600 cursor-not-allowed'
-                    : 'hover:bg-[#66ccff]/10 dark:hover:bg-[#66ccff]/20 text-slate-600 dark:text-slate-300'
-                }`}
-                aria-label="定位当前歌曲"
-                title={audioList.length === 0 ? '暂无可定位的歌曲' : '定位当前歌曲'}
-              >
-                {/* 准星图标：外圆 + 十字线 + 中心点，更符合"定位"语义 */}
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="7" />
-                  <line x1="12" y1="2" x2="12" y2="5" />
-                  <line x1="12" y1="19" x2="12" y2="22" />
-                  <line x1="2" y1="12" x2="5" y2="12" />
-                  <line x1="19" y1="12" x2="22" y2="12" />
-                  <circle cx="12" cy="12" r="1.5" fill="currentColor" />
-                </svg>
-              </button>
-
-              {/* 显示歌词按钮：点击切换歌词显示状态；激活时高亮（与当前播放歌曲高亮色一致） */}
-              <button
-                onClick={handleToggleLyrics}
-                className={`p-1.5 rounded-full transition-colors ${
-                  isLyricsVisible
-                    ? 'bg-[#66ccff]/20 text-[#0099cc] dark:text-[#66ccff]'
-                    : 'hover:bg-[#66ccff]/10 dark:hover:bg-[#66ccff]/20 text-slate-600 dark:text-slate-300'
-                }`}
-                aria-label={isLyricsVisible ? '隐藏歌词' : '显示歌词'}
-                aria-pressed={isLyricsVisible}
-                title={isLyricsVisible ? '隐藏歌词' : '显示歌词'}
-              >
-                {/* 引号图标：双引号代表"歌词文本" */}
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M6 7c-1.66 0-3 1.34-3 3v4c0 1.66 1.34 3 3 3h1c.55 0 1-.45 1-1s-.45-1-1-1H6c-.55 0-1-.45-1-1v-1h2c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2H6zm0 2h1v3H6V9zm9-2c-1.66 0-3 1.34-3 3v4c0 1.66 1.34 3 3 3h1c.55 0 1-.45 1-1s-.45-1-1-1h-1c-.55 0-1-.45-1-1v-1h2c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-1zm0 2h1v3h-1V9z" />
-                </svg>
-              </button>
             </div>
           </div>
 
@@ -1055,8 +1014,49 @@ const MusicPlayerComponent = function MusicPlayer({
                 </div>
               </div>
 
-              {/* 占位，保持左右视觉平衡 */}
-              <div className="w-14" />
+              {/* 右侧：定位 + 歌词按钮（与播放模式左右对称） */}
+              <div className="flex items-center gap-0.5 flex-shrink-0">
+                {/* 定位按钮：将当前播放歌曲滚动到播放列表可视区域；无歌曲时禁用 */}
+                <button
+                  onClick={handleLocateCurrentSong}
+                  disabled={audioList.length === 0}
+                  className={`p-1.5 rounded-full transition-colors ${
+                    audioList.length === 0
+                      ? 'text-slate-300 dark:text-slate-600 cursor-not-allowed'
+                      : 'hover:bg-[#66ccff]/10 dark:hover:bg-[#66ccff]/20 text-slate-600 dark:text-slate-300'
+                  }`}
+                  aria-label="定位当前歌曲"
+                  title={audioList.length === 0 ? '暂无可定位的歌曲' : '定位当前歌曲'}
+                >
+                  {/* 准星图标：外圆 + 十字线 + 中心点，更符合"定位"语义 */}
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="7" />
+                    <line x1="12" y1="2" x2="12" y2="5" />
+                    <line x1="12" y1="19" x2="12" y2="22" />
+                    <line x1="2" y1="12" x2="5" y2="12" />
+                    <line x1="19" y1="12" x2="22" y2="12" />
+                    <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+                  </svg>
+                </button>
+
+                {/* 显示歌词按钮：点击切换歌词显示状态；激活时高亮（与当前播放歌曲高亮色一致） */}
+                <button
+                  onClick={handleToggleLyrics}
+                  className={`p-1.5 rounded-full transition-colors ${
+                    isLyricsVisible
+                      ? 'bg-[#66ccff]/20 text-[#0099cc] dark:text-[#66ccff]'
+                      : 'hover:bg-[#66ccff]/10 dark:hover:bg-[#66ccff]/20 text-slate-600 dark:text-slate-300'
+                  }`}
+                  aria-label={isLyricsVisible ? '隐藏歌词' : '显示歌词'}
+                  aria-pressed={isLyricsVisible}
+                  title={isLyricsVisible ? '隐藏歌词' : '显示歌词'}
+                >
+                  {/* 引号图标：双引号代表"歌词文本" */}
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M6 7c-1.66 0-3 1.34-3 3v4c0 1.66 1.34 3 3 3h1c.55 0 1-.45 1-1s-.45-1-1-1H6c-.55 0-1-.45-1-1v-1h2c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2H6zm0 2h1v3H6V9zm9-2c-1.66 0-3 1.34-3 3v4c0 1.66 1.34 3 3 3h1c.55 0 1-.45 1-1s-.45-1-1-1h-1c-.55 0-1-.45-1-1v-1h2c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-1zm0 2h1v3h-1V9z" />
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
 
