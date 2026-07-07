@@ -1,11 +1,12 @@
 ---
 title: "论期末周还要画图纸这件事"
 date: "2026-06-22"
+updatedAt: "2026-07-08"
 category: "学习"
 author: 歆橙
 language: "zh-CN"
 tags: ["日常", "期末", "工程测绘"]
-excerpt: "——记工程测绘课绘图两三事"
+excerpt: "——记工程测绘课两三事"
 coverImage: "/Blogabout/Engineering-Drawing-Record/cover.png"
 ---
 
@@ -62,8 +63,18 @@ coverImage: "/Blogabout/Engineering-Drawing-Record/cover.png"
 
 &emsp;&emsp;哼哼哼啊啊啊啊，下午考完线代，吃了俩汉堡（豪赤！），然后就吭哧吭哧去绘图教室画图了
 
-<div class="image-grid image-grid-3-cols"><img src="/Blogabout/Engineering-Drawing-Record/8.jpg" alt="事已至此先吃饭吧" /><img src="/Blogabout/Engineering-Drawing-Record/9.jpg" alt="" /><img src="/Blogabout/Engineering-Drawing-Record/10.jpg" alt="" /></div>
+&emsp;&emsp;诶我，不想写了，反正就是熬通宵吭哧吭哧画的，然后早晨六点和舍友出去吃了个饭，又买了杯咖啡。这咖啡一点用没有啊，照样睡着
 
-## 救、气笑了
+&emsp;&emsp;燃尽了，到底是谁设计的期末周搞这玩意哼哼哼啊啊啊啊啊啊啊
+
+&emsp;&emsp;就这样吧，上图
+
+<div class="image-grid image-grid-3-cols"><img src="/Blogabout/Engineering-Drawing-Record/8.jpg" alt="" /><img src="/Blogabout/Engineering-Drawing-Record/9.jpg" alt="" /><img src="/Blogabout/Engineering-Drawing-Record/10.jpg" alt="" /></div>
+
+<div class="image-grid image-grid-3-cols"><img src="/Blogabout/Engineering-Drawing-Record/11.jpg" alt="" /><img src="/Blogabout/Engineering-Drawing-Record/12.jpg" alt="" /><img src="/Blogabout/Engineering-Drawing-Record/13.jpg" alt="" /></div>
+
+## 久久、气笑了
 
 &emsp;&emsp;本来打算给触控笔充电的间隔写个吐槽的，充完电赶紧预习线代以应对期末考试，结果写了一晚上，一点没复习。。。（2026.06.22）
+
+&emsp;&emsp;挂了两科，没救了（2026.07.08）
