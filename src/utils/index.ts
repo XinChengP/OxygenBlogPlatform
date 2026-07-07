@@ -16,7 +16,8 @@ export * from './browserCompatibility';
 export * from './safeMarked';
 
 // 全局音乐播放器管理
-export { default as GlobalMusicPlayerManager } from './globalMusicPlayerManager';
+export { default as HowlerPlayerManager } from './howlerPlayerManager';
+export { HowlerPlayerManager as HowlerPlayerManagerClass } from './howlerPlayerManager';
 
 // Live2D事件发射器
 export * from './live2dEventEmitter';

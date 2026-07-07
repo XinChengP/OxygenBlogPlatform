@@ -3,7 +3,7 @@
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { initScrollManager, getScrollManager } from '@/utils/scrollManager';
-import GlobalMusicPlayerManager from '@/utils/globalMusicPlayerManager';
+import { howlerPlayerManager } from '@/utils/howlerPlayerManager';
 
 interface SmoothScrollProviderProps {
   children: React.ReactNode;
@@ -13,7 +13,7 @@ export default function SmoothScrollProvider({ children }: SmoothScrollProviderP
   const pathname = usePathname();
   const scrollManagerRef = useRef<ReturnType<typeof getScrollManager>>(null);
   const [isInitialized, setIsInitialized] = useState(false);
-  const globalManager = GlobalMusicPlayerManager.getInstance();
+  const globalManager = howlerPlayerManager;
 
   useEffect(() => {
     // 初始化高级滚动管理器

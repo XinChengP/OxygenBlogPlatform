@@ -138,8 +138,8 @@ export class AdvancedScrollManager {
     // scrollManager 是纯工具类，通过动态导入避免循环依赖
     let isMusicPlaying = false;
     try {
-      const { default: GlobalMusicPlayerManager } = require('./globalMusicPlayerManager');
-      isMusicPlaying = GlobalMusicPlayerManager.getInstance().isPlayingState();
+      const { default: HowlerPlayerManager } = require('./howlerPlayerManager');
+      isMusicPlaying = HowlerPlayerManager.getInstance().isPlayingState();
     } catch {
       isMusicPlaying = false;
     }

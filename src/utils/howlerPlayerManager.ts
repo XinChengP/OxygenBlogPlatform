@@ -99,7 +99,7 @@ interface PlayProgressDetail {
   currentIndex: number;
 }
 
-// ==================== 全局音乐播放器管理器类 ====================
+// ==================== Howler 播放器管理器类 ====================
 
 /**
  * 基于 Howler.js 的全局音乐播放器管理器
@@ -107,14 +107,16 @@ interface PlayProgressDetail {
  * 负责管理音频播放、播放列表、播放状态、播放历史等核心功能
  * 采用单例模式确保全局只有一个管理器实例
  *
- * 与旧版播放器实现相比，此版本：
- * 1. 使用 Howler.js 替代旧播放器作为音频引擎
- * 2. 保持外部 API 兼容，减少上层组件改动
- * 3. UI 完全由 React 组件自行渲染
+ * 设计要点：
+ * 1. 使用 Howler.js 作为音频引擎，支持流媒体和本地文件
+ * 2. 事件驱动架构，UI 通过监听事件同步状态
+ * 3. 播放状态持久化到 localStorage，刷新后自动恢复
+ * 4. 随机播放通过已播放索引集合避免连续重复
+ * 5. 歌曲加载/播放失败等待 12 秒后自动切歌
  */
-class HowlerMusicPlayerManager {
+class HowlerPlayerManager {
   /** 单例实例 */
-  private static instance: HowlerMusicPlayerManager;
+  private static instance: HowlerPlayerManager;
 
   /** 播放列表 */
   private playlist: ProcessedAudioItem[] = [];
@@ -159,7 +161,7 @@ class HowlerMusicPlayerManager {
   private eventListeners: Map<string, Set<Function>> = new Map();
 
   /** 初始化完成回调队列 */
-  private initCallbacks: ((manager: HowlerMusicPlayerManager) => void)[] = [];
+  private initCallbacks: ((manager: HowlerPlayerManager) => void)[] = [];
 
   /** 页面过渡监听器是否已设置 */
   private listenersSetup = false;
@@ -192,13 +194,13 @@ class HowlerMusicPlayerManager {
 
   /**
    * 获取单例实例
-   * @returns HowlerMusicPlayerManager 的唯一实例
+   * @returns HowlerPlayerManager 的唯一实例
    */
-  static getInstance(): HowlerMusicPlayerManager {
-    if (!HowlerMusicPlayerManager.instance) {
-      HowlerMusicPlayerManager.instance = new HowlerMusicPlayerManager();
+  static getInstance(): HowlerPlayerManager {
+    if (!HowlerPlayerManager.instance) {
+      HowlerPlayerManager.instance = new HowlerPlayerManager();
     }
-    return HowlerMusicPlayerManager.instance;
+    return HowlerPlayerManager.instance;
   }
 
   // ==================== 页面切换监听 ====================
@@ -298,7 +300,7 @@ class HowlerMusicPlayerManager {
    * 新版返回管理器自身，外部可通过管理器方法控制播放
    * @returns 播放器管理器实例
    */
-  getPlayer(): HowlerMusicPlayerManager {
+  getPlayer(): HowlerPlayerManager {
     return this;
   }
 
@@ -314,7 +316,7 @@ class HowlerMusicPlayerManager {
    * 当播放器初始化后执行回调
    * @param callback 初始化完成后执行的回调函数
    */
-  onInit(callback: (manager: HowlerMusicPlayerManager) => void) {
+  onInit(callback: (manager: HowlerPlayerManager) => void) {
     if (this.isInitialized) {
       callback(this);
     } else {
@@ -669,6 +671,22 @@ class HowlerMusicPlayerManager {
    */
   getCurrentSong(): ProcessedAudioItem | null {
     return this.playlist[this.currentIndex] || null;
+  }
+
+  /**
+   * 直接播放指定索引的歌曲（不走 init）
+   * 区别于 init：该方法不会重置随机播放顺序，不会读取 localStorage 保存的进度，
+   * 也不会触发初始化回调。专用于用户从播放列表手动切歌场景。
+   * @param index 目标歌曲索引
+   * @param autoPlay 是否自动播放，默认 true
+   */
+  playAt(index: number, autoPlay: boolean = true) {
+    if (index < 0 || index >= this.playlist.length) return;
+    // 手动切歌时把当前索引加入已播放集合，避免随机模式下立刻又随机到这首
+    if (this.playMode === 'random' && !this.playedIndices.includes(this.currentIndex)) {
+      this.playedIndices.push(this.currentIndex);
+    }
+    this.loadSong(index, autoPlay);
   }
 
   /**
@@ -1242,19 +1260,10 @@ class HowlerMusicPlayerManager {
   }
 }
 
-// 导出单例实例，保持与旧版相同的导入方式
-const globalMusicPlayerManager = HowlerMusicPlayerManager.getInstance();
+// 导出单例实例，供需要直接引用实例的场景使用
+const howlerPlayerManager = HowlerPlayerManager.getInstance();
 
-// 为了兼容旧版中直接导入的 default export，使用 HowlerMusicPlayerManager 作为默认导出
-export default HowlerMusicPlayerManager;
+// 默认导出类本身，保持与旧版 GlobalMusicPlayerManager 相同的调用方式
+export default HowlerPlayerManager;
 
-// 保持旧版 globalMusicPlayerManager 的导出名称
-export { globalMusicPlayerManager };
-
-// 兼容旧版中 regeneratingRandomOrder 的导出（新版已内置在管理器中）
-export function regenerateRandomOrder() {
-  // 新版无需外部重新生成随机顺序，管理器内部自动维护
-  // 保留此导出以避免引用它的代码报错
-  const manager = HowlerMusicPlayerManager.getInstance();
-  manager['regenerateRandomOrder']?.();
-}
+export { HowlerPlayerManager, howlerPlayerManager };

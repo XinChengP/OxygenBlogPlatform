@@ -51,6 +51,12 @@ class Live2DMessageManager {
   private readonly EASTER_EGG_PRIORITY = 10;
   // 烟花模式状态（独立于彩蛋模式，优先级更高）
   private isFireworksMode = false;
+  // 歌词模式状态：屏蔽所有 showMessage 调用（除歌词自身渲染外）
+  private isLyricsMode = false;
+  // 歌词模式期间保存的原 window.showMessage，用于退出时恢复
+  private originalWindowShowMessage: ((text: string, timeout?: number) => void) | null = null;
+  // 歌词模式期间的延迟保护定时器 ID：防 Live2D 异步加载覆盖重写版
+  private lyricsProtectInterval: number | null = null;
 
   // 性能优化：将关键词集合提取为类级别常量，避免每次调用时重新创建
   private static readonly KEYWORD_SET = new Set(['复制', '成功', '完成', '加载', '切换', '模式']);
@@ -76,6 +82,11 @@ class Live2DMessageManager {
 
     // 烟花模式下阻塞所有消息（包括彩蛋消息）
     if (this.isFireworksMode) {
+      return;
+    }
+
+    // 歌词模式下阻塞所有其他消息（歌词自身走直接 DOM 控制，不经过此方法）
+    if (this.isLyricsMode) {
       return;
     }
 
@@ -142,9 +153,12 @@ class Live2DMessageManager {
       clearTimeout(this.currentTimeout);
     }
 
-    // 检查是否有 showMessage 函数（无论是否被重写）
-    if (typeof (window as any).showMessage === 'function') {
-      (window as any).showMessage(message, duration);
+    // 优先调用保存的原 window.showMessage（绕过歌词模式下的重写转发器），
+    // 避免 showFireworksMessage 等需要穿透模式屏蔽的内部调用被 canShowMessage 误拦
+    const showFn = this.originalWindowShowMessage
+      || (typeof window !== 'undefined' ? (window as any).showMessage : null);
+    if (typeof showFn === 'function') {
+      showFn.call(window, message, duration);
     } else {
       // 降级处理 - 直接操作 DOM
       this.displayMessageDirectly(message);
@@ -248,6 +262,120 @@ class Live2DMessageManager {
    */
   isInFireworksMode(): boolean {
     return this.isFireworksMode;
+  }
+
+  /**
+   * 进入歌词模式
+   * 屏蔽所有 showMessage 调用：
+   *   1. live2dMessageManager.showMessage（项目代码入口）已有 isLyricsMode 屏蔽
+   *   2. window.showMessage（Live2D 自身 message.js 暴露的全局函数）通过重写 + canShowMessage 统一过滤
+   * 歌词自身通过 Live2DLyricsRenderer 直接 innerHTML 到 .message，不依赖 showMessage
+   *
+   * 关键：使用延迟保护机制防止 Live2D 异步加载完成后覆盖重写版（message.js:742 会执行 window.showMessage = showMessage）
+   */
+  enterLyricsMode(): void {
+    if (this.isLyricsMode) return;
+
+    this.clearMessageQueue();
+    this.interruptCurrentMessage();
+    this.isLyricsMode = true;
+
+    this.overrideWindowShowMessage();
+
+    // 延迟保护：进入歌词模式后的 1 秒内，每 200ms 检查一次，
+    // 如果 window.showMessage 被 Live2D 异步加载覆盖了，重新重写
+    // （避免在 Live2D 加载完成前点按钮、加载完成后覆盖重写版的时序问题）
+    let checkCount = 0;
+    const maxChecks = 5;
+    this.lyricsProtectInterval = window.setInterval(() => {
+      checkCount++;
+      if (!this.isLyricsMode || checkCount > maxChecks) {
+        if (this.lyricsProtectInterval !== null) {
+          clearInterval(this.lyricsProtectInterval);
+          this.lyricsProtectInterval = null;
+        }
+        return;
+      }
+      this.overrideWindowShowMessage();
+    }, 200);
+  }
+
+  /**
+   * 退出歌词模式
+   * 1. 清除 isLyricsMode 标志
+   * 2. 停止延迟保护定时器
+   * 3. 恢复原 window.showMessage
+   */
+  exitLyricsMode(): void {
+    this.isLyricsMode = false;
+
+    if (this.lyricsProtectInterval !== null) {
+      clearInterval(this.lyricsProtectInterval);
+      this.lyricsProtectInterval = null;
+    }
+
+    if (typeof window !== 'undefined' && this.originalWindowShowMessage) {
+      (window as any).showMessage = this.originalWindowShowMessage;
+      this.originalWindowShowMessage = null;
+    }
+  }
+
+  /**
+   * 重写 window.showMessage 为转发器（idempotent，可重复调用）
+   * 1. 仅在未保存过原函数时保存（避免重入覆盖）
+   * 2. 替换为转发函数：先过 canShowMessage 过滤，通过则调原 Live2D showMessage 显示
+   *
+   * 不会循环：转发函数直接调 originalWindowShowMessage（原 Live2D showMessage），
+   * 不走 manager 内部，不会触发 canShowMessage 再次检查
+   */
+  private overrideWindowShowMessage(): void {
+    if (typeof window === 'undefined') return;
+    const w = window as any;
+    if (!this.originalWindowShowMessage && typeof w.showMessage === 'function') {
+      this.originalWindowShowMessage = w.showMessage;
+    }
+    // 用箭头函数外加 self 引用，避免 this 绑定问题
+    const self = this;
+    w.showMessage = function (text: string, timeout?: number) {
+      // window.showMessage 是普通消息入口，priority=1
+      if (self.canShowMessage(1) && self.originalWindowShowMessage) {
+        // 调原 Live2D showMessage 显示，绕过当前重写（避免循环）
+        self.originalWindowShowMessage.call(window, text, timeout);
+      }
+      // canShowMessage 返回 false（歌词/烟花/彩蛋模式）：静默丢弃
+    };
+  }
+
+  /**
+   * 检查是否处于歌词模式
+   */
+  isInLyricsMode(): boolean {
+    return this.isLyricsMode;
+  }
+
+  /**
+   * 统一的消息显示判定：合并烟花/歌词/彩蛋三个模式的状态检查
+   * @param priority 消息优先级（0-10），数值越高越优先
+   * @returns 是否允许显示该消息
+   *
+   * 优先级规则：
+   * - 烟花模式：仅允许 priority >= 10（彩蛋）的 showFireworksMessage 穿透
+   * - 歌词模式：完全阻塞（歌词自身直接 innerHTML，不走 showMessage）
+   * - 彩蛋模式：仅允许 priority >= 10 的彩蛋消息
+   * - 正常模式：全部允许
+   */
+  private canShowMessage(priority: number): boolean {
+    if (typeof window === 'undefined') return false;
+    if (this.isFireworksMode) {
+      return priority >= this.EASTER_EGG_PRIORITY;
+    }
+    if (this.isLyricsMode) {
+      return false;
+    }
+    if (this.isEasterEggMode && priority < this.EASTER_EGG_PRIORITY) {
+      return false;
+    }
+    return true;
   }
 
   /**

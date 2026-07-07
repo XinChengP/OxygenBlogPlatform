@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import GlobalMusicPlayerManager from '@/utils/globalMusicPlayerManager';
+import HowlerPlayerManager from '@/utils/howlerPlayerManager';
 import type { MusicHistoryItem, MusicHistory } from '@/types/music';
 
 /**
@@ -73,7 +73,7 @@ export function useMusicHistory(): UseMusicHistoryReturn {
   const [maxItems, setMaxItems] = useState(DEFAULT_MAX_ITEMS);
 
   /** 播放器管理器引用 */
-  const managerRef = useRef<ReturnType<typeof GlobalMusicPlayerManager.getInstance> | null>(null);
+  const managerRef = useRef<ReturnType<typeof HowlerPlayerManager.getInstance> | null>(null);
 
   /** 是否已初始化 */
   const isInitializedRef = useRef(false);
@@ -229,7 +229,7 @@ export function useMusicHistory(): UseMusicHistoryReturn {
     setHistory(savedHistory.items);
     setMaxItems(savedHistory.maxItems);
 
-    const manager = GlobalMusicPlayerManager.getInstance();
+    const manager = HowlerPlayerManager.getInstance();
     managerRef.current = manager;
 
     /**

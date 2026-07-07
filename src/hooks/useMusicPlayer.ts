@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import GlobalMusicPlayerManager from '@/utils/globalMusicPlayerManager';
+import HowlerPlayerManager from '@/utils/howlerPlayerManager';
 import type { PlayMode, MusicPlayerState } from '@/types/music';
 import { PLAY_MODE_ORDER } from '@/types/playMode';
 
@@ -11,7 +11,7 @@ import { PLAY_MODE_ORDER } from '@/types/playMode';
  */
 interface UseMusicPlayerReturn {
   /** 播放器管理器实例，可能为 null（未初始化时） */
-  player: ReturnType<typeof GlobalMusicPlayerManager.getInstance> | null;
+  player: ReturnType<typeof HowlerPlayerManager.getInstance> | null;
   /** 播放器是否已初始化完成 */
   isInitialized: boolean;
   /** 当前播放歌曲在列表中的索引 */
@@ -94,7 +94,7 @@ export function useMusicPlayer(): UseMusicPlayerReturn {
   // ==================== 状态定义 ====================
 
   /** 播放器管理器引用 */
-  const managerRef = useRef<ReturnType<typeof GlobalMusicPlayerManager.getInstance> | null>(null);
+  const managerRef = useRef<ReturnType<typeof HowlerPlayerManager.getInstance> | null>(null);
 
   /** 播放器是否已初始化 */
   const [isInitialized, setIsInitialized] = useState(false);
@@ -149,7 +149,7 @@ export function useMusicPlayer(): UseMusicPlayerReturn {
     // 确保在客户端环境运行
     if (typeof window === 'undefined') return;
 
-    const manager = GlobalMusicPlayerManager.getInstance();
+    const manager = HowlerPlayerManager.getInstance();
     managerRef.current = manager;
 
     /**
