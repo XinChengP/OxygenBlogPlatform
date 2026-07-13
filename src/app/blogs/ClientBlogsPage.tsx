@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { categories } from '@/setting/blogSetting';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 import Pagination from '@/components/Pagination';
@@ -215,13 +215,17 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
 
             {/* 文章列表 */}
             <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2">
+                <AnimatePresence mode="popLayout">
                 {paginationData.currentPosts.map((post) => (
                   <motion.article
                     key={post.slug}
+                    layout
                     className={`${getGlassStyle("rounded-xl shadow-lg overflow-hidden cursor-pointer group relative")} border border-transparent`}
-                    initial={{ opacity: 1, y: 0 }}
+                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9, y: -20 }}
                     whileHover={{ y: -5, boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)", borderColor: "rgba(59,130,246,0.3)" }}
-                    transition={{ duration: 0.4 }}
+                    transition={{ duration: 0.3, layout: { duration: 0.3 } }}
                     onMouseEnter={() => handlePostHover(post)}
                     onMouseLeave={handlePostLeave}
                   >
@@ -316,6 +320,7 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
                     </Link>
                   </motion.article>
                 ))}
+                </AnimatePresence>
               </div>
 
             {paginationData.currentPosts.length === 0 && (

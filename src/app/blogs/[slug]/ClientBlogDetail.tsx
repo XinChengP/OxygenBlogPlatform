@@ -93,6 +93,8 @@ export default function ClientBlogDetail({ blog, seriesArticles }: ClientBlogDet
   const [mounted, setMounted] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<PreviewImage | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [readProgress, setReadProgress] = useState(0);
+  const [showBackToTop, setShowBackToTop] = useState(false);
   const articleImagesRef = useRef<PreviewImage[]>([]);
   const imageSrcSetRef = useRef<Set<string>>(new Set());
   const iframeRefs = useRef<Array<HTMLIFrameElement | null>>([]);
@@ -101,6 +103,26 @@ export default function ClientBlogDetail({ blog, seriesArticles }: ClientBlogDet
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // 阅读进度和返回顶部按钮
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+      setReadProgress(Math.min(100, Math.max(0, progress)));
+      setShowBackToTop(scrollTop > 500);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // 组件挂载时清空图片收集列表，防止路由切换或热更新后残留旧数据
   useEffect(() => {
@@ -374,7 +396,16 @@ export default function ClientBlogDetail({ blog, seriesArticles }: ClientBlogDet
 
   return (
     <div className={containerStyle.className} style={containerStyle.style}>
-
+      {/* 阅读进度条 */}
+      {mounted && (
+        <div className="fixed top-0 left-0 right-0 z-50 h-1 bg-muted/30">
+          <motion.div
+            className="h-full bg-gradient-to-r from-primary via-primary/80 to-primary"
+            style={{ width: `${readProgress}%` }}
+            transition={{ duration: 0.1 }}
+          />
+        </div>
+      )}
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div>
@@ -669,8 +700,24 @@ export default function ClientBlogDetail({ blog, seriesArticles }: ClientBlogDet
         )}
       </AnimatePresence>
 
-      {/* 浮动互动按钮 - 已移除 */}
-
+      {/* 返回顶部按钮 */}
+      <AnimatePresence>
+        {mounted && showBackToTop && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.8, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: 20 }}
+            onClick={scrollToTop}
+            className="fixed bottom-6 right-6 z-40 w-12 h-12 rounded-full bg-card/80 backdrop-blur-md border border-border/50 shadow-lg flex items-center justify-center text-foreground/70 hover:text-primary hover:bg-primary/10 transition-colors"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+            </svg>
+          </motion.button>
+        )}
+      </AnimatePresence>
 
     </div>
   );
