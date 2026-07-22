@@ -30,6 +30,19 @@ interface ComponentProps {
   [key: string]: any;
 }
 
+// 受支持的视频文件扩展名列表
+// 当 Markdown 中使用图片语法引用这些格式的文件时，会自动渲染为 video 标签
+const VIDEO_EXTENSIONS = ['.mp4', '.webm', '.mov', '.mkv', '.ogg', '.ogv', '.avi', '.flv'];
+
+/**
+ * 判断一个地址是否指向视频文件
+ * @param url - 资源地址
+ * @returns 是否为视频
+ */
+function isVideoUrl(url: string): boolean {
+  return VIDEO_EXTENSIONS.some((ext) => url.toLowerCase().endsWith(ext));
+}
+
 /**
  * 标准化编程语言名称，解决大小写敏感问题
  */
@@ -341,10 +354,35 @@ export function useBlogMarkdownComponents(options: {
       );
     },
     // 图片 - 基础加载，支持点击放大和智能尺寸检测
+    // 同时支持本地视频文件（.mp4/.webm/.mov 等），自动渲染为 video 标签
     img({ src, alt, ...props }: MarkdownImgProps) {
       // 处理 GitHub Pages 基础路径
       const processedSrc = typeof src === 'string' && src ? getAssetPath(src) : src;
       const [isLandscape, setIsLandscape] = useState(false);
+
+      // 如果处理后的地址是视频文件，则使用 video 标签渲染
+      // 视频不加入文章图片灯箱，也不支持点击放大
+      if (typeof processedSrc === 'string' && isVideoUrl(processedSrc)) {
+        return (
+          <>
+            <video
+              src={processedSrc}
+              controls
+              preload="metadata"
+              className="rounded-xl shadow-lg mx-auto h-auto my-4 max-w-full block"
+              {...props}
+            >
+              您的浏览器不支持视频播放，请
+              <a href={processedSrc} className="text-primary underline">下载视频</a>
+              查看。
+            </video>
+            {alt && (
+              // 使用 em 标签显示视频描述，样式与图片描述保持一致
+              <em className="block text-sm text-muted-foreground mt-2 mb-4 italic text-center">{alt}</em>
+            )}
+          </>
+        );
+      }
 
       // 收集文章中的图片到预览列表（按出现顺序）
       if (typeof processedSrc === 'string' && processedSrc && !imageSrcSetRef.current.has(processedSrc)) {
