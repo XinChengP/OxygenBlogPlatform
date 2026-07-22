@@ -370,7 +370,6 @@ export function useBlogMarkdownComponents(options: {
               controls
               preload="metadata"
               className="rounded-xl shadow-lg mx-auto h-auto my-4 max-w-full block"
-              {...props}
             >
               您的浏览器不支持视频播放，请
               <a href={processedSrc} className="text-primary underline">下载视频</a>
