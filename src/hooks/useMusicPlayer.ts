@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import HowlerPlayerManager from '@/utils/howlerPlayerManager';
 import type { PlayMode, MusicPlayerState } from '@/types/music';
-import { PLAY_MODE_ORDER } from '@/types/playMode';
 
 /**
  * useMusicPlayer Hook 返回值接口
