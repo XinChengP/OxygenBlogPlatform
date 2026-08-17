@@ -1117,31 +1117,29 @@ export default function RocoPetSimulator() {
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         whileHover={{ scale: 1.05 }}
-        className={`relative flex flex-col items-center p-1 rounded-lg cursor-pointer transition-colors min-h-[80px] ${
-          isDark ? 'hover:bg-gray-700/50' : 'hover:bg-gray-100/50'
-        } ${inLineup ? 'ring-2 ring-green-500 bg-green-500/10' : ''} ${isOwned && !isBatchMode ? (isDark ? 'bg-green-900/20' : 'bg-green-50/50') : ''} ${isBatchSelected ? (isDark ? 'ring-2 ring-blue-500' : 'ring-2 ring-blue-400') : ''}`}
+        className={`relative flex flex-col items-center p-1 rounded-lg cursor-pointer transition-colors min-h-[80px] hover:bg-[var(--color-accent)]/10 ${inLineup ? 'ring-2 ring-green-500 bg-green-500/10' : ''} ${isOwned && !isBatchMode ? (isDark ? 'bg-green-900/20' : 'bg-green-50/50') : ''} ${isBatchSelected ? 'ring-2 ring-[var(--color-primary)]' : ''}`}
         onClick={handlePetCardClick}
         onContextMenu={(e) => handleContextMenu(e, pet.id, context === 'banned' ? 'banned' : context === 'lineup' ? 'lineup' : 'list')}
       >
-        {/* 批量选择复选框 */}
+        {/* 批量选择复选框 - 选中态用主题主色 */}
         {showBatchCheckbox && (
           <div
             className="absolute top-0 left-0 z-10 w-5 h-5 rounded-full border-2 flex items-center justify-center cursor-pointer"
             style={{
-              backgroundColor: isBatchSelected ? '#3b82f6' : isDark ? '#374151' : '#ffffff',
-              borderColor: isBatchSelected ? '#3b82f6' : isDark ? '#6b7280' : '#d1d5db',
+              backgroundColor: isBatchSelected ? 'var(--color-primary)' : 'var(--color-card)',
+              borderColor: isBatchSelected ? 'var(--color-primary)' : 'var(--color-border)',
             }}
             onClick={handleBatchCheckboxClick}
           >
             {isBatchSelected && (
-              <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3 h-3 text-[var(--color-primary-foreground)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
               </svg>
             )}
           </div>
         )}
-        {/* 宠物图片 */}
-        <div className={`relative flex-shrink-0 ${imgSize} rounded-lg bg-gray-200 dark:bg-gray-700`}>
+        {/* 宠物图片 - 占位背景使用主题静默色 */}
+        <div className={`relative flex-shrink-0 ${imgSize} rounded-lg bg-[var(--color-muted)]`}>
           <img
             src={getPetImageUrlWithCache(pet)}
             alt={pet.name}
@@ -1151,7 +1149,7 @@ export default function RocoPetSimulator() {
               context === 'banned' ? 'border-red-500' :
               context === 'lineup' ? getMagicColor(pet.magic).border :
               isOwned ? 'border-green-400 dark:border-green-500' :
-              'border-gray-300 dark:border-gray-600'
+              'border-[var(--color-border)]'
             }`}
           />
           {/* 魔力值徽章 */}
@@ -1166,7 +1164,7 @@ export default function RocoPetSimulator() {
           )}
           {/* 血脉标记 */}
           {selectedTalentId && selectedTalentId !== 0 && (
-            <div className="absolute -bottom-1 -left-1 w-4 h-4 rounded-full bg-white dark:bg-gray-800 border border-orange-400 flex items-center justify-center">
+            <div className="absolute -bottom-1 -left-1 w-4 h-4 rounded-full bg-[var(--color-card)] border border-orange-400 flex items-center justify-center">
               <img
                 src={getTalentImageUrl(selectedTalentId)}
                 alt="血脉"
@@ -1192,7 +1190,7 @@ export default function RocoPetSimulator() {
         </div>
         {/* 宠物名称 - 根据长度调整字体大小 */}
         <span
-          className={`mt-1 leading-tight text-center whitespace-nowrap w-full px-0.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
+          className={`mt-1 leading-tight text-center whitespace-nowrap w-full px-0.5 text-[var(--color-foreground)]`}
           style={{
             fontSize: pet.name.length > 5 ? '8px' : pet.name.length > 3 ? '9px' : '10px'
           }}
@@ -1246,17 +1244,17 @@ export default function RocoPetSimulator() {
 
   return (
     <div className="space-y-6">
-      {/* 通知 - 位置下移防止被导航栏遮挡 */}
+      {/* 通知 - 位置下移防止被导航栏遮挡，保留语义色（成功绿/错误红） */}
       <AnimatePresence>
         {notification && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className={`fixed top-20 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-lg shadow-lg ${
+            className={`fixed top-20 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-lg shadow-xl backdrop-blur-md ring-1 ${
               notification.type === 'success'
-                ? 'bg-green-500 text-white'
-                : 'bg-red-500 text-white'
+                ? 'bg-green-500/95 text-white ring-green-400/30'
+                : 'bg-red-500/95 text-white ring-red-400/30'
             }`}
           >
             {notification.message}
@@ -1269,14 +1267,14 @@ export default function RocoPetSimulator() {
         {/* 手机端：阵容和禁赛在上方 / 桌面端：右侧 30% */}
         <div className="lg:w-[30%] lg:order-2">
           <div ref={rightPanelRef} style={rightPanelStyle} className="space-y-4">
-            {/* 阵容区域 */}
+            {/* 阵容区域 - 保留绿色语义色（阵容=积极/已选），按钮统一主题色 */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className={`rounded-xl border-2 p-4 backdrop-blur-sm transition-colors ${
                 isDark
-                  ? 'border-green-400/50 bg-green-900/10'
-                  : 'border-green-400/50 bg-green-50/50'
+                  ? 'border-green-400/40 bg-green-900/10'
+                  : 'border-green-400/40 bg-green-50/50'
               }`}
             >
               <div className="flex items-center justify-between mb-4">
@@ -1284,14 +1282,10 @@ export default function RocoPetSimulator() {
                   阵容 ({lineup.length}/6)
                 </h3>
                 <div className="flex gap-1">
-                  {/* 放大按钮 */}
+                  {/* 放大按钮 - 改用主题主色 */}
                   <button
                     onClick={() => setIsLineupExpanded(true)}
-                    className={`px-2 py-1 text-xs rounded transition-colors ${
-                      isDark
-                        ? 'bg-cyan-500/80 hover:bg-cyan-600 text-white'
-                        : 'bg-cyan-500 hover:bg-cyan-600 text-white'
-                    }`}
+                    className="px-2 py-1 text-xs rounded transition-colors bg-[var(--color-primary)] hover:bg-[var(--color-accent)] text-[var(--color-primary-foreground)]"
                     title="放大查看阵容"
                   >
                     ⛶
@@ -1305,7 +1299,7 @@ export default function RocoPetSimulator() {
                   </button>
                   <button
                     onClick={() => setShowCustomPetModal(true)}
-                    className="px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors"
+                    className="px-2 py-1 text-xs bg-[var(--color-primary)] hover:bg-[var(--color-accent)] text-[var(--color-primary-foreground)] rounded transition-colors"
                     title="自定义宠物"
                   >
                     自定义
@@ -1324,9 +1318,9 @@ export default function RocoPetSimulator() {
               <div className="mb-4 h-[72px] sm:h-[76px] flex flex-col justify-center">
                 <div className="flex items-center justify-center gap-2 text-lg font-bold">
                   <span className={totalMagic > 16 ? 'text-red-500' : 'text-green-500'}>{totalMagic}</span>
-                  <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>/ 16</span>
+                  <span className="text-[var(--color-muted-foreground)]">/ 16</span>
                 </div>
-                <div className={`h-3 rounded-full overflow-hidden mt-2 ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}>
+                <div className={`h-3 rounded-full overflow-hidden mt-2 ${isDark ? 'bg-[var(--color-muted)]' : 'bg-[var(--color-muted)]'}`}>
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${Math.min(100, (totalMagic / 16) * 100)}%` }}
@@ -1341,12 +1335,12 @@ export default function RocoPetSimulator() {
                 </div>
               </div>
 
-              {/* 阵容列表 - 固定高度避免跳动 */}
+              {/* 阵容列表 - 固定高度避免跳动，使用主题边框色 */}
               {lineup.length === 0 ? (
                 <div className={`grid grid-cols-6 gap-1 min-h-[64px] sm:min-h-[72px] md:min-h-[80px] items-center justify-items-center rounded-lg border-2 border-dashed ${
                   isDark
-                    ? 'border-gray-600 text-gray-400'
-                    : 'border-gray-300 text-gray-500'
+                    ? 'border-[var(--color-border)] text-[var(--color-muted-foreground)]'
+                    : 'border-[var(--color-border)] text-[var(--color-muted-foreground)]'
                 }`}>
                   <div className="col-span-6 text-center">
                     <p className="text-sm">点击宠物添加到阵容</p>
@@ -1409,9 +1403,7 @@ export default function RocoPetSimulator() {
                         onDragOver={(e) => handleDragOver(e, index)}
                         onDrop={(e) => handleDrop(e, index)}
                         onDragEnd={handleDragEnd}
-                        className={`relative flex flex-col items-center justify-center p-1 rounded-lg cursor-move transition-all aspect-square ${
-                          isDark ? 'hover:bg-gray-700/50' : 'hover:bg-gray-100/50'
-                        } ${isLineupDragged ? 'opacity-60' : ''} ${isLineupDragOver ? 'ring-2 ring-green-400 bg-green-400/20' : ''}`}
+                        className={`relative flex flex-col items-center justify-center p-1 rounded-lg cursor-move transition-all aspect-square hover:bg-[var(--color-accent)]/10 ${isLineupDragged ? 'opacity-60' : ''} ${isLineupDragOver ? 'ring-2 ring-green-400 bg-green-400/20' : ''}`}
                         onClick={() => {
                           // 只有没有发生拖拽时才移除宠物
                           if (!hasDragged) {
@@ -1436,7 +1428,7 @@ export default function RocoPetSimulator() {
                           </span>
                           {/* 血脉标记 */}
                           {selectedTalentId && selectedTalentId !== 0 && (
-                            <div className="absolute -bottom-0.5 -left-0.5 w-4 h-4 rounded-full bg-white dark:bg-gray-800 border border-orange-400 flex items-center justify-center">
+                            <div className="absolute -bottom-0.5 -left-0.5 w-4 h-4 rounded-full bg-[var(--color-card)] border border-orange-400 flex items-center justify-center">
                               <img
                                 src={`https://res.17roco.qq.com/res/talent/${selectedTalentId}_small.png`}
                                 alt="血脉"
@@ -1448,7 +1440,7 @@ export default function RocoPetSimulator() {
                         </div>
                         {/* 宠物名称 - 根据长度调整字体大小 */}
                         <span
-                          className={`mt-1 leading-tight text-center whitespace-nowrap w-full px-0.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
+                          className={`mt-1 leading-tight text-center whitespace-nowrap w-full px-0.5 text-[var(--color-foreground)]`}
                           style={{
                             fontSize: pet.name.length > 5 ? '7px' : pet.name.length > 3 ? '8px' : '9px'
                           }}
@@ -1461,7 +1453,7 @@ export default function RocoPetSimulator() {
                 </div>
               )}
 
-              {/* 操作按钮 - 使用更柔和的颜色 */}
+              {/* 操作按钮 - 外观保留橙色语义（装饰），互斥规则用主题主色 */}
               <div className="mt-4 flex gap-2">
                 <button
                   onClick={() => setShowSkinButton(prev => !prev)}
@@ -1475,19 +1467,19 @@ export default function RocoPetSimulator() {
                 </button>
                 <button
                   onClick={() => setModals(prev => ({ ...prev, rules: true }))}
-                  className="flex-1 px-2 py-1.5 text-xs bg-sky-500 hover:bg-sky-600 text-white rounded transition-colors"
+                  className="flex-1 px-2 py-1.5 text-xs bg-[var(--color-primary)] hover:bg-[var(--color-accent)] text-[var(--color-primary-foreground)] rounded transition-colors"
                 >
                   互斥规则
                 </button>
               </div>
             </motion.div>
 
-            {/* 禁赛宠物区域 */}
+            {/* 禁赛宠物区域 - 保留红色语义色（禁赛=危险/警示），链接用主题主色 */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className={`rounded-xl border-2 border-red-400/50 p-4 ${isDark ? 'bg-red-900/10' : 'bg-red-50/50'} backdrop-blur-sm`}
+              className={`rounded-xl border-2 border-red-400/40 p-4 ${isDark ? 'bg-red-900/10' : 'bg-red-50/50'} backdrop-blur-sm`}
             >
               <div className="flex items-center justify-between mb-2">
                 <h3 className={`text-lg font-bold ${isDark ? 'text-red-400' : 'text-red-600'}`}>
@@ -1511,7 +1503,7 @@ export default function RocoPetSimulator() {
                 </div>
               </div>
               {bannedPets.length === 0 ? (
-                <p className={`text-center py-4 text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                <p className={`text-center py-4 text-sm text-[var(--color-muted-foreground)]`}>
                   暂无禁赛宠物
                 </p>
               ) : (
@@ -1522,13 +1514,13 @@ export default function RocoPetSimulator() {
                   })}
                 </div>
               )}
-              {/* 官方每周更新链接 */}
+              {/* 官方每周更新链接 - 使用主题主色 */}
               <div className="mt-3 pt-3 border-t border-red-400/20 text-right">
                 <a
                   href="https://roco.qq.com/webplat/info/news_version3/397/11016/11018/m8583/list_1.shtml"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`text-xs underline hover:no-underline ${isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}
+                  className="text-xs underline hover:no-underline text-[var(--color-primary)] hover:text-[var(--color-accent)]"
                 >
                   查看官方每周更新 →
                 </a>
@@ -1539,45 +1531,39 @@ export default function RocoPetSimulator() {
 
         {/* 左侧 70% - 宠物列表 */}
         <div className="lg:w-[70%] lg:order-1">
-          {/* 宠物列表 */}
+          {/* 宠物列表卡片 - 使用主题卡片色和边框色 */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className={`rounded-xl border ${isDark ? 'border-gray-700 bg-gray-800/30' : 'border-gray-200 bg-white/50'} backdrop-blur-sm p-4`}>
+            className="rounded-xl border border-[var(--color-border)] bg-[var(--color-card)]/50 backdrop-blur-sm p-4">
             {/* 标题、搜索框和魔力值筛选 */}
             <div className="flex flex-col gap-4 mb-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 {/* 账号切换器 */}
                 <div className="flex items-center gap-2">
-                  <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>宠物列表</h3>
+                  <h3 className="text-lg font-bold text-[var(--color-foreground)]">宠物列表</h3>
                   <div className="relative">
                     <button
                       onClick={() => setShowAccountDropdown(prev => !prev)}
-                      className={`flex items-center gap-1 px-2 py-1 text-xs rounded-lg border transition-colors ${
-                        isDark
-                          ? 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
-                          : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                      }`}
+                      className="flex items-center gap-1 px-2 py-1 text-xs rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-foreground)] hover:bg-[var(--color-muted)] transition-colors"
                     >
                       <span className="max-w-[80px] truncate">{currentAccount || '默认账号'}</span>
                       <svg className={`w-3 h-3 transition-transform ${showAccountDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
                     </button>
-                    {/* 账号下拉菜单 */}
+                    {/* 账号下拉菜单 - 使用主题卡片色 */}
                     {showAccountDropdown && (
-                      <div className={`absolute top-full left-0 mt-1 z-20 rounded-lg shadow-lg py-1 min-w-[140px] ${
-                        isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
-                      }`}>
+                      <div className="absolute top-full left-0 mt-1 z-20 rounded-lg shadow-xl py-1 min-w-[140px] bg-[var(--color-card)] border border-[var(--color-border)]">
                         {accounts.map(account => (
-                          <div key={account.name} className="flex items-center justify-between px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 whitespace-nowrap">
+                          <div key={account.name} className="flex items-center justify-between px-3 py-1.5 hover:bg-[var(--color-muted)] whitespace-nowrap">
                             <button
                               onClick={() => handleSwitchAccount(account.name)}
                               className={`text-left text-sm whitespace-nowrap ${
                                 account.name === currentAccount
-                                  ? 'text-green-500 font-medium'
-                                  : isDark ? 'text-gray-300' : 'text-gray-700'
+                                  ? 'text-[var(--color-primary)] font-medium'
+                                  : 'text-[var(--color-foreground)]'
                               }`}
                             >
                               {account.name} ({account.petIds.length})
@@ -1601,11 +1587,7 @@ export default function RocoPetSimulator() {
                               value={newAccountName}
                               onChange={(e) => setNewAccountName(e.target.value)}
                               placeholder="账号名称"
-                              className={`flex-1 px-2 py-1 text-xs rounded border ${
-                                isDark
-                                  ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-500'
-                                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
-                              }`}
+                              className="flex-1 px-2 py-1 text-xs rounded border border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-foreground)] placeholder-[var(--color-muted-foreground)]"
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter') handleCreateAccount();
                                 if (e.key === 'Escape') {
@@ -1636,7 +1618,7 @@ export default function RocoPetSimulator() {
                         ) : (
                           <button
                             onClick={() => setShowNewAccountInput(true)}
-                            className={`w-full text-left px-3 py-1.5 text-sm ${isDark ? 'text-blue-400 hover:bg-gray-700' : 'text-blue-500 hover:bg-gray-50'}`}
+                            className="w-full text-left px-3 py-1.5 text-sm text-[var(--color-primary)] hover:bg-[var(--color-muted)]"
                           >
                             + 新建账号
                           </button>
@@ -1651,14 +1633,10 @@ export default function RocoPetSimulator() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="搜索宠物名称或ID..."
-                    className={`w-full sm:w-64 px-4 py-2 pl-10 rounded-lg border text-sm transition-colors ${
-                      isDark
-                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-green-500'
-                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-green-500'
-                    } focus:outline-none focus:ring-2 focus:ring-green-500/20`}
+                    className="w-full sm:w-64 px-4 py-2 pl-10 rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] text-sm text-[var(--color-foreground)] placeholder-[var(--color-muted-foreground)] focus:border-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 transition-colors"
                   />
                   <svg
-                    className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-muted-foreground)]"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -1668,9 +1646,7 @@ export default function RocoPetSimulator() {
                   {searchQuery && (
                     <button
                       onClick={() => setSearchQuery('')}
-                      className={`absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full flex items-center justify-center ${
-                        isDark ? 'bg-gray-600 text-gray-300 hover:bg-gray-500' : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
-                      }`}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full flex items-center justify-center bg-[var(--color-muted)] text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)]/20"
                     >
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1689,25 +1665,21 @@ export default function RocoPetSimulator() {
                     className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${
                       magicFilter === filter.value
                         ? `${isDark ? filter.color.dark : filter.color.light} text-white shadow-md`
-                        : isDark
-                        ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        : 'bg-[var(--color-muted)] text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)]/20'
                     }`}
                   >
                     {filter.label}
                   </button>
                 ))}
-                {/* 分隔线 */}
-                <div className={`w-px h-5 mx-1 ${isDark ? 'bg-gray-600' : 'bg-gray-300'}`} />
+                {/* 分隔线 - 使用主题边框色 */}
+                <div className="w-px h-5 mx-1 bg-[var(--color-border)]" />
                 {/* 宠物拥有状态筛选 - 已拥有 */}
                 <button
                   onClick={() => setOwnershipFilter(prev => prev === 'owned' ? 'all' : 'owned')}
                   className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${
                     ownershipFilter === 'owned'
                       ? 'bg-green-500 text-white shadow-md'
-                      : isDark
-                      ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      : 'bg-[var(--color-muted)] text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)]/20'
                   }`}
                   title={ownershipFilter === 'owned' ? '显示全部宠物' : '只显示已拥有的宠物'}
                 >
@@ -1719,15 +1691,13 @@ export default function RocoPetSimulator() {
                   className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${
                     ownershipFilter === 'unowned'
                       ? 'bg-red-500 text-white shadow-md'
-                      : isDark
-                      ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      : 'bg-[var(--color-muted)] text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)]/20'
                   }`}
                   title={ownershipFilter === 'unowned' ? '显示全部宠物' : '只显示未拥有的宠物'}
                 >
                   {ownershipFilter === 'unowned' ? '✗ 未拥有' : '未拥有'}
                 </button>
-                {/* 批量选择按钮 */}
+                {/* 批量选择按钮 - 选中态用主题主色 */}
                 <button
                   onClick={() => {
                     setIsBatchMode(prev => !prev);
@@ -1735,10 +1705,8 @@ export default function RocoPetSimulator() {
                   }}
                   className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${
                     isBatchMode
-                      ? 'bg-blue-500 text-white shadow-md'
-                      : isDark
-                      ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      ? 'bg-[var(--color-primary)] text-[var(--color-primary-foreground)] shadow-md'
+                      : 'bg-[var(--color-muted)] text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)]/20'
                   }`}
                 >
                   {isBatchMode ? '✓ 批量' : '批量'}
@@ -1746,11 +1714,7 @@ export default function RocoPetSimulator() {
                 {/* 导入/导出按钮 */}
                 <button
                   onClick={() => setImportExportModal({ open: true, mode: 'import' })}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${
-                    isDark
-                      ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
+                  className="px-3 py-1.5 text-xs font-medium rounded-full transition-all bg-[var(--color-muted)] text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)]/20"
                   title="导入/导出宠物列表"
                 >
                   导入/导出
@@ -1758,9 +1722,9 @@ export default function RocoPetSimulator() {
               </div>
             </div>
 
-            {/* 搜索结果提示 */}
+            {/* 搜索结果提示 - 使用主题次要文字色 */}
             {searchQuery && !hasSearchResults && (
-              <div className={`text-center py-8 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+              <div className="text-center py-8 text-[var(--color-muted-foreground)]">
                 <p>未找到匹配的宠物</p>
                 <p className="text-sm mt-1">请尝试其他关键词</p>
               </div>
@@ -1786,9 +1750,7 @@ export default function RocoPetSimulator() {
                           {!showHiddenPets ? (
                             <button
                               onClick={() => setShowHiddenPets(true)}
-                              className={`w-[72px] h-[72px] rounded-lg border-2 border-dashed flex items-center justify-center text-xl ${
-                                isDark ? 'border-gray-600 text-gray-400 hover:bg-gray-700' : 'border-gray-300 text-gray-500 hover:bg-gray-100'
-                              }`}
+                              className="w-[72px] h-[72px] rounded-lg border-2 border-dashed flex items-center justify-center text-xl border-[var(--color-border)] text-[var(--color-muted-foreground)] hover:bg-[var(--color-muted)]"
                               title="展开更多宠物"
                             >
                               ⋯
@@ -1799,7 +1761,7 @@ export default function RocoPetSimulator() {
                               <button
                                 onClick={() => setShowHiddenPets(false)}
                                 className={`w-[72px] h-[72px] rounded-lg border-2 border-dashed flex items-center justify-center text-xl ${
-                                  isDark ? 'border-gray-600 text-gray-400 hover:bg-gray-700' : 'border-gray-300 text-gray-500 hover:bg-gray-100'
+                                  isDark ? 'border-[var(--color-border)] text-[var(--color-muted-foreground)] hover:bg-[var(--color-muted)]' : 'border-[var(--color-border)] text-[var(--color-muted-foreground)] hover:bg-[var(--color-muted)]'
                                 }`}
                                 title="收起"
                               >
@@ -1819,12 +1781,10 @@ export default function RocoPetSimulator() {
 
       </div>
 
-      {/* 右键菜单 */}
+      {/* 右键菜单 - 使用主题卡片色，菜单项hover保留语义色 */}
       {contextMenu.visible && contextMenu.petId && (
         <div
-          className={`fixed z-50 rounded-lg shadow-lg py-2 min-w-[150px] ${
-            isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
-          }`}
+          className="fixed z-50 rounded-lg shadow-xl py-2 min-w-[150px] bg-[var(--color-card)] border border-[var(--color-border)]"
           style={{ left: contextMenu.x, top: contextMenu.y }}
           onClick={hideContextMenu}
         >
@@ -1844,7 +1804,7 @@ export default function RocoPetSimulator() {
               移出禁赛
             </button>
           ) : null}
-          <div className={`my-1 h-px ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`} />
+          <div className="my-1 h-px bg-[var(--color-border)]" />
           {contextMenu.context !== 'lineup' && !lineup.includes(contextMenu.petId) && (
             <button
               onClick={() => addToLineup(contextMenu.petId!)}
@@ -1863,13 +1823,13 @@ export default function RocoPetSimulator() {
           ) : null}
           {skinPets[contextMenu.petId] && skinPets[contextMenu.petId].length > 1 && (
             <>
-              <div className={`my-1 h-px ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`} />
+              <div className="my-1 h-px bg-[var(--color-border)]" />
               <button
                 onClick={() => {
                   setCurrentPetId(contextMenu.petId);
                   setModals(prev => ({ ...prev, skin: true }));
                 }}
-                className={`w-full px-4 py-2 text-left text-sm hover:bg-blue-500/10 text-blue-500`}
+                className={`w-full px-4 py-2 text-left text-sm hover:bg-orange-500/10 text-orange-500`}
               >
                 切换外观
               </button>
@@ -1877,7 +1837,7 @@ export default function RocoPetSimulator() {
           )}
           {getPetTalents(contextMenu.petId).length > 0 && (
             <>
-              <div className={`my-1 h-px ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`} />
+              <div className="my-1 h-px bg-[var(--color-border)]" />
               <button
                 onClick={() => {
                   setCurrentPetId(contextMenu.petId);
@@ -1892,7 +1852,7 @@ export default function RocoPetSimulator() {
           {/* 标记拥有状态 */}
           {(contextMenu.context === 'list' || contextMenu.context === 'hidden') && (
             <>
-              <div className={`my-1 h-px ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`} />
+              <div className="my-1 h-px bg-[var(--color-border)]" />
               {accountManager.hasPet(contextMenu.petId!) ? (
                 <button
                   onClick={() => {
@@ -1937,34 +1897,26 @@ export default function RocoPetSimulator() {
             top: `${batchPanelPos.y}px`,
           }}
           onMouseDown={handleBatchPanelMouseDown}
-          className={`fixed z-[10003] px-3 py-2 rounded-xl shadow-2xl border max-w-[280px] cursor-default select-none ${
-            isDark
-              ? 'bg-gray-800/95 border-gray-700'
-              : 'bg-white/95 border-gray-200'
-          } backdrop-blur-sm ${isDraggingBatchPanel ? 'cursor-move' : ''}`}
+          className={`fixed z-[10003] px-3 py-2 rounded-xl shadow-2xl border max-w-[280px] cursor-default select-none bg-[var(--color-card)]/95 border-[var(--color-border)] backdrop-blur-sm ${isDraggingBatchPanel ? 'cursor-move' : ''}`}
         >
           {/* 拖拽标题栏 */}
           <div className="batch-panel-header flex items-center justify-between mb-2 cursor-move">
-            <span className={`text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-              已选 <span className="text-blue-500 font-bold">{selectedBatchPets.length}</span>
+            <span className="text-xs font-medium text-[var(--color-foreground)]">
+              已选 <span className="text-[var(--color-primary)] font-bold">{selectedBatchPets.length}</span>
             </span>
             <button
               onClick={() => {
                 setIsBatchMode(false);
                 setSelectedBatchPets([]);
               }}
-              className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${
-                isDark
-                  ? 'bg-gray-700 text-gray-400 hover:bg-gray-600'
-                  : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
-              }`}
+              className="w-5 h-5 rounded-full flex items-center justify-center text-xs bg-[var(--color-muted)] text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)]/20"
               title="退出批量模式"
             >
               ×
             </button>
           </div>
 
-          {/* 快捷操作 */}
+          {/* 快捷操作 - 全选/清空使用主题次要色 */}
           <div className="flex items-center gap-1 mb-2">
             <button
               onClick={() => {
@@ -1979,21 +1931,13 @@ export default function RocoPetSimulator() {
                 });
                 setSelectedBatchPets(allVisiblePetIds);
               }}
-              className={`flex-1 px-2 py-1 text-[10px] rounded transition-colors ${
-                isDark
-                  ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+              className="flex-1 px-2 py-1 text-[10px] rounded transition-colors bg-[var(--color-muted)] text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)]/20"
             >
               全选
             </button>
             <button
               onClick={() => setSelectedBatchPets([])}
-              className={`flex-1 px-2 py-1 text-[10px] rounded transition-colors ${
-                isDark
-                  ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+              className="flex-1 px-2 py-1 text-[10px] rounded transition-colors bg-[var(--color-muted)] text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)]/20"
             >
               清空
             </button>
@@ -2020,8 +1964,8 @@ export default function RocoPetSimulator() {
       {/* 外观选择模态框 */}
       {modals.skin && currentPetId && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4" onClick={() => setModals(prev => ({ ...prev, skin: false }))}>
-          <div className={`rounded-xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto ${isDark ? 'bg-gray-800' : 'bg-white'}`} onClick={e => e.stopPropagation()}>
-            <h3 className={`text-xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>选择外观</h3>
+          <div className={`rounded-xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto bg-[var(--color-card)]`} onClick={e => e.stopPropagation()}>
+            <h3 className={`text-xl font-bold mb-4 text-[var(--color-foreground)]`}>选择外观</h3>
             <div className="grid grid-cols-3 gap-4">
               {skinPets[currentPetId]?.map((skinName, index) => {
                 const pet = getPetById(currentPetId);
@@ -2053,8 +1997,8 @@ export default function RocoPetSimulator() {
                       isSelected
                         ? 'border-green-500 bg-green-500/10'
                         : isDark
-                        ? 'border-gray-600 hover:border-gray-500'
-                        : 'border-gray-200 hover:border-gray-300'
+                        ? 'border-[var(--color-border)] hover:border-[var(--color-primary)]'
+                        : 'border-[var(--color-border)] hover:border-[var(--color-primary)]'
                     }`}
                   >
                     <img
@@ -2063,7 +2007,7 @@ export default function RocoPetSimulator() {
                       onError={handleImageError}
                       className="w-16 h-16 rounded-lg object-cover mb-2"
                     />
-                    <span className={`text-sm text-center ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{skinName}</span>
+                    <span className={`text-sm text-center text-[var(--color-foreground)]`}>{skinName}</span>
                   </button>
                 );
               })}
@@ -2075,23 +2019,21 @@ export default function RocoPetSimulator() {
       {/* 血脉选择模态框 */}
       {modals.talent && currentPetId && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4" onClick={() => setModals(prev => ({ ...prev, talent: false }))}>
-          <div className={`rounded-xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto ${isDark ? 'bg-gray-800' : 'bg-white'}`} onClick={e => e.stopPropagation()}>
-            <h3 className={`text-xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>选择血脉</h3>
+          <div className={`rounded-xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto bg-[var(--color-card)]`} onClick={e => e.stopPropagation()}>
+            <h3 className={`text-xl font-bold mb-4 text-[var(--color-foreground)]`}>选择血脉</h3>
             <div className="space-y-3">
               <button
                 onClick={() => selectTalent(currentPetId, 0)}
                 className={`w-full flex items-center gap-4 p-3 rounded-lg border-2 transition-all ${
                   (selectedTalents[currentPetId] || 0) === 0
                     ? 'border-green-500 bg-green-500/10'
-                    : isDark
-                    ? 'border-gray-600 hover:border-gray-500'
-                    : 'border-gray-200 hover:border-gray-300'
+                    : 'border-[var(--color-border)] hover:border-[var(--color-primary)]'
                 }`}
               >
                 <img src={getTalentImageUrl(0)} alt="不携带" className="w-10 h-10 rounded-lg" />
                 <div className="text-left">
-                  <div className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>不携带血脉</div>
-                  <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>参赛时不携带任何血脉</div>
+                  <div className={`font-medium text-[var(--color-foreground)]`}>不携带血脉</div>
+                  <div className={`text-sm text-[var(--color-muted-foreground)]`}>参赛时不携带任何血脉</div>
                 </div>
               </button>
               {getPetTalents(currentPetId).map(talentId => {
@@ -2116,8 +2058,8 @@ export default function RocoPetSimulator() {
                       isSelected
                         ? 'border-green-500 bg-green-500/10'
                         : isDark
-                        ? 'border-gray-600 hover:border-gray-500'
-                        : 'border-gray-200 hover:border-gray-300'
+                        ? 'border-[var(--color-border)] hover:border-[var(--color-primary)]'
+                        : 'border-[var(--color-border)] hover:border-[var(--color-primary)]'
                     }`}
                   >
                     <img
@@ -2127,8 +2069,8 @@ export default function RocoPetSimulator() {
                       className="w-10 h-10 rounded-lg flex-shrink-0"
                     />
                     <div className="text-left flex-1">
-                      <div className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>{talent.name}</div>
-                      <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{talent.effect}</div>
+                      <div className={`font-medium text-[var(--color-foreground)]`}>{talent.name}</div>
+                      <div className={`text-sm text-[var(--color-muted-foreground)]`}>{talent.effect}</div>
                     </div>
                   </button>
                 );
@@ -2141,23 +2083,23 @@ export default function RocoPetSimulator() {
       {/* 互斥规则模态框 */}
       {modals.rules && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setModals(prev => ({ ...prev, rules: false }))}>
-          <div className={`rounded-xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto ${isDark ? 'bg-gray-800' : 'bg-white'}`} onClick={e => e.stopPropagation()}>
-            <h3 className={`text-xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>互斥规则说明</h3>
+          <div className={`rounded-xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto bg-[var(--color-card)]`} onClick={e => e.stopPropagation()}>
+            <h3 className={`text-xl font-bold mb-4 text-[var(--color-foreground)]`}>互斥规则说明</h3>
             <div className="space-y-4">
               {exclusiveGroups.map((group, index) => (
-                <div key={index} className={`p-4 rounded-lg ${isDark ? 'bg-gray-700/50' : 'bg-gray-50'}`}>
-                  <div className={`font-medium mb-2 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>互斥组 {index + 1}</div>
+                <div key={index} className="p-4 rounded-lg bg-[var(--color-muted)]/50">
+                  <div className="font-medium mb-2 text-[var(--color-primary)]">互斥组 {index + 1}</div>
                   <div className="flex flex-wrap gap-2">
                     {group.map(petId => {
                       const pet = getPetById(petId);
                       return pet ? (
-                        <span key={petId} className={`px-3 py-1 rounded-full text-sm ${isDark ? 'bg-gray-600 text-gray-200' : 'bg-white text-gray-700 border'}`}>
+                        <span key={petId} className="px-3 py-1 rounded-full text-sm bg-[var(--color-card)] text-[var(--color-foreground)] border border-[var(--color-border)]">
                           {pet.name}
                         </span>
                       ) : null;
                     })}
                   </div>
-                  <p className={`text-sm mt-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>这些宠物不可同时参赛</p>
+                  <p className="text-sm mt-2 text-[var(--color-muted-foreground)]">这些宠物不可同时参赛</p>
                 </div>
               ))}
             </div>
@@ -2173,22 +2115,22 @@ export default function RocoPetSimulator() {
       {/* 批量添加禁赛模态框 */}
       {modals.batchBan && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setModals(prev => ({ ...prev, batchBan: false }))}>
-          <div className={`rounded-xl p-6 max-w-md w-full ${isDark ? 'bg-gray-800' : 'bg-white'}`} onClick={e => e.stopPropagation()}>
-            <h3 className={`text-xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>批量添加禁赛宠物</h3>
+          <div className={`rounded-xl p-6 max-w-md w-full bg-[var(--color-card)]`} onClick={e => e.stopPropagation()}>
+            <h3 className={`text-xl font-bold mb-4 text-[var(--color-foreground)]`}>批量添加禁赛宠物</h3>
             <textarea
               value={batchInput}
               onChange={(e) => setBatchInput(e.target.value)}
               placeholder="输入宠物序号/名称，多个请用逗号分隔&#10;例如：2585, 2810, 海芙约忒, 巴哈姆特"
               className={`w-full h-32 p-3 rounded-lg border resize-none ${
                 isDark
-                  ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-500'
-                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
+                  ? 'bg-[var(--color-card)] border-[var(--color-border)] text-[var(--color-foreground)] placeholder-[var(--color-muted-foreground)]'
+                  : 'bg-[var(--color-card)] border-[var(--color-border)] text-[var(--color-foreground)] placeholder-[var(--color-muted-foreground)]'
               }`}
             />
             <div className="flex justify-end gap-2 mt-4">
               <button
                 onClick={() => setModals(prev => ({ ...prev, batchBan: false }))}
-                className={`px-4 py-2 rounded-lg ${isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                className={`px-4 py-2 rounded-lg bg-[var(--color-muted)] text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)]/20`}
               >
                 取消
               </button>
@@ -2206,22 +2148,22 @@ export default function RocoPetSimulator() {
       {/* 批量添加阵容模态框 */}
       {modals.batchLineup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setModals(prev => ({ ...prev, batchLineup: false }))}>
-          <div className={`rounded-xl p-6 max-w-md w-full ${isDark ? 'bg-gray-800' : 'bg-white'}`} onClick={e => e.stopPropagation()}>
-            <h3 className={`text-xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>批量添加阵容</h3>
+          <div className={`rounded-xl p-6 max-w-md w-full bg-[var(--color-card)]`} onClick={e => e.stopPropagation()}>
+            <h3 className={`text-xl font-bold mb-4 text-[var(--color-foreground)]`}>批量添加阵容</h3>
             <textarea
               value={batchInput}
               onChange={(e) => setBatchInput(e.target.value)}
               placeholder="请输入宠物名称，多个名称用逗号或换行分隔"
               className={`w-full h-32 p-3 rounded-lg border resize-none ${
                 isDark
-                  ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-500'
-                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
+                  ? 'bg-[var(--color-card)] border-[var(--color-border)] text-[var(--color-foreground)] placeholder-[var(--color-muted-foreground)]'
+                  : 'bg-[var(--color-card)] border-[var(--color-border)] text-[var(--color-foreground)] placeholder-[var(--color-muted-foreground)]'
               }`}
             />
             <div className="flex justify-end gap-2 mt-4">
               <button
                 onClick={() => setModals(prev => ({ ...prev, batchLineup: false }))}
-                className={`px-4 py-2 rounded-lg ${isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                className={`px-4 py-2 rounded-lg bg-[var(--color-muted)] text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)]/20`}
               >
                 取消
               </button>
@@ -2239,12 +2181,12 @@ export default function RocoPetSimulator() {
       {/* 自定义宠物模态框 */}
       {showCustomPetModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowCustomPetModal(false)}>
-          <div className={`rounded-xl p-6 max-w-md w-full ${isDark ? 'bg-gray-800' : 'bg-white'}`} onClick={e => e.stopPropagation()}>
-            <h3 className={`text-xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>添加自定义宠物</h3>
+          <div className={`rounded-xl p-6 max-w-md w-full bg-[var(--color-card)]`} onClick={e => e.stopPropagation()}>
+            <h3 className={`text-xl font-bold mb-4 text-[var(--color-foreground)]`}>添加自定义宠物</h3>
             <div className="space-y-4">
               {/* 宠物编号 */}
               <div>
-                <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                <label className={`block text-sm font-medium mb-1 text-[var(--color-foreground)]`}>
                   宠物编号 <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -2254,15 +2196,15 @@ export default function RocoPetSimulator() {
                   placeholder="请输入宠物编号"
                   className={`w-full p-3 rounded-lg border ${
                     isDark
-                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-500'
-                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
+                      ? 'bg-[var(--color-card)] border-[var(--color-border)] text-[var(--color-foreground)] placeholder-[var(--color-muted-foreground)]'
+                      : 'bg-[var(--color-card)] border-[var(--color-border)] text-[var(--color-foreground)] placeholder-[var(--color-muted-foreground)]'
                   }`}
                 />
               </div>
               {/* 宠物名称 */}
               <div>
-                <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                  宠物名称 <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>(选填)</span>
+                <label className={`block text-sm font-medium mb-1 text-[var(--color-foreground)]`}>
+                  宠物名称 <span className={`text-xs text-[var(--color-muted-foreground)]`}>(选填)</span>
                 </label>
                 <input
                   type="text"
@@ -2271,14 +2213,14 @@ export default function RocoPetSimulator() {
                   placeholder="请输入宠物名称"
                   className={`w-full p-3 rounded-lg border ${
                     isDark
-                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-500'
-                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
+                      ? 'bg-[var(--color-card)] border-[var(--color-border)] text-[var(--color-foreground)] placeholder-[var(--color-muted-foreground)]'
+                      : 'bg-[var(--color-card)] border-[var(--color-border)] text-[var(--color-foreground)] placeholder-[var(--color-muted-foreground)]'
                   }`}
                 />
               </div>
               {/* 费用 */}
               <div>
-                <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                <label className={`block text-sm font-medium mb-1 text-[var(--color-foreground)]`}>
                   费用
                 </label>
                 <select
@@ -2286,8 +2228,8 @@ export default function RocoPetSimulator() {
                   onChange={(e) => setCustomPetMagic(parseInt(e.target.value))}
                   className={`w-full p-3 rounded-lg border ${
                     isDark
-                      ? 'bg-gray-700 border-gray-600 text-white'
-                      : 'bg-white border-gray-300 text-gray-900'
+                      ? 'bg-[var(--color-card)] border-[var(--color-border)] text-[var(--color-foreground)]'
+                      : 'bg-[var(--color-card)] border-[var(--color-border)] text-[var(--color-foreground)]'
                   }`}
                 >
                   <option value={1}>1费</option>
@@ -2301,13 +2243,13 @@ export default function RocoPetSimulator() {
             <div className="flex justify-end gap-2 mt-6">
               <button
                 onClick={() => setShowCustomPetModal(false)}
-                className={`px-4 py-2 rounded-lg ${isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                className={`px-4 py-2 rounded-lg bg-[var(--color-muted)] text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)]/20`}
               >
                 取消
               </button>
               <button
                 onClick={addCustomPetToLineup}
-                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg"
+                className="px-4 py-2 bg-[var(--color-primary)] hover:bg-[var(--color-accent)] text-[var(--color-primary-foreground)] rounded-lg"
               >
                 添加
               </button>
@@ -2326,11 +2268,7 @@ export default function RocoPetSimulator() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
-            className={`rounded-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto ${
-              isDark
-                ? 'bg-gray-800 border border-green-500/30'
-                : 'bg-white border border-green-400/30'
-            }`}
+            className="rounded-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-[var(--color-card)] border border-green-400/30"
             onClick={e => e.stopPropagation()}
           >
             {/* 模态框标题 */}
@@ -2340,11 +2278,7 @@ export default function RocoPetSimulator() {
               </h3>
               <button
                 onClick={() => setIsLineupExpanded(false)}
-                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-                  isDark
-                    ? 'bg-gray-700 text-gray-400 hover:bg-gray-600 hover:text-white'
-                    : 'bg-gray-200 text-gray-500 hover:bg-gray-300 hover:text-gray-700'
-                }`}
+                className="w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-[var(--color-muted)] text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)]/20 hover:text-[var(--color-foreground)]"
                 title="关闭"
               >
                 ×
@@ -2357,9 +2291,9 @@ export default function RocoPetSimulator() {
                 <span className={totalMagic > 16 ? 'text-red-500' : 'text-green-500'}>
                   {totalMagic}
                 </span>
-                <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>/ 16</span>
+                <span className="text-[var(--color-muted-foreground)]">/ 16</span>
               </div>
-              <div className={`h-4 rounded-full overflow-hidden mt-3 mx-auto max-w-md ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}>
+              <div className={`h-4 rounded-full overflow-hidden mt-3 mx-auto max-w-md ${isDark ? 'bg-[var(--color-muted)]' : 'bg-[var(--color-muted)]'}`}>
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${Math.min(100, (totalMagic / 16) * 100)}%` }}
@@ -2376,8 +2310,8 @@ export default function RocoPetSimulator() {
             {lineup.length === 0 ? (
               <div className={`text-center py-12 rounded-xl border-2 border-dashed ${
                 isDark
-                  ? 'border-gray-600 text-gray-400'
-                  : 'border-gray-300 text-gray-500'
+                  ? 'border-[var(--color-border)] text-[var(--color-muted-foreground)]'
+                  : 'border-[var(--color-border)] text-[var(--color-muted-foreground)]'
               }`}>
                 <p className="text-base">阵容为空</p>
                 <p className="text-sm mt-1">点击宠物添加到阵容</p>
@@ -2443,9 +2377,7 @@ export default function RocoPetSimulator() {
                       onDragOver={(e) => handleDragOver(e, index)}
                       onDrop={(e) => handleDrop(e, index)}
                       onDragEnd={handleDragEnd}
-                      className={`relative flex flex-col items-center justify-center p-1.5 sm:p-2 md:p-3 rounded-lg sm:rounded-xl cursor-move transition-all ${
-                        isDark ? 'hover:bg-gray-700/50' : 'hover:bg-gray-100/50'
-                      } ${isDragged ? 'opacity-60' : ''} ${isDragOver ? 'ring-2 ring-green-400 bg-green-400/20' : ''}`}
+                      className={`relative flex flex-col items-center justify-center p-1.5 sm:p-2 md:p-3 rounded-lg sm:rounded-xl cursor-move transition-all hover:bg-[var(--color-accent)]/10 ${isDragged ? 'opacity-60' : ''} ${isDragOver ? 'ring-2 ring-green-400 bg-green-400/20' : ''}`}
                       onClick={() => {
                         // 只有没有发生拖拽时才移除宠物
                         if (!hasDragged) {
@@ -2497,7 +2429,7 @@ export default function RocoPetSimulator() {
                         </span>
                         {/* 血脉标记 - 放大版 */}
                         {selectedTalentId && selectedTalentId !== 0 && (
-                          <div className="absolute -bottom-0.5 -left-0.5 sm:-bottom-1 sm:-left-1 w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 rounded-full bg-white dark:bg-gray-800 border border-orange-400 flex items-center justify-center shadow-md">
+                          <div className="absolute -bottom-0.5 -left-0.5 sm:-bottom-1 sm:-left-1 w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 rounded-full bg-[var(--color-card)] border border-orange-400 flex items-center justify-center shadow-md">
                             <img
                               src={`https://res.17roco.qq.com/res/talent/${selectedTalentId}_small.png`}
                               alt="血脉"
@@ -2508,7 +2440,7 @@ export default function RocoPetSimulator() {
                         )}
                       </div>
                       {/* 宠物名称 - 放大版 */}
-                      <span className={`mt-1 sm:mt-2 text-[10px] sm:text-xs md:text-sm font-medium text-center whitespace-nowrap w-full px-0.5 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+                      <span className={`mt-1 sm:mt-2 text-[10px] sm:text-xs md:text-sm font-medium text-center whitespace-nowrap w-full px-0.5 text-[var(--color-foreground)]`}>
                         {pet.name}
                       </span>
                     </motion.div>
@@ -2519,7 +2451,7 @@ export default function RocoPetSimulator() {
 
             {/* 操作提示 */}
             {lineup.length > 0 && (
-              <p className={`text-center text-sm mt-6 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+              <p className={`text-center text-sm mt-6 text-[var(--color-muted-foreground)]`}>
                 点击移除，右键菜单，拖拽调整顺序
               </p>
             )}
@@ -2528,9 +2460,7 @@ export default function RocoPetSimulator() {
             {expandedContextMenu.visible && expandedContextMenu.petId && (
               <>
                 <div
-                  className={`fixed z-[70] rounded-lg shadow-lg py-2 min-w-[150px] ${
-                    isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
-                  }`}
+                  className="fixed z-[70] rounded-lg shadow-xl py-2 min-w-[150px] bg-[var(--color-card)] border border-[var(--color-border)]"
                   style={{ left: expandedContextMenu.x, top: expandedContextMenu.y }}
                 >
                   {/* 切换外观选项 */}
@@ -2541,7 +2471,7 @@ export default function RocoPetSimulator() {
                         setModals(prev => ({ ...prev, skin: true }));
                         setExpandedContextMenu(prev => ({ ...prev, visible: false }));
                       }}
-                      className={`w-full px-4 py-2 text-left text-sm hover:bg-blue-500/10 text-blue-500`}
+                      className={`w-full px-4 py-2 text-left text-sm hover:bg-orange-500/10 text-orange-500`}
                     >
                       切换外观
                     </button>
@@ -2574,10 +2504,10 @@ export default function RocoPetSimulator() {
       {/* 导入/导出模态框 */}
       {importExportModal.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setImportExportModal({ open: false, mode: 'import' })}>
-          <div className={`rounded-xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto ${isDark ? 'bg-gray-800' : 'bg-white'}`} onClick={e => e.stopPropagation()}>
+          <div className={`rounded-xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto bg-[var(--color-card)]`} onClick={e => e.stopPropagation()}>
             {/* 模态框标题和模式切换 */}
             <div className="flex items-center justify-between mb-4">
-              <h3 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              <h3 className={`text-xl font-bold text-[var(--color-foreground)]`}>
                 {importExportModal.mode === 'import' ? '导入宠物' : '导出宠物'}
               </h3>
               <div className="flex rounded-lg overflow-hidden border">
@@ -2588,8 +2518,8 @@ export default function RocoPetSimulator() {
                   }}
                   className={`px-3 py-1 text-xs transition-colors ${
                     importExportModal.mode === 'import'
-                      ? 'bg-blue-500 text-white'
-                      : isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      ? 'bg-[var(--color-primary)] text-[var(--color-primary-foreground)]'
+                      : isDark ? 'bg-[var(--color-muted)] text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)]/20' : 'bg-[var(--color-muted)] text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)]/20'
                   }`}
                 >
                   导入
@@ -2601,8 +2531,8 @@ export default function RocoPetSimulator() {
                   }}
                   className={`px-3 py-1 text-xs transition-colors ${
                     importExportModal.mode === 'export'
-                      ? 'bg-blue-500 text-white'
-                      : isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      ? 'bg-[var(--color-primary)] text-[var(--color-primary-foreground)]'
+                      : isDark ? 'bg-[var(--color-muted)] text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)]/20' : 'bg-[var(--color-muted)] text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)]/20'
                   }`}
                 >
                   导出
@@ -2613,7 +2543,7 @@ export default function RocoPetSimulator() {
             {/* 导入模式内容 */}
             {importExportModal.mode === 'import' && (
               <div className="space-y-4">
-                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                <p className={`text-sm text-[var(--color-muted-foreground)]`}>
                   输入宠物ID或名称，多个宠物用逗号、换行或空格分隔。系统会自动识别并匹配宠物。
                 </p>
                 <textarea
@@ -2622,14 +2552,14 @@ export default function RocoPetSimulator() {
                   placeholder="例如：2585, 海芙约忒, 巴哈姆特&#10;或者每行一个宠物名称"
                   className={`w-full h-48 p-3 rounded-lg border resize-none text-sm ${
                     isDark
-                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-500'
-                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
+                      ? 'bg-[var(--color-card)] border-[var(--color-border)] text-[var(--color-foreground)] placeholder-[var(--color-muted-foreground)]'
+                      : 'bg-[var(--color-card)] border-[var(--color-border)] text-[var(--color-foreground)] placeholder-[var(--color-muted-foreground)]'
                   }`}
                 />
                 <div className="flex justify-end gap-2">
                   <button
                     onClick={() => setImportExportModal({ open: false, mode: 'import' })}
-                    className={`px-4 py-2 rounded-lg ${isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                    className={`px-4 py-2 rounded-lg bg-[var(--color-muted)] text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)]/20`}
                   >
                     取消
                   </button>
@@ -2646,7 +2576,7 @@ export default function RocoPetSimulator() {
             {/* 导出模式内容 */}
             {importExportModal.mode === 'export' && (
               <div className="space-y-4">
-                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                <p className={`text-sm text-[var(--color-muted-foreground)]`}>
                   导出当前账号拥有的宠物列表。选择导出格式后，可以复制到剪贴板。
                 </p>
                 {/* 导出格式选择 */}
@@ -2655,8 +2585,8 @@ export default function RocoPetSimulator() {
                     onClick={() => setExportFormat('id')}
                     className={`px-3 py-1.5 text-xs rounded-full transition-all ${
                       exportFormat === 'id'
-                        ? 'bg-blue-500 text-white'
-                        : isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        ? 'bg-[var(--color-primary)] text-[var(--color-primary-foreground)]'
+                        : isDark ? 'bg-[var(--color-muted)] text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)]/20' : 'bg-[var(--color-muted)] text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)]/20'
                     }`}
                   >
                     ID格式
@@ -2665,32 +2595,30 @@ export default function RocoPetSimulator() {
                     onClick={() => setExportFormat('name')}
                     className={`px-3 py-1.5 text-xs rounded-full transition-all ${
                       exportFormat === 'name'
-                        ? 'bg-blue-500 text-white'
-                        : isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        ? 'bg-[var(--color-primary)] text-[var(--color-primary-foreground)]'
+                        : isDark ? 'bg-[var(--color-muted)] text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)]/20' : 'bg-[var(--color-muted)] text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)]/20'
                     }`}
                   >
                     名称格式
                   </button>
                 </div>
                 {/* 导出内容预览 */}
-                <div className={`p-3 rounded-lg border max-h-48 overflow-y-auto ${
-                  isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'
-                }`}>
-                  <pre className={`text-xs whitespace-pre-wrap break-all ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                <div className="p-3 rounded-lg border max-h-48 overflow-y-auto bg-[var(--color-muted)] border-[var(--color-border)]">
+                  <pre className={`text-xs whitespace-pre-wrap break-all text-[var(--color-foreground)]`}>
                     {getExportText() || '当前账号没有宠物'}
                   </pre>
                 </div>
                 <div className="flex justify-end gap-2">
                   <button
                     onClick={() => setImportExportModal({ open: false, mode: 'import' })}
-                    className={`px-4 py-2 rounded-lg ${isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                    className={`px-4 py-2 rounded-lg bg-[var(--color-muted)] text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)]/20`}
                   >
                     关闭
                   </button>
                   <button
                     onClick={() => copyToClipboard(getExportText())}
                     disabled={!getExportText()}
-                    className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white rounded-lg transition-colors"
+                    className="px-4 py-2 bg-[var(--color-primary)] hover:bg-[var(--color-accent)] disabled:bg-[var(--color-muted)] text-[var(--color-primary-foreground)] rounded-lg transition-colors"
                   >
                     复制到剪贴板
                   </button>
