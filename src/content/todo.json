@@ -3,22 +3,22 @@
   "showStats": true,
   "items": [
     {
-      "id": "mma4jywppbzqd",
-      "content": "学高数、学线代、学大物（悲）",
-      "completed": false,
-      "priority": "low",
-      "dueDate": "",
-      "createdAt": "2026-03-03T04:45:33.433Z",
-      "updatedAt": "2026-04-11T09:53:14.000Z"
-    },
-    {
       "id": "mma4jljb7edxs",
       "content": "嘤语六级",
       "completed": false,
       "priority": "medium",
-      "dueDate": "2026-06-13",
+      "dueDate": "2026-12-20",
       "createdAt": "2026-03-03T04:45:16.103Z",
-      "updatedAt": "2026-03-03T04:45:21.295Z"
+      "updatedAt": "2026-08-28T17:59:56.556Z"
+    },
+    {
+      "id": "1787940014352-n1m3k22kk",
+      "content": "开学补考！！！！！",
+      "completed": false,
+      "priority": "high",
+      "dueDate": "2026-09-06",
+      "createdAt": "2026-08-28T18:00:14.352Z",
+      "updatedAt": "2026-08-28T18:00:14.352Z"
     }
   ]
 }

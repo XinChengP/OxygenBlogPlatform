@@ -43,6 +43,7 @@ interface NavItem {
 
 /**
  * 导航项组件属性接口
+ * pathname 通过 prop 从父组件传入，避免在 map 回调中调用 usePathname 违反 Hook 规则
  */
 interface NavItemProps {
   item: NavItem;
@@ -52,6 +53,7 @@ interface NavItemProps {
   expandedItems: Set<string>;
   toggleExpand: (id: string) => void;
   onMobileClose: () => void;
+  pathname: string;
 }
 
 /**
@@ -66,6 +68,7 @@ const NavItemComponent: React.FC<NavItemProps> = ({
   expandedItems,
   toggleExpand,
   onMobileClose,
+  pathname,
 }) => {
   const hasChildren = item.children && item.children.length > 0;
   const isExpanded = expandedItems.has(item.id);
@@ -174,9 +177,10 @@ const NavItemComponent: React.FC<NavItemProps> = ({
               <div className="absolute left-4 top-0 bottom-0 w-px bg-gradient-to-b from-gray-200 dark:from-gray-700 to-transparent" />
               
               {item.children!.map((child, index) => {
-                const childPathname = usePathname();
-                const childIsActive = childPathname === child.href;
-                
+                // 直接使用父组件传入的 pathname 判断激活状态
+                // 禁止在此处调用 usePathname()，map 回调内调用 Hook 会违反 React Hook 规则导致页面崩溃
+                const childIsActive = pathname === child.href;
+
                 return (
                   <motion.div
                     key={child.id}
@@ -367,6 +371,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
             expandedItems={expandedItems}
             toggleExpand={toggleExpand}
             onMobileClose={onMobileClose}
+            pathname={pathname}
           />
         ))}
       </nav>
