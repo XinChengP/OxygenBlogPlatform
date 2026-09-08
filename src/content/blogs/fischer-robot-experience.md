@@ -7,6 +7,7 @@ author: 歆橙
 language: "zh-CN"
 tags: ["夏令营", "慧鱼机器人", "心得"]
 excerpt: "夏令营，小子！"
+coverImage: "/Blogabout/fischer-robot-experience/3.jpg"
 ---
 
 # 背景
@@ -86,3 +87,7 @@ excerpt: "夏令营，小子！"
 &emsp;&emsp;可惜没和队友一块合影留念（bushi）
 
 玛雅我这以前废话怎么这么多，看不下去了
+
+## 分享链接
+
+- **额写的代码**：[点击下载](https://xinchengp.lanzout.com/iPdTX47g883c) （密码：<span id="password-1122" style="cursor: pointer; background-color: var(--password-bg, transparent); color: var(--password-text, inherit); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--password-border, transparent); transition: all 0.2s ease;" data-password="Summer">Summer</span>）
