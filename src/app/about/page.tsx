@@ -1188,7 +1188,7 @@ export default function AboutPage() {
         {/* 页面标题 - 使用统一的 PageHeader 组件 */}
         <PageHeader
           title="关于我"
-          description="了解我的博客、技术栈和联系方式"
+          description="关于我の冷知识（？）"
           size="lg"
           className="mb-8"
           gradientStyle="primary"
