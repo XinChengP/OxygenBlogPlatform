@@ -108,7 +108,8 @@ const DEFAULT_MUSIC_CONFIG: MusicConfig = {
     netease: {
       enabled: true,
       playlistId: "14349636887",
-      api: "https://api.i-meto.com/meting/api",
+      // 原 api.i-meto.com 已下线，更换为 injahow 公共 Meting API
+      api: "https://api.injahow.cn/meting/",
       description: "网易云音乐歌单（通过 Meting API 加载）"
     }
   },

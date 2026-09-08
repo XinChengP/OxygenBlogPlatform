@@ -125,8 +125,8 @@ export const productionCSP: CSPDirectives = {
     'https://cloudflareinsights.com',
     // Google Analytics
     'https://www.google-analytics.com',
-    // 网易云音乐歌单 Meting API
-    'https://api.i-meto.com',
+    // 网易云音乐歌单 Meting API（原 api.i-meto.com 已下线，更换为 api.injahow.cn）
+    'https://api.injahow.cn',
     // 本地开发
     'http://localhost:*',
     'ws://localhost:*',

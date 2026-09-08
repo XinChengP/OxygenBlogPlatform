@@ -23,18 +23,27 @@ import type { ProcessedAudioItem } from '@/types/music';
 
 /**
  * Meting API 返回的单首歌曲数据格式
+ *
+ * 说明：不同 Meting API 实现的字段命名不一致：
+ * - 标准 Meting 格式（如 api.injahow.cn）：name / artist / url / pic / lrc
+ * - 部分旧版实现：title / author / url / pic / lrc
+ * 为保证兼容性，本服务同时支持两种字段命名
  */
 export interface MetingApiSong {
-  /** 歌曲标题 */
-  title: string;
-  /** 歌手/艺术家 */
-  author: string;
+  /** 歌曲标题（标准格式字段） */
+  name?: string;
+  /** 歌曲标题（旧版格式字段） */
+  title?: string;
+  /** 歌手/艺术家（标准格式字段） */
+  artist?: string;
+  /** 歌手/艺术家（旧版格式字段） */
+  author?: string;
   /** 音频文件 URL */
   url: string;
   /** 封面图片 URL */
   pic: string;
   /** 歌词文件 URL */
-  lrc: string;
+  lrc?: string;
 }
 
 /**
@@ -65,8 +74,10 @@ export interface NeteaseLoadResult {
 
 // ==================== 常量定义 ====================
 
-/** 默认的 Meting API 地址（公共 API，稳定性不保证，建议自建或选择稳定的第三方 API） */
-const DEFAULT_METING_API = 'https://api.i-meto.com/meting/api';
+/** 默认的 Meting API 地址（公共 API，稳定性不保证，建议自建或选择稳定的第三方 API）
+ * 注意：原 api.i-meto.com/meting/api 已于 2026 年下线（请求超时），更换为 injahow 提供的公共 Meting API
+ */
+const DEFAULT_METING_API = 'https://api.injahow.cn/meting/';
 
 /** 默认歌单 ID */
 const DEFAULT_PLAYLIST_ID = '14349636887';
@@ -133,16 +144,16 @@ class NeteasePlaylistService {
   private buildApiUrl(config: NeteasePlaylistConfig): string {
     const api = config.api || DEFAULT_METING_API;
     const playlistId = config.playlistId || DEFAULT_PLAYLIST_ID;
-    
-    // 去除 api 末尾的斜杠，避免重复斜杠
-    const baseApi = api.endsWith('/') ? api.slice(0, -1) : api;
-    
+
+    // 注意：保留 API 地址末尾的斜杠原样拼接
+    // 例如 api.injahow.cn/meting/ 必须带斜杠访问，去掉斜杠会触发 301 重定向，增加延迟且可能超时
+
     // 如果 api 已经包含查询参数，需要追加而不是覆盖
-    if (baseApi.includes('?')) {
-      return `${baseApi}&server=netease&type=playlist&id=${encodeURIComponent(playlistId)}`;
+    if (api.includes('?')) {
+      return `${api}&server=netease&type=playlist&id=${encodeURIComponent(playlistId)}`;
     }
-    
-    return `${baseApi}?server=netease&type=playlist&id=${encodeURIComponent(playlistId)}`;
+
+    return `${api}?server=netease&type=playlist&id=${encodeURIComponent(playlistId)}`;
   }
 
   /**
@@ -178,6 +189,11 @@ class NeteasePlaylistService {
 
   /**
    * 验证 Meting API 返回的歌曲数据是否有效
+   *
+   * 兼容两种字段命名：
+   * - 标准格式：name（标题）/ artist（歌手）
+   * - 旧版格式：title（标题）/ author（歌手）
+   *
    * @param song 待验证的歌曲数据
    * @returns 是否有效
    */
@@ -188,10 +204,15 @@ class NeteasePlaylistService {
 
     const s = song as Record<string, unknown>;
 
-    // 必需字段检查
+    // 标题字段兼容：优先 name，其次 title
+    const title = s.name ?? s.title;
+    // 歌手字段兼容：优先 artist，其次 author
+    const artist = s.artist ?? s.author;
+
+    // 必需字段检查（标题、歌手、音频URL、封面URL 均为非空字符串）
     if (
-      typeof s.title !== 'string' || s.title.trim() === '' ||
-      typeof s.author !== 'string' || s.author.trim() === '' ||
+      typeof title !== 'string' || title.trim() === '' ||
+      typeof artist !== 'string' || artist.trim() === '' ||
       typeof s.url !== 'string' || s.url.trim() === '' ||
       typeof s.pic !== 'string' || s.pic.trim() === ''
     ) {
@@ -207,10 +228,15 @@ class NeteasePlaylistService {
    * @param index 歌曲在歌单中的索引，用于生成唯一 ID
    * @returns 处理后的音频项
    */
-  private convertToAudioItem(song: MetingApiSong, index: number): ProcessedAudioItem {
+  private convertToAudioItem(song: MetingApiSong, _index: number): ProcessedAudioItem {
+    // 标题字段兼容：优先标准格式 name，其次旧版格式 title
+    const title = song.name ?? song.title ?? '';
+    // 歌手字段兼容：优先标准格式 artist，其次旧版格式 author
+    const artist = song.artist ?? song.author ?? '';
+
     return {
-      name: song.title.trim(),
-      artist: song.author.trim(),
+      name: title.trim(),
+      artist: artist.trim(),
       url: song.url.trim(),
       cover: song.pic.trim(),
       // 歌词可选，如果存在则使用
