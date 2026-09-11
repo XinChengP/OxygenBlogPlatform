@@ -279,7 +279,40 @@ export const occasionalGames: GameConfig[] = [
   },
 ];
 
-// 我的设备配置
+// 个人技能雷达配置
+// 用于在关于页面以雷达图形式展示个人技能分布
+export interface SkillRadarItem {
+  /** 技能维度名称（会显示在雷达图轴上） */
+  subject: string;
+  /** 熟练度 0-100 */
+  score: number;
+  /** 简短描述，鼠标悬停 tooltip 时显示 */
+  description?: string;
+}
+
+/**
+ * 个人技能列表
+ * 分数建议范围：20-95，避免全部 100 导致雷达图失去辨识度
+ * subject 不要太长，建议 2-4 字
+ */
+export const skillList: SkillRadarItem[] = [
+  { subject: '前端开发', score: 0, description: '全靠万能的ai大人' },
+  { subject: '编程基础', score: 23.3, description: '没啥会的，只会最基础的hello world' },
+  { subject: '机械工程', score: 60, description: '感觉高了（' },
+  { subject: '学习能力', score: 69, description: '反正就这样了' },
+  { subject: '运动能力', score: 33, description: '又菜又爱玩' },
+  { subject: '视频剪辑', score: 60, description: '梦到哪里剪到哪里' },
+  { subject: '音乐调参', score: 10, description: '我自己调的自己都听不下去' },
+  { subject: '设计审美', score: 50, description: '中规中矩吧' },
+];
+
+/**
+ * 个人评价（可选）
+ * 技能雷达卡片底部的一句话自况或座右铭，为空字符串则不显示
+ */
+export const skillEvaluation = '自评：还得练';
+
+//我的设备配置
 // 用于在关于页面展示个人使用的设备
 export interface DeviceConfig {
   id: string; // 唯一标识
@@ -505,8 +538,7 @@ export const devices: DeviceConfig[] = [
   { id: 'phone', 
     name: '手机',
     backContent: [
-      '现用：荣耀X50',
-      '吃灰：荣耀500Pro',
+      '荣耀500Pro',
     ],
   },
   { id: 'tablet', 

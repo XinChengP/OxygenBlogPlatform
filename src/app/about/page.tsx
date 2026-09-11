@@ -111,6 +111,8 @@ import {
   devices,
   animeList,
   travelLocations,
+  skillList,
+  skillEvaluation,
   type AboutSectionConfig,
   type HobbyConfig,
   type MBTIConfig,
@@ -119,6 +121,8 @@ import {
   type DeviceConfig,
   type AnimeConfig,
 } from '@/setting/AboutSetting';
+// 技能雷达卡片组件（独立文件，避免主文件过长）
+import SkillRadarCard from '@/components/about/SkillRadarCard';
 
 /**
  * Lucide 图标映射表
@@ -1691,7 +1695,7 @@ export default function AboutPage() {
                 <DeviceCard devices={devices} />
               </motion.div>
 
-              {/* 右列 - 我追的番 + 旅行足迹 70% */}
+              {/* 右列 - 我追的番 + 技能雷达 & 旅行足迹 70% */}
               <div className="flex flex-col gap-6">
                 {/* 我追的番 */}
                 <motion.div
@@ -1705,25 +1709,31 @@ export default function AboutPage() {
                   <AnimeCard animeList={animeList} />
                 </motion.div>
 
-                {/* 旅行足迹 - 占右列50%，即全局35%，靠右对齐 */}
-                <motion.div
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: '-100px' }}
-                  transition={{ duration: 0.6, delay: 0.7 }}
-                  className={`${getGlassStyle("rounded-2xl p-6 border")} w-1/2 ml-auto`}
-                >
-                  <div className="flex items-center gap-2 mb-4">
-                    <motion.div
-                      animate={{ rotate: [0, 10, -10, 0] }}
-                      transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-                    >
-                      <MapPin className="w-5 h-5 text-primary" />
-                    </motion.div>
-                    <h3 className="text-xl font-semibold text-foreground">旅行足迹</h3>
-                  </div>
-                  <TravelMap locations={travelLocations} />
-                </motion.div>
+                {/* 技能雷达 + 旅行足迹 - 桌面端左右并排，移动端上下堆叠 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* 技能雷达卡片（左半） */}
+                  <SkillRadarCard skills={skillList} evaluation={skillEvaluation} />
+
+                  {/* 旅行足迹卡片（右半） */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: '-100px' }}
+                    transition={{ duration: 0.6, delay: 0.75 }}
+                    className={`${getGlassStyle("rounded-2xl p-6 border")}`}
+                  >
+                    <div className="flex items-center gap-2 mb-4">
+                      <motion.div
+                        animate={{ rotate: [0, 10, -10, 0] }}
+                        transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                      >
+                        <MapPin className="w-5 h-5 text-primary" />
+                      </motion.div>
+                      <h3 className="text-xl font-semibold text-foreground">旅行足迹</h3>
+                    </div>
+                    <TravelMap locations={travelLocations} />
+                  </motion.div>
+                </div>
               </div>
             </div>
           </div>
