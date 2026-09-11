@@ -18,6 +18,9 @@ Disallow: /api/
 Disallow: /draft/
 Disallow: /temp/
 
+# 禁止爬取音乐配置文件（避免 AI 爬虫获取歌单数据）
+Disallow: /content/music.json
+
 # 站点地图地址 - 帮助搜索引擎发现所有页面
 Sitemap: https://blog.xinchengp.cn/sitemap.xml
 

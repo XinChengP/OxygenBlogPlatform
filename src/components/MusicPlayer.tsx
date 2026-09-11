@@ -1062,45 +1062,83 @@ const MusicPlayerComponent = function MusicPlayer({
 
           {/* 播放列表：作为主卡片内部的流式子元素，与主卡片"连一块"（视觉上是一个整体）。
               紧接在控制区下方，max-h 限制 + 独立滚动，避免歌曲太多撑爆播放器。
-              顶部用 border-t 与控制区分隔（视觉上是连续的同一卡片），底部保留下方圆角。 */}
+              顶部用 border-t 与控制区分隔（视觉上是连续的同一卡片），底部保留下方圆角。
+
+              【反爬防护】交互门控渲染：
+              - 折叠状态（!isVisible）：只渲染当前播放的那一首歌，避免 AI 爬虫在 DOM 中看到完整歌单
+              - 展开状态（isVisible）：渲染完整的 audioList 列表，供用户浏览和切换
+              - data-nosnippet：搜索引擎层面的额外防护，告知搜索爬虫不要截取此区域内容 */}
           <div
             ref={playlistRef}
             className="mt-2 max-h-[240px] overflow-y-auto border-t border-[#66ccff]/20 rounded-b-2xl"
+            data-nosnippet
+            aria-hidden={!isVisible}
           >
-            {audioList.map((song, index) => (
-              <div
-                key={`${song.name}-${song.artist}-${index}`}
-                data-current-song={index === currentIndex}
-                onClick={() => handleSwitchSong(index)}
-                className={`
-                  flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors last:rounded-b-2xl
-                  ${index === currentIndex
-                    ? 'bg-[#66ccff]/10 dark:bg-[#66ccff]/15 border-l-2 border-[#66ccff]'
-                    : 'hover:bg-slate-100 dark:hover:bg-slate-700/50 border-l-2 border-transparent'
-                  }
-                `}
-              >
-                <div className="text-xs text-slate-400 w-5 text-center">
-                  {index === currentIndex && isPlaying ? (
-                    <div className="flex items-end justify-center gap-0.5 h-3">
-                      <span className="w-0.5 bg-[#66ccff] animate-[music-bar_0.6s_ease-in-out_infinite]" style={{ height: '60%' }} />
-                      <span className="w-0.5 bg-[#66ccff] animate-[music-bar_0.8s_ease-in-out_infinite]" style={{ height: '100%' }} />
-                      <span className="w-0.5 bg-[#66ccff] animate-[music-bar_0.7s_ease-in-out_infinite]" style={{ height: '40%' }} />
+            {/* 展开状态：渲染完整歌单列表（仅在用户真正 hover 展开播放器后才渲染） */}
+            {isVisible ? (
+              audioList.map((song, index) => (
+                <div
+                  key={`${song.name}-${song.artist}-${index}`}
+                  data-current-song={index === currentIndex}
+                  onClick={() => handleSwitchSong(index)}
+                  className={`
+                    flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors last:rounded-b-2xl
+                    ${index === currentIndex
+                      ? 'bg-[#66ccff]/10 dark:bg-[#66ccff]/15 border-l-2 border-[#66ccff]'
+                      : 'hover:bg-slate-100 dark:hover:bg-slate-700/50 border-l-2 border-transparent'
+                    }
+                  `}
+                >
+                  <div className="text-xs text-slate-400 w-5 text-center">
+                    {index === currentIndex && isPlaying ? (
+                      <div className="flex items-end justify-center gap-0.5 h-3">
+                        <span className="w-0.5 bg-[#66ccff] animate-[music-bar_0.6s_ease-in-out_infinite]" style={{ height: '60%' }} />
+                        <span className="w-0.5 bg-[#66ccff] animate-[music-bar_0.8s_ease-in-out_infinite]" style={{ height: '100%' }} />
+                        <span className="w-0.5 bg-[#66ccff] animate-[music-bar_0.7s_ease-in-out_infinite]" style={{ height: '40%' }} />
+                      </div>
+                    ) : (
+                      index + 1
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className={`text-sm truncate ${index === currentIndex ? 'text-[#0099cc] dark:text-[#66ccff] font-medium' : 'text-slate-700 dark:text-slate-200'}`}>
+                      {song.name}
                     </div>
-                  ) : (
-                    index + 1
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className={`text-sm truncate ${index === currentIndex ? 'text-[#0099cc] dark:text-[#66ccff] font-medium' : 'text-slate-700 dark:text-slate-200'}`}>
-                    {song.name}
-                  </div>
-                  <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                    {highlightArtistName(song.artist)}
+                    <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                      {highlightArtistName(song.artist)}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              /* 折叠状态：只显示当前播放歌曲作为占位，不暴露完整歌单 */
+              currentSong && (
+                <div
+                  data-current-song="true"
+                  className="flex items-center gap-3 px-4 py-2.5 bg-[#66ccff]/10 dark:bg-[#66ccff]/15 border-l-2 border-[#66ccff] last:rounded-b-2xl"
+                >
+                  <div className="text-xs text-slate-400 w-5 text-center">
+                    {isPlaying ? (
+                      <div className="flex items-end justify-center gap-0.5 h-3">
+                        <span className="w-0.5 bg-[#66ccff] animate-[music-bar_0.6s_ease-in-out_infinite]" style={{ height: '60%' }} />
+                        <span className="w-0.5 bg-[#66ccff] animate-[music-bar_0.8s_ease-in-out_infinite]" style={{ height: '100%' }} />
+                        <span className="w-0.5 bg-[#66ccff] animate-[music-bar_0.7s_ease-in-out_infinite]" style={{ height: '40%' }} />
+                      </div>
+                    ) : (
+                      currentIndex + 1
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm truncate text-[#0099cc] dark:text-[#66ccff] font-medium">
+                      {currentSong.name}
+                    </div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                      {highlightArtistName(currentSong.artist)}
+                    </div>
+                  </div>
+                </div>
+              )
+            )}
           </div>
         </div>
       </div>

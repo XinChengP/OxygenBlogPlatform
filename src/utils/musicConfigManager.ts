@@ -20,6 +20,57 @@ import { neteasePlaylistService } from '@/services/neteasePlaylistService';
 export type { MusicSource, ProcessedAudioItem };
 
 /**
+ * AI 爬虫 User-Agent 关键词列表
+ *
+ * 说明：匹配列表中的任意一个关键词（不区分大小写），即可判定为 AI 爬虫。
+ * 保留传统搜索引擎（Googlebot、Bingbot、Baiduspider、Sogou、360Spider 等），
+ * 只屏蔽以下几类：
+ * 1. AI 产品爬虫：Claude、GPT、Perplexity、字节跳动、华为等
+ * 2. SEO 工具爬虫：Semrush、Ahrefs、Majestic 等
+ * 3. 其他不想被爬取敏感数据的产品：Amazon、Apple 等
+ */
+const AI_CRAWLER_UA_KEYWORDS = [
+  // AI 产品
+  'claudeBot',           // Anthropic Claude
+  'anthropic',           // Anthropic 其他产品
+  'gptbot',              // OpenAI GPT
+  'chatgpt-user',        // ChatGPT 用户爬虫
+  'perplexitybot',       // Perplexity AI
+  'perplexity',          // Perplexity 其他
+  'youbot',              // You.com
+  'google-extended',     // Google AI (原 Bard)
+  'bytespider',          // 字节跳动（抖音、飞书）
+  'petalbot',            // 华为爬虫
+  // SEO 工具爬虫
+  'semrushbot',          // Semrush
+  'semrush',             // Semrush 其他
+  'ahrefsbot',           // Ahrefs
+  'mj12bot',             // Majestic
+  'rogerbot',            // Moz
+  'seokicks',            // SEOkicks
+  'serpstatbot',         // Serpstat
+  'dotbot',              // Dotbot
+  // 其他
+  'amazonbot',           // Amazon
+  'applebot',            // Apple
+  'duckduckbot',         // DuckDuckGo
+];
+
+/**
+ * 检测当前客户端是否为 AI 爬虫
+ *
+ * 仅在浏览器环境（typeof window !== 'undefined'）下有效。
+ * 在服务端（SSR）或缺少 User-Agent 时返回 false（不拦截，让页面正常渲染）。
+ *
+ * @returns 是否为 AI 爬虫
+ */
+function detectAiCrawler(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent.toLowerCase();
+  return AI_CRAWLER_UA_KEYWORDS.some(keyword => ua.includes(keyword));
+}
+
+/**
  * 本地音乐源配置接口
  */
 export interface LocalSourceConfig {
@@ -471,7 +522,10 @@ class MusicConfigManager {
       this.neteaseSongs = [];
       if (typeof window !== 'undefined') {
         const neteaseConfig = config.sources?.netease;
-        if (neteaseConfig && neteaseConfig.enabled) {
+        // 【反爬防护】检测 AI 爬虫 User-Agent，对它们跳过网易云歌单加载
+        // 保留传统搜索引擎（Googlebot、Bingbot 等），只屏蔽 AI 产品和 SEO 工具爬虫
+        const isAiCrawler = detectAiCrawler();
+        if (neteaseConfig && neteaseConfig.enabled && !isAiCrawler) {
           try {
             const neteaseResult = await neteasePlaylistService.loadPlaylist(neteaseConfig);
             if (neteaseResult.success && neteaseResult.songs.length > 0) {

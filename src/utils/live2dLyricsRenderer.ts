@@ -53,6 +53,13 @@ class Live2DLyricsRenderer {
     // 停掉旧实例
     this.stop();
 
+    // 【防呆保护】歌词为空时不进入歌词模式
+    // 如果传给渲染器的是空数组（歌曲没有 LRC 歌词），直接放弃渲染
+    // 否则会进入歌词模式（enterLyricsMode），把所有 Live2D message 永久屏蔽！
+    if (!lines || lines.length === 0) {
+      return;
+    }
+
     this.lines = lines;
     this.getCurrentTime = getCurrentTime;
     this.visibleLines = config?.visibleLines ?? 3;
