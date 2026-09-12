@@ -113,6 +113,8 @@ import {
   travelLocations,
   skillList,
   skillEvaluation,
+  favoriteSongs,
+  favoriteQuotes,
   type AboutSectionConfig,
   type HobbyConfig,
   type MBTIConfig,
@@ -123,6 +125,8 @@ import {
 } from '@/setting/AboutSetting';
 // 技能雷达卡片组件（独立文件，避免主文件过长）
 import SkillRadarCard from '@/components/about/SkillRadarCard';
+// 个人偏好 Top N 卡片（歌曲排行 + 语录墙合并）
+import TopFavoritesCard from '@/components/about/TopFavoritesCard';
 
 /**
  * Lucide 图标映射表
@@ -283,7 +287,7 @@ function DeviceCard({ devices }: { devices: DeviceConfig[] }) {
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col">
       {/* 卡片小标题 */}
       <div className="flex items-center gap-2 mb-4">
         <motion.div
@@ -296,7 +300,7 @@ function DeviceCard({ devices }: { devices: DeviceConfig[] }) {
       </div>
 
       {/* 设备列表 - 每个设备都是一张翻牌卡片 */}
-      <div className="grid grid-cols-2 gap-3 flex-1">
+      <div className="grid grid-cols-2 gap-3">
         {devices.map((device, index) => {
           const IconComponent = deviceIconMap[device.id];
           const [isHovered, setIsHovered] = useState(false);
@@ -1684,16 +1688,21 @@ export default function AboutPage() {
           {/* 页底区域 */}
           <div className="col-span-full lg:col-span-4 mt-0">
             <div className="grid grid-cols-1 lg:grid-cols-[3fr_7fr] gap-6">
-              {/* 左侧 - 我的设备卡片 30% */}
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-100px' }}
-                transition={{ duration: 0.6, delay: 0.6 }}
-                className={`${getGlassStyle("rounded-2xl p-6 border")} self-start`}
-              >
-                <DeviceCard devices={devices} />
-              </motion.div>
+              {/* 左侧 - 我的设备卡片 + 个人偏好 30% */}
+              <div className="flex flex-col gap-6 self-start">
+                <motion.div
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '-100px' }}
+                  transition={{ duration: 0.6, delay: 0.6 }}
+                  className={`${getGlassStyle("rounded-2xl p-6 border")} shrink-0`}
+                >
+                  <DeviceCard devices={devices} />
+                </motion.div>
+
+                {/* 个人偏好 Top N - 放在左侧设备卡下方空白处 */}
+                <TopFavoritesCard songs={favoriteSongs} quotes={favoriteQuotes} />
+              </div>
 
               {/* 右列 - 我追的番 + 技能雷达 & 旅行足迹 70% */}
               <div className="flex flex-col gap-6">

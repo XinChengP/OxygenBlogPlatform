@@ -312,6 +312,53 @@ export const skillList: SkillRadarItem[] = [
  */
 export const skillEvaluation = '自评：还得练';
 
+// ===== 个人偏好配置 =====
+
+/**
+ * 最喜欢的歌曲 Top 排行 项
+ */
+export interface FavoriteSongItem {
+  /** 排名序号（从 1 开始） */
+  rank: number;
+  /** 歌曲名称 */
+  name: string;
+  /** 歌手/调教师（可选） */
+  artist?: string;
+  /** 简短推荐语（hover 或下方小字显示） */
+  description?: string;
+  /** 外链地址（可选，比如网易云歌曲链接） */
+  url?: string;
+}
+
+/**
+ * 最喜欢的歌曲 Top 排行
+ * 建议放 3-5 首，太多会显得挤
+ */
+export const favoriteSongs: FavoriteSongItem[] = [
+  { rank: 1, name: '歌行四方', artist: '洛天依', description: '入坑曲，夯爆了' },
+  { rank: 2, name: '三月雨', artist: 'Wing翼', description: '1099' },
+  { rank: 3, name: '笨鸥', artist: '纯白', description: '抓住自己的风' },
+];
+
+/**
+ * 语录/金句 项
+ */
+export interface FavoriteQuoteItem {
+  /** 语录内容 */
+  text: string;
+  /** 出处（可选） */
+  source?: string;
+}
+
+/**
+ * 最喜欢的语录 / 金句
+ * 放在偏好卡片底部，建议 2-4 条
+ */
+export const favoriteQuotes: FavoriteQuoteItem[] = [
+  { text: '满地都是六便士，他却抬头看见了月亮', source: '《月亮与六便士》' },
+  { text: '人生得意须尽欢', source: '— 《将进酒》' },
+];
+
 //我的设备配置
 // 用于在关于页面展示个人使用的设备
 export interface DeviceConfig {
