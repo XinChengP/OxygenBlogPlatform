@@ -1,7 +1,6 @@
 ---
 title: "如何每个版本多白嫖大量原石？"
 date: "2026-09-12"
-updatedAt: "2026-09-12"
 category: "技术"
 author: 歆橙
 language: "zh-CN"

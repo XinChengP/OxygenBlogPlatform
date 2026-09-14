@@ -82,8 +82,27 @@ const devConfig = {
         source: '/:path*',
         headers: [
           {
+            /*
+              开发环境的缓存策略（必须禁用强缓存）
+
+              原值为 public, max-age=31536000, immutable，即「一年强缓存 + 永不重新验证」。
+              这在开发模式下是有害的，原因有二：
+              1. dev 模式产出的 chunk 文件名不含内容哈希（形如
+                 src_app_blogs_[slug]_ClientBlogDetail_tsx_41968b2e._.js，
+                 其中 41968b2e 是稳定的模块图标识，不随源码内容变化）。
+              2. immutable 的语义是「此资源永远不会改变」，浏览器据此不再发请求，
+                 连硬刷新（Ctrl+Shift+R）也不会重新验证。
+
+              两者叠加的结果：改了源码、甚至重启了 dev server，
+              浏览器仍在使用旧 chunk，表现为「改代码不生效」或
+              「HMR 报某模块的模块工厂不存在（module factory is not available）」。
+
+              因此开发环境改为 no-store，让每次请求都拿最新内容。
+              注意：生产环境走 staticConfig，其未配置 headers 字段，不受此处影响，
+              GitHub Pages 上仍由各平台默认策略处理。
+            */
             key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
+            value: 'no-store, must-revalidate',
           },
           {
             key: 'Strict-Transport-Security',

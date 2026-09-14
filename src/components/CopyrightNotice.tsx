@@ -19,6 +19,17 @@ interface CopyrightNoticeProps {
   reference?: Array<{description: string; link: string}>;
   /** CC 协议类型（可选，默认使用配置中的） */
   licenseType?: CCLicenseType;
+  /**
+   * 裸模式
+   *
+   * 开启后不再渲染自身的外层间距与顶部分隔线，也不渲染 CC 声明块自带的卡片外壳
+   * （背景、边框、圆角、模糊、内边距），仅保留文字内容。
+   *
+   * 使用场景：本组件被文章结尾的「标签/分享/版权」合并卡片收纳时，
+   * 若继续保留自带外壳，就会出现「卡片套卡片」的双层边框。
+   * Reference 引用块因本身是主题色浅底的特殊区块，仍保持原样渲染。
+   */
+  bare?: boolean;
 }
 
 /**
@@ -30,7 +41,8 @@ export default function CopyrightNotice({
   publishDate,
   slug,
   reference,
-  licenseType = copyrightConfig.defaultLicense
+  licenseType = copyrightConfig.defaultLicense,
+  bare = false,
 }: CopyrightNoticeProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   
@@ -52,7 +64,7 @@ export default function CopyrightNotice({
     : reference;
   
   return (
-    <div className="mt-8 pt-6 border-t border-border/30">
+    <div className={bare ? '' : 'mt-8 pt-6 border-t border-border/30'}>
       {/* Reference 引用信息 */}
       {reference && reference.length > 0 && (
         <div className="mb-5 p-4 bg-primary/5 rounded-2xl border border-primary/15">
@@ -106,7 +118,14 @@ export default function CopyrightNotice({
       
       {/* CC 转载声明 */}
       {copyrightConfig.showCopyright && (
-        <div className="bg-card/60 backdrop-blur-sm rounded-2xl border border-border/40 p-4">
+        <div
+          className={
+            bare
+              ? // 裸模式：交出卡片外壳，只留文字，外层卡片统一负责背景与边框
+                ''
+              : 'bg-card/60 backdrop-blur-sm rounded-2xl border border-border/40 p-4'
+          }
+        >
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
               <span>© {copyrightYear} {copyrightConfig.author}</span>

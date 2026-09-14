@@ -287,6 +287,61 @@ async function getBlogContent(slug: string): Promise<BlogPost | null> {
 }
 
 /**
+ * 从 public/LTY_Picture 图集中为文章挑选一张分享配图
+ *
+ * 为什么不用「真随机」：
+ * 本站采用静态导出（output: 'export'），所有 HTML 与页面元数据都在构建期一次性生成，
+ * 运行时既没有服务端也没有数据接口，因此无法实现「每次访问随机换一张图」。
+ *
+ * 这里采用「构建期读取目录 + slug 稳定散列」的方案，兼顾两点体验：
+ * - 不同文章会命中不同配图，看起来是随机分配的
+ * - 同一篇文章每次构建结果固定，避免社交平台反复抓取时缩略图来回跳变
+ *
+ * @param slug - 文章的唯一标识符，同时作为散列的种子
+ * @returns 站内路径形式的图片地址（以 / 开头）；目录不存在或无可用图片时返回 null
+ */
+function pickRandomShareImage(slug: string): string | null {
+  try {
+    // 候选图集所在目录：public 目录下的洛天依图片
+    const imageDir = path.join(process.cwd(), 'public', 'LTY_Picture');
+
+    // 只保留常见图片格式，排除目录中的 mp4 等视频文件
+    const imageExtensions = ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.avif'];
+
+    const candidates = fs
+      .readdirSync(imageDir)
+      // 先过滤扩展名，再确认是文件而非同名目录
+      .filter((file) => imageExtensions.includes(path.extname(file).toLowerCase()))
+      .filter((file) => fs.statSync(path.join(imageDir, file)).isFile())
+      // 排除 og-image.png：它是为上一步专门裁出来的分享兜底图，不属于图集原始成员。
+      // 若留在池中，会与下方的兜底逻辑重复，且某些 slug 恰好命中它时，
+      // 会让人误以为随机逻辑没有生效
+      .filter((file) => file !== 'og-image.png')
+      // 必须排序：readdirSync 的原始顺序依赖文件系统，
+      // 不排序会导致不同机器、不同次构建挑到不同的图，破坏结果的稳定性
+      .sort();
+
+    if (candidates.length === 0) {
+      return null;
+    }
+
+    // 稳定散列：以 31 为权重逐字符累乘，再用 >>> 0 转成 32 位无符号整数
+    // 相比简单累加，乘法散列能让相近的 slug（如 xxx-1、xxx-2）落到差异更大的位置
+    let hash = 0;
+    for (let i = 0; i < slug.length; i++) {
+      hash = (hash * 31 + slug.charCodeAt(i)) >>> 0;
+    }
+
+    // 文件名可能包含中文（如「别害怕了.jpg」），必须编码后才能安全拼进 URL
+    return `/LTY_Picture/${encodeURIComponent(candidates[hash % candidates.length])}`;
+  } catch (error) {
+    // 目录缺失或读取失败时静默降级，交由调用方使用固定兜底图，不影响元数据生成
+    console.error('Error picking random share image:', error);
+    return null;
+  }
+}
+
+/**
  * 生成博客详情页面的 SEO 元数据
  * 
  * @param props - 包含 params 参数的对象
@@ -320,7 +375,43 @@ export async function generateMetadata({ params }: BlogDetailPageProps): Promise
   // 优先使用元数据中的 SEO 标题和描述，否则使用默认值
   const seoTitle = blogData.title || '博客文章';
   const seoDescription = blogData.excerpt || `阅读这篇关于${blogData.category}的文章，了解更多技术知识。`;
-  
+
+  /**
+   * 站点根地址
+   *
+   * 与 layout.tsx 中的 BASE_URL 取值保持一致，均优先读取环境变量，
+   * 未配置时回退到线上正式域名。这里必须使用绝对地址，
+   * 因为社交平台抓取页面元数据时无法解析相对路径。
+   */
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://blog.xinchengp.cn';
+
+  /** 本文的规范访问地址，供社交平台识别链接归属并去重 */
+  const articleUrl = blogData.canonicalUrl || `${siteUrl}/blogs/${encodeURIComponent(blogData.slug)}`;
+
+  /**
+   * 分享卡片配图
+   *
+   * 优先使用文章 frontmatter 中的封面图（coverImage），
+   * 该字段已在 getBlogContent 中统一处理过路径格式。
+   *
+   * 需区分两种情况：
+   * - 封面为站内相对路径（以 / 开头）：需拼上站点域名，转为社交平台可访问的绝对地址
+   * - 封面本身已是完整外链（以 http 开头）：原样使用，重复拼接会导致地址失效
+   *
+   * 若文章未配置封面，则从 public/LTY_Picture 图集中按 slug 散列挑一张作为配图；
+   * 万一图集目录不可用（返回 null），再退回固定默认图，保证分享时始终有图可展示。
+   */
+  const fallbackImage = pickRandomShareImage(blogData.slug) || '/LTY_Picture/og-image.png';
+
+  const shareImage = blogData.coverImage
+    ? blogData.coverImage.startsWith('http')
+      ? blogData.coverImage
+      : `${siteUrl}${blogData.coverImage}`
+    : `${siteUrl}${fallbackImage}`;
+
+  /** 分享配图的替代文本，同时用于图片可访问性 */
+  const shareImageAlt = `《${seoTitle}》封面图`;
+
   return {
     title: `${seoTitle} - OxygenBlogPlatform`,
     description: seoDescription,
@@ -328,15 +419,27 @@ export async function generateMetadata({ params }: BlogDetailPageProps): Promise
       title: seoTitle,
       description: seoDescription,
       type: 'article',
+      url: articleUrl,
+      siteName: '心想事成的个人博客',
+      locale: 'zh_CN',
       publishedTime: blogData.date,
       modifiedTime: blogData.updatedAt,
       authors: blogData.author ? [blogData.author] : undefined,
       tags: blogData.tags,
+      // 配图采用数组形式，社交平台会按顺序取第一张作为缩略图
+      images: [
+        {
+          url: shareImage,
+          alt: shareImageAlt,
+        },
+      ],
     },
     twitter: {
+      // summary_large_image 表示大图卡片，与上方 openGraph.images 配套使用
       card: 'summary_large_image',
       title: seoTitle,
       description: seoDescription,
+      images: [shareImage],
     }
   };
 }

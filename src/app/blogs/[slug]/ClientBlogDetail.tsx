@@ -25,6 +25,7 @@ import { useTheme } from 'next-themes';
 import { Live2DMessageHelper } from '../../../utils/live2dMessageManager';
 import { trackArticleView } from '../../../components/Analytics';
 import { useBlogMarkdownComponents } from '../../../components/blogs/BlogMarkdownComponents';
+import BlogSharePanel from '../../../components/blogs/BlogSharePanel';
 
 // 动态导入大型组件，优化初始加载性能
 const LazyTableOfContents = lazy(() => import('../../../components/TableOfContents'));
@@ -65,7 +66,7 @@ interface ClientBlogDetailProps {
   seriesArticles: SeriesArticle[];
 }
 
-// 互动功能Hook - 已移除点赞、收藏、分享、浏览统计功能
+// 互动功能Hook - 已移除点赞、收藏、浏览统计功能（分享功能见 BlogSharePanel 组件）
 
 /**
  * 博客详情客户端组件
@@ -81,7 +82,7 @@ interface ClientBlogDetailProps {
  * - 支持主题切换
  * - 支持复制代码功能
  * - 支持响应式布局
- * - 新增互动功能（点赞、收藏、分享）
+ * - 支持文章分享（复制链接、社交平台跳转）
  * - 增强视觉设计和用户体验
  * 
  * @param blog - 博客文章数据
@@ -94,7 +95,6 @@ export default function ClientBlogDetail({ blog, seriesArticles }: ClientBlogDet
   const [lightboxImage, setLightboxImage] = useState<PreviewImage | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [readProgress, setReadProgress] = useState(0);
-  const [showBackToTop, setShowBackToTop] = useState(false);
   const articleImagesRef = useRef<PreviewImage[]>([]);
   const imageSrcSetRef = useRef<Set<string>>(new Set());
   const iframeRefs = useRef<Array<HTMLIFrameElement | null>>([]);
@@ -104,14 +104,13 @@ export default function ClientBlogDetail({ blog, seriesArticles }: ClientBlogDet
     setMounted(true);
   }, []);
 
-  // 阅读进度和返回顶部按钮
+  // 阅读进度条：监听滚动实时计算文章阅读百分比
   useEffect(() => {
     const handleScroll = () => {
       const scrollTop = window.scrollY;
       const docHeight = document.documentElement.scrollHeight - window.innerHeight;
       const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
       setReadProgress(Math.min(100, Math.max(0, progress)));
-      setShowBackToTop(scrollTop > 500);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -119,10 +118,6 @@ export default function ClientBlogDetail({ blog, seriesArticles }: ClientBlogDet
 
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
 
   // 组件挂载时清空图片收集列表，防止路由切换或热更新后残留旧数据
   useEffect(() => {
@@ -603,33 +598,23 @@ export default function ClientBlogDetail({ blog, seriesArticles }: ClientBlogDet
 
           {/* 文章结尾 */}
           <div className="mt-12">
-            {/* 标签和系列信息 - 移动到文章后面 */}
-            <div className="flex flex-wrap items-start gap-4 mb-8">
-              {blog.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2 bg-card/60 backdrop-blur-sm rounded-2xl p-4 border border-border/40 shadow-sm">
-                  {blog.tags.map((tag, index) => (
-                    <span 
-                      key={index} 
-                      className="px-3.5 py-1.5 bg-primary/10 text-primary rounded-full text-xs font-medium hover:bg-primary/20 transition-colors cursor-pointer"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              )}
-              
-              {blog.series && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground bg-card/60 backdrop-blur-sm px-4 py-3 rounded-2xl border border-border/40 shadow-sm">
-                  <BookOpenIcon className="h-4 w-4 text-primary/70" />
-                  <span>系列: {blog.series}</span>
-                  {blog.seriesOrder && (
-                    <span className="px-2 py-0.5 bg-primary/20 text-primary rounded-full text-xs">
-                      第 {blog.seriesOrder} 篇
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
+            {/*
+              系列信息
+              原本与标签块同处一个 flex 容器，标签块已并入下方的结尾合并卡，
+              因此这里单独成块。用 w-fit 保持「内容宽度」而非撑满整行，
+              与原视觉宽度一致。
+            */}
+            {blog.series && (
+              <div className="w-fit mb-8 flex items-center gap-2 text-sm text-muted-foreground bg-card/60 backdrop-blur-sm px-4 py-3 rounded-2xl border border-border/40 shadow-sm">
+                <BookOpenIcon className="h-4 w-4 text-primary/70" />
+                <span>系列: {blog.series}</span>
+                {blog.seriesOrder && (
+                  <span className="px-2 py-0.5 bg-primary/20 text-primary rounded-full text-xs">
+                    第 {blog.seriesOrder} 篇
+                  </span>
+                )}
+              </div>
+            )}
 
             {/* 系列文章导航 */}
             {blog.series && seriesArticles.length > 0 && (
@@ -666,15 +651,66 @@ export default function ClientBlogDetail({ blog, seriesArticles }: ClientBlogDet
               </div>
             )}
 
-            {/* 结束语 */}
-            <div className="rounded-2xl p-6 mb-8 bg-gradient-to-r from-primary/10 to-primary/5">
-              <p className="text-lg text-muted-foreground italic leading-relaxed">{EndWord}</p>
-            </div>
+            {/*
+              文章收尾融合块
+              「结束语 / 标签 / 分享 / 版权」四部分共用这一个渐变底块，
+              彼此之间不加任何边框与分隔线，只用统一的 space-y-6 留白隔开。
 
-            {/* 版权声明 */}
-          <Suspense fallback={<div className="h-24 bg-card/60 animate-pulse rounded-2xl border border-border/40"></div>}>
-            <LazyCopyrightNotice title={blog.title} publishDate={blog.date} slug={blog.slug} reference={blog.reference} />
-          </Suspense>
+              为什么这样改：
+              1. 早先这四部分是四张各自带边框的卡片，层层堆叠后像一沓纸片；
+                改成一张卡片装三块后，卡片内部又出现了「小标题 + 分隔线」的表格感，
+                两块轻内容（标签、分享）与一块重内容（版权文字）被强行等分，依旧别扭。
+              2. 现在彻底放弃「分区」这个概念：不再有小标题、不再有横线，
+                靠内容自身的形态做区隔——胶囊就是标签、图标行就是分享、© 文字就是版权。
+                读者的视觉断点从「四次」降到「一次」（只在这一整块的开头）。
+              3. 标签胶囊原本被包在卡片里，现在直接铺在渐变底上；
+                分享与版权两个子组件继续以 bare 裸模式接入，
+                交出各自的卡片外壳与自带标题，避免块内再冒出第二条边框和重复标题。
+            */}
+            <div className="rounded-2xl p-6 sm:p-8 mb-8 bg-gradient-to-r from-primary/10 to-primary/5 space-y-6">
+              {/* 结束语 */}
+              <p className="text-lg text-muted-foreground italic leading-relaxed">{EndWord}</p>
+
+              {/* 标签：胶囊形态本身即可自解释，无需再加「标签」二字的小标题 */}
+              {blog.tags && blog.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {blog.tags.map((tag, index) => (
+                    <span
+                      key={index}
+                      /*
+                        底色刻意不用 bg-primary/10：
+                        本块渐变底的左半部分恰好也是 primary/10，两者完全同色，
+                        胶囊会在左侧「隐形」，只剩文字悬在渐变上。
+                        改用背景色打底 + 描边，让胶囊从渐变底上浮出来，
+                        亮色模式呈白胶囊、暗色模式呈深胶囊，两种主题下都有清晰轮廓。
+                      */
+                      className="px-3.5 py-1.5 bg-background/70 border border-border/40 text-primary rounded-full text-xs font-medium hover:bg-background hover:border-primary/40 transition-colors cursor-pointer"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* 分享：一排图标按钮，形态即语义 */}
+              <BlogSharePanel
+                title={blog.title}
+                slug={blog.slug}
+                excerpt={blog.excerpt}
+                bare
+              />
+
+              {/* 版权：文字自然成段 */}
+              <Suspense fallback={<div className="h-20 bg-muted/40 animate-pulse rounded-2xl"></div>}>
+                <LazyCopyrightNotice
+                  title={blog.title}
+                  publishDate={blog.date}
+                  slug={blog.slug}
+                  reference={blog.reference}
+                  bare
+                />
+              </Suspense>
+            </div>
           </div>
 
           {/* 评论区 */}
@@ -697,25 +733,6 @@ export default function ClientBlogDetail({ blog, seriesArticles }: ClientBlogDet
               setLightboxImage(null);
             }}
           />
-        )}
-      </AnimatePresence>
-
-      {/* 返回顶部按钮 */}
-      <AnimatePresence>
-        {mounted && showBackToTop && (
-          <motion.button
-            initial={{ opacity: 0, scale: 0.8, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.8, y: 20 }}
-            onClick={scrollToTop}
-            className="fixed bottom-6 right-6 z-40 w-12 h-12 rounded-full bg-card/80 backdrop-blur-md border border-border/50 shadow-lg flex items-center justify-center text-foreground/70 hover:text-primary hover:bg-primary/10 transition-colors"
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-            </svg>
-          </motion.button>
         )}
       </AnimatePresence>
 

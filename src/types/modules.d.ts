@@ -73,6 +73,8 @@ declare module '@/components/CopyrightNotice' {
       link: string;
     }>;
     licenseType?: "CC BY" | "CC BY-SA" | "CC BY-NC" | "CC BY-NC-SA" | "CC BY-ND" | "CC BY-NC-ND";
+    /** 裸模式：不渲染自带卡片外壳与顶部分隔线，交由父容器统一承担 */
+    bare?: boolean;
   }
   
   const CopyrightNotice: React.FC<CopyrightNoticeProps>;
