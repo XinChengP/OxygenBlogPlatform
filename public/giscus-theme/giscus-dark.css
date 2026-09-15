@@ -55,6 +55,10 @@ main {
   --color-canvas-default: transparent;
   /* 次级面板用博客的 --muted #2a3441 */
   --color-canvas-subtle: #2a3441;
+  /* 内凹区域同样用 --muted。
+     注意：回复楼层 .gsc-replies 引用的就是这个变量，但它已在本文件末尾被显式
+     规则改写成「半透明亚克力」——毛玻璃依赖 backdrop-filter，而变量只能传颜色，
+     因此这里保留实色，仅作为其他内凹区域的兜底。 */
   --color-canvas-inset: #2a3441;
   /* 浮层必须不透明：画布已经是透明的，
      若浮层也透明，表情选择器会与底层文字重叠到一起，完全无法辨认 */
@@ -144,4 +148,22 @@ main .pagination-loader-container {
 
 main .gsc-loading-image {
   background-image: url("https://github.githubassets.com/images/mona-loading-dark.gif");
+}
+
+/* ========== 回复楼层：半透明亚克力 ==========
+   giscus 的回复区容器 .gsc-replies 自身带类 color-bg-inset，
+   其编译后规则为 background-color: var(--color-canvas-inset)，
+   因此这里必须用显式选择器覆盖，而不是改上面的变量，原因有两个：
+     1. 变量只能传颜色，传不了 backdrop-filter 所需的模糊半径；
+     2. 变量是全局的，改掉会连带影响其他内凹区域（如代码块底衬）。
+
+   底色透明度取 0（完全透明），即回复楼层不显示任何底色，
+   直接透出下方博客卡片的背景，与评论区其余部分融为一体。
+   保留 backdrop-filter：一旦回复区下方存在纹理或图片，
+   它依然能呈现毛玻璃质感；背景为纯色时该声明不产生可见影响。 */
+main .gsc-replies {
+  background-color: transparent;
+  /* -webkit- 前缀用于兼容 Safari，Safari 对该属性仍需前缀才能生效 */
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
 }
