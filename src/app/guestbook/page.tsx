@@ -129,7 +129,7 @@ export default function Guestbook() {
         {/* 页面标题 - 使用统一的 PageHeader 组件 */}
         <PageHeader
           title="留言板"
-          description="欢迎留下您的想法和建议"
+          description="留下点什么吧awa"
           size="lg"
           className="mb-12"
           gradientStyle="primary"

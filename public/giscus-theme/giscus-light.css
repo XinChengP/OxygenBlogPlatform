@@ -175,3 +175,21 @@ main .gsc-replies {
   -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
 }
+
+/* ========== 输入框区域：同样不做底色 ==========
+   输入区由三块构成，实测各自的类名与取值来源如下：
+     .gsc-comment-box-tabs          带类 color-bg-tertiary → 读 --color-canvas-subtle
+     .gsc-comment-box-textarea      带类 input-contrast   → 读 --color-canvas-inset
+     .gsc-comment-box-textarea-extras 带类 input-contrast → 读 --color-canvas-inset
+   这三块上下相邻、共用同一圈描边，视觉上是一个整体。
+   若只让中间输入框透出、两侧仍是实色，会出现一道横向色带断层，
+   因此一并置为透明，使整个输入区与回复楼层、评论区底色保持一致。
+
+   这里不加 backdrop-filter：输入区下方就是博客卡片的纯色背景，
+   模糊纯色等于纯色，加了只有渲染开销、没有视觉收益。
+   文字与描边均不受影响，输入时仍能看清光标和输入范围。 */
+main .gsc-comment-box-tabs,
+main .gsc-comment-box-textarea,
+main .gsc-comment-box-textarea-extras {
+  background-color: transparent;
+}

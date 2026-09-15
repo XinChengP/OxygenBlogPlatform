@@ -102,7 +102,7 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
     <div className={containerStyle.className} style={containerStyle.style}>
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         <PageHeader
-          title="时光河流"
+          title="归档"
           description={`共 ${totalPosts} 篇文章，按发布时间线浏览`}
           size="lg"
           className="mb-12"
