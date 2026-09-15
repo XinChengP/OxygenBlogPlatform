@@ -152,8 +152,13 @@ interface ShareChannelConfig {
    * 统一使用 viewBox="0 0 24 24" 的官方品牌轮廓，
    * 这样所有图标能套用同一套尺寸与描边规则，视觉上整齐划一。
    * 图标来源：
-   * - 微博、X：simple-icons 官方图标库
+   * - 微博、X、QQ好友、豆瓣：simple-icons 官方图标库（CC0 协议，可商用、免署名）
    * - QQ空间：SVG Repo 的 Popular Company Logo Icons（CC0 协议，可商用）
+   * - 百度贴吧：全网图标库均无「贴吧」专属的填充型品牌图标
+   *   （唯一命中项为 arcticons 的描边版，且为 CC BY-SA 4.0 授权，
+   *   要求署名并以相同协议共享，对博客而言授权负担偏重），
+   *   故改用同为 simple-icons 的百度品牌标志——贴吧系百度旗下产品，
+   *   图标风格与授权许可都与其余渠道保持一致。
    */
   iconPath: string;
   /** 按钮容器在悬停时的样式（含平台品牌色） */
@@ -197,6 +202,63 @@ const SHARE_CHANNELS: ShareChannelConfig[] = [
     iconClass: 'group-hover:text-[#e6a700]',
     buildUrl: ({ url, title, summary }) =>
       `https://sns.qzone.qq.com/cgi-bin/qzshare/cgi_qzshare_onekey?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}&summary=${encodeURIComponent(summary)}&site=${encodeURIComponent(copyrightConfig.siteName)}`,
+  },
+  {
+    key: 'qq',
+    label: 'QQ好友',
+    /*
+      腾讯 QQ 官方标志：企鹅剪影
+      参数说明（来自 connect.qq.com 定向分享组件文档）：
+      - url     要分享的网页地址
+      - title   分享标题
+      - summary 分享摘要（对链接的描述）
+      - site    分享来源，用于展示「来自某网站」
+      该地址在 PC 端会打开「发送给QQ好友和群组」页面；
+      若当前未登录 QQ，腾讯侧会自动退化为扫码弹窗，这是对方的行为，不影响接入。
+    */
+    iconPath:
+      'M21.395 15.035a40 40 0 0 0-.803-2.264l-1.079-2.695c.001-.032.014-.562.014-.836C19.526 4.632 17.351 0 12 0S4.474 4.632 4.474 9.241c0 .274.013.804.014.836l-1.08 2.695a39 39 0 0 0-.802 2.264c-1.021 3.283-.69 4.643-.438 4.673.54.065 2.103-2.472 2.103-2.472 0 1.469.756 3.387 2.394 4.771-.612.188-1.363.479-1.845.835-.434.32-.379.646-.301.778.343.578 5.883.369 7.482.189 1.6.18 7.14.389 7.483-.189.078-.132.132-.458-.301-.778-.483-.356-1.233-.646-1.846-.836 1.637-1.384 2.393-3.302 2.393-4.771 0 0 1.563 2.537 2.103 2.472.251-.03.581-1.39-.438-4.673',
+    // QQ 品牌色为亮蓝，与天依蓝接近但更饱和，仍能作为悬停反馈被识别出来
+    buttonClass: 'hover:border-[#12b7f5]/40 hover:bg-[#12b7f5]/10',
+    iconClass: 'group-hover:text-[#12b7f5]',
+    buildUrl: ({ url, title, summary }) =>
+      `https://connect.qq.com/widget/shareqq/index.html?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}&summary=${encodeURIComponent(summary)}&site=${encodeURIComponent(copyrightConfig.siteName)}`,
+  },
+  {
+    key: 'tieba',
+    label: '百度贴吧',
+    /*
+      百度官方标志：贴吧无专属填充型品牌图标，故取母公司标志代替
+      参数说明：url 为分享链接、title 为帖子标题、pic 为配图
+      本组件未拿到文章封面（Props 中无封面字段），故 pic 传空值，
+      让贴吧按分享链接自行抓取缩略图，避免传一个无效地址反而覆盖掉自动抓取结果。
+    */
+    iconPath:
+      'M9.154 0C7.71 0 6.54 1.658 6.54 3.707c0 2.051 1.171 3.71 2.615 3.71 1.446 0 2.614-1.659 2.614-3.71C11.768 1.658 10.6 0 9.154 0zm7.025.594C14.86.58 13.347 2.589 13.2 3.927c-.187 1.745.25 3.487 2.179 3.735 1.933.25 3.175-1.806 3.422-3.364.252-1.555-.995-3.364-2.362-3.674a1.218 1.218 0 0 0-.261-.03zM3.582 5.535a2.811 2.811 0 0 0-.156.008c-2.118.19-2.428 3.24-2.428 3.24-.287 1.41.686 4.425 3.297 3.864 2.617-.561 2.262-3.68 2.183-4.362-.125-1.018-1.292-2.773-2.896-2.75zm16.534 1.753c-2.308 0-2.617 2.119-2.617 3.616 0 1.43.121 3.425 2.988 3.362 2.867-.063 2.553-3.238 2.553-3.988 0-.745-.62-2.99-2.924-2.99zm-8.264 2.478c-1.424.014-2.708.925-3.323 1.947-1.118 1.868-2.863 3.05-3.112 3.363-.25.309-3.61 2.116-2.864 5.42.746 3.301 3.365 3.237 3.365 3.237s1.93.19 4.171-.31c2.24-.495 4.17.123 4.17.123s5.233 1.748 6.665-1.616c1.43-3.364-.808-5.109-.808-5.109s-2.99-2.306-4.736-4.798c-1.072-1.665-2.348-2.268-3.528-2.257zm-2.234 3.84l1.542.024v8.197H7.758c-1.47-.291-2.055-1.292-2.13-1.462-.072-.173-.488-.976-.268-2.343.635-2.049 2.447-2.196 2.447-2.196h1.81zm3.964 2.39v3.881c.096.413.612.488.612.488h1.614v-4.343h1.689v5.782h-3.915c-1.517-.39-1.59-1.465-1.59-1.465v-4.317zm-5.458 1.147c-.66.197-.978.708-1.05.928-.076.22-.247.78-.1 1.269.294 1.095 1.248 1.144 1.248 1.144h1.37v-3.34z',
+    // 百度品牌蓝较深，与天依蓝区分度足够，悬停时才显现不会干扰日常观感
+    buttonClass: 'hover:border-[#2932e1]/40 hover:bg-[#2932e1]/10',
+    iconClass: 'group-hover:text-[#2932e1]',
+    buildUrl: ({ url, title }) =>
+      `https://tieba.baidu.com/f/commit/share/openShareApi?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}&pic=`,
+  },
+  {
+    key: 'douban',
+    label: '豆瓣',
+    /*
+      豆瓣官方标志：横向的「豆」字块
+      地址说明：旧的 shuo.douban.com/!service/share 与 www.douban.com/recommend
+      目前都会 302 跳转到 www.douban.com/share/service，
+      这里直接写最终地址，省掉一次跳转、也避免旧地址日后彻底下线带来的失效风险。
+      参数说明：href 为分享链接、name 为标题、url/title 为豆瓣新版页面额外兜底字段。
+      注意：豆瓣分享页需要登录态，未登录会跳转登录页，这属正常流程而非接口故障。
+    */
+    iconPath:
+      'M.51 3.06h22.98V.755H.51V3.06Zm20.976 2.537v9.608h-2.137l-1.669 5.76H24v2.28H0v-2.28h6.32l-1.67-5.76H2.515V5.597h18.972Zm-5.066 9.608H7.58l1.67 5.76h5.501l1.67-5.76ZM18.367 7.9H5.634v5.025h12.733V7.9Z',
+    // 豆瓣品牌绿，与其他渠道的暖色系形成区分
+    buttonClass: 'hover:border-[#007722]/40 hover:bg-[#007722]/10',
+    iconClass: 'group-hover:text-[#007722]',
+    buildUrl: ({ url, title }) =>
+      `https://www.douban.com/share/service?href=${encodeURIComponent(url)}&name=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}&image=`,
   },
   {
     key: 'x',
