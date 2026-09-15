@@ -4,6 +4,7 @@ import matter from 'gray-matter';
 import BlogDetailWrapper from '@/app/blogs/[slug]/BlogDetailWrapper';
 import 'highlight.js/styles/github-dark.css';
 import { formatBlogDate, calculateReadingTime } from '@/utils';
+import { getSortedRelatedPosts, type RelatedPost } from '@/utils/relatedPostsUtils';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 
@@ -93,10 +94,18 @@ interface BlogFrontMatter {
   tags?: string[];
   readTime?: number;
   excerpt?: string;
+  coverImage?: string;
+  series?: string;
   reference?: Array<{description: string; link: string}>;
   pinned?: boolean;
   pinnedAt?: string;
-  hidden?: boolean;
+  /*
+    hidden 支持布尔值与字符串两种写法。
+    这与博客列表页 BlogFrontMatter 的定义保持一致：
+    YAML 中若写成 hidden: "true"（带引号）会被解析为字符串，
+    只判断布尔值会导致这类文章在列表页隐藏、却在详情页的推荐区泄漏。
+  */
+  hidden?: boolean | string;
   [key: string]: any; // 允许其他未知属性
 }
 
@@ -278,7 +287,12 @@ async function getBlogContent(slug: string): Promise<BlogPost | null> {
       reference: frontMatter.reference,
       pinned: frontMatter.pinned || false,
       pinnedAt: frontMatter.pinnedAt ? formatBlogDate(frontMatter.pinnedAt) : undefined,
-      hidden: frontMatter.hidden || false
+      /*
+        hidden 需要显式归一化为布尔值。
+        不能写成 frontMatter.hidden || false：YAML 中 hidden: "false" 会被解析为字符串，
+        而字符串 'false' 本身是真值，会让本应可见的文章被误判为隐藏。
+      */
+      hidden: frontMatter.hidden === true || frontMatter.hidden === 'true'
     };
   } catch (error) {
     console.error('Error reading blog content:', error);
@@ -483,8 +497,21 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
   if (blogData.series) {
     seriesArticles = await getSeriesArticles(blogData.series, decodedSlug);
   }
-  
-  return <BlogDetailWrapper blog={blogData} seriesArticles={seriesArticles} />;
+
+  // 计算相关文章推荐（全体文章参与，按分类/标签/系列/时间多维打分）
+  const relatedArticles = await getRelatedArticles(decodedSlug, blogData.date, {
+    category: blogData.category,
+    tags: blogData.tags,
+    series: blogData.series,
+  });
+
+  return (
+    <BlogDetailWrapper
+      blog={blogData}
+      seriesArticles={seriesArticles}
+      relatedArticles={relatedArticles}
+    />
+  );
 }
 
 // 禁用动态参数，只允许预生成的路由
@@ -527,6 +554,113 @@ async function getSeriesArticles(series: string, currentSlug: string): Promise<S
     return seriesArticles;
   } catch (error) {
     console.error('Error getting series articles:', error);
+    return [];
+  }
+}
+
+/**
+ * 获取用于「相关文章」推荐的候选列表（已按关联度排序）
+ *
+ * 与 getSeriesArticles 的分工：
+ * - getSeriesArticles 只处理「同系列」这一种强关系，产出系列导航
+ * - 本函数则面向全体文章做多维度打分，产出「相关文章」推荐
+ * 两者互不替代，可同时展示。
+ *
+ * 实现要点：
+ * - 排除当前文章自身，避免把自己推荐给自己
+ * - 排除 hidden 为 true 的文章，与博客列表页保持一致，避免隐藏内容从详情页泄漏
+ * - 摘要缺失时退而使用正文前 80 字，保证卡片不会出现空白描述
+ * - 所有候选在构建期一次性读取完毕，客户端直接拿结果渲染
+ *
+ * @param currentSlug - 当前文章的 slug
+ * @param currentDate - 当前文章日期，作为时间新鲜度的基准
+ * @param context - 当前文章的分类、标签、系列信息，用于打分
+ * @returns 按关联度降序排列的相关文章数组
+ */
+async function getRelatedArticles(
+  currentSlug: string,
+  currentDate: string,
+  context: { category: string; tags: string[]; series?: string }
+): Promise<RelatedPost[]> {
+  try {
+    const contentDir = path.join(process.cwd(), 'src/content/blogs');
+
+    if (!fs.existsSync(contentDir)) {
+      return [];
+    }
+
+    const markdownFiles = scanMarkdownFiles(contentDir, contentDir);
+    const candidates: RelatedPost[] = [];
+
+    for (const file of markdownFiles) {
+      // 跳过当前文章：推荐自己给自己没有意义
+      if (file.slug === currentSlug) continue;
+
+      try {
+        const fileContent = fs.readFileSync(file.filePath, 'utf8');
+        const { data, content } = matter(fileContent);
+        const frontMatter = data as BlogFrontMatter;
+
+        // 跳过隐藏文章，保持与列表页一致的可见性规则（兼容布尔值与字符串 'true' 两种写法）
+        if (frontMatter.hidden === true || frontMatter.hidden === 'true') continue;
+
+        const fileName = path.basename(file.filePath, '.md');
+
+        /*
+          摘要兜底策略：
+          部分文章未填写 excerpt，若直接留空，卡片会出现一块空描述的凹陷。
+          这里退而截取正文前 80 个字符，并剔除 Markdown 的常见标记，
+          让兜底摘要读起来仍是自然的一段文字而不是符号堆。
+        */
+        const fallbackExcerpt = content
+          .replace(/```[\s\S]*?```/g, '')        // 去掉代码块，代码不适合做摘要
+          .replace(/!\[[^\]]*\]\([^)]*\)/g, '')  // 去掉图片语法
+          .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1') // 链接只保留文字
+          /*
+            只去掉行首的 Markdown 块级标记（#、>、-、*、数字列表等），
+            而不用字符类逐个剔除：
+            前者能准确清掉标题与列表符号，后者会把正文里的英文连字符误删，
+            例如 machine-learning 会被破坏成 machinelearning。
+          */
+          .replace(/^[ \t]*(#{1,6}|>|[-*+]|\d+\.)[ \t]+/gm, '')
+          .replace(/[*_`~]/g, '')                // 行内强调标记可安全剔除
+          .replace(/\s+/g, ' ')                  // 压缩连续空白
+          .trim()
+          .slice(0, 80);
+
+        // 封面路径处理：与正文图片保持一致，相对路径统一转成以 / 开头的站内路径
+        let coverImage = frontMatter.coverImage;
+        if (coverImage && !coverImage.startsWith('http') && !coverImage.startsWith('/')) {
+          coverImage = coverImage.replace(/^\.\//, '').replace(/^\.\.\//, '');
+          coverImage = '/' + coverImage;
+        }
+
+        candidates.push({
+          title: frontMatter.title || fileName,
+          slug: file.slug,
+          date: formatBlogDate(frontMatter.date),
+          category: frontMatter.category || '其他',
+          tags: frontMatter.tags || [],
+          excerpt: frontMatter.excerpt || fallbackExcerpt,
+          readTime: frontMatter.readTime || calculateReadingTime(content),
+          coverImage,
+          series: frontMatter.series,
+        });
+      } catch {
+        // 跳过无法读取的文件，单篇异常不应影响整页渲染
+      }
+    }
+
+    // 交由工具层按多维度加权评分排序，保证服务端与客户端排序逻辑只有一份实现
+    return getSortedRelatedPosts(candidates, {
+      slug: currentSlug,
+      category: context.category,
+      tags: context.tags,
+      series: context.series,
+      date: currentDate,
+    });
+  } catch (error) {
+    console.error('Error getting related articles:', error);
     return [];
   }
 }

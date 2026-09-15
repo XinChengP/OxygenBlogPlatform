@@ -26,6 +26,7 @@ import { Live2DMessageHelper } from '../../../utils/live2dMessageManager';
 import { trackArticleView } from '../../../components/Analytics';
 import { useBlogMarkdownComponents } from '../../../components/blogs/BlogMarkdownComponents';
 import BlogSharePanel from '../../../components/blogs/BlogSharePanel';
+import RelatedPosts from '../../../components/blogs/RelatedPosts';
 
 // 动态导入大型组件，优化初始加载性能
 const LazyTableOfContents = lazy(() => import('../../../components/TableOfContents'));
@@ -61,9 +62,29 @@ interface SeriesArticle {
   date: string;
 }
 
+/**
+ * 相关文章条目接口
+ *
+ * 服务端已在构建期完成打分排序，这里只用于渲染卡片，
+ * 因此字段与 utils/relatedPostsUtils.ts 中的 RelatedPost 保持一致。
+ */
+interface RelatedPost {
+  title: string;
+  slug: string;
+  date: string;
+  category: string;
+  tags: string[];
+  excerpt: string;
+  readTime: number;
+  coverImage?: string;
+  series?: string;
+}
+
 interface ClientBlogDetailProps {
   blog: BlogPost;
   seriesArticles: SeriesArticle[];
+  /** 相关文章推荐列表，由服务端预计算后传入；为空数组时该区域不渲染 */
+  relatedArticles?: RelatedPost[];
 }
 
 // 互动功能Hook - 已移除点赞、收藏、浏览统计功能（分享功能见 BlogSharePanel 组件）
@@ -88,7 +109,11 @@ interface ClientBlogDetailProps {
  * @param blog - 博客文章数据
  * @returns JSX 元素
  */
-export default function ClientBlogDetail({ blog, seriesArticles }: ClientBlogDetailProps) {
+export default function ClientBlogDetail({
+  blog,
+  seriesArticles,
+  relatedArticles = [],
+}: ClientBlogDetailProps) {
   const { theme, resolvedTheme } = useTheme();
   const { containerStyle } = useBackgroundStyle('blog-detail');
   const [mounted, setMounted] = useState(false);
@@ -711,6 +736,15 @@ export default function ClientBlogDetail({ blog, seriesArticles }: ClientBlogDet
                 />
               </Suspense>
             </div>
+
+            {/*
+              相关文章推荐
+              位置说明：放在收尾融合块之后、评论区之前。
+              读者读完正文与版权说明时正处于「是否继续读」的决策点，此处推荐最有效；
+              若放到评论区之后，读者往往已开始浏览评论，注意力被分散。
+              组件内部会自动处理「无推荐结果」的情况，此处无需再做条件判断。
+            */}
+            <RelatedPosts posts={relatedArticles} />
           </div>
 
           {/* 评论区 */}

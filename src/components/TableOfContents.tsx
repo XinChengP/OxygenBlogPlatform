@@ -153,7 +153,14 @@ export default function TableOfContents({ content }: TableOfContentsProps) {
       {isMobile && (
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className={getGlassStyle("fixed bottom-6 right-4 z-50 w-12 h-12 rounded-full shadow-lg border flex items-center justify-center transition-all duration-200 hover:shadow-xl")}
+          /*
+            位置说明：不能沿用 bottom-6，否则会与右下角全局的 ScrollToTop 按钮组重叠。
+            全局按钮组横向占用 right-6（24px）至 68px，纵向自底部 24px 起向上堆叠，
+            默认三个按钮（设置 / 回到顶部 / 转到页底）共占 24px ~ 172px 的高度区间。
+            因此这里把按钮抬到 180px（172px 上限再加 8px 间隙），使其恰好位于按钮组正上方，
+            两者不再互相遮挡；横向仍保持 right-4，视觉上与本页其他浮动元素对齐。
+          */
+          className={getGlassStyle("fixed bottom-[180px] right-4 z-50 w-12 h-12 rounded-full shadow-lg border flex items-center justify-center transition-all duration-200 hover:shadow-xl")}
         >
           <svg
             className="w-5 h-5 text-foreground/70"
