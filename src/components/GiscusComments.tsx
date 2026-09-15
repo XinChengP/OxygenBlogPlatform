@@ -57,7 +57,8 @@ export default function GiscusComments({ id, type = 'blog' }: GiscusCommentsProp
   const scriptRef = useRef<HTMLScriptElement | null>(null);
   // 记录当前脚本对应的「讨论区标识」，用于区分「只是换了主题」与「换了文章」
   const scriptKeyRef = useRef<string | null>(null);
-  // 始终保存最新主题，供 iframe 加载完成后的补发使用
+  // 当前主题与最新主题都用 ref 保存：
+  // 创建脚本的 effect 因此无需依赖主题值，主题切换就不会重建 iframe
   const latestThemeRef = useRef<GiscusTheme>('light');
 
   // 站点实际生效的主题（next-themes 会把 system 解析为 light / dark）
@@ -74,8 +75,24 @@ export default function GiscusComments({ id, type = 'blog' }: GiscusCommentsProp
    */
   const [themeReady, setThemeReady] = useState(false);
 
+  /**
+   * 主题同步：把 next-themes 的值写入 ref，并推送给已存在的 iframe
+   *
+   * 这段逻辑同时承担两件事，因此合并为一个 effect：
+   * 1. 首次解析出主题时放行脚本创建（setThemeReady 传相同值时 React 会跳过重渲染，不会造成多余渲染）；
+   * 2. 之后每次切换主题时只发消息给 iframe，不触碰脚本。
+   *
+   * 用「只发消息」而非「重建脚本」的方式切换主题：
+   * 重建会让 iframe 整体重新加载，评论区会闪白、滚动位置丢失，
+   * 而 setConfig 只调整外观、不携带任何讨论区匹配信息，因此不会影响已有评论。
+   */
   useEffect(() => {
-    if (resolvedTheme) setThemeReady(true);
+    if (!resolvedTheme) return;
+
+    const theme: GiscusTheme = resolvedTheme === 'dark' ? 'dark' : 'light';
+    latestThemeRef.current = theme;
+    setThemeReady(true);
+    syncIframeTheme(ref.current, theme);
   }, [resolvedTheme]);
 
   // 创建 Giscus 脚本：仅在「首次主题就绪」或「更换了文章 / 用途」时执行
@@ -83,11 +100,7 @@ export default function GiscusComments({ id, type = 'blog' }: GiscusCommentsProp
     const container = ref.current;
     if (!container || !themeReady) return;
 
-    const theme: GiscusTheme = resolvedTheme === 'dark' ? 'dark' : 'light';
-    latestThemeRef.current = theme;
-
-    // 同一个讨论区再次进入（说明只是主题在变）时直接返回，
-    // 主题同步交给下方独立的 effect 处理，避免 iframe 被重建
+    // 同一个讨论区再次进入时直接返回，交由上方 effect 通过 postMessage 同步主题
     const discussionKey = `${type}:${id}`;
     if (scriptRef.current && scriptKeyRef.current === discussionKey) return;
 
@@ -124,7 +137,7 @@ export default function GiscusComments({ id, type = 'blog' }: GiscusCommentsProp
     // 跟随站点主题而非操作系统：
     // 读者手动把站点切成暗色时，评论区必须同时变暗，
     // 否则会出现「暗色页面配一块白色评论区」的割裂观感
-    script.setAttribute('data-theme', theme);
+    script.setAttribute('data-theme', latestThemeRef.current);
     script.setAttribute('data-lang', 'zh-CN');
     script.setAttribute('crossorigin', 'anonymous');
     script.setAttribute('async', 'true');
@@ -158,19 +171,9 @@ export default function GiscusComments({ id, type = 'blog' }: GiscusCommentsProp
       scriptRef.current = null;
       scriptKeyRef.current = null;
     };
-    // resolvedTheme 有意不列入依赖：主题切换由下方 effect 通过 postMessage 完成。
-    // 若列入依赖，每次切换主题都会重建 iframe，导致评论区闪烁并重新拉取数据。
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // 依赖中不含主题值：主题变化由上方 effect 通过 postMessage 处理，
+    // 若把主题列入依赖，每次切换主题都会重建 iframe，导致评论区闪烁并重新拉取数据。
   }, [id, type, themeReady]);
-
-  // 主题变化时同步给 iframe：只发消息、不重建脚本，因此不影响已加载的评论
-  useEffect(() => {
-    if (!resolvedTheme) return;
-
-    const theme: GiscusTheme = resolvedTheme === 'dark' ? 'dark' : 'light';
-    latestThemeRef.current = theme;
-    syncIframeTheme(ref.current, theme);
-  }, [resolvedTheme]);
 
   return (
     <div className="w-full">

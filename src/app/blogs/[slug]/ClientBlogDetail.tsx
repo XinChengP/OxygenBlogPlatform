@@ -13,6 +13,7 @@ import {
   UserIcon,
   GlobeAltIcon,
   BookOpenIcon,
+  ChatBubbleLeftRightIcon,
   ChevronLeftIcon,
   ChevronRightIcon
 } from '@heroicons/react/24/outline';
@@ -747,9 +748,47 @@ export default function ClientBlogDetail({
             <RelatedPosts posts={relatedArticles} />
           </div>
 
-          {/* 评论区 */}
+          {/*
+            评论区
+            与相关文章推荐之间的视觉分隔：用上边框 + 较大间距，明确这是页面最后一个独立区块。
+            标题使用 h2，与文章正文的 h1 构成层级关系，屏幕阅读器可据此快速跳转到评论区。
+          */}
           <div className="mt-12 pt-8 border-t border-border/30">
-            <Suspense fallback={<div className="h-64 bg-muted animate-pulse rounded-xl"></div>}>
+            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 mb-5">
+              <ChatBubbleLeftRightIcon className="w-5 h-5 text-primary" aria-hidden="true" />
+              <h2 className="text-lg font-semibold text-foreground">评论</h2>
+              {/*
+                说明文字与实际规则保持一致：
+                本站评论基于 GitHub Discussions，需 GitHub 账号登录后才能发言。
+              */}
+              <span className="text-sm text-muted-foreground">
+                （使用 GitHub 账号登录后即可评论）
+              </span>
+            </div>
+
+            {/*
+              加载占位
+              用与留言板同构的骨架替代原来的单个灰块，
+              让加载完成前后的高度更接近，减少页面在评论加载时的跳动。
+            */}
+            <Suspense
+              fallback={
+                <div className="space-y-4">
+                  {/* 输入框占位 */}
+                  <div className="h-24 rounded-xl bg-muted/60 animate-pulse" />
+                  {/* 评论条目占位 */}
+                  {[0, 1].map((index) => (
+                    <div key={index} className="flex gap-3">
+                      <div className="w-9 h-9 rounded-full bg-muted/60 animate-pulse flex-shrink-0" />
+                      <div className="flex-1 space-y-2">
+                        <div className="w-24 h-4 rounded bg-muted/60 animate-pulse" />
+                        <div className="w-full h-4 rounded bg-muted/40 animate-pulse" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              }
+            >
               <LazyGiscusComments id={blog.slug} title={blog.title} />
             </Suspense>
           </div>

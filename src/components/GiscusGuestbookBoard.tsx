@@ -35,7 +35,7 @@ export default function GiscusGuestbookBoard() {
             用一个小标题 + 一句说明先给出预期，再进入评论内容。
             同时这个标题与首屏的 PageHeader 构成 h1 → h2 的层级关系，便于屏幕阅读器跳读。
           */}
-          <div className="flex items-center gap-2.5 mb-5">
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 mb-5">
             <MessageSquare className="w-5 h-5 text-primary" aria-hidden="true" />
             <h2 className="text-lg font-semibold text-foreground">留言区</h2>
             {/*

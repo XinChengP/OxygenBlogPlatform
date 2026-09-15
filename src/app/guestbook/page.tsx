@@ -13,12 +13,55 @@ import PageHeader from '@/components/ui/PageHeader';
 // 动态导入大型组件
 const LazyGiscusGuestbookBoard = lazy(() => import('@/components/GiscusGuestbookBoard'));
 
-// 加载占位组件
+/**
+ * 加载占位组件
+ *
+ * 骨架的作用是让「加载中」与「加载完成」两种状态的高度尽量接近，
+ * 避免评论区出现时把页面内容整体顶下去。
+ * 原实现是一个固定 h-96 的空白灰块，与实际评论高度差距明显，
+ * 且灰块形状与「卡片 + 标题 + 输入框」的真实结构毫无关联，观感像页面出错。
+ * 这里改为按真实结构分块：外层卡片留出内边距，内部依次模拟标题行、输入框、若干条评论。
+ */
 function GuestbookSkeleton() {
   return (
-    <div className="space-y-4">
-      {/* 评论区占位 */}
-      <div className="h-96 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse"></div>
+    <div className="w-full">
+      {/* 卡片外壳：圆角与底色同真实卡片保持一致，避免加载完成时边框突然出现 */}
+      <div className="relative bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-3xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
+        {/* 顶部渐变装饰条：与真实卡片一一对应 */}
+        <div
+          className="h-1.5 w-full"
+          style={{
+            background: 'linear-gradient(90deg, #66ccff 0%, #06b6d4 50%, #1e40af 100%)'
+          }}
+        />
+
+        <div className="p-6 md:p-8">
+          {/* 标题行占位 */}
+          <div className="flex items-center gap-2.5 mb-5">
+            <div className="w-5 h-5 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+            <div className="w-16 h-6 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+          </div>
+
+          {/* 评论输入框占位：Giscus 将输入框置于顶部 */}
+          <div className="h-24 rounded-xl bg-gray-200/80 dark:bg-gray-700/80 animate-pulse mb-6" />
+
+          {/* 评论条目占位：三条足以覆盖常见留言量，高度接近真实列表 */}
+          <div className="space-y-4">
+            {[0, 1, 2].map((index) => (
+              <div key={index} className="flex gap-3">
+                {/* 头像 */}
+                <div className="w-9 h-9 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse flex-shrink-0" />
+                {/* 昵称与正文 */}
+                <div className="flex-1 space-y-2">
+                  <div className="w-24 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                  <div className="w-full h-4 rounded bg-gray-200/70 dark:bg-gray-700/70 animate-pulse" />
+                  <div className="w-3/5 h-4 rounded bg-gray-200/70 dark:bg-gray-700/70 animate-pulse" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
