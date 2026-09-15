@@ -750,10 +750,16 @@ export default function ClientBlogDetail({
 
           {/*
             评论区
-            与相关文章推荐之间的视觉分隔：用上边框 + 较大间距，明确这是页面最后一个独立区块。
+            与相关文章推荐之间用 mt-8 间距分隔即可，不再额外画一条上边框：
+            上方「相关文章」本身已是一张独立卡片，再加分隔线会出现「线—卡片—线」的拥挤感，
+            与全站「用卡片承载区块」的表达方式也不一致。
+            改为把评论区同样包成一张卡片，与上方卡片形成并列关系，视觉上更整齐。
             标题使用 h2，与文章正文的 h1 构成层级关系，屏幕阅读器可据此快速跳转到评论区。
           */}
-          <div className="mt-12 pt-8 border-t border-border/30">
+          <section
+            className="mt-8 bg-card/60 backdrop-blur-sm rounded-2xl border border-border/40 shadow-sm p-5"
+            aria-label="评论区"
+          >
             <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 mb-5">
               <ChatBubbleLeftRightIcon className="w-5 h-5 text-primary" aria-hidden="true" />
               <h2 className="text-lg font-semibold text-foreground">评论</h2>
@@ -791,7 +797,7 @@ export default function ClientBlogDetail({
             >
               <LazyGiscusComments id={blog.slug} title={blog.title} />
             </Suspense>
-          </div>
+          </section>
         </div>
       </div>
 

@@ -1,0 +1,155 @@
+/*!
+ * 洛天依主题 - 评论区浅色配色
+ *
+ * 用途：作为 giscus 评论系统的自定义主题，由 data-theme 传入本文件的 HTTPS 地址。
+ *       giscus 会把它作为 <link id="giscus-theme" rel="stylesheet" crossorigin="anonymous">
+ *       插入自身 iframe 的 <head>，因此本文件只影响评论区内部，不影响博客其余部分。
+ *       官方说明见 https://github.com/giscus/giscus/blob/main/ADVANCED-USAGE.md
+ *
+ * 取值来源：变量值全部对照博客 src/app/globals.css 中 :root 下的设计令牌，
+ *           目的是让评论区的画布、文字、描边、主按钮与全站保持同一套配色。
+ *
+ * 作用域说明：变量必须声明在 main 选择器下。
+ *             giscus 内部元素的样式写成 var(--color-xxx, 兜底值)，
+ *             先在 main 上取到变量，再向下继承给内部元素，这与官方主题文件写法一致。
+ */
+
+main {
+  /* ========== 语法高亮 ==========
+     这组颜色描述的是「代码语义」（注释、字符串、关键字等），
+     替换成品牌色会破坏代码本身的可读性，因此沿用 giscus 官方浅色取值。 */
+  --color-prettylights-syntax-comment: #6e7781;
+  --color-prettylights-syntax-constant: #0550ae;
+  --color-prettylights-syntax-entity: #8250df;
+  --color-prettylights-syntax-storage-modifier-import: #24292f;
+  --color-prettylights-syntax-entity-tag: #116329;
+  --color-prettylights-syntax-keyword: #cf222e;
+  --color-prettylights-syntax-string: #0a3069;
+  --color-prettylights-syntax-variable: #953800;
+  --color-prettylights-syntax-brackethighlighter-unmatched: #82071e;
+  --color-prettylights-syntax-invalid-illegal-text: #f6f8fa;
+  --color-prettylights-syntax-invalid-illegal-bg: #82071e;
+  --color-prettylights-syntax-carriage-return-text: #f6f8fa;
+  --color-prettylights-syntax-carriage-return-bg: #cf222e;
+  --color-prettylights-syntax-string-regexp: #116329;
+  --color-prettylights-syntax-markup-list: #3b2300;
+  --color-prettylights-syntax-markup-heading: #0550ae;
+  --color-prettylights-syntax-markup-italic: #24292f;
+  --color-prettylights-syntax-markup-bold: #24292f;
+  --color-prettylights-syntax-markup-deleted-text: #82071e;
+  --color-prettylights-syntax-markup-deleted-bg: #ffebe9;
+  --color-prettylights-syntax-markup-inserted-text: #116329;
+  --color-prettylights-syntax-markup-inserted-bg: #dafbe1;
+  --color-prettylights-syntax-markup-changed-text: #953800;
+  --color-prettylights-syntax-markup-changed-bg: #ffd8b5;
+  --color-prettylights-syntax-markup-ignored-text: #eaeef2;
+  --color-prettylights-syntax-markup-ignored-bg: #0550ae;
+  --color-prettylights-syntax-meta-diff-range: #8250df;
+  --color-prettylights-syntax-brackethighlighter-angle: #57606a;
+  --color-prettylights-syntax-sublimelinter-gutter-mark: #8c959f;
+  --color-prettylights-syntax-constant-other-reference-link: #0a3069;
+
+  /* ========== 画布 ==========
+     关键一步：canvas-default 设为透明，让 iframe 背景透出下方的博客卡片底色。
+     这样评论区不会出现「一块颜色与周围不同的实心方块」，
+     而是与博客卡片融为一体，这是「与博客风格一致」最省力也最见效的一招。 */
+  --color-canvas-default: transparent;
+  /* 次级面板：输入框、引用块等需要与背景拉开一点层次的区域，用博客的 muted 色 */
+  --color-canvas-subtle: #f1f5f9;
+  /* 内凹区域：同样是 muted 色，保持与次级面板一致 */
+  --color-canvas-inset: #f1f5f9;
+  /* 浮层：表情选择、下拉菜单等需要盖在内容之上的元素，
+     必须是不透明底色，否则底层文字会透上来导致无法阅读 */
+  --color-canvas-overlay: #ffffff;
+
+  /* ========== 文字 ==========
+     依次对应博客的 --foreground / --muted-foreground */
+  --color-fg-default: #0f172a;
+  --color-fg-muted: #64748b;
+  --color-fg-subtle: #94a3b8;
+
+  /* ========== 描边 ==========
+     对应博客的 --border: #e2e8f0，
+     muted 在其基础上降低透明度，用于分隔线这类更轻的边界 */
+  --color-border-default: #e2e8f0;
+  --color-border-muted: rgba(226, 232, 240, 0.6);
+
+  /* ========== 强调色（链接、当前项、选中态） ==========
+     浅色背景下天依蓝 #66ccff 作为文字过浅、对比度不足，
+     因此正文链接改用博客的 --secondary #0066cc 保证可读；
+     而天依蓝本色则用于 muted / subtle 这类「底色」用途。 */
+  --color-accent-fg: #0066cc;
+  --color-accent-emphasis: #0066cc;
+  --color-accent-muted: rgba(102, 204, 255, 0.4);
+  --color-accent-subtle: #e6f7ff;
+
+  /* ========== 状态色 ==========
+     成功 / 提醒 / 危险的语义色不改成品牌色，
+     否则会丢失「这是警告」这一层含义，沿用官方取值。 */
+  --color-success-fg: #1a7f37;
+  --color-attention-fg: #9a6700;
+  --color-attention-muted: rgba(212, 167, 44, 0.4);
+  --color-attention-subtle: #fff8c5;
+  --color-danger-fg: #d1242f;
+  --color-danger-muted: rgba(255, 129, 130, 0.4);
+  --color-danger-subtle: #ffebe9;
+
+  /* ========== 普通按钮（回复、表情、排序等） ==========
+     对应博客的 --muted 底 + --border 描边 */
+  --color-btn-text: #0f172a;
+  --color-btn-bg: #f1f5f9;
+  --color-btn-border: #e2e8f0;
+  --color-btn-shadow: 0 1px 0 rgba(15, 23, 42, 0.04);
+  --color-btn-inset-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  --color-btn-hover-bg: #e2e8f0;
+  --color-btn-hover-border: #cbd5e1;
+  --color-btn-active-bg: #e2e8f0;
+  --color-btn-active-border: #cbd5e1;
+  --color-btn-selected-bg: #e2e8f0;
+
+  /* ========== 主按钮（发表评论、提交） ==========
+     用天依蓝本色 #66ccff 作为底色。
+     注意文字必须用深色：天依蓝属于高亮度色，配白字对比度不足，
+     配博客的 --foreground #0f172a 才读得清。 */
+  --color-btn-primary-text: #0f172a;
+  --color-btn-primary-bg: #66ccff;
+  --color-btn-primary-border: rgba(15, 23, 42, 0.12);
+  --color-btn-primary-shadow: 0 1px 0 rgba(15, 23, 42, 0.1);
+  --color-btn-primary-inset-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  --color-btn-primary-hover-bg: #4db8e8;
+  --color-btn-primary-hover-border: rgba(15, 23, 42, 0.16);
+  --color-btn-primary-selected-bg: #3aa9dd;
+  --color-btn-primary-selected-shadow: inset 0 1px 0 rgba(0, 45, 65, 0.2);
+  --color-btn-primary-disabled-text: rgba(15, 23, 42, 0.5);
+  --color-btn-primary-disabled-bg: rgba(102, 204, 255, 0.5);
+  --color-btn-primary-disabled-border: rgba(15, 23, 42, 0.08);
+
+  /* ========== 中性填充（标签、计数、代码行内底色） ========== */
+  --color-neutral-muted: rgba(148, 163, 184, 0.2);
+
+  /* ========== 排序切换控件（旧版 / 新版切换） ========== */
+  --color-segmented-control-bg: #f1f5f9;
+  --color-segmented-control-button-bg: #ffffff;
+  --color-segmented-control-button-selected-border: #94a3b8;
+
+  /* ========== 列表项悬停底色 ========== */
+  --color-action-list-item-default-hover-bg: rgba(102, 204, 255, 0.12);
+
+  /* ========== 阴影 ========== */
+  --color-primer-shadow-inset: inset 0 1px 0 rgba(208, 215, 222, 0.2);
+
+  /* ========== 表情回应（点赞那排按钮）的悬停色 ==========
+     对应官方主题中的 --color-social-reaction-bg-hover 系列 */
+  --color-scale-gray-1: #f1f5f9;
+  --color-scale-blue-1: #d9f0ff;
+}
+
+/* 加载动画：这两张图由 giscus 官方提供，替换掉会丢失加载中的视觉反馈，
+   因此保留，仅随浅色主题使用对应版本。 */
+main .pagination-loader-container {
+  background-image: url("https://github.com/images/modules/pulls/progressive-disclosure-line.svg");
+}
+
+main .gsc-loading-image {
+  background-image: url("https://github.githubassets.com/images/mona-loading-default.gif");
+}

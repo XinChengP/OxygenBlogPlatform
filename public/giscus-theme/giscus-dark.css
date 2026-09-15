@@ -1,0 +1,147 @@
+/*!
+ * 洛天依主题 - 评论区深色配色
+ *
+ * 用途：作为 giscus 评论系统的自定义主题，由 data-theme 传入本文件的 HTTPS 地址。
+ *       与 giscus-light.css 成对使用，站点切换到暗色时由 postMessage 热切换为本文件。
+ *
+ * 取值来源：变量值全部对照博客 src/app/globals.css 中 .dark 下的设计令牌。
+ *
+ * 与浅色版的差异要点：
+ *   1. 深色下天依蓝取 --color-primary 的暗色值 #99ddff（浅色版是 #66ccff），
+ *      因为深色背景需要更亮的蓝才够醒目；
+ *   2. 主按钮底色用 #99ddff 后，文字必须用深色 #0f172a，
+ *      浅色文字压在亮蓝上基本看不清；
+ *   3. 描边不能用实色：深色下博客的 --border 是 rgba(255,255,255,0.1)，
+ *      实心灰线在深色背景上会显得格外突兀。
+ */
+
+main {
+  /* ========== 语法高亮 ==========
+     同浅色版：这组颜色描述代码语义，替换会破坏可读性，沿用 giscus 官方深色取值。 */
+  --color-prettylights-syntax-comment: #8b949e;
+  --color-prettylights-syntax-constant: #79c0ff;
+  --color-prettylights-syntax-entity: #d2a8ff;
+  --color-prettylights-syntax-storage-modifier-import: #c9d1d9;
+  --color-prettylights-syntax-entity-tag: #7ee787;
+  --color-prettylights-syntax-keyword: #ff7b72;
+  --color-prettylights-syntax-string: #a5d6ff;
+  --color-prettylights-syntax-variable: #ffa657;
+  --color-prettylights-syntax-brackethighlighter-unmatched: #f85149;
+  --color-prettylights-syntax-invalid-illegal-text: #f0f6fc;
+  --color-prettylights-syntax-invalid-illegal-bg: #8e1519;
+  --color-prettylights-syntax-carriage-return-text: #f0f6fc;
+  --color-prettylights-syntax-carriage-return-bg: #b62324;
+  --color-prettylights-syntax-string-regexp: #7ee787;
+  --color-prettylights-syntax-markup-list: #f2cc60;
+  --color-prettylights-syntax-markup-heading: #1f6feb;
+  --color-prettylights-syntax-markup-italic: #c9d1d9;
+  --color-prettylights-syntax-markup-bold: #c9d1d9;
+  --color-prettylights-syntax-markup-deleted-text: #ffdcd7;
+  --color-prettylights-syntax-markup-deleted-bg: #67060c;
+  --color-prettylights-syntax-markup-inserted-text: #aff5b4;
+  --color-prettylights-syntax-markup-inserted-bg: #033a16;
+  --color-prettylights-syntax-markup-changed-text: #ffdfb6;
+  --color-prettylights-syntax-markup-changed-bg: #5a1e02;
+  --color-prettylights-syntax-markup-ignored-text: #c9d1d9;
+  --color-prettylights-syntax-markup-ignored-bg: #1158c7;
+  --color-prettylights-syntax-meta-diff-range: #d2a8ff;
+  --color-prettylights-syntax-brackethighlighter-angle: #8b949e;
+  --color-prettylights-syntax-sublimelinter-gutter-mark: #484f58;
+  --color-prettylights-syntax-constant-other-reference-link: #a5d6ff;
+
+  /* ========== 画布 ==========
+     同样设为透明，让 iframe 透出下方博客卡片底色（暗色下是 #2a3441 的毛玻璃卡片），
+     避免评论区成为一块孤立的实心色块。 */
+  --color-canvas-default: transparent;
+  /* 次级面板用博客的 --muted #2a3441 */
+  --color-canvas-subtle: #2a3441;
+  --color-canvas-inset: #2a3441;
+  /* 浮层必须不透明：画布已经是透明的，
+     若浮层也透明，表情选择器会与底层文字重叠到一起，完全无法辨认 */
+  --color-canvas-overlay: #2a3441;
+
+  /* ========== 文字 ==========
+     对应博客 .dark 下的 --foreground #f8fafc / --muted-foreground #94a3b8 */
+  --color-fg-default: #f8fafc;
+  --color-fg-muted: #94a3b8;
+  --color-fg-subtle: #64748b;
+
+  /* ========== 描边 ==========
+     对应博客 .dark 下的 --border: rgba(255,255,255,0.1) */
+  --color-border-default: rgba(255, 255, 255, 0.1);
+  --color-border-muted: rgba(255, 255, 255, 0.06);
+
+  /* ========== 强调色 ==========
+     深色下天依蓝 #99ddff 足够明亮，可直接用作链接与选中态文字色 */
+  --color-accent-fg: #99ddff;
+  --color-accent-emphasis: #99ddff;
+  --color-accent-muted: rgba(153, 221, 255, 0.4);
+  --color-accent-subtle: rgba(153, 221, 255, 0.1);
+
+  /* ========== 状态色 ==========
+     语义色保持官方取值，不替换为品牌色 */
+  --color-success-fg: #3fb950;
+  --color-attention-fg: #d29922;
+  --color-attention-muted: rgba(187, 128, 9, 0.4);
+  --color-attention-subtle: rgba(187, 128, 9, 0.15);
+  --color-danger-fg: #f85149;
+  --color-danger-muted: rgba(248, 81, 73, 0.4);
+  --color-danger-subtle: rgba(248, 81, 73, 0.1);
+
+  /* ========== 普通按钮 ==========
+     对应博客暗色下的 --muted 底 + 半透明描边 */
+  --color-btn-text: #f8fafc;
+  --color-btn-bg: #2a3441;
+  --color-btn-border: rgba(255, 255, 255, 0.1);
+  /* 深色下阴影几乎不可见，官方做法是置为 0 0 transparent，避免无意义的渲染开销 */
+  --color-btn-shadow: 0 0 transparent;
+  --color-btn-inset-shadow: 0 0 transparent;
+  --color-btn-hover-bg: #323d4d;
+  --color-btn-hover-border: rgba(153, 221, 255, 0.4);
+  --color-btn-active-bg: #323d4d;
+  --color-btn-active-border: rgba(153, 221, 255, 0.5);
+  --color-btn-selected-bg: #2a3441;
+
+  /* ========== 主按钮 ==========
+     底色用暗色天依蓝 #99ddff，文字用深色 #0f172a。
+     对比度是这里的硬约束：亮蓝背景配亮文字会直接读不清。 */
+  --color-btn-primary-text: #0f172a;
+  --color-btn-primary-bg: #99ddff;
+  --color-btn-primary-border: rgba(255, 255, 255, 0.1);
+  --color-btn-primary-shadow: 0 0 transparent;
+  --color-btn-primary-inset-shadow: 0 0 transparent;
+  --color-btn-primary-hover-bg: #7fd0f5;
+  --color-btn-primary-hover-border: rgba(255, 255, 255, 0.16);
+  --color-btn-primary-selected-bg: #99ddff;
+  --color-btn-primary-selected-shadow: 0 0 transparent;
+  --color-btn-primary-disabled-text: rgba(15, 23, 42, 0.5);
+  --color-btn-primary-disabled-bg: rgba(153, 221, 255, 0.5);
+  --color-btn-primary-disabled-border: rgba(255, 255, 255, 0.06);
+
+  /* ========== 中性填充 ========== */
+  --color-neutral-muted: rgba(148, 163, 184, 0.2);
+
+  /* ========== 排序切换控件 ========== */
+  --color-segmented-control-bg: rgba(148, 163, 184, 0.1);
+  --color-segmented-control-button-bg: #2a3441;
+  --color-segmented-control-button-selected-border: #64748b;
+
+  /* ========== 列表项悬停底色 ========== */
+  --color-action-list-item-default-hover-bg: rgba(153, 221, 255, 0.12);
+
+  /* ========== 阴影 ========== */
+  --color-primer-shadow-inset: 0 0 transparent;
+
+  /* ========== 表情回应悬停色 ========== */
+  --color-scale-gray-7: #2a3441;
+  --color-scale-blue-8: rgba(153, 221, 255, 0.16);
+}
+
+/* 加载动画：随深色主题使用官方对应的深色版本 */
+main .pagination-loader-container {
+  background-image: url("https://github.com/images/modules/pulls/progressive-disclosure-line-dark.svg");
+}
+
+main .gsc-loading-image {
+  background-image: url("https://github.githubassets.com/images/mona-loading-dark.gif");
+}

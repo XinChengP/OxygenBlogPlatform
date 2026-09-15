@@ -161,6 +161,32 @@ const devConfig = {
           },
         ],
       },
+      {
+        /*
+          评论区自定义主题样式表的跨域许可（仅开发环境需要）
+
+          背景：评论区由 giscus.app 域下的 iframe 渲染，它通过
+          <link rel="stylesheet" crossorigin="anonymous"> 加载本站的
+          /giscus-theme/giscus-light.css 与 giscus-dark.css。
+          带 crossorigin 的标签属于跨域请求，服务器必须回 Access-Control-Allow-Origin，
+          否则浏览器会拒绝应用该样式表，评论区只能回落到 giscus 默认外观。
+
+          线上 blog.xinchengp.cn 由 Cloudflare 统一返回 ACAO: *（实测连 404 响应都带此头），
+          因此生产环境不需要这条配置；但 Next.js 的 dev server 默认不发送该头，
+          会导致本地开发时完全看不到自定义主题的效果。
+
+          注意：此 headers 配置只在开发环境生效（生产走 staticConfig，其未配置 headers 字段），
+          所以这条仅用于让本地预览与线上行为保持一致，不会影响线上。
+          样式表是公开静态资源，不含任何隐私数据，故允许任意来源读取。
+        */
+        source: '/giscus-theme/:path*',
+        headers: [
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: '*',
+          },
+        ],
+      },
     ];
   },
 };

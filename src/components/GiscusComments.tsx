@@ -2,15 +2,46 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useTheme } from 'next-themes';
+import { getAssetPath } from '@/utils/assetUtils';
 
 /**
  * Giscus 主题取值
  *
- * 仅使用 Giscus 官方内置的 light / dark 两套主题。
- * 不采用自定义主题 CSS 的原因：自定义主题需要 Giscus 的 iframe 跨域拉取样式表，
- * 对托管环境的 CORS 响应头存在硬性依赖，内置主题没有这层外部依赖，更稳妥。
+ * 这里保存的是「站点主题」这个语义，而不是直接传给 Giscus 的值。
+ * 实际传给 Giscus 的会是下方 resolveGiscusTheme() 算出的自定义主题样式表地址。
  */
 type GiscusTheme = 'light' | 'dark';
+
+/**
+ * 站点主题 → 自定义主题样式表
+ *
+ * Giscus 官方支持把 data-theme 直接写成一个 CSS 文件的地址，
+ * 它会据此在自身 iframe 的 <head> 末尾插入：
+ *   <link id="giscus-theme" rel="stylesheet" crossorigin="anonymous" href="...">
+ * 样式表内的变量作用在 iframe 内部，不会影响博客其他区域。
+ * 官方说明：https://github.com/giscus/giscus/blob/main/ADVANCED-USAGE.md
+ *
+ * 因此本字段只负责「读哪一份样式」，不参与任何讨论区匹配，改动它不会影响已有评论。
+ */
+const GISCUS_THEME_FILES: Record<GiscusTheme, string> = {
+  light: '/giscus-theme/giscus-light.css',
+  dark: '/giscus-theme/giscus-dark.css',
+};
+
+/**
+ * 把站点主题解析为 Giscus 认识的取值
+ *
+ * 必须返回完整绝对地址：目标样式表是由 giscus.app 域下的 iframe 去加载的，
+ * 若只给相对路径，浏览器会把它拼到 giscus.app 上，必然 404。
+ * 因此这里拼上当前站点源，并用 getAssetPath 补上 GitHub Pages 所需的仓库名前缀，
+ * 保证部署到子路径时依然能找到文件。
+ *
+ * 服务端渲染阶段拿不到 window，此时退回内置主题名，避免报错。
+ */
+function resolveGiscusTheme(theme: GiscusTheme): string {
+  if (typeof window === 'undefined') return theme;
+  return `${window.location.origin}${getAssetPath(GISCUS_THEME_FILES[theme])}`;
+}
 
 /**
  * Giscus iframe 所属源
@@ -41,9 +72,9 @@ interface GiscusCommentsProps {
  * 不携带任何讨论区匹配信息，因此不会影响已有评论。
  *
  * @param container - 挂载 Giscus 的容器
- * @param theme - 目标主题
+ * @param theme - 目标主题，此处需传入已解析好的自定义样式表地址
  */
-function syncIframeTheme(container: HTMLElement | null, theme: GiscusTheme) {
+function syncIframeTheme(container: HTMLElement | null, theme: string) {
   // Giscus 的 client.js 会在容器内插入一个 class 为 giscus-frame 的 iframe
   const iframe = container?.querySelector<HTMLIFrameElement>('iframe.giscus-frame');
   // contentWindow 为空表示 iframe 尚未完成初始化，此时发送的消息会被直接丢弃
@@ -92,7 +123,8 @@ export default function GiscusComments({ id, type = 'blog' }: GiscusCommentsProp
     const theme: GiscusTheme = resolvedTheme === 'dark' ? 'dark' : 'light';
     latestThemeRef.current = theme;
     setThemeReady(true);
-    syncIframeTheme(ref.current, theme);
+    // 传给 iframe 的必须是解析后的样式表地址，此处才在浏览器环境中取值
+    syncIframeTheme(ref.current, resolveGiscusTheme(theme));
   }, [resolvedTheme]);
 
   // 创建 Giscus 脚本：仅在「首次主题就绪」或「更换了文章 / 用途」时执行
@@ -136,8 +168,9 @@ export default function GiscusComments({ id, type = 'blog' }: GiscusCommentsProp
     script.setAttribute('data-input-position', 'top');
     // 跟随站点主题而非操作系统：
     // 读者手动把站点切成暗色时，评论区必须同时变暗，
-    // 否则会出现「暗色页面配一块白色评论区」的割裂观感
-    script.setAttribute('data-theme', latestThemeRef.current);
+    // 否则会出现「暗色页面配一块白色评论区」的割裂观感。
+    // 此处传入的是自定义主题样式表地址，而非内置的 'light' / 'dark'。
+    script.setAttribute('data-theme', resolveGiscusTheme(latestThemeRef.current));
     script.setAttribute('data-lang', 'zh-CN');
     script.setAttribute('crossorigin', 'anonymous');
     script.setAttribute('async', 'true');
@@ -158,7 +191,8 @@ export default function GiscusComments({ id, type = 'blog' }: GiscusCommentsProp
 
       iframe.dataset.themeSynced = 'true';
       iframe.addEventListener('load', () => {
-        syncIframeTheme(container, latestThemeRef.current);
+        // 同样是样式表地址，与另外两处调用保持一致
+        syncIframeTheme(container, resolveGiscusTheme(latestThemeRef.current));
       });
     });
     observer.observe(container, { childList: true, subtree: true });

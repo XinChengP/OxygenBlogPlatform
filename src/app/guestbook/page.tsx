@@ -25,8 +25,12 @@ const LazyGiscusGuestbookBoard = lazy(() => import('@/components/GiscusGuestbook
 function GuestbookSkeleton() {
   return (
     <div className="w-full">
-      {/* 卡片外壳：圆角与底色同真实卡片保持一致，避免加载完成时边框突然出现 */}
-      <div className="relative bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-3xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
+      {/*
+        卡片外壳：圆角、底色、描边、阴影必须与真实卡片（GiscusGuestbookBoard）逐项对齐，
+        否则加载完成的一瞬间，卡片外形会发生可见的变化，像是页面重排了一下。
+        这里同样使用语义令牌 bg-card/60 + border-border/40，而非硬编码灰阶。
+      */}
+      <div className="relative bg-card/60 backdrop-blur-sm rounded-2xl shadow-sm border border-border/40 overflow-hidden">
         {/* 顶部渐变装饰条：与真实卡片一一对应 */}
         <div
           className="h-1.5 w-full"
@@ -36,26 +40,26 @@ function GuestbookSkeleton() {
         />
 
         <div className="p-6 md:p-8">
-          {/* 标题行占位 */}
+          {/* 标题行占位：宽度与真实标题「留言区」+ 说明文字的量级接近 */}
           <div className="flex items-center gap-2.5 mb-5">
-            <div className="w-5 h-5 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
-            <div className="w-16 h-6 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+            <div className="w-5 h-5 rounded bg-muted animate-pulse" />
+            <div className="w-16 h-6 rounded bg-muted animate-pulse" />
           </div>
 
           {/* 评论输入框占位：Giscus 将输入框置于顶部 */}
-          <div className="h-24 rounded-xl bg-gray-200/80 dark:bg-gray-700/80 animate-pulse mb-6" />
+          <div className="h-24 rounded-xl bg-muted/60 animate-pulse mb-6" />
 
           {/* 评论条目占位：三条足以覆盖常见留言量，高度接近真实列表 */}
           <div className="space-y-4">
             {[0, 1, 2].map((index) => (
               <div key={index} className="flex gap-3">
                 {/* 头像 */}
-                <div className="w-9 h-9 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse flex-shrink-0" />
+                <div className="w-9 h-9 rounded-full bg-muted animate-pulse flex-shrink-0" />
                 {/* 昵称与正文 */}
                 <div className="flex-1 space-y-2">
-                  <div className="w-24 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
-                  <div className="w-full h-4 rounded bg-gray-200/70 dark:bg-gray-700/70 animate-pulse" />
-                  <div className="w-3/5 h-4 rounded bg-gray-200/70 dark:bg-gray-700/70 animate-pulse" />
+                  <div className="w-24 h-4 rounded bg-muted animate-pulse" />
+                  <div className="w-full h-4 rounded bg-muted/60 animate-pulse" />
+                  <div className="w-3/5 h-4 rounded bg-muted/60 animate-pulse" />
                 </div>
               </div>
             ))}

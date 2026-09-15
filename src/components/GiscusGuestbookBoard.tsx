@@ -12,14 +12,20 @@ export default function GiscusGuestbookBoard() {
   return (
     // 留言板容器
     <div className="w-full">
-      {/* 主卡片 */}
+      {/*
+        主卡片
+        改用全站统一的语义令牌（card / border），而非之前的 bg-white dark:bg-gray-800 硬编码灰阶：
+        硬编码灰阶与博客的 --card 实际取值并不相同，且主题色调整时不会跟随，
+        会出现「同一页面里留言板与其它卡片不是一回事」的观感。
+        圆角与阴影也统一为 rounded-2xl + shadow-sm，与相关文章推荐等卡片完全同款。
+      */}
       <motion.div 
-        className="relative bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-3xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden"
+        className="relative bg-card/60 backdrop-blur-sm rounded-2xl shadow-sm border border-border/40 overflow-hidden"
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
       >
-        {/* 顶部渐变装饰条 */}
+        {/* 顶部渐变装饰条：保留天依蓝为主的渐变，作为留言板的识别特征 */}
         <div 
           className="h-1.5 w-full"
           style={{ 
