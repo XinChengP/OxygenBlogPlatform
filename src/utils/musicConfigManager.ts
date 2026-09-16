@@ -571,14 +571,34 @@ class MusicConfigManager {
   /**
    * 获取处理后的音频列表
    * 所有资源路径已通过 getAssetPath 处理，可直接用于 Howler.js 播放器
-   * 根据配置决定是否包含本地音乐和网易云音乐
-   * 当前配置：仅显示网易云音乐，隐藏本地音乐
+   * 优先使用网易云歌单，网易云不可用时自动降级为本地音乐
    * 
    * @returns ProcessedAudioItem[] 处理后的音频列表
    */
   public getProcessedAudioList(): ProcessedAudioItem[] {
-    // 只返回网易云歌曲，隐藏本地音乐
-    return [...this.neteaseSongs];
+    // 网易云歌单正常加载时，优先播放网易云歌曲
+    if (this.neteaseSongs.length > 0) {
+      return [...this.neteaseSongs];
+    }
+
+    // 【降级方案】网易云歌单为空时回退到本地音乐
+    // 为空的原因可能是：Meting 接口请求失败、歌单配置未启用、被反爬规则拦截
+    // 若不回退，播放器将没有任何内容可播，用户只能看到空的播放列表
+    return this.getLocalProcessedList();
+  }
+
+  /**
+   * 获取本地音乐的处理后列表
+   * 从已加载的配置中筛出本地歌曲，并批量转换资源路径
+   * 当配置文件本身加载失败时，getConfig() 会返回默认配置中的 10 首本地歌曲
+   * 
+   * @returns ProcessedAudioItem[] 本地音乐列表
+   */
+  private getLocalProcessedList(): ProcessedAudioItem[] {
+    return this.getConfig()
+      .songs
+      .filter(song => song.source === 'local' || !song.source)
+      .map(processSongConfig);
   }
 
   /**

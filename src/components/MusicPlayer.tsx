@@ -789,8 +789,12 @@ const MusicPlayerComponent = function MusicPlayer({
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
-        <div className="ml-2 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md rounded-2xl shadow-xl border border-[#66ccff]/30 px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
-          暂无可用歌曲
+        <div className="ml-2 flex items-center gap-2 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md rounded-2xl shadow-xl border border-[#66ccff]/30 px-4 py-3 text-slate-600 dark:text-slate-300">
+          {/* 复用封面占位处的音符图标，保持视觉语言一致，避免纯文字空状态显得突兀 */}
+          <svg className="w-4 h-4 flex-shrink-0 text-[#66ccff]" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
+          </svg>
+          <span className="text-sm">暂无可用歌曲</span>
         </div>
       </div>
     );
@@ -816,13 +820,11 @@ const MusicPlayerComponent = function MusicPlayer({
       <div className="relative flex items-center">
         {/* 主播放器卡片 + 播放列表容器：直接贴屏幕左边缘（不再有提示条占位） */}
         <div className="relative">
-          {/* 主播放器卡片：拉长整体高度（min-height 让容器更高，内部元素不动）。
-              去掉 overflow-hidden，让内部绝对定位的播放列表能显示（封面 rounded-xl 自带 overflow-hidden 不受影响）。
-              使用 inline style 强制 minHeight 360px，绕过 Tailwind className 编译，确保 HMR 一定生效。
-              flex flex-col justify-center 让内容在更高的容器内垂直居中。 */}
+          {/* 主播放器卡片：用 min-h 让卡片保持修长比例，内容在其中垂直居中。
+              高度不能去掉——否则卡片会塌缩到内容高度，与左侧 GIF 入口的视觉重心不匹配。
+              不加 overflow-hidden，否则内部绝对定位的播放列表与悬停气泡会被裁剪。 */}
           <div
-            className="relative w-[280px] sm:w-[340px] bg-white/90 dark:bg-slate-800/90 backdrop-blur-md rounded-2xl shadow-xl border border-[#66ccff]/30 flex flex-col justify-center"
-            style={{ minHeight: '360px' }}
+            className="relative w-[280px] sm:w-[340px] min-h-[360px] bg-white/90 dark:bg-slate-800/90 backdrop-blur-md rounded-2xl shadow-xl border border-[#66ccff]/30 flex flex-col justify-center"
           >
             {/* 手动隐藏按钮：右上角左箭头，点击立即收起 */}
           <button
@@ -838,8 +840,8 @@ const MusicPlayerComponent = function MusicPlayer({
 
           {/* 顶部控制栏：封面 + 歌曲信息 + 控制按钮 */}
           <div className="flex items-center gap-3 p-3 pr-8">
-            {/* 封面 */}
-            <div className="relative w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 shadow-md">
+            {/* 封面：用圆形裁切，避免方形图片旋转时四角周期性扫出造成视觉噪点（也契合唱片隐喻） */}
+            <div className="relative w-12 h-12 rounded-full overflow-hidden flex-shrink-0 shadow-md">
               {currentSong?.cover ? (
                 <img
                   src={currentSong.cover}
@@ -912,50 +914,66 @@ const MusicPlayerComponent = function MusicPlayer({
             </div>
           </div>
 
-          {/* 进度条（始终显示） */}
-          {/* 外层容器固定高度，避免内部进度条 hover 变粗时带动整体容器高度变化；相对定位用于气泡绝对定位 */}
-          <div
-            className="h-4 flex items-center cursor-pointer group relative px-3"
-            onMouseDown={handleProgressBarMouseDown}
-            onTouchStart={handleProgressBarTouchStart}
-            onMouseMove={handleProgressBarMouseMove}
-            onMouseLeave={handleProgressBarMouseLeave}
-          >
-            <div
-              ref={progressBarRef}
-              className="w-full h-1.5 bg-slate-200/80 dark:bg-slate-700/80 rounded-full relative overflow-hidden transition-all duration-200 group-hover:h-2"
-            >
-              {/* 已播放进度 - 天依蓝渐变 + 微光 */}
-              <div
-                className="absolute left-0 top-0 h-full bg-gradient-to-r from-[#66ccff] via-[#4db8ff] to-[#0099cc] rounded-full shadow-[0_0_10px_rgba(102,204,255,0.45)] transition-all duration-100"
-                style={{ width: `${progressPercent}%` }}
-              />
+          {/* 进度条区块：左右两侧常驻显示当前时间与总时长，
+              不必像以前那样必须悬停才能看到时长信息 */}
+          <div className="h-5 flex items-center gap-1.5 px-3">
+            {/* 当前播放时间：tabular-nums 让数字等宽，避免秒数跳动时文字宽度抖动 */}
+            <span className="w-8 flex-shrink-0 text-right text-[10px] tabular-nums text-slate-400 dark:text-slate-500">
+              {formatTime(currentTime)}
+            </span>
 
-              {/* 拖拽圆点 */}
+            {/* 进度条本体 + 悬停气泡：交互事件绑定在这一层，因为该层的宽度就是进度条的真实宽度，
+                拖拽百分比与气泡定位都以它为基准，不会受两侧时间文字宽度的影响 */}
+            <div
+              className="relative flex-1 flex items-center cursor-pointer group"
+              onMouseDown={handleProgressBarMouseDown}
+              onTouchStart={handleProgressBarTouchStart}
+              onMouseMove={handleProgressBarMouseMove}
+              onMouseLeave={handleProgressBarMouseLeave}
+            >
               <div
-                className="absolute top-1/2 w-3.5 h-3.5 bg-white border-[2.5px] border-[#66ccff] rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none"
-                style={{ left: `${progressPercent}%`, transform: 'translate(-50%, -50%) scale(1)' }}
-              />
+                ref={progressBarRef}
+                className="w-full h-1.5 bg-slate-200/80 dark:bg-slate-700/80 rounded-full relative overflow-hidden transition-all duration-200 group-hover:h-2"
+              >
+                {/* 已播放进度 - 天依蓝渐变 + 微光 */}
+                <div
+                  className="absolute left-0 top-0 h-full bg-gradient-to-r from-[#66ccff] via-[#4db8ff] to-[#0099cc] rounded-full shadow-[0_0_10px_rgba(102,204,255,0.45)] transition-all duration-100"
+                  style={{ width: `${progressPercent}%` }}
+                />
+
+                {/* 拖拽圆点 */}
+                <div
+                  className="absolute top-1/2 w-3.5 h-3.5 bg-white border-[2.5px] border-[#66ccff] rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none"
+                  style={{ left: `${progressPercent}%`, transform: 'translate(-50%, -50%) scale(1)' }}
+                />
+              </div>
+
+              {/* 悬停时间气泡：只显示鼠标所指位置对应的时间点（即跳转预览），
+                  不再重复展示当前时间/总时长（已由两侧常驻文字承担）。
+                  放在 overflow-hidden 外层避免被裁剪；两端动态对齐防止气泡溢出卡片 */}
+              <div
+                className="absolute bottom-full mb-2 px-1.5 py-0.5 bg-slate-800/90 dark:bg-slate-700/90 text-white text-[10px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-30"
+                style={{
+                  // 悬停时使用 hoverPercent，否则使用 progressPercent
+                  left: `${isHoveringProgress ? hoverPercent : progressPercent}%`,
+                  // 靠左时左对齐，靠右时右对齐，中间保持居中，避免气泡溢出卡片或屏幕
+                  transform: `translateX(${
+                    (isHoveringProgress ? hoverPercent : progressPercent) < 10
+                      ? '0%'
+                      : (isHoveringProgress ? hoverPercent : progressPercent) > 90
+                      ? '-100%'
+                      : '-50%'
+                  })`,
+                }}
+              >
+                {formatTime(isHoveringProgress ? hoverTime : currentTime)}
+              </div>
             </div>
 
-            {/* 悬停时间气泡：放在 overflow-hidden 外层，避免被裁剪；根据悬停位置动态调整对齐方式避免溢出 */}
-            <div
-              className="absolute bottom-full mb-2 px-1.5 py-0.5 bg-slate-800/90 dark:bg-slate-700/90 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-30"
-              style={{
-                // 悬停时使用 hoverPercent，否则使用 progressPercent
-                left: `${isHoveringProgress ? hoverPercent : progressPercent}%`,
-                // 靠左时左对齐，靠右时右对齐，中间保持居中，避免气泡溢出卡片或屏幕
-                transform: `translateX(${
-                  (isHoveringProgress ? hoverPercent : progressPercent) < 10
-                    ? '0%'
-                    : (isHoveringProgress ? hoverPercent : progressPercent) > 90
-                    ? '-100%'
-                    : '-50%'
-                })`,
-              }}
-            >
-              {formatTime(isHoveringProgress ? hoverTime : currentTime)} / {formatTime(duration)}
-            </div>
+            {/* 当前歌曲总时长 */}
+            <span className="w-8 flex-shrink-0 text-[10px] tabular-nums text-slate-400 dark:text-slate-500">
+              {formatTime(duration)}
+            </span>
           </div>
 
           {/* 控制区：播放模式、音量控制放在同一行 */}
@@ -1070,7 +1088,7 @@ const MusicPlayerComponent = function MusicPlayer({
               - data-nosnippet：搜索引擎层面的额外防护，告知搜索爬虫不要截取此区域内容 */}
           <div
             ref={playlistRef}
-            className="mt-2 max-h-[240px] overflow-y-auto border-t border-[#66ccff]/20 rounded-b-2xl"
+            className="mt-2 max-h-[240px] overflow-y-auto border-t border-[#66ccff]/20 rounded-b-2xl [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#66ccff]/35"
             data-nosnippet
             aria-hidden={!isVisible}
           >
@@ -1166,9 +1184,10 @@ const MusicPlayerComponent = function MusicPlayer({
             <svg className="h-5 w-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
-            <span>音乐播放器加载失败</span>
+            <span>歌单加载失败</span>
           </div>
-          <div className="text-xs text-white/80">请检查网络连接后重试</div>
+          {/* 说明真实原因：在线歌单与本地歌单是两条独立来源，只有两条都取不到才会走到这里 */}
+          <div className="text-xs text-white/80">在线与本地歌单均未读取成功，请检查网络后重试</div>
           <button
             onClick={handleRetry}
             className="mt-1 w-full bg-white/20 hover:bg-white/30 transition-colors duration-200 px-3 py-1.5 rounded text-xs font-medium flex items-center justify-center gap-1"
