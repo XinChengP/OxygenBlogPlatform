@@ -5,7 +5,7 @@ updatedAt: "2026-07-08"
 category: "学习"
 author: 歆橙
 language: "zh-CN"
-tags: ["日常", "期末", "工程测绘"]
+tags: ["日常", "期末", "工程测绘", "机械", "机械制图"]
 excerpt: "——记工程测绘课两三事"
 coverImage: "/Blogabout/Engineering-Drawing-Record/cover.png"
 ---
