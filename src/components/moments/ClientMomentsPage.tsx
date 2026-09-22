@@ -163,7 +163,8 @@ function ClientMomentsPage({ moments, blogCount, blogTotalWordCount, blogs, cate
               
               if (allItems.length === 0) {
                 return (
-                  <div className="p-6 rounded-lg border transition-all duration-300 backdrop-blur-md bg-card/90 border-border shadow-lg supports-[backdrop-filter]:bg-card/75 text-center">
+                  /* 空状态：内容流卡片改近实色，圆角统一 xl，阴影引用令牌 */
+                  <div className="p-6 rounded-xl border transition-[box-shadow,border-color] duration-300 bg-card/95 border-border shadow-card text-center">
                     <h3 className="text-xl font-semibold mb-2">暂无动态</h3>
                     <p className="text-muted-foreground">还没有发布任何动态，快来添加第一条吧！</p>
                   </div>
@@ -176,7 +177,7 @@ function ClientMomentsPage({ moments, blogCount, blogTotalWordCount, blogs, cate
                   return (
                     <div
                       key={moment.id}
-                      className="p-5 rounded-xl border transition-all duration-300 backdrop-blur-md bg-card/90 border-border shadow-md supports-[backdrop-filter]:bg-card/75 hover:shadow-lg"
+                      className="p-5 rounded-xl border transition-[box-shadow,border-color] duration-300 bg-card/95 border-border shadow-card hover:shadow-card-hover hover:border-primary/30"
                     >
                       {/* 社交媒体风格头部：头像 + 昵称 + 时间 + 置顶标签 */}
                       <div className="flex items-center justify-between mb-3 pb-3 border-b border-border/30">
@@ -226,7 +227,7 @@ function ClientMomentsPage({ moments, blogCount, blogTotalWordCount, blogs, cate
                   return (
                     <div
                       key={blog.id}
-                      className="rounded-xl border transition-all duration-300 backdrop-blur-md bg-card/90 border-border shadow-md supports-[backdrop-filter]:bg-card/75 hover:shadow-lg overflow-hidden"
+                      className="rounded-xl border transition-[box-shadow,border-color] duration-300 bg-card/95 border-border shadow-card hover:shadow-card-hover hover:border-primary/30 overflow-hidden"
                     >
                       {/* 博客发布记录卡片：左侧彩色边条区分，更丰富的样式 */}
                       <div className="flex">
@@ -264,8 +265,8 @@ function ClientMomentsPage({ moments, blogCount, blogTotalWordCount, blogs, cate
 
           {/* 右边：预留小组件（30%宽度） */}
           <div className="lg:w-3/12 max-w-md space-y-6">
-            {/* 关于我卡片 */}
-            <div className="p-6 rounded-lg border transition-all duration-300 backdrop-blur-md bg-card/90 border-border shadow-lg supports-[backdrop-filter]:bg-card/75 sticky top-24">
+            {/* 关于我卡片：sticky 浮动元素保留毛玻璃，圆角统一 xl、阴影引用令牌 */}
+            <div className="p-6 rounded-xl border transition-[box-shadow,border-color] duration-300 backdrop-blur-md bg-card/90 border-border shadow-card supports-[backdrop-filter]:bg-card/75 sticky top-24">
               <div className="text-center mb-4">
                 <a href={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/about`} className="block w-20 h-20 rounded-full mx-auto mb-4 overflow-hidden border-2 border-primary/30 shadow-lg hover:shadow-xl transition-shadow">
                   <img 
@@ -316,8 +317,8 @@ function ClientMomentsPage({ moments, blogCount, blogTotalWordCount, blogs, cate
 
 
 
-            {/* 公告板 */}
-            <div className="p-4 rounded-lg border transition-all duration-300 backdrop-blur-md bg-card/90 border-border shadow-lg supports-[backdrop-filter]:bg-card/75">
+            {/* 公告板：内容流卡片改近实色，圆角统一 xl，阴影引用令牌 */}
+            <div className="p-4 rounded-xl border transition-[box-shadow,border-color] duration-300 bg-card/95 border-border shadow-card">
               <h3 className="text-lg font-semibold flex items-center gap-2 mb-3">
                 <span className="w-2 h-6 bg-primary rounded-full"></span>
                 公告板
@@ -327,8 +328,8 @@ function ClientMomentsPage({ moments, blogCount, blogTotalWordCount, blogs, cate
               </div>
             </div>
 
-            {/* 日历小组件 */}
-            <div className="p-6 rounded-lg border transition-all duration-300 backdrop-blur-md bg-card/90 border-border shadow-lg supports-[backdrop-filter]:bg-card/75">
+            {/* 日历小组件：内容流卡片改近实色，圆角统一 xl，阴影引用令牌 */}
+            <div className="p-6 rounded-xl border transition-[box-shadow,border-color] duration-300 bg-card/95 border-border shadow-card">
               <div className="calendar">
                 <div className="text-center mb-4">
                   <div className="text-lg font-medium">{new Date().getFullYear()}年 {new Date().toLocaleString('zh-CN', { month: 'long' })}</div>

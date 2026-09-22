@@ -87,12 +87,14 @@ const ImageCard = ({ image, onClick, index, priority = 'low' }: ImageCardProps) 
   }, [image.src, resetImageState]);
   
   return (
-    <motion.div 
-      className="group relative cursor-pointer overflow-hidden rounded-lg shadow-md transition-all duration-300"
+    /* 圆角统一为标准卡片档 rounded-xl；阴影引用统一令牌；
+       不加 CSS transition——位移和阴影由 Framer Motion 逐帧驱动，避免双重过渡 */
+    <motion.div
+      className="group relative cursor-pointer overflow-hidden rounded-xl shadow-card"
       onClick={onClick}
-      whileHover={{ 
-        y: -4, 
-        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+      whileHover={{
+        y: -3,
+        boxShadow: 'var(--card-shadow-hover)'
       }}
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
@@ -126,11 +128,11 @@ const ImageCard = ({ image, onClick, index, priority = 'low' }: ImageCardProps) 
           </div>
         )}
         
-        {/* 图片 */}
+        {/* 图片：CSS 过渡只管加载淡入（opacity），缩放交给 Framer Motion，避免双重过渡 */}
         <motion.img
           src={currentSrc}
           alt={image.alt}
-          className={`w-full h-full object-cover transition-all duration-500 ${loadStatus === 'loading' ? 'opacity-0' : 'opacity-100'}`}
+          className={`w-full h-full object-cover transition-opacity duration-500 ${loadStatus === 'loading' ? 'opacity-0' : 'opacity-100'}`}
           onLoad={handleImageLoad}
           onError={handleImageError}
           crossOrigin="anonymous"

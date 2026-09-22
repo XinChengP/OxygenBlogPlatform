@@ -42,15 +42,16 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
   // 获取卡片样式类名
   // 内容流中的文章卡片默认使用近实色背景（bg-card/95），
   // 去掉 backdrop-blur 后滚动时不再触发大量模糊合成，性能更好；
-  // 仅浮动元素（如 sticky 侧边栏）传入 floating=true 保留毛玻璃
+  // 仅浮动元素（如 sticky 侧边栏）传入 floating=true 保留毛玻璃；
+  // 阴影统一引用 shadow-card 令牌（亮暗模式自动切换）
   const getGlassStyle = (baseStyle: string, floating = false) => {
     if (isBackgroundEnabled) {
       if (floating) {
-        return `${baseStyle} backdrop-blur-md bg-card/90 border-border shadow-lg supports-[backdrop-filter]:bg-card/75`;
+        return `${baseStyle} backdrop-blur-md bg-card/90 border-border shadow-card supports-[backdrop-filter]:bg-card/75`;
       }
-      return `${baseStyle} bg-card/95 border-border shadow-lg`;
+      return `${baseStyle} bg-card/95 border-border shadow-card`;
     }
-    return `bg-card ${baseStyle} border-border shadow-lg`;
+    return `bg-card ${baseStyle} border-border shadow-card`;
   };
 
   const handlePostHover = (post: BlogPost) => {
@@ -224,17 +225,17 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
             <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2">
                 <AnimatePresence mode="popLayout">
                 {paginationData.currentPosts.map((post) => (
+                  /* 文章卡片：悬停边框用主题令牌 hover:border-primary/30（原为硬编码 blue-500）；
+                     悬停反馈全站统一为位移 -3 + 悬停阴影令牌，亮暗模式自动切换；
+                     静态背景/阴影由 getGlassStyle 统一提供，参数里不再重复 shadow 类 */
                   <motion.article
                     key={post.slug}
                     layout
-                    /* 悬停边框改用 Tailwind 主题令牌（hover:border-primary/30），
-                       替代原来硬编码的 Tailwind blue-500（rgba(59,130,246,0.3)），
-                       保证悬停反馈与天依蓝主题及暗黑模式主色一致 */
-                    className={`${getGlassStyle("rounded-xl shadow-lg overflow-hidden cursor-pointer group relative")} border border-transparent hover:border-primary/30 transition-colors`}
+                    className={`${getGlassStyle("rounded-xl overflow-hidden cursor-pointer group relative")} border border-transparent hover:border-primary/30 transition-colors`}
                     initial={{ opacity: 0, scale: 0.9, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.9, y: -20 }}
-                    whileHover={{ y: -5, boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)" }}
+                    whileHover={{ y: -3, boxShadow: "var(--card-shadow-hover)" }}
                     transition={{ duration: 0.3, layout: { duration: 0.3 } }}
                     onMouseEnter={() => handlePostHover(post)}
                     onMouseLeave={handlePostLeave}

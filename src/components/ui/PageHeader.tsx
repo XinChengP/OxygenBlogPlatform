@@ -29,8 +29,9 @@ interface PageHeaderProps {
   centered?: boolean;
   /** 显示分隔线 */
   showDivider?: boolean;
-  /** 标题渐变样式 */
-  gradientStyle?: 'default' | 'primary' | 'rainbow' | 'sunset' | 'ocean' | 'purple';
+  /** 标题渐变样式：全站锁定天依蓝，仅保留默认（前景色）与天依蓝两档；
+   *  原 rainbow/sunset/ocean/purple 预设全站零引用且与主题策略冲突，已移除 */
+  gradientStyle?: 'default' | 'primary';
 }
 
 /**
@@ -88,14 +89,10 @@ export default function PageHeader({
     },
   };
 
-  // 渐变色配置 - 多种预设渐变效果
+  // 渐变色配置 - 仅保留两档：默认前景色与天依蓝主题渐变
   const gradientConfig = {
     default: 'bg-gradient-to-r from-foreground via-foreground to-foreground/80',
     primary: 'bg-gradient-to-r from-primary via-primary/80 to-primary/60',
-    rainbow: 'bg-gradient-to-r from-pink-500 via-purple-500 to-primary',
-    sunset: 'bg-gradient-to-r from-orange-400 via-pink-500 to-purple-500',
-    ocean: 'bg-gradient-to-r from-cyan-400 via-primary to-blue-500',
-    purple: 'bg-gradient-to-r from-purple-400 via-pink-400 to-primary',
   };
 
   const config = sizeConfig[size];

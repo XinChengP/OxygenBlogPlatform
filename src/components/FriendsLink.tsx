@@ -76,23 +76,27 @@ function FriendCard({ link, index }: { link: FriendLink; index: number }) {
         delay: index * 0.1,
         ease: [0.25, 0.46, 0.45, 0.94]
       }}
-      whileHover={{ 
-        y: -8,
+      /* 悬停位移与全站卡片统一为 -3（原 -8 幅度过大）；阴影过渡时长统一 300ms */
+      whileHover={{
+        y: -3,
         transition: { duration: 0.3, ease: "easeOut" }
       }}
       whileTap={{ scale: 0.98 }}
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
-      className="group relative block rounded-2xl overflow-hidden bg-white dark:bg-gray-800/80 
-                 border border-gray-200/50 dark:border-gray-700/50
-                 shadow-md hover:shadow-2xl
-                 transition-shadow duration-500"
+      /* 卡片视觉与全站统一：rounded-xl 标准圆角、bg-card/95 近实色、
+         border-border 语义边框、shadow-card 静态阴影、悬停 shadow-card-hover；
+         CSS 过渡只管阴影，位移由 Framer Motion 驱动 */
+      className="group relative block rounded-xl overflow-hidden bg-card/95
+                 border border-border
+                 shadow-card hover:shadow-card-hover
+                 transition-[box-shadow,border-color] duration-300 hover:border-primary/30"
     >
-      {/* 顶部渐变装饰条 */}
-      <motion.div 
+      {/* 顶部渐变装饰条：天依蓝引用主题令牌，两侧分类色保留以区分友链类型 */}
+      <motion.div
         className="absolute top-0 left-0 right-0 h-1"
-        style={{ 
-          background: `linear-gradient(90deg, ${categoryColor} 0%, #66ccff 50%, ${categoryColor} 100%)`,
+        style={{
+          background: `linear-gradient(90deg, ${categoryColor} 0%, var(--primary) 50%, ${categoryColor} 100%)`,
           backgroundSize: '200% 100%'
         }}
         animate={isHovered ? { backgroundPosition: ['0% 0%', '200% 0%'] } : {}}
@@ -116,8 +120,8 @@ function FriendCard({ link, index }: { link: FriendLink; index: number }) {
             whileHover={{ scale: 1.1, rotate: 5 }}
             transition={{ duration: 0.3 }}
           >
-            <div 
-              className="w-16 h-16 rounded-2xl overflow-hidden shadow-lg"
+            <div
+              className="w-16 h-16 rounded-xl overflow-hidden shadow-lg"
               style={{
                 boxShadow: `0 4px 20px ${categoryColor}30`
               }}

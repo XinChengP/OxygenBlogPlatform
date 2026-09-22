@@ -29,21 +29,22 @@ interface ToolCardProps {
 }
 
 function ToolCard({ tool, index }: ToolCardProps) {
-  /* 正文卡片改用近实色背景（bg-card/95）：
-     去掉 backdrop-blur 后每张卡片不再触发独立的模糊合成，
-     长列表滚动性能更好，卡片层次也更清爽 */
+  /* 正文卡片近实色背景 + 统一阴影令牌：
+     去掉 backdrop-blur 后长列表滚动不触发模糊合成，层次也更清爽 */
   const getGlassStyle = (baseStyle: string) => {
-    return `${baseStyle} bg-card/95 border-border shadow-lg`;
+    return `${baseStyle} bg-card/95 border-border shadow-card`;
   };
 
   return (
+    /* 圆角统一标准卡片档 rounded-xl；CSS 过渡只管阴影/边框色，
+       位移由 Framer Motion 驱动（-3 与全站卡片一致），避免双重过渡 */
     <motion.div
       key={tool.id}
-      className={getGlassStyle("rounded-lg shadow-md p-6 border hover:shadow-xl transition-all duration-300")}
+      className={getGlassStyle("rounded-xl p-6 border hover:shadow-card-hover hover:border-primary/30 transition-[box-shadow,border-color] duration-300")}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: index * 0.1 }}
-      whileHover={{ y: -5 }}
+      whileHover={{ y: -3 }}
     >
       <div className="flex items-center gap-3 mb-4">
         <span className="text-2xl">{tool.icon}</span>
@@ -106,11 +107,11 @@ export default function ToolsPage() {
   const getGlassStyle = (baseStyle: string, floating = false) => {
     if (containerStyle && containerStyle.className) {
       if (floating) {
-        return `${baseStyle} backdrop-blur-md bg-card/90 border-border shadow-lg supports-[backdrop-filter]:bg-card/75`;
+        return `${baseStyle} backdrop-blur-md bg-card/90 border-border shadow-card supports-[backdrop-filter]:bg-card/75`;
       }
-      return `${baseStyle} bg-card/95 border-border shadow-lg`;
+      return `${baseStyle} bg-card/95 border-border shadow-card`;
     }
-    return `bg-card ${baseStyle} border-border shadow-lg`;
+    return `bg-card ${baseStyle} border-border shadow-card`;
   };
   
   // 处理分类变化
@@ -141,7 +142,7 @@ export default function ToolsPage() {
         >
           <button
             onClick={() => setIsCategoryCollapsed(!isCategoryCollapsed)}
-            className={getGlassStyle("w-full rounded-lg shadow-md p-4 flex items-center justify-between text-foreground hover:bg-card/90 transition-colors border")}
+            className={getGlassStyle("w-full rounded-xl p-4 flex items-center justify-between text-foreground hover:bg-card/90 transition-colors border")}
           >
             <span className="flex items-center gap-2">
               <span>🗂️</span>
@@ -169,7 +170,7 @@ export default function ToolsPage() {
             transition={{ duration: 0.3, ease: 'easeInOut' }}
             className="overflow-hidden"
           >
-            <div className={getGlassStyle("rounded-lg shadow-md mt-2 p-4 border")}>
+            <div className={getGlassStyle("rounded-xl mt-2 p-4 border")}>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {toolCategories.map((category) => (
                    <button
@@ -197,7 +198,7 @@ export default function ToolsPage() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            <div className={getGlassStyle("rounded-lg shadow-md p-6 sticky top-24 border", true)}>
+            <div className={getGlassStyle("rounded-xl p-6 sticky top-24 border", true)}>
               <h3 className="text-lg font-semibold text-foreground mb-4">
                 🗂️ 工具分类
               </h3>

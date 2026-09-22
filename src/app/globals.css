@@ -43,6 +43,10 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  /* 卡片阴影令牌：静态阴影与悬停阴影两档，具体值在 :root/.dark 中按模式定义，
+     注册后可用 shadow-card / shadow-card-hover 工具类，也可供 Framer Motion 引用 */
+  --shadow-card: var(--card-shadow);
+  --shadow-card-hover: var(--card-shadow-hover);
   --grid-template-columns-14: repeat(14, minmax(0, 1fr));
   --grid-template-columns-16: repeat(16, minmax(0, 1fr));
   --grid-template-columns-18: repeat(18, minmax(0, 1fr));
@@ -142,6 +146,12 @@
   --code-inline-bg: #f1f5f9; /* slate-100 */
   --code-inline-text: #2563eb; /* blue-600 */
   --code-inline-border: #cbd5e1; /* slate-300 */
+
+  /* 卡片阴影（亮色模式）：双层阴影营造精致克制的悬浮感——
+     第一层极淡近影描出边缘，第二层柔和远影拉开层次；
+     悬停档加深远影，配合天依蓝边框反馈，阴影本身保持中性不染色 */
+  --card-shadow: 0 1px 3px rgba(15, 23, 42, 0.05), 0 4px 14px -4px rgba(15, 23, 42, 0.08);
+  --card-shadow-hover: 0 4px 8px rgba(15, 23, 42, 0.06), 0 16px 32px -12px rgba(15, 23, 42, 0.18);
 }
 
 .dark {
@@ -194,6 +204,11 @@
   --code-inline-bg: #1e293b; /* slate-800 */
   --code-inline-text: #93c5fd; /* blue-300 */
   --code-inline-border: #475569; /* slate-600 */
+
+  /* 卡片阴影（暗色模式）：深色背景下阴影需要更黑更柔才"托得住"卡片，
+     悬停档加大远影扩散，配合天依蓝边框高亮 */
+  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.30), 0 4px 14px -4px rgba(0, 0, 0, 0.35);
+  --card-shadow-hover: 0 4px 10px rgba(0, 0, 0, 0.35), 0 18px 36px -12px rgba(0, 0, 0, 0.55);
 }
 
 /* 代码块主题样式优化 */
