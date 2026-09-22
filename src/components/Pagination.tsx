@@ -117,14 +117,16 @@ export default function Pagination({
     >
       <div className={getGlassStyle("rounded-lg shadow-md p-2 border")}>
         <div className="flex items-center gap-1 sm:gap-2">
-          {/* 上一页按钮 */}
+          {/* 上一页按钮
+              过渡说明：transform 由 Framer Motion 的 whileHover/whileTap 逐帧驱动，
+              CSS 过渡只管颜色和背景，不能用 transition-all 缓冲 transform 造成双重过渡 */}
           <motion.button
             onClick={() => handlePageClick(currentPage - 1)}
             disabled={currentPage === 1}
             className={`
-              flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-md transition-all duration-200
-              ${currentPage === 1 
-                ? 'text-muted-foreground cursor-not-allowed opacity-50' 
+              flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-md transition-[color,background-color] duration-200
+              ${currentPage === 1
+                ? 'text-muted-foreground cursor-not-allowed opacity-50'
                 : 'text-foreground hover:bg-primary/10 hover:text-primary active:scale-95'
               }
             `}
@@ -145,8 +147,11 @@ export default function Pagination({
                 ) : (
                   <motion.button
                     onClick={() => handlePageClick(page as number)}
+                    /* 过渡说明：颜色和背景色由 Framer Motion 的 animate 逐帧驱动，
+                       这里不能有任何 CSS transition（包括 transition-all），
+                       否则浏览器过渡和 Framer Motion 逐帧写入叠加成双重过渡 */
                     className={`
-                      flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-md text-sm font-medium transition-all duration-200
+                      flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-md text-sm font-medium
                       ${currentPage === page
                         ? 'bg-primary text-primary-foreground shadow-md'
                         : 'text-foreground hover:bg-primary/10 hover:text-primary active:scale-95'
@@ -168,14 +173,14 @@ export default function Pagination({
             ))}
           </div>
 
-          {/* 下一页按钮 */}
+          {/* 下一页按钮（过渡约束同上一页按钮） */}
           <motion.button
             onClick={() => handlePageClick(currentPage + 1)}
             disabled={currentPage === totalPages}
             className={`
-              flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-md transition-all duration-200
-              ${currentPage === totalPages 
-                ? 'text-muted-foreground cursor-not-allowed opacity-50' 
+              flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-md transition-[color,background-color] duration-200
+              ${currentPage === totalPages
+                ? 'text-muted-foreground cursor-not-allowed opacity-50'
                 : 'text-foreground hover:bg-primary/10 hover:text-primary active:scale-95'
               }
             `}

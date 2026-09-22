@@ -39,11 +39,18 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
 
   const POSTS_PER_PAGE = 6;
 
-  const getGlassStyle = (baseStyle: string) => {
+  // 获取卡片样式类名
+  // 内容流中的文章卡片默认使用近实色背景（bg-card/95），
+  // 去掉 backdrop-blur 后滚动时不再触发大量模糊合成，性能更好；
+  // 仅浮动元素（如 sticky 侧边栏）传入 floating=true 保留毛玻璃
+  const getGlassStyle = (baseStyle: string, floating = false) => {
     if (isBackgroundEnabled) {
-      return `${baseStyle} backdrop-blur-md bg-card/90 border-border shadow-lg supports-[backdrop-filter]:bg-card/75`;
+      if (floating) {
+        return `${baseStyle} backdrop-blur-md bg-card/90 border-border shadow-lg supports-[backdrop-filter]:bg-card/75`;
+      }
+      return `${baseStyle} bg-card/95 border-border shadow-lg`;
     }
-    return `bg-card ${baseStyle} border-border`;
+    return `bg-card ${baseStyle} border-border shadow-lg`;
   };
 
   const handlePostHover = (post: BlogPost) => {
@@ -156,7 +163,7 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* 桌面端左侧边栏 */}
           <aside className="hidden lg:block lg:col-span-1">
-            <div className={getGlassStyle("rounded-xl shadow-lg p-6 sticky top-24 border")}>
+            <div className={getGlassStyle("rounded-xl shadow-lg p-6 sticky top-24 border", true)}>
               <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
                 <BookOpen className="w-4 h-4" />
                 分类筛选
@@ -220,11 +227,14 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
                   <motion.article
                     key={post.slug}
                     layout
-                    className={`${getGlassStyle("rounded-xl shadow-lg overflow-hidden cursor-pointer group relative")} border border-transparent`}
+                    /* 悬停边框改用 Tailwind 主题令牌（hover:border-primary/30），
+                       替代原来硬编码的 Tailwind blue-500（rgba(59,130,246,0.3)），
+                       保证悬停反馈与天依蓝主题及暗黑模式主色一致 */
+                    className={`${getGlassStyle("rounded-xl shadow-lg overflow-hidden cursor-pointer group relative")} border border-transparent hover:border-primary/30 transition-colors`}
                     initial={{ opacity: 0, scale: 0.9, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.9, y: -20 }}
-                    whileHover={{ y: -5, boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)", borderColor: "rgba(59,130,246,0.3)" }}
+                    whileHover={{ y: -5, boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)" }}
                     transition={{ duration: 0.3, layout: { duration: 0.3 } }}
                     onMouseEnter={() => handlePostHover(post)}
                     onMouseLeave={handlePostLeave}

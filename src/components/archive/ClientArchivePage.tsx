@@ -919,7 +919,11 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
                           }}
                           className="block w-full h-full group"
                         >
-                          <div className="w-full h-full rounded-xl md:rounded-2xl overflow-hidden border border-border shadow-lg transition-all duration-300 group-hover:shadow-xl group-hover:shadow-primary/20 bg-card/70 supports-[backdrop-filter]:bg-card/60 backdrop-blur-xl">
+                          {/* 正文卡片改用近实色背景（bg-card/95）：
+                              原来的 bg-card/70 + backdrop-blur-xl 是全站毛玻璃浓度最高的位置，
+                              时光河流页一屏渲染十几张卡片，模糊合成开销大；
+                              实色后卡片层次更清晰，滚动更流畅 */}
+                          <div className="w-full h-full rounded-xl md:rounded-2xl overflow-hidden border border-border shadow-lg transition-all duration-300 group-hover:shadow-xl group-hover:shadow-primary/20 bg-card/95">
                             {/* 封面区：无封面时降级为渐变底 + 书本图标 */}
                             {post.coverImage ? (
                               <div className="relative overflow-hidden" style={{ height: coverHeight }}>

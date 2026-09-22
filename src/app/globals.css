@@ -48,7 +48,6 @@
   --grid-template-columns-18: repeat(18, minmax(0, 1fr));
   --animate-meteor: meteor 5s linear infinite;
   --animate-gradient-shift: gradientShift 6s ease-in-out infinite;
-  --animate-rainbow-flow: rainbowFlow 8s ease-in-out infinite;
   @keyframes meteor {
   0% {
     transform: rotate(var(--angle)) translateX(0);
@@ -73,28 +72,8 @@
     background-position: 0% 50%;
   }
   }
-  @keyframes rainbowFlow {
-  0% {
-    background-position: 0% 50%;
-    filter: brightness(1.1) saturate(1.2) hue-rotate(0deg);
-    }
-  25% {
-    background-position: 100% 25%;
-    filter: brightness(1.2) saturate(1.3) hue-rotate(90deg);
-    }
-  50% {
-    background-position: 100% 100%;
-    filter: brightness(1.1) saturate(1.2) hue-rotate(180deg);
-    }
-  75% {
-    background-position: 0% 75%;
-    filter: brightness(1.2) saturate(1.3) hue-rotate(270deg);
-    }
-  100% {
-    background-position: 0% 50%;
-    filter: brightness(1.1) saturate(1.2) hue-rotate(360deg);
-    }
-  }
+  /* rainbowFlow 彩虹流光动画已删除：与"锁定天依蓝"的主题策略冲突，
+     且循环 hue-rotate 滤镜持续触发重绘，全站无引用 */
   @keyframes fadeIn {
     from {
       opacity: 0;
@@ -340,17 +319,17 @@ html {
   -ms-overflow-style: auto;
 }
 
-/* Dashboard 统计卡片背景色 - 确保 Tailwind 任意值类名能正常工作 */
+/* Dashboard 统计卡片背景色 - 统一引用主题令牌，避免硬编码色值脱离主题体系 */
 .bg-tianyi-blue {
-  background-color: #66ccff;
+  background-color: var(--color-primary);
 }
 
 .bg-tianyi-cyan {
-  background-color: #06b6d4;
+  background-color: var(--color-chart-2);
 }
 
 .bg-tianyi-dark {
-  background-color: #1e40af;
+  background-color: var(--color-secondary);
 }
 
 /* ============================================
@@ -439,25 +418,13 @@ html {
 }
 
 /**
- * 全局暗黑模式过渡
- * 为所有元素添加平滑的主题切换过渡效果
+ * 主题切换过渡说明：
+ * 全局通配符过渡（html * transition）已被移除，原因：
+ * 1. 全站数千个元素各自注册过渡监听，拖慢渲染性能；
+ * 2. 与 Framer Motion 组件自身的过渡定义冲突。
+ * 主题切换的平滑过渡由 ThemeProvider/ThemeToggle 临时挂载的
+ * theme-transitioning 类按需提供（见上方定义），不影响日常渲染。
  */
-html,
-html *,
-html *::before,
-html *::after {
-  transition: background-color 0.3s ease,
-              border-color 0.3s ease,
-              color 0.3s ease;
-}
-
-/* 排除某些不需要过渡的元素 */
-html .no-transition,
-html .no-transition *,
-html .no-transition *::before,
-html .no-transition *::after {
-  transition: none !important;
-}
 
 /**
  * 图片暗黑模式滤镜
@@ -497,49 +464,20 @@ html .no-transition *::after {
 }
 
 /**
- * 卡片和图片容器暗黑模式优化
+ * 代码块暗黑模式优化说明：
+ * 原 .dark pre/code 滤镜已删除，暗黑配色由 --code-* 令牌直接承载，
+ * 保证语法高亮颜色在两种模式下都忠实于代码主题。
  */
-.dark .dark-mode-card {
-  background: linear-gradient(
-    145deg,
-    rgba(42, 52, 65, 0.9) 0%,
-    rgba(31, 39, 53, 0.95) 100%
-  );
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-}
 
 /**
- * 代码块暗黑模式优化
- * 增强代码可读性
+ * 暗黑模式交互说明：
+ * 以下全局滤镜规则已被移除，原因：
+ * 1. .dark pre/code 的 brightness(1.1) 会拉亮语法高亮配色，使其偏离代码主题本色；
+ * 2. .dark a/button 的 hover 滤镜会给全站所有链接按钮无差别加效果，
+ *    与组件自身的悬停动画叠加，且滤镜在大面积元素上触发重绘；
+ * 3. 暗黑模式的配色已由 .dark 下的颜色令牌（--color-* 系列）正确承载，
+ *    不需要滤镜二次补偿。
  */
-.dark pre,
-.dark code {
-  filter: brightness(1.1);
-}
-
-/**
- * 链接和交互元素暗黑模式优化
- */
-.dark a:not(.no-dark-filter) {
-  transition: color 0.3s ease, opacity 0.3s ease;
-}
-
-.dark a:not(.no-dark-filter):hover {
-  filter: brightness(1.2);
-}
-
-/**
- * 按钮暗黑模式优化
- */
-.dark button:not(.no-dark-filter) {
-  transition: all 0.3s ease;
-}
-
-.dark button:not(.no-dark-filter):hover {
-  filter: brightness(1.1);
-  transform: translateY(-1px);
-}
 
 /**
  * 表单元素暗黑模式优化
@@ -818,7 +756,8 @@ html:not(.music-player-active) body {
 
 .btn-hover-lift:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 204, 255, 0.3);
+  /* 使用主题色派生阴影，避免硬编码色值在暗黑模式下失配 */
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--primary) 30%, transparent);
 }
 
 /**

@@ -244,7 +244,8 @@ const Navigation = () => {
     if (isDropdown) {
       return `${baseClasses} ${isAtTop ? 'text-white hover:text-gray-200' : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary'}`;
     }
-    
+
+    // 下拉菜单项与普通导航项的样式规则完全一致（原本就是同一段代码，合并避免重复）
     return `${baseClasses} ${isAtTop ? 'text-white hover:text-gray-200' : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary'}`;
   }, [isActive, isAtTop]);
 
@@ -276,11 +277,7 @@ const Navigation = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
-              className={`absolute top-full left-0 mt-1 w-24 rounded-lg shadow-lg border overflow-hidden ${
-                isAtTop 
-                  ? 'bg-white/70 dark:bg-gray-900/70 backdrop-blur-md border-gray-200/50 dark:border-gray-700/50' 
-                  : 'bg-white/70 dark:bg-gray-900/70 backdrop-blur-md border-gray-200/50 dark:border-gray-700/50'
-              }`}
+              className={`absolute top-full left-0 mt-1 min-w-[8rem] rounded-lg shadow-lg border overflow-hidden bg-white/70 dark:bg-gray-900/70 backdrop-blur-md border-gray-200/50 dark:border-gray-700/50`}
             >
               <div className="py-1">
                 {dropdown.items.map((item) => (
@@ -398,13 +395,10 @@ const Navigation = () => {
           exit={{ opacity: 0, x: 20, scale: 0.95 }}
           transition={{ duration: 0.2, ease: "easeOut" }}
         >
-          {/* 气泡式菜单容器 - 透明度和导航栏保持一致 */}
+          {/* 气泡式菜单容器 - 浮层固定用毛玻璃，不随 isAtTop 变化 */}
           <div className={`
             min-w-[140px] rounded-2xl shadow-xl border
-            ${isAtTop 
-              ? 'bg-white/70 dark:bg-gray-900/70 border-gray-200/50 dark:border-gray-700/50 backdrop-blur-md' 
-              : 'bg-white/70 dark:bg-gray-900/70 border-gray-200/50 dark:border-gray-700/50 backdrop-blur-md'
-            }
+            bg-white/70 dark:bg-gray-900/70 border-gray-200/50 dark:border-gray-700/50 backdrop-blur-md
             py-3 px-2
           `}>
             {/* 普通导航项 */}
@@ -430,7 +424,7 @@ const Navigation = () => {
             
             {/* 社交分类 */}
             <div className="space-y-1">
-              <div className={`px-4 py-1 text-xs font-medium text-right ${isAtTop ? 'text-gray-400 dark:text-gray-500' : 'text-gray-400 dark:text-gray-500'}`}>
+              <div className="px-4 py-1 text-xs font-medium text-right text-gray-400 dark:text-gray-500">
                 社交
               </div>
               {socialDropdown.items.map((item) => (
@@ -454,7 +448,7 @@ const Navigation = () => {
             
             {/* 关于分类 */}
             <div className="space-y-1">
-              <div className={`px-4 py-1 text-xs font-medium text-right ${isAtTop ? 'text-gray-400 dark:text-gray-500' : 'text-gray-400 dark:text-gray-500'}`}>
+              <div className="px-4 py-1 text-xs font-medium text-right text-gray-400 dark:text-gray-500">
                 关于
               </div>
               {aboutDropdown.items.map((item) => (

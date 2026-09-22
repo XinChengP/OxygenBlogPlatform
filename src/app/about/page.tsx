@@ -651,6 +651,10 @@ function AnimeCard({ animeList }: { animeList: AnimeConfig[] }) {
 /**
  * 游戏库横向手风琴面板组件
  * 添加封面图片视差移动 + 悬停光晕效果
+ *
+ * 过渡说明：面板的 flex 展开动画由 Framer Motion 逐帧驱动，
+ * 不能使用 transition-all（它会缓冲 Framer Motion 逐帧写入的 flex 值，
+ * 造成双重过渡、动画迟滞），只过渡边框和阴影即可
  */
 function GameLibraryAccordionPanel({
   game,
@@ -679,7 +683,7 @@ function GameLibraryAccordionPanel({
       }}
       transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
       whileHover={!isActive ? { flex: collapsedFlex + 0.3 } : undefined}
-      className={`relative overflow-hidden rounded-2xl border cursor-pointer ${glassClass} transition-all duration-300 ${isActive ? 'shadow-2xl shadow-primary/20' : 'shadow-lg hover:shadow-xl hover:shadow-primary/10'}`}
+      className={`relative overflow-hidden rounded-2xl border cursor-pointer ${glassClass} transition-[border-color,box-shadow] duration-300 ${isActive ? 'shadow-2xl shadow-primary/20' : 'shadow-lg hover:shadow-xl hover:shadow-primary/10'}`}
     >
       {/* 共享的封面背景层 - 添加悬停缩放 */}
       <motion.div
@@ -903,6 +907,10 @@ function parseVerticalPosition(position?: string): number {
 /**
  * 横向手风琴面板组件
  * 添加封面悬停缩放 + 展开时内容交错入场
+ *
+ * 过渡说明：面板的 flex 展开动画由 Framer Motion 逐帧驱动，
+ * 不能使用 transition-all（它会缓冲 Framer Motion 逐帧写入的 flex 值，
+ * 造成双重过渡、动画迟滞），只过渡边框和阴影即可
  */
 function HorizontalAccordionPanel({
   section,
@@ -936,7 +944,7 @@ function HorizontalAccordionPanel({
       }}
       transition={{ duration: 0.3, ease: 'easeOut' }}
       whileHover={!isActive ? { flex: 1.3 } : undefined}
-      className={`relative overflow-hidden rounded-2xl border cursor-pointer ${glassClass} transition-all duration-300 ${isActive ? 'shadow-2xl shadow-primary/20' : 'shadow-lg hover:shadow-xl hover:shadow-primary/10'}`}
+      className={`relative overflow-hidden rounded-2xl border cursor-pointer ${glassClass} transition-[border-color,box-shadow] duration-300 ${isActive ? 'shadow-2xl shadow-primary/20' : 'shadow-lg hover:shadow-xl hover:shadow-primary/10'}`}
     >
       {/* 收缩状态下的封面背景 + 垂直标题 */}
       <AnimatePresence mode="wait">
@@ -1053,7 +1061,7 @@ function SocialLink({
       rel={href && href.startsWith('http') ? 'noopener noreferrer' : undefined}
       whileHover={{ scale: 1.12, y: -2 }}
       whileTap={{ scale: 0.95 }}
-      className="flex items-center justify-center w-10 h-10 rounded-lg bg-background border border-border hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 transition-all duration-300 cursor-pointer"
+      className="flex items-center justify-center w-10 h-10 rounded-lg bg-background border border-border hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 transition-[border-color,box-shadow] duration-300 cursor-pointer"
       title={title}
     >
       <OptimizedIcon
@@ -1216,7 +1224,7 @@ export default function AboutPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className={`${getGlassStyle("rounded-2xl shadow-xl border overflow-hidden relative")} transition-all duration-300 group/card hover:shadow-2xl hover:shadow-primary/10`}
+              className={`${getGlassStyle("rounded-2xl shadow-xl border overflow-hidden relative")} transition-[border-color,box-shadow] duration-300 group/card hover:shadow-2xl hover:shadow-primary/10`}
             >
               {/* 悬停时的渐变边框光效 */}
               <div className="absolute inset-0 rounded-2xl opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 pointer-events-none"
@@ -1445,7 +1453,7 @@ export default function AboutPage() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: '-100px' }}
                   transition={{ duration: 0.6, delay: 0.1 + index * 0.1 }}
-                  className={`${getGlassStyle("rounded-2xl border shadow-lg overflow-hidden")} transition-all duration-300`}
+                  className={`${getGlassStyle("rounded-2xl border shadow-lg overflow-hidden")} transition-[border-color,box-shadow] duration-300`}
                 >
                   <button
                     onClick={() => setActiveSection(activeSection === index ? 0 : index)}
@@ -1569,7 +1577,7 @@ export default function AboutPage() {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, margin: '-100px' }}
                     transition={{ duration: 0.6, delay: 0.1 + index * 0.1 }}
-                    className={`${getGlassStyle("rounded-2xl border shadow-lg overflow-hidden")} transition-all duration-300`}
+                    className={`${getGlassStyle("rounded-2xl border shadow-lg overflow-hidden")} transition-[border-color,box-shadow] duration-300`}
                   >
                     <button
                       onClick={() => setActiveFrequentGame(index)}
@@ -1631,7 +1639,7 @@ export default function AboutPage() {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, margin: '-100px' }}
                     transition={{ duration: 0.6, delay: 0.1 + index * 0.1 }}
-                    className={`${getGlassStyle("rounded-2xl border shadow-lg overflow-hidden")} transition-all duration-300`}
+                    className={`${getGlassStyle("rounded-2xl border shadow-lg overflow-hidden")} transition-[border-color,box-shadow] duration-300`}
                   >
                     <button
                       onClick={() => setActiveOccasionalGame(index)}

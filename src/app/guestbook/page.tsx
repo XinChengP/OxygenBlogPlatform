@@ -31,11 +31,11 @@ function GuestbookSkeleton() {
         这里同样使用语义令牌 bg-card/60 + border-border/40，而非硬编码灰阶。
       */}
       <div className="relative bg-card/60 backdrop-blur-sm rounded-2xl shadow-sm border border-border/40 overflow-hidden">
-        {/* 顶部渐变装饰条：与真实卡片一一对应 */}
+        {/* 顶部渐变装饰条：与真实卡片一一对应，颜色引用主题令牌以适配亮暗模式 */}
         <div
           className="h-1.5 w-full"
           style={{
-            background: 'linear-gradient(90deg, #66ccff 0%, #06b6d4 50%, #1e40af 100%)'
+            background: 'linear-gradient(90deg, var(--primary) 0%, var(--color-chart-2) 50%, var(--color-secondary) 100%)'
           }}
         />
 
@@ -74,9 +74,8 @@ export default function Guestbook() {
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
-  // 主题颜色 - 使用天依蓝配色
-  const primaryColor = '#66ccff';
-  const accentColor = '#06b6d4';
+  /* 主题颜色说明：不再定义硬编码的十六进制色值变量，
+     全部改用 CSS 主题令牌（--primary 等），保证亮暗模式自动适配 */
 
   useEffect(() => {
     setMounted(true);
@@ -93,10 +92,11 @@ export default function Guestbook() {
         {/* 左上角装饰圆 */}
         <motion.div 
           className="absolute -top-20 -left-20 w-96 h-96 rounded-full opacity-30"
-          style={{ 
-            background: `radial-gradient(circle, ${primaryColor}40 0%, transparent 70%)`,
+          style={{
+            /* 使用主题令牌派生半透明光晕，替代硬编码的 #66ccff40 */
+            background: 'radial-gradient(circle, color-mix(in srgb, var(--primary) 25%, transparent) 0%, transparent 70%)',
           }}
-          animate={{ 
+          animate={{
             scale: [1, 1.1, 1],
             opacity: [0.3, 0.4, 0.3]
           }}
@@ -109,10 +109,11 @@ export default function Guestbook() {
         {/* 右下角装饰圆 */}
         <motion.div 
           className="absolute -bottom-32 -right-32 w-[500px] h-[500px] rounded-full opacity-20"
-          style={{ 
-            background: `radial-gradient(circle, ${accentColor}40 0%, transparent 70%)`,
+          style={{
+            /* 使用辅助色令牌派生半透明光晕，替代硬编码的 #06b6d440 */
+            background: 'radial-gradient(circle, color-mix(in srgb, var(--color-chart-2) 25%, transparent) 0%, transparent 70%)',
           }}
-          animate={{ 
+          animate={{
             scale: [1, 1.15, 1],
             opacity: [0.2, 0.3, 0.2]
           }}

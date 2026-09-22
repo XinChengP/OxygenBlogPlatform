@@ -21,15 +21,19 @@ import { trackToolView, trackPageView } from '@/components/Analytics';
 
 
 // 工具卡片组件
+// 文字颜色改用语义令牌（text-foreground/text-muted-foreground），
+// 不再需要 isDark 手动切换硬编码的灰色系
 interface ToolCardProps {
   tool: ToolItem;
   index: number;
-  isDark: boolean;
 }
 
-function ToolCard({ tool, index, isDark }: ToolCardProps) {
+function ToolCard({ tool, index }: ToolCardProps) {
+  /* 正文卡片改用近实色背景（bg-card/95）：
+     去掉 backdrop-blur 后每张卡片不再触发独立的模糊合成，
+     长列表滚动性能更好，卡片层次也更清爽 */
   const getGlassStyle = (baseStyle: string) => {
-    return `${baseStyle} backdrop-blur-md bg-card/90 border-border shadow-lg supports-[backdrop-filter]:bg-card/75`;
+    return `${baseStyle} bg-card/95 border-border shadow-lg`;
   };
 
   return (
@@ -43,11 +47,11 @@ function ToolCard({ tool, index, isDark }: ToolCardProps) {
     >
       <div className="flex items-center gap-3 mb-4">
         <span className="text-2xl">{tool.icon}</span>
-        <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+        <h3 className="text-lg font-semibold text-foreground">
           {tool.name}
         </h3>
       </div>
-      <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'} mb-4`}>
+      <p className="text-sm text-muted-foreground mb-4">
         {tool.description}
       </p>
       <Link
@@ -95,12 +99,18 @@ export default function ToolsPage() {
 
   const isDark = resolvedTheme === 'dark';
   
-  // 获取毛玻璃样式类名
-  const getGlassStyle = (baseStyle: string) => {
+  // 获取卡片样式类名
+  // 内容流中的卡片默认使用近实色背景，减少全站毛玻璃的滥用；
+  // 仅浮动元素（如 sticky 侧边栏）传入 floating=true 保留毛玻璃，
+  // 毛玻璃只用于"浮在内容之上"的元素，层次更清晰
+  const getGlassStyle = (baseStyle: string, floating = false) => {
     if (containerStyle && containerStyle.className) {
-      return `${baseStyle} backdrop-blur-md bg-card/90 border-border shadow-lg supports-[backdrop-filter]:bg-card/75`;
+      if (floating) {
+        return `${baseStyle} backdrop-blur-md bg-card/90 border-border shadow-lg supports-[backdrop-filter]:bg-card/75`;
+      }
+      return `${baseStyle} bg-card/95 border-border shadow-lg`;
     }
-    return `bg-card ${baseStyle} border-border`;
+    return `bg-card ${baseStyle} border-border shadow-lg`;
   };
   
   // 处理分类变化
@@ -187,7 +197,7 @@ export default function ToolsPage() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            <div className={getGlassStyle("rounded-lg shadow-md p-6 sticky top-24 border")}>
+            <div className={getGlassStyle("rounded-lg shadow-md p-6 sticky top-24 border", true)}>
               <h3 className="text-lg font-semibold text-foreground mb-4">
                 🗂️ 工具分类
               </h3>
@@ -228,7 +238,7 @@ export default function ToolsPage() {
               <div className="mb-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {getFeaturedTools().map((tool, index) => (
-                    <ToolCard key={tool.id} tool={tool} index={index} isDark={isDark} />
+                    <ToolCard key={tool.id} tool={tool} index={index} />
                   ))}
                 </div>
               </div>
@@ -251,7 +261,7 @@ export default function ToolsPage() {
                 return filteredTools.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredTools.map((tool, index) => (
-                      <ToolCard key={tool.id} tool={tool} index={index} isDark={isDark} />
+                      <ToolCard key={tool.id} tool={tool} index={index} />
                     ))}
                   </div>
                 ) : (

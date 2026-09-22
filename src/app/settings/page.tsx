@@ -17,20 +17,17 @@ import {
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const [isDark, setIsDark] = useState(false);
   const [musicPlayerVisible, setMusicPlayerVisible] = useState(false);
   // 音乐播放器相关状态已完全移除
   // const [playlists, setPlaylists] = useState<Playlist[]>([]);
   // const [showMusicConfig, setShowMusicConfig] = useState(false);
 
-  // 主题颜色 - 与留言板页面保持一致
-  const [primaryColor] = useState('#66ccff');
-  const [secondaryColor] = useState('#1e40af');
-  const [accentColor] = useState('#06b6d4');
+  /* 主题颜色说明：不再使用硬编码的十六进制色值 state（原 primaryColor 等），
+     所有颜色直接引用 CSS 令牌（var(--primary) 等），亮暗模式自动适配，
+     原先用于手动判暗色的 isDark state 也随之删除 */
 
   useEffect(() => {
     setMounted(true);
-    setIsDark(theme === 'dark');
     // 初始化音乐播放器显示状态
     setMusicPlayerVisible(getMusicPlayerVisibility());
     
@@ -70,28 +67,28 @@ export default function SettingsPage() {
 
       
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-20">
-        {/* 主要内容卡片 - 使用更简洁的样式 */}
-        <div className="relative z-10 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
-          {/* 头部区域 - 使用与留言板相同的半透明主题色背景 */}
-          <div 
+        {/* 主要内容卡片 - 使用更简洁的样式（颜色引用主题令牌） */}
+        <div className="relative z-10 bg-card/80 backdrop-blur-sm rounded-2xl shadow-xl border border-border overflow-hidden">
+          {/* 头部区域 - 渐变引用主题令牌（color-mix 派生半透明），替代硬编码十六进制 */}
+          <div
             className="relative p-8 text-white transition-all duration-500 overflow-hidden"
             style={{
               background: `
-                linear-gradient(135deg, ${primaryColor}cc 0%, ${accentColor}cc 50%, ${secondaryColor}cc 100%),
-                radial-gradient(circle at top left, ${primaryColor}80 0%, transparent 50%),
-                radial-gradient(circle at bottom right, ${secondaryColor}80 0%, transparent 50%)
+                linear-gradient(135deg, color-mix(in srgb, var(--primary) 80%, transparent) 0%, color-mix(in srgb, var(--color-chart-2) 80%, transparent) 50%, color-mix(in srgb, var(--color-secondary) 80%, transparent) 100%),
+                radial-gradient(circle at top left, color-mix(in srgb, var(--primary) 50%, transparent) 0%, transparent 50%),
+                radial-gradient(circle at bottom right, color-mix(in srgb, var(--color-secondary) 50%, transparent) 0%, transparent 50%)
               `,
             }}
           >
             {/* 动态光效背景 */}
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-pulse"></div>
             <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-black/10"></div>
-            
+
             {/* 装饰性几何图形 */}
-            <div className="absolute top-4 right-4 w-20 h-20 rounded-full opacity-20" 
-                 style={{ background: `radial-gradient(circle, ${accentColor}aa, transparent)` }}></div>
-            <div className="absolute bottom-4 left-4 w-16 h-16 rounded-full opacity-15" 
-                 style={{ background: `radial-gradient(circle, ${primaryColor}aa, transparent)` }}></div>
+            <div className="absolute top-4 right-4 w-20 h-20 rounded-full opacity-20"
+                 style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--color-chart-2) 70%, transparent), transparent)' }}></div>
+            <div className="absolute bottom-4 left-4 w-16 h-16 rounded-full opacity-15"
+                 style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--primary) 70%, transparent), transparent)' }}></div>
             
             <div className="relative z-10">
               <h1 className="text-2xl md:text-3xl font-bold mb-2 drop-shadow-2xl tracking-wide">博客设置</h1>
@@ -105,109 +102,103 @@ export default function SettingsPage() {
             <div className="mb-12">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
                   <div className="flex items-center gap-3">
-                    <h2 className="text-2xl font-bold" style={{ color: isDark ? '#f1f5f9' : '#1e293b' }}>
+                    <h2 className="text-2xl font-bold text-foreground">
                       模式设置
                     </h2>
-                    <span 
-                      className="px-3 py-1 rounded-full text-sm font-medium"
-                      style={{
-                        backgroundColor: isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)',
-                        color: isDark ? '#93c5fd' : '#3b82f6'
-                      }}
-                    >
+                    <span className="px-3 py-1 rounded-full text-sm font-medium bg-primary/10 text-primary">
                       {theme === 'light' ? '浅色模式' : theme === 'dark' ? '深色模式' : '跟随系统'}
                     </span>
                   </div>
-                
+
                 {/* 主题选项 - 使用更简洁的样式 */}
-                <div className="inline-flex rounded-lg overflow-hidden shadow-sm border border-gray-200 dark:border-gray-700">
+                <div className="inline-flex rounded-lg overflow-hidden shadow-sm border border-border">
                   {/* 浅色模式选项 */}
                   <div
                     onClick={() => setTheme('light')}
                     className={`group relative overflow-hidden p-4 transition-all duration-300 cursor-pointer ${
-                      theme === 'light' 
-                        ? 'bg-white dark:bg-gray-800 shadow-lg' 
-                        : 'bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600'
+                      theme === 'light'
+                        ? 'bg-card shadow-lg'
+                        : 'bg-muted/60 hover:bg-muted'
                     }`}
                   >
                     {/* 选中指示器 */}
                     {theme === 'light' && (
                       <div className="absolute top-1 right-1">
-                        <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center">
-                          <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <div className="w-4 h-4 rounded-full bg-primary flex items-center justify-center">
+                          <svg className="w-2.5 h-2.5 text-primary-foreground" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                         </div>
                       </div>
                     )}
-                    
+
                     <div className="flex items-center">
                       <div className="w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center mr-2 shadow-sm">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                         </svg>
                       </div>
-                      <span className="text-sm font-medium whitespace-nowrap" style={{ color: isDark ? '#f1f5f9' : '#1e293b' }}>浅色模式</span>
+                      <span className="text-sm font-medium whitespace-nowrap text-foreground">浅色模式</span>
                     </div>
                   </div>
                   
                   {/* 深色模式选项 */}
                   <div
                     onClick={() => setTheme('dark')}
-                    className={`group relative overflow-hidden p-4 transition-all duration-300 cursor-pointer border-l border-gray-200 dark:border-gray-700 ${
-                      theme === 'dark' 
-                        ? 'bg-white dark:bg-gray-800 shadow-lg' 
-                        : 'bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600'
+                    className={`group relative overflow-hidden p-4 transition-all duration-300 cursor-pointer border-l border-border ${
+                      theme === 'dark'
+                        ? 'bg-card shadow-lg'
+                        : 'bg-muted/60 hover:bg-muted'
                     }`}
                   >
                     {/* 选中指示器 */}
                     {theme === 'dark' && (
                       <div className="absolute top-1 right-1">
-                        <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center">
-                          <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <div className="w-4 h-4 rounded-full bg-primary flex items-center justify-center">
+                          <svg className="w-2.5 h-2.5 text-primary-foreground" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                         </div>
                       </div>
                     )}
-                    
+
                     <div className="flex items-center">
                       <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-600 to-purple-700 flex items-center justify-center mr-2 shadow-sm">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                         </svg>
                       </div>
-                      <span className="text-sm font-medium whitespace-nowrap" style={{ color: isDark ? '#f1f5f9' : '#1e293b' }}>深色模式</span>
+                      <span className="text-sm font-medium whitespace-nowrap text-foreground">深色模式</span>
                     </div>
                   </div>
                   
                   {/* 跟随系统选项 */}
                   <div
                     onClick={() => setTheme('system')}
-                    className={`group relative overflow-hidden p-4 transition-all duration-300 cursor-pointer border-l border-gray-200 dark:border-gray-700 ${
-                      theme === 'system' 
-                        ? 'bg-white dark:bg-gray-800 shadow-lg' 
-                        : 'bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600'
+                    className={`group relative overflow-hidden p-4 transition-all duration-300 cursor-pointer border-l border-border ${
+                      theme === 'system'
+                        ? 'bg-card shadow-lg'
+                        : 'bg-muted/60 hover:bg-muted'
                     }`}
                   >
                     {/* 选中指示器 */}
                     {theme === 'system' && (
                       <div className="absolute top-1 right-1">
-                        <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center">
-                          <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <div className="w-4 h-4 rounded-full bg-primary flex items-center justify-center">
+                          <svg className="w-2.5 h-2.5 text-primary-foreground" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                         </div>
                       </div>
                     )}
-                    
+
                     <div className="flex items-center">
                       <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center mr-2 shadow-sm">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                         </svg>
                       </div>
-                      <span className="text-sm font-medium whitespace-nowrap" style={{ color: isDark ? '#f1f5f9' : '#1e293b' }}>跟随系统</span>
+                      <span className="text-sm font-medium whitespace-nowrap text-foreground">跟随系统</span>
                     </div>
                   </div>
                 </div>
@@ -218,33 +209,29 @@ export default function SettingsPage() {
             <div className="mb-12">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
                 <div className="flex items-center gap-3">
-                  <h2 className="text-2xl font-bold" style={{ color: isDark ? '#f1f5f9' : '#1e293b' }}>
+                  <h2 className="text-2xl font-bold text-foreground">
                     音乐播放器
                   </h2>
-                  <span 
-                    className="px-3 py-1 rounded-full text-sm font-medium"
-                    style={{
-                      backgroundColor: musicPlayerVisible 
-                        ? (isDark ? 'rgba(34, 197, 94, 0.2)' : 'rgba(34, 197, 94, 0.1)')
-                        : (isDark ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.1)'),
-                      color: musicPlayerVisible 
-                        ? (isDark ? '#86efac' : '#16a34a')
-                        : (isDark ? '#fca5a5' : '#dc2626')
-                    }}
+                  {/* 状态徽章：显示用绿色、隐藏用警示色，全部改用 Tailwind 色板配暗黑变体，不再手动判 isDark */}
+                  <span
+                    className={`px-3 py-1 rounded-full text-sm font-medium ${
+                      musicPlayerVisible
+                        ? 'bg-green-500/10 text-green-600 dark:bg-green-500/20 dark:text-green-400'
+                        : 'bg-destructive/10 text-destructive'
+                    }`}
                   >
                     {musicPlayerVisible ? '显示中' : '已隐藏'}
                   </span>
                 </div>
-                
-                {/* 音乐播放器开关 */}
+
+                {/* 音乐播放器开关：选中色引用主题令牌，关闭态用中性色令牌 */}
                 <button
                   onClick={handleMusicPlayerToggle}
-                  className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                  aria-label={musicPlayerVisible ? '隐藏音乐播放器' : '显示音乐播放器'}
+                  className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
                     musicPlayerVisible
-                      ? 'bg-blue-600'
-                      : isDark
-                        ? 'bg-gray-600'
-                        : 'bg-gray-200'
+                      ? 'bg-primary'
+                      : 'bg-muted-foreground/40'
                   }`}
                 >
                   <span
@@ -254,34 +241,26 @@ export default function SettingsPage() {
                   />
                 </button>
               </div>
-              
-              <div className={`p-6 rounded-lg ${
-                isDark ? 'bg-gray-700/50' : 'bg-gray-100/50'
-              }`}>
-                <p className={`text-sm mb-4 ${
-                  isDark ? 'text-gray-300' : 'text-gray-600'
-                }`}>
+
+              <div className="p-6 rounded-lg bg-muted/50">
+                <p className="text-sm mb-4 text-muted-foreground">
                   控制右下角音乐播放器的显示状态。隐藏后，音乐播放将在后台继续运行。
                 </p>
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
                     <div className={`w-3 h-3 rounded-full ${
-                      musicPlayerVisible ? 'bg-green-500' : 'bg-gray-400'
+                      musicPlayerVisible ? 'bg-green-500' : 'bg-muted-foreground/40'
                     }`}></div>
-                    <span className={`text-sm ${
-                      isDark ? 'text-gray-300' : 'text-gray-600'
-                    }`}>
+                    <span className="text-sm text-muted-foreground">
                       {musicPlayerVisible ? '播放器可见' : '播放器隐藏'}
                     </span>
                   </div>
                   {musicPlayerVisible && (
                     <div className="flex items-center gap-2">
-                      <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                      <svg className="w-4 h-4 text-primary" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 11-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.415z" clipRule="evenodd" />
                       </svg>
-                      <span className={`text-sm ${
-                        isDark ? 'text-gray-300' : 'text-gray-600'
-                      }`}>
+                      <span className="text-sm text-muted-foreground">
                         正在播放洛天依歌曲
                       </span>
                     </div>

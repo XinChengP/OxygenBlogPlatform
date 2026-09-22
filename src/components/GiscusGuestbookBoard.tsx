@@ -25,11 +25,11 @@ export default function GiscusGuestbookBoard() {
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
       >
-        {/* 顶部渐变装饰条：保留天依蓝为主的渐变，作为留言板的识别特征 */}
-        <div 
+        {/* 顶部渐变装饰条：保留天依蓝为主的渐变，作为留言板的识别特征；颜色引用主题令牌以适配亮暗模式 */}
+        <div
           className="h-1.5 w-full"
-          style={{ 
-            background: 'linear-gradient(90deg, #66ccff 0%, #06b6d4 50%, #1e40af 100%)' 
+          style={{
+            background: 'linear-gradient(90deg, var(--primary) 0%, var(--color-chart-2) 50%, var(--color-secondary) 100%)'
           }}
         />
 
