@@ -251,6 +251,8 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
   const [showTagModal, setShowTagModal] = useState(false);
   const [selectedTag, setSelectedTag] = useState<string>('');
   const [tagPosts, setTagPosts] = useState<BlogPost[]>([]);
+  // 卡片标签区放不下、被 +N 收起时，用这个状态承载「查看该文全部标签」浮层
+  const [tagOverflowPost, setTagOverflowPost] = useState<BlogPost | null>(null);
 
   // ── 响应式状态 ──
   // 初始值与服务端渲染保持一致（桌面端布局），避免水合不一致报错；
@@ -842,6 +844,15 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
                   const lineStartY = isAbove ? cardY + cardHeight : cardY;
                   const dateText = formatTimelineDate(post.date);
 
+                  /*
+                    卡片高度是固定的，标签换行不能无限撑高（否则会挤压摘要和底部信息栏，
+                    甚至被卡片外层的 overflow-hidden 裁掉）。
+                    因此标签区最多铺两行，放不下的收进 +N，点击后弹层查看全部。
+                  */
+                  const maxVisibleTags = isMobile ? 3 : 4;
+                  const visibleTags = post.tags.slice(0, maxVisibleTags);
+                  const hiddenTagCount = post.tags.length - visibleTags.length;
+
                   return (
                     <g key={post.id}>
                       {/* 卡片与河流节点之间的虚线连接线 */}
@@ -962,18 +973,31 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
                                 </p>
                               )}
 
-                              {/* 标签入口：点击弹出标签筛选浮层，最多展示两个避免溢出 */}
+                              {/* 标签入口：最多铺两行，超出部分收进 +N，点击弹层查看全部 */}
                               {post.tags.length > 0 && (
-                                <div className="flex flex-wrap gap-1 mb-1.5 md:mb-2">
-                                  {post.tags.slice(0, 2).map((tag) => (
+                                <div className="flex flex-wrap gap-1 mb-1.5 md:mb-2 max-h-[34px] md:max-h-[40px] overflow-hidden">
+                                  {visibleTags.map((tag) => (
                                     <span
                                       key={tag}
                                       onClick={(e) => handleTagClick(tag, e)}
-                                      className="px-1 py-0.5 rounded-full text-[7px] md:text-[9px] bg-muted/60 text-muted-foreground hover:bg-primary/20 hover:text-primary cursor-pointer transition-colors"
+                                      className="h-fit px-1 py-0.5 rounded-full text-[7px] md:text-[9px] bg-muted/60 text-muted-foreground hover:bg-primary/20 hover:text-primary cursor-pointer transition-colors"
                                     >
                                       #{tag}
                                     </span>
                                   ))}
+                                  {hiddenTagCount > 0 && (
+                                    <span
+                                      onClick={(e) => {
+                                        // 与标签点击一样，拦截冒泡以免触发卡片跳转
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setTagOverflowPost(post);
+                                      }}
+                                      className="h-fit px-1 py-0.5 rounded-full text-[7px] md:text-[9px] bg-primary/10 text-primary hover:bg-primary/25 cursor-pointer transition-colors"
+                                    >
+                                      +{hiddenTagCount}
+                                    </span>
+                                  )}
                                 </div>
                               )}
 
@@ -1117,6 +1141,53 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
                 </button>
               </div>
             )}
+          </motion.div>
+        </div>
+      )}
+
+      {/* 文章全部标签浮层：卡片标签被 +N 收起时，点击 +N 打开 */}
+      {tagOverflowPost && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          onClick={() => setTagOverflowPost(null)}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.3, type: "spring", damping: 25 }}
+            className={getGlassStyle("w-full max-w-md rounded-2xl p-6 border shadow-2xl")}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center gap-3 mb-4">
+              <div className="min-w-0">
+                <h2 className="text-lg font-bold text-foreground">全部标签</h2>
+                <p className="text-sm text-muted-foreground mt-1 truncate">{tagOverflowPost.title}</p>
+              </div>
+              <button
+                onClick={() => setTagOverflowPost(null)}
+                className="w-10 h-10 shrink-0 rounded-full bg-muted/50 hover:bg-primary/10 flex items-center justify-center text-muted-foreground hover:text-primary transition-all duration-300"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {tagOverflowPost.tags.map((tag) => (
+                <button
+                  key={tag}
+                  onClick={(e) => {
+                    // 先收起本浮层，再复用既有的标签筛选浮层
+                    setTagOverflowPost(null);
+                    handleTagClick(tag, e);
+                  }}
+                  className="px-2.5 py-1 rounded-full text-xs bg-muted/60 text-muted-foreground hover:bg-primary/20 hover:text-primary transition-colors"
+                >
+                  #{tag}
+                </button>
+              ))}
+            </div>
           </motion.div>
         </div>
       )}
