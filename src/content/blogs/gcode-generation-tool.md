@@ -1,7 +1,7 @@
 ---
 title: "搓了一个DXF转G代码的小工具"
 date: "2026-09-19"
-updatedAt: "2026-09-19"
+updatedAt: "2026-10-02"
 category: "技术"
 author: 歆橙
 language: "zh-CN"
@@ -55,6 +55,8 @@ coverImage: "/Blogabout/gcode-generation-tool/cover.png"
 &emsp;&emsp;图一是CAD文件图纸，图二图三是预览图，图四是成果图awa
 
 > 赛博签名（确信
+
+&emsp;&emsp;完整文件在此，点击即可下载：<a href="/Blogabout/gcode-generation-tool/luotianyi-signature.nc" download>洛天依签名G代码（.nc，126KB）</a>
 
 # 写在最后
 

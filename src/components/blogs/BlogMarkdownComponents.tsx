@@ -1,13 +1,11 @@
 'use client';
 
-import React, { Suspense, lazy, useState, useMemo, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import React, { Suspense, lazy, useState, useMemo } from 'react';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { getAssetPath } from '@/utils/assetUtils';
 import type { PreviewImage } from '@/types/gallery';
 import type { ReactMarkdownProps } from '@/components/LazyMarkdown';
-import CodeCopyButton from '@/components/CodeCopyButton';
+import CollapsibleCodeBlock from '@/components/blogs/CollapsibleCodeBlock';
 
 // 懒加载 BilibiliIframe 组件
 const BilibiliIframe = lazy(() => import('@/components/BilibiliIframe'));
@@ -21,6 +19,7 @@ interface MarkdownExtraProps {
 type MarkdownCodeProps = React.ComponentPropsWithoutRef<'code'> & MarkdownExtraProps & { inline?: boolean };
 type MarkdownImgProps = React.ComponentPropsWithoutRef<'img'> & MarkdownExtraProps;
 type MarkdownDivProps = React.ComponentPropsWithoutRef<'div'> & MarkdownExtraProps;
+type MarkdownAProps = React.ComponentPropsWithoutRef<'a'> & MarkdownExtraProps;
 type MarkdownIframeProps = React.ComponentPropsWithoutRef<'iframe'> & MarkdownExtraProps & { allowfullscreen?: boolean | string };
 
 // 通用 Markdown 组件属性（用于不需要额外解构的组件）
@@ -69,7 +68,7 @@ const getLanguageDisplayName = (language: string): string => {
     python: 'Python', cpp: 'C++', c: 'C', html: 'HTML', css: 'CSS',
     scss: 'SCSS', sass: 'Sass', bash: 'Bash', yaml: 'YAML',
     dockerfile: 'Dockerfile', makefile: 'Makefile', markdown: 'Markdown',
-    latex: 'LaTeX', matlab: 'MATLAB', r: 'R',
+    latex: 'LaTeX', matlab: 'MATLAB', r: 'R', gcode: 'G代码',
   };
   return displayNames[language] || language.charAt(0).toUpperCase() + language.slice(1);
 };
@@ -106,52 +105,15 @@ export function useBlogMarkdownComponents(options: {
       const language = match ? normalizeLanguage(match[1]) : '';
       const childrenString = String(children || '').replace(/\n$/, '');
 
-      // 多行代码块（有语言指定）
+      // 多行代码块（有语言指定）- 交给可折叠代码块组件，超长代码自动折叠
       if (!inline && language) {
         return (
-          <div className="relative my-6 rounded-2xl overflow-hidden shadow-lg border border-border/30">
-            {/* 代码块头部 - 玻璃态风格 */}
-            <div className="flex justify-between items-center bg-gradient-to-r from-card/90 to-card/70 backdrop-blur-md px-4 py-3 text-sm border-b border-border/30">
-              <div className="flex items-center gap-3">
-                {/* 窗口控制点装饰 */}
-                <div className="flex gap-1.5">
-                  <span className="w-3 h-3 rounded-full bg-red-400/80 shadow-sm"></span>
-                  <span className="w-3 h-3 rounded-full bg-yellow-400/80 shadow-sm"></span>
-                  <span className="w-3 h-3 rounded-full bg-green-400/80 shadow-sm"></span>
-                </div>
-                <span className="font-medium text-foreground/80 ml-2">{getLanguageDisplayName(language)}</span>
-              </div>
-              {/* 使用自管理的 CodeCopyButton，避免复制状态影响文章级别渲染 */}
-              <CodeCopyButton
-                code={childrenString}
-                size="sm"
-                showText={true}
-                className="text-foreground/70 hover:text-primary hover:bg-primary/10"
-              />
-            </div>
-            {/* 代码内容区域 */}
-            <div className="overflow-hidden !bg-transparent">
-              <SyntaxHighlighter
-                style={syntaxTheme as any}
-                language={language}
-                PreTag="div"
-                className="!bg-transparent"
-                customStyle={{
-                  margin: 0,
-                  borderRadius: 0,
-                  background: 'transparent',
-                }}
-                codeTagProps={{
-                  style: {
-                    background: 'transparent',
-                  }
-                }}
-                {...props}
-              >
-                {childrenString}
-              </SyntaxHighlighter>
-            </div>
-          </div>
+          <CollapsibleCodeBlock
+            code={childrenString}
+            language={language}
+            displayName={getLanguageDisplayName(language)}
+            syntaxTheme={syntaxTheme}
+          />
         );
       }
 
@@ -340,11 +302,15 @@ export function useBlogMarkdownComponents(options: {
         </li>
       );
     },
-    // 链接
-    a({ href, children }: { href?: string; children?: React.ReactNode }) {
+    // 链接 - 本地静态资源路径自动补基础路径，支持 download 属性提供文件下载
+    a({ href, download, children }: MarkdownAProps) {
+      const processedHref = typeof href === 'string' && href.startsWith('/') && !href.startsWith('//')
+        ? getAssetPath(href)
+        : href;
       return (
         <a
-          href={href}
+          href={processedHref}
+          download={download}
           className="text-primary hover:text-primary/80 underline decoration-primary/30 underline-offset-4 hover:decoration-primary/60 transition-all duration-200"
           target={href?.startsWith('http') ? '_blank' : undefined}
           rel={href?.startsWith('http') ? 'noopener noreferrer' : undefined}
