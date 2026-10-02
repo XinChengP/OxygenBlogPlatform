@@ -264,15 +264,22 @@ pre code {
   }
   body {
     @apply text-foreground bg-background;
+    /* overflow-x:hidden 会把 overflow-y 计算成 auto，使 body 成为（从不滚动的）
+       滚动容器，导致全站 position:sticky 全部失效（博客/动态/工具页侧栏同样受影响）。
+       改用 overflow-x:clip：同样裁掉横向溢出，但不会创建滚动容器；
+       旧浏览器不支持 clip 时回退到上一行的 hidden。 */
     overflow-x: hidden;
+    overflow-x: clip;
     position: relative;
     width: 100%;
   }
   html {
     overflow-x: hidden;
+    overflow-x: clip;
   }
   #__next {
     overflow-x: hidden;
+    overflow-x: clip;
     width: 100%;
   }
 }

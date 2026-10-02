@@ -40,8 +40,9 @@ export default function LinksPage() {
           title="相关链接"
           description="本站参考的资源"
           size="lg"
-          className="mb-8"
+          className="mb-12"
           gradientStyle="primary"
+          showDivider
         />
 
         <motion.main
