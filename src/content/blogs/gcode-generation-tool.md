@@ -14,7 +14,7 @@ coverImage: "/Blogabout/gcode-generation-tool/cover.png"
 
 &emsp;&emsp;本项目旨在~~减少~~省去自己手敲G代码的时间
 
-> 注意：本项目仅停留在理论阶段，还没有实际上铣床加工
+> 本项目铣床加工完美实现
 
 - ps：ai给我生成的封面还真不错啊
 
@@ -47,6 +47,14 @@ coverImage: "/Blogabout/gcode-generation-tool/cover.png"
 <div class="image-grid image-grid-2-cols"><img src="/Blogabout/gcode-generation-tool/input.png" alt="输入文件" /><img src="/Blogabout/gcode-generation-tool/preview.png" alt="预览图" /></div>
 
 &emsp;&emsp;图一是CAD文件图纸，图二是转换后的预览图
+
+# 实际成果
+
+<div class="image-grid image-grid-4-cols"><img src="/Blogabout/gcode-generation-tool/lao_tuzhi.png" alt="输入文件" /><img src="/Blogabout/gcode-generation-tool/lao_cutting.png" alt="预览图-仅削切轨迹" /><img src="/Blogabout/gcode-generation-tool/lao_full.png" alt="预览图-完整轨迹" /><img src="/Blogabout/gcode-generation-tool/lao.jpg" alt="成果图" /></div>
+
+&emsp;&emsp;图一是CAD文件图纸，图二图三是预览图，图四是成果图awa
+
+> 赛博签名（确信
 
 # 写在最后
 
