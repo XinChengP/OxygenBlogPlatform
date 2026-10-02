@@ -14,16 +14,17 @@ export default function LinksPage() {
     setMounted(true);
   }, []);
 
+  // 未挂载时的骨架占位：使用与主渲染相同的容器样式（containerStyle），
+  // 避免硬编码渐变背景导致挂载前后背景跳变；圆角统一为 rounded-xl
   if (!mounted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-8 pt-[80px]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="animate-pulse space-y-4">
-            <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
-            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className={containerStyle.className} style={containerStyle.style}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+          <div className="animate-pulse space-y-8">
+            <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded-xl"></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {[...Array(6)].map((_, i) => (
-                <div key={i} className="h-32 bg-gray-200 dark:bg-gray-700 rounded-2xl"></div>
+                <div key={i} className="h-40 bg-gray-200 dark:bg-gray-700 rounded-xl"></div>
               ))}
             </div>
           </div>
