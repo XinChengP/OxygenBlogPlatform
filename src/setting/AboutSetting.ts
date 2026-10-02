@@ -923,5 +923,13 @@ export const relatedLinks: RelatedLink[] = [
     category: 'tutorial',
     icon: "fish",
     tags: ['特效', '动画', '页脚']
+  },
+  {
+    name: "Kirameku",
+    url: "https://github.com/Xinghongia/Kirameku",
+    description: "时光河流归档页的参考实现，本站归档页横向波浪时间轴的灵感来源",
+    category: 'project',
+    icon: "template",
+    tags: ['Next.js', '时间轴', '参考']
   }
 ];
