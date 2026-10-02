@@ -2,14 +2,15 @@
 
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { 
-  Github, 
-  Mail, 
-  Globe, 
-  ExternalLink, 
+import {
+  Github,
+  Mail,
+  Globe,
+  ExternalLink,
   Users,
-  Tag,
-  Sparkles
+  Sparkles,
+  UserPlus,
+  ArrowDown
 } from "lucide-react";
 import Image from 'next/image';
 import { 
@@ -71,9 +72,10 @@ function FriendCard({ link, index }: { link: FriendLink; index: number }) {
       rel="noopener noreferrer"
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ 
-        duration: 0.5, 
-        delay: index * 0.1,
+      transition={{
+        duration: 0.5,
+        // 单帧延迟收敛到 0.06s，并设置 0.3s 上限，避免友链数量增多时入场等待过长
+        delay: Math.min(index * 0.06, 0.3),
         ease: [0.25, 0.46, 0.45, 0.94]
       }}
       /* 悬停位移与全站卡片统一为 -3（原 -8 幅度过大）；阴影过渡时长统一 300ms */
@@ -247,15 +249,96 @@ function EmptyState() {
 
 /**
  * 统计信息组件
+ * 以低调的主题色胶囊展示好友总数，与空状态的胶囊视觉语言保持一致
  */
 function StatsInfo({ total }: { total: number }) {
   return (
-    <div className="flex items-center gap-4 mb-6 text-sm text-muted-foreground">
-      <div className="flex items-center gap-2">
-        <Users className="w-4 h-4" />
-        <span>共 {total} 位好友</span>
-      </div>
+    <div className="mb-6">
+      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full
+                       bg-primary/10 border border-primary/15
+                       text-primary text-xs font-medium">
+        <Users className="w-3.5 h-3.5" />
+        共 {total} 位好友
+      </span>
     </div>
+  );
+}
+
+/**
+ * 「申请友链」占位卡片
+ * 固定渲染在友链网格末尾：
+ * 1. 友链数量较少时填补网格空位，避免末行大片留白
+ * 2. 以虚线边框区分「可申请」与「已存在」的友链卡，点击平滑滚动到交换说明区
+ * 3. 悬停位移与友链卡片保持一致（y: -3），维持整套卡片的交互统一感
+ */
+function ApplyInviteCard({ index }: { index: number }) {
+  /**
+   * 点击占位卡时平滑滚动到页面下方的交换友链说明区域
+   * 尊重系统「减少动态效果」设置：开启时退化为瞬间定位
+   */
+  const handleScrollToExchange = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    // 拦截锚点默认跳转，改用 scrollIntoView 以获得平滑滚动
+    event.preventDefault();
+    const target = document.getElementById('exchange');
+    if (!target) return;
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    target.scrollIntoView({
+      behavior: prefersReducedMotion ? 'auto' : 'smooth',
+      block: 'start'
+    });
+  };
+
+  return (
+    <motion.a
+      href="#exchange"
+      onClick={handleScrollToExchange}
+      aria-label="申请交换友链，查看交换说明"
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{
+        duration: 0.5,
+        delay: Math.min(index * 0.06, 0.3),
+        ease: [0.25, 0.46, 0.45, 0.94]
+      }}
+      whileHover={{
+        y: -3,
+        transition: { duration: 0.3, ease: 'easeOut' }
+      }}
+      whileTap={{ scale: 0.98 }}
+      /* 虚线边框 + 半透明卡片底色：页面衬有全屏背景图，纯透明底会让占位卡失去轮廓，
+         因此借用 RelatedLinks 的做法给 card 色底加毛玻璃；
+         底色透明度（60~70%）高于实体友链卡（95%），配合虚线，虚实区分明确。
+         网格默认 align-items: stretch，本卡会自动与同行友链卡等高，内部用 flex 垂直居中 */
+      className="group relative flex flex-col items-center justify-center text-center
+                 rounded-xl border border-dashed border-primary/40
+                 bg-card/70 backdrop-blur-sm supports-[backdrop-filter]:bg-card/60
+                 p-6 min-h-[192px]
+                 hover:border-primary/70 hover:bg-card/90
+                 transition-[background-color,border-color] duration-300
+                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50
+                 focus-visible:ring-offset-2 focus-visible:ring-offset-card"
+    >
+      {/* 图标：虚框圆角方块，悬停时轻微放大，呼应友链卡的头像位置 */}
+      <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4
+                      border border-dashed border-primary/40 text-primary
+                      transition-transform duration-300 group-hover:scale-110">
+        <UserPlus className="w-6 h-6" />
+      </div>
+
+      {/* 标题与说明 */}
+      <h4 className="text-base font-semibold text-foreground mb-1">
+        想在这里安个家qwq？
+      </h4>
+      <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+        欢迎申请交换友链awa！
+      </p>
+
+      {/* 行动提示：悬停时箭头轻向下移动，暗示页面会向下滚动 */}
+      <span className="inline-flex items-center gap-1.5 text-sm font-medium text-primary">
+        点这里查看交换方式owo
+        <ArrowDown className="w-4 h-4 transition-transform duration-300 group-hover:translate-y-0.5" />
+      </span>
+    </motion.a>
   );
 }
 
@@ -274,10 +357,11 @@ export default function FriendsLink() {
   if (!mounted) {
     return (
       <div className="animate-pulse">
-        <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded-lg w-1/3 mb-8"></div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="h-8 w-28 bg-gray-200 dark:bg-gray-700 rounded-full mb-6"></div>
+        {/* 骨架断点与正式网格保持一致：grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-48 bg-gray-200 dark:bg-gray-700 rounded-2xl"></div>
+            <div key={i} className="h-48 bg-gray-200 dark:bg-gray-700 rounded-xl"></div>
           ))}
         </div>
       </div>
@@ -289,17 +373,21 @@ export default function FriendsLink() {
       {/* 统计信息 */}
       <StatsInfo total={friendsLinks.length} />
 
-      {/* 友链网格 */}
-      <motion.div 
+      {/* 友链网格：断点与全站卡片网格规范统一 */}
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
       >
         {friendsLinks.length > 0 ? (
-          friendsLinks.map((link, index) => (
-            <FriendCard key={link.name} link={link} index={index} />
-          ))
+          <>
+            {friendsLinks.map((link, index) => (
+              <FriendCard key={link.name} link={link} index={index} />
+            ))}
+            {/* 末尾固定一张「申请友链」占位卡，填补末行空位并引导交换 */}
+            <ApplyInviteCard index={friendsLinks.length} />
+          </>
         ) : (
           <EmptyState />
         )}

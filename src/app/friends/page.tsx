@@ -1,13 +1,12 @@
 /**
  * 友情链接独立页面
  * 展示所有友情链接，使用现代化的页面布局风格
- * 包含毛玻璃效果、主题色（天依蓝 #66ccff）和丰富的动画效果
+ * 视觉规范：与全站卡片体系统一（rounded-xl、bg-card/95、border-border、shadow-card 令牌）
  */
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useTheme } from 'next-themes';
 import {
   Globe,
   Link2,
@@ -26,8 +25,10 @@ import FriendsLink from '@/components/FriendsLink';
 /**
  * 交换友链说明卡片组件
  * 合并展示我的信息、申请要求和联系方式
+ * 注意：颜色全部走语义令牌（card/border/foreground/muted），不再硬编码灰阶，
+ * 这样亮暗主题切换时自动跟随全站配色，无需维护 dark: 变体
  */
-function ExchangeCard({ isDark }: { isDark: boolean }) {
+function ExchangeCard() {
   const primaryColor = '#66ccff';
 
   const requirements = [
@@ -49,27 +50,29 @@ function ExchangeCard({ isDark }: { isDark: boolean }) {
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: 0.3 }}
-      className="relative overflow-hidden rounded-2xl border border-gray-200/50 dark:border-gray-700/50
-                 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md shadow-lg"
+      /* 容器与友链卡片使用同一套视觉令牌：rounded-xl 圆角、bg-card/95 近实色、
+         border-border 语义边框、shadow-card 静态阴影，保证页面上下两部分质感统一 */
+      className="relative overflow-hidden rounded-xl border border-border
+                 bg-card/95 backdrop-blur-md shadow-card"
     >
-      {/* 顶部装饰条 */}
+      {/* 顶部装饰条：仅 1px 高的天依蓝渐变，克制地点缀主题色 */}
       <div
-        className="absolute top-0 left-0 right-0 h-1"
+        className="absolute top-0 left-0 right-0 h-[2px]"
         style={{
           background: `linear-gradient(90deg, ${primaryColor} 0%, #06b6d4 50%, ${primaryColor} 100%)`,
           backgroundSize: '200% 100%'
         }}
       />
 
-      {/* 背景装饰 */}
-      <div className="absolute top-0 right-0 w-64 h-64 opacity-5 pointer-events-none">
+      {/* 背景装饰：极低透明度的主题色光晕，仅增加层次不喧宾夺主 */}
+      <div className="absolute top-0 right-0 w-64 h-64 opacity-[0.04] dark:opacity-[0.06] pointer-events-none">
         <div
           className="w-full h-full rounded-full blur-3xl"
           style={{ background: `radial-gradient(circle, ${primaryColor} 0%, transparent 70%)` }}
         />
       </div>
 
-      <div className="relative p-8">
+      <div className="relative p-6 sm:p-8">
         {/* 标题区域 */}
         <div className="flex items-center gap-4 mb-6">
           <motion.div
@@ -86,10 +89,10 @@ function ExchangeCard({ isDark }: { isDark: boolean }) {
           </motion.div>
 
           <div>
-            <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-1">
+            <h3 className="text-xl font-bold text-foreground mb-1">
               交换友链
             </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="text-sm text-muted-foreground">
               欢迎与我建立友情链接
             </p>
           </div>
@@ -99,7 +102,7 @@ function ExchangeCard({ isDark }: { isDark: boolean }) {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {/* 左侧：我的信息 */}
           <div>
-            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2">
+            <h4 className="text-sm font-semibold text-foreground/90 mb-4 flex items-center gap-2">
               <User className="w-4 h-4 text-primary" />
               我的信息
             </h4>
@@ -120,7 +123,7 @@ function ExchangeCard({ isDark }: { isDark: boolean }) {
                 />
               </div>
               <div className="space-y-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-800 dark:text-white truncate">
+                <p className="text-sm font-semibold text-foreground truncate">
                   {myInfo.name}
                 </p>
                 <a
@@ -131,10 +134,10 @@ function ExchangeCard({ isDark }: { isDark: boolean }) {
                 >
                   {myInfo.url}
                 </a>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                <p className="text-xs text-muted-foreground">
                   {myInfo.description}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                <p className="text-xs text-muted-foreground">
                   头像链接：
                   <a
                     href={myInfo.avatar}
@@ -151,7 +154,7 @@ function ExchangeCard({ isDark }: { isDark: boolean }) {
 
           {/* 中间：申请要求 - 使用列表风格 */}
           <div>
-            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2">
+            <h4 className="text-sm font-semibold text-foreground/90 mb-4 flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-primary" />
               申请信息
             </h4>
@@ -162,7 +165,7 @@ function ExchangeCard({ isDark }: { isDark: boolean }) {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.4, delay: 0.5 + index * 0.1 }}
-                  className="flex items-center gap-3 text-gray-600 dark:text-gray-300"
+                  className="flex items-center gap-3 text-muted-foreground"
                 >
                   <span
                     className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
@@ -178,7 +181,7 @@ function ExchangeCard({ isDark }: { isDark: boolean }) {
 
           {/* 右侧：联系方式 - 使用卡片风格 */}
           <div>
-            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2">
+            <h4 className="text-sm font-semibold text-foreground/90 mb-4 flex items-center gap-2">
               <MessageCircle className="w-4 h-4 text-primary" />
               联系方式
             </h4>
@@ -189,9 +192,11 @@ function ExchangeCard({ isDark }: { isDark: boolean }) {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.4, delay: 0.5 }}
                 whileHover={{ scale: 1.02, x: 5 }}
-                className="flex items-center gap-3 p-4 rounded-xl bg-white dark:bg-gray-700/50
-                           border border-gray-200 dark:border-gray-600 shadow-sm
-                           hover:shadow-md hover:border-primary/30 transition-all group"
+                /* 子卡片同样令牌化：muted 底色 + border-border，悬停时边框转天依蓝 */
+                className="flex items-center gap-3 p-4 rounded-xl bg-muted/50
+                           border border-border
+                           hover:border-primary/30 hover:bg-muted
+                           transition-colors duration-300 group"
               >
                 <span
                   className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -200,10 +205,10 @@ function ExchangeCard({ isDark }: { isDark: boolean }) {
                   <Mail className="w-5 h-5" />
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-200">发送邮件</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">2574386537@qq.com</p>
+                  <p className="text-sm font-medium text-foreground">发送邮件</p>
+                  <p className="text-xs text-muted-foreground truncate">2574386537@qq.com</p>
                 </div>
-                <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-primary transition-colors" />
+                <ArrowRight className="w-4 h-4 text-muted-foreground/60 group-hover:text-primary transition-colors" />
               </motion.a>
 
               <motion.a
@@ -212,9 +217,10 @@ function ExchangeCard({ isDark }: { isDark: boolean }) {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.4, delay: 0.7 }}
                 whileHover={{ scale: 1.02, x: 5 }}
-                className="flex items-center gap-3 p-4 rounded-xl bg-white dark:bg-gray-700/50
-                           border border-gray-200 dark:border-gray-600 shadow-sm
-                           hover:shadow-md hover:border-primary/30 transition-all group"
+                className="flex items-center gap-3 p-4 rounded-xl bg-muted/50
+                           border border-border
+                           hover:border-primary/30 hover:bg-muted
+                           transition-colors duration-300 group"
               >
                 <span
                   className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -223,10 +229,10 @@ function ExchangeCard({ isDark }: { isDark: boolean }) {
                   <MessageSquare className="w-5 h-5" />
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-200">留言板</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">点击前往留言</p>
+                  <p className="text-sm font-medium text-foreground">留言板</p>
+                  <p className="text-xs text-muted-foreground truncate">点击前往留言</p>
                 </div>
-                <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-primary transition-colors" />
+                <ArrowRight className="w-4 h-4 text-muted-foreground/60 group-hover:text-primary transition-colors" />
               </motion.a>
             </div>
           </div>
@@ -242,16 +248,13 @@ function ExchangeCard({ isDark }: { isDark: boolean }) {
  * 使用现代化的布局风格，包含精美的视觉效果
  */
 export default function FriendsPage() {
-  const { resolvedTheme } = useTheme();
-  const { containerStyle, isBackgroundEnabled } = useBackgroundStyle('friends');
+  const { containerStyle } = useBackgroundStyle('friends');
   const [mounted, setMounted] = useState(false);
 
   // 确保组件已挂载，避免服务端渲染与客户端渲染不一致
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  const isDark = resolvedTheme === 'dark';
 
   // 如果还没有挂载，显示加载占位避免闪烁
   // 使用与主渲染相同的容器样式，避免 hydration mismatch
@@ -260,9 +263,9 @@ export default function FriendsPage() {
       <div className={containerStyle.className} style={containerStyle.style}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
           <div className="animate-pulse space-y-8">
-            <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded-2xl"></div>
-            <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded-2xl"></div>
-            <div className="h-48 bg-gray-200 dark:bg-gray-700 rounded-2xl"></div>
+            <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded-xl"></div>
+            <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded-xl"></div>
+            <div className="h-48 bg-gray-200 dark:bg-gray-700 rounded-xl"></div>
           </div>
         </div>
       </div>
@@ -289,14 +292,15 @@ export default function FriendsPage() {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="space-y-12"
         >
-          {/* 友链列表 - 复用 FriendsLink 组件 */}
+          {/* 友链列表 - 复用 FriendsLink 组件（含末尾「申请友链」占位卡） */}
           <section>
             <FriendsLink />
           </section>
 
-          {/* 交换友链说明 - 包含我的信息、申请要求和联系方式 */}
-          <section>
-            <ExchangeCard isDark={isDark} />
+          {/* 交换友链说明 - 占位卡的锚点滚动目标；
+              scroll-mt 预留顶部固定导航的高度，避免定位后标题被导航遮挡 */}
+          <section id="exchange" className="scroll-mt-24">
+            <ExchangeCard />
           </section>
 
           {/* 底部装饰引用 */}
@@ -304,18 +308,18 @@ export default function FriendsPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.6 }}
-            className="text-center py-12"
+            className="text-center py-8"
           >
             <div className="relative inline-block">
               {/* 引号装饰 */}
-              <div className="absolute -top-4 -left-8 text-6xl text-primary/10 font-serif">"</div>
-              <div className="absolute -bottom-8 -right-8 text-6xl text-primary/10 font-serif">"</div>
-              
+              <div className="absolute -top-4 -left-8 text-6xl text-primary/10 font-serif select-none">"</div>
+              <div className="absolute -bottom-8 -right-8 text-6xl text-primary/10 font-serif select-none">"</div>
+
               <blockquote className="relative">
-                <p className="text-xl md:text-2xl font-medium text-gray-700 dark:text-gray-200 italic mb-4">
+                <p className="text-xl md:text-2xl font-medium text-foreground/80 italic mb-4">
                   海内存知己，天涯若比邻
                 </p>
-                <footer className="text-sm text-gray-500 dark:text-gray-400">
+                <footer className="text-sm text-muted-foreground">
                   —— 王勃《送杜少府之任蜀州》
                 </footer>
               </blockquote>

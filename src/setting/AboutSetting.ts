@@ -670,8 +670,15 @@ export const friendsLinks: FriendLink[] = [
     url: "https://allenwdk.github.io/OxygenBlog/",
     description: "A Novice Developer",
     avatar: "/friendlink/Allenwdk.jpg",
-    category: 'developer',
+    category: 'blog',
     tags: ['Next.js', '博客']
+  },
+  {
+    name: "alimey. 的个人主页",
+    url: "https://www.alimeylab.com",
+    description: "在天际线的彼方，心绪飘忽轻吟。",
+    avatar: "https://www.alimeylab.com/alimey.jpg",
+    category: 'blog'
   }
 ];
 
