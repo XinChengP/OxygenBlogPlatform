@@ -54,9 +54,11 @@ coverImage: "/Blogabout/gcode-generation-tool/cover.png"
 
 &emsp;&emsp;图一是CAD文件图纸，图二图三是预览图，图四是成果图awa
 
+&emsp;&emsp;至于CAD文件图纸怎么来的，哼哼，找到洛佬的签名图片，接着在网上随便找个转换成矢量图svg的工具，然后再用找到的svg转DXF的工具（[svg-to-dxf](https://github.com/chenjia916/svg-to-dxf)），最后就重复文章刚开始的步骤即可（
+
 > 赛博签名（确信
 
-&emsp;&emsp;完整文件在此，点击即可下载：<a href="/Blogabout/gcode-generation-tool/luotianyi-signature.nc" download>洛天依签名G代码（.nc，126KB）</a>
+&emsp;&emsp;完整文件在此，点击即可下载awa：<a href="/Blogabout/gcode-generation-tool/luotianyi-signature.nc" download>洛天依签名G代码（.nc，126KB）</a>
 
 # 写在最后
 
