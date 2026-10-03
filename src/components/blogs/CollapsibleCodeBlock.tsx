@@ -3,7 +3,8 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+// 按需注册语言的 Prism 轻量版（全量入口会把 300 种语言打进 chunk，见 prismLanguages.ts）
+import SyntaxHighlighter from '@/components/ui/prismLanguages';
 import CodeCopyButton from '@/components/CodeCopyButton';
 
 // 折叠状态下展示的行数

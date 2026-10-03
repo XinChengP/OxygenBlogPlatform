@@ -15,9 +15,13 @@ export * from './browserCompatibility';
 // 安全的Markdown处理
 export * from './safeMarked';
 
-// 全局音乐播放器管理
-export { default as HowlerPlayerManager } from './howlerPlayerManager';
-export { HowlerPlayerManager as HowlerPlayerManagerClass } from './howlerPlayerManager';
+/*
+  音乐播放器相关的 howlerPlayerManager / musicPlayerPreloader
+  刻意不在此处 re-export：它们只应被 MusicPlayer（dynamic chunk）引用，
+  若经 barrel 导出，任何 `import { xxx } from '@/utils'` 的模块
+  都可能把它们连带 howler 一起拖进全站首载包。
+  需要时请直接从各自模块路径导入。
+*/
 
 // Live2D事件发射器
 export * from './live2dEventEmitter';
@@ -27,9 +31,6 @@ export * from './live2dMessageManager';
 
 // 脚本加载工具
 export * from './loadScript';
-
-// 音乐播放器预加载
-export { default as MusicPlayerPreloader } from './musicPlayerPreloader';
 
 // 音乐播放器可见性管理
 export * from './musicPlayerVisibility';

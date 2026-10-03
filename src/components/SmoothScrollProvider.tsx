@@ -3,7 +3,6 @@
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { initScrollManager, getScrollManager } from '@/utils/scrollManager';
-import { howlerPlayerManager } from '@/utils/howlerPlayerManager';
 
 interface SmoothScrollProviderProps {
   children: React.ReactNode;
@@ -13,7 +12,6 @@ export default function SmoothScrollProvider({ children }: SmoothScrollProviderP
   const pathname = usePathname();
   const scrollManagerRef = useRef<ReturnType<typeof getScrollManager>>(null);
   const [isInitialized, setIsInitialized] = useState(false);
-  const globalManager = howlerPlayerManager;
 
   useEffect(() => {
     // 初始化高级滚动管理器
@@ -34,16 +32,12 @@ export default function SmoothScrollProvider({ children }: SmoothScrollProviderP
 
     // 页面切换时的额外处理
     const handleRouteChange = () => {
-      // 检查音乐播放器是否正在播放（若播放器尚未加载则跳过）
-      const isMusicPlaying = globalManager.isPlayingState();
-
-      if (isMusicPlaying) {
-        // 如果音乐正在播放，添加特殊类来禁用过渡效果
-        document.documentElement.classList.add('music-player-active');
-      } else {
-        // 移除特殊类，允许正常过渡
-        document.documentElement.classList.remove('music-player-active');
-      }
+      /*
+        music-player-active（音乐播放中禁用过渡）已改由 howlerPlayerManager
+        在播放状态变化时直接维护，这里只负责页面过渡效果本身，
+        从而切断对 howlerPlayerManager 的静态依赖——
+        否则 howler 与 1200+ 行的播放器管理器会被打进全站首载包。
+      */
 
       // 添加页面过渡效果
       document.documentElement.classList.add('page-transitioning');

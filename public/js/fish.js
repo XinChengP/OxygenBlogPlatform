@@ -4,7 +4,10 @@ var RENDERER = {
 	MAX_INTERVAL_COUNT : 50,
 	INIT_HEIGHT_RATE : 0.5,
 	THRESHOLD : 50,
-	
+	// resize 防抖间隔。原实现引用了未定义的 this.WATCH_INTERVAL（等于 0ms），
+	// 防抖实际失效，拖动窗口时会立即反复重建画布；现补上真实间隔
+	WATCH_INTERVAL : 200,
+
 	init : function(){
 		this.setParameters();
 		this.reconstructMethods();
@@ -13,10 +16,11 @@ var RENDERER = {
 		this.render();
 	},
 	setParameters : function(){
-		this.$window = $(window);
-		this.$container = $('#jsi-flying-fish-container');
-		this.$canvas = $('<canvas />');
-		this.context = this.$canvas.appendTo(this.$container).get(0).getContext('2d');
+		// 原实现基于 jQuery，现为等价的原生 DOM 操作
+		this.container = document.getElementById('jsi-flying-fish-container');
+		this.canvas = document.createElement('canvas');
+		this.container.appendChild(this.canvas);
+		this.context = this.canvas.getContext('2d');
 		this.points = [];
 		this.fishes = [];
 		this.watchIds = [];
@@ -48,19 +52,22 @@ var RENDERER = {
 		this.fishes.length = 0;
 		this.watchIds.length = 0;
 		this.intervalCount = this.MAX_INTERVAL_COUNT;
-		this.width = this.$container.width();
-		this.height = this.$container.height();
+		// 容器无 padding/border，getBoundingClientRect 与 jQuery.width() 取值一致
+		var rect = this.container.getBoundingClientRect();
+		this.width = rect.width;
+		this.height = rect.height;
 		this.fishCount = this.FISH_COUNT * this.width / 500 * this.height / 500;
-		this.$canvas.attr({width : this.width, height : this.height});
+		this.canvas.width = this.width;
+		this.canvas.height = this.height;
 		this.reverse = false;
-		
+
 		this.fishes.push(new FISH(this));
 		this.createSurfacePoints();
 	},
 	watchWindowSize : function(){
 		this.clearTimer();
-		this.tmpWidth = this.$window.width();
-		this.tmpHeight = this.$window.height();
+		this.tmpWidth = document.documentElement.clientWidth;
+		this.tmpHeight = document.documentElement.clientHeight;
 		this.watchIds.push(setTimeout(this.jdugeToStopResize, this.WATCH_INTERVAL));
 	},
 	clearTimer : function(){
@@ -69,8 +76,8 @@ var RENDERER = {
 		}
 	},
 	jdugeToStopResize : function(){
-		var width = this.$window.width(),
-			height = this.$window.height(),
+		var width = document.documentElement.clientWidth,
+			height = document.documentElement.clientHeight,
 			stopped = (width == this.tmpWidth && height == this.tmpHeight);
 			
 		this.tmpWidth = width;
@@ -81,16 +88,22 @@ var RENDERER = {
 		}
 	},
 	bindEvent : function(){
-		this.$window.on('resize', this.watchWindowSize);
-		this.$container.on('mouseenter', this.startEpicenter);
-		this.$container.on('mousemove', this.moveEpicenter);
+		window.addEventListener('resize', this.watchWindowSize);
+		this.container.addEventListener('mouseenter', this.startEpicenter);
+		this.container.addEventListener('mousemove', this.moveEpicenter);
 	},
+	/*
+		光标相对容器的坐标。
+		原实现 clientX - offset().left + scrollLeft() 中 scroll 相互抵消，
+		等价于视口坐标之差，因此直接用 getBoundingClientRect：
+		x = clientX - rect.left, y = clientY - rect.top
+	*/
 	getAxis : function(event){
-		var offset = this.$container.offset();
-		
+		var rect = this.container.getBoundingClientRect();
+
 		return {
-			x : event.clientX - offset.left + this.$window.scrollLeft(),
-			y : event.clientY - offset.top + this.$window.scrollTop()
+			x : event.clientX - rect.left,
+			y : event.clientY - rect.top
 		};
 	},
 	startEpicenter : function(event){
@@ -143,7 +156,7 @@ var RENDERER = {
 		this.context.clearRect(0, 0, this.width, this.height);
 		// 读取容器上设置的 CSS color 属性，实现与页脚主题色统一
 		// 默认使用浅色半透明作为降级方案
-		this.context.fillStyle = this.$container.css('color') || 'rgba(102, 204, 255, 0.35)';
+		this.context.fillStyle = getComputedStyle(this.container).color || 'rgba(102, 204, 255, 0.35)';
 		
 		for(var i = 0, count = this.fishes.length; i < count; i++){
 			this.fishes[i].render(this.context);
@@ -340,6 +353,12 @@ FISH.prototype = {
 		this.controlStatus(context);
 	}
 };
-$(function(){
+// 脚本由页脚组件在挂载后动态加载，此刻 DOM 必然就绪；
+// 保留就绪判断作为直接以 <script> 引入时的兜底
+if(document.readyState === 'loading'){
+	document.addEventListener('DOMContentLoaded', function(){
+		RENDERER.init();
+	});
+}else{
 	RENDERER.init();
-});
+}

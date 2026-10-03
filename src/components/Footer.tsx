@@ -45,7 +45,7 @@ function FlyingFish() {
   // 标记是否已经加载过脚本，防止 Strict Mode 下重复加载
   const isLoadedRef = useRef(false);
 
-  // 页面加载完成后按顺序加载 jQuery 和 fish.js
+  // 页面加载完成后加载小鱼特效脚本（已去除 jQuery 依赖，单脚本即可运行）
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (isLoadedRef.current) return;
@@ -55,12 +55,9 @@ function FlyingFish() {
       container.addEventListener('click', (e) => e.stopPropagation(), true);
     }
 
-    const jqueryPath = getAssetPath('/js/jquery.min.js');
     const fishPath = getAssetPath('/js/fish.js');
 
-    // 先加载 jQuery，再加载 fish.js
-    loadScript(jqueryPath)
-      .then(() => loadScript(fishPath))
+    loadScript(fishPath)
       .then(() => {
         isLoadedRef.current = true;
         console.log('小鱼特效加载成功');

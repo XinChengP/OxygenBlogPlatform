@@ -231,8 +231,8 @@ export const baseComponents = {
       </a>
     );
   },
-  // div - 支持自定义图片网格
-  div({ className, children, ...props }: MarkdownDivProps) {
+  // div - 支持自定义图片网格（node 为 react-markdown 注入的 hast 引用，弃置不透传）
+  div({ className, children, node, ...props }: MarkdownDivProps) {
     return <div className={className} {...props}>{children}</div>;
   },
 };

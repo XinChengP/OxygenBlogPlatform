@@ -14,7 +14,9 @@ import { useBlogArticleAssets } from '@/components/blogs/BlogArticleContext';
  * - 水合后把图片注册进文章灯箱列表，点击可放大并左右切换
  * - 通过 onLoad 获取自然尺寸，横图放宽限制、竖图限宽 400px
  */
-export default function BlogArticleImage({ src, alt, ...props }: MarkdownImgProps) {
+export default function BlogArticleImage({ src, alt, node, ...props }: MarkdownImgProps) {
+  // node 是 react-markdown 注入的 hast 节点引用，解构出来弃置，
+  // 避免随 ...props 展开成 DOM 属性（node="[object Object]"）
   const { imageSrcSetRef, articleImagesRef, onImageClick } = useBlogArticleAssets();
   const [isLandscape, setIsLandscape] = useState(false);
 

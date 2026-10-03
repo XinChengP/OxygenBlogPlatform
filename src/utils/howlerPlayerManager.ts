@@ -426,20 +426,24 @@ class HowlerPlayerManager {
         this.emitEvent('play');
         this.recordHistoryOnPlay();
         this.startProgressLoop();
+        this.syncPlaybackClass();
       },
       onpause: () => {
         this.playing = false;
         this.emitEvent('pause');
         this.savePlayState();
+        this.syncPlaybackClass();
       },
       onend: () => {
         this.playing = false;
         this.emitEvent('ended');
         this.handleSongEnd();
+        this.syncPlaybackClass();
       },
       onstop: () => {
         this.playing = false;
         this.emitEvent('pause');
+        this.syncPlaybackClass();
       },
       onseek: () => {
         this.updateProgress();
@@ -695,6 +699,20 @@ class HowlerPlayerManager {
    */
   isPlayingState(): boolean {
     return this.playing;
+  }
+
+  /**
+   * 同步 html 根元素上的 music-player-active 标记
+   *
+   * 该类被 globals.css 用于「音乐播放中禁用页面过渡动画」。
+   * 原由 SmoothScrollProvider 在每次路由切换时查询播放状态来维护，
+   * 那样会把本管理器（连带 howler）打进全站首载包；
+   * 现改为播放状态变化时由本管理器直接驱动，语义也更准确：
+   * 暂停后立即恢复过渡动画，无需等下一次路由切换。
+   */
+  private syncPlaybackClass(): void {
+    if (typeof document === 'undefined') return;
+    document.documentElement.classList.toggle('music-player-active', this.playing);
   }
 
   /**

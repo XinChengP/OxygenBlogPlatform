@@ -20,8 +20,10 @@ const BilibiliIframe = lazy(() => import('@/components/BilibiliIframe'));
 export default function BlogArticleIframe({
   src,
   allowfullscreen,
+  node,
   ...props
 }: MarkdownIframeProps) {
+  // node 为 react-markdown 注入的 hast 节点引用，解构弃置避免泄漏进 DOM 属性
   const { iframeRefs } = useBlogArticleAssets();
 
   // 将字符串 "true" 转换为布尔值 true，确保传递布尔值给React属性

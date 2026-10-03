@@ -134,19 +134,16 @@ export class AdvancedScrollManager {
     this.navigationHistory.push(this.currentPath);
     this.currentPath = newPath;
 
-    // 使用 Howler 播放器管理器判断音乐是否正在播放
-    // scrollManager 是纯工具类，通过动态导入避免循环依赖
-    let isMusicPlaying = false;
-    try {
-      const { default: HowlerPlayerManager } = require('./howlerPlayerManager');
-      isMusicPlaying = HowlerPlayerManager.getInstance().isPlayingState();
-    } catch {
-      isMusicPlaying = false;
-    }
-
-    if (!isMusicPlaying) {
-      document.documentElement.classList.add('page-transitioning');
-    }
+    /*
+      music-player-active（音乐播放中禁用过渡）由 howlerPlayerManager
+      在播放状态变化时直接维护；globals.css 的规则
+      「html.page-transitioning:not(.music-player-active)」会自行跳过播放场景，
+      因此这里无条件加类即可，无需查询播放状态——
+      原先的 require('./howlerPlayerManager') 虽为运行时导入，
+      但 webpack 对同步 require 仍会静态打包，等于把 howler 和
+      1200+ 行的播放器管理器带进了全站首载包。
+    */
+    document.documentElement.classList.add('page-transitioning');
 
     setTimeout(() => {
       this.isNavigating = false;
