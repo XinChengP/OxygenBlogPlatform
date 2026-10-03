@@ -7,6 +7,8 @@ import remarkEmoji from 'remark-emoji';
 import remarkBreaks from 'remark-breaks';
 import rehypeHighlight from 'rehype-highlight';
 import rehypeRaw from 'rehype-raw';
+import rehypeSanitize from 'rehype-sanitize';
+import { blogSanitizeSchema } from '@/components/blogs/sanitizeSchema';
 import ImageGrid from './ImageGrid';
 import TimeProgressWidget from './TimeProgressWidget';
 import TodoWidget from './TodoWidget';
@@ -209,7 +211,8 @@ function ClientMomentsPage({ moments, blogCount, blogTotalWordCount, blogs, cate
                       <div className="text-foreground text-sm leading-relaxed">
                         <ReactMarkdown
                           remarkPlugins={[remarkGfm, remarkEmoji, remarkBreaks]}
-                          rehypePlugins={[rehypeHighlight, rehypeRaw]}
+                          /* rehypeRaw 展开原始 HTML 后立即清洗，再交给高亮（顺序见 sanitizeSchema.ts） */
+                          rehypePlugins={[rehypeRaw, [rehypeSanitize, blogSanitizeSchema], rehypeHighlight]}
                           components={momentsMarkdownComponents}
                         >
                           {moment.content}
@@ -265,8 +268,8 @@ function ClientMomentsPage({ moments, blogCount, blogTotalWordCount, blogs, cate
 
           {/* 右边：预留小组件（30%宽度） */}
           <div className="lg:w-3/12 max-w-md space-y-6">
-            {/* 关于我卡片：sticky 浮动元素保留毛玻璃，圆角统一 xl、阴影引用令牌 */}
-            <div className="p-6 rounded-xl border transition-[box-shadow,border-color] duration-300 backdrop-blur-md bg-card/90 border-border shadow-card supports-[backdrop-filter]:bg-card/75 sticky top-24">
+            {/* 关于我卡片：侧栏卡片保留毛玻璃，圆角统一 xl、阴影引用令牌 */}
+            <div className="p-6 rounded-xl border transition-[box-shadow,border-color] duration-300 backdrop-blur-md bg-card/90 border-border shadow-card supports-[backdrop-filter]:bg-card/75">
               <div className="text-center mb-4">
                 <a href={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/about`} className="block w-20 h-20 rounded-full mx-auto mb-4 overflow-hidden border-2 border-primary/30 shadow-lg hover:shadow-xl transition-shadow">
                   <img 

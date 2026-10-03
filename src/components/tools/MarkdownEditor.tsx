@@ -10,7 +10,9 @@ import dynamic from 'next/dynamic';
 import { safeMarkdownToHtml } from '@/utils/safeMarked';
 import { copyToClipboard } from '@/utils/clipboard';
 // 字数统计与阅读时长统一走 utils（wordCountUtils + lib/utils），编辑器不再维护私有实现
-import { calculateReadingTime, advancedWordCount } from '@/utils';
+// 注意走精确路径而非 '@/utils' barrel，避免把 barrel 里的重模块拖进编辑器 chunk
+import { calculateReadingTime } from '@/lib/utils';
+import { advancedWordCount } from '@/utils/wordCountUtils';
 import live2dMessageManager, { Live2DMessages } from '@/utils/live2dMessageManager';
 import { uploadEditorImage, uploadBase64Image } from '@/utils/editorImageUpload';
 

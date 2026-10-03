@@ -1,9 +1,21 @@
 import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
+import type { Metadata } from 'next';
 import { formatBlogDate, calculateReadingTime } from '@/utils';
 import { getBlogTotalWordCount } from '@/utils/momentsUtils';
 import ClientBlogsPage from './ClientBlogsPage';
+
+/*
+  列表页独立元数据：此前缺失时继承根布局的默认 title/description，
+  外链最多的页面之一却与首页共享描述，不利于搜索引擎区分页面用途。
+  canonical 由各页面自身 URL 决定，根布局刻意不设全局 canonical（见 layout.tsx）。
+*/
+export const metadata: Metadata = {
+  title: '博客文章',
+  description:
+    '全部博客文章列表：前端开发技术、VOCALOID 相关内容、生活感悟与学习笔记，支持按分类、标签与关键词筛选。',
+};
 
 /**
  * 博客文章接口

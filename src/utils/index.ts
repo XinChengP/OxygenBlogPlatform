@@ -12,8 +12,12 @@ export { cn } from './cn';
 // 浏览器兼容性检测
 export * from './browserCompatibility';
 
-// 安全的Markdown处理
-export * from './safeMarked';
+/*
+  safeMarked 刻意不在此处 re-export：它连带 marked 与 DOMPurify 两个较重的库，
+  经 barrel 导出后会被 webpack 与 assetUtils 等常用模块切进同一个共享 chunk，
+  导致仅需 assetUtils 的页面（如首页）被迫一并下载 marked（约 60KB）。
+  MarkdownEditor 等使用方请直接从 '@/utils/safeMarked' 导入。
+*/
 
 /*
   音乐播放器相关的 howlerPlayerManager / musicPlayerPreloader

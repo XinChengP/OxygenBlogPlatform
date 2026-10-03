@@ -152,12 +152,17 @@ export async function changeRestorePassword(
 
 export async function verifyRestorePassword(password: string): Promise<boolean> {
   if (isStaticExport) return false;
-  
+
   try {
     const storedPassword = await fs.readFile(PASSWORD_FILE, 'utf-8');
     return storedPassword === password;
   } catch {
-    return true;
+    /*
+      密码文件读取失败（不存在/无权限）时必须拒绝（fails-closed）。
+      原实现 catch 里 return true：密码文件缺失时任何密码都能通过校验，
+      等于恢复功能的最后一道防线在异常情况下自动放行。
+    */
+    return false;
   }
 }
 

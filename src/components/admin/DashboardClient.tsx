@@ -377,7 +377,7 @@ const CategoryPieChart: React.FC<CategoryPieChartProps> = ({
       <div className="w-full relative" style={{ height: '280px', minWidth: '200px' }}>
         {sortedData.length > 0 ? (
           <>
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={200}>
               <PieChart>
                 <Pie
                   data={dataWithTotal}

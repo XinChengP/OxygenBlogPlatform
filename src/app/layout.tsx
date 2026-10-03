@@ -12,6 +12,9 @@ import Analytics from "@/components/Analytics";
 import SecurityProvider from "@/components/security/SecurityProvider";
 import Live2DDynamicLoader from "@/components/Live2DDynamicLoader";
 import MusicPlayerController from "@/components/MusicPlayerController";
+import { enableBackground, backgroundImage } from "@/setting/WebSetting";
+import { getAssetPath } from "@/utils/assetUtils";
+import AsyncFontLoader from "@/components/ui/AsyncFontLoader";
 
 /**
  * 站点基础URL配置
@@ -218,7 +221,17 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://giscus.app" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://api.github.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap" rel="stylesheet" />
+        {/*
+          手写字体（Ma Shan Zheng）改由 AsyncFontLoader（client 组件）在水合后注入：
+          直接渲染带 media 切换脚本的 <link> 会在水合时触发属性不匹配警告。
+          preconnect 预连接保留在下方，字体加载不阻塞渲染；
+          未用 next/font 是因为其构建期需要访问 Google 服务器下载字体，
+          本地与 CI 的网络环境不可控。
+          noscript 兜底：禁用 JS 时字体加载器不会执行，退回普通样式表。
+        */}
+        <noscript>
+          <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap" rel="stylesheet" />
+        </noscript>
 
         {/* DNS预解析 - 加速第三方资源加载 */}
         <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
@@ -227,9 +240,13 @@ export default function RootLayout({
         {/* RSS订阅自动发现 - 让浏览器和RSS阅读器能够发现博客订阅 */}
         <link rel="alternate" type="application/rss+xml" title="歆橙的博客 RSS" href={`${BASE_URL}/rss.xml`} />
 
-        {/* 注意：背景图片由 BackgroundLayer 组件动态加载，不预加载以避免浏览器警告
-            BackgroundLayer 会在客户端挂载后根据主题设置加载图片，预加载可能导致资源浪费
-        */}
+        {/* 背景图片预加载
+            BackgroundLayer 会在客户端挂载后才设置背景图 URL，若不在此预加载，
+            背景要等 JS 水合后才开始下载，拖慢全站最大内容元素（LCP）。
+            仅在背景功能开启且配置了图片时输出，避免无效请求。 */}
+        {enableBackground && backgroundImage && (
+          <link rel="preload" as="image" href={getAssetPath(`/${backgroundImage}`)} />
+        )}
 
 
 
@@ -254,11 +271,11 @@ export default function RootLayout({
             - smooth-navigation.js 通过Script组件加载，不需要预加载
         */}
 
-        {/* 主题初始化脚本 - 外部文件减少 HTML 体积 */}
+        {/* 主题初始化脚本 - 外部文件减少 HTML 体积（须同步执行以避免主题闪烁） */}
         <script src="/js/theme-init.js" />
 
-        {/* 动态标题脚本 */}
-        <script src="/js/dynamic-title.js" />
+        {/* 动态标题脚本 - 非关键功能，defer 延迟执行不阻塞解析 */}
+        <script src="/js/dynamic-title.js" defer />
       </head>
       <body
         className="antialiased text-foreground transition-colors duration-300"
@@ -267,6 +284,8 @@ export default function RootLayout({
         }}
         suppressHydrationWarning
       >
+        {/* 手写字体异步加载器（水合后注入样式表，渲染 null） */}
+        <AsyncFontLoader />
         {/* 平滑导航脚本 - 使用普通script标签 */}
         <script src="/js/smooth-navigation.js" defer />
         {/* 安全保护提供者 - 提供CSP、防劫持、完整性检测等安全功能 */}

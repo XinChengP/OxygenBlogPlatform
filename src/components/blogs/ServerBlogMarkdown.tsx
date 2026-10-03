@@ -3,6 +3,7 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import remarkBreaks from 'remark-breaks';
 import remarkEmoji from 'remark-emoji';
+import rehypeSanitize from 'rehype-sanitize';
 import rehypeKatex from 'rehype-katex';
 import rehypeRaw from 'rehype-raw';
 import rehypeSlug from 'rehype-slug';
@@ -15,6 +16,7 @@ import {
   getLanguageDisplayName,
   normalizeLanguage,
 } from '@/components/blogs/BlogMarkdownBase';
+import { blogSanitizeSchema } from '@/components/blogs/sanitizeSchema';
 
 /**
  * 博客正文服务端渲染器
@@ -35,7 +37,12 @@ export default function ServerBlogMarkdown({ content }: { content: string }) {
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm, remarkMath, remarkBreaks, remarkEmoji]}
-      rehypePlugins={[rehypeKatex, rehypeRaw, rehypeSlug]}
+      /*
+        顺序要点：rehypeRaw 展开原始 HTML 后立即由 rehypeSanitize 清洗
+        （白名单见 sanitizeSchema.ts），KaTeX 的 MathML 在此之后生成、
+        属于库的可信输出，不会被清洗。
+      */
+      rehypePlugins={[rehypeRaw, [rehypeSanitize, blogSanitizeSchema], rehypeKatex, rehypeSlug]}
       components={{
         ...baseComponents,
         code({ className, children }) {

@@ -12,7 +12,6 @@ import {
   UserPlus,
   ArrowDown
 } from "lucide-react";
-import Image from 'next/image';
 import { 
   friendsLinks, 
   friendCategoryLabels, 
@@ -129,7 +128,13 @@ function FriendCard({ link, index }: { link: FriendLink; index: number }) {
               }}
             >
               {!imageError && link.avatar ? (
-                <Image
+                /*
+                  用普通 img 而非 next/image：友链头像域名由友链配置任意指定，
+                  next/image 的 remotePatterns 白名单无法穷举；
+                  静态导出模式下 next/image 本就 unoptimized（无优化收益），
+                  只剩域名校验的负担。
+                */
+                <img
                   src={getFriendAvatarPath(link.avatar)}
                   alt={link.name}
                   width={64}

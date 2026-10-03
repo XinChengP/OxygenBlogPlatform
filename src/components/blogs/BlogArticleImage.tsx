@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { getAssetPath } from '@/utils/assetUtils';
 import type { PreviewImage } from '@/types/gallery';
 import { isVideoUrl, type MarkdownImgProps } from '@/components/blogs/BlogMarkdownBase';
@@ -46,20 +46,20 @@ export default function BlogArticleImage({ src, alt, node, ...props }: MarkdownI
     );
   }
 
-  // 按出现顺序收集文章内图片到灯箱列表
-  // 原实现写在渲染期（StrictMode 下会重复收集），现移到挂载后执行一次；
-  // 点击事件只可能发生在水合之后，注册时序等价
-  useEffect(() => {
-    if (typeof processedSrc !== 'string' || !processedSrc) return;
-    if (imageSrcSetRef.current.has(processedSrc)) return;
-
+  // 按出现顺序收集文章内图片到灯箱列表（保持与旧实现一致的渲染期收集）
+  // 必须在渲染期而非 useEffect：ClientBlogDetail 挂载时会清空一次列表以清除
+  // 路由切换/热更新的残留，而子组件的 effect 先于父组件执行，若在此处注册
+  // 会被那次清空抹掉且再无重跑时机，灯箱列表将永远为空、点击无响应；
+  // 渲染期收集则会在随后 mounted 状态更新触发的重渲染中自动补齐。
+  // imageSrcSetRef 去重保证 StrictMode 双渲染 / 重复挂载不会重复收集。
+  if (typeof processedSrc === 'string' && processedSrc && !imageSrcSetRef.current.has(processedSrc)) {
     imageSrcSetRef.current.add(processedSrc);
     articleImagesRef.current.push({
       id: `blog-img-${articleImagesRef.current.length}`,
       src: processedSrc,
       alt: alt || '图片',
     });
-  }, [processedSrc, alt, imageSrcSetRef, articleImagesRef]);
+  }
 
   const handleImageClick = () => {
     if (typeof processedSrc !== 'string') return;

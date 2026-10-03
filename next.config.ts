@@ -39,11 +39,22 @@ const baseConfig = {
   
   images: {
     formats: ['image/avif', 'image/webp'],
+    /*
+      白名单而非 hostname: '**'：宽松配置会让 dev/SSR 模式的
+      /_next/image?url=... 端点成为可被滥用的开放图片代理。
+      静态导出模式 images.unoptimized = true，/_next/image 端点不存在，
+      此白名单在 GitHub Pages 生产环境不参与工作；这里主要约束本地开发。
+      新增图床时在下面追加一行即可。
+    */
     remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "**",
-      },
+      { protocol: 'https', hostname: 'avatars.githubusercontent.com' },
+      { protocol: 'https', hostname: 'raw.githubusercontent.com' },
+      { protocol: 'https', hostname: 'cdn.jsdelivr.net' },
+      { protocol: 'https', hostname: 'cdnjs.cloudflare.com' },
+      { protocol: 'https', hostname: 'api.injahow.cn' },
+      { protocol: 'https', hostname: 'i0.hdslb.com' },
+      { protocol: 'https', hostname: 'i1.hdslb.com' },
+      { protocol: 'https', hostname: 'i2.hdslb.com' },
     ],
     unoptimized: isStaticExport,
   },
@@ -56,9 +67,12 @@ const baseConfig = {
 
   pageExtensions: ["tsx", "ts", "jsx", "js"],
 
-  generateBuildId: async () => {
-    return new Date().getTime().toString();
-  },
+  /*
+    不再自定义 generateBuildId：
+    原实现用 new Date().getTime()，每次构建都产生新 id，
+    两次部署之间回访用户的 RSC/预取缓存全部失效。
+    删除后 Next 使用默认的构建 id 生成策略。
+  */
 
   poweredByHeader: false,
 
@@ -136,11 +150,17 @@ const devConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://giscus.app https://v6.51.la https://sdk.51.la https://static.cloudflareinsights.com https://www.google-analytics.com https://www.googletagmanager.com",
+              /*
+                Google Analytics 已确认未接入（源码中无 gtag.js 加载代码，
+                HijackingProtector 的 gtag 上报因 window.gtag 不存在而永不生效），
+                因此不再在 script-src / connect-src 中为其保留白名单。
+                将来若接入 GA，需同时把上述死代码一并恢复。
+              */
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://giscus.app https://v6.51.la https://sdk.51.la https://static.cloudflareinsights.com",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://giscus.app",
               "img-src 'self' data: blob: https: http:",
               "font-src 'self' https://fonts.gstatic.com data:",
-              "connect-src 'self' https://api.github.com https://giscus.app https://v6.51.la https://sdk.51.la https://collect-v6.51.la https://v1.hitokoto.cn https://cloudflareinsights.com https://www.google-analytics.com https://api.injahow.cn",
+              "connect-src 'self' https://api.github.com https://giscus.app https://v6.51.la https://sdk.51.la https://collect-v6.51.la https://v1.hitokoto.cn https://cloudflareinsights.com https://api.injahow.cn",
               "media-src 'self' https: http:",
               "object-src 'none'",
               "frame-src https://giscus.app https://*.github.com https://player.bilibili.com",
@@ -203,12 +223,9 @@ const staticConfig = {
   experimental: undefined,
   images: {
     unoptimized: true,
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "**",
-      },
-    ],
+    // 白名单与 baseConfig 保持一致；unoptimized 下实际不参与构建，
+    // 仅在将来切换 SSR 部署时生效（见 baseConfig 中的说明）
+    remotePatterns: baseConfig.images.remotePatterns,
   },
   env: {
     ...baseConfig.env,
