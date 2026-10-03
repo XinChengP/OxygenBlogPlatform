@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { copyrightConfig } from '@/setting/blogSetting';
+import { copyToClipboard } from '@/utils/clipboard';
 
 /**
  * 功能图标的公共属性
@@ -371,62 +372,21 @@ export default function BlogSharePanel({
   const summary = excerpt.slice(0, 100);
 
   /**
-   * 降级复制方案，兼容不支持 Clipboard API 的旧浏览器或非 HTTPS 环境
-   *
-   * @param text - 待复制的文本
-   * @returns 是否复制成功
-   */
-  const fallbackCopy = useCallback((text: string): boolean => {
-    const textArea = document.createElement('textarea');
-    textArea.value = text;
-    // 移出可视区域，防止复制瞬间页面发生滚动跳动
-    textArea.style.position = 'fixed';
-    textArea.style.left = '-999999px';
-    textArea.style.top = '0';
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-
-    try {
-      const successful = document.execCommand('copy');
-      document.body.removeChild(textArea);
-      return successful;
-    } catch {
-      document.body.removeChild(textArea);
-      return false;
-    }
-  }, []);
-
-  /**
    * 复制文章链接到剪贴板
-   * 优先使用 Clipboard API，失败时自动回退到降级方案
+   * 复制与降级逻辑统一走 utils/clipboard，本组件只负责成功反馈
    */
   const handleCopyLink = useCallback(async () => {
     // 已在成功反馈状态中则忽略重复点击，避免定时器被反复重置
     if (isCopied) return;
 
-    let copied = false;
-
-    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
-      try {
-        await navigator.clipboard.writeText(articleUrl);
-        copied = true;
-      } catch {
-        // Clipboard API 调用失败（常见于非 HTTPS 环境或无权限），转为降级方案处理
-        copied = false;
-      }
-    }
-
-    if (!copied) {
-      copied = fallbackCopy(articleUrl);
-    }
+    const copied = await copyToClipboard(articleUrl);
 
     if (copied) {
       setIsCopied(true);
       // 2 秒后恢复默认文案，与 CodeCopyButton 的反馈节奏保持一致
       setTimeout(() => setIsCopied(false), 2000);
     }
-  }, [articleUrl, isCopied, fallbackCopy]);
+  }, [articleUrl, isCopied]);
 
   /**
    * 打开第三方平台的分享页面

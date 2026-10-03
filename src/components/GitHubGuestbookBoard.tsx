@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 import Image from 'next/image';
+import { formatRelativeTime } from '@/utils/relativeTime';
 
 interface DiscussionMessage {
   id: string;
@@ -289,23 +290,7 @@ ${replyData.content}
     }
   };
 
-  // 格式化时间
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    
-    const minutes = Math.floor(diff / (1000 * 60));
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    
-    if (minutes < 1) return '刚刚';
-    if (minutes < 60) return `${minutes}分钟前`;
-    if (hours < 24) return `${hours}小时前`;
-    if (days < 7) return `${days}天前`;
-    
-    return date.toLocaleDateString('zh-CN');
-  };
+  // 格式化时间（统一走 utils/relativeTime）
 
   // 加载数据
   useEffect(() => {
@@ -523,7 +508,7 @@ ${replyData.content}
                       {message.author.login}
                     </h4>
                     <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {formatTime(message.created_at)}
+                      {formatRelativeTime(message.created_at)}
                     </span>
                   </div>
                 </div>
@@ -580,7 +565,7 @@ ${replyData.content}
                             {comment.author.login}
                           </span>
                           <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {formatTime(comment.created_at)}
+                            {formatRelativeTime(comment.created_at)}
                           </span>
                         </div>
                         <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">

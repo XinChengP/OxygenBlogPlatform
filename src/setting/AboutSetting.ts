@@ -861,14 +861,6 @@ export const relatedLinks: RelatedLink[] = [
     tags: ['Frontmatter', 'YAML', '解析']
   },
   {
-    name: "date-fns",
-    url: "https://date-fns.org/",
-    description: "现代JavaScript日期处理库",
-    category: 'tool',
-    icon: "calendar",
-    tags: ['日期', '时间', '工具']
-  },
-  {
     name: "next-themes",
     url: "https://github.com/pacocoursey/next-themes",
     description: "Next.js主题切换方案，支持深色模式",
@@ -907,14 +899,6 @@ export const relatedLinks: RelatedLink[] = [
     category: 'tool',
     icon: "typography",
     tags: ['排版', 'Tailwind', '文章']
-  },
-  {
-    name: "yet-another-react-lightbox",
-    url: "https://yet-another-react-lightbox.com/",
-    description: "React图片灯箱组件，画廊图片预览",
-    category: 'ui',
-    icon: "image",
-    tags: ['图片', '灯箱', '画廊']
   },
   {
     name: "页脚小鱼特效",

@@ -39,6 +39,7 @@ import OptimizedImage from '@/components/core/OptimizedImage';
 import PageHeader from '@/components/ui/PageHeader';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 import { getAssetPath } from '@/utils/assetUtils';
+import { copyToClipboard } from '@/utils/clipboard';
 import dynamic from 'next/dynamic';
 
 // 动态导入 Leaflet 地图组件（避免 SSR 问题）
@@ -1147,12 +1148,12 @@ export default function AboutPage() {
    * 复制成功后显示勾选图标和 Toast 提示，2秒后恢复
    */
   const handleCopyEmail = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(mail);
+    const success = await copyToClipboard(mail);
+    if (success) {
       setCopied(true);
       showToast('邮箱已复制到剪贴板');
       setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
+    } else {
       // 复制失败时降级使用 mailto 跳转
       window.location.href = `mailto:${mail}`;
     }

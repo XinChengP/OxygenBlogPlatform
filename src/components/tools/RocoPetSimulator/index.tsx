@@ -3,6 +3,13 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from 'next-themes';
+import { copyToClipboard as copyTextToClipboard } from '@/utils/clipboard';
+import {
+  getPetIconUrl,
+  getPetSkinIconUrl,
+  getPetIconUrlWithSkin,
+  getTalentIconUrl,
+} from './petAssets';
 import {
   pets,
   talentData,
@@ -359,8 +366,7 @@ export default function RocoPetSimulator() {
       // 预加载所有宠物的主图片（分批进行，避免一次性请求过多）
       pets.forEach((pet, index) => {
         const imageId = pet.imageId || pet.id;
-        const formattedId = String(imageId).padStart(3, '0');
-        const networkUrl = `https://res.17roco.qq.com/res/combat/icons/${formattedId}-.png`;
+        const networkUrl = getPetIconUrl(imageId);
 
         // 只预加载前 30 个可见宠物和已拥有的宠物，避免一次性加载过多
         if (index < 30 || accountManager.hasPet(pet.id)) {
@@ -561,12 +567,12 @@ export default function RocoPetSimulator() {
     }
   }, [exportFormat]);
 
-  // 复制到剪贴板
+  // 复制到剪贴板（复制与降级逻辑统一走 utils/clipboard）
   const copyToClipboard = useCallback(async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
+    const success = await copyTextToClipboard(text);
+    if (success) {
       showNotification('已复制到剪贴板');
-    } catch {
+    } else {
       showNotification('复制失败', 'error');
     }
   }, [showNotification]);
@@ -575,15 +581,9 @@ export default function RocoPetSimulator() {
   const getPetImageUrl = useCallback((pet: Pet): string => {
     const skinIndex = selectedSkins[pet.id];
     const imageId = pet.imageId || pet.id;
-    const formattedId = String(imageId).padStart(3, '0');
 
-    // 构建网络URL
-    let networkUrl: string;
-    if (skinIndex && skinIndex > 0 && skinPets[pet.id]) {
-      networkUrl = `https://res.17roco.qq.com/res/combat/icons/1${formattedId}${skinIndex - 1}-.png`;
-    } else {
-      networkUrl = `https://res.17roco.qq.com/res/combat/icons/${formattedId}-.png`;
-    }
+    // 构建网络URL（皮肤/原皮选择规则统一在 petAssets 中维护）
+    const networkUrl = getPetIconUrlWithSkin(imageId, pet.id, skinIndex, !!skinPets[pet.id]);
 
     // 本地备用路径
     const localUrl = `/roco-icons/pets/${imageId}.png`;
@@ -598,15 +598,9 @@ export default function RocoPetSimulator() {
   const getPetImageUrlWithCache = useCallback((pet: Pet): string => {
     const skinIndex = selectedSkins[pet.id];
     const imageId = pet.imageId || pet.id;
-    const formattedId = String(imageId).padStart(3, '0');
 
-    // 构建网络URL
-    let networkUrl: string;
-    if (skinIndex && skinIndex > 0 && skinPets[pet.id]) {
-      networkUrl = `https://res.17roco.qq.com/res/combat/icons/1${formattedId}${skinIndex - 1}-.png`;
-    } else {
-      networkUrl = `https://res.17roco.qq.com/res/combat/icons/${formattedId}-.png`;
-    }
+    // 构建网络URL（皮肤/原皮选择规则统一在 petAssets 中维护）
+    const networkUrl = getPetIconUrlWithSkin(imageId, pet.id, skinIndex, !!skinPets[pet.id]);
 
     // 本地备用路径
     const localUrl = `/roco-icons/pets/${imageId}.png`;
@@ -631,7 +625,7 @@ export default function RocoPetSimulator() {
     if (!talentId || talentId === 0) {
       return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjIwIiBoZWlnaHQ9IjIwIiBmaWxsPSIjRkZGIiBzdHJva2U9IiM5OTkiIHN0cm9rZS13aWR0aD0iMSIgcng9IjIiLz4KPHBhdGggZD0iTTYgNkwxNCAxNE0xNCA2TDYgMTQiIHN0cm9rZT0iIzk5OSIgc3Ryb2tlLXdpZHRoPSIyIi8+Cjwvc3ZnPg==';
     }
-    return `https://res.17roco.qq.com/res/talent/${talentId}_small.png`;
+    return getTalentIconUrl(talentId);
   }, []);
 
   // 获取本地血脉图片URL（用于网络加载失败时）
@@ -1384,11 +1378,7 @@ export default function RocoPetSimulator() {
                     const getLineupPetImageUrl = () => {
                       const skinIndex = selectedSkins[pet.id];
                       const imageId = pet.imageId || pet.id;
-                      const formattedId = String(imageId).padStart(3, '0');
-                      if (skinIndex && skinIndex > 0 && skinPets[pet.id]) {
-                        return `https://res.17roco.qq.com/res/combat/icons/1${formattedId}${skinIndex - 1}-.png`;
-                      }
-                      return `https://res.17roco.qq.com/res/combat/icons/${formattedId}-.png`;
+                      return getPetIconUrlWithSkin(imageId, pet.id, skinIndex, !!skinPets[pet.id]);
                     };
                     
                     const isLineupDragged = draggedIndex === index;
@@ -1430,7 +1420,7 @@ export default function RocoPetSimulator() {
                           {selectedTalentId && selectedTalentId !== 0 && (
                             <div className="absolute -bottom-0.5 -left-0.5 w-4 h-4 rounded-full bg-[var(--color-card)] border border-orange-400 flex items-center justify-center">
                               <img
-                                src={`https://res.17roco.qq.com/res/talent/${selectedTalentId}_small.png`}
+                                src={getTalentIconUrl(selectedTalentId)}
                                 alt="血脉"
                                 onError={handleLineupTalentImageError}
                                 className="w-2.5 h-2.5 rounded-full"
@@ -1972,13 +1962,10 @@ export default function RocoPetSimulator() {
                 if (!pet) return null;
                 const isSelected = (selectedSkins[currentPetId] || 0) === index;
                 const imageId = pet.imageId || pet.id;
-                // 网络URL
-                let networkUrl: string;
-                if (index === 0) {
-                  networkUrl = `https://res.17roco.qq.com/res/combat/icons/${String(imageId).padStart(3, '0')}-.png`;
-                } else {
-                  networkUrl = `https://res.17roco.qq.com/res/combat/icons/1${String(pet.id).padStart(3, '0')}${index - 1}-.png`;
-                }
+                // 网络URL（index 0 为原皮，其余为对应序号皮肤）
+                const networkUrl = index === 0
+                  ? getPetIconUrl(imageId)
+                  : getPetSkinIconUrl(pet.id, index);
                 // 本地备用URL
                 const localUrl = `/roco-icons/pets/${imageId}.png`;
 
@@ -2040,7 +2027,7 @@ export default function RocoPetSimulator() {
                 const talent = talentData.find(t => t.id === talentId);
                 if (!talent) return null;
                 const isSelected = selectedTalents[currentPetId] === talentId;
-                const networkUrl = `https://res.17roco.qq.com/res/talent/${talentId}_small.png`;
+                const networkUrl = getTalentIconUrl(talentId);
                 const localUrl = `/roco-icons/talents/${talentId}.png`;
 
                 const handleTalentModalError = (e: React.SyntheticEvent<HTMLImageElement>) => {
@@ -2354,11 +2341,7 @@ export default function RocoPetSimulator() {
                   const getLineupPetImageUrl = () => {
                     const skinIndex = selectedSkins[pet.id];
                     const imageId = pet.imageId || pet.id;
-                    const formattedId = String(imageId).padStart(3, '0');
-                    if (skinIndex && skinIndex > 0 && skinPets[pet.id]) {
-                      return `https://res.17roco.qq.com/res/combat/icons/1${formattedId}${skinIndex - 1}-.png`;
-                    }
-                    return `https://res.17roco.qq.com/res/combat/icons/${formattedId}-.png`;
+                    return getPetIconUrlWithSkin(imageId, pet.id, skinIndex, !!skinPets[pet.id]);
                   };
 
                   const isDragged = draggedIndex === index;
@@ -2431,7 +2414,7 @@ export default function RocoPetSimulator() {
                         {selectedTalentId && selectedTalentId !== 0 && (
                           <div className="absolute -bottom-0.5 -left-0.5 sm:-bottom-1 sm:-left-1 w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 rounded-full bg-[var(--color-card)] border border-orange-400 flex items-center justify-center shadow-md">
                             <img
-                              src={`https://res.17roco.qq.com/res/talent/${selectedTalentId}_small.png`}
+                              src={getTalentIconUrl(selectedTalentId)}
                               alt="血脉"
                               onError={handleLineupTalentImageError}
                               className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-3.5 md:h-3.5 rounded-full"

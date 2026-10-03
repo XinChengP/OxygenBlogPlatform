@@ -6,6 +6,7 @@ import BackgroundLayer from '@/components/BackgroundLayer';
 import { useTheme } from 'next-themes';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 import { getAssetPath } from '@/utils/assetUtils';
+import { copyToClipboard } from '@/utils/clipboard';
 import PageHeader from '@/components/ui/PageHeader';
 import { trackToolView } from '@/components/Analytics';
 
@@ -405,10 +406,10 @@ export default function PinyinConverter() {
   // 复制结果
   const copyResult = useCallback(async () => {
     const textToCopy = isEditing ? editedOutput : outputText;
-    
-    try {
-      await navigator.clipboard.writeText(textToCopy);
-      
+
+    const copied = await copyToClipboard(textToCopy);
+
+    if (copied) {
       // Live2D联动：发送复制成功事件，使用个性化消息
       try {
         const { emitLive2DEvent } = await import('@/utils/live2dEventEmitter');
@@ -453,8 +454,7 @@ export default function PinyinConverter() {
       } catch {
         // Live2D联动失败，静默处理
       }
-      
-    } catch {
+    } else {
       // Live2D联动：发送复制失败事件，使用个性化消息
       try {
         const { emitLive2DEvent } = await import('@/utils/live2dEventEmitter');

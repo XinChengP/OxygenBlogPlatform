@@ -3,7 +3,6 @@
 import { useState, lazy, Suspense, useEffect, useRef, useCallback } from 'react';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import LazyMarkdown from '../../../components/LazyMarkdown';
 import ImagePreview from '../../../app/gallery/components/ImagePreview';
 import { PreviewImage } from '../../../types/gallery';
 import Link from 'next/link';
@@ -25,7 +24,8 @@ import { useBackgroundStyle } from '../../../hooks/useBackgroundStyle';
 import { useTheme } from 'next-themes';
 import { Live2DMessageHelper } from '../../../utils/live2dMessageManager';
 import { trackArticleView } from '../../../components/Analytics';
-import { useBlogMarkdownComponents } from '../../../components/blogs/BlogMarkdownComponents';
+import { copyToClipboard } from '@/utils/clipboard';
+import { BlogArticleProvider } from '../../../components/blogs/BlogArticleContext';
 import BlogSharePanel from '../../../components/blogs/BlogSharePanel';
 import RelatedPosts from '../../../components/blogs/RelatedPosts';
 
@@ -86,6 +86,12 @@ interface ClientBlogDetailProps {
   seriesArticles: SeriesArticle[];
   /** 相关文章推荐列表，由服务端预计算后传入；为空数组时该区域不渲染 */
   relatedArticles?: RelatedPost[];
+  /**
+   * 服务端构建期渲染好的正文（ServerBlogMarkdown 的输出）。
+   * 以 ReactNode 形式传入，静态 HTML 中直接包含正文内容，
+   * 本组件只负责提供灯箱/iframe 等交互资源（经 BlogArticleContext）。
+   */
+  renderedContent: React.ReactNode;
 }
 
 // 互动功能Hook - 已移除点赞、收藏、浏览统计功能（分享功能见 BlogSharePanel 组件）
@@ -114,6 +120,7 @@ export default function ClientBlogDetail({
   blog,
   seriesArticles,
   relatedArticles = [],
+  renderedContent,
 }: ClientBlogDetailProps) {
   const { theme, resolvedTheme } = useTheme();
   const { containerStyle } = useBackgroundStyle('blog-detail');
@@ -201,15 +208,6 @@ export default function ClientBlogDetail({
     setIsPreviewOpen(true);
   }, []);
 
-  // 博客 Markdown 渲染组件配置（提取为独立 Hook，降低主组件复杂度）
-  const markdownComponents = useBlogMarkdownComponents({
-    currentTheme,
-    imageSrcSetRef,
-    articleImagesRef,
-    onImageClick: handleImageClick,
-    iframeRefs,
-  });
-
   // 复制密码功能
   useEffect(() => {
     // 设置CSS变量以支持深色模式
@@ -233,85 +231,32 @@ export default function ClientBlogDetail({
     const handlePasswordClick = (e: Event) => {
       const target = e.target as HTMLElement;
       const passwordSpan = target.closest('[data-password]');
-      
+
       if (passwordSpan) {
         e.preventDefault();
         const password = passwordSpan.getAttribute('data-password');
         if (password) {
-          // 检查 clipboard API 是否可用
-          if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
-            navigator.clipboard.writeText(password).then(() => {
-              const originalText = passwordSpan.textContent;
-              const originalBackgroundColor = (passwordSpan as HTMLElement).style.backgroundColor;
-              const originalColor = (passwordSpan as HTMLElement).style.color;
-              
-              (passwordSpan as HTMLElement).textContent = '已复制!';
-                (passwordSpan as HTMLElement).style.backgroundColor = '#4CAF50';
-                (passwordSpan as HTMLElement).style.color = 'white';
-                
-                setTimeout(() => {
-                  (passwordSpan as HTMLElement).textContent = originalText || '';
-                  (passwordSpan as HTMLElement).style.backgroundColor = originalBackgroundColor;
-                  (passwordSpan as HTMLElement).style.color = originalColor;
-              }, 1500);
-            }).catch(() => {
-              // 降级方案
-              const textArea = document.createElement('textarea');
-              textArea.value = password;
-              textArea.style.position = 'fixed';
-              textArea.style.left = '-999999px';
-              document.body.appendChild(textArea);
-              textArea.focus();
-              textArea.select();
-              try {
-                document.execCommand('copy');
-                const originalText = (passwordSpan as HTMLElement).textContent;
-                const originalBackgroundColor = (passwordSpan as HTMLElement).style.backgroundColor;
-                const originalColor = (passwordSpan as HTMLElement).style.color;
-                
-                (passwordSpan as HTMLElement).textContent = '已复制!';
-                (passwordSpan as HTMLElement).style.backgroundColor = '#4CAF50';
-                (passwordSpan as HTMLElement).style.color = 'white';
-                
-                setTimeout(() => {
-                  (passwordSpan as HTMLElement).textContent = originalText || '';
-                  (passwordSpan as HTMLElement).style.backgroundColor = originalBackgroundColor;
-                  (passwordSpan as HTMLElement).style.color = originalColor;
-                }, 1500);
-              } catch {
-                alert('复制失败，请手动复制：' + password);
-              }
-              document.body.removeChild(textArea);
-            });
-          } else {
-            // 直接使用降级方案
-            const textArea = document.createElement('textarea');
-            textArea.value = password;
-            textArea.style.position = 'fixed';
-            textArea.style.left = '-999999px';
-            document.body.appendChild(textArea);
-            textArea.focus();
-            textArea.select();
-            try {
-              document.execCommand('copy');
-              const originalText = passwordSpan.textContent;
-              const originalBackgroundColor = (passwordSpan as HTMLElement).style.backgroundColor;
-              const originalColor = (passwordSpan as HTMLElement).style.color;
-              
-              (passwordSpan as HTMLElement).textContent = '已复制!';
-              (passwordSpan as HTMLElement).style.backgroundColor = '#4CAF50';
-              (passwordSpan as HTMLElement).style.color = 'white';
-              
-              setTimeout(() => {
-                (passwordSpan as HTMLElement).textContent = originalText || '';
-                (passwordSpan as HTMLElement).style.backgroundColor = originalBackgroundColor;
-                (passwordSpan as HTMLElement).style.color = originalColor;
-              }, 1500);
-            } catch {
+          // 复制与降级逻辑统一走 utils/clipboard，此处只负责视觉反馈
+          copyToClipboard(password).then((success) => {
+            if (!success) {
               alert('复制失败，请手动复制：' + password);
+              return;
             }
-            document.body.removeChild(textArea);
-          }
+
+            const originalText = passwordSpan.textContent;
+            const originalBackgroundColor = (passwordSpan as HTMLElement).style.backgroundColor;
+            const originalColor = (passwordSpan as HTMLElement).style.color;
+
+            (passwordSpan as HTMLElement).textContent = '已复制!';
+            (passwordSpan as HTMLElement).style.backgroundColor = '#4CAF50';
+            (passwordSpan as HTMLElement).style.color = 'white';
+
+            setTimeout(() => {
+              (passwordSpan as HTMLElement).textContent = originalText || '';
+              (passwordSpan as HTMLElement).style.backgroundColor = originalBackgroundColor;
+              (passwordSpan as HTMLElement).style.color = originalColor;
+            }, 1500);
+          });
         }
       }
     };
@@ -614,10 +559,21 @@ export default function ClientBlogDetail({
             `}</style>
             <div className="bg-card/60 backdrop-blur-sm rounded-2xl shadow-lg p-6 md:p-10">
               <div className="prose prose-lg dark:prose-invert max-w-none">
-                <LazyMarkdown
-                  content={blog.content}
-                  components={markdownComponents}
-                />
+                {/*
+                  正文由服务端在构建期渲染（ServerBlogMarkdown），此处直接接收结果。
+                  Provider 把灯箱与 iframe 资源共享给正文里的客户端交互件
+                  （BlogArticleImage / BlogArticleIframe / ThemeAwareCodeBlock）。
+                */}
+                <BlogArticleProvider
+                  value={{
+                    imageSrcSetRef,
+                    articleImagesRef,
+                    iframeRefs,
+                    onImageClick: handleImageClick,
+                  }}
+                >
+                  {renderedContent}
+                </BlogArticleProvider>
               </div>
             </div>
           </article>

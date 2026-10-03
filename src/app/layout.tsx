@@ -94,12 +94,16 @@ export const metadata: Metadata = {
   },
 
   /**
-   * 规范URL配置和替代格式
-   * 防止重复内容问题，告诉搜索引擎哪个是首选URL
-   * 同时提供RSS订阅地址
+   * 替代格式配置
+   *
+   * 注意：这里刻意不设置 alternates.canonical。
+   * 根布局的 metadata 会被所有子页面继承，若在此处写死 canonical，
+   * 每篇导出的文章/列表页都会输出「指向首页」的 canonical，
+   * 等于告诉搜索引擎全站都是首页的重复内容，可能导致收录被合并。
+   * 各页面的规范地址由各自页面级 metadata 声明
+   * （如博客详情页在 generateMetadata 中输出自身 URL）。
    */
   alternates: {
-    canonical: BASE_URL,
     types: {
       'application/rss+xml': `${BASE_URL}/rss.xml`,
     },

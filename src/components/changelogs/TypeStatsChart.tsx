@@ -28,6 +28,8 @@ interface TimeStats {
  */
 interface TypeStatsChartProps {
   changelogs: Changelog[];
+  /** 卡片标题；更新日志页用默认值，仪表盘传「日志类型分布」以保持原有文案 */
+  title?: string;
   blogTimeStats?: TimeStats;  // 文章时间统计（后台使用）
   momentTimeStats?: TimeStats;  // 动态时间统计（后台使用）
 }
@@ -155,7 +157,7 @@ const renderCustomLegendIcon = (props: any) => {
  * 类型统计环形图组件
  * 使用环形图展示不同类型更新的占比
  */
-export default function TypeStatsChart({ changelogs }: TypeStatsChartProps) {
+export default function TypeStatsChart({ changelogs, title = '类型分布' }: TypeStatsChartProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const data = getTypeStats(changelogs);
 
@@ -206,9 +208,8 @@ export default function TypeStatsChart({ changelogs }: TypeStatsChartProps) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
             </svg>
           </motion.div>
-          类型分布
-        </h3>
-        {sortedData.length > 0 && (
+          {title}
+        </h3>        {sortedData.length > 0 && (
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}

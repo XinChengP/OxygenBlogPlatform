@@ -3,6 +3,7 @@
 import React, { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { ClipboardIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { copyToClipboard } from '@/utils/clipboard';
 
 interface CodeCopyButtonProps {
   /**
@@ -70,35 +71,8 @@ function CodeCopyButton({
   const [isCopying, setIsCopying] = useState(false);
 
   /**
-   * 使用降级方案复制文本
-   * 兼容不支持 Clipboard API 的浏览器
-   * 
-   * @param text - 要复制的文本
-   * @returns 是否复制成功
-   */
-  const fallbackCopyTextToClipboard = useCallback((text: string): boolean => {
-    const textArea = document.createElement('textarea');
-    textArea.value = text;
-    textArea.style.position = 'fixed';
-    textArea.style.left = '-999999px';
-    textArea.style.top = '0';
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-
-    try {
-      const successful = document.execCommand('copy');
-      document.body.removeChild(textArea);
-      return successful;
-    } catch (err) {
-      document.body.removeChild(textArea);
-      return false;
-    }
-  }, []);
-
-  /**
    * 复制代码到剪贴板
-   * 优先使用 Clipboard API，不支持时使用降级方案
+   * 复制与降级逻辑统一走 utils/clipboard，本组件只负责视觉反馈
    */
   const handleCopy = useCallback(async () => {
     if (isCopying || !code) return;
@@ -106,26 +80,12 @@ function CodeCopyButton({
     setIsCopying(true);
 
     try {
-      let copied = false;
-
-      // 优先使用 Clipboard API
-      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
-        try {
-          await navigator.clipboard.writeText(code);
-          copied = true;
-        } catch {
-          // Clipboard API 失败，使用降级方案
-          copied = fallbackCopyTextToClipboard(code);
-        }
-      } else {
-        // 不支持 Clipboard API，使用降级方案
-        copied = fallbackCopyTextToClipboard(code);
-      }
+      const copied = await copyToClipboard(code);
 
       if (copied) {
         setIsCopied(true);
         onCopy?.();
-        
+
         // 2秒后重置状态
         setTimeout(() => {
           setIsCopied(false);
@@ -136,13 +96,13 @@ function CodeCopyButton({
     } catch (error) {
       const err = error instanceof Error ? error : new Error('复制失败');
       onError?.(err);
-      
+
       // 显示错误提示
       console.error('[CodeCopyButton] 复制失败:', err);
     } finally {
       setIsCopying(false);
     }
-  }, [code, isCopying, fallbackCopyTextToClipboard, onCopy, onError]);
+  }, [code, isCopying, onCopy, onError]);
 
   // 尺寸配置
   const sizeConfig = {

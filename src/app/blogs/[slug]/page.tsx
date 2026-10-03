@@ -1,7 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
-import BlogDetailWrapper from '@/app/blogs/[slug]/BlogDetailWrapper';
+import ClientBlogDetail from '@/app/blogs/[slug]/ClientBlogDetail';
+import ServerBlogMarkdown from '@/components/blogs/ServerBlogMarkdown';
 import 'highlight.js/styles/github-dark.css';
 import { formatBlogDate, calculateReadingTime } from '@/utils';
 import { getSortedRelatedPosts, type RelatedPost } from '@/utils/relatedPostsUtils';
@@ -399,8 +400,14 @@ export async function generateMetadata({ params }: BlogDetailPageProps): Promise
    */
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://blog.xinchengp.cn';
 
-  /** 本文的规范访问地址，供社交平台识别链接归属并去重 */
-  const articleUrl = blogData.canonicalUrl || `${siteUrl}/blogs/${encodeURIComponent(blogData.slug)}`;
+  /**
+   * 本文的规范访问地址，供社交平台识别链接归属并去重
+   *
+   * 自动生成的地址带尾斜杠，与 sitemap.ts（trailingSlash: true）输出的
+   * URL 形式保持一致，避免同一页面出现两种 URL 形式；
+   * frontmatter 中自定义的 canonicalUrl 属于作者显式声明，原样使用。
+   */
+  const articleUrl = blogData.canonicalUrl || `${siteUrl}/blogs/${encodeURIComponent(blogData.slug)}/`;
 
   /**
    * 分享卡片配图
@@ -429,6 +436,10 @@ export async function generateMetadata({ params }: BlogDetailPageProps): Promise
   return {
     title: `${seoTitle} - OxygenBlogPlatform`,
     description: seoDescription,
+    // 页面级 canonical：指向本文自身 URL，避免搜索引擎把文章与首页/列表页合并
+    alternates: {
+      canonical: articleUrl,
+    },
     openGraph: {
       title: seoTitle,
       description: seoDescription,
@@ -506,10 +517,12 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
   });
 
   return (
-    <BlogDetailWrapper
+    <ClientBlogDetail
       blog={blogData}
       seriesArticles={seriesArticles}
       relatedArticles={relatedArticles}
+      /* 正文在构建期渲染为静态 HTML，随 RSC payload 一并传给客户端骨架 */
+      renderedContent={<ServerBlogMarkdown content={blogData.content} />}
     />
   );
 }

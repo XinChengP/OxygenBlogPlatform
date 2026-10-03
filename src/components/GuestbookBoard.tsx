@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
+import { formatRelativeTime } from '@/utils/relativeTime';
 
 interface Message {
   id: string;
@@ -198,27 +199,7 @@ export default function GuestbookBoard() {
     setErrors({});
   };
 
-  // 格式化时间
-  const formatDate = (date: Date) => {
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    
-    if (days === 0) {
-      const hours = Math.floor(diff / (1000 * 60 * 60));
-      if (hours === 0) {
-        const minutes = Math.floor(diff / (1000 * 60));
-        return minutes <= 1 ? '刚刚' : `${minutes} 分钟前`;
-      }
-      return `${hours} 小时前`;
-    } else if (days === 1) {
-      return '昨天';
-    } else if (days < 7) {
-      return `${days} 天前`;
-    } else {
-      return date.toLocaleDateString('zh-CN');
-    }
-  };
+  // 格式化时间（统一走 utils/relativeTime）
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -307,7 +288,7 @@ export default function GuestbookBoard() {
                 <div className="flex-1">
                   <div className="flex items-center space-x-2 mb-2">
                     <span className="font-medium text-gray-900 dark:text-white">{message.name}</span>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">{formatDate(message.timestamp)}</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">{formatRelativeTime(message.timestamp)}</span>
                   </div>
                   <div className="text-gray-800 dark:text-gray-200 mb-4 whitespace-pre-wrap">{message.content}</div>
                   
@@ -365,7 +346,7 @@ export default function GuestbookBoard() {
                           <div key={reply.id} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-md">
                             <div className="flex items-center space-x-2 mb-2">
                               <span className="font-medium text-gray-900 dark:text-white">{reply.name}</span>
-                              <span className="text-sm text-gray-500 dark:text-gray-400">{formatDate(reply.timestamp)}</span>
+                              <span className="text-sm text-gray-500 dark:text-gray-400">{formatRelativeTime(reply.timestamp)}</span>
                             </div>
                             <div className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{reply.content}</div>
                           </div>
