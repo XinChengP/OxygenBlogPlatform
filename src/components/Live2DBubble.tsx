@@ -47,10 +47,11 @@ export default function Live2DBubble({
               textAlign: 'center',
               color: '#66ccff',
               fontSize: '12px',
-              background: 'var(--live2d-bubble-bg, rgba(255, 255, 255, 0.9))',
+              background: 'var(--live2d-bubble-bg, transparent)',
               padding: '10px',
               borderRadius: '8px',
               border: '1px solid rgba(102, 204, 255, 0.3)',
+              textShadow: '0 1px 3px rgba(0, 0, 0, 0.7)',
               transition: 'background-color 0.3s ease, border-color 0.3s ease',
             }}
           >

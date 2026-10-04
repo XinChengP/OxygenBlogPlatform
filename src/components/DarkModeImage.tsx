@@ -1,5 +1,10 @@
 'use client';
 
+/**
+ * @deprecated 暗色压暗请改用 globals.css 的 .dark-mode-image-filter / .dark-mode-content-filter
+ * CSS 类（见 DarkModeFilters.tsx 顶部的废弃说明），本组件当前无任何调用方。
+ */
+
 import React from 'react';
 import OptimizedImage from './core/OptimizedImage';
 import { DarkModeImageFilter, DarkModeContentFilter } from './DarkModeFilters';

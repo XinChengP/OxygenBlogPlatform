@@ -1,5 +1,13 @@
 'use client';
 
+/**
+ * @deprecated 全站已不再使用 JS 内联滤镜做暗色压暗（当前无任何调用方）。
+ * 暗色下图片/内容的压暗统一由 globals.css 的 CSS 规则承载：
+ *   .dark .dark-mode-image-filter img / .dark img.dark-mode-filter（brightness 0.85）
+ *   .dark .dark-mode-content-filter（brightness 0.95）
+ * 新代码请直接使用上述类名，避免出现第二套会漂移的滤镜参数。
+ */
+
 import React from 'react';
 import { useDarkMode } from '@/hooks/useDarkMode';
 

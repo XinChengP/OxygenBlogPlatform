@@ -263,9 +263,9 @@ export default function FriendsPage() {
       <div className={containerStyle.className} style={containerStyle.style}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
           <div className="animate-pulse space-y-8">
-            <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded-xl"></div>
-            <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded-xl"></div>
-            <div className="h-48 bg-gray-200 dark:bg-gray-700 rounded-xl"></div>
+            <div className="h-32 bg-muted rounded-xl"></div>
+            <div className="h-64 bg-muted rounded-xl"></div>
+            <div className="h-48 bg-muted rounded-xl"></div>
           </div>
         </div>
       </div>

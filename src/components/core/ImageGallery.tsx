@@ -71,7 +71,7 @@ export default function ImageGallery({
           onClick={handleClose}
         >
           <button
-            className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors text-2xl"
+            className="absolute top-4 right-4 text-white hover:text-white/70 transition-colors text-2xl"
             onClick={handleClose}
           >
             ×

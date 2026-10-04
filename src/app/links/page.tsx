@@ -21,10 +21,10 @@ export default function LinksPage() {
       <div className={containerStyle.className} style={containerStyle.style}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
           <div className="animate-pulse space-y-8">
-            <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded-xl"></div>
+            <div className="h-32 bg-muted rounded-xl"></div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {[...Array(6)].map((_, i) => (
-                <div key={i} className="h-40 bg-gray-200 dark:bg-gray-700 rounded-xl"></div>
+                <div key={i} className="h-40 bg-muted rounded-xl"></div>
               ))}
             </div>
           </div>

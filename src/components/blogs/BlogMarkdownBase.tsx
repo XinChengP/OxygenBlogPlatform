@@ -245,7 +245,7 @@ export function PlainCodeLines({ childrenString }: { childrenString: string }) {
       {lines.map((line, index) => (
         <div
           key={index}
-          className="px-4 py-2 bg-slate-100/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-lg border border-slate-200 dark:border-slate-700 text-sm font-mono text-slate-800 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+          className="px-4 py-2 bg-muted/80 backdrop-blur-sm rounded-lg border border-border text-sm font-mono text-foreground hover:bg-muted transition-colors"
         >
           {line || '\u00A0'}
         </div>

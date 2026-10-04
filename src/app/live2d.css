@@ -1,13 +1,13 @@
 /* Live2D 看板娘样式 */
 
-/* 气泡底色令牌：亮暗两档，供加载气泡等内联样式通过 var() 引用，
-   切换主题时随 html.dark 自动切换 */
+/* 气泡底色令牌：已按需求改为全透明（2026-10），
+   保留变量供加载框等内联样式引用 */
 :root {
-  --live2d-bubble-bg: rgba(248, 250, 252, 0.92);
+  --live2d-bubble-bg: transparent;
 }
 
 html.dark {
-  --live2d-bubble-bg: rgba(42, 52, 65, 0.92);
+  --live2d-bubble-bg: transparent;
 }
 
 #landlord {
@@ -37,12 +37,16 @@ html.dark {
   top: 10px;
   right: 0;
   text-align: center;
-  border: 1px solid rgba(255,255,255,.6);
+  border: 1px solid rgba(102,204,255,.4);
   border-radius: 12px;
-  background-color: rgba(255,255,255,.8);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 3px 15px 2px rgba(0,0,0,.15);
+  /* 背景透明（2026-10 按需求）：!important 压过 message.js 动态创建时
+     写入内联的白底/渐变与 backdrop-filter，做到真透明；
+     文字可读性由 .live2d-bubble / .dark 规则的投影与文字色保证 */
+  background: transparent !important;
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
   font-size: 13px;
   font-weight: 400;
   text-overflow: ellipsis;
@@ -129,14 +133,14 @@ html.dark {
 }
 
 .refresh-button.luotianyi-theme {
-  border-color: rgba(var(--primary), 0.4);
-  background: rgba(var(--primary), 0.2);
-  box-shadow: 0 3px 15px 2px rgba(var(--primary), 0.4);
+  border-color: color-mix(in srgb, var(--primary) 40%, transparent);
+  background: color-mix(in srgb, var(--primary) 20%, transparent);
+  box-shadow: 0 3px 15px 2px color-mix(in srgb, var(--primary) 40%, transparent);
 }
 
 .refresh-button.luotianyi-theme:hover {
-  border-color: rgba(var(--primary), 0.6);
-  background: rgba(var(--primary), 0.6);
+  border-color: color-mix(in srgb, var(--primary) 60%, transparent);
+  background: color-mix(in srgb, var(--primary) 60%, transparent);
 }
 
 @media (max-width: 860px) {
@@ -146,29 +150,20 @@ html.dark {
 }
 
 .message.luotianyi-theme {
-  border-color: rgba(255,255,255,.6);
-  background-color: rgba(255,255,255,.85);
-  backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
-  box-shadow: 0 3px 15px 2px rgba(0,0,0,.15);
+  border-color: rgba(102,204,255,.4);
 }
 
-/* 暗色模式气泡：亮色白玻璃在深夜背景上过亮刺眼，
-   换成与全站卡片一致的深蓝灰玻璃 + 天依蓝描边 + 浅色文字。
-   需要 !important 压过 message.js 动态创建时写入的内联样式。
-   刻意不含 background-image 渐变：渐变无法参与 transition，
-   保留它会让暗/亮切换时渐变层瞬跳、与底色过渡不同步 */
+/* 暗色模式气泡：背景同样透明，仅保留天依蓝描边与浅色文字；
+   需要 !important 压过 message.js 动态创建时写入的内联样式 */
 .dark .message,
 .dark .message.luotianyi-theme {
-  border-color: rgba(102, 204, 255, 0.3) !important;
-  background-color: rgba(42, 52, 65, 0.82) !important;
+  border-color: rgba(102, 204, 255, 0.35) !important;
   color: #f0f9ff !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35) !important;
 }
 
-/* React 版气泡（Live2DBubble）：颜色样式集中在类里（此前内联写死亮色、
-   transition 仅含 opacity，导致主题切换时颜色瞬跳不跟随），
-   布局项（定位/显隐/透明度）仍由组件内联控制，此处覆盖 .message 基础规则 */
+/* React 版气泡（Live2DBubble）：背景透明，颜色样式集中在类里，
+   布局项（定位/显隐/透明度）仍由组件内联控制，此处覆盖 .message 基础规则。
+   文字加投影保证透明底在任意插画区域上的可读性 */
 .message.live2d-bubble {
   top: -20px;
   left: 50px;
@@ -176,26 +171,27 @@ html.dark {
   max-width: 300px;
   text-transform: none;
   word-wrap: break-word;
-  background-color: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(102, 204, 255, 0.3);
   color: var(--foreground);
-  box-shadow: 0 3px 15px 2px rgba(102, 204, 255, 0.35);
+  text-shadow: 0 1px 3px rgba(255, 255, 255, 0.9), 0 0 8px rgba(255, 255, 255, 0.6);
   transition: opacity 0.5s ease-in-out,
-              background-color 0.3s ease,
               border-color 0.3s ease,
               color 0.3s ease,
-              box-shadow 0.3s ease;
+              text-shadow 0.3s ease;
+}
+
+.dark .message.live2d-bubble {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8), 0 0 8px rgba(0, 0, 0, 0.5);
 }
 
 .hide-button.luotianyi-theme {
-  border-color: rgba(var(--primary), 0.4);
-  background: rgba(var(--primary), 0.2);
-  box-shadow: 0 3px 15px 2px rgba(var(--primary), 0.4);
+  border-color: color-mix(in srgb, var(--primary) 40%, transparent);
+  background: color-mix(in srgb, var(--primary) 20%, transparent);
+  box-shadow: 0 3px 15px 2px color-mix(in srgb, var(--primary) 40%, transparent);
 }
 
 .hide-button.luotianyi-theme:hover {
-  border-color: rgba(var(--primary), 0.6);
-  background: rgba(var(--primary), 0.6);
+  border-color: color-mix(in srgb, var(--primary) 60%, transparent);
+  background: color-mix(in srgb, var(--primary) 60%, transparent);
 }
 
 /* Live2D 消息容器样式 */

@@ -1187,12 +1187,12 @@ export default function AboutPage() {
   // 如果还没有挂载，显示骨架屏避免闪烁
   if (!mounted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-8 pt-[80px]">
+      <div className="min-h-screen bg-gradient-to-br from-muted via-background to-muted dark:from-background dark:via-card dark:to-background py-8 pt-[80px]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="animate-pulse">
-            <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
-            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
-            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
+            <div className="h-12 bg-muted rounded mb-4"></div>
+            <div className="h-4 bg-muted rounded mb-2"></div>
+            <div className="h-4 bg-muted rounded"></div>
           </div>
         </div>
       </div>

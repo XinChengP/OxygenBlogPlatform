@@ -21,10 +21,10 @@ const LoadingSkeleton = ({ count = 12 }: LoadingSkeletonProps) => {
         >
           <div className="group relative overflow-hidden rounded-lg shadow-md border border-border/50">
             {/* 骨架屏容器 */}
-            <div className="aspect-square relative bg-gray-100 dark:bg-gray-800 overflow-hidden">
+            <div className="aspect-square relative bg-muted overflow-hidden">
               {/* 骨架屏动画 - 波浪效果 */}
               <div className="absolute inset-0">
-                <div className="h-full w-full bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-gray-700 dark:via-gray-600 dark:to-gray-700 animate-pulse"></div>
+                <div className="h-full w-full bg-gradient-to-r from-muted via-muted/60 to-muted animate-pulse"></div>
                 {/* 波浪动画叠加层 */}
                 <motion.div 
                   className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
@@ -43,7 +43,7 @@ const LoadingSkeleton = ({ count = 12 }: LoadingSkeletonProps) => {
               {/* 加载指示器 */}
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="relative">
-                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 dark:border-gray-600"></div>
+                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-border"></div>
                   <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-primary absolute top-0 left-0"></div>
                 </div>
               </div>

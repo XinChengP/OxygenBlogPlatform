@@ -56,15 +56,15 @@ function LocationPopup({ location }: { location: TravelLocation }) {
   return (
     <div className="min-w-[160px]">
       <div className="mb-0.5">
-        <h4 className="font-bold text-sm leading-tight text-gray-900 dark:text-white">
-          {location.city}{location.province && <span className="font-normal text-xs text-gray-400 dark:text-gray-500 ml-1">{location.province}</span>}
+        <h4 className="font-bold text-sm leading-tight text-foreground">
+          {location.city}{location.province && <span className="font-normal text-xs text-muted-foreground ml-1">{location.province}</span>}
         </h4>
       </div>
-      <div className="text-[11px] text-gray-400 dark:text-gray-500">
+      <div className="text-[11px] text-muted-foreground">
         <span>{location.date}</span>
       </div>
       {location.description && (
-        <p className="text-xs text-gray-500 dark:text-gray-400 leading-snug mt-1.5 pt-1.5 border-t border-gray-100/80 dark:border-gray-700/50">
+        <p className="text-xs text-muted-foreground leading-snug mt-1.5 pt-1.5 border-t border-border/60">
           {location.description}
         </p>
       )}
@@ -75,7 +75,7 @@ function LocationPopup({ location }: { location: TravelLocation }) {
 // 图例组件
 function MapLegend() {
   return (
-    <div className="absolute bottom-3 left-3 z-[1000] bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-md border border-gray-200 dark:border-gray-700">
+    <div className="absolute bottom-3 left-3 z-[1000] bg-card/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-md border border-border">
       <div className="flex items-center gap-3">
         {(Object.entries(travelCategoryConfig) as [TravelCategory, { label: string; color: string }][]).map(
           ([key, config]) => (
@@ -84,7 +84,7 @@ function MapLegend() {
                 className="w-2.5 h-2.5 rounded-full"
                 style={{ background: config.color }}
               />
-              <span className="text-xs text-gray-600 dark:text-gray-300">{config.label}</span>
+              <span className="text-xs text-muted-foreground">{config.label}</span>
             </div>
           )
         )}

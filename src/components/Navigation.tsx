@@ -242,11 +242,11 @@ const Navigation = () => {
     }
     
     if (isDropdown) {
-      return `${baseClasses} ${isAtTop ? 'text-white hover:text-gray-200' : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary'}`;
+      return `${baseClasses} ${isAtTop ? 'text-white hover:text-white/80' : 'text-foreground hover:text-primary dark:hover:text-primary'}`;
     }
 
     // 下拉菜单项与普通导航项的样式规则完全一致（原本就是同一段代码，合并避免重复）
-    return `${baseClasses} ${isAtTop ? 'text-white hover:text-gray-200' : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary'}`;
+    return `${baseClasses} ${isAtTop ? 'text-white hover:text-white/80' : 'text-foreground hover:text-primary dark:hover:text-primary'}`;
   }, [isActive, isAtTop]);
 
   // 渲染下拉菜单
@@ -288,7 +288,7 @@ const Navigation = () => {
                     className={`block px-4 py-2 text-sm transition-colors duration-200 ${
                       pathname === item.href
                         ? 'text-primary dark:text-primary bg-primary/10 dark:bg-primary/10'
-                        : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary hover:bg-gray-50 dark:hover:bg-gray-800'
+                        : 'text-foreground hover:text-primary dark:hover:text-primary hover:bg-muted/60'
                     }`}
                   >
                     {item.label}
@@ -329,8 +329,8 @@ const Navigation = () => {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2" onClick={closeMobileMenu}>
-            <span className={`text-2xl font-bold transition-colors duration-300 ${isAtTop ? 'text-white' : 'text-gray-900 dark:text-white'}`}>{emojy}</span>
-            <span className={`text-xl font-bold transition-colors duration-300 ${isAtTop ? 'text-white' : 'text-gray-900 dark:text-white'}`}>{name}</span>
+            <span className={`text-2xl font-bold transition-colors duration-300 ${isAtTop ? 'text-white' : 'text-foreground'}`}>{emojy}</span>
+            <span className={`text-xl font-bold transition-colors duration-300 ${isAtTop ? 'text-white' : 'text-foreground'}`}>{name}</span>
           </Link>
           
           {/* Navigation Links */}
@@ -362,8 +362,8 @@ const Navigation = () => {
               onClick={toggleMobileMenu}
               className={`transition-colors duration-300 ${
                 isAtTop 
-                  ? 'text-white hover:text-gray-200' 
-                  : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary'
+                  ? 'text-white hover:text-white/80' 
+                  : 'text-foreground hover:text-primary dark:hover:text-primary'
               } p-2`}
               aria-label="切换菜单"
             >
@@ -410,7 +410,7 @@ const Navigation = () => {
                   className={`block px-4 py-2 rounded-xl text-base font-medium transition-all duration-200 text-right ${
                     pathname === item.href
                       ? 'text-primary dark:text-primary bg-primary/10 dark:bg-primary/10'
-                      : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary hover:bg-gray-100/50 dark:hover:bg-gray-800/50'
+                      : 'text-foreground hover:text-primary dark:hover:text-primary hover:bg-muted/50'
                   }`}
                 >
                   {item.label}
@@ -419,11 +419,11 @@ const Navigation = () => {
             </div>
             
             {/* 分隔线 */}
-            <div className="border-t border-gray-200/50 dark:border-gray-700/50 my-2 mx-2" />
+            <div className="border-t border-border/50 my-2 mx-2" />
             
             {/* 社交分类 */}
             <div className="space-y-1">
-              <div className="px-4 py-1 text-xs font-medium text-right text-gray-400 dark:text-gray-500">
+              <div className="px-4 py-1 text-xs font-medium text-right text-muted-foreground">
                 社交
               </div>
               {socialDropdown.items.map((item) => (
@@ -434,7 +434,7 @@ const Navigation = () => {
                   className={`block px-4 py-2 rounded-xl text-base font-medium transition-all duration-200 text-right ${
                     pathname === item.href
                       ? 'text-primary dark:text-primary bg-primary/10 dark:bg-primary/10'
-                      : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary hover:bg-gray-100/50 dark:hover:bg-gray-800/50'
+                      : 'text-foreground hover:text-primary dark:hover:text-primary hover:bg-muted/50'
                   }`}
                 >
                   {item.label}
@@ -443,11 +443,11 @@ const Navigation = () => {
             </div>
             
             {/* 分隔线 */}
-            <div className="border-t border-gray-200/50 dark:border-gray-700/50 my-2 mx-2" />
+            <div className="border-t border-border/50 my-2 mx-2" />
             
             {/* 关于分类 */}
             <div className="space-y-1">
-              <div className="px-4 py-1 text-xs font-medium text-right text-gray-400 dark:text-gray-500">
+              <div className="px-4 py-1 text-xs font-medium text-right text-muted-foreground">
                 关于
               </div>
               {aboutDropdown.items.map((item) => (
@@ -458,7 +458,7 @@ const Navigation = () => {
                   className={`block px-4 py-2 rounded-xl text-base font-medium transition-all duration-200 text-right ${
                     pathname === item.href
                       ? 'text-primary dark:text-primary bg-primary/10 dark:bg-primary/10'
-                      : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary hover:bg-gray-100/50 dark:hover:bg-gray-800/50'
+                      : 'text-foreground hover:text-primary dark:hover:text-primary hover:bg-muted/50'
                   }`}
                 >
                   {item.label}

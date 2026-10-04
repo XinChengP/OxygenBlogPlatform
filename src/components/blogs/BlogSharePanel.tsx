@@ -569,7 +569,7 @@ export default function BlogSharePanel({
                 <div className="rounded-[14px] bg-white p-3">
                   <Suspense
                     fallback={
-                      <div className="w-[140px] h-[140px] flex items-center justify-center text-xs text-gray-400">
+                      <div className="w-[140px] h-[140px] flex items-center justify-center text-xs text-muted-foreground">
                         生成中...
                       </div>
                     }

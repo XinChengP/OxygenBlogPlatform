@@ -59,7 +59,7 @@ function ThemeController() {
  *
  * 功能特性：
  * 1. 为应用提供主题切换功能
- * 2. 自动应用主题色
+ * 2. 配色由 globals.css 的 :root/.dark CSS 令牌承载，与 giscus 评论区主题同源
  * 3. 支持系统主题自动同步
  * 4. 平滑过渡动画
  */

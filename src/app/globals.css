@@ -174,8 +174,8 @@
   --popover: #2a3441;
   --popover-foreground: #f8fafc;
   
-  /* 主题色变量 - 深色模式默认使用blue主题 (转换为hex以支持Framer Motion动画) */
-  --color-primary: #99ddff;
+  /* 主题色变量 - 深色模式同样锁死天依蓝 #66ccff（2026-10 按需求取消暗色提亮） */
+  --color-primary: #66ccff;
   --color-primary-foreground: #0f172a;
   --color-secondary: #3388dd;
   --color-accent: #33aadd;
@@ -362,13 +362,13 @@ pre code {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.2);
   border-radius: 3px;
   transition: background 0.3s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.35);
 }
 
 /* 暗色模式适配 */
@@ -383,7 +383,7 @@ html.dark::-webkit-scrollbar-thumb:hover {
 /* Firefox */
 html {
   scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.3) transparent;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
 }
 
 html.dark {

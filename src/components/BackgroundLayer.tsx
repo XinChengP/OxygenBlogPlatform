@@ -46,8 +46,10 @@ const BackgroundLayer = () => {
     width: '100vw',
     height: '100vh',
     zIndex: -50,
+    // 暗色遮罩 0.4：介于原 0.3（白云贴卡片泛白）与 0.5（压得太狠）之间，
+    // 退为氛围层的同时保留插画细节
     backgroundImage: isDark
-      ? `linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)), url("${fullImagePath}")`
+      ? `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url("${fullImagePath}")`
       : `url("${fullImagePath}")`,
     backgroundSize: backgroundMode === 'cover' ? 'cover' : backgroundMode === 'contain' ? 'contain' : 'cover',
     backgroundPosition: 'center center',

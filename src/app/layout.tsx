@@ -14,7 +14,6 @@ import Live2DDynamicLoader from "@/components/Live2DDynamicLoader";
 import MusicPlayerController from "@/components/MusicPlayerController";
 import { enableBackground, backgroundImage } from "@/setting/WebSetting";
 import { getAssetPath } from "@/utils/assetUtils";
-import AsyncFontLoader from "@/components/ui/AsyncFontLoader";
 
 /**
  * 站点基础URL配置
@@ -217,24 +216,15 @@ export default function RootLayout({
             ============================================ */}
 
         {/* 预连接到关键域名 - 提前建立连接减少延迟 */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" crossOrigin="anonymous" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://giscus.app" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://api.github.com" crossOrigin="anonymous" />
         {/*
-          手写字体（Ma Shan Zheng）改由 AsyncFontLoader（client 组件）在水合后注入：
-          直接渲染带 media 切换脚本的 <link> 会在水合时触发属性不匹配警告。
-          preconnect 预连接保留在下方，字体加载不阻塞渲染；
-          未用 next/font 是因为其构建期需要访问 Google 服务器下载字体，
-          本地与 CI 的网络环境不可控。
-          noscript 兜底：禁用 JS 时字体加载器不会执行，退回普通样式表。
+          注：原 Google Fonts 手写字体（Ma Shan Zheng）加载链路已整体移除——
+          字体在其目标网络环境下无法从 fonts.gstatic.com 下载（92 个分片 0 成功），
+          全站也从未有 CSS 规则引用它，属于纯无效请求。
         */}
-        <noscript>
-          <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap" rel="stylesheet" />
-        </noscript>
 
         {/* DNS预解析 - 加速第三方资源加载 */}
-        <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
         <link rel="dns-prefetch" href="https://giscus.app" />
 
         {/* RSS订阅自动发现 - 让浏览器和RSS阅读器能够发现博客订阅 */}
@@ -284,8 +274,6 @@ export default function RootLayout({
         }}
         suppressHydrationWarning
       >
-        {/* 手写字体异步加载器（水合后注入样式表，渲染 null） */}
-        <AsyncFontLoader />
         {/* 平滑导航脚本 - 使用普通script标签 */}
         <script src="/js/smooth-navigation.js" defer />
         {/* 安全保护提供者 - 提供CSP、防劫持、完整性检测等安全功能 */}

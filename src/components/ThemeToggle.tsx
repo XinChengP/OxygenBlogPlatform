@@ -32,7 +32,7 @@ export default function ThemeToggle() {
 
   if (!mounted) {
     return (
-      <div className="w-9 h-9 rounded-md bg-gray-100 dark:bg-gray-800 animate-pulse" />
+      <div className="w-9 h-9 rounded-md bg-muted animate-pulse" />
     );
   }
 
@@ -133,11 +133,11 @@ export default function ThemeToggle() {
         onClick={toggleDropdown}
         disabled={isTransitioning}
         className={`
-          flex items-center justify-center w-9 h-9 rounded-md 
-          bg-gray-100/80 dark:bg-gray-800/80 
-          hover:bg-gray-200/80 dark:hover:bg-gray-700/80 
-          transition-all duration-300 backdrop-blur-sm 
-          border border-gray-200/50 dark:border-gray-700/50
+          flex items-center justify-center w-9 h-9 rounded-md
+          bg-muted/80
+          hover:bg-muted
+          transition-all duration-300 backdrop-blur-sm
+          border border-border/50
           ${isTransitioning ? 'opacity-50 cursor-not-allowed' : ''}
         `}
         aria-label={`当前主题: ${getCurrentLabel()}，点击切换主题`}
@@ -168,14 +168,14 @@ export default function ThemeToggle() {
           <div 
             className="
               absolute right-0 top-full mt-2 w-48 
-              bg-white/95 dark:bg-gray-900/95 
-              backdrop-blur-md rounded-lg shadow-lg 
-              border border-gray-200/50 dark:border-gray-700/50 
+              bg-popover/95
+              backdrop-blur-md rounded-lg shadow-lg
+              border border-border/50
               py-1 z-20 animate-fadeIn
             "
           >
             {/* 菜单标题 */}
-            <div className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400 border-b border-gray-200/50 dark:border-gray-700/50">
+            <div className="px-3 py-2 text-xs text-muted-foreground border-b border-border/50">
               选择主题
             </div>
             
@@ -189,8 +189,8 @@ export default function ThemeToggle() {
                   transition-all duration-200 
                   flex items-center space-x-3
                   ${theme === themeOption.key
-                    ? 'bg-blue-50/80 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50/80 dark:hover:bg-gray-800/50'
+                    ? 'bg-primary/15 text-foreground'
+                    : 'text-foreground hover:bg-muted/50'
                   }
                 `}
               >
@@ -206,15 +206,15 @@ export default function ThemeToggle() {
                 {/* 文字内容 */}
                 <div className="flex-1">
                   <div className="font-medium">{themeOption.label}</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                    {themeOption.description}
-                  </div>
+                    <div className="text-xs text-muted-foreground">
+                      {themeOption.description}
+                    </div>
                 </div>
                 
                 {/* 选中标记 */}
                 {theme === themeOption.key && (
                   <svg 
-                    className="w-4 h-4 text-blue-600 dark:text-blue-400" 
+                    className="w-4 h-4 text-primary"
                     fill="currentColor" 
                     viewBox="0 0 20 20"
                   >

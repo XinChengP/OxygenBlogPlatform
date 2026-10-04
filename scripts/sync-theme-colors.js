@@ -220,18 +220,11 @@ function updateLayoutScript(colors) {
  * 主函数
  */
 function main() {
-  console.log('🚀 开始同步主题色到静态文件...');
-  
-  // 提取主题色配置
-  const colors = extractThemeColors();
-  
-  // 更新 CSS 文件
-  updateGlobalsCss(colors);
-  
-  // 更新 layout 脚本
-  updateLayoutScript(colors);
-  
-  console.log('🎉 主题色同步完成！静态生成时将使用正确的主题色。');
+  // 该脚本已完成使命：WebSetting.ts 中的 themeColors 配置已删除，
+  // 全站配色改由 globals.css 的 :root/.dark CSS 令牌唯一承载，
+  // 构建流程（package.json）也不再调用本脚本。保留文件仅作历史参考。
+  console.log('ℹ️  sync-theme-colors 已废弃：配色由 src/app/globals.css 的 CSS 令牌唯一承载，');
+  console.log('    如需更换主题色请直接修改 globals.css 中 :root/.dark 的 --color-* 变量。');
 }
 
 // 执行脚本
