@@ -13,7 +13,7 @@ import { copyToClipboard } from '@/utils/clipboard';
 // 注意走精确路径而非 '@/utils' barrel，避免把 barrel 里的重模块拖进编辑器 chunk
 import { calculateReadingTime } from '@/lib/utils';
 import { advancedWordCount } from '@/utils/wordCountUtils';
-import live2dMessageManager, { Live2DMessages } from '@/utils/live2dMessageManager';
+import live2dMessageManager, { Live2DMessageHelper } from '@/utils/live2dMessageManager';
 import { uploadEditorImage, uploadBase64Image } from '@/utils/editorImageUpload';
 
 const CodeBlock = dynamic(() => import('./CodeBlock'), {
@@ -2580,7 +2580,7 @@ seoDescription: "${blogMetadata.seoDescription}"
             <button
               onClick={() => {
                 setPreviewMode('edit');
-                live2dMessageManager.showMessage(Live2DMessages.MARKDOWN.PREVIEW_EDIT, 2000, 1);
+                Live2DMessageHelper.showMarkdownMessage('MODE_EDIT');
               }}
               className={`px-2 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
                 previewMode === 'edit'
@@ -2594,7 +2594,7 @@ seoDescription: "${blogMetadata.seoDescription}"
             <button
               onClick={() => {
                 setPreviewMode('preview');
-                live2dMessageManager.showMessage(Live2DMessages.MARKDOWN.PREVIEW_PREVIEW, 2000, 1);
+                Live2DMessageHelper.showMarkdownMessage('MODE_PREVIEW');
               }}
               className={`px-2 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
                 previewMode === 'preview'
@@ -2608,7 +2608,7 @@ seoDescription: "${blogMetadata.seoDescription}"
             <button
               onClick={() => {
                 setPreviewMode('split');
-                live2dMessageManager.showMessage(Live2DMessages.MARKDOWN.PREVIEW_SPLIT, 2000, 1);
+                Live2DMessageHelper.showMarkdownMessage('MODE_SPLIT');
               }}
               className={`px-2 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
                 previewMode === 'split'
@@ -2623,7 +2623,7 @@ seoDescription: "${blogMetadata.seoDescription}"
               <button
                 onClick={() => {
                   setPreviewMode('blog');
-                  live2dMessageManager.showMessage(Live2DMessages.MARKDOWN.PREVIEW_BLOG, 2000, 1);
+                  Live2DMessageHelper.showMarkdownMessage('MODE_BLOG');
                 }}
                 className={`px-2 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
                   previewMode === 'blog'
@@ -2642,7 +2642,7 @@ seoDescription: "${blogMetadata.seoDescription}"
             <button
               onClick={() => {
                 undo();
-                live2dMessageManager.showMessage(Live2DMessages.MARKDOWN.UNDO, 1500, 1);
+                Live2DMessageHelper.showMarkdownMessage('UNDO');
               }}
               className={`px-2 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
                 historyIndex <= 0
@@ -2657,7 +2657,7 @@ seoDescription: "${blogMetadata.seoDescription}"
             <button
               onClick={() => {
                 redo();
-                live2dMessageManager.showMessage(Live2DMessages.MARKDOWN.REDO, 1500, 1);
+                Live2DMessageHelper.showMarkdownMessage('REDO');
               }}
               className={`px-2 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
                 historyIndex >= history.length - 1
@@ -2673,7 +2673,7 @@ seoDescription: "${blogMetadata.seoDescription}"
             <button
               onClick={() => {
                 handleSave();
-                live2dMessageManager.showMessage(Live2DMessages.MARKDOWN.SAVE, 1500, 1);
+                Live2DMessageHelper.showMarkdownMessage('SAVE');
               }}
               className={`px-2 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
                 saved
@@ -2687,7 +2687,7 @@ seoDescription: "${blogMetadata.seoDescription}"
             <button
               onClick={() => {
                 handleClear();
-                live2dMessageManager.showMessage(Live2DMessages.MARKDOWN.CLEAR, 1500, 1);
+                Live2DMessageHelper.showMarkdownMessage('CLEAR');
               }}
               className={`px-2 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
                 isDark ? 'bg-[#ee0000] hover:bg-[#dd0000] text-white border-[#ee0000]' : 'bg-[#ee0000] hover:bg-[#dd0000] text-white border-[#ee0000]'
@@ -2701,7 +2701,7 @@ seoDescription: "${blogMetadata.seoDescription}"
                 try {
                   console.log('示例按钮被点击');
                   loadSample();
-                  live2dMessageManager.showMessage(Live2DMessages.MARKDOWN.SAMPLE, 1500, 1);
+                  Live2DMessageHelper.showMarkdownMessage('SAMPLE');
                 } catch (error) {
                   console.error('示例按钮点击出错:', error);
                   alert('示例功能出错，请查看控制台了解详情');
@@ -2721,9 +2721,9 @@ seoDescription: "${blogMetadata.seoDescription}"
                 <button
                   onClick={() => {
                     setShowMetadataPanel(!showMetadataPanel);
-                  live2dMessageManager.showMessage(
-                    showMetadataPanel ? Live2DMessages.MARKDOWN.METADATA_HIDE : Live2DMessages.MARKDOWN.METADATA_SHOW, 1500, 1
-                  );
+                    Live2DMessageHelper.showMarkdownMessage(
+                      showMetadataPanel ? 'METADATA_HIDE' : 'METADATA_SHOW'
+                    );
                   }}
                   className={`px-2 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
                     showMetadataPanel
@@ -2737,7 +2737,7 @@ seoDescription: "${blogMetadata.seoDescription}"
                 <button
                   onClick={() => {
                     handlePublish();
-                  live2dMessageManager.showMessage(Live2DMessages.MARKDOWN.PUBLISH, 1500, 1);
+                    Live2DMessageHelper.showMarkdownMessage('PUBLISH');
                   }}
                   className={`px-2 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
                     isDark ? 'bg-green-600 hover:bg-green-700 text-white border-green-500' : 'bg-green-500 hover:bg-green-600 text-white border-green-400'

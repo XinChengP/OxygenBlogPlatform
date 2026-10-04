@@ -198,42 +198,6 @@ export const PageMessages = {
     priority: MessagePriority.NORMAL
   },
 
-  // 画廊页面
-  GALLERY: {
-    messages: [
-      '来看看博主的画廊吧！有很多好看的图片哦～',
-      '画廊里有很多精彩的瞬间呢～',
-      '这些图片都很有意义吧？',
-      '来欣赏一下图片吧～'
-    ],
-    duration: MessageDuration.NORMAL,
-    priority: MessagePriority.NORMAL
-  },
-
-  // 个人动态页面
-  MOMENTS: {
-    messages: [
-      '这是博主的个人动态～记录着生活的点点滴滴！',
-      '来看看最近都发生了什么吧～',
-      '生活中的小确幸都在这里呢～',
-      '来了解一下博主的日常吧～'
-    ],
-    duration: MessageDuration.NORMAL,
-    priority: MessagePriority.NORMAL
-  },
-
-  // 更新日志页面
-  CHANGELOGS: {
-    messages: [
-      '这是更新日志～记录着博客的成长历程！',
-      '来看看博客都有哪些变化吧～',
-      '每一次更新都是博主的心血呢～',
-      '了解博客的最新动态吧～'
-    ],
-    duration: MessageDuration.NORMAL,
-    priority: MessagePriority.NORMAL
-  },
-
   // 友链页面
   FRIENDS: {
     messages: [
@@ -629,9 +593,10 @@ export function getPageMessageConfig(pageType: string): MessageConfig {
     '博客文章': PageMessages.BLOGS,
     '工具页面': PageMessages.TOOLS,
     '设置页面': PageMessages.SETTINGS,
-    '画廊页面': PageMessages.GALLERY,
-    '个人动态': PageMessages.MOMENTS,
-    '更新日志': PageMessages.CHANGELOGS,
+    // 画廊/个人动态/更新日志复用各自的专属配置，避免 PageMessages 中重复定义
+    '画廊页面': GalleryMessages.PAGE_VISIT,
+    '个人动态': MomentsMessages.PAGE_VISIT,
+    '更新日志': ChangelogsMessages.PAGE_VISIT,
     '友链页面': PageMessages.FRIENDS,
     '相关链接': PageMessages.LINKS
   };
@@ -660,13 +625,18 @@ export function getHolidayMessageConfig(month: number, date: number): MessageCon
 
 /**
  * 消息模板渲染
- * 支持 {text} 占位符替换
+ * 支持 {text}、{category} 等命名占位符替换
+ * @param template 消息模板字符串
+ * @param data 占位符键值对，键不含花括号（如 { text: '正文', category: '风景' }）
  */
-export function renderMessageTemplate(template: string, data: { text?: string } = {}): string {
-  if (data.text) {
-    return template.replace(/{text}/g, data.text);
-  }
-  return template;
+export function renderMessageTemplate(
+  template: string,
+  data: Record<string, string | undefined> = {}
+): string {
+  return template.replace(/\{(\w+)\}/g, (match, key: string) => {
+    const value = data[key];
+    return value !== undefined && value !== '' ? value : match;
+  });
 }
 
 /**
@@ -928,12 +898,17 @@ export function getContextAwareMessageConfig(context: {
   returnVisits: number;
   timeOnPage: number;
 }): MessageConfig | null {
-  // 优先级：无操作 > 快速滚动 > 深夜 > 频繁返回 > 长时间阅读 > 时间+页面组合
-  
+  // 优先级：深夜（含静默）> 无操作 > 快速滚动 > 频繁返回 > 长时间阅读 > 时间+页面组合
+  // 深夜语境优先：用户深夜静默/离开时，「夜深了」比「睡着了」更贴合场景，避免语义重叠
+
+  if (context.isLateNight && context.isInactive) {
+    return ContextAwareMessages.LATE_NIGHT;
+  }
+
   if (context.isInactive) {
     return ContextAwareMessages.INACTIVE;
   }
-  
+
   if (context.scrollSpeed === 'fast') {
     return ContextAwareMessages.FAST_SCROLL;
   }

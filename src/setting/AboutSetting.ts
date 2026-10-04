@@ -335,7 +335,7 @@ export interface FavoriteSongItem {
  * 建议放 3-5 首，太多会显得挤
  */
 export const favoriteSongs: FavoriteSongItem[] = [
-  { rank: 1, name: '歌行四方', artist: '洛天依', description: '入坑曲，夯爆了' },
+  { rank: 1, name: '歌行四方', artist: '洛天依', description: '“有歌的地方自由向往”' },
   { rank: 2, name: '三月雨', artist: 'Wing翼', description: '1099' },
   { rank: 3, name: '笨鸥', artist: '纯白', description: '抓住自己的风' },
 ];

@@ -55,6 +55,8 @@ class Live2DMessageManager {
   private isLyricsMode = false;
   // 歌词模式期间保存的原 window.showMessage（React 桥接版），用于退出时恢复
   private originalWindowShowMessage: ((text: string, timeout?: number) => void) | null = null;
+  // 上下文监听的取消函数，保证 startContextListening 幂等且可清理
+  private contextListenerCleanup: (() => void) | null = null;
 
   // 性能优化：将关键词集合提取为类级别常量，避免每次调用时重新创建
   private static readonly KEYWORD_SET = new Set(['复制', '成功', '完成', '加载', '切换', '模式']);
@@ -445,31 +447,26 @@ class Live2DMessageManager {
    */
   private isSimilarToLastMessage(message: string): boolean {
     if (!this.lastMessage) return false;
-    
+
     // 完全相同的消息 - 最快路径
     if (message === this.lastMessage) return true;
-    
-    // 性能优化：使用预计算的 Set 进行 O(1) 查找
+
+    // 问候语组合检查：两条消息都包含问候关键词才算相似
     const hasGreeting = (msg: string): boolean => {
-      let has你好 = false;
-      let has天依 = false;
-      for (const char of msg) {
-        if (char === '你' || char === '好') has你好 = true;
-        if (char === '洛' || char === '天' || char === '依') has天依 = true;
-        if (has你好 && has天依) return true;
+      for (const keyword of Live2DMessageManager.GREETING_KEYWORDS) {
+        if (msg.includes(keyword)) return true;
       }
       return false;
     };
-    
-    // 问候语组合检查
+
     if (hasGreeting(message) && hasGreeting(this.lastMessage)) {
       return true;
     }
-    
+
     // 关键词匹配：使用 Set 进行 O(1) 查找
     let currentHasKeyword = false;
     let lastHasKeyword = false;
-    
+
     Live2DMessageManager.KEYWORD_SET.forEach(keyword => {
       if (!currentHasKeyword && message.includes(keyword)) {
         currentHasKeyword = true;
@@ -478,7 +475,7 @@ class Live2DMessageManager {
         lastHasKeyword = true;
       }
     });
-    
+
     return currentHasKeyword && lastHasKeyword;
   }
 
@@ -510,26 +507,48 @@ class Live2DMessageManager {
   /**
    * 启动上下文监听
    * 自动根据用户行为显示智能消息
+   * @returns 取消监听的函数；重复调用时返回已有的取消函数，不会重复注册
    */
-  startContextListening(): void {
-    let lastMessageTime = 0;
+  startContextListening(): () => void {
+    // 幂等：已注册则直接返回现有取消函数，避免重复注册导致消息重复与泄漏
+    if (this.contextListenerCleanup) {
+      return this.contextListenerCleanup;
+    }
+
+    let lastContextMessageTime = 0;
     const MESSAGE_COOLDOWN = 30000; // 30秒冷却
-    
-    live2dContextTracker.onBehaviorChange((context) => {
+
+    const unsubscribe = live2dContextTracker.onBehaviorChange((context) => {
       const now = Date.now();
-      if (now - lastMessageTime < MESSAGE_COOLDOWN) {
+      if (now - lastContextMessageTime < MESSAGE_COOLDOWN) {
         return;
       }
-      
+
       // 只在有明显行为变化时显示消息
-      if (context.isInactive || 
-          context.scrollSpeed === 'fast' || 
+      if (context.isInactive ||
+          context.scrollSpeed === 'fast' ||
           context.returnVisits > 2 ||
           (context.isLateNight && context.timeOnPage > 60)) {
         this.showContextAwareMessage(context);
-        lastMessageTime = now;
+        lastContextMessageTime = now;
       }
     });
+
+    this.contextListenerCleanup = () => {
+      unsubscribe();
+      this.contextListenerCleanup = null;
+    };
+
+    return this.contextListenerCleanup;
+  }
+
+  /**
+   * 停止上下文监听，释放已注册的 handler
+   */
+  stopContextListening(): void {
+    if (this.contextListenerCleanup) {
+      this.contextListenerCleanup();
+    }
   }
 }
 
@@ -537,45 +556,6 @@ class Live2DMessageManager {
 const live2dMessageManager = Live2DMessageManager.getInstance();
 
 export default live2dMessageManager;
-
-/**
- * 预设的Live2D消息提示 - 保持向后兼容
- * 新代码请使用 src/setting/live2dMessages.ts 中的配置
- */
-export const Live2DMessages = {
-  // Markdown编辑器相关消息
-  MARKDOWN: {
-    UNDO: '撤销操作成功～',
-    REDO: '重做操作完成！',
-    SAVE: '内容已保存，天依帮你保管好了～',
-    CLEAR: '编辑器已清空，重新开始吧！',
-    SAMPLE: '示例内容加载完成，可以参考一下哦～',
-    COPY: '复制成功！代码已复制到剪贴板～',
-    PUBLISH: '好耶，发布成功！',
-    METADATA_SHOW: '元数据面板已显示～',
-    METADATA_HIDE: '元数据面板已隐藏～',
-    MODE_EDIT: '切换到编辑模式～',
-    MODE_PREVIEW: '切换到预览模式！',
-    MODE_SPLIT: '切换到分屏模式，可以同时编辑和预览～',
-    MODE_BLOG: '切换到博客预览模式，看看效果如何～',
-    PREVIEW_EDIT: '切换到编辑模式～',
-    PREVIEW_PREVIEW: '切换到预览模式！',
-    PREVIEW_SPLIT: '切换到分屏模式，可以同时编辑和预览～',
-    PREVIEW_BLOG: '切换到博客预览模式，看看效果如何～',
-    IMPORT_EXPORT: '导入导出功能已打开，支持多种格式哦～'
-  },
-
-  // 通用消息
-  GENERAL: {
-    HELLO: '你好～我是洛天依！',
-    CLICK: '想听我唱歌吗？',
-    HOVER: '天依在这里等你哦～',
-    SUCCESS: '操作成功！',
-    ERROR: '好像出了点问题...',
-    WARNING: '注意一下哦～',
-    INFO: '天依来告诉你一个小秘密～'
-  }
-} as const;
 
 /**
  * 便捷方法：显示配置化消息
@@ -824,9 +804,9 @@ export class Live2DMessageHelper {
 
     let message = getRandomMessage(config);
 
-    // 处理模板占位符
+    // 处理模板占位符：将 {category} 替换为实际分类名
     if (type === 'CATEGORY_CHANGE' && data?.category) {
-      message = renderMessageTemplate(message, { text: data.category });
+      message = renderMessageTemplate(message, { category: data.category });
     }
 
     live2dMessageManager.showMessage(

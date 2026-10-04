@@ -47,20 +47,20 @@ export default function LuoTianyiLive2D({ hidden = false }: LuoTianyiLive2DProps
     return () => observer.disconnect();
   }, []);
 
-  const triggerFadeOut = useCallback(() => {
+  const triggerFadeOut = useCallback((duration: number = 5000) => {
     if (fadeTimeoutRef.current) clearTimeout(fadeTimeoutRef.current);
-    fadeTimeoutRef.current = setTimeout(() => setMessageOpacity(0), 5000);
+    fadeTimeoutRef.current = setTimeout(() => setMessageOpacity(0), duration);
   }, []);
 
   const updateMessage = useCallback(
-    (newMessage: string, type: 'normal' | 'interaction' | 'fireworks' = 'normal') => {
+    (newMessage: string, type: 'normal' | 'interaction' | 'fireworks' = 'normal', duration: number = 5000) => {
       if (hiddenRef.current) return;
       if (!newMessage || typeof newMessage !== 'string' || newMessage.trim() === '') return;
       if (type !== 'fireworks' && live2dMessageManager.isInFireworksMode()) return;
 
       setMessage(newMessage);
       setMessageOpacity(1);
-      triggerFadeOut();
+      triggerFadeOut(duration);
     },
     [triggerFadeOut]
   );
@@ -69,10 +69,11 @@ export default function LuoTianyiLive2D({ hidden = false }: LuoTianyiLive2DProps
   // 不依赖 Live2D 异步加载，确保 smart page message (3s)、一言 timer (45s) 等早期消息不会丢失
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    (window as any).showMessage = (msg: string) => {
+    (window as any).showMessage = (msg: string, timeout?: number) => {
       if (msg && typeof msg === 'string' && msg.trim() !== '') {
         const isFireworksMode = live2dMessageManager.isInFireworksMode();
-        updateMessage(msg, isFireworksMode ? 'fireworks' : 'normal');
+        // 透传 timeout 作为气泡停留时长，未提供时使用默认值
+        updateMessage(msg, isFireworksMode ? 'fireworks' : 'normal', timeout);
       }
     };
   }, [updateMessage]);
@@ -101,6 +102,8 @@ export default function LuoTianyiLive2D({ hidden = false }: LuoTianyiLive2DProps
         if ((window as any).__live2dInterval) clearInterval((window as any).__live2dInterval);
         if ((window as any).__live2dTimeout) clearTimeout((window as any).__live2dTimeout);
       }
+      // 卸载时释放上下文监听，避免 handler 泄漏导致重复消息
+      live2dMessageManager.stopContextListening();
     };
   }, []);
 
@@ -185,18 +188,41 @@ export default function LuoTianyiLive2D({ hidden = false }: LuoTianyiLive2DProps
   }, [checkPageStayTime]);
 
   // 一言定时器：每 45 秒从 v1.hitokoto.cn 拉一句随机句子显示
+  // 使用递归 setTimeout：页面隐藏时暂停请求，连续失败时按退避间隔重试
   useEffect(() => {
     if (hidden) return;
     let cancelled = false;
-    const interval = window.setInterval(async () => {
-      if (cancelled || hiddenRef.current) return;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let failureCount = 0;
+
+    const schedule = (delay: number) => {
+      timer = setTimeout(run, delay);
+    };
+
+    const run = async () => {
+      if (cancelled) return;
+      // 页面隐藏时跳过本次请求，直接按正常间隔等待下一轮，避免后台无谓请求
+      if (typeof document !== 'undefined' && document.hidden) {
+        schedule(45000);
+        return;
+      }
       const text = await fetchHitokoto();
-      if (cancelled || !text) return;
-      updateMessage(text);
-    }, 45000);
+      if (cancelled) return;
+      if (text) {
+        failureCount = 0;
+        updateMessage(text);
+        schedule(45000);
+      } else {
+        // 失败退避：45s → 90s → 180s，上限 180s
+        failureCount = Math.min(failureCount + 1, 2);
+        schedule(45000 * Math.pow(2, failureCount));
+      }
+    };
+
+    schedule(45000);
     return () => {
       cancelled = true;
-      clearInterval(interval);
+      if (timer) clearTimeout(timer);
     };
   }, [updateMessage, hidden]);
 
