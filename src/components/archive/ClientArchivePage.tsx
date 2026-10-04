@@ -6,6 +6,7 @@ import { motion, useMotionValue } from 'framer-motion';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 import { Pin, Clock, BookOpen, Calendar } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
+import { Live2DMessageHelper } from '@/utils/live2dMessageManager';
 
 /**
  * 博客文章接口
@@ -167,6 +168,21 @@ function lowerBound(values: number[], target: number): number {
 }
 
 /**
+ * 河流尽头的题词
+ *
+ * 出自陶渊明《归去来兮辞》：「悟已往之不谏，知来者之可追。」
+ *
+ * 为什么安放在最右侧：本页文章按发布日期倒序排布，最右端是时间最早处，
+ * 也恰是「把整条河从最新拖到最旧、看完全部来路」的终点。
+ * 在此收束一句，寓意读完过去便不必拘泥过去，转身继续向前看。
+ *
+ * 排列方式：横向逐字展开，每个字的纵向位置都跟随河流波形（见 computeWaveY）。
+ * 第 0 项「悟已往之不谏」落在河流上方，第 1 项「知来者之可追」落在河流下方，
+ * 两句共用同一段横坐标区间，一上一下把河流夹在中间。
+ */
+const RIVER_INSCRIPTION = ['悟已往之不谏', '知来者之可追'] as const;
+
+/**
  * 画布布局常量
  *
  * 桌面端与移动端各一套参数。移动端整体缩小卡片、缩短波长、降低振幅，
@@ -192,6 +208,21 @@ const LAYOUT = {
     yearSlotWidth: 300,
     /** 年份水印竖直虚线的长度：只作短距离牵引，过长的虚线会显得空旷 */
     yearStemLength: 70,
+    /**
+     * 河流尽头「题词区」的横向总宽。
+     * 题词为横向逐字铺开：六个字、字距 42px，实宽约 210px；
+     * 取 370px = 左侧内边距 40 + 文字 210 + 右侧余量 120，
+     * 右侧特意留足余量，避免拖到画布尽头时最后一字贴住视口右缘、看起来像被裁掉。
+     */
+    inscriptionWidth: 370,
+    /**
+     * 题词区与最后一张卡片之间的呼吸间距。
+     * 取 80px：题词紧挨卡片才有「顺着河流接着写下去」的连贯感。
+     * 早前让题词寄居在整段 600px 的 padding 之后，孤悬于画布尽头、与画面脱节。
+     */
+    inscriptionGap: 80,
+    /** 题词文字相对题词区左缘的内边距：靠左起排，把富余宽度尽数让给右侧 */
+    inscriptionPadLeft: 40,
   },
   mobile: {
     cardWidth: 170,
@@ -211,6 +242,14 @@ const LAYOUT = {
     yearSlotWidth: 170,
     /** 移动端虚线同步减半，避免数字顶出画布上边界 */
     yearStemLength: 44,
+    /**
+     * 移动端题词区宽度、呼吸间距与左内边距。
+     * 字号缩至 15px、字距 29px 后六个字实宽约 145px，
+     * 故取 250px = 左内边距 26 + 文字 145 + 右侧余量约 79，各值随屏宽同步收窄。
+     */
+    inscriptionWidth: 250,
+    inscriptionGap: 50,
+    inscriptionPadLeft: 26,
   },
 } as const;
 
@@ -273,6 +312,8 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
   const riverX = useMotionValue(0);
   /** 标记「刚刚发生过拖拽」，用于屏蔽拖拽结束瞬间误触发的卡片点击 */
   const didDrag = useRef(false);
+  /** 标记「时光河流最右端彩蛋」是否已触发，保证每次浏览最多只弹一次，来回拖动也不刷屏 */
+  const hasTriggeredRiverEndEgg = useRef(false);
   /** 可视区域裁剪的重算触发器：拖拽时递增它来驱动重渲染 */
   const [visibleRangeKey, setVisibleRangeKey] = useState(0);
   /** requestAnimationFrame 句柄，用于对拖拽中的重算做节流 */
@@ -336,6 +377,9 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
     coverHeight,
     yearSlotWidth,
     yearStemLength,
+    inscriptionWidth,
+    inscriptionGap,
+    inscriptionPadLeft,
   } = layout;
 
   // 文章总数
@@ -400,11 +444,43 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
 
   /**
    * 画布总宽度
-   * 右侧需容纳最后一张卡片的完整宽度，再补上一段 padding 留白。
+   * 右侧需容纳最后一张卡片的完整宽度，再接一段呼吸间距与题词区：
+   * 题词不再另起一片孤立的空白，而是紧接河流继续向前铺开。
    */
   const totalWidth = totalPosts > 0
-    ? cardXList[totalPosts - 1] + cardWidth + padding
+    ? cardXList[totalPosts - 1] + cardWidth + inscriptionGap + inscriptionWidth
     : viewWidth;
+
+  /**
+   * 河流尽头题词的排版参数
+   *
+   * 排列方式：两句横向逐字展开，每个字的纵向位置都跟随河流波形起伏
+   * （逐字调用 computeWaveY 取该横坐标处的河道高度，再叠加固定的上下偏移），
+   * 因此「紧贴河流」不是一条直线上的一行字，而是真正顺着波浪走的一串字。
+   *
+   * 位置逻辑：
+   * - 横向自「最后一张卡片右边缘 + 呼吸间距」处靠左起排，整句在题词区内偏左，
+   *   把右侧余量留足，避免拖到画布尽头时最后一字贴住视口右缘、像是被裁掉；
+   * - 「悟已往之不谏」落在河道上方，「知来者之可追」落在河道下方，两句共用同一段横坐标。
+   *
+   * 尺寸随设备切换：桌面端更大更疏朗，移动端整体收窄。
+   */
+  const inscription = useMemo(() => {
+    // 字号与字距：字距约为字号的 1.9 倍，既跟得上波形起伏又不至于连成一团
+    const fontSize = isMobile ? 15 : 22;
+    const charStep = isMobile ? 29 : 42;
+    // 字心到河道的垂直距离：够近才叫「紧贴着」，又要给河道自身的描边与发光层留出余量
+    const charGap = isMobile ? 22 : 30;
+
+    // 题词区左端：紧接最后一张卡片，只留一段呼吸间距
+    const regionLeft = totalPosts > 0
+      ? cardXList[totalPosts - 1] + cardWidth + inscriptionGap
+      : 0;
+    // 首字中心：靠左起排，富余宽度全部让给右侧
+    const startX = regionLeft + inscriptionPadLeft;
+
+    return { startX, charStep, charGap, fontSize };
+  }, [isMobile, totalPosts, cardXList, cardWidth, inscriptionGap, inscriptionPadLeft]);
 
   /**
    * 画布总高度
@@ -527,6 +603,34 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
     }),
     [totalWidth, viewWidth, initialX],
   );
+
+  /**
+   * 滑到时光河流最右端时触发看板娘彩蛋
+   *
+   * 「最右端」即画布水平位移的最小值 dragConstraints.left，
+   * 对应时间轴上最早的一篇文章，也正是页面尽头题词所在之处。
+   *
+   * 为什么订阅 MotionValue 而不是写在 onDragEnd 里：
+   * 拖拽松手后还有一段惯性滑动，该阶段不会再触发 onDragEnd，
+   * 只有订阅 riverX 的变化，才能在滑到尽头的那一刻准确命中。
+   */
+  useEffect(() => {
+    // 画布未超出视口时，根本不存在「滑到最右端」这一动作，直接跳过
+    if (totalWidth <= viewWidth) return;
+
+    const unsubscribe = riverX.on('change', (latest) => {
+      // 彩蛋只弹一次，来回拖动不重复触发
+      if (hasTriggeredRiverEndEgg.current) return;
+
+      // 留 8px 容差，覆盖拖拽弹性与像素取整带来的细微偏差
+      if (latest <= dragConstraints.left + 8) {
+        hasTriggeredRiverEndEgg.current = true;
+        Live2DMessageHelper.showArchiveRiverEndEasterEgg();
+      }
+    });
+
+    return () => unsubscribe();
+  }, [riverX, totalWidth, viewWidth, dragConstraints]);
 
   // 毛玻璃样式函数（供标签筛选浮层使用）：迁入全站玻璃强档令牌
   const getGlassStyle = (baseStyle: string) => {
@@ -1040,6 +1144,64 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
                     </g>
                   );
                 })}
+
+                {/*
+                  河流尽头的题词
+                  安放在画布最右端（时间最早处），作为「看完全部来路」的收束。
+
+                  排列思路：不再是一整块竖排文字，而是把两句各自拆成单个字，
+                  逐字取该横坐标处的河道高度（computeWaveY），再统一向河道外侧偏移，
+                  于是两行字一上一下分列河道两侧，字与字之间自然随波起伏；
+                  两句共用同一段横坐标，一上一下把河流夹在中间。
+
+                  描边与投影沿用年份水印那套语言：极细描边勾出边界，
+                  双层投影（白晕托起、深影压边）保证在明暗背景上都读得清。
+                */}
+                {totalPosts > 0 && (
+                  <g style={{ pointerEvents: 'none' }}>
+                    {RIVER_INSCRIPTION.map((sentence, lineIndex) => {
+                      // 第 0 项「悟已往之不谏」落在河道上方，第 1 项「知来者之可追」落在河道下方
+                      const isBelow = lineIndex === 1;
+
+                      return Array.from(sentence).map((char, charIndex) => {
+                        // 当前字的横坐标
+                        const x = inscription.startX + charIndex * inscription.charStep;
+                        // 河道在该横坐标处的纵坐标，再按上下方向偏移一个字距
+                        const waveY = computeWaveY(x, riverY, amplitude, wavelength);
+                        const y = isBelow
+                          ? waveY + inscription.charGap
+                          : waveY - inscription.charGap;
+
+                        return (
+                          <text
+                            key={`inscription-${lineIndex}-${charIndex}`}
+                            x={x}
+                            y={y}
+                            textAnchor="middle"
+                            dominantBaseline="middle"
+                            // 楷体强化碑刻气质，逐级回退保证各系统都能落到衬线字体
+                            fontFamily="'KaiTi', 'STKaiti', 'Kaiti SC', 'Songti SC', serif"
+                            fontSize={inscription.fontSize}
+                            fontWeight="700"
+                            fillOpacity={0.78}
+                            strokeWidth={isMobile ? 0.3 : 0.4}
+                            style={{
+                              // SVG 的 fill / stroke 作为表现属性时不解析 CSS 变量，必须走 style
+                              fill: 'var(--primary)',
+                              stroke: 'var(--primary)',
+                              paintOrder: 'stroke',
+                              // 与年份水印同款的双层投影：白晕托起、深影压边，明暗背景都可读
+                              filter:
+                                'drop-shadow(0 2px 4px rgba(255,255,255,0.35)) drop-shadow(0 3px 8px rgba(12,40,85,0.4))',
+                            }}
+                          >
+                            {char}
+                          </text>
+                        );
+                      });
+                    })}
+                  </g>
+                )}
               </svg>
             </motion.div>
           </div>

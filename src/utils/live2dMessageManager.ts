@@ -244,6 +244,33 @@ class Live2DMessageManager {
   }
 
   /**
+   * 判断一条「直连显示」的消息在彩蛋期间是否应当被拦截
+   *
+   * 为什么需要这个方法：
+   * 本管理器的 showMessage 能靠 isEasterEggMode 屏蔽普通消息，但前提是消息走了 showMessage。
+   * 实际上有几条高频旁路是直接调用 React 侧的 updateMessage 落到气泡上的，
+   * 完全不经过本管理器，因此优先级与彩蛋模式对它们形同虚设：
+   *   1. 一言定时器（每 45 秒拉一句）—— 撞上 9 秒彩蛋的概率约两成，是最主要的元凶
+   *   2. live2dEventEmitter 的 custom-message 事件
+   *   3. 任何直接调用 window.showMessage 的三方脚本
+   * 由 React 侧在显示前调用本方法做一次兜底过滤，即可把这几条旁路统一纳入彩蛋保护。
+   *
+   * 判定要点：彩蛋消息自身也是经过 updateMessage 显示到气泡上的，
+   * 所以绝不能「彩蛋模式下拒绝一切」，只拦「内容与当前彩蛋不同」的那些。
+   * displayMessage 在调用显示函数之前就已把文本写入 lastMessage，
+   * 因此此刻 lastMessage 记录的恰好是正在展示的彩蛋原文，可直接用于比对。
+   *
+   * @param text 即将直连显示的消息文本
+   * @returns true 表示应当拦截（静默丢弃）
+   */
+  shouldBlockDirectMessage(text: string): boolean {
+    // 不在彩蛋模式，无需拦截
+    if (!this.isEasterEggMode) return false;
+    // 内容相同视为彩蛋自身的显示，放行
+    return text !== this.lastMessage;
+  }
+
+  /**
    * 进入歌词模式
    * 屏蔽所有普通消息（除烟花彩蛋可穿透），歌词自身走独立 DOM 渲染不经过此处
    * 重写 window.showMessage 为带优先级过滤的转发器
@@ -826,6 +853,20 @@ export class Live2DMessageHelper {
       );
     }, 200);
     return true;
+  }
+
+  /**
+   * 显示「时光河流滑到最右端」彩蛋消息
+   * 归档页把时间轴滑到最右端（时间最早处）时触发，
+   * 与页面末端的题词「悟已往之不谏，知来者之可追」相呼应
+   */
+  static showArchiveRiverEndEasterEgg(): void {
+    const config = EasterEggMessages.ARCHIVE_RIVER_END;
+    live2dMessageManager.showMessage(
+      getRandomMessage(config),
+      config.duration,
+      config.priority
+    );
   }
 
   /**

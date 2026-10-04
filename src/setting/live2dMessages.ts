@@ -19,6 +19,18 @@ export interface MessageConfig {
   messages: readonly string[];
   duration: number;
   priority: number;
+  /**
+   * 可选的抽取权重，数组长度需与 messages 一致。
+   *
+   * 为什么需要它：默认所有消息等概率抽取，但某些配置里句子的「分量」并不相同。
+   * 以归档页彩蛋为例，前四句是原创文案、后四句是歌词引用，
+   * 创作者希望原创部分出现得更多，就需要能按权重分配概率。
+   *
+   * 实现要点：数组里存的是「相对整数」，不要求加起来等于 100。
+   * 例如 [3,3,3,3,1,1,1,1] 表示前四句各占 3/16（合计 75%），后四句各占 1/16（合计 25%）。
+   * 未配置该项（或长度不匹配）时退化为等概率，保证老配置行为不变。
+   */
+  weights?: readonly number[];
 }
 
 // 消息优先级定义
@@ -578,10 +590,46 @@ export const HolidayMessages = {
 
 /**
  * 从消息配置中随机选择一条消息
+ *
+ * 抽取规则分两种：
+ * 1. 配置了合法权重（weights 存在且长度与 messages 相同）时，按权重抽取；
+ * 2. 其余情况（未配置权重，或权重长度写错了）一律等概率抽取，
+ *    这样能保证任何一处配置失误都不会让函数抛异常，最多是概率退回均等。
+ *
+ * 加权抽取的原理是「累减区间法」：把所有权重首尾相接铺成一条总长为 total 的线段，
+ * 在 [0, total) 上取一个随机落点，落点落在哪一段就取对应的那条消息。
+ * 由于落点在区间内均匀分布，各消息被抽中的概率恰好等于 自身权重 / 总权重。
+ * 之所以不用「乘比例后取整再查表」的写法，是为了避免浮点误差把边界算丢。
  */
 export function getRandomMessage(config: MessageConfig): string {
   const messages = config.messages;
-  return messages[Math.floor(Math.random() * messages.length)];
+  const weights = config.weights;
+
+  // 未配置权重，或权重个数与消息条数对不上，退化为等概率随机
+  if (!weights || weights.length !== messages.length) {
+    return messages[Math.floor(Math.random() * messages.length)];
+  }
+
+  // 总权重：正常配置下都大于 0
+  const total = weights.reduce((sum, weight) => sum + weight, 0);
+
+  // 极端情况（全为 0 或负数）保护：退化为等概率，避免落点永远落在区间外
+  if (total <= 0) {
+    return messages[Math.floor(Math.random() * messages.length)];
+  }
+
+  let point = Math.random() * total;
+
+  for (let i = 0; i < messages.length; i++) {
+    point -= weights[i];
+    // 落点被减到负数，说明它正落在第 i 段区间里
+    if (point < 0) {
+      return messages[i];
+    }
+  }
+
+  // 浮点误差兜底：理论上不会走到这里，返回最后一条最稳妥
+  return messages[messages.length - 1];
 }
 
 /**
@@ -871,7 +919,33 @@ export const EasterEggMessages = {
       message: '这是天依蓝(〃\'▽\'〃)',
       description: '洛天依的代表蓝色'
     }
-  } as Record<string, { message: string; description: string }>
+  } as Record<string, { message: string; description: string }>,
+
+  // ----------------------------------------------------------
+  // 6. 时光河流彩蛋（归档页把时间轴滑到最右端、即时间最早处时触发）
+  //    与页面尽头题词「悟已往之不谏，知来者之可追」相呼应
+  // ----------------------------------------------------------
+  ARCHIVE_RIVER_END: {
+    messages: [
+      '你已经滑到时光的最上游了呀…往者不可谏，来者犹可追。',
+      '看完了全部来路，就把心事交给白鸟吧——往者不必追悔，来者尚可奔赴。',
+      '河水流到尽头不是终点，是放下过往、抬头向前的地方～',
+      '过去的水都流走了，前面的路还长着呢，天依会陪你去追逐新的风景的。',
+      '你溯完整条时光长河啦，凡是过去，皆为序章。往后的章节，天依陪你慢慢写～',
+      // 引自 ilem《白鸟过河滩》
+      '"白鸟白鸟不要回头望，你要替我飞去那地方"',
+      '"长风长风飘在山海间，白鸟白鸟展翅入苍天"',
+      // 引自 Soda纯白《笨鸥》（词：举烛）
+      '"笨鸥一直飞，飞向海岸线的天空"',
+      '"有些事只能，做过笨鸥后才懂"'
+    ],
+    // 本组消息普遍偏长：最长一句 30 余字，另有三句歌词引用，
+    // 默认的 LONG（4 秒）常常还没读完就消失了，故单独拉长到 9 秒
+    duration: MessageDuration.LONG + 5000,
+    priority: MessagePriority.EASTER_EGG,
+
+    weights: [12, 12, 12, 12, 12, 5, 5, 5, 5]
+  } as MessageConfig
 };
 
 /**

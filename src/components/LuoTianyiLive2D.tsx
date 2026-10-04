@@ -57,6 +57,10 @@ export default function LuoTianyiLive2D({ hidden = false }: LuoTianyiLive2DProps
       if (hiddenRef.current) return;
       if (!newMessage || typeof newMessage !== 'string' || newMessage.trim() === '') return;
       if (type !== 'fireworks' && live2dMessageManager.isInFireworksMode()) return;
+      // 彩蛋消息显示期间，拦下绕过消息管理器的直连消息（一言定时器、custom-message 事件等）。
+      // 这些入口直接落到气泡上、不经过 showMessage，管理器的优先级机制对它们无效，
+      // 若不在此处兜底，彩蛋往往还没读完就被顶掉。彩蛋自身的显示会被放行（内容相同）。
+      if (type !== 'fireworks' && live2dMessageManager.shouldBlockDirectMessage(newMessage)) return;
 
       setMessage(newMessage);
       setMessageOpacity(1);
