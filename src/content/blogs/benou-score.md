@@ -1,6 +1,6 @@
 ---
 title: "笨鸥 简谱"
-date: "2025-08-31"
+date: "2025-11-06"
 author: 歆橙
 category: "洛天依"
 tags: ["洛天依", "简谱", "笨鸥", "VOCALOID", "分享"]

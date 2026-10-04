@@ -202,7 +202,7 @@ export default function RedirectNotice({
           <p id="redirect-notice-desc" className="text-sm text-muted-foreground leading-relaxed max-w-md">
             即将跳出本站，外面的世界很精彩，但也要留个心眼哦 (•̀ᴗ•́)و
             <br />
-            先瞄一眼下面的地址，确认没被“挂羊头卖狗肉”再冲～
+            先瞄一眼下面的地址，确认这链接保熟再冲～
           </p>
         </div>
 
