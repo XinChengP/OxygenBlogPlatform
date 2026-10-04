@@ -48,8 +48,9 @@ export default function Home() {
             </h2>
           </BoxReveal>
 
-          {/* 打字机 */}
-          <div className="mt-3 text-sm sm:text-base text-white/60 gpu-accelerated">
+          {/* 打字机 —— 背景 AT 是天空插画，白字必须足够实并带深色投影，
+              否则亮色云层上几乎不可见 */}
+          <div className="mt-3 text-sm sm:text-base text-white/90 gpu-accelerated drop-shadow-[0_1px_4px_rgba(15,40,90,0.65)]">
             <Typewriter texts={TypewriterTexts} delay={0.5} />
           </div>
 

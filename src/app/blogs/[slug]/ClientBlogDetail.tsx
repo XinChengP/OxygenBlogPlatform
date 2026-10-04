@@ -557,7 +557,9 @@ export default function ClientBlogDetail({
                 background: transparent !important;
               }
             `}</style>
-            <div className="bg-card/60 backdrop-blur-sm rounded-2xl shadow-lg p-6 md:p-10">
+            {/* 正文主面板：用强档玻璃（/92 底），保证正文文字不被背景云层干扰——
+                强透玻璃只留给列表卡片等短文案场景 */}
+            <div className="glass-card-strong rounded-2xl p-6 md:p-10">
               <div className="prose prose-lg dark:prose-invert max-w-none">
                 {/*
                   正文由服务端在构建期渲染（ServerBlogMarkdown），此处直接接收结果。

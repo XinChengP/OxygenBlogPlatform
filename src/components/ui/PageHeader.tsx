@@ -90,9 +90,10 @@ export default function PageHeader({
   };
 
   // 渐变色配置 - 仅保留两档：默认前景色与天依蓝主题渐变
+  // 页头直接压在全站天空插画上，渐变下限不能太透，否则亮色下标题融进蓝天
   const gradientConfig = {
     default: 'bg-gradient-to-r from-foreground via-foreground to-foreground/80',
-    primary: 'bg-gradient-to-r from-primary via-primary/80 to-primary/60',
+    primary: 'bg-gradient-to-r from-primary via-primary to-primary/85',
   };
 
   const config = sizeConfig[size];
@@ -190,13 +191,13 @@ export default function PageHeader({
             ${gradientClass}
             bg-clip-text
             text-transparent
-            drop-shadow-sm
+            /* bg-clip-text 文字透明，textShadow 几乎不可见；
+               drop-shadow 作用于合成后的字形像素，是渐变字在插画背景上的有效分离手段 */
+            drop-shadow-[0_2px_5px_rgba(12,40,85,0.45)]
+            dark:drop-shadow-[0_2px_8px_rgba(0,0,0,0.55)]
             ${titleClassName}
           `}
           variants={itemVariants}
-          style={{
-            textShadow: gradientStyle !== 'default' ? '0 2px 10px rgba(var(--primary), 0.1)' : undefined,
-          }}
         >
           {title}
         </motion.h1>
@@ -211,7 +212,9 @@ export default function PageHeader({
             max-w-2xl
             ${centered ? 'mx-auto' : ''}
             leading-relaxed
-            opacity-90
+            /* 灰字压在云/夜空上对比弱：亮色加白色光晕托底，暗色加深色投影 */
+            drop-shadow-[0_1px_2px_rgba(255,255,255,0.85)]
+            dark:drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)]
             ${descriptionClassName}
           `}
           variants={itemVariants}
