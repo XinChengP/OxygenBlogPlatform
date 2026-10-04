@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import dynamic from 'next/dynamic';
 
@@ -20,6 +20,19 @@ const MusicPlayer = dynamic(() => import('@/components/MusicPlayer'), {
  */
 export default function MusicPlayerController() {
   const pathname = usePathname();
+  const [isNotFound, setIsNotFound] = useState(false);
+
+  // 真实 404 的 pathname 是访问的任意不存在路径，无法枚举匹配，
+  // 因此复用 not-found.tsx 写在 body 上的 `not-found` 类来识别 404 页面。
+  useEffect(() => {
+    const update = () => {
+      setIsNotFound(document.body.classList.contains('not-found'));
+    };
+    update();
+    const observer = new MutationObserver(update);
+    observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
 
   // 计算当前是否需要隐藏播放器
   const isHidden = useMemo(() => {
@@ -29,13 +42,14 @@ export default function MusicPlayerController() {
     }
     // 首页、404 页面、不存在的路由以及后台管理页面都隐藏播放器
     return (
+      isNotFound ||
       pathname === '/' ||
       pathname === '/404' ||
       pathname === '/not-found' ||
       pathname.startsWith('/_not-found') ||
       pathname.startsWith('/admin')
     );
-  }, [pathname]);
+  }, [pathname, isNotFound]);
 
   return <MusicPlayer hidden={isHidden} />;
 }

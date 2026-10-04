@@ -1,6 +1,6 @@
 # 🌸 个人博客 - 洛天依主题
 
-*最后更新: 2026年10月2日*
+*最后更新: 2026年10月4日*
 
 一个温馨可爱的个人博客，以虚拟歌手洛天依为主题，适合记录生活感悟和技术学习心得。
 
@@ -9,13 +9,14 @@
 ## 🛠️ 技术栈
 
 ### 核心框架
-- **Next.js 16.1.6** - App Router，开发模式使用 Turbopack，静态导出构建使用 webpack
-- **React 19.x** - 函数组件 + Hooks
+- **Next.js 16.3.8** - App Router，开发模式使用 Turbopack，静态导出构建使用 webpack
+- **React 19.x** - 函数组件 + hооk
 - **TypeScript 5.x** - 严格模式，类型安全
 - **Node.js 24** - 运行环境要求（engines 强制 >=24.0.0）
 
 ### 样式系统
 - **Tailwind CSS 4** - 原子化CSS，深色模式支持
+- **shadcn/ui 语义化 CSS 变量** - 统一语义化设计令牌，主题切换平滑过渡
 - **CSS Variables** - 主题色系统，锁定天依蓝配色
 - **Framer Motion** - 动画和过渡效果
 
@@ -25,10 +26,10 @@
 - **gray-matter** - Frontmatter解析
 - **highlight.js / react-syntax-highlighter** - 代码语法高亮
 - **remark-gfm / remark-math / rehype-katex** - Markdown扩展（表格、数学公式）
+- **rehype-sanitize / remark-emoji** - Markdown 安全过滤与表情支持
 - **recharts** - 数据可视化图表（更新日志统计、技能雷达图）
 - **howler** - 音乐播放器核心（HowlerPlayerManager 单例管理）
 - **@tsparticles/react** - 粒子动画背景
-- **yet-another-react-lightbox** - 图片灯箱预览
 - **leaflet / react-leaflet** - 旅行足迹地图
 - **katex** - 数学公式渲染
 - **dompurify** - XSS防护
@@ -36,7 +37,6 @@
 - **octokit** - GitHub API集成
 - **simple-git** - Git操作（后台推送）
 - **chinese-lunar-calendar** - 农历节日计算
-- **date-fns** - 日期处理
 - **lucide-react / @heroicons/react** - 图标库
 
 ### 开发工具
@@ -50,6 +50,9 @@
 
 ### ✨ 洛天依特色
 - **互动看板娘** - 可爱的洛天依陪你逛博客，支持音乐/主题/页面联动与彩蛋消息
+- **消息优先级系统** - 配置化消息模板 + 优先级队列（彩蛋 10 > 紧急 9 > 高 7 > 中 5 > 普通 3 > 低 1），高优先级可中断当前消息，彩蛋/烟花/歌词模式互斥屏蔽
+- **上下文感知** - 根据滚动速度、停留时长、深夜活跃、回访次数等行为智能推送消息（30秒冷却）
+- **一言接入** - 原生 fetch 调用一言 API，由 React 组件生命周期托管定时器，8秒超时静默降级
 - **精选音乐** - 内置多首洛天依歌曲
 - **主题配色** - 以天依蓝为主色调，清新自然
 
@@ -66,6 +69,9 @@
 - **多媒体渲染** - 支持KaTeX数学公式、视频文件自动渲染为播放器、B站视频嵌入
 - **长代码折叠** - 超过30行的带语言代码块自动折叠，支持展开/收起与完整复制，避免长代码拖慢页面
 - **文件下载链接** - Markdown链接支持download属性，可直接提供本地文件下载
+- **路由级兜底** - 各主要页面提供 `loading.tsx` 骨架屏与 `error.tsx` 错误兜底，统一为 RouteSkeleton / RouteErrorFallback 组件，弱网或异常时不再白屏
+- **博客渲染重构** - 拆分 BlogMarkdownBase / ServerBlogMarkdown / BlogArticleImage / BlogArticleIframe / ThemeAwareCodeBlock，服务端与客户端渲染统一
+- **Markdown 安全** - rehype-sanitize 配置独立 sanitizeSchema，过滤危险标签属性
 
 ### 🎵 音乐播放器
 - **Howler驱动** - 基于 Howler.js 的全局播放管理器，播放状态跨页面持久化
@@ -116,9 +122,12 @@
 - **深色模式** - 自动跟随系统或手动切换，暗色图片智能滤镜
 - **浏览器检测** - 自动检测浏览器兼容性并提示
 - **代码复制** - 代码块一键复制功能
+- **外链安全守卫** - 全局拦截站外链接点击，弹出跳转提醒（/redirect 中转页 + 全站事件委托守卫），支持继续访问/返回，尊重 Ctrl/Cmd 新标签页习惯
+- **相关链接页** - 品牌图标识别、搜索与分类导航，视觉规范统一
+- **友链申请** - 友链页面新增申请占位卡，统一卡片样式与交互
 - **网站统计** - 接入51la统计分析
 - **SEO优化** - 自动生成robots.txt和sitemap.xml
-- **安全防护** - XSS防护、CSP策略、防劫持检测
+- **安全防护** - XSS防护、CSP策略、防劫持检测、外链跳转拦截
 - **实用工具** - 拼音转换器、Markdown编辑器、洛克王国阵容搭配模拟器
 
 ## 🚀 本地体验
@@ -210,8 +219,7 @@
 3. **推送代码**：推送到 main 分支即自动触发构建部署（也可在Actions页面手动触发）
 4. **等待部署**：GitHub Actions 自动完成以下步骤：
    - 安装依赖（Node.js 24环境）
-   - 生成站点地图
-   - 执行 `npm run build:pages` 静态导出
+   - 执行 `npm run build:pages` 静态导出（构建期自动生成 sitemap.xml）
    - 部署到 GitHub Pages
 
 ### 环境变量配置

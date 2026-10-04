@@ -42,17 +42,44 @@ function loadScript(src: string): Promise<void> {
  * 5. 移动端默认隐藏，避免影响触控操作
  */
 function FlyingFish() {
+  const pathname = usePathname();
   // 标记是否已经加载过脚本，防止 Strict Mode 下重复加载
   const isLoadedRef = useRef(false);
 
   // 页面加载完成后加载小鱼特效脚本（已去除 jQuery 依赖，单脚本即可运行）
+  // 依赖 pathname：路由切换（例如从 404 返回）后重新检查并恢复小鱼特效
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    if (isLoadedRef.current) return;
 
     const container = document.getElementById('jsi-flying-fish-container');
     if (container) {
       container.addEventListener('click', (e) => e.stopPropagation(), true);
+    }
+
+    // 恢复小鱼特效：
+    // 若容器已可见，但画布缺失（未初始化）或尺寸为 0（在隐藏状态下被 resize 重算成 0），
+    // 则主动补齐，避免从 404 等隐藏页脚返回后小鱼不显示
+    const restoreFish = () => {
+      const el = document.getElementById('jsi-flying-fish-container');
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return;
+
+      const canvas = el.querySelector('canvas');
+      if (!canvas) {
+        const renderer = (window as unknown as { RENDERER?: { init?: () => void } }).RENDERER;
+        if (renderer && typeof renderer.init === 'function') {
+          renderer.init();
+        }
+      } else if (canvas.width === 0 || canvas.height === 0) {
+        // 触发一次 resize，让 fish.js 内部重新按容器尺寸计算画布大小
+        window.dispatchEvent(new Event('resize'));
+      }
+    };
+
+    if (isLoadedRef.current) {
+      restoreFish();
+      return;
     }
 
     const fishPath = getAssetPath('/js/fish.js');
@@ -60,15 +87,13 @@ function FlyingFish() {
     loadScript(fishPath)
       .then(() => {
         isLoadedRef.current = true;
+        restoreFish();
         console.log('小鱼特效加载成功');
       })
       .catch((error) => {
         console.error('小鱼特效加载失败:', error);
       });
-
-    // 注意：小鱼特效脚本只需要加载一次
-    // 清理函数留空，避免 React Strict Mode 双重挂载导致重复加载和初始化
-  }, []);
+  }, [pathname]);
 
   return (
     <>

@@ -340,6 +340,11 @@ pre code {
 
 /* gradientShift动画：实现从左往右的渐变流动效果 */
 
+/* 404 页面：隐藏全局页脚（含小鱼特效），避免遮挡全屏视频背景 */
+body.not-found footer {
+  display: none !important;
+}
+
 /* 隐藏滚动条样式 */
 .scrollbar-hide {
   scrollbar-width: none; /* Firefox */

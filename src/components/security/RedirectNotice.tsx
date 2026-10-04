@@ -217,13 +217,13 @@ export default function RedirectNotice({
         </div>
 
         {/* 目标链接展示区 */}
-        <div className="mb-6">
+        <div className="relative mb-3.5">
           <div className="flex items-center gap-2 mb-2 text-xs font-medium text-muted-foreground">
             <ExternalLink className="w-3.5 h-3.5" />
             目标地址
           </div>
           <div
-            className="group/link flex items-center gap-3 p-3 rounded-xl bg-muted/60 border border-border
+            className="group/link flex items-center gap-3 p-2.5 rounded-xl bg-muted/60 border border-border
                        transition-colors duration-200 hover:border-primary/40"
           >
             <div className="flex-1 min-w-0">
@@ -272,11 +272,11 @@ export default function RedirectNotice({
               </AnimatePresence>
             </motion.button>
           </div>
-          {/* 复制成功提示（对读屏软件友好） */}
+          {/* 复制成功提示（对读屏软件友好，绝对定位避免撑开高度） */}
           <p
             role="status"
             aria-live="polite"
-            className={`mt-2 text-xs text-green-600 dark:text-green-400 transition-opacity duration-200 ${
+            className={`absolute mt-1.5 text-xs text-green-600 dark:text-green-400 transition-opacity duration-200 ${
               copied ? 'opacity-100' : 'opacity-0'
             }`}
           >

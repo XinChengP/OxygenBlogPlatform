@@ -23,9 +23,9 @@ export default function RouteErrorFallback({
   }, [error]);
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center py-20">
+    <div className="min-h-screen flex items-center justify-center py-20">
       <div className="max-w-md w-full mx-4 bg-card/60 backdrop-blur-sm rounded-2xl border border-border/40 shadow-lg p-8 text-center">
-        <div className="text-4xl mb-4">😵</div>
+        <div className="text-4xl mb-4">QAQ</div>
         <h2 className="text-lg font-semibold text-foreground mb-2">页面出了点小问题</h2>
         <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
           内容渲染时遇到异常，可以尝试重新加载；如果持续出现，欢迎通过留言板告诉我。

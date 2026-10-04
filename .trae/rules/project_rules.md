@@ -1,13 +1,13 @@
 # 个人博客 - 洛天依主题 开发规范
 
 ## 项目概述
-以洛天依为主题的个人博客，基于 Next.js 16.1.6 构建，支持 GitHub Pages 静态部署（已配置 GitHub Actions 自动部署，使用自定义域名 blog.xinchengp.cn），集成 Live2D 看板娘、Howler 音乐播放器、时光河流归档等特色功能，用于记录技术学习与生活感悟。
+以洛天依为主题的个人博客，基于 Next.js 16.3.8 构建，支持 GitHub Pages 静态部署（已配置 GitHub Actions 自动部署，使用自定义域名 blog.xinchengp.cn），集成 Live2D 看板娘、Howler 音乐播放器、外链安全守卫、时光河流归档等特色功能，用于记录技术学习与生活感悟。
 
 ## 核心技术栈
 
 ### 核心框架
-- **Next.js 16.1.6** - App Router；开发模式使用 Turbopack，静态导出/生产构建强制使用 webpack（`next build --webpack`，避免 Turbopack 生产构建偶发缺失 chunk）
-- **React 19.x** - 函数组件 + Hooks
+- **Next.js 16.3.8** - App Router；开发模式使用 Turbopack，静态导出/生产构建强制使用 webpack（`next build --webpack`，避免 Turbopack 生产构建偶发缺失 chunk）
+- **React 19.x** - 函数组件 + Hooks（`src/utils/howlerPlayerManager.ts` 为播放器单例管理器）
 - **TypeScript 5.x** - 严格模式，类型安全
 - **Node.js 24** - engines 强制要求 >=24.0.0，npm >=10.0.0
 
@@ -20,17 +20,21 @@
 - **howler** - 音乐播放器核心（`src/utils/howlerPlayerManager.ts` 单例管理器）
 - **recharts** - 数据可视化（更新日志统计图、技能雷达图）
 - **leaflet / react-leaflet** - 旅行足迹地图
-- **yet-another-react-lightbox** - 图片灯箱预览
 - **katex / remark-math / rehype-katex** - 数学公式渲染
+- **rehype-sanitize / sanitizeSchema** - Markdown 内容清洗，防止 XSS（配置见 `src/components/blogs/sanitizeSchema.ts`）
 - **dompurify** - XSS防护
 - **octokit / simple-git** - GitHub API 与后台推送
 - **express / compression** - 本地静态预览服务器
 - **chinese-lunar-calendar** - 农历节日计算
 
+> 注：已移除 `date-fns`（由 `src/utils/relativeTime.ts` 自实现替代）、`yet-another-react-lightbox`（图片灯箱改为自研 ImageGallery 组件）、`jQuery`（旧版 Live2D 与 fish 效果改为原生实现）。
+
 ### 核心功能
 - **Live2D看板娘** - 洛天依互动系统，支持音乐/主题/页面联动，彩蛋消息功能
+- **Live2D消息系统** - 配置化消息模板（`src/setting/live2dMessages.ts`）+ 单例消息管理器（`src/utils/live2dMessageManager.ts`），支持优先级队列、彩蛋/烟花/歌词模式互斥、上下文感知（`live2dContextTracker.ts`）与一言接入（`live2dHitokoto.ts`）
+- **外链安全守卫** - 全局事件委托拦截站外链接（`ExternalLinkGuard` / `RedirectNotice`）。跳转提醒支持模态弹窗与独立页面（`/redirect?url=`）两种形态，另有 `/redirect` 中转页
 - **音乐播放器** - 基于 Howler.js，侧边滑出式设计，播放状态持久化
-- **主题系统** - 锁定天依蓝配色，支持暗黑模式图片滤镜优化
+- **主题系统** - 锁定天依蓝配色，基于 shadcn/ui 语义化 CSS 变量，支持暗黑模式图片滤镜优化
 - **时光河流归档** - 水平波浪时间线布局，年份自动分组
 - **实用工具** - 拼音转换器、Markdown编辑器、洛克王国阵容搭配模拟器
 - **GitHub评论** - Giscus评论系统，基于GitHub Discussions
@@ -44,10 +48,11 @@
 - **浏览器检测** - 自动检测浏览器兼容性并提示
 - **时间进度** - 年度进度和节日倒计时展示
 - **桌面应用** - 支持 Electron 34 打包为桌面应用
-- **代码复制** - 代码块一键复制功能
-- **SEO优化** - 自动生成robots.txt和sitemap.xml，支持搜索引擎验证
+- **代码复制** - 代码块一键复制功能（统一走 `src/utils/clipboard.ts`）
+- **路由兜底** - 各主要路由 `loading.tsx`（RouteSkeleton 骨架屏）与 `error.tsx`（RouteErrorFallback 错误兜底）
+- **SEO优化** - 由 `src/app/sitemap.ts` 在构建期生成 sitemap.xml，自动生成 robots.txt
 - **网站统计** - 接入51la网站统计分析功能
-- **安全防护** - XSS防护、CSP策略、防劫持检测（security组件）
+- **安全防护** - XSS防护、CSP策略、防劫持检测（security组件）、外链跳转拦截
 
 ## 项目架构
 
@@ -65,11 +70,13 @@ src/
 │   ├── links/             # 相关链接页面
 │   ├── moments/           # 个人动态
 │   ├── settings/          # 设置页面
+│   ├── redirect/          # 外链跳转提醒独立页（?url= 中转）
 │   ├── admin/             # 后台管理（dashboard/blogs/moments/changelogs/gallery/todo/backup/settings）
 │   ├── tools/             # 工具页面
 │   │   ├── pinyin-converter/     # 拼音转换器
 │   │   ├── markdown-editor/      # Markdown编辑器
 │   │   └── roco-team/            # 洛克王国阵容搭配模拟器
+│   ├── sitemap.ts         # 构建期生成 sitemap.xml
 │   └── api/               # API路由（about.txt等）
 ├── actions/               # Server Actions（含静态导出空实现检测）
 │   ├── todoActions.ts     # 待办数据操作
@@ -80,26 +87,29 @@ src/
 │   └── index.static.ts    # 静态导出空实现
 ├── admin/                 # 后台管理逻辑
 ├── components/            # 可复用组件
-│   ├── ui/               # 基础UI组件
+│   ├── ui/               # 基础UI组件（含 RouteSkeleton 骨架屏、RouteErrorFallback 错误兜底）
 │   ├── magicui/          # 特效UI组件
 │   ├── archive/          # 归档专用组件（ClientArchivePage 时光河流）
 │   ├── about/            # 关于页面组件（技能雷达图、旅行地图、设备卡片等）
 │   ├── tools/            # 工具专用组件
 │   ├── moments/          # 个人动态组件
-│   ├── blogs/            # 博客专用组件（分享面板、相关文章等）
+│   ├── blogs/            # 博客专用组件（Markdown渲染拆分、分享面板、相关文章等）
+│   │                     #   BlogMarkdownBase / ServerBlogMarkdown / BlogArticleImage
+│   │                     #   BlogArticleIframe / ThemeAwareCodeBlock / CollapsibleCodeBlock
+│   │                     #   sanitizeSchema（rehype-sanitize 清洗规则）
+│   ├── links/            # 相关链接品牌图标（brandIcons.tsx）
 │   ├── changelogs/       # 更新日志组件
 │   ├── admin/            # 后台管理组件库
 │   ├── core/             # 核心组件（OptimizedImage等）
-│   ├── security/         # 安全组件（防劫持等）
-│   └── widgets/          # 功能组件
+│   └── security/         # 安全组件（防劫持、外链守卫 ExternalLinkGuard、跳转提醒 RedirectNotice）
 ├── content/               # 内容文件
 │   ├── blogs/            # Markdown博客文章
 │   ├── moments/          # Markdown个人动态
 │   ├── changelogs/       # 更新日志
 │   └── todo.json         # 待办事项数据
 ├── data/                  # 静态数据文件
-├── utils/                 # 工具函数（assetUtils、howlerPlayerManager等）
-├── setting/               # 配置文件（WebSetting、AboutSetting、toolsSetting等）
+├── utils/                 # 工具函数（assetUtils、howlerPlayerManager、clipboard、relativeTime、live2dHitokoto 等）
+├── setting/               # 配置文件（WebSetting、AboutSetting、toolsSetting、live2dMessages等）
 ├── types/                 # TypeScript类型
 ├── contexts/              # React上下文
 ├── hooks/                 # 自定义Hooks
@@ -198,8 +208,8 @@ npm run electron         # 运行桌面应用
 - **prepare-static-export.js** - 构建前将带 'use server' 的 actions 文件替换为空实现（.bak备份），构建后自动恢复
 - **serve-static.js** - Express静态预览服务器
 - **sync-theme-colors.js** - 主题色同步
-- **generate-sitemap.ts** - 生成 sitemap.xml 和 robots.txt
 - **generate-gallery-data.ts** - 递归扫描画廊图片生成数据
+- **generate-sitemap.ts（已移除）** - 站点地图改由 `src/app/sitemap.ts` 在构建期生成到 `out/sitemap.xml`，deploy.yml 中不再单独执行生成脚本
 
 ## 资源管理
 
@@ -268,7 +278,7 @@ export default function Component({ title, className }: ComponentProps) {
 - **工作流文件**: `.github/workflows/deploy.yml`
 - **触发条件**: 推送到 main 分支或手动触发
 - **构建环境**: Node.js 24，npm ci 安装依赖
-- **构建步骤**: 删除 .env.local → 生成sitemap → `npm run build:pages` → 上传 out 目录 → 部署
+- **构建步骤**: 删除 .env.local → `npm run build:pages`（构建期由 `src/app/sitemap.ts` 生成 sitemap.xml）→ 上传 out 目录 → 部署
 - **环境变量注入**: NODE_ENV=production、NEXT_PRIVATE_STATIC_EXPORT=true、STATIC_EXPORT=true、CUSTOM_DOMAIN=true、NEXT_PUBLIC_SITE_URL=https://blog.xinchengp.cn、NEXT_PUBLIC_BASE_PATH 为空
 
 ### Next.js配置要点（next.config.ts）
@@ -295,15 +305,18 @@ export default function Component({ title, className }: ComponentProps) {
 
 ## 性能优化
 - **代码分割**: Next.js自动分割 + 动态导入
-- **包大小**: 定期分析，移除未使用依赖
+- **包大小**: 定期分析，移除未使用依赖（已移除 jQuery、date-fns、yet-another-react-lightbox 等冗余依赖）
 - **图片格式**: WebP/AVIF优先
 - **加载优化**: 懒加载 + 渐进式占位符
 - **缓存策略**: 开发环境 no-store 强制刷新；生产由 GitHub Pages 默认策略处理
 - **编译优化**: 静态导出时移除console日志（保留error）和React属性
+- **资源复用**: 剪贴板、时间格式化、代码高亮语言包等公共逻辑集中到 utils/，避免重复打包
 
 ## 安全规范
 - **前端安全**: TypeScript严格检查，输入验证，XSS防护（dompurify），CSP策略（next.config.ts headers）
+- **Markdown清洗**: 通过 rehype-sanitize + `src/components/blogs/sanitizeSchema.ts` 自定义 schema 过滤危险标签与属性
 - **防劫持**: security组件（SecurityProvider、HijackingProtector）
+- **外链防护**: ExternalLinkGuard 全局事件委托拦截站外链接跳转，白名单域名（xinchengp.cn / localhost / 127.0.0.1）与 `data-skip-external-guard` 标记放行
 - **依赖安全**: `npm audit`定期检查，Dependabot自动补丁，最小权限原则
 
 ## 文档规范
@@ -631,6 +644,78 @@ honors:
 ### 手风琴交互
 - "关于我/关于博客/关于域名" 面板必须 hover 触发，0.3s ease-out 过渡，默认完全收起
 
+## 外链安全守卫规范
+
+### 组成
+- **全局守卫**: `src/components/security/ExternalLinkGuard.tsx` —— 挂载于根布局，通过事件委托（捕获阶段）监听全站链接点击
+- **提醒组件**: `src/components/security/RedirectNotice.tsx` —— 支持 `modal`（弹窗）与 `page`（独立页）两种 variant
+- **独立中转页**: `src/app/redirect/page.tsx` —— 访问 `/redirect?url=<目标链接>`，方便分享与测试
+
+### 拦截规则
+- 站内链接（同源、以 `/` 或 `#` 开头、`mailto/tel` 等协议）不拦截
+- 命中 `data-skip-external-guard` 属性或带 `download` 属性的链接不拦截
+- 修饰键点击（Ctrl/Cmd/Shift/Alt/中键）不拦截，尊重「新标签页打开」习惯
+- 白名单域名放行：`xinchengp.cn`、`blog.xinchengp.cn`、`localhost`、`127.0.0.1`
+
+### 交互约束
+- 拦截后弹出提醒，用户可选择「继续访问」（新标签页打开）或「返回上一页」
+- 弹窗打开时锁定页面滚动，关闭后把焦点交还触发链接
+- 各动作联动看板娘消息（BLOCKED / CONTINUE / BACK / COPY）
+
+## Live2D 消息系统规范
+
+### 组成
+- **消息配置**: `src/setting/live2dMessages.ts` —— 所有消息模板与优先级/时长常量
+- **消息管理器**: `src/utils/live2dMessageManager.ts` —— 单例，负责队列、优先级、模式互斥
+- **上下文追踪**: `src/utils/live2dContextTracker.ts` —— 采集滚动速度、停留时长、深夜、回访等行为
+- **一言接入**: `src/utils/live2dHitokoto.ts` —— 原生 fetch 调用一言 API
+
+### 优先级规则
+| 级别 | 数值 | 说明 |
+|------|------|------|
+| LOW | 1 | 低优先级 |
+| NORMAL | 3 | 普通消息（多数配置默认值） |
+| MEDIUM | 5 | 中等优先级 |
+| HIGH | 7 | 高优先级 |
+| URGENT | 9 | 紧急 |
+| EASTER_EGG | 10 | 彩蛋消息，高于所有常规消息 |
+
+- 高优先级消息可中断当前消息；低优先级消息进入队列并按优先级排序
+- **模式互斥**：烟花模式阻塞全部消息（仅彩蛋 10 可穿透）；彩蛋模式屏蔽普通消息；歌词模式完全屏蔽（歌词自身直接操作 DOM，不走 showMessage）
+- **防重复/防洪水**：相似消息冷却、短时间低优先级消息限流（500ms 冷却、800ms 最小间隔）
+- **上下文感知**：监听行为变化，30 秒冷却，仅在明显行为变化时推送
+
+### 便捷入口
+- 通过 `Live2DMessageHelper` 静态方法调用（showWelcomeMessage / showPageMessage / showExternalLinkMessage 等）
+
+## 通用工具函数规范
+
+### 剪贴板
+- **唯一实现**: `src/utils/clipboard.ts` 的 `copyToClipboard()`
+- **约束**: 全站不得再自行实现复制逻辑（曾散布于 adminUtils、CodeCopyButton、BlogSharePanel、MarkdownEditor 等），统一引用本模块
+- **降级**: 优先 Clipboard API，不可用时回退 textarea + execCommand
+
+### 时间格式化
+- **唯一实现**: `src/utils/relativeTime.ts`
+- **约束**: 留言板等场景的相对时间统一走此处，替换手写实现
+
+### 其他统一项
+- **代码高亮语言包**: `src/components/ui/prismLanguages.ts`
+- **滚动管理**: `src/utils/scrollManager.ts`
+- **禁止引入 jQuery**：旧版 Live2D、fish 特效等已改为原生实现
+
+## 相关链接与友链页面规范
+
+### 相关链接页（/links）
+- **组件**: `src/components/RelatedLinks.tsx` + `src/components/links/brandIcons.tsx`
+- **功能**: 品牌图标识别、搜索过滤、分类导航
+- **规范**: 卡片样式、间距、阴影令牌全站统一
+
+### 友情链接页（/friends）
+- **组件**: `src/components/FriendsLink.tsx` + `src/app/friends/page.tsx`
+- **功能**: 友链展示、新增申请占位卡
+- **规范**: 统一视觉规范与交互反馈
+
 ## 桌面应用支持
 
 ### Electron配置
@@ -708,6 +793,6 @@ npm run electron         # 运行桌面应用
 
 ---
 
-*最后更新: 2026年9月22日*
+*最后更新: 2026年10月4日*
 *维护者: 歆橙*
-*版本: v5.0*
+*版本: v5.1*

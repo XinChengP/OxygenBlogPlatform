@@ -157,6 +157,16 @@ export default function NotFound() {
       delete window.hideLive2D;
       window.removeEventListener('themechange', handleThemeChange);
 
+      // 移除 404 标记类（页脚隐藏、音乐播放器隐藏均依赖它，离开页面需清除以便恢复）
+      document.body.classList.remove('not-found');
+
+      // 恢复 Live2D 看板娘：移除隐藏类，并还原之前被强制设置的 display
+      document.body.classList.remove('live2d-hidden');
+      const live2dContainer = document.getElementById('landlord') as HTMLElement | null;
+      if (live2dContainer) {
+        live2dContainer.style.display = '';
+      }
+
       // 恢复 html 和 body 的滚动样式
       document.documentElement.style.overflow = originalHtmlOverflow;
       document.body.style.overflow = originalBodyOverflow;
@@ -235,10 +245,10 @@ export default function NotFound() {
 
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
+    <div className="min-h-screen h-dvh relative overflow-hidden bg-black">
       {/* 视频背景 - 确保在静态构建中包含 */}
       <video
-          className="absolute inset-0 w-full h-full object-cover"
+          className="fixed inset-0 w-screen h-screen object-cover"
           autoPlay
           muted
           loop

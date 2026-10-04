@@ -5,7 +5,6 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { categories } from '@/setting/blogSetting';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
-import Pagination from '@/components/Pagination';
 import { getAssetPath } from '@/utils/assetUtils';
 import { Calendar, ArrowRight, BookOpen, Pin, Tag } from 'lucide-react';
 import live2dMessageManager, { Live2DMessageHelper } from '@/utils/live2dMessageManager';
@@ -34,10 +33,7 @@ interface ClientBlogsPageProps {
 
 export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagCount }: ClientBlogsPageProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [currentPage, setCurrentPage] = useState<number>(1);
   const { containerStyle, isBackgroundEnabled } = useBackgroundStyle('blogs');
-
-  const POSTS_PER_PAGE = 6;
 
   // 获取卡片样式类名
   // 内容流中的文章卡片默认使用近实色背景（bg-card/95），
@@ -92,23 +88,8 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
     });
   }, [initialPosts, selectedCategory]);
 
-  const paginationData = useMemo(() => {
-    const totalPosts = filteredAndSortedPosts.length;
-    const totalPages = Math.ceil(totalPosts / POSTS_PER_PAGE);
-    const startIndex = (currentPage - 1) * POSTS_PER_PAGE;
-    const endIndex = startIndex + POSTS_PER_PAGE;
-    const currentPosts = filteredAndSortedPosts.slice(startIndex, endIndex);
-    return { currentPosts, totalPages, totalPosts };
-  }, [filteredAndSortedPosts, currentPage]);
-
   const handleCategoryChange = (category: string) => {
     setSelectedCategory(category);
-    setCurrentPage(1);
-  };
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const formatDate = (dateString: string) => {
@@ -204,17 +185,14 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
             {/* 文章统计 */}
             <div className="mb-6">
               <p className="text-sm text-muted-foreground">
-                {selectedCategory === 'all' ? '全部' : selectedCategory} 分类下共有 {paginationData.totalPosts} 篇文章
-                {paginationData.totalPages > 1 && (
-                  <span className="ml-2">(第 {currentPage} 页，共 {paginationData.totalPages} 页)</span>
-                )}
+                {selectedCategory === 'all' ? '全部' : selectedCategory} 分类下共有 {filteredAndSortedPosts.length} 篇文章
               </p>
             </div>
 
             {/* 文章列表 */}
             <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2">
                 <AnimatePresence mode="popLayout">
-                {paginationData.currentPosts.map((post) => (
+                {filteredAndSortedPosts.map((post) => (
                   /* 文章卡片：悬停边框用主题令牌 hover:border-primary/30（原为硬编码 blue-500）；
                      悬停反馈全站统一为位移 -3 + 悬停阴影令牌，亮暗模式自动切换；
                      静态背景/阴影由 getGlassStyle 统一提供，参数里不再重复 shadow 类 */
@@ -324,17 +302,11 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
                 </AnimatePresence>
               </div>
 
-            {paginationData.currentPosts.length === 0 && (
+            {filteredAndSortedPosts.length === 0 && (
               <div className="text-center py-12">
                 <div className="text-4xl mb-4">📭</div>
                 <p className="text-muted-foreground text-lg mb-2">该分类下暂无文章</p>
                 <p className="text-muted-foreground text-sm">试试切换其他分类</p>
-              </div>
-            )}
-
-            {paginationData.totalPages > 1 && (
-              <div>
-                <Pagination currentPage={currentPage} totalPages={paginationData.totalPages} onPageChange={handlePageChange} />
               </div>
             )}
           </main>
