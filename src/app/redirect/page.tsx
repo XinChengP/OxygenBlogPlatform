@@ -66,7 +66,6 @@ export default function RedirectPage() {
         <PageHeader
           title="链接跳转提醒"
           description="别急着跑，先看清要去哪儿，确认安全再出发～"
-          icon={<ShieldAlert />}
           size="lg"
           className="mb-10"
           gradientStyle="primary"

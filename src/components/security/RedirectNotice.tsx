@@ -196,7 +196,7 @@ export default function RedirectNotice({
               <img
                 src={getAssetPath('/tips.gif')}
                 alt="安全提示"
-                className="w-full h-full object-cover scale-[1.5] select-none pointer-events-none"
+                className="w-full h-full object-cover scale-[1.36] select-none pointer-events-none"
                 draggable={false}
               />
             </motion.div>
