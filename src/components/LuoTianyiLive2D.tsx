@@ -29,7 +29,22 @@ export default function LuoTianyiLive2D({ hidden = false }: LuoTianyiLive2DProps
   const [isLoading, setIsLoading] = useState(true);
   const [loadProgress, setLoadProgress] = useState(0);
   const [isModelReady, setIsModelReady] = useState(false);
+  // 主题类名（'dark' | ''）：用 state 承载并监听 html class 变化，
+  // 保证切换主题时气泡/控件立即重渲染同步（此前是渲染时快照，
+  // 切主题后组件不重渲染，类名停留在旧主题直到下一次无关更新）
+  const [themeClass, setThemeClass] = useState('');
   const pageStartTimeRef = useRef(Date.now());
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const syncThemeClass = () => {
+      setThemeClass(document.documentElement.classList.contains('dark') ? 'dark' : '');
+    };
+    syncThemeClass();
+    const observer = new MutationObserver(syncThemeClass);
+    observer.observe(document.documentElement, { attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
 
   const triggerFadeOut = useCallback(() => {
     if (fadeTimeoutRef.current) clearTimeout(fadeTimeoutRef.current);
@@ -126,11 +141,6 @@ export default function LuoTianyiLive2D({ hidden = false }: LuoTianyiLive2DProps
     if (path.startsWith('/blogs/') && path !== '/blogs') pageType = '博客文章';
     if (path.startsWith('/tools/')) pageType = '工具页面';
     return { page: pageType, path };
-  }, []);
-
-  const getCurrentThemeClass = useCallback(() => {
-    if (typeof window === 'undefined') return '';
-    return document.documentElement.classList.contains('dark') ? 'dark' : '';
   }, []);
 
   const showSmartPageMessage = useCallback(() => {
@@ -408,8 +418,6 @@ export default function LuoTianyiLive2D({ hidden = false }: LuoTianyiLive2DProps
       triggerFadeOut();
     }
   }, [loadLive2D, triggerFadeOut, isLoading]);
-
-  const themeClass = getCurrentThemeClass();
 
   return (
     <>

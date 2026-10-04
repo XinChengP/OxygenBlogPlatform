@@ -47,10 +47,11 @@ export default function Live2DBubble({
               textAlign: 'center',
               color: '#66ccff',
               fontSize: '12px',
-              background: 'rgba(255, 255, 255, 0.9)',
+              background: 'var(--live2d-bubble-bg, rgba(255, 255, 255, 0.9))',
               padding: '10px',
               borderRadius: '8px',
               border: '1px solid rgba(102, 204, 255, 0.3)',
+              transition: 'background-color 0.3s ease, border-color 0.3s ease',
             }}
           >
             <div
@@ -70,23 +71,13 @@ export default function Live2DBubble({
       )}
 
       <div
-        className={`message ${themeClass}`}
+        className={`message live2d-bubble ${themeClass}`}
         style={{
           opacity,
           position: 'absolute',
           top: '-20px',
           left: '50px',
           display: message && message.trim() !== '' ? 'block' : 'none',
-          transition: 'opacity 0.5s ease-in-out',
-          background: 'rgba(102, 204, 255, 0.2)',
-          padding: '7px',
-          borderRadius: '12px',
-          border: '1px solid rgba(102,204,255,.4)',
-          boxShadow: '0 3px 15px 2px rgba(102,204,255,.4)',
-          color: 'var(--foreground)',
-          fontSize: '13px',
-          maxWidth: '300px',
-          wordWrap: 'break-word',
           zIndex: 10001,
         }}
       >

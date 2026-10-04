@@ -1,5 +1,15 @@
 /* Live2D 看板娘样式 */
 
+/* 气泡底色令牌：亮暗两档，供加载气泡等内联样式通过 var() 引用，
+   切换主题时随 html.dark 自动切换 */
+:root {
+  --live2d-bubble-bg: rgba(248, 250, 252, 0.92);
+}
+
+html.dark {
+  --live2d-bubble-bg: rgba(42, 52, 65, 0.92);
+}
+
 #landlord {
   user-select: none;
   position: fixed;
@@ -145,14 +155,36 @@
 
 /* 暗色模式气泡：亮色白玻璃在深夜背景上过亮刺眼，
    换成与全站卡片一致的深蓝灰玻璃 + 天依蓝描边 + 浅色文字。
-   需要 !important 压过 message.js 动态创建时写入的内联样式 */
+   需要 !important 压过 message.js 动态创建时写入的内联样式。
+   刻意不含 background-image 渐变：渐变无法参与 transition，
+   保留它会让暗/亮切换时渐变层瞬跳、与底色过渡不同步 */
 .dark .message,
 .dark .message.luotianyi-theme {
   border-color: rgba(102, 204, 255, 0.3) !important;
   background-color: rgba(42, 52, 65, 0.82) !important;
-  background-image: linear-gradient(135deg, rgba(102, 204, 255, 0.14) 0%, rgba(102, 204, 255, 0.05) 100%) !important;
   color: #f0f9ff !important;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* React 版气泡（Live2DBubble）：颜色样式集中在类里（此前内联写死亮色、
+   transition 仅含 opacity，导致主题切换时颜色瞬跳不跟随），
+   布局项（定位/显隐/透明度）仍由组件内联控制，此处覆盖 .message 基础规则 */
+.message.live2d-bubble {
+  top: -20px;
+  left: 50px;
+  right: auto;
+  max-width: 300px;
+  text-transform: none;
+  word-wrap: break-word;
+  background-color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(102, 204, 255, 0.3);
+  color: var(--foreground);
+  box-shadow: 0 3px 15px 2px rgba(102, 204, 255, 0.35);
+  transition: opacity 0.5s ease-in-out,
+              background-color 0.3s ease,
+              border-color 0.3s ease,
+              color 0.3s ease,
+              box-shadow 0.3s ease;
 }
 
 .hide-button.luotianyi-theme {
