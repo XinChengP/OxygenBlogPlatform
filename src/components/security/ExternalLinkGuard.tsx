@@ -19,6 +19,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import RedirectNotice from './RedirectNotice';
+import { Live2DMessageHelper } from '@/utils/live2dMessageManager';
 
 /**
  * 视为「站内」的额外域名白名单（部署主站 + 本地开发）
@@ -101,6 +102,8 @@ export default function ExternalLinkGuard(): React.ReactElement | null {
       event.preventDefault();
       setPendingUrl(anchor.href);
       setOriginAnchor(anchor);
+      // 看板娘提示：即将离开本站
+      Live2DMessageHelper.showExternalLinkMessage('BLOCKED');
     };
 
     document.addEventListener('click', handleClick, true);
@@ -116,6 +119,8 @@ export default function ExternalLinkGuard(): React.ReactElement | null {
     window.open(pendingUrl, '_blank', 'noopener,noreferrer');
     setPendingUrl(null);
     setOriginAnchor(null);
+    // 看板娘提示：送别
+    Live2DMessageHelper.showExternalLinkMessage('CONTINUE');
   }, [pendingUrl]);
 
   /**
@@ -126,6 +131,8 @@ export default function ExternalLinkGuard(): React.ReactElement | null {
     originAnchor?.focus?.();
     setPendingUrl(null);
     setOriginAnchor(null);
+    // 看板娘提示：留下来了
+    Live2DMessageHelper.showExternalLinkMessage('BACK');
   }, [originAnchor]);
 
   /**

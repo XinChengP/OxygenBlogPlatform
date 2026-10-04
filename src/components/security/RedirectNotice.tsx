@@ -20,8 +20,10 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle, Copy, Check, ExternalLink, ArrowLeft, ShieldAlert } from 'lucide-react';
+import { Copy, Check, ExternalLink, ArrowLeft, ShieldAlert } from 'lucide-react';
 import { copyToClipboard } from '@/utils/clipboard';
+import { Live2DMessageHelper } from '@/utils/live2dMessageManager';
+import { getAssetPath } from '@/utils/assetUtils';
 
 /**
  * 跳转提醒组件属性
@@ -91,6 +93,8 @@ export default function RedirectNotice({
     const success = await copyToClipboard(url);
     if (success) {
       setCopied(true);
+      // 看板娘提示：复制成功
+      Live2DMessageHelper.showExternalLinkMessage('COPY');
       if (copyTimerRef.current) {
         clearTimeout(copyTimerRef.current);
       }
@@ -176,7 +180,7 @@ export default function RedirectNotice({
       <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
 
       <div className="relative p-6 sm:p-8">
-        {/* 警告图标 + 标题 */}
+        {/* 提示动图 + 标题 */}
         <div className="flex flex-col items-center text-center mb-6">
           <div className="relative mb-4">
             {/* 脉冲光晕 */}
@@ -185,10 +189,16 @@ export default function RedirectNotice({
               initial={{ scale: 0.6, opacity: 0, rotate: -12 }}
               animate={{ scale: 1, opacity: 1, rotate: 0 }}
               transition={{ type: 'spring', stiffness: 260, damping: 18 }}
-              className="relative w-16 h-16 rounded-full flex items-center justify-center
-                         bg-gradient-to-br from-amber-400 to-primary shadow-lg"
+              className="relative w-32 h-24 rounded-full flex items-center justify-center
+                         bg-gradient-to-br from-amber-400/20 to-primary/20 shadow-lg
+                         ring-1 ring-amber-400/30 overflow-hidden"
             >
-              <AlertTriangle className="w-8 h-8 text-white" strokeWidth={2.2} />
+              <img
+                src={getAssetPath('/tips.gif')}
+                alt="安全提示"
+                className="w-full h-full object-cover scale-[1.5] select-none pointer-events-none"
+                draggable={false}
+              />
             </motion.div>
           </div>
 
@@ -213,7 +223,8 @@ export default function RedirectNotice({
             目标地址
           </div>
           <div
-            className="flex items-center gap-3 p-3 rounded-xl bg-muted/60 border border-border"
+            className="group/link flex items-center gap-3 p-3 rounded-xl bg-muted/60 border border-border
+                       transition-colors duration-200 hover:border-primary/40"
           >
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-foreground truncate" title={hostname}>
@@ -223,13 +234,18 @@ export default function RedirectNotice({
                 {url}
               </p>
             </div>
-            <button
+            <motion.button
               type="button"
               onClick={handleCopy}
               aria-label={copied ? '已复制链接' : '复制链接'}
+              whileHover={{ scale: 1.08, y: -1 }}
+              whileTap={{ scale: 0.92 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 20 }}
               className="flex-shrink-0 w-9 h-9 rounded-lg flex items-center justify-center
-                         border border-border bg-card hover:border-primary/50 hover:text-primary
-                         text-muted-foreground transition-colors duration-200"
+                         border border-border bg-card text-muted-foreground
+                         hover:border-primary/50 hover:text-primary hover:bg-primary/5
+                         transition-colors duration-200
+                         focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
             >
               <AnimatePresence mode="wait" initial={false}>
                 {copied ? (
@@ -254,7 +270,7 @@ export default function RedirectNotice({
                   </motion.span>
                 )}
               </AnimatePresence>
-            </button>
+            </motion.button>
           </div>
           {/* 复制成功提示（对读屏软件友好） */}
           <p
@@ -270,32 +286,61 @@ export default function RedirectNotice({
 
         {/* 操作按钮组 */}
         <div className="flex flex-col sm:flex-row gap-3">
+          {/* 主操作：继续访问 —— 渐变背景 + 光泽扫过 + 悬浮上浮 */}
           <motion.button
             ref={continueButtonRef}
             type="button"
             onClick={handleContinue}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-xl
-                       bg-primary text-primary-foreground font-medium
-                       hover:bg-primary/90 transition-colors duration-200
+            initial="rest"
+            whileHover="hover"
+            whileTap={{ scale: 0.97 }}
+            animate="rest"
+            variants={{
+              rest: { y: 0, boxShadow: '0 4px 14px -4px rgba(56, 137, 232, 0.45)' },
+              hover: { y: -2, boxShadow: '0 12px 26px -6px rgba(56, 137, 232, 0.6)' },
+            }}
+            transition={{ type: 'spring', stiffness: 320, damping: 22 }}
+            className="group relative flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-xl
+                       overflow-hidden text-primary-foreground font-semibold
+                       bg-gradient-to-r from-primary to-[color-mix(in_srgb,var(--primary)_78%,#7cc7ff)]
                        focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           >
-            <ExternalLink className="w-4 h-4" />
-            继续访问
+            {/* 光泽扫过动效 */}
+            <motion.span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-y-0 w-1/3 -skew-x-12
+                         bg-gradient-to-r from-transparent via-white/40 to-transparent"
+              variants={{
+                rest: { x: '-150%', opacity: 0 },
+                hover: { x: '350%', opacity: 1 },
+              }}
+              transition={{ duration: 0.7, ease: 'easeOut' }}
+            />
+            {/* 图标：悬浮时向右轻移，暗示「前进/出站」 */}
+            <motion.span
+              className="relative inline-flex"
+              variants={{ rest: { x: 0 }, hover: { x: 2 } }}
+              transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+            >
+              <ExternalLink className="w-4 h-4" />
+            </motion.span>
+            <span className="relative">继续访问</span>
           </motion.button>
 
+          {/* 次操作：返回上一页 —— 轻量描边，悬浮泛色 */}
           <motion.button
             type="button"
             onClick={handleBack}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-xl
-                       border border-border bg-card text-foreground font-medium
-                       hover:border-primary/40 hover:bg-muted transition-colors duration-200
+            whileHover={{ scale: 1.02, y: -1 }}
+            whileTap={{ scale: 0.97 }}
+            transition={{ type: 'spring', stiffness: 320, damping: 22 }}
+            className="group flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-xl
+                       border border-border bg-transparent text-foreground/90 font-medium
+                       hover:border-primary/50 hover:text-primary hover:bg-primary/5
+                       transition-colors duration-200
                        focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="w-4 h-4 transition-transform duration-200 group-hover:-translate-x-0.5" />
             返回上一页
           </motion.button>
         </div>

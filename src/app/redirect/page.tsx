@@ -19,6 +19,7 @@ import { motion } from 'framer-motion';
 import { ShieldAlert } from 'lucide-react';
 import RedirectNotice from '@/components/security/RedirectNotice';
 import PageHeader from '@/components/ui/PageHeader';
+import { Live2DMessageHelper } from '@/utils/live2dMessageManager';
 
 export default function RedirectPage() {
   const [targetUrl, setTargetUrl] = useState<string | null>(null);
@@ -34,6 +35,8 @@ export default function RedirectPage() {
       setTargetUrl('');
     }
     setReady(true);
+    // 看板娘提示：即将离开本站
+    Live2DMessageHelper.showExternalLinkMessage('BLOCKED');
   }, []);
 
   // 返回上一页：优先 history.back()，无历史记录则回首页
@@ -43,6 +46,17 @@ export default function RedirectPage() {
     } else {
       window.location.href = '/';
     }
+  };
+
+  // 继续访问：新标签页打开目标链接，并显示看板娘送别消息
+  const handleContinue = () => {
+    if (targetUrl) {
+      window.open(targetUrl, '_blank', 'noopener,noreferrer');
+    } else {
+      window.location.href = '/';
+      return;
+    }
+    Live2DMessageHelper.showExternalLinkMessage('CONTINUE');
   };
 
   return (
@@ -67,15 +81,18 @@ export default function RedirectPage() {
         >
           {ready &&
             (targetUrl ? (
-              <RedirectNotice url={targetUrl} variant="page" onBack={handleBack} />
+              <RedirectNotice
+                url={targetUrl}
+                variant="page"
+                onContinue={handleContinue}
+                onBack={handleBack}
+              />
             ) : (
               <RedirectNotice
                 url="（未提供目标链接）"
                 variant="page"
                 onBack={handleBack}
-                onContinue={() => {
-                  window.location.href = '/';
-                }}
+                onContinue={handleContinue}
               />
             ))}
         </motion.div>

@@ -1151,3 +1151,50 @@ export const RocoSimulatorMessages = {
     priority: MessagePriority.MEDIUM
   }
 } as const;
+
+/**
+ * 外链跳转提醒消息配置
+ * 用于外部链接跳转提醒（弹窗 / 独立页面）场景中 Live2D 看板娘的消息提示
+ */
+export const ExternalLinkMessages = {
+  // 外链被拦截、弹出提醒时
+  BLOCKED: {
+    messages: [
+      '要出站啦？先确认一下地址安不安全哦～',
+      '前方是天依管不到的地方，小心一点～',
+      '诶，这个链接要跳出去了，先看一眼再走嘛～',
+      '出门在外要注意安全，陌生网站别乱填信息哦～'
+    ],
+    duration: MessageDuration.NORMAL,
+    priority: MessagePriority.MEDIUM
+  },
+  // 用户点击「继续访问」时
+  CONTINUE: {
+    messages: [
+      '好嘞，天依送你去～记得早点回来哦！',
+      '出发吧！路上小心～',
+      '那就去看看呗，天依在这里等你回来～',
+      '去吧去吧，注意安全就好～'
+    ],
+    duration: MessageDuration.SHORT,
+    priority: MessagePriority.LOW
+  },
+  // 用户点击「返回上一页」时
+  BACK: {
+    messages: [
+      '嘿嘿，还是留下来陪天依吧～'
+    ],
+    duration: MessageDuration.SHORT,
+    priority: MessagePriority.LOW
+  },
+  // 复制目标链接时
+  COPY: {
+    messages: [
+      '链接复制好啦～记得核实来源再访问哦！',
+      '复制成功！陌生链接要留个心眼呢～',
+      '把地址存下来了，安全第一哦～'
+    ],
+    duration: MessageDuration.SHORT,
+    priority: MessagePriority.LOW
+  }
+} as const;

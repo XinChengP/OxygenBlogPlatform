@@ -25,6 +25,7 @@ import {
   MomentsMessages,
   ChangelogsMessages,
   RocoSimulatorMessages,
+  ExternalLinkMessages,
   getTimeGreetingConfig,
   getPageMessageConfig,
   getHolidayMessageConfig,
@@ -891,6 +892,23 @@ export class Live2DMessageHelper {
     type: 'PAGE_VISIT' | 'ADD_TO_LINEUP' | 'REMOVE_FROM_LINEUP' | 'SWITCH_SKIN' | 'SELECT_TALENT' | 'CLEAR_LINEUP' | 'BAN_PET' | 'UNBAN_PET' | 'LINEUP_FULL' | 'EXCLUSIVE_CONFLICT' | 'MAGIC_OVER_LIMIT'
   ): void {
     const config = RocoSimulatorMessages[type];
+    if (!config) return;
+
+    live2dMessageManager.showMessage(
+      getRandomMessage(config),
+      config.duration,
+      config.priority
+    );
+  }
+
+  /**
+   * 显示外链跳转提醒相关消息
+   * @param type 消息类型（BLOCKED 拦截提醒 / CONTINUE 继续访问 / BACK 返回上一页 / COPY 复制链接）
+   */
+  static showExternalLinkMessage(
+    type: 'BLOCKED' | 'CONTINUE' | 'BACK' | 'COPY'
+  ): void {
+    const config = ExternalLinkMessages[type];
     if (!config) return;
 
     live2dMessageManager.showMessage(
