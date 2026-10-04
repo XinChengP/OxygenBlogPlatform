@@ -28,6 +28,8 @@ export const MessagePriority = {
   MEDIUM: 5,
   HIGH: 7,
   URGENT: 9,
+  // 彩蛋消息：高于所有常规消息，确保彩蛋触发时不被覆盖
+  EASTER_EGG: 10,
 } as const;
 
 // 消息显示时长定义（毫秒）
@@ -35,7 +37,6 @@ export const MessageDuration = {
   SHORT: 2000,
   NORMAL: 3000,
   LONG: 4000,
-  EXTRA_LONG: 5000,
 } as const;
 
 /**
@@ -75,10 +76,10 @@ export const InteractionMessages = {
   // 标题悬停
   TITLE_HOVER: {
     messages: [
-      '要看看 {text} 吗？',
-      '这是什么呢？好有趣的样子～',
-      '想要了解更多吗？',
-      '这个标题看起来很吸引人呢！'
+      '这个标题看起来很吸引人呢！',
+      '想点进去看看吗？',
+      '感兴趣的话就打开看看吧～',
+      '标题里有不少故事哦～'
     ],
     duration: MessageDuration.SHORT,
     priority: MessagePriority.LOW
@@ -242,7 +243,7 @@ export const TimeMessages = {
   // 时间段问候
   GREETING: {
     MIDNIGHT: {
-      messages: ['夜深了，注意休息哦～', '已经这么晚了，早点睡吧～'],
+      messages: ['凌晨好～新的一天从此刻开始呢', '这个点还醒着，天依陪着你～'],
       duration: MessageDuration.NORMAL,
       priority: MessagePriority.LOW
     },
@@ -266,22 +267,38 @@ export const TimeMessages = {
   // 页面停留时间
   STAY_TIME: {
     FIVE_MINUTES: {
-      messages: ['你已经在这里停留了5分钟呢，天依很开心能陪伴你～'],
+      messages: [
+        '你已经在这里停留了5分钟呢，天依很开心能陪伴你～',
+        '5分钟过去了，还看得津津有味呢～',
+        '不知不觉聊了5分钟啦，喜欢这里吗？'
+      ],
       duration: MessageDuration.NORMAL,
       priority: MessagePriority.LOW
     },
     TEN_MINUTES: {
-      messages: ['10分钟了！看来你对这个内容很感兴趣呢～'],
+      messages: [
+        '10分钟了！看来你对这个内容很感兴趣呢～',
+        '10分钟啦，要不要喝口水休息一下～',
+        '已经10分钟了呢，天依一直在这里陪你～'
+      ],
       duration: MessageDuration.NORMAL,
       priority: MessagePriority.LOW
     },
     FIFTEEN_MINUTES: {
-      messages: ['15分钟了！天依很享受这段共处的时光～'],
+      messages: [
+        '15分钟了！天依很享受这段共处的时光～',
+        '15分钟啦，时间过得真快呢～',
+        '已经15分钟了，谢谢你愿意停留这么久～'
+      ],
       duration: MessageDuration.NORMAL,
       priority: MessagePriority.LOW
     },
     THIRTY_MINUTES: {
-      messages: ['半小时了！长时间阅读要注意休息眼睛哦～'],
+      messages: [
+        '半小时了！长时间阅读要注意休息眼睛哦～',
+        '已经半小时啦，起来活动活动吧～',
+        '半小时过去了，天依提醒你该休息一下了～'
+      ],
       duration: MessageDuration.LONG,
       priority: MessagePriority.MEDIUM
     }
@@ -316,7 +333,7 @@ export const ThemeMessages = {
   LIGHT: {
     messages: [
       '切换到亮色模式了！眼睛会舒服一些～',
-      '哇，好明亮啊！像阳光一样温暖☀️',
+      '哇，好明亮啊！像阳光一样温暖',
       '亮色模式开启！今天也是元气满满的一天！',
       '切换到亮色主题了，很适合白天使用呢～'
     ],
@@ -325,8 +342,8 @@ export const ThemeMessages = {
   },
   DARK: {
     messages: [
-      '切换到深色模式了！夜晚模式启动🌙',
-      '哇，好酷的黑色！像夜空一样神秘✨',
+      '切换到深色模式了！夜晚模式启动',
+      '哇，好酷的黑色！像夜空一样神秘',
       '深色模式开启！保护眼睛，从我做起～',
       '切换到深色主题了，很适合夜晚浏览哦～'
     ],
@@ -424,7 +441,7 @@ export const MarkdownMessages = {
     priority: MessagePriority.LOW
   },
   PUBLISH: {
-    messages: ['好耶，发布成功！', '发布成功啦！🎉'],
+    messages: ['好耶，发布成功！', '发布成功啦！'],
     duration: MessageDuration.NORMAL,
     priority: MessagePriority.HIGH
   },
@@ -647,7 +664,7 @@ export const GalleryMessages = {
   // 画廊页面访问消息 - 提高优先级，高于通用页面消息
   PAGE_VISIT: {
     messages: [
-      '欢迎来到画廊！这里有很多好看的图片~',
+      '欢迎来到画廊！这里有很多好看的图片～',
       '来看看博主的精心收藏吧～',
       '画廊里有不少精彩图片呢！',
       '这些图片都是博主的心头好哦～'
@@ -658,10 +675,10 @@ export const GalleryMessages = {
   // 画廊分类切换消息
   CATEGORY_CHANGE: {
     messages: [
-      '切换到{category}分类了~',
-      '正在浏览{category}分类的图片~',
+      '切换到{category}分类了～',
+      '正在浏览{category}分类的图片～',
       '{category}分类有很多好看的图片呢！',
-      '来看看{category}分类吧~'
+      '来看看{category}分类吧～'
     ],
     duration: 2500,
     priority: MessagePriority.LOW
@@ -669,9 +686,9 @@ export const GalleryMessages = {
   // 画廊图片点击消息 - 提高优先级，确保用户交互反馈优先显示
   IMAGE_CLICK: {
     messages: [
-      '这张图片真好看呢~',
+      '这张图片真好看呢～',
       '喜欢这张图片吗？',
-      '这张图的色调很舒服~',
+      '这张图的色调很舒服～',
       '看起来真不错！'
     ],
     duration: MessageDuration.NORMAL,
@@ -680,9 +697,9 @@ export const GalleryMessages = {
   // 画廊图片预览消息
   IMAGE_PREVIEW: {
     messages: [
-      '正在查看大图~',
+      '正在查看大图～',
       '这张图好清晰呀！',
-      '细节看得更清楚了~'
+      '细节看得更清楚了～'
     ],
     duration: 2500,
     priority: MessagePriority.LOW
@@ -690,8 +707,8 @@ export const GalleryMessages = {
   // 关闭画廊预览消息
   PREVIEW_CLOSE: {
     messages: [
-      '预览已关闭~',
-      '回到画廊了~',
+      '预览已关闭～',
+      '回到画廊了～',
       '继续看其他图片吧！'
     ],
     duration: MessageDuration.SHORT,
@@ -700,10 +717,10 @@ export const GalleryMessages = {
   // 画廊滚动浏览消息（低概率触发）
   SCROLL: {
     messages: [
-      '正在浏览画廊~',
+      '正在浏览画廊～',
       '看看还有什么好看的图片吧！',
-      '这么多好看的图片~',
-      '继续往下看看吧~'
+      '这么多好看的图片～',
+      '继续往下看看吧～'
     ],
     duration: 2500,
     priority: MessagePriority.LOW
@@ -763,7 +780,7 @@ export const HiddenTagEasterEggMessages = {
       '天依的小秘密被你发现了，要帮人家保密哦～'
     ],
     duration: MessageDuration.LONG,
-    priority: 10 // 彩蛋消息优先级
+    priority: MessagePriority.EASTER_EGG
   },
   // 隐藏博客的特殊提示
   SPECIAL_NOTE: {
@@ -832,18 +849,7 @@ export const ContextAwareMessages = {
     priority: MessagePriority.MEDIUM
   },
   
-  // 重复访问消息
-  REPEAT_VISIT: {
-    messages: [
-      '又来看这篇文章？果然很喜欢呢～',
-      '这篇文章一定很精彩，看了还想看～',
-      '天依知道你很喜欢这篇！'
-    ],
-    duration: MessageDuration.SHORT,
-    priority: MessagePriority.LOW
-  },
-  
-  // 长时间阅读消息
+  // 长时间阅读消息（聚焦阅读投入，区别于 TimeMessages.STAY_TIME 的计时提醒）
   LONG_READ: {
     messages: [
       '这篇文章真的很吸引人呢～',
@@ -965,7 +971,7 @@ export const RocoSimulatorMessages = {
       '又添一员大将！你的阵容正在成型哦～',
       '好选择！这只宠物会和天依一样可爱吗？'
     ],
-    duration: MessageDuration.SHORT,
+    duration: MessageDuration.NORMAL,
     priority: MessagePriority.MEDIUM
   },
   // 移除宠物消息
@@ -976,7 +982,7 @@ export const RocoSimulatorMessages = {
       '阵容调整中...天依相信你的判断！',
       '移除了呢～是为了给更棒的宠物腾位置吗？'
     ],
-    duration: MessageDuration.SHORT,
+    duration: MessageDuration.NORMAL,
     priority: MessagePriority.LOW
   },
   // 切换外观消息
@@ -987,7 +993,7 @@ export const RocoSimulatorMessages = {
       '哇～这个造型天依也很喜欢呢！',
       '换装完成！宠物们也要美美哒～'
     ],
-    duration: MessageDuration.SHORT,
+    duration: MessageDuration.NORMAL,
     priority: MessagePriority.LOW
   },
   // 选择血脉消息
@@ -998,7 +1004,7 @@ export const RocoSimulatorMessages = {
       '血脉之力涌动中...感觉变得更强了！',
       '天依觉得这是个很棒的选择哦～'
     ],
-    duration: MessageDuration.SHORT,
+    duration: MessageDuration.NORMAL,
     priority: MessagePriority.LOW
   },
   // 清空阵容消息
@@ -1020,7 +1026,7 @@ export const RocoSimulatorMessages = {
       '暂时不能上场了呢～不过其他宠物也有机会表现啦～',
       '被禁赛了...天依会为它加油的！'
     ],
-    duration: MessageDuration.SHORT,
+    duration: MessageDuration.NORMAL,
     priority: MessagePriority.LOW
   },
   // 解除禁赛消息
@@ -1031,7 +1037,7 @@ export const RocoSimulatorMessages = {
       '重获自由！让它大展身手吧～',
       '回来啦～天依就知道你会想念它的！'
     ],
-    duration: MessageDuration.SHORT,
+    duration: MessageDuration.NORMAL,
     priority: MessagePriority.LOW
   },
   // 阵容已满消息
@@ -1042,7 +1048,7 @@ export const RocoSimulatorMessages = {
       '已经塞不下更多宠物啦～阵容很豪华呢！',
       '满了满了～天依觉得现在的阵容已经很强了！'
     ],
-    duration: MessageDuration.SHORT,
+    duration: MessageDuration.NORMAL,
     priority: MessagePriority.LOW
   },
   // 互斥冲突消息
