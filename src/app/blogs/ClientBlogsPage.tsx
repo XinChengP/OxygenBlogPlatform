@@ -8,7 +8,7 @@ import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 import Pagination from '@/components/Pagination';
 import { getAssetPath } from '@/utils/assetUtils';
 import { Calendar, ArrowRight, BookOpen, Pin, Tag } from 'lucide-react';
-import live2dMessageManager from '@/utils/live2dMessageManager';
+import live2dMessageManager, { Live2DMessageHelper } from '@/utils/live2dMessageManager';
 import PageHeader from '@/components/ui/PageHeader';
 
 interface BlogPost {
@@ -55,20 +55,10 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
   };
 
   const handlePostHover = (post: BlogPost) => {
-    if (post.slug === 'benou-score') {
-      live2dMessageManager.clearMessageQueue();
-      setTimeout(() => {
-        live2dMessageManager.showMessage('如果双腿跑不动，那就试着抓住风～天依相信每一只笨鸥都能飞到自己的天空！', 4000, 10);
-      }, 200);
-      return;
-    }
-    if (post.slug === 'markdown-editor' || post.slug === 'color-egg') {
-      live2dMessageManager.clearMessageQueue();
-      setTimeout(() => {
-        live2dMessageManager.showMessage('发现了彩蛋文章！天依为你准备了特别的惊喜～', 4000, 10);
-      }, 200);
-      return;
-    }
+    // 命中了列表悬停彩蛋则直接返回，不再显示普通悬停消息
+    if (Live2DMessageHelper.showListHoverEasterEgg(post.slug)) return;
+
+    // 普通悬停消息
     const hoverMessages = [
       `对《${post.title}》感兴趣吗？点击查看详情～`,
       `这是一篇关于${post.category}的文章，阅读时间大约${post.readTime}分钟`,

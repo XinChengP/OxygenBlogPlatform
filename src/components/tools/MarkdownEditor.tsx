@@ -14,6 +14,7 @@ import { copyToClipboard } from '@/utils/clipboard';
 import { calculateReadingTime } from '@/lib/utils';
 import { advancedWordCount } from '@/utils/wordCountUtils';
 import live2dMessageManager, { Live2DMessageHelper } from '@/utils/live2dMessageManager';
+import { EasterEggMessages } from '@/setting/live2dMessages';
 import { uploadEditorImage, uploadBase64Image } from '@/utils/editorImageUpload';
 
 const CodeBlock = dynamic(() => import('./CodeBlock'), {
@@ -1226,21 +1227,12 @@ seoDescription: "${blogMetadata.seoDescription}"
 
   // 彩蛋功能管理器
   const easterEggManager = {
-    // 颜色彩蛋配置
-    colorEggs: {
-      '#ee0000': {
-        message: '这是阿绫红哦~(　ﾟ∀ﾟ) ﾉ♡',
-        description: '乐正绫的代表红色'
-      },
-      '#66ccff': {
-        message: '这是天依蓝(〃\'▽\'〃)',
-        description: '洛天依的代表蓝色'
-      }
-    },
+    // 颜色彩蛋配置（统一取自彩蛋消息配置中心）
+    colorEggs: EasterEggMessages.COLOR,
 
     // 触发颜色彩蛋
     triggerColorEgg: (color: string, duration: number = 2000) => {
-      const egg = easterEggManager.colorEggs[color as keyof typeof easterEggManager.colorEggs];
+      const egg = easterEggManager.colorEggs[color];
       if (egg) {
         live2dMessageManager.showMessage(egg.message, duration, 10); // 彩蛋消息使用最高优先级10
       }
@@ -1248,7 +1240,7 @@ seoDescription: "${blogMetadata.seoDescription}"
 
     // 隐藏颜色彩蛋消息
     hideColorEgg: (color: string) => {
-      const egg = easterEggManager.colorEggs[color as keyof typeof easterEggManager.colorEggs];
+      const egg = easterEggManager.colorEggs[color];
       if (egg) {
         // 只隐藏优先级 <= 10 的消息，彩蛋消息现在也是最高优先级
         live2dMessageManager.hideMessage(0, 10);

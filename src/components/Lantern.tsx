@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigationVisibility } from '@/contexts/NavigationVisibilityContext';
 import live2dMessageManager from '@/utils/live2dMessageManager';
+import { EasterEggMessages } from '@/setting/live2dMessages';
 
 interface LanternProps {
   text?: string;
@@ -720,7 +721,8 @@ export default function Lantern({ text = '新春快乐', enabled = true }: Lante
         // 先进入烟花模式（阻塞所有消息）
         live2dMessageManager.enterFireworksMode();
         // 触发彩蛋消息（使用 showFireworksMessage 绕过阻塞）
-        live2dMessageManager.showFireworksMessage('谢谢你的灯笼！天依都收到啦，请你看烟花！', 5000);
+        const lanternEgg = EasterEggMessages.LANTERN;
+        live2dMessageManager.showFireworksMessage(lanternEgg.messages[0], lanternEgg.duration);
         // 触发烟花效果
         startFireworks();
         // 标记彩蛋消息已触发

@@ -764,38 +764,115 @@ export const ChangelogsMessages = {
 } as const;
 
 /**
- * 隐藏标签博客彩蛋消息配置
- * 用于触发 Live2D 看板娘的特殊彩蛋消息
+ * ============================================================
+ * 彩蛋消息配置中心
+ * 所有彩蛋消息集中在这里，方便统一查阅与管理
+ * 注意：仅集中「消息内容与显示参数」，触发逻辑保留在各自的组件/管理器中
+ * ============================================================
  */
-export const HiddenTagEasterEggMessages = {
-  // 发现隐藏博客的惊喜消息
-  DISCOVERY: {
-    messages: [
-      '哇！你发现了隐藏博客！天依好惊喜～',
-      '居然找到了这篇隐藏文章，太厉害了！',
-      '隐藏内容解锁成功！天依为你骄傲～',
-      '发现了不得了的东西呢，你真是有心人～',
-      '隐藏博客被发现啦！看来是天意让你看到～',
-      '咦？这篇博客明明藏起来了，你是怎么找到的？',
-      '天依的小秘密被你发现了，要帮人家保密哦～'
-    ],
-    duration: MessageDuration.LONG,
-    priority: MessagePriority.EASTER_EGG
+export const EasterEggMessages = {
+  // ----------------------------------------------------------
+  // 1. 隐藏标签博客彩蛋（文章带有 hidden 标签时触发）
+  // ----------------------------------------------------------
+  HIDDEN_TAG: {
+    // 发现隐藏博客的惊喜消息
+    DISCOVERY: {
+      messages: [
+        '哇！你发现了隐藏博客！天依好惊喜～',
+        '居然找到了这篇隐藏文章，太厉害了！',
+        '隐藏内容解锁成功！天依为你骄傲～',
+        '发现了不得了的东西呢，你真是有心人～',
+        '隐藏博客被发现啦！看来是天意让你看到～',
+        '咦？这篇博客明明藏起来了，你是怎么找到的？',
+        '天依的小秘密被你发现了，要帮人家保密哦～'
+      ],
+      duration: MessageDuration.LONG,
+      priority: MessagePriority.EASTER_EGG
+    },
+    // 隐藏博客的特殊提示
+    SPECIAL_NOTE: {
+      messages: [
+        '这篇隐藏博客可是特别的哦，要好好珍惜～',
+        '隐藏内容通常都有特别的意义呢～',
+        '天依的秘密基地被你发现啦～',
+        '这可是限定版内容哦，只有有缘人才能看到～',
+        '能在这里相遇，一定是特别的缘分呢～',
+        '天依会把这份回忆好好珍藏起来的～'
+      ],
+      duration: MessageDuration.NORMAL,
+      priority: MessagePriority.MEDIUM
+    }
   },
-  // 隐藏博客的特殊提示
-  SPECIAL_NOTE: {
+
+  // ----------------------------------------------------------
+  // 2. 文章详情页专属彩蛋（key 为文章 slug，打开文章时触发）
+  // ----------------------------------------------------------
+  ARTICLE: {
+    // 《博客崩溃纪实（迫真）》
+    'blogs-crash-diary': {
+      messages: [
+        '这可是博主得意的癫疯之作，快来赤一下吧（笑）',
+        '体现了博主美丽の精神状态（逃）'
+      ],
+      duration: MessageDuration.LONG,
+      priority: MessagePriority.EASTER_EGG
+    }
+  } as Record<string, MessageConfig>,
+
+  // ----------------------------------------------------------
+  // 3. 博客列表页悬停彩蛋（key 为文章 slug，悬停卡片时触发）
+  // ----------------------------------------------------------
+  LIST_HOVER: {
+    // 《笨鸥》
+    'benou-score': {
+      messages: [
+        '如果双腿跑不动，那就试着抓住风～天依相信每一只笨鸥都能飞到自己的天空！'
+      ],
+      duration: MessageDuration.LONG,
+      priority: MessagePriority.EASTER_EGG
+    },
+    // 彩蛋文章提示（Markdown 编辑器 / 颜色彩蛋演示文章）
+    'markdown-editor': {
+      messages: [
+        '发现了彩蛋文章！天依为你准备了特别的惊喜～'
+      ],
+      duration: MessageDuration.LONG,
+      priority: MessagePriority.EASTER_EGG
+    },
+    'color-egg': {
+      messages: [
+        '发现了彩蛋文章！天依为你准备了特别的惊喜～'
+      ],
+      duration: MessageDuration.LONG,
+      priority: MessagePriority.EASTER_EGG
+    }
+  } as Record<string, MessageConfig>,
+
+  // ----------------------------------------------------------
+  // 4. 灯笼彩蛋（连续点亮 4 盏灯笼后触发，配合烟花）
+  // ----------------------------------------------------------
+  LANTERN: {
     messages: [
-      '这篇隐藏博客可是特别的哦，要好好珍惜～',
-      '隐藏内容通常都有特别的意义呢～',
-      '天依的秘密基地被你发现啦～',
-      '这可是限定版内容哦，只有有缘人才能看到～',
-      '能在这里相遇，一定是特别的缘分呢～',
-      '天依会把这份回忆好好珍藏起来的～'
+      '谢谢你的灯笼！天依都收到啦，请你看烟花！'
     ],
-    duration: MessageDuration.NORMAL,
-    priority: MessagePriority.MEDIUM
-  }
-} as const;
+    duration: MessageDuration.LONG + 1000,
+    priority: MessagePriority.EASTER_EGG
+  } as MessageConfig,
+
+  // ----------------------------------------------------------
+  // 5. Markdown 编辑器颜色彩蛋（输入特定色值时触发）
+  // ----------------------------------------------------------
+  COLOR: {
+    '#ee0000': {
+      message: '这是阿绫红哦~(　ﾟ∀ﾟ) ﾉ♡',
+      description: '乐正绫的代表红色'
+    },
+    '#66ccff': {
+      message: '这是天依蓝(〃\'▽\'〃)',
+      description: '洛天依的代表蓝色'
+    }
+  } as Record<string, { message: string; description: string }>
+};
 
 /**
  * 上下文感知消息配置

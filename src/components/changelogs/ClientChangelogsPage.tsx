@@ -125,7 +125,7 @@ function ClientChangelogsPage({ changelogs, blogTimeStats, momentTimeStats }: Cl
         {/* 页面标题区域 */}
         <PageHeader
           title="开发日志"
-          description="记录项目成长，见证每一次进步"
+          description="博客の成长历程"
           size="lg"
           className="mb-12"
         />

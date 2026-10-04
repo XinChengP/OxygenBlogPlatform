@@ -138,18 +138,43 @@ export default function ClientBlogDetail({
   }, []);
 
   // 阅读进度条：监听滚动实时计算文章阅读百分比
+  // 说明：使用 requestAnimationFrame 节流 + 仅在数值变化时才 setState，
+  // 避免滚动时高频更新导致的「Maximum update depth exceeded」问题。
   useEffect(() => {
-    const handleScroll = () => {
+    let frameId: number | null = null;
+    let lastProgress = -1;
+
+    const updateProgress = () => {
       const scrollTop = window.scrollY;
       const docHeight = document.documentElement.scrollHeight - window.innerHeight;
       const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
-      setReadProgress(Math.min(100, Math.max(0, progress)));
+      const nextProgress = Math.min(100, Math.max(0, Math.round(progress)));
+
+      if (nextProgress !== lastProgress) {
+        lastProgress = nextProgress;
+        setReadProgress(nextProgress);
+      }
+    };
+
+    const handleScroll = () => {
+      if (frameId !== null) return;
+      frameId = window.requestAnimationFrame(() => {
+        frameId = null;
+        updateProgress();
+      });
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
+    window.addEventListener('resize', handleScroll, { passive: true });
+    updateProgress();
 
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId);
+      }
+    };
   }, []);
 
   // 组件挂载时清空图片收集列表，防止路由切换或热更新后残留旧数据
@@ -313,6 +338,15 @@ export default function ClientBlogDetail({
       return () => clearTimeout(timer);
     }
   }, [blog.hidden]);
+
+  // 特定文章专属彩蛋消息（按 slug 匹配，无配置时静默跳过）
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      Live2DMessageHelper.showArticleEasterEgg(blog.slug);
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [blog.slug]);
 
   // 清理 iframe 资源 - 防止页面切换时的脚本错误
   useEffect(() => {

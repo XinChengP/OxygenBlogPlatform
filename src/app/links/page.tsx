@@ -38,7 +38,7 @@ export default function LinksPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         <PageHeader
           title="相关链接"
-          description="本站参考的资源"
+          description="本站参考借鉴的资源ovo"
           size="lg"
           className="mb-12"
           gradientStyle="primary"

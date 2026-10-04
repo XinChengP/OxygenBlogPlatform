@@ -10,6 +10,7 @@ import SmoothScrollProvider from "@/components/SmoothScrollProvider";
 import { NavigationVisibilityProvider } from "@/contexts/NavigationVisibilityContext";
 import Analytics from "@/components/Analytics";
 import SecurityProvider from "@/components/security/SecurityProvider";
+import ExternalLinkGuard from "@/components/security/ExternalLinkGuard";
 import Live2DDynamicLoader from "@/components/Live2DDynamicLoader";
 import MusicPlayerController from "@/components/MusicPlayerController";
 import { enableBackground, backgroundImage } from "@/setting/WebSetting";
@@ -298,6 +299,8 @@ export default function RootLayout({
                 </main>
                 <Footer />
                 <ConditionalComponents />
+                {/* 外部链接跳转提醒 - 拦截全站外链点击并弹出安全提示 */}
+                <ExternalLinkGuard />
               </SmoothScrollProvider>
             </NavigationVisibilityProvider>
           </ThemeProvider>

@@ -278,7 +278,7 @@ export default function FriendsPage() {
         {/* 页面标题 - 使用统一的 PageHeader 组件 */}
         <PageHeader
           title="友情链接"
-          description="互联网上的朋友们，让我们一起在这个广阔的世界中相遇、成长"
+          description="互联网上的朋友们qwq"
           size="lg"
           className="mb-12"
           gradientStyle="primary"

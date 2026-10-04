@@ -20,7 +20,7 @@ import {
   MarkdownMessages,
   GeneralMessages,
   HolidayMessages,
-  HiddenTagEasterEggMessages,
+  EasterEggMessages,
   GalleryMessages,
   MomentsMessages,
   ChangelogsMessages,
@@ -774,20 +774,57 @@ export class Live2DMessageHelper {
     const useDiscovery = Math.random() < 0.6; // 60% 概率显示发现消息
 
     if (useDiscovery) {
-      const config = HiddenTagEasterEggMessages.DISCOVERY;
+      const config = EasterEggMessages.HIDDEN_TAG.DISCOVERY;
       live2dMessageManager.showMessage(
         getRandomMessage(config),
         config.duration,
         config.priority
       );
     } else {
-      const config = HiddenTagEasterEggMessages.SPECIAL_NOTE;
+      const config = EasterEggMessages.HIDDEN_TAG.SPECIAL_NOTE;
       live2dMessageManager.showMessage(
         getRandomMessage(config),
         config.duration,
         config.priority
       );
     }
+  }
+
+  /**
+   * 显示特定文章的专属彩蛋消息
+   * 当用户打开配置了专属彩蛋的文章时触发（按 slug 匹配）
+   * @param slug 文章 slug
+   */
+  static showArticleEasterEgg(slug: string): void {
+    const config = EasterEggMessages.ARTICLE[slug];
+    if (!config) return;
+
+    live2dMessageManager.showMessage(
+      getRandomMessage(config),
+      config.duration,
+      config.priority
+    );
+  }
+
+  /**
+   * 显示博客列表页悬停彩蛋消息
+   * 当用户悬停配置了彩蛋的文章卡片时触发（按 slug 匹配）
+   * @param slug 文章 slug
+   * @returns 是否命中了彩蛋（true 表示已处理，调用方无需再显示普通悬停消息）
+   */
+  static showListHoverEasterEgg(slug: string): boolean {
+    const config = EasterEggMessages.LIST_HOVER[slug];
+    if (!config) return false;
+
+    live2dMessageManager.clearMessageQueue();
+    setTimeout(() => {
+      live2dMessageManager.showMessage(
+        getRandomMessage(config),
+        config.duration,
+        config.priority
+      );
+    }, 200);
+    return true;
   }
 
   /**
