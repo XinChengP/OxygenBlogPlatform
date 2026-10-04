@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { GalleryImage, ImageLoadStatus } from '../../../types/gallery';
 import { getAssetPath } from '@/utils/assetUtils';
-import { RefreshCw, ImageOff, Tag } from 'lucide-react';
+import { RefreshCw, ImageOff } from 'lucide-react';
 
 // ImageCard组件属性
 interface ImageCardProps {
@@ -15,7 +15,7 @@ interface ImageCardProps {
   priority?: 'high' | 'low';
 }
 
-// ImageCard组件
+// ImageCard组件 — 展签式卡片：自然比例图片 + 美术馆图注
 const ImageCard = ({ image, onClick, index, priority = 'low' }: ImageCardProps) => {
   // 图片加载状态
   const [loadStatus, setLoadStatus] = useState<ImageLoadStatus>('loading');
@@ -24,10 +24,15 @@ const ImageCard = ({ image, onClick, index, priority = 'low' }: ImageCardProps) 
   const maxRetries = 3;
   const hasFallback = !!image.fallbackSrc;
   const hasSwitchedToFallback = currentSrc === image.fallbackSrc;
-  
+
+  // 展签编号：01、02……
+  const plaqueNo = String(index + 1).padStart(2, '0');
+  // 原始宽高比例（缺失时用 4:5 竖幅兜底，避免加载时跳动）
+  const aspectRatio = image.width && image.height ? image.width / image.height : 4 / 5;
+
   // 重试计时器引用
   const retryTimerRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   // 处理图片路径 - 使用getAssetPath确保GitHub Pages兼容性
   const processImagePath = useCallback((path: string) => {
     return getAssetPath(path);
@@ -39,7 +44,7 @@ const ImageCard = ({ image, onClick, index, priority = 'low' }: ImageCardProps) 
     setRetryCount(0);
     setCurrentSrc(processImagePath(image.src));
   }, [image.src, processImagePath]);
-  
+
   // 图片加载成功处理
   const handleImageLoad = () => {
     setLoadStatus('loaded');
@@ -48,17 +53,17 @@ const ImageCard = ({ image, onClick, index, priority = 'low' }: ImageCardProps) 
       retryTimerRef.current = null;
     }
   };
-  
+
   // 图片加载失败处理
   const handleImageError = () => {
     if (retryCount < maxRetries) {
       setLoadStatus('loading');
       setRetryCount(prev => prev + 1);
-      
+
       if (retryTimerRef.current) {
         clearTimeout(retryTimerRef.current);
       }
-      
+
       const waitTime = 1000 * Math.pow(2, retryCount);
       retryTimerRef.current = setTimeout(() => {
         setLoadStatus('loading');
@@ -71,7 +76,7 @@ const ImageCard = ({ image, onClick, index, priority = 'low' }: ImageCardProps) 
       setLoadStatus('failed');
     }
   };
-  
+
   // 组件卸载时清除计时器
   useEffect(() => {
     return () => {
@@ -80,75 +85,52 @@ const ImageCard = ({ image, onClick, index, priority = 'low' }: ImageCardProps) 
       }
     };
   }, []);
-  
+
   // 当image.src变化时重置状态
   useEffect(() => {
     resetImageState();
   }, [image.src, resetImageState]);
-  
+
   return (
-    /* 圆角统一为标准卡片档 rounded-xl；阴影引用统一令牌；
-       不加 CSS transition——位移和阴影由 Framer Motion 逐帧驱动，避免双重过渡 */
-    <motion.div
-      className="group relative cursor-pointer overflow-hidden rounded-xl shadow-card"
+    <motion.figure
+      className="group cursor-pointer"
       onClick={onClick}
-      whileHover={{
-        y: -3,
-        boxShadow: 'var(--card-shadow-hover)'
-      }}
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.4, delay: index * 0.02 }}
+      whileHover={{ y: -4 }}
+      transition={{ duration: 0.25 }}
     >
-      {/* 图片容器 */}
-      <div className="aspect-square relative bg-gray-100 dark:bg-gray-800 overflow-hidden">
+      {/* 画框：细边框 + 略偏移的底衬阴影，营造装裱感 */}
+      <motion.div
+        className="relative overflow-hidden rounded-lg border border-border/70 bg-muted/40 shadow-card group-hover:shadow-[var(--card-shadow-hover)] transition-shadow duration-300"
+        style={{ aspectRatio }}
+      >
         {/* 加载中状态 - 骨架屏效果 */}
         {loadStatus === 'loading' && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-800">
-            <div className="relative w-full h-full">
-              {/* 骨架屏动画 */}
-              <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-gray-700 dark:via-gray-600 dark:to-gray-700 animate-pulse"></div>
-              {/* 加载指示器 */}
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <div className="relative">
-                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 dark:border-gray-600"></div>
-                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-primary absolute top-0 left-0"></div>
-                </div>
-                {retryCount > 0 && (
-                  <motion.p 
-                    className="text-xs text-muted-foreground mt-2"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                  >
-                    重试中... ({retryCount}/{maxRetries})
-                  </motion.p>
-                )}
-              </div>
-            </div>
+          <div className="absolute inset-0 bg-gradient-to-r from-muted via-muted/60 to-muted animate-pulse flex items-center justify-center">
+            {retryCount > 0 && (
+              <p className="text-xs text-muted-foreground">重试中... ({retryCount}/{maxRetries})</p>
+            )}
           </div>
         )}
-        
-        {/* 图片：CSS 过渡只管加载淡入（opacity），缩放交给 Framer Motion，避免双重过渡 */}
-        <motion.img
+
+        {/* 图片：淡入与悬停缩放共用一个transition声明，避免类冲突 */}
+        <img
           src={currentSrc}
           alt={image.alt}
-          className={`w-full h-full object-cover transition-opacity duration-500 ${loadStatus === 'loading' ? 'opacity-0' : 'opacity-100'}`}
+          className={`w-full h-full object-cover transition-[opacity,transform] duration-500 ease-out group-hover:scale-[1.04] ${loadStatus === 'loading' ? 'opacity-0' : 'opacity-100'}`}
           onLoad={handleImageLoad}
           onError={handleImageError}
           crossOrigin="anonymous"
           referrerPolicy="no-referrer"
-          whileHover={{ scale: 1.05 }}
-          transition={{ duration: 0.3 }}
           loading={priority === 'high' ? 'eager' : 'lazy'}
           decoding="async"
         />
-        
+
         {/* 加载失败状态 */}
         {loadStatus === 'failed' && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-200 dark:bg-gray-700">
-            <ImageOff className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-2" />
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">图片加载失败</p>
-            <motion.button 
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted">
+            <ImageOff className="w-10 h-10 text-muted-foreground/60 mb-2" />
+            <p className="text-xs text-muted-foreground mb-3">作品暂时无法展出</p>
+            <motion.button
               className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors px-3 py-1.5 rounded-full bg-primary/10 hover:bg-primary/20"
               onClick={(e) => {
                 e.stopPropagation();
@@ -159,37 +141,42 @@ const ImageCard = ({ image, onClick, index, priority = 'low' }: ImageCardProps) 
               whileTap={{ scale: 0.95 }}
             >
               <RefreshCw className="w-3 h-3" />
-              点击重试
+              重新加载
             </motion.button>
           </div>
         )}
-        
-        {/* 悬停效果：渐变色叠加层 */}
-        <motion.div 
-          className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end"
-          initial={false}
-        >
-          <div className="p-4">
-            <p className="text-white text-sm font-medium truncate mb-1">{image.alt}</p>
-            <div className="flex items-center gap-1">
-              <Tag className="w-3 h-3 text-primary" />
-              <span className="text-white/80 text-xs">{image.category}</span>
-            </div>
-          </div>
-        </motion.div>
 
-        {/* 分类标签 - 左上角 */}
-        <motion.div 
-          className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-          initial={{ y: -10, opacity: 0 }}
-          whileHover={{ y: 0, opacity: 1 }}
-        >
-          <span className="text-xs px-2 py-1 rounded-full bg-primary/80 text-white backdrop-blur-sm">
+        {/* 悬停信息层：底部渐变 + 标题浮现 */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end pointer-events-none">
+          <p className="p-4 text-white text-sm font-medium leading-snug line-clamp-2">
+            {image.alt}
+            {image.subCategory && (
+              <span className="block text-white/70 text-xs mt-0.5">{image.subCategory}</span>
+            )}
+          </p>
+        </div>
+
+        {/* 右上角编号角标（悬停浮现） */}
+        <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full bg-black/45 text-white/90 text-[10px] tracking-widest tabular-nums backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          {plaqueNo}
+        </span>
+      </motion.div>
+
+      {/* 展签图注：小型玻璃底托保证任意背景上可读，编号 + 标题 + 分类 */}
+      <figcaption className="pt-2.5">
+        <div className="inline-flex items-baseline gap-2.5 max-w-full rounded-md bg-card/75 backdrop-blur-md border border-border/40 px-2.5 py-1.5 shadow-sm">
+          <span className="text-[11px] font-semibold text-primary tabular-nums shrink-0">
+            {plaqueNo}
+          </span>
+          <span className="text-[13px] text-foreground/95 truncate">
+            {image.alt}
+          </span>
+          <span className="ml-auto text-[10px] uppercase tracking-[0.15em] text-muted-foreground shrink-0">
             {image.category}
           </span>
-        </motion.div>
-      </div>
-    </motion.div>
+        </div>
+      </figcaption>
+    </motion.figure>
   );
 };
 

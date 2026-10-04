@@ -19,101 +19,19 @@ export const backgroundFixed = true; // 是否固定背景（视差效果）
 //预设的主题色方案，只保留蓝色主题
 const themePresets = {
   blue: {
-    primary: "#66ccff", // 蓝色
+    primary: "#66ccff", // 天依蓝（洛天依应援色）
     secondary: "#1e40af", // 深蓝色
     accent: "#06b6d4", // 青色
   },
 } as const;
 
-//当前使用的主题色方案，你也可以选择自己的，修改themePresets.后面的值
+//当前使用的主题色方案
+//注意：此处仅作为"站点配色方案"的文档性声明，不再驱动任何界面颜色
+//（历史上 applyThemeColors 曾用它在运行时覆盖 CSS 变量，已于 2026-10 移除）
+//界面配色的真正来源是 src/app/globals.css 的 CSS 令牌：
+//  - primary   → --color-primary: #66ccff（与此处一致）
+//  - secondary → --color-secondary: #0066cc（与 #1e40af 已分叉）
+//  - accent    → --color-accent: #0099cc（#06b6d4 对应的是 --color-chart-2）
+//换主题色请改 globals.css 的 :root/.dark 令牌；
+//另有约 46 个文件硬编码 #66ccff 等字面量（admin 后台为主），改色时需一并排查
 export const themeColors = themePresets.blue;
-
-//应用主题色函数(不用动)
-export const applyThemeColors = (isDark: boolean = false) => {
-  if (typeof window === "undefined") return;
-
-  const root = document.documentElement;
-
-  // 将十六进制转换为 RGB 值
-  const hexToRgb = (hex: string) => {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result
-      ? {
-          r: parseInt(result[1], 16),
-          g: parseInt(result[2], 16),
-          b: parseInt(result[3], 16),
-        }
-      : { r: 0, g: 0, b: 0 };
-  };
-
-  // 调整颜色亮度
-  const adjustBrightness = (hex: string, factor: number) => {
-    const { r, g, b } = hexToRgb(hex);
-    const adjust = (value: number) =>
-      Math.max(0, Math.min(255, Math.round(value * factor)));
-
-    let newR = adjust(r).toString(16);
-    let newG = adjust(g).toString(16);
-    let newB = adjust(b).toString(16);
-    
-    // 确保十六进制字符串长度为2
-    newR = newR.length === 1 ? '0' + newR : newR;
-    newG = newG.length === 1 ? '0' + newG : newG;
-    newB = newB.length === 1 ? '0' + newB : newB;
-
-    return `#${newR}${newG}${newB}`;
-  };
-
-  // 根据模式调整颜色
-  const primaryColor = isDark
-    ? adjustBrightness(themeColors.primary, 1.3)
-    : adjustBrightness(themeColors.primary, 0.8);
-  const accentColor = isDark
-    ? adjustBrightness(themeColors.accent, 1.2)
-    : adjustBrightness(themeColors.accent, 0.9);
-  const secondaryColor = isDark
-    ? adjustBrightness(themeColors.secondary, 1.4)
-    : themeColors.secondary;
-
-  // 设置 CSS 变量
-  root.style.setProperty("--theme-primary", primaryColor);
-  root.style.setProperty("--theme-accent", accentColor);
-  root.style.setProperty("--theme-secondary", secondaryColor);
-
-  // 兼容性：同时设置旧的变量名
-  root.style.setProperty("--primary", primaryColor);
-  root.style.setProperty(
-    "--primary-foreground",
-    isDark ? "#0f0f0f" : "#ffffff"
-  );
-  root.style.setProperty("--accent", accentColor);
-  root.style.setProperty("--accent-foreground", isDark ? "#0f0f0f" : "#ffffff");
-  root.style.setProperty("--secondary", secondaryColor);
-  root.style.setProperty(
-    "--secondary-foreground",
-    isDark ? "#f0f0f0" : "#1f1f1f"
-  );
-  
-  // Tailwind 颜色变量 - 带 --color- 前缀
-  root.style.setProperty("--color-primary", primaryColor);
-  root.style.setProperty("--color-primary-foreground", isDark ? "#0f0f0f" : "#ffffff");
-  root.style.setProperty("--color-accent", accentColor);
-  root.style.setProperty("--color-accent-foreground", isDark ? "#0f0f0f" : "#ffffff");
-  root.style.setProperty("--color-secondary", secondaryColor);
-  root.style.setProperty("--color-secondary-foreground", isDark ? "#f0f0f0" : "#1f1f1f");
-  
-  // 添加 Tailwind 需要的其他颜色变量
-  root.style.setProperty("--color-background", isDark ? "#111827" : "#ffffff");
-  root.style.setProperty("--color-foreground", isDark ? "#f9fafb" : "#111827");
-  root.style.setProperty("--color-muted", isDark ? "#374151" : "#f3f4f6");
-  root.style.setProperty("--color-muted-foreground", isDark ? "#9ca3af" : "#6b7280");
-  root.style.setProperty("--color-card", isDark ? "#1f2937" : "#ffffff");
-  root.style.setProperty("--color-card-foreground", isDark ? "#f9fafb" : "#111827");
-  root.style.setProperty("--color-popover", isDark ? "#1f2937" : "#ffffff");
-  root.style.setProperty("--color-popover-foreground", isDark ? "#f9fafb" : "#111827");
-  root.style.setProperty("--color-border", isDark ? "#374151" : "#e5e7eb");
-  root.style.setProperty("--color-input", isDark ? "#374151" : "#e5e7eb");
-  root.style.setProperty("--color-ring", primaryColor);
-  root.style.setProperty("--color-destructive", isDark ? "#ef4444" : "#dc2626");
-  root.style.setProperty("--color-destructive-foreground", isDark ? "#f9fafb" : "#ffffff");
-};

@@ -152,6 +152,18 @@
      悬停档加深远影，配合天依蓝边框反馈，阴影本身保持中性不染色 */
   --card-shadow: 0 1px 3px rgba(15, 23, 42, 0.05), 0 4px 14px -4px rgba(15, 23, 42, 0.08);
   --card-shadow-hover: 0 4px 8px rgba(15, 23, 42, 0.06), 0 16px 32px -12px rgba(15, 23, 42, 0.18);
+
+  /* 毛玻璃面板令牌（.glass-card / .glass-card-strong 共用）：
+     bg 为降级底色（浏览器不支持 backdrop-filter 时仍可读），
+     bg-blur 为支持毛玻璃时的底色（更透明，靠模糊补层次）；
+     色相统一取 card 令牌（亮 slate / 暗深蓝灰），全站面板不再各说各话 */
+  --glass-blur: 12px;
+  --glass-bg: rgba(248, 250, 252, 0.8);
+  --glass-bg-blur: rgba(248, 250, 252, 0.68);
+  --glass-bg-strong: rgba(248, 250, 252, 0.92);
+  --glass-bg-strong-blur: rgba(248, 250, 252, 0.78);
+  --glass-border: rgba(226, 232, 240, 0.55);
+  --glass-shadow: 0 3px 15px 2px rgba(15, 23, 42, 0.08);
 }
 
 .dark {
@@ -209,6 +221,48 @@
      悬停档加大远影扩散，配合天依蓝边框高亮 */
   --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.30), 0 4px 14px -4px rgba(0, 0, 0, 0.35);
   --card-shadow-hover: 0 4px 10px rgba(0, 0, 0, 0.35), 0 18px 36px -12px rgba(0, 0, 0, 0.55);
+
+  /* 毛玻璃面板令牌（暗色模式）：底色取 --card (#2a3441)，
+     边框与暗色全局 border 一致为白色低透明 */
+  --glass-blur: 12px;
+  --glass-bg: rgba(42, 52, 65, 0.8);
+  --glass-bg-blur: rgba(42, 52, 65, 0.66);
+  --glass-bg-strong: rgba(42, 52, 65, 0.92);
+  --glass-bg-strong-blur: rgba(42, 52, 65, 0.78);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-shadow: 0 3px 15px 2px rgba(0, 0, 0, 0.25);
+}
+
+/* ============================================
+   毛玻璃面板工具类
+   全站统一入口：导航栏、目录、分页等悬浮面板使用，
+   调整全站玻璃质感只需改 :root/.dark 里的 --glass-* 令牌。
+   .glass-card        标准档（bg-card/80 一档）
+   .glass-card-strong 加实档（bg-card/90 一档，用于小面积控件）
+   两者均自带边框色与阴影；圆角、内边距由使用处自行补充。
+   ============================================ */
+@layer components {
+  .glass-card,
+  .glass-card-strong {
+    border-color: var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    backdrop-filter: blur(var(--glass-blur));
+    background-color: var(--glass-bg);
+  }
+
+  .glass-card-strong {
+    background-color: var(--glass-bg-strong);
+  }
+
+  @supports (backdrop-filter: blur(4px)) or (-webkit-backdrop-filter: blur(4px)) {
+    .glass-card {
+      background-color: var(--glass-bg-blur);
+    }
+    .glass-card-strong {
+      background-color: var(--glass-bg-strong-blur);
+    }
+  }
 }
 
 /* 代码块主题样式优化 */

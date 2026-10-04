@@ -440,8 +440,7 @@ export default function RelatedLinks() {
       {/* 粘性工具栏：搜索框 + 分类快速导航；毛玻璃底保证滚动时压过背景图仍然可读 */}
       <div ref={barRef} className="sticky top-20 z-30 mb-8 -mx-2 px-2">
         <div
-          className="rounded-2xl border border-border shadow-card px-3 py-2.5
-                     bg-card/90 backdrop-blur-md supports-[backdrop-filter]:bg-card/75"
+          className="rounded-2xl border shadow-card px-3 py-2.5 glass-card-strong"
         >
           <div className="flex flex-col lg:flex-row lg:items-center gap-2.5">
             {/* 搜索框 */}

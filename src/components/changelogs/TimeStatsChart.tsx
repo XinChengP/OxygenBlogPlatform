@@ -5,7 +5,6 @@ import { Changelog, getMonthStats, getQuarterStats, getYearStats } from '@/types
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, AreaChart, Area } from 'recharts';
 import { motion } from 'framer-motion';
 import { containerVariants } from '@/utils/animationVariants';
-import { themeColors } from '@/setting/WebSetting';
 
 /**
  * 时间统计项接口

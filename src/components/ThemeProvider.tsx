@@ -4,13 +4,13 @@ import { ThemeProvider as NextThemesProvider } from 'next-themes';
 import { type ThemeProviderProps } from 'next-themes';
 import { useEffect, useState, useCallback } from 'react';
 import { useTheme } from 'next-themes';
-import { applyThemeColors } from '@/setting/WebSetting';
 
 /**
  * 主题控制器组件
- * 合并了 ThemeColorApplier 和 SystemThemeSync 的功能：
- * 1. 监听 resolvedTheme 变化并应用主题色
- * 2. 监听系统主题变化并添加过渡效果
+ * 界面配色完全由 globals.css 的 :root/.dark CSS 令牌承载，
+ * 这里不做任何运行时颜色重算（原 applyThemeColors 已删除，
+ * 其亮度系数会偏离手调色板，且部分变量在 Tailwind v4 下不生效）。
+ * 职责：主题切换时的平滑过渡 + 系统主题变化监听。
  */
 function ThemeController() {
   const { resolvedTheme, theme } = useTheme();
@@ -20,19 +20,19 @@ function ThemeController() {
     setMounted(true);
   }, []);
 
-  const applyThemeWithTransition = useCallback((isDark: boolean) => {
-    document.documentElement.classList.add('theme-transitioning');
-    applyThemeColors(isDark);
-    setTimeout(() => {
-      document.documentElement.classList.remove('theme-transitioning');
-    }, 500);
-  }, []);
-
-  // 监听 resolvedTheme 变化并应用主题色
+  // 手动切换主题时临时挂载过渡类，让颜色平滑渐变
+  // （配色本身由 .dark 类切换 CSS 令牌自动生效，这里只负责过渡动画）
   useEffect(() => {
     if (!mounted) return;
-    applyThemeWithTransition(resolvedTheme === 'dark');
-  }, [resolvedTheme, applyThemeWithTransition, mounted]);
+    document.documentElement.classList.add('theme-transitioning');
+    const timer = setTimeout(() => {
+      document.documentElement.classList.remove('theme-transitioning');
+    }, 500);
+    return () => {
+      clearTimeout(timer);
+      document.documentElement.classList.remove('theme-transitioning');
+    };
+  }, [resolvedTheme, mounted]);
 
   // 监听系统主题变化（当设置为跟随系统时）
   useEffect(() => {

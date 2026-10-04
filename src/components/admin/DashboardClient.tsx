@@ -31,7 +31,6 @@ import type { DashboardStats } from '../../utils/server/adminStats';
 import { Changelog, ChangelogType, getTypeStats, getChangelogTypeLabel, getMonthStats, getQuarterStats, getYearStats } from '../../types/changelogTypes';
 import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Legend, AreaChart, Area } from 'recharts';
 import TypeStatsChart from '@/components/changelogs/TypeStatsChart';
-import { themeColors } from '../../setting/WebSetting';
 import TimeStatsChart from '../changelogs/TimeStatsChart';
 
 /**

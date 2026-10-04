@@ -140,6 +140,16 @@ const serverHttpsFetch = <T = unknown>(url: string, headers: Record<string, stri
 const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif'];
 
 /**
+ * 判断错误是否为 GitHub API 限流（HTTP 403 rate limit exceeded）
+ * 限流窗口按整点重置（未认证 60 次/小时/IP），几秒的退避不会恢复配额，
+ * 因此限流时应直接降级而不是重试——重试只会继续消耗剩余配额
+ */
+const isRateLimitError = (error: unknown): boolean => {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.includes('403') || /rate limit/i.test(message);
+};
+
+/**
  * 检查文件是否为图片
  * @param filename - 文件名
  * @returns 是否为图片
@@ -775,13 +785,7 @@ export const getRemoteImages = async (config: {
         const response = await fetch(treesApiUrl, fetchOptions);
 
         if (!response.ok) {
-          if (response.status === 403 && retryCount < maxRetries - 1) {
-            retryCount++;
-            const waitTime = 1000 * Math.pow(2, retryCount);
-            console.log(`Rate limited, retrying in ${waitTime}ms...`);
-            await new Promise(resolve => setTimeout(resolve, waitTime));
-            continue;
-          }
+          // 403/限流直接抛出，由外层统一降级处理（重试无意义）
           throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
         }
 
@@ -865,13 +869,21 @@ export const getRemoteImages = async (config: {
 
       return images;
     } catch (error) {
+      // 限流是预期中的降级场景：配额按整点重置，退避重试无法恢复，
+      // 直接降级为仅本地图片，并用 warn 级别记录（避免 Next.js dev overlay 报 Console Error）
+      if (isRateLimitError(error)) {
+        console.warn('[Gallery] GitHub API 限流（403 rate limit exceeded），本次仅显示本地图片。', {
+          提示: '未认证配额为 60 次/小时/IP，整点重置；可在 .env 配置 GITHUB_TOKEN 提升至 5000 次/小时',
+        });
+        return [];
+      }
+
       retryCount++;
-      // 输出详细错误信息
-      console.error('[Gallery] Fetch error details:', {
+      // 输出详细错误信息（warn 级别，避免污染 Next.js dev overlay）
+      console.warn('[Gallery] Fetch error details:', {
         message: error instanceof Error ? error.message : 'Unknown error',
         name: error instanceof Error ? error.name : 'Unknown',
         cause: error instanceof Error ? (error as any).cause : 'Unknown',
-        stack: error instanceof Error ? error.stack : 'No stack trace'
       });
       if (retryCount >= maxRetries) {
         console.warn(

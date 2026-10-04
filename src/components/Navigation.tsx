@@ -228,7 +228,7 @@ const Navigation = () => {
     return `fixed top-0 left-0 right-0 z-[100000] transition-all duration-300 gpu-accelerated ${
       isAtTop
         ? 'bg-transparent dark:bg-transparent border-transparent'
-        : 'bg-white/70 dark:bg-gray-900/70 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-700/50'
+        : 'glass-card border-b'
     }`;
   }, [isAtTop]);
 
@@ -277,7 +277,7 @@ const Navigation = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
-              className={`absolute top-full left-0 mt-1 min-w-[8rem] rounded-lg shadow-lg border overflow-hidden bg-white/70 dark:bg-gray-900/70 backdrop-blur-md border-gray-200/50 dark:border-gray-700/50`}
+              className={`absolute top-full left-0 mt-1 min-w-[8rem] rounded-lg shadow-lg border overflow-hidden glass-card`}
             >
               <div className="py-1">
                 {dropdown.items.map((item) => (
@@ -397,8 +397,7 @@ const Navigation = () => {
         >
           {/* 气泡式菜单容器 - 浮层固定用毛玻璃，不随 isAtTop 变化 */}
           <div className={`
-            min-w-[140px] rounded-2xl shadow-xl border
-            bg-white/70 dark:bg-gray-900/70 border-gray-200/50 dark:border-gray-700/50 backdrop-blur-md
+            min-w-[140px] rounded-2xl shadow-xl border glass-card-strong
             py-3 px-2
           `}>
             {/* 普通导航项 */}

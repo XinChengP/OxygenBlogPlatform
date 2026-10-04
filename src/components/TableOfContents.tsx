@@ -108,7 +108,7 @@ export default function TableOfContents({ content }: TableOfContentsProps) {
   // 毛玻璃样式函数
   const getGlassStyle = (baseClasses: string) => {
     if (isBackgroundEnabled) {
-      return `${baseClasses} backdrop-blur-md bg-card/80 supports-[backdrop-filter]:bg-card/60 border-border/50`;
+      return `${baseClasses} glass-card`;
     }
     return `bg-card ${baseClasses} border-border`;
   };

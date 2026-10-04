@@ -41,7 +41,7 @@ export default function Pagination({
    */
   const getGlassStyle = (baseStyle: string) => {
     if (isBackgroundEnabled) {
-      return `${baseStyle} backdrop-blur-md bg-card/90 border-border shadow-lg supports-[backdrop-filter]:bg-card/75`;
+      return `${baseStyle} glass-card-strong`;
     }
     return `bg-card ${baseStyle} border-border`;
   };
