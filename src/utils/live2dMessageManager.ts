@@ -53,10 +53,8 @@ class Live2DMessageManager {
   private isFireworksMode = false;
   // 歌词模式状态：屏蔽所有 showMessage 调用（除歌词自身渲染外）
   private isLyricsMode = false;
-  // 歌词模式期间保存的原 window.showMessage，用于退出时恢复
+  // 歌词模式期间保存的原 window.showMessage（React 桥接版），用于退出时恢复
   private originalWindowShowMessage: ((text: string, timeout?: number) => void) | null = null;
-  // 歌词模式期间的延迟保护定时器 ID：防 Live2D 异步加载覆盖重写版
-  private lyricsProtectInterval: number | null = null;
 
   // 性能优化：将关键词集合提取为类级别常量，避免每次调用时重新创建
   private static readonly KEYWORD_SET = new Set(['复制', '成功', '完成', '加载', '切换', '模式']);
@@ -160,36 +158,14 @@ class Live2DMessageManager {
     if (typeof showFn === 'function') {
       showFn.call(window, message, duration);
     } else {
-      // 降级处理 - 直接操作 DOM
-      this.displayMessageDirectly(message);
+      // window.showMessage 尚未就绪（理论上不会发生，组件挂载时即桥接）
+      console.warn('[Live2D] showMessage 未就绪，跳过显示:', message);
     }
 
     // 设置消息结束后的处理
     this.currentTimeout = setTimeout(() => {
       this.onMessageComplete();
     }, duration);
-  }
-
-  /**
-   * 直接操作 DOM 显示消息 - 已废弃，不再直接操作 DOM
-   */
-  private displayMessageDirectly(message: string): void {
-    // 不再直接操作 DOM，而是通过事件或状态管理
-    // 如果 window.showMessage 存在，使用它
-    if (typeof (window as any).showMessage === 'function') {
-      (window as any).showMessage(message, 3000);
-    }
-  }
-
-  /**
-   * 直接显示消息（内部方法） - 已废弃，不再直接操作 DOM
-   */
-  private showMessageDirectly(message: string): void {
-    // 不再直接操作 DOM
-    // 如果 window.showMessage 存在，使用它
-    if (typeof (window as any).showMessage === 'function') {
-      (window as any).showMessage(message, 3000);
-    }
   }
 
   /**
@@ -266,12 +242,8 @@ class Live2DMessageManager {
 
   /**
    * 进入歌词模式
-   * 屏蔽所有 showMessage 调用：
-   *   1. live2dMessageManager.showMessage（项目代码入口）已有 isLyricsMode 屏蔽
-   *   2. window.showMessage（Live2D 自身 message.js 暴露的全局函数）通过重写 + canShowMessage 统一过滤
-   * 歌词自身通过 Live2DLyricsRenderer 直接 innerHTML 到 .message，不依赖 showMessage
-   *
-   * 关键：使用延迟保护机制防止 Live2D 异步加载完成后覆盖重写版（message.js:742 会执行 window.showMessage = showMessage）
+   * 屏蔽所有普通消息（除烟花彩蛋可穿透），歌词自身走独立 DOM 渲染不经过此处
+   * 重写 window.showMessage 为带优先级过滤的转发器
    */
   enterLyricsMode(): void {
     if (this.isLyricsMode) return;
@@ -279,40 +251,15 @@ class Live2DMessageManager {
     this.clearMessageQueue();
     this.interruptCurrentMessage();
     this.isLyricsMode = true;
-
     this.overrideWindowShowMessage();
-
-    // 延迟保护：进入歌词模式后的 1 秒内，每 200ms 检查一次，
-    // 如果 window.showMessage 被 Live2D 异步加载覆盖了，重新重写
-    // （避免在 Live2D 加载完成前点按钮、加载完成后覆盖重写版的时序问题）
-    let checkCount = 0;
-    const maxChecks = 5;
-    this.lyricsProtectInterval = window.setInterval(() => {
-      checkCount++;
-      if (!this.isLyricsMode || checkCount > maxChecks) {
-        if (this.lyricsProtectInterval !== null) {
-          clearInterval(this.lyricsProtectInterval);
-          this.lyricsProtectInterval = null;
-        }
-        return;
-      }
-      this.overrideWindowShowMessage();
-    }, 200);
   }
 
   /**
    * 退出歌词模式
-   * 1. 清除 isLyricsMode 标志
-   * 2. 停止延迟保护定时器
-   * 3. 恢复原 window.showMessage
+   * 恢复之前保存的 window.showMessage
    */
   exitLyricsMode(): void {
     this.isLyricsMode = false;
-
-    if (this.lyricsProtectInterval !== null) {
-      clearInterval(this.lyricsProtectInterval);
-      this.lyricsProtectInterval = null;
-    }
 
     if (typeof window !== 'undefined' && this.originalWindowShowMessage) {
       (window as any).showMessage = this.originalWindowShowMessage;
@@ -321,11 +268,11 @@ class Live2DMessageManager {
   }
 
   /**
-   * 重写 window.showMessage 为转发器（idempotent，可重复调用）
-   * 1. 仅在未保存过原函数时保存（避免重入覆盖）
-   * 2. 替换为转发函数：先过 canShowMessage 过滤，通过则调原 Live2D showMessage 显示
+   * 重写 window.showMessage 为带优先级过滤的转发器（幂等，可重复调用）
+   * 1. 首次调用时保存当前 window.showMessage（React 桥接版），避免重入覆盖
+   * 2. 替换为转发函数：先过 canShowMessage 过滤，通过则调保存的原函数显示
    *
-   * 不会循环：转发函数直接调 originalWindowShowMessage（原 Live2D showMessage），
+   * 不会循环：转发函数直接调 originalWindowShowMessage，
    * 不走 manager 内部，不会触发 canShowMessage 再次检查
    */
   private overrideWindowShowMessage(): void {
@@ -334,12 +281,10 @@ class Live2DMessageManager {
     if (!this.originalWindowShowMessage && typeof w.showMessage === 'function') {
       this.originalWindowShowMessage = w.showMessage;
     }
-    // 用箭头函数外加 self 引用，避免 this 绑定问题
     const self = this;
     w.showMessage = function (text: string, timeout?: number) {
       // window.showMessage 是普通消息入口，priority=1
       if (self.canShowMessage(1) && self.originalWindowShowMessage) {
-        // 调原 Live2D showMessage 显示，绕过当前重写（避免循环）
         self.originalWindowShowMessage.call(window, text, timeout);
       }
       // canShowMessage 返回 false（歌词/烟花/彩蛋模式）：静默丢弃
@@ -399,9 +344,6 @@ class Live2DMessageManager {
     this.isDisplayingMessage = false;
     this.currentPriority = 0;
 
-    // 不再直接操作 DOM，让 React 组件自己处理隐藏动画
-    // this.fadeOutMessage();
-
     // 烟花模式下不处理队列中的消息
     if (this.isFireworksMode) {
       return;
@@ -417,44 +359,6 @@ class Live2DMessageManager {
         }, 300);
       }
     }
-  }
-
-  /**
-   * 淡出消息动画
-   */
-  private fadeOutMessage(): void {
-    const messageElement = document.querySelector('.message');
-    const waifuMessage = document.querySelector('#waifu-tips');
-    const landlordMessage = document.querySelector('#landlord .message');
-
-    // 淡出动画
-    const fadeOut = (element: Element) => {
-      if (element) {
-        (element as HTMLElement).style.transition = 'opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
-        (element as HTMLElement).style.opacity = '0';
-      }
-    };
-
-    if (messageElement) fadeOut(messageElement);
-    if (waifuMessage) fadeOut(waifuMessage);
-    if (landlordMessage) fadeOut(landlordMessage);
-  }
-
-  /**
-   * 淡入消息动画
-   */
-  private fadeInMessage(element: HTMLElement): void {
-    element.style.transition = 'opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
-    element.style.opacity = '0';
-    element.style.display = 'block';
-    
-    // 强制重绘以触发动画
-    void element.offsetHeight;
-    
-    // 淡入
-    requestAnimationFrame(() => {
-      element.style.opacity = '1';
-    });
   }
 
   /**
@@ -502,25 +406,7 @@ class Live2DMessageManager {
     this.isDisplayingMessage = false;
     this.currentPriority = 0;
 
-    // 不再直接操作DOM，让React组件自己处理隐藏动画
-    // this.fadeOutMessage();
-    
-    // 不再直接操作DOM元素显示状态，让React组件自己处理
-    // setTimeout(() => {
-    //   const messageElement = document.querySelector('.message');
-    //   const waifuMessage = document.querySelector('#waifu-tips');
-    //   const landlordMessage = document.querySelector('#landlord .message');
-
-    //   if (messageElement) {
-    //     (messageElement as HTMLElement).style.display = 'none';
-    //   }
-    //   if (waifuMessage) {
-    //     (waifuMessage as HTMLElement).style.display = 'none';
-    //   }
-    //   if (landlordMessage) {
-    //     (landlordMessage as HTMLElement).style.display = 'none';
-    //   }
-    // }, 300);
+    // 消息的淡出/隐藏由 React 组件（LuoTianyiLive2D）的 state + CSS transition 负责
   }
 
   /**
@@ -610,51 +496,10 @@ class Live2DMessageManager {
   }
 
   /**
-   * 检查Live2D是否可用
-   */
-  isLive2DAvailable(): boolean {
-    if (typeof window === 'undefined') return false;
-    
-    return !!(
-      (window as any).GlobalMessageManager ||
-      (window as any).showMessage ||
-      document.querySelector('#live2d')
-    );
-  }
-
-  /**
-   * 等待Live2D初始化完成
-   * @param timeout 超时时间（毫秒），默认10000ms
-   */
-  async waitForInitialization(timeout: number = 10000): Promise<boolean> {
-    if (this.isInitialized) return true;
-
-    const startTime = Date.now();
-    
-    return new Promise((resolve) => {
-      const checkInterval = setInterval(() => {
-        if (this.isLive2DAvailable()) {
-          this.isInitialized = true;
-          clearInterval(checkInterval);
-          resolve(true);
-        } else if (Date.now() - startTime > timeout) {
-          clearInterval(checkInterval);
-          resolve(false);
-        }
-      }, 100);
-    });
-  }
-
-  /**
    * 显示上下文感知消息
    * 根据用户行为和上下文智能选择消息
    */
   showContextAwareMessage(context: BehaviorContext): void {
-    // 隐藏状态下不显示消息
-    if (typeof window !== 'undefined' && (window as any).__live2dHidden) {
-      return;
-    }
-    
     const config = getContextAwareMessageConfig(context);
     if (config) {
       const message = getRandomMessage(config);

@@ -30,10 +30,10 @@ async function preloadLive2DResources(
   setLoadProgress: (v: number) => void
 ): Promise<PreloadResult> {
   const basePath = getAssetPath('/luotianyi-live2d-master');
-  // 给关键资源分配权重：核心 Live2D 库最大，message 和 model.json 较小
+  // 给关键资源分配权重：核心 Live2D 库最大，model.json 较小
+  // 注意：message.js 已被移除（消息系统完全由 React 侧接管）
   const criticalResources = [
     { url: `${basePath}/live2d/js/live2d.js`, type: 'script' as const, weight: 5 },
-    { url: `${basePath}/live2d/js/message.js`, type: 'script' as const, weight: 2 },
     { url: `${basePath}/live2d/model/tianyi/model.json`, type: 'json' as const, weight: 1 },
   ];
 

@@ -6,6 +6,7 @@ import { live2dEventEmitter } from '../utils/live2dEventEmitter';
 import live2dMessageManager, { Live2DMessageHelper } from '../utils/live2dMessageManager';
 import { InteractionMessages } from '../setting/live2dMessages';
 import { useLive2DLoader } from '../hooks/useLive2DLoader';
+import { fetchHitokoto } from '../utils/live2dHitokoto';
 import Live2DBubble from './Live2DBubble';
 import Live2DControls from './Live2DControls';
 
@@ -57,23 +58,24 @@ export default function LuoTianyiLive2D({ hidden = false }: LuoTianyiLive2DProps
       if (!newMessage || typeof newMessage !== 'string' || newMessage.trim() === '') return;
       if (type !== 'fireworks' && live2dMessageManager.isInFireworksMode()) return;
 
-      const isDefaultMessage =
-        (newMessage.includes('你好') && newMessage.includes('洛天依') && newMessage.includes('！')) ||
-        newMessage === '你好～我是洛天依！' ||
-        newMessage === '你好~我是洛天依！';
-      if (isDefaultMessage) return;
-
       setMessage(newMessage);
       setMessageOpacity(1);
       triggerFadeOut();
-
-      if (typeof window !== 'undefined' && (window as any).live2dMessageManager) {
-        const mgr = (window as any).live2dMessageManager;
-        if (typeof mgr.isDisplayingMessage !== 'undefined') mgr.isDisplayingMessage = false;
-      }
     },
     [triggerFadeOut]
   );
+
+  // 组件挂载时立即桥接 window.showMessage → React updateMessage
+  // 不依赖 Live2D 异步加载，确保 smart page message (3s)、一言 timer (45s) 等早期消息不会丢失
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    (window as any).showMessage = (msg: string) => {
+      if (msg && typeof msg === 'string' && msg.trim() !== '') {
+        const isFireworksMode = live2dMessageManager.isInFireworksMode();
+        updateMessage(msg, isFireworksMode ? 'fireworks' : 'normal');
+      }
+    };
+  }, [updateMessage]);
 
   useEffect(() => {
     if (hidden) {
@@ -182,6 +184,22 @@ export default function LuoTianyiLive2D({ hidden = false }: LuoTianyiLive2DProps
     return () => clearInterval(interval);
   }, [checkPageStayTime]);
 
+  // 一言定时器：每 45 秒从 v1.hitokoto.cn 拉一句随机句子显示
+  useEffect(() => {
+    if (hidden) return;
+    let cancelled = false;
+    const interval = window.setInterval(async () => {
+      if (cancelled || hiddenRef.current) return;
+      const text = await fetchHitokoto();
+      if (cancelled || !text) return;
+      updateMessage(text);
+    }, 45000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [updateMessage, hidden]);
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const currentPath = window.location.pathname;
@@ -216,20 +234,12 @@ export default function LuoTianyiLive2D({ hidden = false }: LuoTianyiLive2DProps
   }, []);
 
   useEffect(() => {
-    const handleCopy = (event: ClipboardEvent) => {
-      const marker = document.createElement('div');
-      marker.setAttribute('data-live2d-copy-handled', 'true');
-      marker.style.display = 'none';
-      document.body.appendChild(marker);
+    const handleCopy = (_event: ClipboardEvent) => {
       setTimeout(() => {
         const selection = window.getSelection()?.toString();
-        const clipboardData = event.clipboardData?.getData('text/plain');
-        if ((selection || clipboardData || '').length > 10) {
+        if ((selection || '').length > 10) {
           Live2DMessageHelper.showCopyMessage();
         }
-        setTimeout(() => {
-          if (marker.parentNode) marker.parentNode.removeChild(marker);
-        }, 1000);
       }, 100);
     };
     if (typeof document !== 'undefined') {
@@ -320,16 +330,8 @@ export default function LuoTianyiLive2D({ hidden = false }: LuoTianyiLive2DProps
     };
     const THROTTLE_DELAY = 2000;
 
-    (window as any).showMessage = (msg: string) => {
-      if (msg && typeof msg === 'string' && msg.trim() !== '') {
-        const isFireworksMode = live2dMessageManager.isInFireworksMode();
-        updateMessage(msg, isFireworksMode ? 'fireworks' : 'normal');
-      }
-      if (typeof window !== 'undefined' && (window as any).live2dMessageManager) {
-        const mgr = (window as any).live2dMessageManager;
-        if (typeof mgr.isDisplayingMessage !== 'undefined') mgr.isDisplayingMessage = false;
-      }
-    };
+    // 注意：window.showMessage 桥接已在组件挂载时的 useEffect 中完成，
+    // 这里不再重复设置。message.js 已删除，不会有竞态覆盖问题。
 
     const messageConfig = {
       mouseover: [
@@ -344,7 +346,6 @@ export default function LuoTianyiLive2D({ hidden = false }: LuoTianyiLive2DProps
 
     const setupThrottledEvents = () => {
       if (signal.aborted) return;
-      const globalShowMessage = (window as any).showMessage;
 
       const renderTip = (text: string, data: any) => {
         if (data && data.text) return text.replace(/{text}/g, data.text || '');
@@ -355,14 +356,19 @@ export default function LuoTianyiLive2D({ hidden = false }: LuoTianyiLive2DProps
         if (live2dMessageManager.isInFireworksMode()) return;
         const target = e.target as HTMLElement;
         if (!target.matches(tips.selector)) return;
-        e.stopPropagation();
+
+        // 节流判断在前，stopPropagation 在后——避免无意义地阻断不相关事件
         const now = Date.now();
         const lastTrigger = triggerLimits[eventType].get(tips.selector) || 0;
         if (now - lastTrigger < THROTTLE_DELAY) return;
         triggerLimits[eventType].set(tips.selector, now);
+
+        // 节流通过后才阻断事件传播
+        e.stopPropagation();
+
         let text = Array.isArray(tips.text) ? tips.text[Math.floor(Math.random() * tips.text.length)] : tips.text;
         text = renderTip(text, { text: target.textContent || '' });
-        if (globalShowMessage) globalShowMessage(text, 3000);
+        (window as any).showMessage(text);
       };
 
       messageConfig.mouseover.forEach((tips: any) => {
@@ -372,10 +378,6 @@ export default function LuoTianyiLive2D({ hidden = false }: LuoTianyiLive2DProps
         document.addEventListener('click', createHandler(tips, 'click'), { signal } as any);
       });
     };
-
-    (window as any).message_Path = getAssetPath('/luotianyi-live2d-master/live2d/');
-    (window as any).home_Path = window.location.origin;
-    (window as any).messageConfig = messageConfig;
 
     const timeoutId = setTimeout(() => {
       if (!signal.aborted) setupThrottledEvents();
@@ -396,10 +398,6 @@ export default function LuoTianyiLive2D({ hidden = false }: LuoTianyiLive2DProps
     try {
       if (typeof window !== 'undefined') {
         (window as any).messageSystemInitialized = false;
-        const live2DInstance = (window as any).Live2D;
-        if (live2DInstance?.dispose) {
-          try { live2DInstance.dispose(); } catch {}
-        }
       }
       if (messageAbortRef.current) {
         messageAbortRef.current.abort();
@@ -464,13 +462,9 @@ export default function LuoTianyiLive2D({ hidden = false }: LuoTianyiLive2DProps
 declare global {
   interface Window {
     loadlive2d?: (canvasId: string, modelPath: string) => void;
-    jQuery?: any;
-    $?: any;
+    showMessage?: (msg: string, timeout?: number) => void;
     message_Path?: string;
     home_Path?: string;
-    messageConfig?: any;
-    showMessage?: (msg: string, timeout?: number) => void;
-    live2dMessageManager?: any;
     __luotianyiWelcomeShown?: boolean;
     __lastThemeChangeTime?: number;
   }

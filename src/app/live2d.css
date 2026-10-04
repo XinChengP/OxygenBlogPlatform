@@ -39,14 +39,12 @@ html.dark {
   text-align: center;
   border: 1px solid rgba(102,204,255,.4);
   border-radius: 12px;
-  /* 背景透明（2026-10 按需求）：!important 压过 message.js 动态创建时
-     写入内联的白底/渐变与 backdrop-filter，做到真透明；
-     文字可读性由 .live2d-bubble / .dark 规则的投影与文字色保证 */
-  background: transparent !important;
-  background-color: transparent !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  box-shadow: none !important;
+  /* 气泡背景透明（message.js 已移除，不再需要 !important 压内联样式） */
+  background: transparent;
+  background-color: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
   font-size: 13px;
   font-weight: 400;
   text-overflow: ellipsis;
@@ -153,12 +151,11 @@ html.dark {
   border-color: rgba(102,204,255,.4);
 }
 
-/* 暗色模式气泡：背景同样透明，仅保留天依蓝描边与浅色文字；
-   需要 !important 压过 message.js 动态创建时写入的内联样式 */
+/* 暗色模式气泡：背景透明，仅保留天依蓝描边与浅色文字 */
 .dark .message,
 .dark .message.luotianyi-theme {
-  border-color: rgba(102, 204, 255, 0.35) !important;
-  color: #f0f9ff !important;
+  border-color: rgba(102, 204, 255, 0.35);
+  color: #f0f9ff;
 }
 
 /* React 版气泡（Live2DBubble）：背景透明，颜色样式集中在类里，
