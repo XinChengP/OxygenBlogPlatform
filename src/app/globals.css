@@ -781,14 +781,15 @@ html:not(.music-player-active) body {
 
 /**
  * 懒加载占位符
- * 用于图片懒加载时的占位
+ * 用于图片懒加载时的占位（2026-10：灰色系换为天依蓝淡渐变，
+ * 加载过程的闪动与主题色保持同调）
  */
 .lazy-placeholder {
   background: linear-gradient(
     90deg,
-    rgba(226, 232, 240, 0.8) 0%,
-    rgba(241, 245, 249, 0.8) 50%,
-    rgba(226, 232, 240, 0.8) 100%
+    rgba(102, 204, 255, 0.12) 0%,
+    rgba(102, 204, 255, 0.28) 50%,
+    rgba(102, 204, 255, 0.12) 100%
   );
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
@@ -804,14 +805,14 @@ html:not(.music-player-active) body {
 }
 
 /**
- * 暗色模式下的懒加载占位符
+ * 暗色模式下的懒加载占位符（同换天依蓝，透明度略降避免夜里过亮）
  */
 .dark .lazy-placeholder {
   background: linear-gradient(
     90deg,
-    rgba(55, 65, 81, 0.8) 0%,
-    rgba(75, 85, 99, 0.8) 50%,
-    rgba(55, 65, 81, 0.8) 100%
+    rgba(102, 204, 255, 0.08) 0%,
+    rgba(102, 204, 255, 0.18) 50%,
+    rgba(102, 204, 255, 0.08) 100%
   );
   background-size: 200% 100%;
 }

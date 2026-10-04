@@ -267,7 +267,7 @@ function ClientChangelogsPage({ changelogs, blogTimeStats, momentTimeStats }: Cl
 
           {/* 右侧：统计图表（固定 30% 宽度） */}
           <div className="w-full lg:w-[30%] flex-shrink-0 flex-grow-0">
-            <div className="space-y-6 lg:sticky lg:top-24">
+            <div className="space-y-4 lg:sticky lg:top-24">
               <TimeStatsChart changelogs={changelogs} blogTimeStats={blogTimeStats} momentTimeStats={momentTimeStats} />
               <TypeStatsChart changelogs={changelogs} blogTimeStats={blogTimeStats} momentTimeStats={momentTimeStats} />
             </div>

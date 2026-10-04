@@ -528,10 +528,10 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
     [totalWidth, viewWidth, initialX],
   );
 
-  // 毛玻璃样式函数（供标签筛选浮层使用）
+  // 毛玻璃样式函数（供标签筛选浮层使用）：迁入全站玻璃强档令牌
   const getGlassStyle = (baseStyle: string) => {
     if (isBackgroundEnabled) {
-      return `${baseStyle} backdrop-blur-md bg-card/90 border-border shadow-lg supports-[backdrop-filter]:bg-card/75`;
+      return `${baseStyle} glass-card-strong`;
     }
     return `bg-card ${baseStyle} border-border`;
   };
@@ -764,16 +764,24 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
                       />
 
                       {/*
-                        河流节点：外圈光晕 + 内圈实心圆。
+                        河流节点：三层光晕 + 内圈实心圆（2026-10 增强可辨识度：
+                        原两层在插画背景上几乎隐形）。
                         尺寸与配色和文章卡片的节点完全一致，
                         让「年份」读起来是时间轴上的一个刻度，而不是另起一套装饰。
                       */}
                       <circle
                         cx={group.nodeX}
                         cy={group.waveY}
-                        r="10"
+                        r="16"
                         style={{ fill: 'var(--primary)' }}
-                        opacity="0.25"
+                        opacity="0.12"
+                      />
+                      <circle
+                        cx={group.nodeX}
+                        cy={group.waveY}
+                        r="11"
+                        style={{ fill: 'var(--primary)' }}
+                        opacity="0.28"
                       />
                       <circle
                         cx={group.nodeX}
@@ -805,6 +813,9 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
                           fill: 'var(--primary)',
                           stroke: 'var(--primary)',
                           paintOrder: 'stroke',
+                          /* 双层投影：白晕先把数字从背景里"托"出来，
+                             深影再给轮廓压出边界，亮色天空与暗色夜空都成立 */
+                          filter: 'drop-shadow(0 2px 4px rgba(255,255,255,0.35)) drop-shadow(0 3px 8px rgba(12,40,85,0.4))',
                         }}
                         fillOpacity="0.45"
                         strokeWidth={watermarkStrokeWidth}
@@ -867,13 +878,20 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
                         strokeDasharray="4 3"
                       />
 
-                      {/* 河流节点：外圈光晕 + 内圈实心圆 */}
+                      {/* 河流节点：三层光晕 + 内圈实心圆（与年份节点同规格，增强可辨识度） */}
                       <circle
                         cx={cx}
                         cy={waveY}
-                        r="10"
+                        r="16"
                         style={{ fill: 'var(--primary)' }}
-                        opacity="0.25"
+                        opacity="0.12"
+                      />
+                      <circle
+                        cx={cx}
+                        cy={waveY}
+                        r="11"
+                        style={{ fill: 'var(--primary)' }}
+                        opacity="0.28"
                       />
                       <circle
                         cx={cx}

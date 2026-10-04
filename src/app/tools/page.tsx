@@ -29,10 +29,10 @@ interface ToolCardProps {
 }
 
 function ToolCard({ tool, index }: ToolCardProps) {
-  /* 正文卡片近实色背景 + 统一阴影令牌：
-     去掉 backdrop-blur 后长列表滚动不触发模糊合成，层次也更清爽 */
+  /* 工具卡迁入全站玻璃令牌：强档 glass-card-strong（近实底 + 细微通透），
+     与文章正文面板同档；卡量少（<10），backdrop-blur 合成开销可忽略 */
   const getGlassStyle = (baseStyle: string) => {
-    return `${baseStyle} bg-card/95 border-border shadow-card`;
+    return `${baseStyle} glass-card-strong`;
   };
 
   return (
@@ -57,7 +57,9 @@ function ToolCard({ tool, index }: ToolCardProps) {
       </p>
       <Link
         href={tool.path!}
-        className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors duration-200 flex items-center justify-center gap-2"
+        className="w-full px-4 py-2 rounded-md border border-primary/40 bg-primary/10 text-primary
+                   hover:bg-primary/20 hover:border-primary/70 transition-colors duration-200
+                   flex items-center justify-center gap-2"
       >
         <span>立即使用</span>
         <span>→</span>
@@ -101,13 +103,12 @@ export default function ToolsPage() {
   const isDark = resolvedTheme === 'dark';
   
   // 获取卡片样式类名
-  // 内容流中的卡片默认使用近实色背景，减少全站毛玻璃的滥用；
-  // 仅浮动元素（如 sticky 侧边栏）传入 floating=true 保留毛玻璃，
-  // 毛玻璃只用于"浮在内容之上"的元素，层次更清晰
+  // 浮动元素（sticky 侧栏）用强档玻璃令牌（等值替换原 bg-card/90→75 手写组合）；
+  // 内容流中的普通控件（分类按钮）保持近实底，与浮层形成层次
   const getGlassStyle = (baseStyle: string, floating = false) => {
     if (containerStyle && containerStyle.className) {
       if (floating) {
-        return `${baseStyle} backdrop-blur-md bg-card/90 border-border shadow-card supports-[backdrop-filter]:bg-card/75`;
+        return `${baseStyle} glass-card-strong`;
       }
       return `${baseStyle} bg-card/95 border-border shadow-card`;
     }

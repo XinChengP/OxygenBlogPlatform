@@ -85,19 +85,18 @@ function FriendCard({ link, index }: { link: FriendLink; index: number }) {
       whileTap={{ scale: 0.98 }}
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
-      /* 卡片视觉与全站统一：rounded-xl 标准圆角、bg-card/95 近实色、
-         border-border 语义边框、shadow-card 静态阴影、悬停 shadow-card-hover；
-         CSS 过渡只管阴影，位移由 Framer Motion 驱动 */
-      className="group relative block rounded-xl overflow-hidden bg-card/95
-                 border border-border
-                 shadow-card hover:shadow-card-hover
+      /* 卡片视觉与全站统一：迁入玻璃强档令牌 glass-card-strong（近实底 + 细微通透），
+         rounded-xl 标准圆角，阴影/边框由令牌承载，悬停加深并泛天依蓝 */
+      className="group relative block rounded-xl overflow-hidden glass-card-strong
+                 hover:shadow-card-hover
                  transition-[box-shadow,border-color] duration-300 hover:border-primary/30"
     >
-      {/* 顶部渐变装饰条：天依蓝引用主题令牌，两侧分类色保留以区分友链类型 */}
+      {/* 顶部渐变装饰条：青→天依蓝→青（2026-10 收敛进蓝色系色板，
+          原 blog 分类绿色 #10b981 跑出色板）；友链类型区分由卡片内分类标签承担 */}
       <motion.div
         className="absolute top-0 left-0 right-0 h-1"
         style={{
-          background: `linear-gradient(90deg, ${categoryColor} 0%, var(--primary) 50%, ${categoryColor} 100%)`,
+          background: 'linear-gradient(90deg, #06b6d4 0%, var(--primary) 50%, #06b6d4 100%)',
           backgroundSize: '200% 100%'
         }}
         animate={isHovered ? { backgroundPosition: ['0% 0%', '200% 0%'] } : {}}

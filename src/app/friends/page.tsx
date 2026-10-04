@@ -50,10 +50,8 @@ function ExchangeCard() {
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: 0.3 }}
-      /* 容器与友链卡片使用同一套视觉令牌：rounded-xl 圆角、bg-card/95 近实色、
-         border-border 语义边框、shadow-card 静态阴影，保证页面上下两部分质感统一 */
-      className="relative overflow-hidden rounded-xl border border-border
-                 bg-card/95 backdrop-blur-md shadow-card"
+      /* 容器迁入全站玻璃强档令牌 glass-card-strong，与上方友链卡质感统一 */
+      className="relative overflow-hidden rounded-xl glass-card-strong"
     >
       {/* 顶部装饰条：仅 1px 高的天依蓝渐变，克制地点缀主题色 */}
       <div

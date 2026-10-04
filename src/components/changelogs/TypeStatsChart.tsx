@@ -97,42 +97,42 @@ const renderActiveShape = (props: any) => {
   const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill, payload, percent } = props;
   
   return (
-    <g style={{ filter: `drop-shadow(0 0 8px ${fill}cc) drop-shadow(0 0 12px ${fill}66)` }}>
+    <g style={{ filter: `drop-shadow(0 0 6px ${fill}cc) drop-shadow(0 0 10px ${fill}66)` }}>
       <Sector
         cx={cx}
         cy={cy}
         innerRadius={innerRadius}
-        outerRadius={outerRadius + 8}
+        outerRadius={outerRadius + 5}
         startAngle={startAngle}
         endAngle={endAngle}
         fill={fill}
         stroke="hsl(var(--background))"
-        strokeWidth={3}
+        strokeWidth={2}
       />
       <Sector
         cx={cx}
         cy={cy}
         startAngle={startAngle}
         endAngle={endAngle}
-        innerRadius={outerRadius + 12}
-        outerRadius={outerRadius + 16}
+        innerRadius={outerRadius + 8}
+        outerRadius={outerRadius + 11}
         fill={fill}
       />
       <text
         x={cx}
-        y={cy - 10}
+        y={cy - 6}
         textAnchor="middle"
         fill="hsl(var(--foreground))"
-        className="text-lg font-bold"
+        className="text-sm font-bold"
       >
         {payload.label}
       </text>
       <text
         x={cx}
-        y={cy + 15}
+        y={cy + 12}
         textAnchor="middle"
         fill="hsl(var(--muted-foreground))"
-        className="text-sm"
+        className="text-xs"
       >
         {(percent * 100).toFixed(1)}%
       </text>
@@ -189,7 +189,7 @@ export default function TypeStatsChart({ changelogs, title = '类型分布' }: T
 
   return (
     <motion.div
-      className="p-4 rounded-xl border transition-all duration-500 backdrop-blur-md bg-card/90 border-border shadow-lg supports-[backdrop-filter]:bg-card/75 hover:shadow-xl relative overflow-hidden"
+      className="p-3 rounded-xl border transition-all duration-500 backdrop-blur-md bg-card/90 border-border shadow-lg supports-[backdrop-filter]:bg-card/75 hover:shadow-xl relative overflow-hidden"
       variants={containerVariants}
       initial="hidden"
       animate="visible"
@@ -197,7 +197,7 @@ export default function TypeStatsChart({ changelogs, title = '类型分布' }: T
       <BackgroundDecoration />
 
       {/* 卡片头部 */}
-      <div className="flex justify-between items-center mb-4 pb-3 border-b border-border/30">
+      <div className="flex justify-between items-center mb-3 pb-2 border-b border-border/30">
         <h3 className="text-base font-bold flex items-center gap-2 bg-gradient-to-r from-primary via-primary/80 to-accent bg-clip-text text-transparent">
           <motion.div
             animate={{ rotate: 360 }}
@@ -225,7 +225,7 @@ export default function TypeStatsChart({ changelogs, title = '类型分布' }: T
       </div>
 
       {/* 图表区域 */}
-      <div className="w-full relative" style={{ height: '280px', minWidth: '200px' }}>
+      <div className="w-full relative" style={{ height: '180px', minWidth: '200px' }}>
         {sortedData.length > 0 ? (
           <>
             <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={200}>
@@ -234,8 +234,8 @@ export default function TypeStatsChart({ changelogs, title = '类型分布' }: T
                   data={dataWithTotal}
                   cx="50%"
                   cy="50%"
-                  innerRadius={65}
-                  outerRadius={95}
+                  innerRadius={50}
+                  outerRadius={75}
                   paddingAngle={8}
                   dataKey="count"
                   nameKey="label"
@@ -319,19 +319,19 @@ export default function TypeStatsChart({ changelogs, title = '类型分布' }: T
       {/* 统计摘要 */}
       {sortedData.length > 0 && (
         <motion.div
-          className="mt-4 pt-3 border-t border-border/30"
+          className="mt-3 pt-2 border-t border-border/30"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
         >
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-1.5">
             {sortedData.map((item, index) => (
               <motion.div
                 key={item.type}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.4 + index * 0.1 }}
-                className="group flex items-center justify-between text-xs p-2.5 rounded-xl bg-gradient-to-r from-muted/60 to-muted/40 hover:from-muted/80 hover:to-muted/60 transition-all duration-300 cursor-pointer border border-border/30 hover:border-border/60 shadow-sm hover:shadow-md"
+                className="group flex items-center justify-between text-[11px] p-2 rounded-lg bg-gradient-to-r from-muted/60 to-muted/40 hover:from-muted/80 hover:to-muted/60 transition-all duration-300 cursor-pointer border border-border/30 hover:border-border/60 shadow-sm hover:shadow-md"
                 onClick={() => setActiveIndex(index)}
                 whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.98 }}

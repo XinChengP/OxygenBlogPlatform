@@ -154,17 +154,23 @@ export default function TimeStatsChart({ changelogs, blogTimeStats, momentTimeSt
 
   return (
     <motion.div
-      className="p-4 rounded-xl border transition-all duration-500 backdrop-blur-md bg-card/90 border-border shadow-lg supports-[backdrop-filter]:bg-card/75 hover:shadow-xl relative overflow-hidden"
+      className="p-3 rounded-xl border transition-all duration-500 backdrop-blur-md bg-card/90 border-border shadow-lg supports-[backdrop-filter]:bg-card/75 hover:shadow-xl relative overflow-hidden"
       variants={containerVariants}
       initial="hidden"
       animate="visible"
     >
       {/* 卡片头部 */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 pb-3 border-b border-border/30">
-        <h3 className="text-base font-bold flex items-center gap-2 mb-2 sm:mb-0 whitespace-nowrap">
-          <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
-          </svg>
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-3 pb-2 border-b border-border/30">
+        {/* 标题：渐变色 + 旋转图标，与 TypeStatsChart 保持一致 */}
+        <h3 className="text-base font-bold flex items-center gap-2 mb-2 sm:mb-0 whitespace-nowrap bg-gradient-to-r from-primary via-primary/80 to-accent bg-clip-text text-transparent">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+          >
+            <svg className="w-5 h-5 shrink-0 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+            </svg>
+          </motion.div>
           {isAdminView ? '内容发布趋势' : '日志时间趋势'}
         </h3>
 
@@ -208,7 +214,7 @@ export default function TimeStatsChart({ changelogs, blogTimeStats, momentTimeSt
       </div>
 
       {/* 图表区域 */}
-      <div className="w-full flex justify-center" style={{ height: '280px', minWidth: '200px' }}>
+      <div className="w-full flex justify-center" style={{ height: '200px', minWidth: '200px' }}>
         <div className="w-full max-w-lg" style={{ minWidth: '200px' }}>
           {filteredData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={200}>
