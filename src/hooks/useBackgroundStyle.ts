@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import { enableBackground, backgroundImage } from '../setting/WebSetting';
 
 type PageType = 'home' | 'blogs' | 'about' | 'blog-detail' | 'archive' | 'guestbook' | 'tools' | 'gallery' | 'friends' | 'links';
@@ -10,16 +10,17 @@ interface StyleConfig {
 
 /**
  * 背景样式 Hook
- * 处理不同页面类型的背景样式，避免水合错误
+ * 处理不同页面类型的背景样式
  */
 export function useBackgroundStyle(_pageType: PageType) {
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  const isBackgroundEnabled = isClient && enableBackground && backgroundImage;
+  /*
+    背景开关是构建期常量，SSR 与客户端渲染结果天然一致，
+    不需要再用 isClient 状态翻转：
+    旧实现首帧（挂载前）输出不透明的 bg-background、挂载后才变透明，
+    直达或刷新页面时会先闪一瞬白底再透出背景图。
+    现在首帧即输出最终 className，与服务端 HTML 一致，无水合差异。
+  */
+  const isBackgroundEnabled = enableBackground && !!backgroundImage;
 
   const containerStyle = useMemo((): StyleConfig => ({
     className: isBackgroundEnabled
