@@ -38,18 +38,18 @@ import { Live2DMessageHelper } from '@/utils/live2dMessageManager';
 // 暗色模式颜色：降低饱和度，提高亮度，使颜色在深色背景上更舒适
 const magicColors = {
   light: {
-    5: { bg: 'bg-[#b866ff]', text: 'text-[#b866ff]', border: 'border-[#b866ff]', color: '#b866ff' },
-    4: { bg: 'bg-[#ff668f]', text: 'text-[#ff668f]', border: 'border-[#ff668f]', color: '#ff668f' },
-    3: { bg: 'bg-[#66ccff]', text: 'text-[#66ccff]', border: 'border-[#66ccff]', color: '#66ccff' },
-    2: { bg: 'bg-[#fff566]', text: 'text-[#d4c700]', border: 'border-[#fff566]', color: '#fff566' },
-    1: { bg: 'bg-[#66ff7a]', text: 'text-[#36c748]', border: 'border-[#66ff7a]', color: '#66ff7a' },
+    5: { bg: 'bg-[#b866ff]', text: 'text-[#b866ff]', border: 'border-[#b866ff]', color: '#b866ff', badge: 'text-white' },
+    4: { bg: 'bg-[#ff668f]', text: 'text-[#ff668f]', border: 'border-[#ff668f]', color: '#ff668f', badge: 'text-white' },
+    3: { bg: 'bg-[#66ccff]', text: 'text-[#66ccff]', border: 'border-[#66ccff]', color: '#66ccff', badge: 'text-gray-900' },
+    2: { bg: 'bg-[#fff566]', text: 'text-[#d4c700]', border: 'border-[#fff566]', color: '#fff566', badge: 'text-gray-900' },
+    1: { bg: 'bg-[#66ff7a]', text: 'text-[#36c748]', border: 'border-[#66ff7a]', color: '#66ff7a', badge: 'text-gray-900' },
   },
   dark: {
-    5: { bg: 'bg-[#d4a3ff]', text: 'text-[#d4a3ff]', border: 'border-[#d4a3ff]', color: '#d4a3ff' },
-    4: { bg: 'bg-[#ff9ab3]', text: 'text-[#ff9ab3]', border: 'border-[#ff9ab3]', color: '#ff9ab3' },
-    3: { bg: 'bg-[#a3e0ff]', text: 'text-[#a3e0ff]', border: 'border-[#a3e0ff]', color: '#a3e0ff' },
-    2: { bg: 'bg-[#fff9a3]', text: 'text-[#fff9a3]', border: 'border-[#fff9a3]', color: '#fff9a3' },
-    1: { bg: 'bg-[#a3ffb3]', text: 'text-[#a3ffb3]', border: 'border-[#a3ffb3]', color: '#a3ffb3' },
+    5: { bg: 'bg-[#d4a3ff]', text: 'text-[#d4a3ff]', border: 'border-[#d4a3ff]', color: '#d4a3ff', badge: 'text-gray-900' },
+    4: { bg: 'bg-[#ff9ab3]', text: 'text-[#ff9ab3]', border: 'border-[#ff9ab3]', color: '#ff9ab3', badge: 'text-gray-900' },
+    3: { bg: 'bg-[#a3e0ff]', text: 'text-[#a3e0ff]', border: 'border-[#a3e0ff]', color: '#a3e0ff', badge: 'text-gray-900' },
+    2: { bg: 'bg-[#fff9a3]', text: 'text-[#fff9a3]', border: 'border-[#fff9a3]', color: '#fff9a3', badge: 'text-gray-900' },
+    1: { bg: 'bg-[#a3ffb3]', text: 'text-[#a3ffb3]', border: 'border-[#a3ffb3]', color: '#a3ffb3', badge: 'text-gray-900' },
   },
 } as const;
 
@@ -165,77 +165,15 @@ interface ModalState {
 
 // 魔力值筛选选项 - 与魔力值颜色配置保持一致
 const MAGIC_FILTERS = [
-  { value: 'all', label: '全部', color: { light: 'bg-[#94a3b8]', dark: 'bg-[#94a3b8]' } },
-  { value: '5', label: '5魔力', color: { light: 'bg-[#b866ff]', dark: 'bg-[#d4a3ff]' } },
-  { value: '4', label: '4魔力', color: { light: 'bg-[#ff668f]', dark: 'bg-[#ff9ab3]' } },
-  { value: '3', label: '3魔力', color: { light: 'bg-[#66ccff]', dark: 'bg-[#a3e0ff]' } },
-  { value: '2', label: '2魔力', color: { light: 'bg-[#fff566]', dark: 'bg-[#fff9a3]' } },
-  { value: '1', label: '1魔力', color: { light: 'bg-[#66ff7a]', dark: 'bg-[#a3ffb3]' } },
+  { value: 'all', label: '全部', color: { light: 'bg-[#94a3b8]', dark: 'bg-[#94a3b8]' }, badge: { light: 'text-white', dark: 'text-white' } },
+  { value: '5', label: '5魔力', color: { light: 'bg-[#b866ff]', dark: 'bg-[#d4a3ff]' }, badge: { light: 'text-white', dark: 'text-gray-900' } },
+  { value: '4', label: '4魔力', color: { light: 'bg-[#ff668f]', dark: 'bg-[#ff9ab3]' }, badge: { light: 'text-white', dark: 'text-gray-900' } },
+  { value: '3', label: '3魔力', color: { light: 'bg-[#66ccff]', dark: 'bg-[#a3e0ff]' }, badge: { light: 'text-gray-900', dark: 'text-gray-900' } },
+  { value: '2', label: '2魔力', color: { light: 'bg-[#fff566]', dark: 'bg-[#fff9a3]' }, badge: { light: 'text-gray-900', dark: 'text-gray-900' } },
+  { value: '1', label: '1魔力', color: { light: 'bg-[#66ff7a]', dark: 'bg-[#a3ffb3]' }, badge: { light: 'text-gray-900', dark: 'text-gray-900' } },
 ] as const;
 
 export default function RocoPetSimulator() {
-  // 右侧卡片引用
-  const rightPanelRef = useRef<HTMLDivElement>(null);
-  const [rightPanelStyle, setRightPanelStyle] = useState<React.CSSProperties>({});
-
-  // 监听滚动，实现右侧卡片固定（仅在桌面端lg及以上屏幕启用）
-  useEffect(() => {
-    const handleScroll = () => {
-      if (!rightPanelRef.current) return;
-
-      // 只在桌面端（屏幕宽度大于等于1024px）启用固定定位
-      const isDesktop = window.innerWidth >= 1024;
-      if (!isDesktop) {
-        setRightPanelStyle({ position: 'static' });
-        return;
-      }
-
-      const scrollY = window.scrollY;
-      const initialTop = 200; // 初始距离顶部的位置
-
-      if (scrollY > initialTop) {
-        setRightPanelStyle({
-          position: 'fixed',
-          top: '80px',
-          width: rightPanelRef.current.parentElement?.clientWidth,
-        });
-      } else {
-        setRightPanelStyle({
-          position: 'static',
-        });
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    handleScroll(); // 初始化
-
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  // 监听窗口大小变化，更新宽度（仅在桌面端）
-  useEffect(() => {
-    const handleResize = () => {
-      if (!rightPanelRef.current) return;
-      
-      // 只在桌面端更新宽度
-      const isDesktop = window.innerWidth >= 1024;
-      if (!isDesktop) {
-        setRightPanelStyle({ position: 'static' });
-        return;
-      }
-      
-      const parentWidth = rightPanelRef.current.parentElement?.clientWidth;
-      if (parentWidth && window.scrollY > 200) {
-        setRightPanelStyle(prev => ({
-          ...prev,
-          width: parentWidth,
-        }));
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
 
@@ -1147,7 +1085,7 @@ export default function RocoPetSimulator() {
             }`}
           />
           {/* 魔力值徽章 */}
-          <span className={`absolute -top-1 -right-1 w-4 h-4 rounded-full ${getMagicColor(pet.magic).bg} ${isDark ? 'text-black' : 'text-white'} text-[10px] flex items-center justify-center font-bold`}>
+          <span className={`absolute -top-1 -right-1 w-4 h-4 rounded-full ${getMagicColor(pet.magic).bg} ${getMagicColor(pet.magic).badge} text-[10px] flex items-center justify-center font-bold`}>
             {pet.magic}
           </span>
           {/* 禁赛标记 */}
@@ -1186,7 +1124,7 @@ export default function RocoPetSimulator() {
         <span
           className={`mt-1 leading-tight text-center whitespace-nowrap w-full px-0.5 text-[var(--color-foreground)]`}
           style={{
-            fontSize: pet.name.length > 5 ? '8px' : pet.name.length > 3 ? '9px' : '10px'
+            fontSize: pet.name.length > 5 ? '9px' : pet.name.length > 3 ? '10px' : '11px'
           }}
         >
           {pet.name}
@@ -1245,13 +1183,16 @@ export default function RocoPetSimulator() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className={`fixed top-20 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-lg shadow-xl backdrop-blur-md ring-1 ${
+            className={`fixed top-20 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-lg shadow-xl backdrop-blur-md ring-1 flex items-center gap-2.5 ${
               notification.type === 'success'
                 ? 'bg-green-500/95 text-white ring-green-400/30'
                 : 'bg-red-500/95 text-white ring-red-400/30'
             }`}
           >
-            {notification.message}
+            <span className="w-5 h-5 rounded-full bg-white/25 flex items-center justify-center text-xs font-bold flex-shrink-0">
+              {notification.type === 'success' ? '✓' : '!'}
+            </span>
+            <span>{notification.message}</span>
           </motion.div>
         )}
       </AnimatePresence>
@@ -1259,8 +1200,12 @@ export default function RocoPetSimulator() {
       {/* 左右七三分布局 - 手机端改为上下布局，阵容在上方 */}
       <div className="flex flex-col lg:flex-row gap-6 relative">
         {/* 手机端：阵容和禁赛在上方 / 桌面端：右侧 30% */}
-        <div className="lg:w-[30%] lg:order-2">
-          <div ref={rightPanelRef} style={rightPanelStyle} className="space-y-4">
+        {/* 悬浮方式参考博客页左侧卡片：改用纯 CSS sticky 固定，
+            滚动时平滑跟随、保留原有占位（避免旧版 JS 监听滚动 + position:fixed 带来的抖动与布局塌陷）；
+            self-start 使 flex 子项高度收缩为内容高度，sticky 才能生效；
+            限制最大高度为一屏减去顶部偏移，内容过高时在列内独立滚动，避免底部被视口裁掉 */}
+        <div className="lg:w-[30%] lg:order-2 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto">
+          <div className="space-y-4">
             {/* 阵容区域 - 保留绿色语义色（阵容=积极/已选），按钮统一主题色 */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -1318,7 +1263,7 @@ export default function RocoPetSimulator() {
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${Math.min(100, (totalMagic / 16) * 100)}%` }}
-                    className={`h-full rounded-full ${totalMagic > 16 ? 'bg-red-500' : 'bg-green-500'}`}
+                    className={`h-full rounded-full ${totalMagic > 16 ? 'bg-gradient-to-r from-red-400 to-red-600' : 'bg-gradient-to-r from-green-400 to-green-600'}`}
                     transition={{ duration: 0.3 }}
                   />
                 </div>
@@ -1413,7 +1358,7 @@ export default function RocoPetSimulator() {
                             className={`w-10 h-10 sm:w-11 sm:h-11 rounded-lg object-cover border-2 ${getMagicColor(pet.magic).border}`}
                           />
                           {/* 魔力值徽章 */}
-                          <span className={`absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full ${getMagicColor(pet.magic).bg} ${isDark ? 'text-black' : 'text-white'} text-[8px] flex items-center justify-center font-bold`}>
+                          <span className={`absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full ${getMagicColor(pet.magic).bg} ${getMagicColor(pet.magic).badge} text-[8px] flex items-center justify-center font-bold`}>
                             {pet.magic}
                           </span>
                           {/* 血脉标记 */}
@@ -1432,7 +1377,7 @@ export default function RocoPetSimulator() {
                         <span
                           className={`mt-1 leading-tight text-center whitespace-nowrap w-full px-0.5 text-[var(--color-foreground)]`}
                           style={{
-                            fontSize: pet.name.length > 5 ? '7px' : pet.name.length > 3 ? '8px' : '9px'
+                            fontSize: pet.name.length > 5 ? '8px' : pet.name.length > 3 ? '9px' : '10px'
                           }}
                         >
                           {pet.name}
@@ -1654,7 +1599,7 @@ export default function RocoPetSimulator() {
                     onClick={() => setMagicFilter(filter.value)}
                     className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${
                       magicFilter === filter.value
-                        ? `${isDark ? filter.color.dark : filter.color.light} text-white shadow-md`
+                        ? `${isDark ? filter.color.dark : filter.color.light} ${isDark ? filter.badge.dark : filter.badge.light} shadow-md`
                         : 'bg-[var(--color-muted)] text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)]/20'
                     }`}
                   >
@@ -1730,9 +1675,10 @@ export default function RocoPetSimulator() {
 
                 return (
                   <div key={magic} className="flex items-start gap-4">
-                    <span className={`text-2xl font-bold ${getMagicColor(magic).text} w-8 text-center flex-shrink-0 pt-2`}>
-                      {magic}
-                    </span>
+                    <div className="w-8 flex-shrink-0 pt-2 text-center">
+                      <div className={`text-2xl font-bold leading-none ${getMagicColor(magic).text}`}>{magic}</div>
+                      <div className="text-[10px] text-[var(--color-muted-foreground)] mt-1">{visiblePets.length}</div>
+                    </div>
                     <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-7 lg:grid-cols-9 xl:grid-cols-11 gap-3 flex-1">
                       {visiblePets.map(pet => renderPetCard(pet, 'list'))}
                       {magic === 1 && hiddenMagicPets.length > 0 && (
@@ -1955,7 +1901,16 @@ export default function RocoPetSimulator() {
       {modals.skin && currentPetId && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4" onClick={() => setModals(prev => ({ ...prev, skin: false }))}>
           <div className={`rounded-xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto bg-[var(--color-card)]`} onClick={e => e.stopPropagation()}>
-            <h3 className={`text-xl font-bold mb-4 text-[var(--color-foreground)]`}>选择外观</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className={`text-xl font-bold text-[var(--color-foreground)]`}>选择外观</h3>
+              <button
+                onClick={() => setModals(prev => ({ ...prev, skin: false }))}
+                className="w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-[var(--color-muted)] text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)]/20 hover:text-[var(--color-foreground)]"
+                title="关闭"
+              >
+                ×
+              </button>
+            </div>
             <div className="grid grid-cols-3 gap-4">
               {skinPets[currentPetId]?.map((skinName, index) => {
                 const pet = getPetById(currentPetId);
@@ -1980,7 +1935,7 @@ export default function RocoPetSimulator() {
                   <button
                     key={index}
                     onClick={() => selectSkin(currentPetId, index)}
-                    className={`flex flex-col items-center p-3 rounded-lg border-2 transition-all ${
+                    className={`relative flex flex-col items-center p-3 rounded-lg border-2 transition-all ${
                       isSelected
                         ? 'border-green-500 bg-green-500/10'
                         : isDark
@@ -1995,6 +1950,13 @@ export default function RocoPetSimulator() {
                       className="w-16 h-16 rounded-lg object-cover mb-2"
                     />
                     <span className={`text-sm text-center text-[var(--color-foreground)]`}>{skinName}</span>
+                    {isSelected && (
+                      <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-green-500 text-white flex items-center justify-center shadow-md">
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </span>
+                    )}
                   </button>
                 );
               })}
@@ -2007,7 +1969,16 @@ export default function RocoPetSimulator() {
       {modals.talent && currentPetId && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4" onClick={() => setModals(prev => ({ ...prev, talent: false }))}>
           <div className={`rounded-xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto bg-[var(--color-card)]`} onClick={e => e.stopPropagation()}>
-            <h3 className={`text-xl font-bold mb-4 text-[var(--color-foreground)]`}>选择血脉</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className={`text-xl font-bold text-[var(--color-foreground)]`}>选择血脉</h3>
+              <button
+                onClick={() => setModals(prev => ({ ...prev, talent: false }))}
+                className="w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-[var(--color-muted)] text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)]/20 hover:text-[var(--color-foreground)]"
+                title="关闭"
+              >
+                ×
+              </button>
+            </div>
             <div className="space-y-3">
               <button
                 onClick={() => selectTalent(currentPetId, 0)}
@@ -2071,7 +2042,16 @@ export default function RocoPetSimulator() {
       {modals.rules && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setModals(prev => ({ ...prev, rules: false }))}>
           <div className={`rounded-xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto bg-[var(--color-card)]`} onClick={e => e.stopPropagation()}>
-            <h3 className={`text-xl font-bold mb-4 text-[var(--color-foreground)]`}>互斥规则说明</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className={`text-xl font-bold text-[var(--color-foreground)]`}>互斥规则说明</h3>
+              <button
+                onClick={() => setModals(prev => ({ ...prev, rules: false }))}
+                className="w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-[var(--color-muted)] text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)]/20 hover:text-[var(--color-foreground)]"
+                title="关闭"
+              >
+                ×
+              </button>
+            </div>
             <div className="space-y-4">
               {exclusiveGroups.map((group, index) => (
                 <div key={index} className="p-4 rounded-lg bg-[var(--color-muted)]/50">
@@ -2079,11 +2059,22 @@ export default function RocoPetSimulator() {
                   <div className="flex flex-wrap gap-2">
                     {group.map(petId => {
                       const pet = getPetById(petId);
-                      return pet ? (
-                        <span key={petId} className="px-3 py-1 rounded-full text-sm bg-[var(--color-card)] text-[var(--color-foreground)] border border-[var(--color-border)]">
+                      if (!pet) return null;
+                      const localIcon = `/roco-icons/pets/${pet.imageId || pet.id}.png`;
+                      return (
+                        <span key={petId} className="flex items-center gap-1.5 pl-1 pr-3 py-1 rounded-full text-sm bg-[var(--color-card)] text-[var(--color-foreground)] border border-[var(--color-border)]">
+                          <img
+                            src={getPetIconUrl(pet.imageId || pet.id)}
+                            alt={pet.name}
+                            onError={(e) => {
+                              const img = e.currentTarget;
+                              if (img.src !== localIcon) img.src = localIcon;
+                            }}
+                            className="w-6 h-6 rounded-full object-cover"
+                          />
                           {pet.name}
                         </span>
-                      ) : null;
+                      );
                     })}
                   </div>
                   <p className="text-sm mt-2 text-[var(--color-muted-foreground)]">这些宠物不可同时参赛</p>
@@ -2284,7 +2275,7 @@ export default function RocoPetSimulator() {
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${Math.min(100, (totalMagic / 16) * 100)}%` }}
-                  className={`h-full rounded-full ${totalMagic > 16 ? 'bg-red-500' : 'bg-green-500'}`}
+                  className={`h-full rounded-full ${totalMagic > 16 ? 'bg-gradient-to-r from-red-400 to-red-600' : 'bg-gradient-to-r from-green-400 to-green-600'}`}
                   transition={{ duration: 0.5 }}
                 />
               </div>
@@ -2407,7 +2398,7 @@ export default function RocoPetSimulator() {
                           className={`w-10 h-10 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-20 lg:h-20 rounded-lg sm:rounded-xl object-cover border-2 ${getMagicColor(pet.magic).border}`}
                         />
                         {/* 魔力值徽章 - 放大版 */}
-                        <span className={`absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 rounded-full ${getMagicColor(pet.magic).bg} ${isDark ? 'text-black' : 'text-white'} text-[8px] sm:text-[10px] md:text-xs flex items-center justify-center font-bold shadow-md`}>
+                        <span className={`absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 rounded-full ${getMagicColor(pet.magic).bg} ${getMagicColor(pet.magic).badge} text-[8px] sm:text-[10px] md:text-xs flex items-center justify-center font-bold shadow-md`}>
                           {pet.magic}
                         </span>
                         {/* 血脉标记 - 放大版 */}
