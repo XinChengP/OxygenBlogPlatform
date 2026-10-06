@@ -36,20 +36,24 @@ import { Live2DMessageHelper } from '@/utils/live2dMessageManager';
 // 魔力值颜色配置 - 使用自定义配色方案，支持亮色/暗色模式
 // 亮色模式颜色：5魔力-紫色, 4魔力-粉色, 3魔力-天依蓝, 2魔力-黄色, 1魔力-绿色
 // 暗色模式颜色：降低饱和度，提高亮度，使颜色在深色背景上更舒适
+// 饱和度调整：在原始配色基础上，将每个色值与其感知亮度灰按 8:2 混合（降饱和约 20%），
+// 色相与明度保持不变，仅让整体观感更柔和；3魔力沿用主题基色 #66ccff 不作调整，以与全站主题保持一致
+// 文字色：亮色模式 3 魔力底色为天依蓝 #66ccff，文字用白色；暗色模式底色是浅蓝 #a3e0ff，
+//         白色文字几乎不可读，故仍保留深色文字
 const magicColors = {
   light: {
-    5: { bg: 'bg-[#b866ff]', text: 'text-[#b866ff]', border: 'border-[#b866ff]', color: '#b866ff', badge: 'text-white' },
-    4: { bg: 'bg-[#ff668f]', text: 'text-[#ff668f]', border: 'border-[#ff668f]', color: '#ff668f', badge: 'text-white' },
-    3: { bg: 'bg-[#66ccff]', text: 'text-[#66ccff]', border: 'border-[#66ccff]', color: '#66ccff', badge: 'text-gray-900' },
-    2: { bg: 'bg-[#fff566]', text: 'text-[#d4c700]', border: 'border-[#fff566]', color: '#fff566', badge: 'text-gray-900' },
-    1: { bg: 'bg-[#66ff7a]', text: 'text-[#36c748]', border: 'border-[#66ff7a]', color: '#66ff7a', badge: 'text-gray-900' },
+    5: { bg: 'bg-[#b06ee9]', text: 'text-[#b06ee9]', border: 'border-[#b06ee9]', color: '#b06ee9', badge: 'text-white' },
+    4: { bg: 'bg-[#ea7091]', text: 'text-[#ea7091]', border: 'border-[#ea7091]', color: '#ea7091', badge: 'text-white' },
+    3: { bg: 'bg-[#66ccff]', text: 'text-[#66ccff]', border: 'border-[#66ccff]', color: '#66ccff', badge: 'text-white' },
+    2: { bg: 'bg-[#faf280]', text: 'text-[#cec324]', border: 'border-[#faf280]', color: '#faf280', badge: 'text-gray-900' },
+    1: { bg: 'bg-[#78f388]', text: 'text-[#47bb56]', border: 'border-[#78f388]', color: '#78f388', badge: 'text-gray-900' },
   },
   dark: {
-    5: { bg: 'bg-[#d4a3ff]', text: 'text-[#d4a3ff]', border: 'border-[#d4a3ff]', color: '#d4a3ff', badge: 'text-gray-900' },
-    4: { bg: 'bg-[#ff9ab3]', text: 'text-[#ff9ab3]', border: 'border-[#ff9ab3]', color: '#ff9ab3', badge: 'text-gray-900' },
+    5: { bg: 'bg-[#cfa8f2]', text: 'text-[#cfa8f2]', border: 'border-[#cfa8f2]', color: '#cfa8f2', badge: 'text-gray-900' },
+    4: { bg: 'bg-[#f1a1b5]', text: 'text-[#f1a1b5]', border: 'border-[#f1a1b5]', color: '#f1a1b5', badge: 'text-gray-900' },
     3: { bg: 'bg-[#a3e0ff]', text: 'text-[#a3e0ff]', border: 'border-[#a3e0ff]', color: '#a3e0ff', badge: 'text-gray-900' },
-    2: { bg: 'bg-[#fff9a3]', text: 'text-[#fff9a3]', border: 'border-[#fff9a3]', color: '#fff9a3', badge: 'text-gray-900' },
-    1: { bg: 'bg-[#a3ffb3]', text: 'text-[#a3ffb3]', border: 'border-[#a3ffb3]', color: '#a3ffb3', badge: 'text-gray-900' },
+    2: { bg: 'bg-[#fcf7b3]', text: 'text-[#fcf7b3]', border: 'border-[#fcf7b3]', color: '#fcf7b3', badge: 'text-gray-900' },
+    1: { bg: 'bg-[#aef8bb]', text: 'text-[#aef8bb]', border: 'border-[#aef8bb]', color: '#aef8bb', badge: 'text-gray-900' },
   },
 } as const;
 
@@ -163,15 +167,38 @@ interface ModalState {
   batchLineup: boolean;
 }
 
-// 魔力值筛选选项 - 与魔力值颜色配置保持一致
+// 魔力值筛选选项 - 与魔力值颜色配置保持一致（同步使用降饱和后的色值）
 const MAGIC_FILTERS = [
   { value: 'all', label: '全部', color: { light: 'bg-[#94a3b8]', dark: 'bg-[#94a3b8]' }, badge: { light: 'text-white', dark: 'text-white' } },
-  { value: '5', label: '5魔力', color: { light: 'bg-[#b866ff]', dark: 'bg-[#d4a3ff]' }, badge: { light: 'text-white', dark: 'text-gray-900' } },
-  { value: '4', label: '4魔力', color: { light: 'bg-[#ff668f]', dark: 'bg-[#ff9ab3]' }, badge: { light: 'text-white', dark: 'text-gray-900' } },
-  { value: '3', label: '3魔力', color: { light: 'bg-[#66ccff]', dark: 'bg-[#a3e0ff]' }, badge: { light: 'text-gray-900', dark: 'text-gray-900' } },
-  { value: '2', label: '2魔力', color: { light: 'bg-[#fff566]', dark: 'bg-[#fff9a3]' }, badge: { light: 'text-gray-900', dark: 'text-gray-900' } },
-  { value: '1', label: '1魔力', color: { light: 'bg-[#66ff7a]', dark: 'bg-[#a3ffb3]' }, badge: { light: 'text-gray-900', dark: 'text-gray-900' } },
+  { value: '5', label: '5魔力', color: { light: 'bg-[#b06ee9]', dark: 'bg-[#cfa8f2]' }, badge: { light: 'text-white', dark: 'text-gray-900' } },
+  { value: '4', label: '4魔力', color: { light: 'bg-[#ea7091]', dark: 'bg-[#f1a1b5]' }, badge: { light: 'text-white', dark: 'text-gray-900' } },
+  { value: '3', label: '3魔力', color: { light: 'bg-[#66ccff]', dark: 'bg-[#a3e0ff]' }, badge: { light: 'text-white', dark: 'text-gray-900' } },
+  { value: '2', label: '2魔力', color: { light: 'bg-[#faf280]', dark: 'bg-[#fcf7b3]' }, badge: { light: 'text-gray-900', dark: 'text-gray-900' } },
+  { value: '1', label: '1魔力', color: { light: 'bg-[#78f388]', dark: 'bg-[#aef8bb]' }, badge: { light: 'text-gray-900', dark: 'text-gray-900' } },
 ] as const;
+
+// 局部降饱和样式 —— 覆盖 Tailwind 4 的调色板 CSS 变量，仅作用于本组件子树，不影响全站其他页面
+// 原理：Tailwind 4 的工具类（如 bg-green-500、text-red-500）实际引用 var(--color-*) 变量，
+//       因此在子树根节点重新定义这些变量，即可让组件内所有语义色统一降饱和
+// 取值：保持原色的亮度（oklch 第一位）与色相（第三位）不变，仅将彩度（第二位）乘以 0.8，即降饱和约 20%
+// 说明：仅覆盖本组件实际用到的色阶，避免多余改动
+const DESATURATED_PALETTE = {
+  '--color-green-50': 'oklch(98.2% 0.0144 155.826)',   // 原彩度 0.018
+  '--color-green-400': 'oklch(79.2% 0.167 151.711)',   // 原彩度 0.209
+  '--color-green-500': 'oklch(72.3% 0.175 149.579)',   // 原彩度 0.219
+  '--color-green-600': 'oklch(62.7% 0.155 149.214)',   // 原彩度 0.194
+  '--color-green-900': 'oklch(39.3% 0.076 152.535)',   // 原彩度 0.095
+  '--color-red-50': 'oklch(97.1% 0.0104 17.38)',       // 原彩度 0.013
+  '--color-red-400': 'oklch(70.4% 0.153 22.216)',      // 原彩度 0.191
+  '--color-red-500': 'oklch(63.7% 0.19 25.331)',       // 原彩度 0.237
+  '--color-red-600': 'oklch(57.7% 0.196 27.325)',      // 原彩度 0.245
+  '--color-red-900': 'oklch(39.6% 0.113 25.723)',      // 原彩度 0.141
+  '--color-amber-500': 'oklch(76.9% 0.15 70.08)',      // 原彩度 0.188
+  '--color-amber-600': 'oklch(66.6% 0.143 58.318)',    // 原彩度 0.179
+  '--color-orange-400': 'oklch(75% 0.146 55.934)',     // 原彩度 0.183
+  '--color-orange-500': 'oklch(70.5% 0.17 47.604)',    // 原彩度 0.213
+  '--color-purple-500': 'oklch(62.7% 0.212 303.9)',    // 原彩度 0.265
+} as React.CSSProperties;
 
 export default function RocoPetSimulator() {
   const { resolvedTheme } = useTheme();
@@ -1122,7 +1149,7 @@ export default function RocoPetSimulator() {
         </div>
         {/* 宠物名称 - 根据长度调整字体大小 */}
         <span
-          className={`mt-1 leading-tight text-center whitespace-nowrap w-full px-0.5 text-[var(--color-foreground)]`}
+          className={`mt-1 leading-tight flex justify-center whitespace-nowrap w-full px-0.5 text-[var(--color-foreground)]`}
           style={{
             fontSize: pet.name.length > 5 ? '9px' : pet.name.length > 3 ? '10px' : '11px'
           }}
@@ -1175,7 +1202,7 @@ export default function RocoPetSimulator() {
   }, [filteredPetsByMagic]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" style={DESATURATED_PALETTE}>
       {/* 通知 - 位置下移防止被导航栏遮挡，保留语义色（成功绿/错误红） */}
       <AnimatePresence>
         {notification && (
@@ -1375,7 +1402,7 @@ export default function RocoPetSimulator() {
                         </div>
                         {/* 宠物名称 - 根据长度调整字体大小 */}
                         <span
-                          className={`mt-1 leading-tight text-center whitespace-nowrap w-full px-0.5 text-[var(--color-foreground)]`}
+                          className={`mt-1 leading-tight flex justify-center whitespace-nowrap w-full px-0.5 text-[var(--color-foreground)]`}
                           style={{
                             fontSize: pet.name.length > 5 ? '8px' : pet.name.length > 3 ? '9px' : '10px'
                           }}
@@ -2414,7 +2441,7 @@ export default function RocoPetSimulator() {
                         )}
                       </div>
                       {/* 宠物名称 - 放大版 */}
-                      <span className={`mt-1 sm:mt-2 text-[10px] sm:text-xs md:text-sm font-medium text-center whitespace-nowrap w-full px-0.5 text-[var(--color-foreground)]`}>
+                      <span className={`mt-1 sm:mt-2 text-[10px] sm:text-xs md:text-sm font-medium flex justify-center whitespace-nowrap w-full px-0.5 text-[var(--color-foreground)]`}>
                         {pet.name}
                       </span>
                     </motion.div>
