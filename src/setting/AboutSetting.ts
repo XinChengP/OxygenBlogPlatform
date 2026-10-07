@@ -1,11 +1,9 @@
 // 导入路径工具函数，必须放在文件最顶部
 import { getAssetPath } from '../utils/assetUtils';
 
-//主标题部分配置
-export const title = "关于"; //主标题
+//主标题动画字配置
 export const BeforeAnimationText = "Keep "; //在动画字前面的字
 export const AnimationText = "Going"; //动画字
-export const isRainbowGradient = true; //控制 BeforeAnimationText 的颜色效果，观察是否开启彩虹渐变
 
 //个人信息部分配置
 const AVATAR_FILENAME = "星球卑.jpg"; //头像配置，头像需要放进public文件夹内，这里只写文件名和后缀
@@ -621,15 +619,7 @@ export const devices: DeviceConfig[] = [
   },
 ];
 
-//关于我页面一二三段（保留以兼容旧用法，建议后续使用 aboutSections 配置）
-export const aboutMeP1 = "天津工业大学机械工程专业就读，预计2029年毕业 ";
-export const aboutMeP2 = "热爱技术，热爱生活，希望自己能创造更多价值 ";
-export const aboutMeP3 = "（成分复杂）";
-
-//联系我页面配置
-export const mainContactMeDescription =
-  "如果你对我的文章感兴趣，欢迎与我联系！"; //联系我页面主描述
-export const subContactMeDescription = "我会尽快回复你的消息"; //联系我页面补充描述
+//联系邮箱与社交账号配置（关于页展示用）
 export const mail = "2574386537@qq.com"; //邮箱配置
 export const github = "https://github.com/XinChengP"; //github网站配置
 export const bilibili = "https://space.bilibili.com/522845412?spm_id_from=333.1007.0.0";
