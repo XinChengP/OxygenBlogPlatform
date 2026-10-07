@@ -34,41 +34,6 @@ export const availableTools: ToolItem[] = [
     featured: true
   },
   {
-    id: 'image-compressor',
-    name: '图片压缩器',
-    description: '在线图片压缩工具，支持多种格式，保持质量的同时减小文件大小',
-    icon: '🖼️',
-    isActive: false
-  },
-  {
-    id: 'color-picker',
-    name: '颜色选择器',
-    description: '强大的颜色工具，支持调色板、颜色转换和对比度检测',
-    icon: '🎨',
-    isActive: false
-  },
-  {
-    id: 'code-formatter',
-    name: '代码格式化',
-    description: '支持多种编程语言的代码格式化工具，让代码更整洁美观',
-    icon: '⚡',
-    isActive: false
-  },
-  {
-    id: 'json-validator',
-    name: 'JSON 验证器',
-    description: '在线 JSON 格式验证和美化工具，支持语法检查和错误提示',
-    icon: '🔧',
-    isActive: false
-  },
-  {
-    id: 'url-shortener',
-    name: '短链接生成',
-    description: '生成简洁美观的短链接，方便分享和管理',
-    icon: '🔗',
-    isActive: false
-  },
-  {
     id: 'roco-team',
     name: '阵容搭配模拟器',
     description: '洛克王国天梯赛宠物一览和阵容搭配模拟器，支持禁赛设置、外观切换、血脉选择',
