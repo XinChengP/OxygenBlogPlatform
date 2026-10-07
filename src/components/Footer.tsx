@@ -51,9 +51,13 @@ function FlyingFish() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    // 捕获阶段拦截小鱼容器内部的点击冒泡，避免误触发页面上层的点击行为。
+    // 注意：本 effect 依赖 pathname，每次路由切换都会重新执行，
+    // 因此必须使用具名函数并在清理函数中解绑，防止监听器无限堆积
     const container = document.getElementById('jsi-flying-fish-container');
+    const stopPropagationInCapture = (e: Event) => e.stopPropagation();
     if (container) {
-      container.addEventListener('click', (e) => e.stopPropagation(), true);
+      container.addEventListener('click', stopPropagationInCapture, true);
     }
 
     // 恢复小鱼特效：
@@ -77,9 +81,15 @@ function FlyingFish() {
       }
     };
 
+    // 统一清理函数：effect 因路由切换重新执行或组件卸载时解绑监听器，
+    // 避免匿名监听器无法移除导致的持续堆积
+    const cleanup = () => {
+      container?.removeEventListener('click', stopPropagationInCapture, true);
+    };
+
     if (isLoadedRef.current) {
       restoreFish();
-      return;
+      return cleanup;
     }
 
     const fishPath = getAssetPath('/js/fish.js');
@@ -93,6 +103,10 @@ function FlyingFish() {
       .catch((error) => {
         console.error('小鱼特效加载失败:', error);
       });
+
+    // 脚本异步加载期间若组件卸载或路由切换，同样需要执行清理；
+    // restoreFish 内部有容器存在性判断，卸载后不会误操作已销毁的 DOM
+    return cleanup;
   }, [pathname]);
 
   return (

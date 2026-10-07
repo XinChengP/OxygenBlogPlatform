@@ -110,10 +110,12 @@ function ToolCard({ tool, index }: ToolCardProps) {
 
   return (
     /* 圆角统一标准卡片档 rounded-xl；CSS 过渡只管阴影/边框色，
-       位移由 Framer Motion 驱动（-3 与全站卡片一致），避免双重过渡 */
+       位移由 Framer Motion 驱动（-3 与全站卡片一致），避免双重过渡。
+       flex flex-col：纵向弹性容器，配合按钮行的 mt-auto 实现按钮贴底——
+       网格内同行卡片默认等高拉伸，简介长短不一时按钮行仍对齐卡片底边 */
     <motion.div
       key={tool.id}
-      className={getGlassStyle("rounded-xl p-6 border hover:shadow-card-hover hover:border-primary/30 transition-[box-shadow,border-color] duration-300")}
+      className={getGlassStyle("rounded-xl p-6 border hover:shadow-card-hover hover:border-primary/30 transition-[box-shadow,border-color] duration-300 flex flex-col")}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: index * 0.1 }}
@@ -143,8 +145,9 @@ function ToolCard({ tool, index }: ToolCardProps) {
       <p className="text-sm text-muted-foreground mb-4">
         {tool.description}
       </p>
-      {/* 按钮行：flex 容器让按钮并排且等宽（无次按钮时主按钮占满整行） */}
-      <div className="flex gap-2">
+      {/* 按钮行：flex 容器让按钮并排且等宽（无次按钮时主按钮占满整行）；
+          mt-auto 吸收简介剩余空间，强制按钮行贴住卡片底部 */}
+      <div className="flex gap-2 mt-auto">
         {renderActionButtons()}
       </div>
     </motion.div>

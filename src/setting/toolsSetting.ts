@@ -61,6 +61,16 @@ export const availableTools: ToolItem[] = [
     isActive: true,
     path: 'https://github.com/XinChengP/MidiGenshin',
     external: true
+  },
+  {
+    // B站弹幕爬取工具（外部开源项目，托管于 GitHub）
+    id: 'bilibili-danmu',
+    name: 'B站弹幕爬取工具',
+    description: '输入视频链接，弹幕自动导出',
+    icon: '💬',
+    isActive: true,
+    path: 'https://github.com/XinChengP/bilibili-danmu',
+    external: true
   }
 ];
 

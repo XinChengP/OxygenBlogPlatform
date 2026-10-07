@@ -9,6 +9,14 @@ var RENDERER = {
 	WATCH_INTERVAL : 200,
 
 	init : function(){
+		// 关键修复：动画循环一旦启动就永不停止（render 内部持续 requestAnimationFrame），
+		// 若不先取消旧循环，重复调用 init（例如页脚组件卸载后重新挂载）会让
+		// render 每帧执行次数 +1，小鱼状态推进速度成倍加快，且越积越快。
+		// 因此 init 的第一步永远是停掉可能存在的旧循环，保证全局只有一条渲染循环。
+		if(this.rafId){
+			cancelAnimationFrame(this.rafId);
+			this.rafId = 0;
+		}
 		this.setParameters();
 		this.reconstructMethods();
 		this.setup();
@@ -18,6 +26,11 @@ var RENDERER = {
 	setParameters : function(){
 		// 原实现基于 jQuery，现为等价的原生 DOM 操作
 		this.container = document.getElementById('jsi-flying-fish-container');
+		// 若容器里已残留旧画布（重复初始化的场景），先移除，避免画布层层堆叠
+		var oldCanvas = this.container.querySelector('canvas');
+		if(oldCanvas){
+			oldCanvas.remove();
+		}
 		this.canvas = document.createElement('canvas');
 		this.container.appendChild(this.canvas);
 		this.context = this.canvas.getContext('2d');
@@ -40,7 +53,14 @@ var RENDERER = {
 		}
 	},
 	reconstructMethods : function(){
+		// window 级监听器不会随容器 DOM 销毁而移除，重复 init 前必须先解绑旧的，
+		// 否则 resize 监听器会越积越多（bind 每次生成新引用，不解绑就永远移除不掉）
+		if(this.boundWatchWindowSize){
+			window.removeEventListener('resize', this.boundWatchWindowSize);
+		}
 		this.watchWindowSize = this.watchWindowSize.bind(this);
+		// 保存绑定后的引用，供下次 init 时解绑使用
+		this.boundWatchWindowSize = this.watchWindowSize;
 		this.jdugeToStopResize = this.jdugeToStopResize.bind(this);
 		this.startEpicenter = this.startEpicenter.bind(this);
 		this.moveEpicenter = this.moveEpicenter.bind(this);
@@ -151,7 +171,9 @@ var RENDERER = {
 		}
 	},
 	render : function(){
-		requestAnimationFrame(this.render);
+		// 记录每次注册的帧回调 id，供 init 在重新启动循环前取消旧循环，
+		// 防止多条循环叠加导致小鱼运动速度成倍加快
+		this.rafId = requestAnimationFrame(this.render);
 		this.controlStatus();
 		this.context.clearRect(0, 0, this.width, this.height);
 		// 读取容器上设置的 CSS color 属性，实现与页脚主题色统一

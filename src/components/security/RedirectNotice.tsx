@@ -324,7 +324,8 @@ export default function RedirectNotice({
             >
               <ExternalLink className="w-4 h-4" />
             </motion.span>
-            <span className="relative">继续访问</span>
+            {/* 字号缩小到14px并禁止换行，避免中等宽度下按钮文字折行 */}
+            <span className="relative whitespace-nowrap text-sm">无视风险继续访问！</span>
           </motion.button>
 
           {/* 次操作：返回上一页 —— 轻量描边，悬浮泛色 */}
@@ -341,7 +342,8 @@ export default function RedirectNotice({
                        focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           >
             <ArrowLeft className="w-4 h-4 transition-transform duration-200 group-hover:-translate-x-0.5" />
-            返回上一页
+            {/* 字号缩小到14px并禁止换行，避免中等宽度下按钮文字折行 */}
+            <span className="relative whitespace-nowrap text-sm">我不打扰，我走了哈</span>
           </motion.button>
         </div>
 
