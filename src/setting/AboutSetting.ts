@@ -657,7 +657,7 @@ export interface FriendLink {
 export const friendsLinks: FriendLink[] = [
   {
     name: "Allenwdk's Blog",
-    url: "https://allenwdk.github.io/OxygenBlog/",
+    url: "https://blog.allenwdk.qzz.io/",
     description: "A Novice Developer",
     avatar: "/friendlink/Allenwdk.jpg",
     category: 'blog',
