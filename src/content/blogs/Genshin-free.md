@@ -1,6 +1,7 @@
 ---
-title: "如何每个版本多白嫖大量原石？"
+title: "如何每个版本多白嫖大量原石？（划掉）"
 date: "2026-09-12"
+updatedAt: "2026-10-09"
 category: "技术"
 author: 歆橙
 language: "zh-CN"
@@ -39,7 +40,7 @@ coverImage: "/Blogabout/Genshin-free/cover.png"
 
 &emsp; &emsp; 再给鼠鼠送软妹币是错误的，所以打开ac站，我的-创作中心-收益中心-可提现xxx-金仓鼠快捷账户-立即兑换
 
-&emsp; &emsp; 然后你就会发现被打赏的10个电池变成了11个电池，你就可以用其中10个电池打赏给py了，如此循环往复无穷尽也（bushi
+&emsp; &emsp; ~~然后你就会发现被打赏的10个电池变成了11个电池，你就可以用其中10个电池打赏给py了，如此循环往复无穷尽也（bushi~~
 
 <div class="image-grid image-grid-4-cols"><img src="/Blogabout/Genshin-free/4.1.png" alt="" /><img src="/Blogabout/Genshin-free/4.2.png" alt="" /><img src="/Blogabout/Genshin-free/4.3.png" alt="" /><img src="/Blogabout/Genshin-free/4.4.png" alt="" /></div>
 
@@ -53,5 +54,7 @@ coverImage: "/Blogabout/Genshin-free/cover.png"
 
 &emsp; &emsp; 好像后面的1000原石档位特别难抢，整个五天感觉拿到800原石就好了
 
-&emsp; &emsp; 所以说ac站的50%抽成在哪？根本没发现啊，容我再观察观察
+> 2026年10月9日编
+
+&emsp; &emsp; 好像ac站确实有50%的抽成？有点摸不清头脑一会有一会没的，不过这样也相当于花了五毛钱整了200原石（逃），可以当成后备隐藏能源
 

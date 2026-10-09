@@ -2,69 +2,14 @@ import { MetadataRoute } from 'next';
 import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
+// 复用公共的博客扫描与站点地址工具，替代原先与 RSS 路由重复的实现
+import { siteUrl, scanMarkdownFiles } from '@/utils/blogScanner';
 
 /**
  * 静态导出配置
  * 用于支持 output: export 模式
  */
 export const dynamic = 'force-static';
-
-/**
- * 站点基础URL配置
- * 根据部署环境自动选择正确的域名
- */
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://blog.xinchengp.cn';
-
-/**
- * 博客文章前置元数据接口
- */
-interface BlogFrontMatter {
-  title?: string;
-  date?: string;
-  updatedAt?: string;
-  hidden?: boolean;
-}
-
-/**
- * 递归扫描目录中的所有 .md 文件
- *
- * @param dir - 要扫描的目录路径
- * @param baseDir - 基础目录路径，用于计算相对路径
- * @returns 包含所有 .md 文件信息的数组
- */
-function scanMarkdownFiles(dir: string, baseDir: string): Array<{ filePath: string; relativePath: string; slug: string }> {
-  const results: Array<{ filePath: string; relativePath: string; slug: string }> = [];
-
-  try {
-    const items = fs.readdirSync(dir);
-
-    for (const item of items) {
-      const itemPath = path.join(dir, item);
-      const stat = fs.statSync(itemPath);
-
-      if (stat.isDirectory()) {
-        // 递归扫描子目录
-        const subResults = scanMarkdownFiles(itemPath, baseDir);
-        results.push(...subResults);
-      } else if (item.endsWith('.md')) {
-        // 找到 .md 文件
-        const relativePath = path.relative(baseDir, itemPath);
-        // 生成 slug：使用相对路径，去除 .md 扩展名，将路径分隔符替换为连字符
-        const slug = relativePath.replace(/\.md$/, '').replace(/[\/\\]/g, '-');
-
-        results.push({
-          filePath: itemPath,
-          relativePath,
-          slug,
-        });
-      }
-    }
-  } catch (error) {
-    console.error(`扫描目录 ${dir} 时出错:`, error);
-  }
-
-  return results;
-}
 
 /**
  * 获取所有博客文章的站点地图条目
@@ -79,34 +24,25 @@ function getBlogSitemapEntries(): MetadataRoute.Sitemap {
       return [];
     }
 
-    // 递归扫描所有 .md 文件
-    const markdownFiles = scanMarkdownFiles(contentDir, contentDir);
     const entries: MetadataRoute.Sitemap = [];
 
-    for (const { filePath, slug } of markdownFiles) {
-      try {
-        const fileContent = fs.readFileSync(filePath, 'utf8');
-        const { data } = matter(fileContent);
-        const frontMatter = data as BlogFrontMatter;
-
-        // 跳过隐藏的博客文章
-        if (frontMatter.hidden === true) {
-          continue;
-        }
-
-        // 解析日期
-        const dateStr = frontMatter.updatedAt || frontMatter.date;
-        const lastModified = dateStr ? new Date(dateStr) : new Date();
-
-        entries.push({
-          url: `${BASE_URL}/blogs/${slug}/`,
-          lastModified,
-          changeFrequency: 'weekly',
-          priority: 0.8,
-        });
-      } catch (error) {
-        console.error(`读取博客文件 ${filePath} 时出错:`, error);
+    // 递归扫描所有 .md 文件（扫描与 frontmatter 解析已统一收敛到公共模块）
+    for (const { slug, frontMatter } of scanMarkdownFiles(contentDir, contentDir)) {
+      // 跳过隐藏的博客文章
+      if (frontMatter.hidden === true) {
+        continue;
       }
+
+      // 解析日期
+      const dateStr = frontMatter.updatedAt || frontMatter.date;
+      const lastModified = dateStr ? new Date(dateStr) : new Date();
+
+      entries.push({
+        url: siteUrl(`/blogs/${slug}/`),
+        lastModified,
+        changeFrequency: 'weekly',
+        priority: 0.8,
+      });
     }
 
     return entries;
@@ -143,7 +79,7 @@ function getMomentsSitemapEntries(): MetadataRoute.Sitemap {
         const lastModified = dateStr ? new Date(dateStr) : new Date();
 
         entries.push({
-          url: `${BASE_URL}/moments/`,
+          url: siteUrl('/moments/'),
           lastModified,
           changeFrequency: 'daily',
           priority: 0.6,
@@ -202,7 +138,7 @@ function getChangelogsSitemapEntries(): MetadataRoute.Sitemap {
 
     // 添加更新日志页面
     entries.push({
-      url: `${BASE_URL}/changelogs/`,
+      url: siteUrl('/changelogs/'),
       lastModified: latestDate > new Date(0) ? latestDate : new Date(),
       changeFrequency: 'daily',
       priority: 0.5,
@@ -227,94 +163,94 @@ function getChangelogsSitemapEntries(): MetadataRoute.Sitemap {
  * @returns 站点地图数组
  */
 export default function sitemap(): MetadataRoute.Sitemap {
-  // 基础页面
+  // 基础页面（通过 siteUrl 统一拼接，兼容 GitHub Pages 子路径部署）
   const baseEntries: MetadataRoute.Sitemap = [
     {
-      url: `${BASE_URL}/`,
+      url: siteUrl('/'),
       lastModified: new Date(),
       changeFrequency: 'daily',
       priority: 1.0,
     },
     {
-      url: `${BASE_URL}/blogs/`,
+      url: siteUrl('/blogs/'),
       lastModified: new Date(),
       changeFrequency: 'daily',
       priority: 0.9,
     },
     {
-      url: `${BASE_URL}/archive/`,
+      url: siteUrl('/archive/'),
       lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.7,
     },
     {
-      url: `${BASE_URL}/gallery/`,
+      url: siteUrl('/gallery/'),
       lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.6,
     },
     {
-      url: `${BASE_URL}/moments/`,
+      url: siteUrl('/moments/'),
       lastModified: new Date(),
       changeFrequency: 'daily',
       priority: 0.6,
     },
     {
-      url: `${BASE_URL}/changelogs/`,
+      url: siteUrl('/changelogs/'),
       lastModified: new Date(),
       changeFrequency: 'daily',
       priority: 0.5,
     },
     {
-      url: `${BASE_URL}/about/`,
+      url: siteUrl('/about/'),
       lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.5,
     },
     {
-      url: `${BASE_URL}/friends/`,
+      url: siteUrl('/friends/'),
       lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.5,
     },
     {
-      url: `${BASE_URL}/guestbook/`,
+      url: siteUrl('/guestbook/'),
       lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.5,
     },
     {
-      url: `${BASE_URL}/links/`,
+      url: siteUrl('/links/'),
       lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.4,
     },
     {
-      url: `${BASE_URL}/tools/`,
+      url: siteUrl('/tools/'),
       lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.4,
     },
     {
-      url: `${BASE_URL}/tools/pinyin-converter/`,
+      url: siteUrl('/tools/pinyin-converter/'),
       lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.4,
     },
     {
-      url: `${BASE_URL}/tools/markdown-editor/`,
+      url: siteUrl('/tools/markdown-editor/'),
       lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.4,
     },
     {
-      url: `${BASE_URL}/tools/roco-team/`,
+      url: siteUrl('/tools/roco-team/'),
       lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.4,
     },
     {
-      url: `${BASE_URL}/settings/`,
+      url: siteUrl('/settings/'),
       lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.3,
