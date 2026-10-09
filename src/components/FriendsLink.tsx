@@ -112,13 +112,13 @@ function FriendCard({ link, index }: { link: FriendLink; index: number }) {
       />
 
       <div className="relative p-6">
-        {/* 头部：头像和基本信息 */}
-        <div className="flex items-start gap-4 mb-4">
-          {/* 头像容器 */}
+        {/* 头部：头像和基本信息 —— items-center 让文字块相对头像垂直居中，视觉更平衡 */}
+        <div className="flex items-center gap-4 mb-4">
+          {/* 头像容器：悬停仅轻微放大，去掉旋转 —— 与全站「精致克制」的动效基调一致 */}
           <motion.div 
             className="relative flex-shrink-0"
-            whileHover={{ scale: 1.1, rotate: 5 }}
-            transition={{ duration: 0.3 }}
+            whileHover={{ scale: 1.08 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
           >
             <div
               className="w-16 h-16 rounded-xl overflow-hidden shadow-lg"
@@ -158,7 +158,8 @@ function FriendCard({ link, index }: { link: FriendLink; index: number }) {
           {/* 名称和描述 */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <h4 className="text-lg font-bold text-gray-800 dark:text-white truncate group-hover:text-primary transition-colors">
+              {/* 名称走语义令牌 foreground，亮暗主题自动跟随，不再需要 dark: 变体 */}
+              <h4 className="text-lg font-bold text-foreground truncate group-hover:text-primary transition-colors">
                 {link.name}
               </h4>
               <motion.div
@@ -170,20 +171,24 @@ function FriendCard({ link, index }: { link: FriendLink; index: number }) {
               </motion.div>
             </div>
             
-            <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed">
+            {/* 描述走 muted 语义令牌，与全站副文案层级一致 */}
+            <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
               {link.description}
             </p>
           </div>
         </div>
 
-        {/* 底部：链接信息 */}
-        <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-700/50">
-          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+        {/* 底部：链接信息 —— 分隔线走 border 语义令牌，亮暗主题自动跟随 */}
+        <div className="flex items-center justify-between pt-4 border-t border-border">
+          {/* 域名胶囊化：muted 底色 + 细边框圆角胶囊，比裸文字更有质感，也强化了「信息标签」的层级 */}
+          <span className="inline-flex items-center gap-1.5 max-w-[170px] px-2.5 py-1
+                           rounded-full bg-muted/70 border border-border
+                           text-xs text-muted-foreground">
             {siteIcon}
-            <span className="truncate max-w-[150px]">
+            <span className="truncate">
               {new URL(link.url).hostname.replace(/^www\./, '') + new URL(link.url).pathname.replace(/\/$/, '')}
             </span>
-          </div>
+          </span>
           
           {/* 访问按钮 */}
           <motion.div
@@ -361,11 +366,12 @@ export default function FriendsLink() {
   if (!mounted) {
     return (
       <div className="animate-pulse">
-        <div className="h-8 w-28 bg-gray-200 dark:bg-gray-700 rounded-full mb-6"></div>
+        {/* 骨架屏同样走 muted 语义令牌，与正式卡片令牌体系一致 */}
+        <div className="h-8 w-28 bg-muted rounded-full mb-6"></div>
         {/* 骨架断点与正式网格保持一致：grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-48 bg-gray-200 dark:bg-gray-700 rounded-xl"></div>
+            <div key={i} className="h-48 bg-muted rounded-xl"></div>
           ))}
         </div>
       </div>

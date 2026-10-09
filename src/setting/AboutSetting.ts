@@ -90,8 +90,8 @@ export const aboutSections: AboutSectionConfig[] = [
     coverVerticalPosition: '50%',
     coverSize: '100%',
     paragraphs: [
-      '天津工业大学机械工程专业就读，预计2029年毕业。',
-      '一个机械工程专业的25级大学牲。总想搞一些东西，总是在焦虑之中，总爱碎碎念。。。'
+      'TGU机械工程专业就读，预计2029年毕业。',
+      '一个牢机械专业的25级大学牲。总想搞一些东西，总是在焦虑之中，总爱碎碎念。。。'
     ],
     quote: {
       intro: '来个超绝比喻介绍一下自己：',

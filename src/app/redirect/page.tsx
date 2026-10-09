@@ -48,15 +48,26 @@ export default function RedirectPage() {
     }
   };
 
-  // 继续访问：新标签页打开目标链接，并显示看板娘送别消息
+  // 继续访问：新窗口（新标签页）打开目标链接
+  // 安全校验：仅允许 http/https 协议（目标来自查询参数，用户可控），
+  // 防止 javascript: 等危险协议被注入执行
   const handleContinue = () => {
-    if (targetUrl) {
-      window.open(targetUrl, '_blank', 'noopener,noreferrer');
-    } else {
-      window.location.href = '/';
-      return;
+    let target: string | null = null;
+    try {
+      if (targetUrl && /^https?:$/i.test(new URL(targetUrl).protocol)) {
+        target = targetUrl;
+      }
+    } catch {
+      target = null;
     }
-    Live2DMessageHelper.showExternalLinkMessage('CONTINUE');
+    if (target) {
+      // 新标签页打开目标链接（点击事件内调用，不会被弹窗拦截器拦截）
+      window.open(target, '_blank', 'noopener,noreferrer');
+      Live2DMessageHelper.showExternalLinkMessage('CONTINUE');
+    } else {
+      // 未提供有效目标链接时回首页
+      window.location.href = '/';
+    }
   };
 
   return (

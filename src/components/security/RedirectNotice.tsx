@@ -103,13 +103,21 @@ export default function RedirectNotice({
   }, [url]);
 
   /**
-   * 继续访问：默认在新标签页打开，并带上安全属性
+   * 继续访问：新窗口（新标签页）打开目标链接
+   * 安全校验：仅允许 http/https 协议，防止 javascript: 等危险协议注入；
+   * noopener 防止新页面反向操控本站
    */
   const handleContinue = useCallback(() => {
     if (onContinue) {
       onContinue();
       return;
     }
+    try {
+      if (!/^https?:$/i.test(new URL(url).protocol)) return;
+    } catch {
+      return;
+    }
+    // 新标签页打开目标链接（点击事件内调用，不会被弹窗拦截器拦截）
     window.open(url, '_blank', 'noopener,noreferrer');
   }, [onContinue, url]);
 

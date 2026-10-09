@@ -16,7 +16,7 @@
 
 'use client';
 
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import RedirectNotice from './RedirectNotice';
 import { Live2DMessageHelper } from '@/utils/live2dMessageManager';
@@ -72,8 +72,6 @@ function isExternalLink(anchor: HTMLAnchorElement): boolean {
 export default function ExternalLinkGuard(): React.ReactElement | null {
   const [pendingUrl, setPendingUrl] = useState<string | null>(null);
   const [originAnchor, setOriginAnchor] = useState<HTMLAnchorElement | null>(null);
-  // 用于「继续访问」时避免再次触发拦截
-  const bypassRef = useRef(false);
 
   /**
    * 全局点击委托
@@ -90,12 +88,6 @@ export default function ExternalLinkGuard(): React.ReactElement | null {
       const anchor = target?.closest?.('a[href]') as HTMLAnchorElement | null;
       if (!anchor) return;
 
-      // 绕过标记（继续访问时手动触发）
-      if (bypassRef.current) {
-        bypassRef.current = false;
-        return;
-      }
-
       if (!isExternalLink(anchor)) return;
 
       // 拦截默认跳转，弹出提醒
@@ -111,16 +103,18 @@ export default function ExternalLinkGuard(): React.ReactElement | null {
   }, []);
 
   /**
-   * 继续访问：在新标签页打开目标链接
+   * 继续访问：新窗口（新标签页）打开目标链接
+   * 说明：在点击事件内直接调用 window.open 属于用户手势触发，
+   * 不会被浏览器弹窗拦截器拦截；noopener 防止新页面反向操控本站
    */
   const handleContinue = useCallback(() => {
     if (!pendingUrl) return;
-    bypassRef.current = true;
-    window.open(pendingUrl, '_blank', 'noopener,noreferrer');
     setPendingUrl(null);
     setOriginAnchor(null);
     // 看板娘提示：送别
     Live2DMessageHelper.showExternalLinkMessage('CONTINUE');
+    // 新标签页打开目标链接
+    window.open(pendingUrl, '_blank', 'noopener,noreferrer');
   }, [pendingUrl]);
 
   /**
