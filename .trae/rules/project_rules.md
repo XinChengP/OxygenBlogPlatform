@@ -36,7 +36,7 @@
 - **音乐播放器** - 基于 Howler.js，侧边滑出式设计，播放状态持久化
 - **主题系统** - 锁定天依蓝配色，基于 shadcn/ui 语义化 CSS 变量，支持暗黑模式图片滤镜优化
 - **时光河流归档** - 水平波浪时间线布局，年份自动分组
-- **实用工具** - 拼音转换器、Markdown编辑器、洛克王国阵容搭配模拟器
+- **实用工具** - 站内工具（拼音转换器、Markdown编辑器、洛克王国阵容搭配模拟器）+ 外部工具收录（CNC G 代码生成、自动弹原琴、B站弹幕爬取），工具配置支持 external/repoUrl 字段
 - **GitHub评论** - Giscus评论系统，基于GitHub Discussions
 - **粒子动画** - tsparticles背景效果
 - **GitHub发布** - 支持直接从编辑器发布到GitHub仓库
@@ -51,6 +51,7 @@
 - **代码复制** - 代码块一键复制功能（统一走 `src/utils/clipboard.ts`）
 - **路由兜底** - 各主要路由 `loading.tsx`（RouteSkeleton 骨架屏）与 `error.tsx`（RouteErrorFallback 错误兜底）
 - **SEO优化** - 由 `src/app/sitemap.ts` 在构建期生成 sitemap.xml，自动生成 robots.txt
+- **RSS订阅** - `src/app/rss.xml/route.ts` 构建期静态生成 RSS 源，与 sitemap 共用 `src/utils/blogScanner.ts` 扫描博客（跳过 hidden 文章），页脚提供订阅入口
 - **网站统计** - 接入51la网站统计分析功能
 - **安全防护** - XSS防护、CSP策略、防劫持检测（security组件）、外链跳转拦截
 
@@ -77,6 +78,7 @@ src/
 │   │   ├── markdown-editor/      # Markdown编辑器
 │   │   └── roco-team/            # 洛克王国阵容搭配模拟器
 │   ├── sitemap.ts         # 构建期生成 sitemap.xml
+│   ├── rss.xml/           # RSS订阅源路由（route.ts，构建期静态生成）
 │   └── api/               # API路由（about.txt等）
 ├── actions/               # Server Actions（含静态导出空实现检测）
 │   ├── todoActions.ts     # 待办数据操作
@@ -108,7 +110,7 @@ src/
 │   ├── changelogs/       # 更新日志
 │   └── todo.json         # 待办事项数据
 ├── data/                  # 静态数据文件
-├── utils/                 # 工具函数（assetUtils、howlerPlayerManager、clipboard、relativeTime、live2dHitokoto 等）
+├── utils/                 # 工具函数（assetUtils、howlerPlayerManager、clipboard、relativeTime、live2dHitokoto、blogScanner 等）
 ├── setting/               # 配置文件（WebSetting、AboutSetting、toolsSetting、live2dMessages等）
 ├── types/                 # TypeScript类型
 ├── contexts/              # React上下文
@@ -392,6 +394,9 @@ const useLocalStorage = <T,>(key: string, initialValue: T) => {
 - **Markdown编辑器**: 实时预览、语法高亮、工具栏、导出功能、GitHub发布
 - **阵容搭配模拟器** (`/tools/roco-team`): 洛克王国天梯赛宠物一览、阵容搭配、禁赛设置、外观切换、血脉选择
 - **工具配置**: 新工具需在 `src/setting/toolsSetting.ts` 的 availableTools 中注册（isActive、path、featured）
+- **站内工具**: path 填站内路由（如 `/tools/roco-team`），可选 repoUrl 指向源码仓库展示"查看源码"入口
+- **外部工具**: external 设为 true，path 直接填完整仓库网址（如 GitHub 项目链接），新标签页打开且无第二按钮；外部链接不加 `data-skip-external-guard`，保持全站外链守卫统一拦截提醒
+- **页面布局**: 工具页已移除分类筛选侧边栏，改为全宽单列布局（`/tools` 页面）
 - **代码块组件**: 语法高亮、语言标签显示、一键复制功能
 - **暗黑模式图片**: 智能滤镜适配、懒加载、WebP格式支持
 
@@ -793,6 +798,6 @@ npm run electron         # 运行桌面应用
 
 ---
 
-*最后更新: 2026年10月4日*
+*最后更新: 2026年10月10日*
 *维护者: 歆橙*
 *版本: v5.1*

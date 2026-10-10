@@ -1,6 +1,6 @@
 # 🌸 个人博客 - 洛天依主题
 
-*最后更新: 2026年10月4日*
+*最后更新: 2026年10月10日*
 
 一个温馨可爱的个人博客，以虚拟歌手洛天依为主题，适合记录生活感悟和技术学习心得。
 
@@ -72,6 +72,7 @@
 - **路由级兜底** - 各主要页面提供 `loading.tsx` 骨架屏与 `error.tsx` 错误兜底，统一为 RouteSkeleton / RouteErrorFallback 组件，弱网或异常时不再白屏
 - **博客渲染重构** - 拆分 BlogMarkdownBase / ServerBlogMarkdown / BlogArticleImage / BlogArticleIframe / ThemeAwareCodeBlock，服务端与客户端渲染统一
 - **Markdown 安全** - rehype-sanitize 配置独立 sanitizeSchema，过滤危险标签属性
+- **RSS 订阅** - 内置 `/rss.xml` 订阅源（构建期静态生成），与 sitemap 共用统一的博客扫描工具（blogScanner），页脚提供订阅入口
 
 ### 🎵 音乐播放器
 - **Howler驱动** - 基于 Howler.js 的全局播放管理器，播放状态跨页面持久化
@@ -126,9 +127,9 @@
 - **相关链接页** - 品牌图标识别、搜索与分类导航，视觉规范统一
 - **友链申请** - 友链页面新增申请占位卡，统一卡片样式与交互
 - **网站统计** - 接入51la统计分析
-- **SEO优化** - 自动生成robots.txt和sitemap.xml
+- **SEO优化** - 自动生成robots.txt、sitemap.xml 和 RSS 订阅源（/rss.xml）
 - **安全防护** - XSS防护、CSP策略、防劫持检测、外链跳转拦截
-- **实用工具** - 拼音转换器、Markdown编辑器、洛克王国阵容搭配模拟器
+- **实用工具** - 站内工具（拼音转换器、Markdown编辑器、洛克王国阵容搭配模拟器）+ 外部开源工具收录（CNC G 代码生成、自动弹原琴、B站弹幕爬取），支持仓库直达入口
 
 ## 🚀 本地体验
 
