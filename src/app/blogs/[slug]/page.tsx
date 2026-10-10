@@ -517,14 +517,106 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
   });
 
   return (
-    <ClientBlogDetail
-      blog={blogData}
-      seriesArticles={seriesArticles}
-      relatedArticles={relatedArticles}
-      /* 正文在构建期渲染为静态 HTML，随 RSC payload 一并传给客户端骨架 */
-      renderedContent={<ServerBlogMarkdown content={blogData.content} />}
-    />
+    <>
+      {/* JSON-LD 结构化数据：帮助搜索引擎理解文章与面包屑层级（详情见下方构建函数） */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: buildStructuredData(blogData) }}
+      />
+      <ClientBlogDetail
+        blog={blogData}
+        seriesArticles={seriesArticles}
+        relatedArticles={relatedArticles}
+        /* 正文在构建期渲染为静态 HTML，随 RSC payload 一并传给客户端骨架 */
+        renderedContent={<ServerBlogMarkdown content={blogData.content} />}
+      />
+    </>
   );
+}
+
+/**
+ * 构建文章页的 JSON-LD 结构化数据
+ *
+ * 输出两组 schema，放在同一个 @graph 中：
+ * - BlogPosting：文章的标题、作者、日期、配图、标签等核心信息
+ * - BreadcrumbList：面包屑层级（首页 → 博客 → 文章），帮助搜索引擎理解站点结构
+ *
+ * 注意：JSON-LD 的 image 必须是绝对地址，因此这里与 generateMetadata
+ * 采用同一套取图口径 —— 优先 frontmatter 封面图（外链原样、站内路径拼域名），
+ * 无封面时回退到固定的默认分享图（不使用随机图集，保证每次构建结果稳定一致）。
+ *
+ * @param blog - 文章数据（来自 getBlogContent）
+ * @returns 可直接内联到 <script type="application/ld+json"> 的 JSON 字符串
+ */
+function buildStructuredData(blog: BlogPost): string {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://blog.xinchengp.cn';
+
+  // 文章页地址：与 generateMetadata 的 canonical 口径一致（带尾斜杠）
+  const articleUrl = blog.canonicalUrl || `${siteUrl}/blogs/${encodeURIComponent(blog.slug)}/`;
+
+  // 配图绝对地址
+  const imageUrl = blog.coverImage
+    ? blog.coverImage.startsWith('http')
+      ? blog.coverImage
+      : `${siteUrl}${blog.coverImage}`
+    : `${siteUrl}/LTY_Picture/og-image.png`;
+
+  const schema = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'BlogPosting',
+        headline: blog.title,
+        description: blog.excerpt || blog.seoDescription || '',
+        datePublished: blog.date,
+        // 未配置更新时间时省略该字段，避免输出无意义的重复日期
+        ...(blog.updatedAt ? { dateModified: blog.updatedAt } : {}),
+        author: {
+          '@type': 'Person',
+          name: blog.author || '歆橙',
+        },
+        publisher: {
+          '@type': 'Organization',
+          name: '心想事成的个人博客',
+          url: siteUrl,
+        },
+        image: imageUrl,
+        mainEntityOfPage: {
+          '@type': 'WebPage',
+          '@id': articleUrl,
+        },
+        ...(blog.tags && blog.tags.length > 0 ? { keywords: blog.tags.join(', ') } : {}),
+        ...(blog.category ? { articleSection: blog.category } : {}),
+        inLanguage: 'zh-CN',
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          {
+            '@type': 'ListItem',
+            position: 1,
+            name: '首页',
+            item: siteUrl,
+          },
+          {
+            '@type': 'ListItem',
+            position: 2,
+            name: '博客',
+            item: `${siteUrl}/blogs/`,
+          },
+          {
+            '@type': 'ListItem',
+            position: 3,
+            name: blog.title,
+            item: articleUrl,
+          },
+        ],
+      },
+    ],
+  };
+
+  // 序列化时转义 < 为 \u003c，防止正文中出现 </script> 提前闭合标签造成注入
+  return JSON.stringify(schema).replace(/</g, '\\u003c');
 }
 
 // 禁用动态参数，只允许预生成的路由

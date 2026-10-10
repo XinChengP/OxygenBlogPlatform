@@ -7,7 +7,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { emojy, name } from '@/setting/NavigationSetting';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 import { useNavigationVisibility } from '@/contexts/NavigationVisibilityContext';
-import { Users, MessageSquare, Link2, User, ChevronDown } from 'lucide-react';
+import { Users, MessageSquare, Link2, User, ChevronDown, Search } from 'lucide-react';
+import { OPEN_SEARCH_EVENT } from '@/components/SearchDialog';
 
 /**
  * 导航项类型定义
@@ -156,6 +157,15 @@ const Navigation = () => {
    */
   const handleDropdownLeave = useCallback(() => {
     setActiveDropdown(null);
+  }, []);
+
+  /**
+   * 打开站内搜索弹窗
+   * 通过派发自定义事件通知全局挂载的 SearchDialog，
+   * 导航与弹窗之间无需建立状态依赖
+   */
+  const handleSearchClick = useCallback(() => {
+    window.dispatchEvent(new CustomEvent(OPEN_SEARCH_EVENT));
   }, []);
 
   /**
@@ -350,15 +360,42 @@ const Navigation = () => {
               
               {/* 社交下拉菜单 */}
               {renderDropdown(socialDropdown)}
-              
+
               {/* 关于下拉菜单 */}
               {renderDropdown(aboutDropdown)}
+
+              {/* 站内搜索按钮 */}
+              <button
+                type="button"
+                onClick={handleSearchClick}
+                aria-label="搜索文章（快捷键 Ctrl+K）"
+                className={`px-2 xl:px-3 py-2 rounded-md transition-colors duration-300 ${
+                  isAtTop
+                    ? 'text-white hover:text-white/80'
+                    : 'text-foreground hover:text-primary dark:hover:text-primary'
+                }`}
+              >
+                <Search className="w-4 h-4" />
+              </button>
             </div>
           </div>
           
           {/* Mobile menu button */}
           <div className="lg:hidden flex items-center space-x-2">
-            <button 
+            {/* 移动端站内搜索按钮 */}
+            <button
+              type="button"
+              onClick={handleSearchClick}
+              aria-label="搜索文章"
+              className={`p-2 transition-colors duration-300 ${
+                isAtTop
+                  ? 'text-white hover:text-white/80'
+                  : 'text-foreground hover:text-primary dark:hover:text-primary'
+              }`}
+            >
+              <Search className="w-6 h-6" />
+            </button>
+            <button
               onClick={toggleMobileMenu}
               className={`transition-colors duration-300 ${
                 isAtTop 

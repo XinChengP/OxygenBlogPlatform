@@ -13,6 +13,7 @@ import SecurityProvider from "@/components/security/SecurityProvider";
 import ExternalLinkGuard from "@/components/security/ExternalLinkGuard";
 import Live2DDynamicLoader from "@/components/Live2DDynamicLoader";
 import MusicPlayerController from "@/components/MusicPlayerController";
+import SearchDialog from "@/components/SearchDialog";
 import { enableBackground, backgroundImage } from "@/setting/WebSetting";
 import { getAssetPath } from "@/utils/assetUtils";
 
@@ -301,6 +302,8 @@ export default function RootLayout({
                 <ConditionalComponents />
                 {/* 外部链接跳转提醒 - 拦截全站外链点击并弹出安全提示 */}
                 <ExternalLinkGuard />
+                {/* 站内搜索弹窗 - Ctrl+K 或导航栏按钮唤起 */}
+                <SearchDialog />
               </SmoothScrollProvider>
             </NavigationVisibilityProvider>
           </ThemeProvider>

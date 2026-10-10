@@ -85,6 +85,17 @@ export default function CollapsibleCodeBlock({
               background: 'transparent',
             }
           }}
+          // 显示行号，方便读者对照与讨论具体代码位置
+          showLineNumbers
+          // 行号配色跟随主题语义变量，明暗模式自动适配；
+          // 禁止选中避免复制代码时把行号一起带走
+          lineNumberStyle={{
+            color: 'var(--muted-foreground)',
+            opacity: 0.5,
+            minWidth: '2.5em',
+            paddingRight: '1em',
+            userSelect: 'none',
+          }}
         >
           {visibleCode}
         </SyntaxHighlighter>
