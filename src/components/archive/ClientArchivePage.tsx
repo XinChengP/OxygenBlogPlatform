@@ -688,7 +688,19 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
               dragMomentum
               dragElastic={0.1}
               dragConstraints={dragConstraints}
-              style={{ x: riverX }}
+              style={{
+                x: riverX,
+                /*
+                  显式钉死 will-change：让整块超宽画布常驻提升为合成层。
+                  原因：画布宽度达上万像素，远超 GPU 常规纹理尺寸，只能切块渲染；
+                  framer-motion v12 会在「动画进行中」自动加 will-change、结束后移除，
+                  于是拖拽松手后的弹性回弹期间图层被降级，整块画布跌回主线程逐帧重绘，
+                  尽头处题词滤镜与卡片（foreignObject HTML）的光栅化跟不上帧节奏，
+                  表现为拉到最右端时卡片高频闪烁。常驻合成层后，
+                  逐帧位移变为纯 GPU 合成（缓存切块整体平移），不再反复重绘。
+                */
+                willChange: 'transform',
+              }}
               onDragStart={() => {
                 didDrag.current = true;
               }}
@@ -1158,7 +1170,21 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
                   双层投影（白晕托起、深影压边）保证在明暗背景上都读得清。
                 */}
                 {totalPosts > 0 && (
-                  <g style={{ pointerEvents: 'none' }}>
+                  <g
+                    style={{
+                      pointerEvents: 'none',
+                      /*
+                        双层投影提升到整个题词分组统一施加，不再逐字挂滤镜。
+                        原因：每个字的 drop-shadow 都是一个独立滤镜区域，
+                        12 个字就是 12 个滤镜区域，是河流尽头（拖拽最右端）
+                        光栅化开销的大头，也是卡片高频闪烁的诱因之一。
+                        字距 42px 远大于阴影模糊半径 8px，相邻字的投影互不重叠，
+                        因此合并到分组后视觉效果与逐字施加完全一致。
+                      */
+                      filter:
+                        'drop-shadow(0 2px 4px rgba(255,255,255,0.35)) drop-shadow(0 3px 8px rgba(12,40,85,0.4))',
+                    }}
+                  >
                     {RIVER_INSCRIPTION.map((sentence, lineIndex) => {
                       // 第 0 项「悟已往之不谏」落在河道上方，第 1 项「知来者之可追」落在河道下方
                       const isBelow = lineIndex === 1;
@@ -1190,9 +1216,7 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
                               fill: 'var(--primary)',
                               stroke: 'var(--primary)',
                               paintOrder: 'stroke',
-                              // 与年份水印同款的双层投影：白晕托起、深影压边，明暗背景都可读
-                              filter:
-                                'drop-shadow(0 2px 4px rgba(255,255,255,0.35)) drop-shadow(0 3px 8px rgba(12,40,85,0.4))',
+                              // 投影滤镜已上移到外层 <g> 统一施加（见分组处注释），逐字不再单独挂
                             }}
                           >
                             {char}
