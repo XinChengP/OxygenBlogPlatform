@@ -14,7 +14,7 @@ coverImage: "/Blogabout/ChunlanHuanyue2026/cover.jpg"
 
 # 背景
 
-&emsp;&emsp;上个暑假书没去成，这个暑假必须去，北京，出发！哼，哼，哼，啊啊啊啊————
+&emsp;&emsp;上个暑假没去成，这个暑假必须去，北京，出发！哼，哼，哼，啊啊啊啊————
 
 # 进场
 

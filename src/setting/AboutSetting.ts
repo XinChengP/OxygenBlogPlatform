@@ -153,7 +153,7 @@ export interface MusicPlaylistConfig {
 
 export const musicPlaylist: MusicPlaylistConfig = {
   name: '华风夏韵，洛水天依',
-  description: '任天地之间，吟游四方\n《歌行四方》夯爆了，入坑曲好吧\n （歌单也可以在左下播放器里播放）',
+  description: '任天地之间，吟游四方\n《歌行四方》夯爆了，入坑曲好吧\n （歌单也可以在左侧播放器里播放）',
   coverImage: '/aboutme/musiclistcover/gexingsifang.jpg',
   url: 'https://music.163.com/playlist?id=14349636887&uct2=U2FsdGVkX19EskAPIF87AMNeAZEiTZ6kJr8vlF0T/og=',
   buttonText: '去听听',
@@ -556,6 +556,17 @@ export const animeList: AnimeConfig[] = [
     link: 'https://www.bilibili.com/bangumi/media/md28235362',
     coverHorizontalPosition: '50%',
     coverVerticalPosition: '22.5%',
+    coverSize: '100%',
+  },
+  {
+    id: 'anime7',
+    name: '魔女之旅',
+    coverImage: '/aboutme/anime/mnzl.png',
+    description: '致郁番（确信）',
+    status: '正在追',
+    link: 'https://www.bilibili.com/bangumi/media/md28229881',
+    coverHorizontalPosition: '50%',
+    coverVerticalPosition: '10%',
     coverSize: '100%',
   },
 

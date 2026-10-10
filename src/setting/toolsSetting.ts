@@ -43,6 +43,16 @@ export const availableTools: ToolItem[] = [
     featured: true
   },
   {
+    // 二维码生成器组件（外部开源项目，托管于 GitHub）
+    id: 'qrcode-generator',
+    name: '二维码生成器（demo）',
+    description: '文本/URL 生成二维码（）',
+    icon: '🔳',
+    isActive: true,
+    path: 'https://github.com/XinChengP/Qrcode-generator',
+    external: true
+  },
+  {
     // CNC G 代码生成工具（外部开源项目，托管于 GitHub）
     id: 'cnc-gcode-generator',
     name: 'CNC G 代码生成工具',
@@ -66,12 +76,13 @@ export const availableTools: ToolItem[] = [
     // B站弹幕爬取工具（外部开源项目，托管于 GitHub）
     id: 'bilibili-danmu',
     name: 'B站弹幕爬取工具',
-    description: '输入视频链接，弹幕自动导出',
+    description: '输入视频链接自动解析 cid，图形界面操作，弹幕一键导出 CSV（仅供学习研究）',
     icon: '💬',
     isActive: true,
     path: 'https://github.com/XinChengP/bilibili-danmu',
     external: true
-  }
+  },
+
 ];
 
 // 获取全部已激活的工具
