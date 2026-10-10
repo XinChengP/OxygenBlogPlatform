@@ -135,6 +135,7 @@ export function calculateReadingTime(content: string): number {
  * 
  * 支持的格式：
  * - YYYY-MM-DD (如: 2024-01-01)
+ * - 不补零的 YYYY-M-D (如: 2024-1-1，解析前会自动补零归一化)
  * - YYYY-MM-DD HH:mm (如: 2024-01-01 14:30)
  * - YYYY-MM-DD HH:mm:ss (如: 2024-01-01 14:30:45)
  * - ISO 8601 格式 (如: 2024-01-01T14:30:45.123Z)
@@ -150,22 +151,34 @@ export function formatBlogDate(dateInput?: string, defaultDate: string = '2024-0
   }
   
   try {
+    // 第一步：归一化不补零的年月日写法（如 2025-9-24 → 2025-09-24、2025-09-4 → 2025-09-04）。
+    // 修复原因：下方分支只识别补零格式，不补零时会掉进兜底的 new Date(非标准字符串)，
+    // V8 按本地时间解析后再经 toISOString() 转 UTC，在东八区会把日期回退一天
+    // （实测 2025-9-24 会输出 2025-09-23，导致归档页时光河流按年分组串年）。
+    // 先补零可让它走上方的标准分支（按 UTC 解析），彻底避开时区偏移；
+    // 已补零的输入经过此步保持原样，不影响既有行为。
+    const normalizedInput = dateInput.replace(
+      /^(\d{4})-(\d{1,2})-(\d{1,2})(?!\d)/,
+      (_match, year: string, month: string, day: string) =>
+        `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+    );
+
     // 尝试解析各种日期格式
     let date: Date;
     
-    // 处理常见的日期格式
-    if (/^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
+    // 处理常见的日期格式（统一基于归一化后的字符串判断与解析）
+    if (/^\d{4}-\d{2}-\d{2}$/.test(normalizedInput)) {
       // YYYY-MM-DD 格式
-      date = new Date(dateInput + 'T00:00:00.000Z');
-    } else if (/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}$/.test(dateInput)) {
+      date = new Date(normalizedInput + 'T00:00:00.000Z');
+    } else if (/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}$/.test(normalizedInput)) {
       // YYYY-MM-DD HH:mm 格式
-      date = new Date(dateInput + ':00.000Z');
-    } else if (/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}$/.test(dateInput)) {
+      date = new Date(normalizedInput + ':00.000Z');
+    } else if (/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}$/.test(normalizedInput)) {
       // YYYY-MM-DD HH:mm:ss 格式
-      date = new Date(dateInput + '.000Z');
+      date = new Date(normalizedInput + '.000Z');
     } else {
       // 其他格式，直接使用 Date 构造函数
-      date = new Date(dateInput);
+      date = new Date(normalizedInput);
     }
     
     // 检查日期是否有效

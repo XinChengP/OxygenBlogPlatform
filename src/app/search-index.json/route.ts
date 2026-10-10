@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import path from 'path';
 // 复用公共博客扫描模块（与 rss.xml / sitemap 共用，避免重复实现扫描逻辑）
 import { scanMarkdownFiles } from '@/utils/blogScanner';
+// 复用日期归一化函数：排序前把 frontmatter 日期统一为 YYYY-MM-DD，避免不补零写法排错序
+import { formatBlogDate } from '@/lib/utils';
 
 // 静态导出标记：构建期生成 /search-index.json 静态文件（与 rss.xml 先例一致）
 export const dynamic = 'force-static';
@@ -103,7 +105,13 @@ function generateSearchIndex(): SearchIndexEntry[] {
     });
 
   // 按日期倒序，保证空搜索态展示的「热门文章」是最新内容
-  entries.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  // 必须先经 formatBlogDate 归一化为 YYYY-MM-DD 再比较：
+  // frontmatter 可能写成不补零格式（如 2025-9-24），直接 localeCompare 时
+  // 字典序会把「2025-9-24」排到「2025-10-01」之后（字符 9 > 1），造成排序错乱。
+  // 第二个参数传空串：缺失日期的条目仍返回空字符串，保持排在最后的原有语义。
+  entries.sort((a, b) =>
+    formatBlogDate(b.date || undefined, '').localeCompare(formatBlogDate(a.date || undefined, ''))
+  );
 
   return entries;
 }

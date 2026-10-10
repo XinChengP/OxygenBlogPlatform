@@ -81,7 +81,7 @@ const Navigation = () => {
     icon: <User className="w-4 h-4" />,
     items: [
       { href: '/about', label: '关于我' },
-      { href: '/changelogs', label: '日志' },
+      { href: '/changelogs', label: '开发日志' },
       { href: '/links', label: '相关链接' },
     ],
   }), []);
