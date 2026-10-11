@@ -2,8 +2,12 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GalleryImage, ImageCategoryTree, GalleryState } from '../../types/gallery';
-import { filterImagesByCategory } from '../../utils/galleryUtils';
+import { GalleryImage, ImageCategoryTree, GalleryState, ImageSource } from '../../types/gallery';
+import {
+  filterImagesByCategory,
+  fetchRemoteImagesInBrowser,
+  buildCategoryTree
+} from '../../utils/galleryShared';
 import ImageCard from './components/ImageCard';
 import ImagePreview from './components/ImagePreview';
 import { useBackgroundStyle } from '../../hooks/useBackgroundStyle';
@@ -20,6 +24,13 @@ interface GalleryClientProps {
 
 // 首屏优先加载的图片数量
 const INITIAL_LOAD_COUNT = 20;
+
+// ===== 浏览器端实时刷新的会话级缓存 =====
+// 缓存键：存放在 sessionStorage（标签页会话内有效），记录最近一次成功拉取的图床数据
+const REMOTE_REFRESH_CACHE_KEY = 'gallery_remote_refresh_cache';
+// 缓存有效期：5 分钟。未认证的 GitHub API 配额为 60 次/小时/IP，
+// 设置有效期可避免用户频繁切换页面时重复请求触发限流
+const REMOTE_REFRESH_CACHE_TTL = 5 * 60 * 1000;
 
 // GalleryClient组件
 const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps) => {
@@ -40,6 +51,69 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
 
   // 滚动节流定时器引用
   const scrollThrottleRef = useRef<number>(0);
+
+  // ===== 浏览器端实时刷新图床数据 =====
+  // 背景：本站为静态导出站点，首屏数据（initialImages）是构建时抓取的快照，
+  // 图床仓库新增文件夹后快照不会变化。此副作用在页面挂载后由浏览器直接
+  // 调用 GitHub Trees API 拉取最新目录树，使新文件夹无需重新构建部署即可识别。
+  useEffect(() => {
+    // 取消标志：组件卸载后丢弃迟到的响应，避免对已卸载组件更新状态
+    let cancelled = false;
+
+    const refreshRemoteImages = async () => {
+      // 1. 优先读取会话级缓存（5 分钟内有效），避免重复请求触发 GitHub API 限流
+      let cachedImages: GalleryImage[] | null = null;
+      try {
+        const cached = sessionStorage.getItem(REMOTE_REFRESH_CACHE_KEY);
+        if (cached) {
+          const parsed = JSON.parse(cached) as { images?: GalleryImage[]; timestamp?: number };
+          if (Array.isArray(parsed.images) && parsed.timestamp &&
+              Date.now() - parsed.timestamp < REMOTE_REFRESH_CACHE_TTL) {
+            cachedImages = parsed.images;
+          }
+        }
+      } catch {
+        // 缓存读取/解析失败不影响主流程，直接走实时拉取
+      }
+
+      // 2. 无有效缓存时实时拉取最新目录树（内部已处理重试与限流降级）
+      const freshImages = cachedImages ?? await fetchRemoteImagesInBrowser();
+
+      // 组件已卸载或拉取失败（返回空数组）时静默退出，保留构建期兜底数据
+      if (cancelled || freshImages.length === 0) return;
+
+      // 3. 拉取成功且数据来自实时请求时，写入会话缓存（写入失败静默忽略）
+      if (!cachedImages) {
+        try {
+          sessionStorage.setItem(
+            REMOTE_REFRESH_CACHE_KEY,
+            JSON.stringify({ images: freshImages, timestamp: Date.now() })
+          );
+        } catch {
+          // 图片数量过多导致存储超限时放弃缓存，不影响本次展示
+        }
+      }
+
+      // 4. 合并数据：本地图片保留，远程图片整体替换为最新版本，并重算分类树
+      //    （替换而非合并可正确同步图床侧的删除与移动）
+      setState(prev => {
+        const localImages = prev.images.filter(img => img.source === ImageSource.Local);
+        const mergedImages = [...localImages, ...freshImages];
+        return {
+          ...prev,
+          images: mergedImages,
+          categories: buildCategoryTree(mergedImages),
+        };
+      });
+    };
+
+    refreshRemoteImages();
+
+    return () => {
+      cancelled = true;
+    };
+    // 仅在组件挂载时执行一次：数据刷新与用户交互状态无关
+  }, []);
 
   // 根据选中的分类和子分类过滤图片
   const filteredImages = useMemo(() => {

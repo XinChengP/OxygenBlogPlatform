@@ -82,6 +82,16 @@ export const availableTools: ToolItem[] = [
     path: 'https://github.com/XinChengP/bilibili-danmu',
     external: true
   },
+  {
+    // 洛天依图床管理工具（外部开源项目，作者 Eiheir，托管于 GitHub）
+    id: 'luo-tianyi-image',
+    name: '图床管理工具（内含洛佬精美图片）',
+    description: '图床管理工具，支持批量上传、自动分类、哈希去重与 Git 自动推送',
+    icon: '🖼️',
+    isActive: true,
+    path: 'https://github.com/Eiheir/Luo_Tianyi_Image',
+    external: true
+  },
 
 ];
 

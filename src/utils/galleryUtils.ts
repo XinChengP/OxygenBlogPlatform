@@ -3,6 +3,36 @@ import type * as fsType from 'fs';
 import type * as httpsType from 'https';
 import { GalleryImage, ImageSource, ImageCategory, ImageCategoryTree } from '../types/gallery';
 import { getAssetPath } from './assetUtils';
+// 共享逻辑统一从同构模块导入：分类映射、目录树解析、浏览器端拉取等
+// （该模块零 Node 依赖，可被客户端组件安全导入；本文件仅保留服务端专属逻辑）
+import {
+  GITHUB_IMAGE_REPO_CONFIG,
+  isImageFile,
+  generateImageId,
+  mapPathToCategory,
+  buildCategoryTree,
+  filterImagesByCategory,
+  getCategorySortOrder,
+  parseGitHubTreeToImages,
+  GitHubTreeResponse
+} from './galleryShared';
+
+// 对外保持原有的导出接口不变：其他模块原先从本文件导入这些成员，
+// 现统一转发到共享模块，避免破坏现有引用
+export {
+  GITHUB_IMAGE_REPO_CONFIG,
+  isImageFile,
+  generateImageId,
+  mapPathToCategory,
+  buildCategoryTree,
+  filterImagesByCategory,
+  getCategorySortOrder,
+  getConfiguredMainCategories,
+  getAllCategoryConfigs,
+  getSubCategories,
+  fetchRemoteImagesInBrowser
+} from './galleryShared';
+export type { GalleryCategoryConfig } from './galleryShared';
 
 // 只在服务器端环境中导入 fs 和 https 模块
 let fs: typeof fsType | undefined;
@@ -57,7 +87,7 @@ const serverHttpsFetch = <T = unknown>(url: string, headers: Record<string, stri
     }
 
     const parsedUrl = new URL(url);
-    
+
     // 调试日志：输出解析后的URL信息
     console.log('[Gallery] HTTPS请求配置:', {
       原始URL: url,
@@ -66,10 +96,10 @@ const serverHttpsFetch = <T = unknown>(url: string, headers: Record<string, stri
       路径: parsedUrl.pathname + parsedUrl.search,
       NODE_ENV: process.env.NODE_ENV
     });
-    
+
     // 动态导入 https 模块以获取 Agent 类
     const httpsModule = require('https');
-    
+
     // 创建自定义 HTTPS Agent，在开发环境中允许自签名证书
     // 这可以解决 "unable to verify the first certificate" 错误
     const agent = new httpsModule.Agent({
@@ -77,7 +107,7 @@ const serverHttpsFetch = <T = unknown>(url: string, headers: Record<string, stri
       // 设置超时时间
       timeout: 30000,
     });
-    
+
     const options = {
       hostname: parsedUrl.hostname,
       port: parsedUrl.port || 443, // 使用URL中指定的端口，如果没有则默认使用443
@@ -88,7 +118,7 @@ const serverHttpsFetch = <T = unknown>(url: string, headers: Record<string, stri
       // 添加lookup选项以使用IPv4优先，避免某些网络环境下的DNS解析问题
       family: 4
     };
-    
+
     const req = https.request(options, (res: import('http').IncomingMessage) => {
       let data = '';
       res.on('data', (chunk: string) => {
@@ -106,38 +136,41 @@ const serverHttpsFetch = <T = unknown>(url: string, headers: Record<string, stri
         }
       });
     });
-    
+
     req.on('error', (e: Error) => {
       // 详细记录错误信息以便诊断
-      console.error('[Gallery] HTTPS请求错误:', {
+      // 使用 warn 级别：环境类网络问题（如 hosts 劫持、代理未启动）属于预期内降级场景，
+      // error 级别会触发 Next.js 开发面板的红色报错干扰开发
+      console.warn('[Gallery] HTTPS请求错误:', {
         错误消息: e.message,
         错误名称: e.name,
         主机名: parsedUrl.hostname,
         端口: parsedUrl.port || 443,
-        原始URL: url,
-        堆栈: e.stack
+        原始URL: url
       });
-      
+
       // 检查是否是连接被拒绝错误，且主机名是应该解析到外网的域名
       if (e.message.includes('ECONNREFUSED 127.0.0.1') && isHostnameMisconfigured(parsedUrl.hostname)) {
-        console.error(`[Gallery] DNS解析错误: ${parsedUrl.hostname} 被错误解析到 127.0.0.1，请检查hosts文件或网络配置`);
-        reject(new Error(`DNS解析错误: ${parsedUrl.hostname} 被错误解析到本地地址，请检查hosts文件或网络配置`));
+        // 典型场景：Watt Toolkit（Steam++）等加速工具在 hosts 中把域名劫持到 127.0.0.1，
+        // 但工具未运行或对应加速开关未开启，本地无服务监听导致连接被拒
+        console.warn(
+          `[Gallery] ${parsedUrl.hostname} 被解析到 127.0.0.1 但本地无服务监听（连接被拒）。` +
+          `若使用 Watt Toolkit 等加速工具，请启动它并开启 GitHub 加速；否则请检查 hosts 文件`
+        );
+        reject(new Error(`ECONNREFUSED_HOSTS: ${parsedUrl.hostname} 被劫持到本地但无服务监听`));
       } else {
         reject(e);
       }
     });
-    
+
     req.setTimeout(30000, () => {
       req.destroy();
       reject(new Error('Request timeout'));
     });
-    
+
     req.end();
   });
 };
-
-// 支持的图片扩展名
-const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif'];
 
 /**
  * 判断错误是否为 GitHub API 限流（HTTP 403 rate limit exceeded）
@@ -150,26 +183,19 @@ const isRateLimitError = (error: unknown): boolean => {
 };
 
 /**
- * 检查文件是否为图片
- * @param filename - 文件名
- * @returns 是否为图片
+ * 判断错误是否为"重试也无法恢复"的环境类网络错误
+ * 包括：hosts 劫持导致的连接拒绝、DNS 解析失败等。
+ * 这类错误由本机网络环境决定，短时间内重试结果完全相同，
+ * 快速失败可以立即降级为本地图片，避免用户白等指数退避的 7 秒
  */
-const isImageFile = (filename: string): boolean => {
-  const ext = path.extname(filename).toLowerCase();
-  return IMAGE_EXTENSIONS.includes(ext);
-};
-
-/**
- * 生成唯一图片ID
- * @param filePath - 文件路径
- * @returns 唯一ID
- */
-// 生成唯一图片ID
-const generateImageId = (filePath: string): string => {
-  return filePath
-    .replace(/[\\/]/g, '-') // 统一替换所有路径分隔符
-    .replace(/\./g, '-')
-    .toLowerCase();
+const isNonRetryableNetworkError = (error: unknown): boolean => {
+  const message = error instanceof Error ? error.message : String(error);
+  return (
+    message.includes('ECONNREFUSED') ||      // 连接被拒（含 ECONNREFUSED_HOSTS 标记）
+    message.includes('ENOTFOUND') ||         // 域名不存在
+    message.includes('getaddrinfo') ||       // Node DNS 解析底层错误前缀
+    message.includes('Request timeout')      // 请求超时（网络不可达）
+  );
 };
 
 /**
@@ -180,18 +206,18 @@ const generateImageId = (filePath: string): string => {
  */
 const scanImageFiles = (dir: string, baseDir: string): GalleryImage[] => {
   const results: GalleryImage[] = [];
-  
+
   try {
     if (!fs) {
       return results;
     }
-    
+
     const items = fs.readdirSync(dir);
-    
+
     items.forEach((item: string) => {
       const itemPath = path.join(dir, item);
       const stat = fs.statSync(itemPath);
-      
+
       if (stat.isDirectory()) {
         // 递归扫描子目录
         results.push(...scanImageFiles(itemPath, baseDir));
@@ -202,13 +228,13 @@ const scanImageFiles = (dir: string, baseDir: string): GalleryImage[] => {
         const directoryPath = path.dirname(fullPath); // 只使用目录路径进行分类映射
         const normalizedDirPath = directoryPath.replace(/\\/g, '/'); // 确保目录路径分隔符一致
         const filename = path.basename(itemPath);
-        
+
         // 生成图片URL（相对于public目录）
         const imageUrl = `/gallery/${relativePath}`;
-        
+
         // 使用分类映射系统确定分类
         const { mainCategory, subCategory } = mapPathToCategory(normalizedDirPath);
-        
+
         results.push({
           id: generateImageId(relativePath),
           src: getAssetPath(imageUrl),
@@ -223,7 +249,7 @@ const scanImageFiles = (dir: string, baseDir: string): GalleryImage[] => {
   } catch (error) {
     console.error(`Error scanning directory ${dir}:`, error);
   }
-  
+
   return results;
 };
 
@@ -236,113 +262,22 @@ export const getAllLocalImages = (): GalleryImage[] => {
     if (!fs) {
       return [];
     }
-    
+
     const galleryDir = path.join(process.cwd(), 'public', 'gallery');
-    
+
     if (!fs.existsSync(galleryDir)) {
       // 如果gallery目录不存在，返回空数组
       return [];
     }
-    
+
     // 递归扫描所有图片文件
     const images = scanImageFiles(galleryDir, galleryDir);
-    
+
     return images;
   } catch (error) {
     console.error('Error getting all local images:', error);
     return [];
   }
-};
-
-/**
- * 构建树形分类结构
- * @param images - 图片数组
- * @returns 树形分类数组
- */
-export const buildCategoryTree = (images: GalleryImage[]): ImageCategoryTree[] => {
-  // 1. 按主分类分组
-  const mainCategoryMap = new Map<string, GalleryImage[]>();
-  
-  images.forEach(image => {
-    if (!mainCategoryMap.has(image.category)) {
-      mainCategoryMap.set(image.category, []);
-    }
-    mainCategoryMap.get(image.category)?.push(image);
-  });
-  
-  // 2. 构建树形结构
-  const categoryTrees: ImageCategoryTree[] = [];
-  
-  mainCategoryMap.forEach((categoryImages, mainCategoryName) => {
-    // 统计主分类图片数量（包含子分类）
-    const mainCategoryCount = categoryImages.length;
-    
-    // 按子分类分组
-    const subCategoryMap = new Map<string, GalleryImage[]>();
-    
-    categoryImages.forEach(image => {
-      if (image.subCategory) {
-        if (!subCategoryMap.has(image.subCategory)) {
-          subCategoryMap.set(image.subCategory, []);
-        }
-        subCategoryMap.get(image.subCategory)?.push(image);
-      }
-    });
-    
-    // 生成主分类 slug
-    const mainCategorySlug = mainCategoryName
-      .toLowerCase()
-      .replace(/\s+/g, '-')
-      .replace(/[^a-z0-9\u4e00-\u9fa5_-]/g, '') // 保留中文、字母、数字、下划线和连字符
-      || 'category-' + Math.random().toString(36).substr(2, 9); // 如果为空则生成随机 slug
-    
-    // 构建子分类数组
-    const subCategories: ImageCategoryTree[] = [];
-    
-    subCategoryMap.forEach((subCategoryImages, subCategoryName) => {
-      // 生成子分类 slug
-      const subCategorySlug = `${mainCategorySlug}-${subCategoryName
-        .toLowerCase()
-        .replace(/\s+/g, '-')
-        .replace(/[^a-z0-9\u4e00-\u9fa5_-]/g, '')}`
-        || `subcategory-${Math.random().toString(36).substr(2, 9)}`;
-      
-      subCategories.push({
-        name: subCategoryName,
-        slug: subCategorySlug,
-        count: subCategoryImages.length,
-        source: ImageSource.Remote, // 暂时默认为远程，实际应该根据图片来源判断
-        parentCategory: mainCategoryName
-      });
-    });
-    
-    // 按排序顺序排序子分类
-    subCategories.sort((a, b) => {
-      const orderA = getCategorySortOrder(mainCategoryName, a.name);
-      const orderB = getCategorySortOrder(mainCategoryName, b.name);
-      return orderA - orderB;
-    });
-    
-    // 创建主分类节点
-    const mainCategoryTree: ImageCategoryTree = {
-      name: mainCategoryName,
-      slug: mainCategorySlug,
-      count: mainCategoryCount,
-      source: ImageSource.Remote, // 暂时默认为远程，实际应该根据图片来源判断
-      subCategories: subCategories.length > 0 ? subCategories : undefined
-    };
-    
-    categoryTrees.push(mainCategoryTree);
-  });
-  
-  // 3. 按排序顺序排序主分类
-  categoryTrees.sort((a, b) => {
-    const orderA = getCategorySortOrder(a.name);
-    const orderB = getCategorySortOrder(b.name);
-    return orderA - orderB;
-  });
-  
-  return categoryTrees;
 };
 
 /**
@@ -352,13 +287,13 @@ export const buildCategoryTree = (images: GalleryImage[]): ImageCategoryTree[] =
  */
 export const getImageCategories = (images: GalleryImage[]): ImageCategory[] => {
   const categoryMap = new Map<string, number>();
-  
+
   // 统计每个分类的图片数量
   images.forEach(image => {
     const count = categoryMap.get(image.category) || 0;
     categoryMap.set(image.category, count + 1);
   });
-  
+
   // 转换为分类数组
   const categories: ImageCategory[] = [];
   categoryMap.forEach((count, name) => {
@@ -369,343 +304,9 @@ export const getImageCategories = (images: GalleryImage[]): ImageCategory[] => {
       source: ImageSource.Local
     });
   });
-  
+
   // 按名称排序
   return categories.sort((a, b) => a.name.localeCompare(b.name));
-};
-
-/**
- * 画廊分类配置类型
- */
-interface GalleryCategoryConfig {
-  pathPattern: string;        // 路径匹配模式（用于匹配文件夹路径）
-  mainCategory: string;       // 主分类名称（显示在标签页上）
-  subCategory?: string;       // 子分类名称（可选，用于更细粒度的分类）
-  sortOrder?: number;         // 排序顺序（数字越小越靠前）
-  icon?: string;              // 图标（可选）
-  description?: string;       // 描述（可选）
-}
-
-/**
- * 画廊分类映射配置
- * 可扩展：只需在此处添加新的路径映射规则
- * 
- * 文件结构示例:
- * LTYpicture/ 
- *   ├── emoticon/ 或 表情包/
- *   │   └── Zi_Series/ 或 Zi系列/
- *   ├── temporary/ 或 临时/
- *   └── wallpapers&illustration/ 或 壁纸插画/
- *       ├── heng/ 或 横屏/
- *       └── shu/ 或 竖屏/
- * 
- * 支持中文路径和英文路径两种形式
- */
-const GALLERY_PATH_MAPPINGS: GalleryCategoryConfig[] = [
-  // ========== 表情包分类 ==========
-  // 英文路径
-  {
-    pathPattern: 'LTYpicture/emoticon',
-    mainCategory: '表情包',
-    sortOrder: 10,
-    description: '洛天依表情包合集'
-  },
-  {
-    pathPattern: 'LTYpicture/emoticon/Zi_Series',
-    mainCategory: '表情包',
-    subCategory: 'Zi系列',
-    sortOrder: 11,
-    description: '活！字！乱！刷！ 来源：B站up主 Armillary_璇玑'
-  },
-  {
-    pathPattern: 'LTYpicture/emoticon/辟浪',
-    mainCategory: '表情包',
-    subCategory: '辟浪',
-    sortOrder: 12,
-    description: '辟浪系列表情包'
-  },
-  // 中文路径支持
-  {
-    pathPattern: 'LTYpicture/表情包',
-    mainCategory: '表情包',
-    sortOrder: 10,
-    description: '洛天依表情包合集'
-  },
-  {
-    pathPattern: 'LTYpicture/表情包/Zi系列',
-    mainCategory: '表情包',
-    subCategory: 'Zi系列',
-    sortOrder: 11,
-    description: '活！字！乱！刷！ 来源：B站up主 Armillary_璇玑'
-  },
-  {
-    pathPattern: 'LTYpicture/表情包/辟浪',
-    mainCategory: '表情包',
-    subCategory: '辟浪',
-    sortOrder: 12,
-    description: '辟浪系列表情包'
-  },
-  
-  // ========== 美图分类 ==========
-  // 英文路径
-  {
-    pathPattern: 'LTYpicture/wallpapers&illustration',
-    mainCategory: '美图',
-    sortOrder: 1,
-    description: '佬の壁纸和曲绘'
-  },
-  {
-    pathPattern: 'LTYpicture/wallpapers&illustration/heng',
-    mainCategory: '美图',
-    subCategory: '横屏',
-    sortOrder: 2,
-    description: '横版壁纸'
-  },
-  {
-    pathPattern: 'LTYpicture/wallpapers&illustration/shu',
-    mainCategory: '美图',
-    subCategory: '竖屏',
-    sortOrder: 3,
-    description: '竖版壁纸'
-  },
-  {
-    pathPattern: 'LTYpicture/wallpapers&illustration/avatar',
-    mainCategory: '美图',
-    subCategory: '头像',
-    sortOrder: 4,
-    description: '头像图片'
-  },
-  // 中文路径支持
-  {
-    pathPattern: 'LTYpicture/壁纸插画',
-    mainCategory: '美图',
-    sortOrder: 1,
-    description: '佬の壁纸和曲绘'
-  },
-  {
-    pathPattern: 'LTYpicture/壁纸插画/横屏',
-    mainCategory: '美图',
-    subCategory: '横屏',
-    sortOrder: 2,
-    description: '横版壁纸'
-  },
-  {
-    pathPattern: 'LTYpicture/壁纸插画/竖屏',
-    mainCategory: '美图',
-    subCategory: '竖屏',
-    sortOrder: 3,
-    description: '竖版壁纸'
-  },
-  {
-    pathPattern: 'LTYpicture/壁纸插画/头像',
-    mainCategory: '美图',
-    subCategory: '头像',
-    sortOrder: 4,
-    description: '头像图片'
-  },
-
-  // ========== 其他分类 ==========
-  // 英文路径
-  {
-    pathPattern: 'LTYpicture/temporary',
-    mainCategory: '临时',
-    sortOrder: 99,
-    description: '临时存放的图片'
-  },
-  // 中文路径支持
-  {
-    pathPattern: 'LTYpicture/临时',
-    mainCategory: '临时',
-    sortOrder: 99,
-    description: '临时存放的图片'
-  },
-  // 直接映射 LTYpicture 目录下的其他图片
-  {
-    pathPattern: 'LTYpicture',
-    mainCategory: '默认',
-    sortOrder: 100,
-    description: '洛天依图片合集'
-  },
-];
-/**
- * 将GitHub仓库路径映射到分类名称
- * @param relativePath - 相对于仓库根目录的路径
- * @returns 包含主分类和子分类的对象
- */
-const mapPathToCategory = (relativePath: string): GalleryCategoryConfig => {
-  // 按路径长度降序排序，确保更具体的路径优先匹配
-  const sortedMappings = [...GALLERY_PATH_MAPPINGS].sort(
-    (a, b) => b.pathPattern.length - a.pathPattern.length
-  );
-  
-  // 调试日志：输出正在匹配的路径（仅在开发环境）
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`[Gallery] 开始匹配路径: "${relativePath}"`);
-  }
-   
-  // 查找匹配的路径（支持精确匹配和前缀匹配）
-  for (const config of sortedMappings) {
-    const pathPattern = config.pathPattern;
-    
-    // 处理相对路径为空的情况（根目录）
-    if (!relativePath && !pathPattern) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`[Gallery] 匹配成功（根目录）: ${config.mainCategory}`);
-      }
-      return {
-        mainCategory: config.mainCategory,
-        subCategory: config.subCategory,
-        sortOrder: config.sortOrder,
-        icon: config.icon,
-        description: config.description,
-        pathPattern: config.pathPattern
-      };
-    }
-    
-    // 正常路径匹配
-    if (relativePath.startsWith(pathPattern + '/') || relativePath === pathPattern) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`[Gallery] 匹配成功: "${relativePath}" -> "${pathPattern}" = ${config.mainCategory}${config.subCategory ? '/' + config.subCategory : ''}`);
-      }
-      return {
-        mainCategory: config.mainCategory,
-        subCategory: config.subCategory,
-        sortOrder: config.sortOrder,
-        icon: config.icon,
-        description: config.description,
-        pathPattern: config.pathPattern
-      };
-    }
-  }
-  
-  // 处理根目录情况
-  if (!relativePath) {
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[Gallery] 未匹配到配置，使用默认分类（根目录）`);
-    }
-    return {
-      mainCategory: '默认',
-      sortOrder: 100,
-      description: '来自根目录',
-      pathPattern: ''
-    };
-  }
-  
-  // 智能分类推断：根据路径结构自动推断主分类和子分类
-  const parts = relativePath.split('/').filter(Boolean);
-  
-  // 如果路径以 LTYpicture 开头，使用智能推断逻辑
-  if (parts.length >= 2 && parts[0] === 'LTYpicture') {
-    const mainCategory = parts[1]; // 第二级作为主分类
-    const subCategory = parts.length >= 3 ? parts[parts.length - 1] : undefined; // 最后一级作为子分类
-    
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[Gallery] 智能推断分类: 主分类="${mainCategory}", 子分类="${subCategory || '无'}"`);
-    }
-    
-    return {
-      mainCategory,
-      subCategory,
-      sortOrder: 100,
-      description: `来自 ${relativePath} 文件夹`,
-      pathPattern: ''
-    };
-  }
-  
-  // 对于其他路径，使用最后一部分作为主分类
-  const lastPart = parts[parts.length - 1] || '默认';
-  
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`[Gallery] 未匹配到配置，使用路径最后部分作为分类: "${lastPart}"`);
-  }
-  
-  return {
-    mainCategory: lastPart,
-    sortOrder: 100,
-    description: `来自 ${lastPart} 文件夹`,
-    pathPattern: ''
-  };
-};
-
-/**
- * 获取所有已配置的主分类（按排序顺序）
- * @returns 主分类名称数组
- */
-export const getConfiguredMainCategories = (): string[] => {
-  const mainCategories = new Map<number, string>();
-  
-  for (const config of GALLERY_PATH_MAPPINGS) {
-    if (!mainCategories.has(config.sortOrder || 99)) {
-      mainCategories.set(config.sortOrder || 99, config.mainCategory);
-    }
-  }
-  
-  // 按排序顺序返回
-  return Array.from(mainCategories.entries())
-    .sort((a, b) => a[0] - b[0])
-    .map(([, name]) => name);
-};
-
-/**
- * 获取所有分类配置
- * @returns 分类配置数组
- */
-export const getAllCategoryConfigs = (): Omit<GalleryCategoryConfig, 'pathPattern'>[] => {
-  const categoryMap = new Map<string, Omit<GalleryCategoryConfig, 'pathPattern'>>();
-  
-  for (const config of GALLERY_PATH_MAPPINGS) {
-    const key = config.mainCategory;
-    if (!categoryMap.has(key)) {
-      categoryMap.set(key, {
-        mainCategory: config.mainCategory,
-        sortOrder: config.sortOrder,
-        description: config.description
-      });
-    }
-  }
-  
-  return Array.from(categoryMap.values())
-    .sort((a, b) => (a.sortOrder || 99) - (b.sortOrder || 99));
-};
-
-/**
- * 获取指定主分类下的所有子分类
- * @param mainCategory - 主分类名称
- * @returns 子分类配置数组
- */
-export const getSubCategories = (mainCategory: string): GalleryCategoryConfig[] => {
-  return GALLERY_PATH_MAPPINGS
-    .filter(config => config.mainCategory === mainCategory && config.subCategory)
-    .sort((a, b) => (a.sortOrder || 99) - (b.sortOrder || 99));
-};
-
-/**
- * 获取分类的显示顺序
- * @param mainCategory - 主分类名称
- * @param subCategory - 子分类名称（可选）
- * @returns 排序顺序
- */
-export const getCategorySortOrder = (
-  mainCategory: string,
-  subCategory?: string
-): number => {
-  // 查找主分类的排序顺序（不带子分类的配置项）
-  if (!subCategory) {
-    // 优先查找完全匹配主分类且没有子分类的配置
-    for (const config of GALLERY_PATH_MAPPINGS) {
-      if (config.mainCategory === mainCategory && !config.subCategory) {
-        return config.sortOrder || 99;
-      }
-    }
-  } else {
-    // 查找子分类的排序顺序
-    for (const config of GALLERY_PATH_MAPPINGS) {
-      if (config.mainCategory === mainCategory && config.subCategory === subCategory) {
-        return config.sortOrder || 99;
-      }
-    }
-  }
-  return 99;
 };
 
 /**
@@ -726,7 +327,7 @@ export const clearRemoteImagesCache = (config?: {
 };
 
 /**
- * 从GitHub图床获取图片
+ * 从GitHub图床获取图片（服务端构建期使用）
  * @param config - GitHub图床配置
  * @param options - 可选配置项
  * @returns 远程图片数组
@@ -767,13 +368,13 @@ export const getRemoteImages = async (config: {
         console.log('[Gallery] Using GitHub Token for authentication');
       }
 
-      let treeData: any;
+      let treeData: GitHubTreeResponse;
 
       // 服务端使用自定义 HTTPS 请求（禁用 SSL 证书验证）
       // 浏览器端使用 fetch
       if (!isBrowser && https) {
         console.log('[Gallery] Using server-side HTTPS request (Trees API)');
-        treeData = await serverHttpsFetch(treesApiUrl, headers);
+        treeData = await serverHttpsFetch<GitHubTreeResponse>(treesApiUrl, headers);
       } else {
         // 浏览器端使用 fetch
         const fetchOptions: RequestInit = {
@@ -792,88 +393,24 @@ export const getRemoteImages = async (config: {
         treeData = await response.json();
       }
 
-      const images: GalleryImage[] = [];
-
-      // 处理目录树中的所有文件
-      // Trees API 返回的是扁平化的文件列表，需要过滤出图片文件
-      const basePath = config.path ? config.path.replace(/^\//, '') : '';
-
-      for (const item of treeData.tree || []) {
-        // 只处理文件（type === 'blob'）
-        if (item.type !== 'blob') continue;
-
-        // 解码路径中的 URL 编码字符（如中文）
-        // GitHub Trees API 返回的路径可能是 URL 编码的
-        const decodedPath = decodeURIComponent(item.path);
-
-        // 检查是否在指定路径下
-        if (basePath && !decodedPath.startsWith(basePath + '/') && decodedPath !== basePath) {
-          continue;
-        }
-
-        // 检查是否为图片文件
-        if (!isImageFile(decodedPath)) continue;
-
-        // 处理图片文件
-        // Trees API 返回的 item.path 是相对于仓库根目录的完整路径
-        const fullPath = decodedPath.replace(/^\//, '');
-
-        // 获取相对于仓库根目录的目录路径
-        let relativePath = path.dirname(fullPath);
-
-        // 规范化路径分隔符，将反斜杠转换为正斜杠，确保跨平台兼容性
-        relativePath = relativePath.replace(/\\/g, '/');
-
-        // 处理根目录情况
-        if (relativePath === '.') {
-          relativePath = '';
-        }
-
-        // 调试日志：输出处理后的路径信息（仅在开发环境）
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`[Gallery] 处理图片路径:`, {
-            original: item.path,
-            decoded: decodedPath,
-            relativePath,
-            fullPath
-          });
-        }
-
-        // 使用路径映射函数确定分类
-        const { mainCategory, subCategory } = mapPathToCategory(relativePath);
-
-        // 构造jsDelivr加速URL
-        const encodedImagePath = fullPath.split('/').map(encodeURIComponent).join('/');
-        // 添加时间戳查询参数实现强制刷新（当 forceRefresh 为 true 时）
-        const cacheBuster = forceRefresh ? `?t=${Date.now()}` : '';
-        const jsdelivrUrl = `https://cdn.jsdelivr.net/gh/${config.owner}/${config.repo}@${config.branch}/${encodedImagePath}${cacheBuster}`;
-
-        // 构造 GitHub raw URL 作为备用
-        const githubRawUrl = `https://raw.githubusercontent.com/${config.owner}/${config.repo}/${config.branch}/${encodedImagePath}`;
-
-        // 从路径中提取文件名
-        const fileName = path.basename(fullPath);
-
-        images.push({
-          id: generateImageId(fullPath), // 使用完整路径生成唯一ID
-          src: jsdelivrUrl, // 使用jsDelivr加速URL作为主URL
-          fallbackSrc: githubRawUrl, // 使用 GitHub raw URL 作为备用
-          alt: fileName.replace(path.extname(fileName), ''),
-          source: ImageSource.Remote,
-          category: mainCategory, // 使用映射后的分类名称
-          subCategory, // 子分类（可选）
-          createdAt: new Date().toISOString(), // Trees API 不提供创建时间，使用当前时间
-          updatedAt: new Date().toISOString() // Trees API 不提供更新时间，使用当前时间
-        });
-      }
-
-      return images;
+      // 目录树解析逻辑已抽离为共享纯函数（服务端与浏览器端共用），
+      // forceRefresh 语义与原实现一致：管理场景强制刷新时给图片 URL 追加时间戳绕过 CDN 缓存
+      return parseGitHubTreeToImages(treeData, config, forceRefresh);
     } catch (error) {
       // 限流是预期中的降级场景：配额按整点重置，退避重试无法恢复，
       // 直接降级为仅本地图片，并用 warn 级别记录（避免 Next.js dev overlay 报 Console Error）
       if (isRateLimitError(error)) {
         console.warn('[Gallery] GitHub API 限流（403 rate limit exceeded），本次仅显示本地图片。', {
           提示: '未认证配额为 60 次/小时/IP，整点重置；可在 .env 配置 GITHUB_TOKEN 提升至 5000 次/小时',
+        });
+        return [];
+      }
+
+      // 环境类网络错误（hosts 劫持、DNS 失败、超时）重试无意义，立即快速失败降级
+      if (isNonRetryableNetworkError(error)) {
+        console.warn('[Gallery] 网络环境问题导致图床请求失败，本次仅显示本地图片。', {
+          错误消息: error instanceof Error ? error.message : '未知错误',
+          提示: '若使用 Watt Toolkit 等加速工具，请确认其正在运行且开启了 GitHub 加速',
         });
         return [];
       }
@@ -912,30 +449,26 @@ export const getAllImages = async (options?: {
 }): Promise<GalleryImage[]> => {
   // 获取本地图片
   const localImages = getAllLocalImages();
-  
+
   // 获取远程图片（GitHub图床）
+  // 配置统一引用共享常量，与浏览器端实时刷新保持同一数据源，避免多处硬编码
   let remoteImages: GalleryImage[] = [];
   try {
-    remoteImages = await getRemoteImages({
-      owner: 'Eiheir',
-      repo: 'Luo_Tianyi_Image',
-      branch: 'main',
-      path: ''
-    }, options);
+    remoteImages = await getRemoteImages({ ...GITHUB_IMAGE_REPO_CONFIG }, options);
   } catch (error) {
     // 详细记录错误信息
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.warn('[Gallery] 获取远程图片失败，仅显示本地图片:', errorMessage);
-    
-    // 如果是DNS解析错误，给出更明确的提示
-    if (errorMessage.includes('DNS解析错误')) {
-      console.warn('[Gallery] 提示: 请检查系统hosts文件或网络代理设置');
+
+    // 如果是 hosts 劫持导致的连接拒绝，给出更明确的操作指引
+    if (errorMessage.includes('ECONNREFUSED_HOSTS')) {
+      console.warn('[Gallery] 提示: hosts 把 GitHub 域名指向了本地但无服务监听，请启动 Watt Toolkit 并开启 GitHub 加速，或清理 hosts 条目');
     }
-    
+
     // 远程图片获取失败时，只返回本地图片
     remoteImages = [];
   }
-  
+
   // 合并所有图片
   return [...localImages, ...remoteImages];
 };
@@ -950,43 +483,13 @@ export const getAllCategories = (images: GalleryImage[]): ImageCategoryTree[] =>
 };
 
 /**
- * 按分类过滤图片
- * @param images - 图片数组
- * @param category - 分类名称（null表示所有分类）
- * @param subCategory - 子分类名称（可选，null表示不筛选子分类）
- * @returns 过滤后的图片数组
- */
-export const filterImagesByCategory = (images: GalleryImage[], category: string | null, subCategory?: string | null): GalleryImage[] => {
-  if (!category) {
-    // 全部分类：按分类排序顺序排序图片，让美图排在表情包前面
-    return [...images].sort((a, b) => {
-      const orderA = getCategorySortOrder(a.category);
-      const orderB = getCategorySortOrder(b.category);
-      if (orderA !== orderB) {
-        return orderA - orderB;
-      }
-      // 同一分类内按子分类排序
-      const subOrderA = getCategorySortOrder(a.category, a.subCategory);
-      const subOrderB = getCategorySortOrder(b.category, b.subCategory);
-      return subOrderA - subOrderB;
-    });
-  }
-
-  if (subCategory) {
-    return images.filter(image => image.category === category && image.subCategory === subCategory);
-  }
-
-  return images.filter(image => image.category === category);
-};
-
-/**
  * 预加载图片
  * @param images - 图片数组
  * @param count - 预加载数量（默认10）
  */
 export const preloadImages = (images: GalleryImage[], count: number = 10): void => {
   const imagesToPreload = images.slice(0, count);
-  
+
   imagesToPreload.forEach(image => {
     const img = new Image();
     img.src = image.src;
