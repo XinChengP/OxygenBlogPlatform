@@ -240,60 +240,95 @@ export const GALLERY_PATH_MAPPINGS: GalleryCategoryConfig[] = [
  * @param relativePath - 相对于仓库根目录（或 public 目录）的目录路径
  * @returns 包含主分类和子分类的对象
  *
- * 修复说明（新文件夹识别）：
- * 原实现在未命中配置时，对 LTYpicture 以外的路径"取路径最后一部分作为主分类"，
- * 导致多层结构的新文件夹（如 新文件夹/2024/图.png）主分类被错误识别为"2024"。
- * 现改为：第一级目录作为主分类，最后一级目录作为子分类（多层时），
- * 与 LTYpicture 分支的智能推断语义保持一致。
+ * 匹配策略（最长前缀匹配 + 剩余部分归类）：
+ * 1. 在所有配置中找出"匹配得最深"的那一条（最长前缀），而非第一个匹配就返回。
+ *    原因：配置表同时存在 LTYpicture/emoticon 与 LTYpicture/emoticon/Zi_Series，
+ *    若按顺序返回，父级规则会吞掉子级映射，导致子分类永远无法生效。
+ * 2. 若路径与命中的配置完全一致 → 直接采用配置定义的主/子分类。
+ * 3. 若路径比命中的配置更深（配置未覆盖到该层）→ 把配置未覆盖的剩余目录继续归类，
+ *    这是"新目录自动识别"的关键：图床上新建文件夹后，只要它在已配置目录之下，
+ *    无需修改配置表即可被识别为新分类或新子分类。
+ *    - 位于顶层兜底（LTYpicture）之下 → 剩余首段作为新主分类
+ *    - 位于分类容器（如 LTYpicture/emoticon）之下 → 继承主分类，剩余部分作为新子分类
+ * 4. 完全未命中配置的路径 → 按第一级目录作主分类、最后一级作子分类兜底推断。
  */
 export const mapPathToCategory = (relativePath: string): GalleryCategoryConfig => {
-  // 按路径长度降序排序，确保更具体的路径优先匹配
-  const sortedMappings = [...GALLERY_PATH_MAPPINGS].sort(
-    (a, b) => b.pathPattern.length - a.pathPattern.length
-  );
+  // 规范化路径：去除首尾多余斜杠，空串统一表示仓库根目录
+  // 目的：防止 "LTYpicture/emoticon/" 这类带尾斜杠的路径导致前缀匹配与切片计算错位
+  const normalizedPath = (relativePath || '').replace(/^\/+|\/+$/g, '');
 
-  // 调试日志：输出正在匹配的路径（仅在开发环境）
   if (process.env.NODE_ENV === 'development') {
-    console.log(`[Gallery] 开始匹配路径: "${relativePath}"`);
+    console.log(`[Gallery] 开始匹配路径: "${normalizedPath}"`);
   }
 
-  // 查找匹配的路径（支持精确匹配和前缀匹配）
-  for (const config of sortedMappings) {
-    const pathPattern = config.pathPattern;
-
-    // 处理相对路径为空的情况（根目录）
-    if (!relativePath && !pathPattern) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`[Gallery] 匹配成功（根目录）: ${config.mainCategory}`);
-      }
-      return {
-        mainCategory: config.mainCategory,
-        subCategory: config.subCategory,
-        sortOrder: config.sortOrder,
-        icon: config.icon,
-        description: config.description,
-        pathPattern: config.pathPattern
-      };
-    }
-
-    // 正常路径匹配
-    if (relativePath.startsWith(pathPattern + '/') || relativePath === pathPattern) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`[Gallery] 匹配成功: "${relativePath}" -> "${pathPattern}" = ${config.mainCategory}${config.subCategory ? '/' + config.subCategory : ''}`);
-      }
-      return {
-        mainCategory: config.mainCategory,
-        subCategory: config.subCategory,
-        sortOrder: config.sortOrder,
-        icon: config.icon,
-        description: config.description,
-        pathPattern: config.pathPattern
-      };
+  // ---------- 第 1 步：最长前缀匹配 ----------
+  // 遍历全部配置，保留"匹配得最深"（pathPattern 最长）的一条
+  let matched: GalleryCategoryConfig | null = null;
+  for (const config of GALLERY_PATH_MAPPINGS) {
+    const pattern = config.pathPattern;
+    const isMatch =
+      normalizedPath === pattern ||
+      (pattern !== '' && normalizedPath.startsWith(pattern + '/'));
+    if (!isMatch) continue;
+    if (!matched || pattern.length > matched.pathPattern.length) {
+      matched = config;
     }
   }
 
-  // 处理根目录情况
-  if (!relativePath) {
+  // ---------- 第 2 步：命中配置时的分类判定 ----------
+  if (matched) {
+    // 2a. 精确命中：路径与配置完全一致，直接采用配置定义的主/子分类
+    if (normalizedPath === matched.pathPattern) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[Gallery] 精确命中: "${normalizedPath}" = ${matched.mainCategory}${matched.subCategory ? '/' + matched.subCategory : ''}`);
+      }
+      return { ...matched };
+    }
+
+    // 2b. 深层未配置目录：配置只覆盖到父级，剩余目录继续参与归类
+    // 剩余目录 = 去掉已命中前缀后接续的目录片段（如 emoticon/Zi_Series 命中 emoticon 后剩余 Zi_Series）
+    const remainder = normalizedPath.slice(matched.pathPattern.length + 1);
+
+    // 顶层兜底配置（LTYpicture 本身）之下的一级目录视为"新主分类"，
+    // 例如 LTYpicture/新分类 → 主分类"新分类"
+    if (matched.pathPattern === 'LTYpicture') {
+      const parts = remainder.split('/').filter(Boolean);
+      const mainCategory = parts[0] || '默认';
+      const subCategory = parts.length >= 2 ? parts[parts.length - 1] : undefined;
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[Gallery] LTYpicture 下新增主分类: 主分类="${mainCategory}", 子分类="${subCategory || '无'}"`);
+      }
+
+      return {
+        mainCategory,
+        subCategory,
+        sortOrder: 100,
+        description: `来自 ${normalizedPath} 文件夹`,
+        pathPattern: ''
+      };
+    }
+
+    // 分类容器（如 LTYpicture/emoticon）之下新增的子目录，继承容器主分类，剩余部分作为新子分类
+    // 例如 LTYpicture/emoticon/新系列 → 主分类"表情包"、子分类"新系列"
+    const subCategory = remainder || undefined;
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[Gallery] 分类容器下新增子分类: 主分类="${matched.mainCategory}", 子分类="${subCategory || '无'}"`);
+    }
+
+    return {
+      mainCategory: matched.mainCategory,
+      subCategory,
+      sortOrder: matched.sortOrder ?? 100,
+      description: `来自 ${normalizedPath} 文件夹`,
+      pathPattern: matched.pathPattern
+    };
+  }
+
+  // ---------- 第 3 步：完全未命中配置 ----------
+  // 根目录情况
+  if (!normalizedPath) {
     if (process.env.NODE_ENV === 'development') {
       console.log(`[Gallery] 未匹配到配置，使用默认分类（根目录）`);
     }
@@ -305,31 +340,8 @@ export const mapPathToCategory = (relativePath: string): GalleryCategoryConfig =
     };
   }
 
-  // 智能分类推断：根据路径结构自动推断主分类和子分类
-  const parts = relativePath.split('/').filter(Boolean);
-
-  // 如果路径以 LTYpicture 开头，使用智能推断逻辑：
-  // 第二级目录作为主分类（新增子文件夹自动成为新分类），最后一级目录作为子分类
-  if (parts.length >= 2 && parts[0] === 'LTYpicture') {
-    const mainCategory = parts[1]; // 第二级作为主分类
-    const subCategory = parts.length >= 3 ? parts[parts.length - 1] : undefined; // 最后一级作为子分类
-
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[Gallery] 智能推断分类: 主分类="${mainCategory}", 子分类="${subCategory || '无'}"`);
-    }
-
-    return {
-      mainCategory,
-      subCategory,
-      sortOrder: 100,
-      description: `来自 ${relativePath} 文件夹`,
-      pathPattern: ''
-    };
-  }
-
-  // 对于 LTYpicture 以外的路径：
-  // 第一级目录作为主分类（保证新顶层文件夹整体归为一组），最后一级目录作为子分类
-  // 注意：单层路径（parts.length === 1）行为与旧版一致，仅多层路径的归类得到修正
+  // 兜底推断：第一级目录作为主分类（保证新顶层文件夹整体归为一组），最后一级作为子分类
+  const parts = normalizedPath.split('/').filter(Boolean);
   const mainCategory = parts[0] || '默认';
   const subCategory = parts.length >= 2 ? parts[parts.length - 1] : undefined;
 
