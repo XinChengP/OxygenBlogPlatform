@@ -65,7 +65,20 @@ const STORAGE_KEYS = {
   selectedTalents: 'roco-selected-talents',
   showSkinButton: 'roco-show-skin-button',
   imageCache: 'roco-image-cache', // 图片缓存状态记录
+  officialBans: 'roco-official-bans', // 官方每周禁赛缓存（接口不可用时降级使用）
+  excludedOfficialBans: 'roco-official-bans-excluded', // 用户主动剔除的官方每周禁赛（记住移除结果）
 };
+
+// ==================== 官方每周禁赛数据 ====================
+// 说明：天梯赛每周禁赛名单由外部接口下发，字段 ladder_bans 为宠物名称数组，
+//       需要与本地宠物库（按名称精确匹配）换算成宠物 ID 后才能参与组件内的禁赛逻辑。
+// 策略：进入页面时请求接口；请求失败或数据非法时静默降级，沿用上一次成功结果的本地缓存。
+const OFFICIAL_BAN_API = 'https://rocotnt.xinchengp.cn/api/ban/current';
+
+// 接口返回结构中仅声明本组件实际用到的字段
+interface OfficialBanResponse {
+  ladder_bans?: unknown;
+}
 
 // ==================== 宠物图标缓存系统 ====================
 // 缓存策略：使用内存缓存 + localStorage 持久化记录
@@ -211,6 +224,11 @@ export default function RocoPetSimulator() {
 
   // 状态管理
   const [bannedPets, setBannedPets] = useState<number[]>([]);
+  // 官方每周禁赛宠物 ID（接口原始结果，独立存放；展示时与用户手动禁赛合并）
+  const [officialBannedPets, setOfficialBannedPets] = useState<number[]>([]);
+  // 用户主动剔除的官方每周禁赛 ID：官方项允许被移除，剔除结果持久化，刷新后依然保持不显示；
+  // 官方换周后若该宠物已不在名单中，剔除记录会自动失效（详见拉取逻辑中的净化步骤）
+  const [excludedOfficialBans, setExcludedOfficialBans] = useState<number[]>([]);
   const [lineup, setLineup] = useState<number[]>([]);
   const [selectedSkins, setSelectedSkins] = useState<Record<number, number>>({});
   const [selectedTalents, setSelectedTalents] = useState<Record<number, number>>({});
@@ -292,12 +310,14 @@ export default function RocoPetSimulator() {
         const savedSkins = localStorage.getItem(STORAGE_KEYS.selectedSkins);
         const savedTalents = localStorage.getItem(STORAGE_KEYS.selectedTalents);
         const savedShowSkin = localStorage.getItem(STORAGE_KEYS.showSkinButton);
+        const savedExcluded = localStorage.getItem(STORAGE_KEYS.excludedOfficialBans);
 
         if (savedBanned) setBannedPets(JSON.parse(savedBanned));
         if (savedLineup) setLineup(JSON.parse(savedLineup));
         if (savedSkins) setSelectedSkins(JSON.parse(savedSkins));
         if (savedTalents) setSelectedTalents(JSON.parse(savedTalents));
         if (savedShowSkin) setShowSkinButton(JSON.parse(savedShowSkin));
+        if (savedExcluded) setExcludedOfficialBans(JSON.parse(savedExcluded));
       } catch (error) {
         console.error('加载本地数据失败:', error);
       }
@@ -307,6 +327,97 @@ export default function RocoPetSimulator() {
     // 页面加载时触发Live2D消息
     Live2DMessageHelper.showRocoSimulatorMessage('PAGE_VISIT');
   }, []);
+
+  // 拉取官方每周禁赛数据
+  // 优先级：接口实时数据 > 本地缓存；两者都不可用时保持空名单，不影响其它功能
+  useEffect(() => {
+    // 读取上一次成功缓存的官方禁赛 ID（接口失败时降级使用）
+    let cachedBans: number[] = [];
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.officialBans);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          cachedBans = parsed.filter((id): id is number => typeof id === 'number');
+        }
+      }
+    } catch {
+      // 缓存损坏时忽略，视作没有缓存
+    }
+
+    // 将接口下发的宠物名称换算为本地宠物 ID，匹配不到的仅输出控制台警告（静默降级）
+    const mapNamesToIds = (names: unknown[]): number[] => {
+      const ids: number[] = [];
+      names.forEach(name => {
+        if (typeof name !== 'string' || !name.trim()) return;
+        const pet = pets.find(p => p.name === name.trim());
+        if (pet) {
+          if (!ids.includes(pet.id)) ids.push(pet.id);
+        } else {
+          console.warn(`[roco-team] 官方禁赛名单中的宠物未在本地宠物库匹配到：${name}`);
+        }
+      });
+      return ids;
+    };
+
+    // 组件卸载后不再更新状态，避免无效 setState
+    let cancelled = false;
+
+    const loadOfficialBans = async () => {
+      try {
+        const res = await fetch(OFFICIAL_BAN_API, { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = (await res.json()) as OfficialBanResponse;
+        if (!Array.isArray(data.ladder_bans)) throw new Error('ladder_bans 字段格式异常');
+
+        const ids = mapNamesToIds(data.ladder_bans);
+        if (cancelled) return;
+        setOfficialBannedPets(ids);
+        // 缓存本次结果，供下次接口不可用时降级
+        localStorage.setItem(STORAGE_KEYS.officialBans, JSON.stringify(ids));
+        // 净化剔除记录：只保留仍在本周官方名单内的项。
+        // 官方换周后名单会变化，旧宠物若已不在名单中，其剔除记录失去意义，
+        // 在此移除可避免它下周重新上榜时被错误地一并隐藏。
+        setExcludedOfficialBans(prev => {
+          const next = prev.filter(id => ids.includes(id));
+          // 长度相同即无变化，返回原引用避免触发多余渲染与写盘
+          return next.length === prev.length ? prev : next;
+        });
+      } catch (error) {
+        console.warn('[roco-team] 官方禁赛数据获取失败，已降级使用本地缓存：', error);
+        if (!cancelled) setOfficialBannedPets(cachedBans);
+      }
+    };
+
+    loadOfficialBans();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // 剔除结果持久化：用户移除官方项后写入本地，刷新页面依然保持已移除状态
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.excludedOfficialBans, JSON.stringify(excludedOfficialBans));
+  }, [excludedOfficialBans]);
+
+  // 当前实际生效的官方每周禁赛 = 接口结果 - 用户已剔除项
+  // 说明：剔除记录独立于接口数据，接口每次拉取都会覆盖 officialBannedPets，
+  //       若直接在原数组上删除，刷新后会被接口重新写回，因此用「剔除名单」的方式记录移除结果。
+  const activeOfficialBannedPets = useMemo(
+    () => officialBannedPets.filter(id => !excludedOfficialBans.includes(id)),
+    [officialBannedPets, excludedOfficialBans]
+  );
+
+  // 合并后的禁赛名单：官方每周禁赛在前，用户手动禁赛补充在后（自动去重）
+  // 展示、判定与阵容校验统一使用该合并名单
+  const allBannedPets = useMemo(() => {
+    const merged = [...activeOfficialBannedPets];
+    bannedPets.forEach(id => {
+      if (!merged.includes(id)) merged.push(id);
+    });
+    return merged;
+  }, [activeOfficialBannedPets, bannedPets]);
 
   // 初始化账号数据（加载预设账号）
   useEffect(() => {
@@ -601,23 +712,47 @@ export default function RocoPetSimulator() {
     return `/roco-icons/talents/${talentId}.png`;
   }, []);
 
-  // 禁赛操作
+  // 禁赛操作：统一处理右键菜单与面板按钮的「加入/移出禁赛」请求
   const toggleBanPet = useCallback((petId: number) => {
-    setBannedPets(prev => {
-      if (prev.includes(petId)) {
-        Live2DMessageHelper.showRocoSimulatorMessage('UNBAN_PET');
-        showNotification('已移出禁赛列表');
-        return prev.filter(id => id !== petId);
-      } else {
-        Live2DMessageHelper.showRocoSimulatorMessage('BAN_PET');
-        showNotification('已添加到禁赛列表');
-        return [...prev, petId];
-      }
-    });
-  }, [showNotification]);
+    // 情况一：当前生效的官方每周禁赛 → 允许移除，移除方式是记入剔除名单（接口数据本身不改动）
+    if (activeOfficialBannedPets.includes(petId)) {
+      setExcludedOfficialBans(prev => (prev.includes(petId) ? prev : [...prev, petId]));
+      // 同步清理手动名单中的同名项：换周场景下该宠物可能曾被手动添加过，避免移除后仍有残留
+      setBannedPets(prev => prev.filter(id => id !== petId));
+      Live2DMessageHelper.showRocoSimulatorMessage('UNBAN_PET');
+      showNotification('已移出官方每周禁赛');
+      return;
+    }
+
+    // 情况二：曾被剔除的官方项再次被加入 → 撤销剔除记录，让它重新归属官方名单
+    if (officialBannedPets.includes(petId)) {
+      setExcludedOfficialBans(prev => prev.filter(id => id !== petId));
+      Live2DMessageHelper.showRocoSimulatorMessage('BAN_PET');
+      showNotification('已恢复到官方每周禁赛');
+      return;
+    }
+
+    // 情况三：用户自定义禁赛 → 常规增删
+    if (bannedPets.includes(petId)) {
+      setBannedPets(prev => prev.filter(id => id !== petId));
+      Live2DMessageHelper.showRocoSimulatorMessage('UNBAN_PET');
+      showNotification('已移出禁赛列表');
+    } else {
+      setBannedPets(prev => [...prev, petId]);
+      Live2DMessageHelper.showRocoSimulatorMessage('BAN_PET');
+      showNotification('已添加到禁赛列表');
+    }
+  }, [showNotification, activeOfficialBannedPets, officialBannedPets, bannedPets]);
 
   // 添加到阵容
   const addToLineup = useCallback((petId: number) => {
+    // 禁赛宠物（含官方每周禁赛）不能进入阵容，此处统一拦截，覆盖点击、右键与批量添加等入口
+    if (allBannedPets.includes(petId)) {
+      const bannedPet = getPetById(petId);
+      showNotification(`${bannedPet?.name || '该宠物'} 处于禁赛状态，无法加入阵容`, 'error');
+      return false;
+    }
+
     if (lineup.length >= 6) {
       Live2DMessageHelper.showRocoSimulatorMessage('LINEUP_FULL');
       showNotification('阵容已满，最多6只宠物', 'error');
@@ -669,7 +804,7 @@ export default function RocoPetSimulator() {
     Live2DMessageHelper.showRocoSimulatorMessage('ADD_TO_LINEUP');
     showNotification('已添加到阵容');
     return true;
-  }, [lineup, selectedTalents, showNotification]);
+  }, [lineup, selectedTalents, showNotification, allBannedPets]);
 
   // 从阵容移除
   const removeFromLineup = useCallback((petId: number) => {
@@ -783,11 +918,29 @@ export default function RocoPetSimulator() {
     setShowCustomPetModal(false);
   }, [customPetId, customPetName, customPetMagic, lineup, showNotification]);
 
-  // 清空禁赛
+  // 清空禁赛（一键清空全部，含官方每周禁赛）
   const clearBanned = useCallback(() => {
     setBannedPets([]);
-    showNotification('禁赛列表已清空');
-  }, [showNotification]);
+    // 官方项一并清掉：把当前生效的官方项全部记入剔除名单，使其不再显示
+    setExcludedOfficialBans(prev => {
+      const next = [...prev];
+      activeOfficialBannedPets.forEach(id => {
+        if (!next.includes(id)) next.push(id);
+      });
+      return next;
+    });
+    showNotification('已清空全部禁赛');
+  }, [activeOfficialBannedPets, showNotification]);
+
+  // 一键恢复官方每周禁赛：清空剔除名单，让接口下发的官方名单重新全部生效
+  const restoreOfficialBans = useCallback(() => {
+    if (excludedOfficialBans.length === 0) {
+      showNotification('官方每周禁赛已是完整状态');
+      return;
+    }
+    setExcludedOfficialBans([]);
+    showNotification('已恢复官方每周禁赛');
+  }, [excludedOfficialBans.length, showNotification]);
 
   // 切换外观
   const selectSkin = useCallback((petId: number, skinIndex: number) => {
@@ -822,25 +975,31 @@ export default function RocoPetSimulator() {
     const inputs = batchInput.split(/[,，]/).map(item => item.trim().replace(/[.。]+$/, '')).filter(Boolean);
     let addedCount = 0;
     const notFound: string[] = [];
+    // 已在禁赛名单中的宠物（含官方每周禁赛），单独统计以便给出准确提示
+    const alreadyBanned: string[] = [];
 
     inputs.forEach(input => {
       const petId = parseInt(input);
       if (!isNaN(petId)) {
         const pet = getPetById(petId);
-        if (pet && !bannedPets.includes(petId)) {
+        if (!pet) {
+          notFound.push(input);
+        } else if (allBannedPets.includes(petId)) {
+          alreadyBanned.push(pet.name);
+        } else {
           setBannedPets(prev => [...prev, petId]);
           addedCount++;
-        } else if (!pet) {
-          notFound.push(input);
         }
       } else {
         // 按名称匹配
-        const pet = pets.find(p => p.name.includes(input) && !bannedPets.includes(p.id));
-        if (pet) {
+        const pet = pets.find(p => p.name.includes(input));
+        if (!pet) {
+          notFound.push(input);
+        } else if (allBannedPets.includes(pet.id)) {
+          alreadyBanned.push(pet.name);
+        } else {
           setBannedPets(prev => [...prev, pet.id]);
           addedCount++;
-        } else {
-          notFound.push(input);
         }
       }
     });
@@ -848,13 +1007,16 @@ export default function RocoPetSimulator() {
     if (addedCount > 0) {
       showNotification(`成功添加 ${addedCount} 个宠物到禁赛列表`);
     }
+    if (alreadyBanned.length > 0) {
+      showNotification(`已在禁赛名单中: ${alreadyBanned.join(', ')}`, 'error');
+    }
     if (notFound.length > 0) {
       showNotification(`未找到: ${notFound.join(', ')}`, 'error');
     }
 
     setBatchInput('');
     setModals(prev => ({ ...prev, batchBan: false }));
-  }, [batchInput, bannedPets, showNotification]);
+  }, [batchInput, allBannedPets, showNotification]);
 
   // 批量添加阵容 - 带输入验证和去重
   const batchAddLineup = useCallback(() => {
@@ -984,7 +1146,9 @@ export default function RocoPetSimulator() {
 
   // 渲染宠物卡片
   const renderPetCard = useCallback((pet: Pet, context: 'list' | 'banned' | 'lineup' | 'hidden') => {
-    const isBanned = bannedPets.includes(pet.id);
+    const isBanned = allBannedPets.includes(pet.id);
+    // 是否为当前生效的官方每周禁赛：用于在禁赛面板中额外加标记，与用户自定义禁赛区分
+    const isOfficialBanned = activeOfficialBannedPets.includes(pet.id);
     const inLineup = lineup.includes(pet.id);
     const hasSkins = skinPets[pet.id] && skinPets[pet.id].length > 1;
     const hasTalents = getPetTalents(pet.id).length > 0;
@@ -1121,6 +1285,15 @@ export default function RocoPetSimulator() {
               <span className="text-red-500 text-2xl font-bold">×</span>
             </div>
           )}
+          {/* 官方每周禁赛标记 - 仅在禁赛面板中显示，用于区分官方名单与用户自定义名单 */}
+          {context === 'banned' && isOfficialBanned && (
+            <span
+              className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center"
+              title="官方每周禁赛"
+            >
+              周
+            </span>
+          )}
           {/* 血脉标记 */}
           {selectedTalentId && selectedTalentId !== 0 && (
             <div className="absolute -bottom-1 -left-1 w-4 h-4 rounded-full bg-[var(--color-card)] border border-orange-400 flex items-center justify-center">
@@ -1158,7 +1331,7 @@ export default function RocoPetSimulator() {
         </span>
       </motion.div>
     );
-  }, [bannedPets, lineup, selectedTalents, showSkinButton, getPetImageUrl, getPetImageUrlWithCache, getTalentImageUrl, getLocalPetImageUrl, getLocalTalentImageUrl, handleContextMenu, isDark, getMagicColor, isBatchMode, selectedBatchPets, togglePetOwnership, addToLineup, removeFromLineup]);
+  }, [allBannedPets, activeOfficialBannedPets, lineup, selectedTalents, showSkinButton, getPetImageUrl, getPetImageUrlWithCache, getTalentImageUrl, getLocalPetImageUrl, getLocalTalentImageUrl, handleContextMenu, isDark, getMagicColor, isBatchMode, selectedBatchPets, togglePetOwnership, addToLineup, removeFromLineup]);
 
   // 按魔力值分组的宠物
   const petsByMagic = useMemo(() => getPetsByMagic(), []);
@@ -1445,9 +1618,19 @@ export default function RocoPetSimulator() {
             >
               <div className="flex items-center justify-between mb-2">
                 <h3 className={`text-lg font-bold ${isDark ? 'text-red-400' : 'text-red-600'}`}>
-                  禁赛 ({bannedPets.length})
+                  禁赛 ({allBannedPets.length})
                 </h3>
                 <div className="flex gap-1">
+                  {/* 一键恢复官方每周禁赛：仅在存在被移除的官方项时出现，避免无意义占位 */}
+                  {excludedOfficialBans.length > 0 && (
+                    <button
+                      onClick={restoreOfficialBans}
+                      className="px-2 py-1 text-xs bg-[var(--color-primary)] hover:opacity-90 text-white rounded transition-colors"
+                      title={`恢复官方每周禁赛（已移除 ${excludedOfficialBans.length} 个）`}
+                    >
+                      ↺
+                    </button>
+                  )}
                   <button
                     onClick={() => setModals(prev => ({ ...prev, batchBan: true }))}
                     className="px-2 py-1 text-xs bg-green-500 hover:bg-green-600 text-white rounded transition-colors"
@@ -1464,13 +1647,13 @@ export default function RocoPetSimulator() {
                   </button>
                 </div>
               </div>
-              {bannedPets.length === 0 ? (
+              {allBannedPets.length === 0 ? (
                 <p className={`text-center py-4 text-sm text-[var(--color-muted-foreground)]`}>
                   暂无禁赛宠物
                 </p>
               ) : (
                 <div className="grid grid-cols-4 gap-2">
-                  {bannedPets.map(petId => {
+                  {allBannedPets.map(petId => {
                     const pet = getPetById(petId);
                     return pet ? renderPetCard(pet, 'banned') : null;
                   })}
@@ -1751,7 +1934,7 @@ export default function RocoPetSimulator() {
           style={{ left: contextMenu.x, top: contextMenu.y }}
           onClick={hideContextMenu}
         >
-          {contextMenu.context !== 'banned' && !bannedPets.includes(contextMenu.petId) && (
+          {contextMenu.context !== 'banned' && !allBannedPets.includes(contextMenu.petId) && (
             <button
               onClick={() => toggleBanPet(contextMenu.petId!)}
               className={`w-full px-4 py-2 text-left text-sm hover:bg-red-500/10 text-red-500`}
@@ -1759,7 +1942,8 @@ export default function RocoPetSimulator() {
               加入禁赛
             </button>
           )}
-          {contextMenu.context === 'banned' || bannedPets.includes(contextMenu.petId) ? (
+          {contextMenu.context === 'banned' || allBannedPets.includes(contextMenu.petId) ? (
+            // 官方项与用户自定义项均可移出；官方项移除后可通过面板的「恢复」按钮找回
             <button
               onClick={() => toggleBanPet(contextMenu.petId!)}
               className={`w-full px-4 py-2 text-left text-sm hover:bg-green-500/10 text-green-500`}
