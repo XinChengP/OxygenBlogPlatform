@@ -17,7 +17,12 @@ var RENDERER = {
 			cancelAnimationFrame(this.rafId);
 			this.rafId = 0;
 		}
-		this.setParameters();
+		// 关键修复：setParameters 在页脚容器缺失时返回 false，
+		// 此时必须立即放弃本次初始化，否则 setup/bindEvent/render 会在
+		// 没有画布的状态下继续执行并抛出异常。
+		if(this.setParameters() === false){
+			return;
+		}
 		this.reconstructMethods();
 		this.setup();
 		this.bindEvent();
@@ -26,6 +31,15 @@ var RENDERER = {
 	setParameters : function(){
 		// 原实现基于 jQuery，现为等价的原生 DOM 操作
 		this.container = document.getElementById('jsi-flying-fish-container');
+		// 关键修复：容器不存在时直接返回 false，放弃本次初始化。
+		// 触发场景：本脚本由页脚组件在挂载后动态加载，若脚本已被浏览器缓存，
+		// 可能在容器尚未挂载（或已随组件卸载）的时机被注入执行，
+		// 此时 getElementById 返回 null，紧接着的 querySelector 会抛出
+		// "Cannot read properties of null (reading 'querySelector')"。
+		// 注意：容器稍后出现时，页脚组件的 restoreFish 会再次调用 init，功能不受影响。
+		if(!this.container){
+			return false;
+		}
 		// 若容器里已残留旧画布（重复初始化的场景），先移除，避免画布层层堆叠
 		var oldCanvas = this.container.querySelector('canvas');
 		if(oldCanvas){
@@ -37,6 +51,8 @@ var RENDERER = {
 		this.points = [];
 		this.fishes = [];
 		this.watchIds = [];
+		// 返回 true 表示容器与画布均已就绪，init 可继续后续步骤
+		return true;
 	},
 	createSurfacePoints : function(){
 		var count = Math.round(this.width / this.POINT_INTERVAL);

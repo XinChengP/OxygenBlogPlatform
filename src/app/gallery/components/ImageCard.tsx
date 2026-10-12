@@ -112,14 +112,21 @@ const ImageCard = ({ image, onClick, index, priority = 'low' }: ImageCardProps) 
           </div>
         )}
 
-        {/* 图片：淡入与悬停缩放共用一个transition声明，避免类冲突 */}
+        {/*
+          图片：淡入与悬停缩放共用一个 transition 声明，避免类冲突。
+
+          此处刻意不设置 crossOrigin="anonymous"：
+          图床主地址 jsDelivr 在部分图片上会 302 重定向到 raw.githubusercontent.com，
+          该域名不返回 Access-Control-Allow-Origin 头；img 一旦带 crossOrigin 就按跨域校验处理，
+          图片会被 CORS 策略拦截而加载失败（画廊只能显示"作品暂时无法展出"）。
+          展示型 img 无需 CORS 头，去掉后无论是否发生重定向都能正常显示。
+        */}
         <img
           src={currentSrc}
           alt={image.alt}
           className={`w-full h-full object-cover transition-[opacity,transform] duration-500 ease-out group-hover:scale-[1.04] ${loadStatus === 'loading' ? 'opacity-0' : 'opacity-100'}`}
           onLoad={handleImageLoad}
           onError={handleImageError}
-          crossOrigin="anonymous"
           referrerPolicy="no-referrer"
           loading={priority === 'high' ? 'eager' : 'lazy'}
           decoding="async"

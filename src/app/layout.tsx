@@ -263,6 +263,76 @@ export default function RootLayout({
             - smooth-navigation.js 通过Script组件加载，不需要预加载
         */}
 
+        {/* 分块（chunk）加载失败自动恢复脚本
+
+            背景：本站为静态导出（output: export），HTML 中引用的 JS 分块文件名带内容哈希。
+            每次重新部署都会生成一批新的哈希文件名并删除旧的，若访客仍停留在部署前的
+            旧页面（浏览器缓存的 HTML 或已打开的标签页），后续跳转就会请求已被删除的旧分块，
+            webpack 抛出 ChunkLoadError，页面只能落到错误兜底页上。
+
+            处理：捕获 ChunkLoadError（包括同步 error 与 promise rejection 两种形态）后
+            自动刷新页面；刷新会重新拉取最新 HTML 与当前真实存在的分块，从而自愈。
+            为防止分块真的缺失时陷入无限刷新，同一会话内最多自动刷新 2 次，
+            并且只有在上次刷新距今 60 秒内才继续计数（超时则重新计数）。
+
+            必须内联执行：若把这段兜底逻辑也打成独立分块，它自身会先因分块加载失败而失效。 */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function () {
+                // 会话级重试状态键与阈值
+                var KEY = '__chunkLoadRetry__';
+                var MAX_RETRY = 2;        // 同一窗口内最多自动刷新次数
+                var WINDOW_MS = 60000;    // 计数窗口（毫秒）
+
+                // 判断错误信息是否属于分块加载失败
+                function isChunkLoadError(message) {
+                  if (!message) return false;
+                  return /ChunkLoadError/i.test(message) ||
+                    /Loading (CSS )?chunk .* failed/i.test(message);
+                }
+
+                // 触发一次自动刷新（带次数限制，避免无限刷新）
+                function recover() {
+                  var state = null;
+                  try {
+                    state = JSON.parse(sessionStorage.getItem(KEY) || 'null');
+                  } catch (e) {
+                    state = null;
+                  }
+                  var now = Date.now();
+                  // 状态缺失、结构异常或已超出计数窗口时，重新开始计数
+                  if (!state || typeof state.count !== 'number' || now - state.ts > WINDOW_MS) {
+                    state = { count: 0, ts: now };
+                  }
+                  if (state.count >= MAX_RETRY) return;
+                  state.count += 1;
+                  state.ts = now;
+                  try {
+                    sessionStorage.setItem(KEY, JSON.stringify(state));
+                  } catch (e) {
+                    // 隐私模式下 sessionStorage 可能不可写，忽略即可
+                  }
+                  location.reload();
+                }
+
+                // 同步抛出：webpack 加载分块失败会以 error 事件冒泡到 window
+                window.addEventListener('error', function (event) {
+                  var message = (event && (event.message || (event.error && event.error.message))) || '';
+                  if (isChunkLoadError(message)) recover();
+                });
+
+                // 异步抛出：React.lazy / next/dynamic 的加载失败表现为未处理的 promise rejection
+                window.addEventListener('unhandledrejection', function (event) {
+                  var reason = event && event.reason;
+                  var message = reason ? (reason.message || String(reason)) : '';
+                  if (isChunkLoadError(message)) recover();
+                });
+              })();
+            `,
+          }}
+        />
+
         {/* 主题初始化脚本 - 外部文件减少 HTML 体积（须同步执行以避免主题闪烁） */}
         <script src="/js/theme-init.js" />
 

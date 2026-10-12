@@ -272,7 +272,14 @@ export default function OptimizedImage({
         />
       )}
 
-      {/* 实际图片 */}
+      {/*
+        实际图片。
+
+        此处刻意不设置 crossOrigin="anonymous"：
+        外部图床（jsDelivr）的部分图片会 302 重定向到 raw.githubusercontent.com，
+        该域名不返回 Access-Control-Allow-Origin 头；img 一旦带 crossOrigin 就按跨域校验处理，
+        图片会被 CORS 策略拦截而加载失败。展示型 img 无需 CORS 头，去掉后更不易加载失败。
+      */}
       <img
         src={finalSrc}
         alt={alt}
@@ -289,7 +296,6 @@ export default function OptimizedImage({
         onLoad={handleLoad}
         onError={handleError}
         onClick={onClick}
-        crossOrigin="anonymous"
         decoding={priority ? 'sync' : 'async'}
       />
 
