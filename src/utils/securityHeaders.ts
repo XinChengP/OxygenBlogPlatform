@@ -11,6 +11,8 @@
  * @version 1.0.0
  */
 
+import { productionCSP, generateCSPString } from './cspConfig';
+
 /**
  * 安全响应头配置接口
  */
@@ -41,21 +43,9 @@ export interface SecurityHeaders {
  */
 export const productionSecurityHeaders: SecurityHeaders = {
   // 内容安全策略 - 防止XSS和数据注入
-  'Content-Security-Policy': [
-    "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://giscus.app https://v6.51.la https://sdk.51.la https://static.cloudflareinsights.com",
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://giscus.app",
-    "img-src 'self' data: blob: https: http:",
-    "font-src 'self' https://fonts.gstatic.com data:",
-    "connect-src 'self' https://api.github.com https://giscus.app https://v6.51.la https://sdk.51.la https://collect-v6.51.la https://v1.hitokoto.cn https://cloudflareinsights.com https://api.injahow.cn https://rocotnt.xinchengp.cn",
-    "media-src 'self' https: http:",
-    "object-src 'none'",
-    "frame-src https://giscus.app https://*.github.com https://player.bilibili.com",
-    "frame-ancestors 'self' https://*.github.io",
-    "form-action 'self'",
-    "base-uri 'self'",
-    "upgrade-insecure-requests",
-  ].join('; '),
+  // 统一从 cspConfig 的 productionCSP 派生，避免白名单在多处维护时不同步。
+  // includeFrameAncestors: true —— 此处是 HTTP 响应头场景，可以且需要下发该指令。
+  'Content-Security-Policy': generateCSPString(productionCSP, { includeFrameAncestors: true }),
   
   // 严格传输安全 - 强制HTTPS
   'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',

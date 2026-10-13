@@ -5,6 +5,18 @@
  * 2. 只有显式设置 STATIC_EXPORT=true 或 NEXT_PRIVATE_STATIC_EXPORT=true 时才启用静态导出
  * 3. 生产环境默认不启用静态导出，除非显式设置
  */
+
+/*
+  安全策略统一从 src/utils 派生，避免白名单在多处硬编码而不同步：
+  - src/utils/cspSources.ts                域名白名单唯一数据源
+  - src/utils/cspConfig.ts 的 productionCSP 生产严格策略
+  - generateCSPString                       负责把策略对象序列化为字符串
+
+  这里使用相对路径而非 @/ 别名：next.config.ts 由 Next.js 在 Node 构建环境加载，
+  此时 tsconfig 的 path 别名未必生效，相对路径最稳妥。
+*/
+import { productionCSP, generateCSPString } from './src/utils/cspConfig';
+
 const isStaticExport = process.env.NODE_ENV !== 'development' && 
   (String(process.env.STATIC_EXPORT).toLowerCase() === 'true' || 
    String(process.env.NEXT_PRIVATE_STATIC_EXPORT).toLowerCase() === 'true');
@@ -147,28 +159,23 @@ const devConfig = {
             value: 'same-origin',
           },
           {
+            /*
+              开发服务器的 CSP 响应头。
+
+              白名单不再在此硬编码：域名统一登记在 src/utils/cspSources.ts，
+              由 src/utils/cspConfig.ts 的 productionCSP 按指令组装，
+              这里只负责把它序列化成字符串。
+
+              这里刻意使用 productionCSP 而非 developmentCSP：
+              developmentCSP 仅用于浏览器端 meta 注入时的宽松调试
+              （其 connect-src 被放宽为 *），若拿来做开发服务器响应头，
+              会与线上策略差异过大，从而掩盖真实的 CSP 拦截问题。
+
+              includeFrameAncestors: true —— 这里是 HTTP 响应头场景，
+              frame-ancestors 指令可以且需要下发（meta 标签不支持该指令）。
+            */
             key: 'Content-Security-Policy',
-            value: [
-              "default-src 'self'",
-              /*
-                Google Analytics 已确认未接入（源码中无 gtag.js 加载代码，
-                HijackingProtector 的 gtag 上报因 window.gtag 不存在而永不生效），
-                因此不再在 script-src / connect-src 中为其保留白名单。
-                将来若接入 GA，需同时把上述死代码一并恢复。
-              */
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://giscus.app https://v6.51.la https://sdk.51.la https://static.cloudflareinsights.com",
-              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://giscus.app",
-              "img-src 'self' data: blob: https: http:",
-              "font-src 'self' https://fonts.gstatic.com data:",
-              "connect-src 'self' https://api.github.com https://giscus.app https://v6.51.la https://sdk.51.la https://collect-v6.51.la https://v1.hitokoto.cn https://cloudflareinsights.com https://api.injahow.cn https://rocotnt.xinchengp.cn",
-              "media-src 'self' https: http:",
-              "object-src 'none'",
-              "frame-src https://giscus.app https://*.github.com https://player.bilibili.com",
-              "frame-ancestors 'self' https://*.github.io",
-              "form-action 'self'",
-              "base-uri 'self'",
-              "upgrade-insecure-requests",
-            ].join('; '),
+            value: generateCSPString(productionCSP, { includeFrameAncestors: true }),
           },
         ],
       },

@@ -6,7 +6,13 @@
  * 1. GitHub Pages支持通过<meta>标签设置CSP
  * 2. 本配置针对静态网站设计，平衡安全性和功能性
  * 3. 定期审查和更新允许列表
+ *
+ * 【白名单维护】
+ * 所有外部来源域名统一登记在 `src/utils/cspSources.ts`，
+ * 本文件不再硬编码具体域名，新增域名请只修改那一个文件。
  */
+
+import { getSourcesForDirective } from './cspSources';
 
 /**
  * CSP指令类型定义
@@ -58,33 +64,19 @@ export const productionCSP: CSPDirectives = {
   // 'self' - 同源脚本
   // 'unsafe-inline' - 允许内联脚本（Next.js需要）
   // 'unsafe-eval' - 允许eval（部分库需要）
-  // 特定域名 - 允许的外部脚本
+  // 其余外部域名统一由 cspSources.ts 提供
   'script-src': [
     "'self'",
     "'unsafe-inline'",
     "'unsafe-eval'",
-    // GitHub Pages相关
-    'https://*.github.io',
-    // Giscus评论系统
-    'https://giscus.app',
-    // 51la统计
-    'https://v6.51.la',
-    'https://sdk.51.la',
-    // Google Analytics（可选）
-    'https://www.google-analytics.com',
-    'https://www.googletagmanager.com',
-    // Cloudflare Web Analytics
-    'https://static.cloudflareinsights.com',
+    ...getSourcesForDirective('script-src'),
   ],
   
   // 样式来源控制
   'style-src': [
     "'self'",
-    "'unsafe-inline'", // Tailwind CSS和styled-components需要
-    // Google Fonts
-    'https://fonts.googleapis.com',
-    // Giscus评论系统样式
-    'https://giscus.app',
+    "'unsafe-inline'", // Tailwind CSS 与 styled-components 需要
+    ...getSourcesForDirective('style-src'),
   ],
   
   // 图片来源控制
@@ -92,46 +84,22 @@ export const productionCSP: CSPDirectives = {
     "'self'",
     'data:', // 允许Data URI图片
     'blob:', // 允许Blob URL
-    // 允许的外部图片域名
-    'https:',
-    'http:',
-    // GitHub相关
-    'https://*.githubusercontent.com',
-    'https://*.github.io',
+    'https:', // 允许任意 https 图片
+    'http:', // 允许任意 http 图片
+    ...getSourcesForDirective('img-src'),
   ],
   
   // 字体来源控制
   'font-src': [
     "'self'",
-    // Google Fonts
-    'https://fonts.gstatic.com',
     'data:', // 允许Data URI字体
+    ...getSourcesForDirective('font-src'),
   ],
   
   // 连接来源控制（XHR、fetch、WebSocket）
   'connect-src': [
     "'self'",
-    // GitHub API
-    'https://api.github.com',
-    // Giscus 评论系统
-    'https://giscus.app',
-    // 51la 统计
-    'https://v6.51.la',
-    'https://sdk.51.la',
-    'https://collect-v6.51.la',  // 51la 数据收集
-    // 一言API（Live2D看板娘随机句子）
-    'https://v1.hitokoto.cn',
-    // Cloudflare Web Analytics数据上报
-    'https://cloudflareinsights.com',
-    // Google Analytics
-    'https://www.google-analytics.com',
-    // 网易云音乐歌单 Meting API（原 api.i-meto.com 已下线，更换为 api.injahow.cn）
-    'https://api.injahow.cn',
-    // 洛克王国天梯赛每周禁赛数据接口（roco-team 阵容模拟器使用）
-    'https://rocotnt.xinchengp.cn',
-    // 本地开发
-    'http://localhost:*',
-    'ws://localhost:*',
+    ...getSourcesForDirective('connect-src'),
   ],
   
   // 媒体来源控制
@@ -146,20 +114,15 @@ export const productionCSP: CSPDirectives = {
   
   // iframe来源控制
   'frame-src': [
-    // Giscus评论系统
-    'https://giscus.app',
-    // GitHub相关
-    'https://*.github.com',
-    'https://*.github.io',
-    // B站视频播放器
-    'https://player.bilibili.com',
+    ...getSourcesForDirective('frame-src'),
   ],
   
   // 防止被嵌入到恶意网站（点击劫持防护）
+  // 注意：该指令无法通过 meta 标签下发，仅 HTTP 响应头生效，
+  //       是否输出由 generateCSPString 的 includeFrameAncestors 选项决定
   'frame-ancestors': [
     "'self'",
-    // 允许的嵌入来源
-    'https://*.github.io',
+    ...getSourcesForDirective('frame-ancestors'),
   ],
   
   // 表单提交目标控制
@@ -194,15 +157,24 @@ export const developmentCSP: CSPDirectives = {
 /**
  * 将CSP配置对象转换为meta标签内容字符串
  * @param directives CSP指令配置
+ * @param options 可选配置
+ *   - includeFrameAncestors: 是否输出 frame-ancestors 指令。
+ *     该指令不被 meta 标签支持，默认 false（用于 SecurityProvider 注入 meta）；
+ *     HTTP 响应头场景（next.config.ts、securityHeaders.ts）需传 true。
  * @returns CSP策略字符串
  */
-export function generateCSPString(directives: CSPDirectives): string {
+export function generateCSPString(
+  directives: CSPDirectives,
+  options: { includeFrameAncestors?: boolean } = {}
+): string {
+  const { includeFrameAncestors = false } = options;
   const entries: string[] = [];
 
   for (const [key, value] of Object.entries(directives)) {
     // frame-ancestors 指令不能通过 meta 标签设置，只能通过 HTTP 响应头设置
     // 参考: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy/frame-ancestors
-    if (key === 'frame-ancestors') {
+    // 因此默认跳过，仅在明确要求（响应头场景）时才输出
+    if (key === 'frame-ancestors' && !includeFrameAncestors) {
       continue;
     }
 
