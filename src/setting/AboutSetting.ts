@@ -631,7 +631,7 @@ export const devices: DeviceConfig[] = [
 ];
 
 //联系邮箱与社交账号配置（关于页展示用）
-export const mail = "2574386537@qq.com"; //邮箱配置
+export const mail = "blog@xinchengp.cn"; //邮箱配置
 export const github = "https://github.com/XinChengP"; //github网站配置
 export const bilibili = "https://space.bilibili.com/522845412?spm_id_from=333.1007.0.0";
 

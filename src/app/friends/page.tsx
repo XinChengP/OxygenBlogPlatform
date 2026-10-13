@@ -185,7 +185,7 @@ function ExchangeCard() {
             </h4>
             <div className="space-y-3">
               <motion.a
-                href="mailto:2574386537@qq.com"
+                href="mailto:blog@xinchengp.cn"
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.4, delay: 0.5 }}
@@ -204,7 +204,7 @@ function ExchangeCard() {
                 </span>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground">发送邮件</p>
-                  <p className="text-xs text-muted-foreground truncate">2574386537@qq.com</p>
+                  <p className="text-xs text-muted-foreground truncate">blog@xinchengp.cn</p>
                 </div>
                 <ArrowRight className="w-4 h-4 text-muted-foreground/60 group-hover:text-primary transition-colors" />
               </motion.a>
