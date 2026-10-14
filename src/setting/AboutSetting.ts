@@ -680,6 +680,14 @@ export const friendsLinks: FriendLink[] = [
     description: "在天际线的彼方，心绪飘忽轻吟。",
     avatar: "https://www.alimeylab.com/alimey.jpg",
     category: 'blog'
+  },
+  {
+    name: "饿师傅的技术札记",
+    url: "https://hungryluo.top",
+    description: "锦依卫-饿魔的个人博客，一个分享折腾日常的温馨小窝awa～",
+    // 头像为对方站点远程资源，与 alimey 的处理方式一致，直接引用远程链接
+    avatar: "https://hungryluo.top/usr/uploads/avatar.png",
+    category: 'blog'
   }
 ];
 
