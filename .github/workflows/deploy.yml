@@ -66,6 +66,9 @@ jobs:
           CUSTOM_DOMAIN: "true"
           NEXT_PUBLIC_SITE_URL: "https://blog.xinchengp.cn"
           NEXT_PUBLIC_BASE_PATH: ""
+          # Twikoo 评论后端地址。必须与 cloudflare/twikoo 实际绑定的一致：
+          # 它同时决定前端请求地址与 CSP 白名单，填错会让评论区请求被浏览器拦下。
+          NEXT_PUBLIC_TWIKOO_ENV_ID: "https://twikoo.xinchengp.cn"
         run: |
           # 输出构建环境信息
           echo "构建环境信息："
@@ -74,6 +77,7 @@ jobs:
           echo "NEXT_PUBLIC_BASE_PATH: $NEXT_PUBLIC_BASE_PATH"
           echo "NEXT_PUBLIC_SITE_URL: $NEXT_PUBLIC_SITE_URL"
           echo "CUSTOM_DOMAIN: $CUSTOM_DOMAIN"
+          echo "NEXT_PUBLIC_TWIKOO_ENV_ID: $NEXT_PUBLIC_TWIKOO_ENV_ID"
           echo "NEXT_PRIVATE_STATIC_EXPORT: $NEXT_PRIVATE_STATIC_EXPORT"
           echo "STATIC_EXPORT: $STATIC_EXPORT"
           # 执行构建（使用 build:pages 脚本，会自动替换 actions 文件）

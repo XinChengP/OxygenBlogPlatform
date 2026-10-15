@@ -48,6 +48,18 @@ export interface ExternalSource {
 }
 
 /**
+ * Twikoo 评论后端地址（去掉结尾斜杠）
+ *
+ * 这里直接读环境变量、不 import src/setting/CommentSetting.ts，
+ * 是为了守住本文件的「零依赖」约束（见文件头说明）。
+ * 两处读的是同一个 NEXT_PUBLIC_TWIKOO_ENV_ID，改动时需一起确认。
+ *
+ * 未配置时为空串，下方不登记该来源 —— 避免往 CSP 里写进一个空串，
+ * 那会让整个指令串变得不可解析。
+ */
+const TWIKOO_ORIGIN = (process.env.NEXT_PUBLIC_TWIKOO_ENV_ID || '').replace(/\/+$/, '');
+
+/**
  * 全站外部来源白名单
  *
  * 说明：'self'、data:、blob:、https:、http: 这类“通用来源”不在此登记，
@@ -77,11 +89,18 @@ export const EXTERNAL_SOURCES: ExternalSource[] = [
   },
 
   // ===== 评论系统 =====
-  {
-    origin: 'https://giscus.app',
-    desc: 'Giscus 评论系统（脚本、样式、接口、iframe 四个方向都要用到）',
-    directives: ['script-src', 'style-src', 'connect-src', 'frame-src'],
-  },
+  // Twikoo 后端（Cloudflare Workers）。
+  // 与 giscus 不同，Twikoo 只需要放行 connect-src 一个方向：
+  //   - 前端脚本自托管在 /js/twikoo.min.js，同源，由 'self' 覆盖；
+  //   - Twikoo 直接渲染在当前页面 DOM 中，不使用 iframe，无需 frame-src。
+  // 地址未配置时不登记任何来源。
+  ...(TWIKOO_ORIGIN
+    ? [{
+        origin: TWIKOO_ORIGIN,
+        desc: 'Twikoo 评论后端（Cloudflare Workers）',
+        directives: ['connect-src'] as CspDirectiveName[],
+      }]
+    : []),
 
   // ===== 统计与监控 =====
   // 注：Google Analytics 已确认未接入（源码中无 gtag.js 加载代码），

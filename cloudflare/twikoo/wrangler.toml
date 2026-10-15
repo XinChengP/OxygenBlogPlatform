@@ -1,0 +1,53 @@
+#:schema node_modules/wrangler/config-schema.json
+#
+# Twikoo 评论后端的 Cloudflare Workers 配置
+#
+# 本目录是 Twikoo 官方独立 Worker 适配器（twikoojs/twikoo-cloudflare）的部署副本，
+# 与博客前端解耦：前端只通过 envId 指向本 Worker 的地址，二者可各自独立更新。
+#
+# 部署前必须改的一处：下方 [[d1_databases]] 的 database_id。
+# 它由 `npx wrangler d1 create twikoo` 生成，是账号级唯一标识，无法预设。
+
+name = "twikoo"
+main = "src/index.js"
+
+# nodejs_compat 是硬性要求：Twikoo 依赖的部分 npm 包需要 Node 内置模块垫片，
+# 不开启会在部署或运行时直接报错。
+compatibility_flags = ["nodejs_compat"]
+
+# 保持与上游一致。调高此日期会启用更新的 Workers 运行时行为，
+# 可能与上游代码的预期不符，除非上游同步升级，否则不要改。
+compatibility_date = "2024-09-23"
+
+[[d1_databases]]
+binding = "DB" # Worker 中通过 env.DB 访问
+database_name = "twikoo"
+# ↓↓↓ 由 `npx wrangler d1 create twikoo --location apac` 生成 ↓↓↓
+# 区域选定 apac（亚太）：D1 的主区域创建后无法更改，而它决定了每次评论读写的往返延迟。
+# 首次创建时未指定区域会落在 wnam（美西），国内访客每次加载评论都要绕到美国，
+# 因此这里显式指定亚太。
+database_id = "e563f521-cfe4-44c0-98b0-7edcf894c4f1"
+
+# ============================================================================
+# R2 对象存储（可选）
+#
+# 只有「评论支持上传图片」才需要。Twikoo 的图片上传会把文件写进 R2，
+# 再用 R2_PUBLIC_URL 拼出可访问的图片地址。
+#
+# 保持注释状态时：图片上传会退化为使用 Twikoo 管理面板中配置的 IMAGE_CDN，
+# 面板里也没配则上传失败。若不需要图片上传，在管理面板关闭该功能即可。
+#
+# 启用步骤：
+#   1. npx wrangler r2 bucket create twikoo
+#   2. 给该桶开启公开访问（推荐绑自定义域名；r2.dev 公共域名有速率限制，不适合生产）
+#   3. 取消下面注释，并把 R2_PUBLIC_URL 改成该公开地址
+# ============================================================================
+# [[r2_buckets]]
+# binding = "R2"
+# bucket_name = "twikoo"
+#
+# [vars]
+# R2_PUBLIC_URL = "https://img.xinchengp.cn"
+
+[dev]
+port = 5000

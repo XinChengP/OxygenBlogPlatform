@@ -343,7 +343,8 @@ class DOMMonitor {
       'localhost',
       '127.0.0.1',
       window.location.hostname,
-      'giscus.app',
+      // 原 giscus.app 已移除：评论区迁移到 Twikoo 后，前端脚本自托管在 /js/ 下，
+      // 已由上面的 window.location.hostname 覆盖，不再需要放行任何第三方脚本域名。
       'v6.51.la',
       'sdk.51.la',
       'google-analytics.com',
@@ -363,8 +364,9 @@ class DOMMonitor {
    * 检查iframe来源是否允许
    */
   private isAllowedIframeSource(src: string): boolean {
+    // 原 giscus.app 已移除：Twikoo 直接渲染在当前页面的 DOM 中，不使用 iframe，
+    // 因此这里没有任何需要为评论区放行的来源。
     const allowedDomains = [
-      'giscus.app',
       'github.com',
       'player.bilibili.com', // 允许B站视频嵌入
     ];

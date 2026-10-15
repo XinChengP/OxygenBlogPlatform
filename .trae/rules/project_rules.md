@@ -37,7 +37,7 @@
 - **主题系统** - 锁定天依蓝配色，基于 shadcn/ui 语义化 CSS 变量，支持暗黑模式图片滤镜优化
 - **时光河流归档** - 水平波浪时间线布局，年份自动分组
 - **实用工具** - 站内工具（拼音转换器、Markdown编辑器、洛克王国阵容搭配模拟器）+ 外部工具收录（CNC G 代码生成、自动弹原琴、B站弹幕爬取），工具配置支持 external/repoUrl 字段
-- **GitHub评论** - Giscus评论系统，基于GitHub Discussions
+- **评论系统** - Twikoo 评论系统，后端部署在 Cloudflare Workers + D1（部署副本见 `cloudflare/twikoo/`）
 - **粒子动画** - tsparticles背景效果
 - **GitHub发布** - 支持直接从编辑器发布到GitHub仓库
 - **个人动态** - 记录生活点滴，支持置顶和隐藏功能，画廊选图
@@ -129,7 +129,7 @@ public/
 ├── Momentsabout/         # 个人动态图片
 ├── footprintmap/         # 旅行足迹地图资源
 ├── roco-icons/           # 洛克王国宠物图标
-├── giscus-theme/         # Giscus评论区自定义主题样式
+├── js/                    # JavaScript文件（含自托管的 twikoo.min.js）
 ├── bilibili-collections/ # B站收藏夹资源
 ├── aboutme/              # 关于页面资源
 ├── friendlink/           # 友链相关
@@ -289,7 +289,6 @@ export default function Component({ title, className }: ComponentProps) {
 // 开发环境：
 //   - Turbopack（Next.js 16 默认）
 //   - headers 配置 CSP 安全策略、no-store 缓存（避免 dev 缓存导致改代码不生效）
-//   - giscus-theme 路径返回 ACAO:* 跨域头（评论区自定义样式）
 //   - devIndicators: false，allowedDevOrigins 跨域白名单
 // 静态导出环境：
 //   - output: "export"、distDir: 'out'、trailingSlash: true

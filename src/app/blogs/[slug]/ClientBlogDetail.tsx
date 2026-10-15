@@ -31,7 +31,7 @@ import RelatedPosts from '../../../components/blogs/RelatedPosts';
 
 // 动态导入大型组件，优化初始加载性能
 const LazyTableOfContents = lazy(() => import('../../../components/TableOfContents'));
-const LazyGiscusComments = lazy(() => import('../../../components/GiscusComments'));
+const LazyTwikooComments = lazy(() => import('../../../components/TwikooComments'));
 const LazyCopyrightNotice = lazy(() => import('../../../components/CopyrightNotice'));
 
 interface BlogPost {
@@ -756,11 +756,12 @@ export default function ClientBlogDetail({
               <ChatBubbleLeftRightIcon className="w-5 h-5 text-primary" aria-hidden="true" />
               <h2 className="text-lg font-semibold text-foreground">评论</h2>
               {/*
-                说明文字与实际规则保持一致：
-                本站评论基于 GitHub Discussions，需 GitHub 账号登录后才能发言。
+                说明文字与实际规则保持一致。
+                迁移到 Twikoo 后不再需要 GitHub 账号，昵称与邮箱为必填项；
+                若将来在 Twikoo 管理面板开启「强制登录」，这里需同步修改。
               */}
               <span className="text-sm text-muted-foreground">
-                （使用 GitHub 账号登录后即可评论）
+                （无需注册，填写昵称和邮箱即可评论）
               </span>
             </div>
 
@@ -787,7 +788,7 @@ export default function ClientBlogDetail({
                 </div>
               }
             >
-              <LazyGiscusComments id={blog.slug} title={blog.title} />
+              <LazyTwikooComments id={blog.slug} />
             </Suspense>
           </section>
         </div>

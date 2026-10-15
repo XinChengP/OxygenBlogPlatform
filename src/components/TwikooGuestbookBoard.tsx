@@ -3,12 +3,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { MessageSquare } from 'lucide-react';
-import GiscusComments from './GiscusComments';
+import TwikooComments from './TwikooComments';
 
-export default function GiscusGuestbookBoard() {
-  // 为留言板生成一个唯一的ID
-  const guestbookId = 'guestbook-homepage';
-
+export default function TwikooGuestbookBoard() {
   return (
     // 留言板容器
     <div className="w-full">
@@ -45,22 +42,20 @@ export default function GiscusGuestbookBoard() {
             <MessageSquare className="w-5 h-5 text-primary" aria-hidden="true" />
             <h2 className="text-lg font-semibold text-foreground">留言区</h2>
             {/*
-              说明文字必须与实际规则一致：
-              本站评论基于 GitHub Discussions，必须使用 GitHub 账号登录后才能发言，
-              并不支持匿名留言。若写成「无需注册」会误导读者。
+              说明文字必须与实际规则一致。
+              迁移到 Twikoo 后不再需要 GitHub 账号，Twikoo 默认允许匿名留言、
+              昵称与邮箱为必填项，因此原文案「使用 GitHub 账号登录后即可留言」已不成立。
+              注意：若将来在 Twikoo 管理面板里开启了「强制登录」，
+              这里必须同步改成对应的说法，否则会误导读者。
             */}
             <span className="text-sm text-muted-foreground">
-              （使用 GitHub 账号登录后即可留言）
+              （无需注册，填写昵称和邮箱即可留言）
             </span>
           </div>
 
-          {/* Giscus 评论区 */}
+          {/* Twikoo 评论区 */}
           <div className="relative">
-            <GiscusComments 
-              id={guestbookId}
-              title="博客留言板"
-              type="guestbook"
-            />
+            <TwikooComments type="guestbook" />
           </div>
         </div>
       </motion.div>

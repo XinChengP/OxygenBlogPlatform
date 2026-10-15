@@ -1,0 +1,7 @@
+# 依赖与本地构建产物
+node_modules/
+.wrangler/
+
+# npm 会为部署生成 lockfile，但它与本目录的依赖树绑定，
+# 且 overrides 里引用了 git 依赖，不同环境解析结果可能不同，故不入库。
+package-lock.json

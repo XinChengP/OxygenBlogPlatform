@@ -11,7 +11,7 @@ import { MessageSquare } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 
 // 动态导入大型组件
-const LazyGiscusGuestbookBoard = lazy(() => import('@/components/GiscusGuestbookBoard'));
+const LazyTwikooGuestbookBoard = lazy(() => import('@/components/TwikooGuestbookBoard'));
 
 /**
  * 加载占位组件
@@ -26,7 +26,7 @@ function GuestbookSkeleton() {
   return (
     <div className="w-full">
       {/*
-        卡片外壳：圆角、底色、描边、阴影必须与真实卡片（GiscusGuestbookBoard）逐项对齐，
+        卡片外壳：圆角、底色、描边、阴影必须与真实卡片（TwikooGuestbookBoard）逐项对齐，
         否则加载完成的一瞬间，卡片外形会发生可见的变化，像是页面重排了一下。
         这里同样使用语义令牌 bg-card/60 + border-border/40，而非硬编码灰阶。
       */}
@@ -46,7 +46,7 @@ function GuestbookSkeleton() {
             <div className="w-16 h-6 rounded bg-muted animate-pulse" />
           </div>
 
-          {/* 评论输入框占位：Giscus 将输入框置于顶部 */}
+          {/* 评论输入框占位：Twikoo 将输入框置于顶部 */}
           <div className="h-24 rounded-xl bg-muted/60 animate-pulse mb-6" />
 
           {/* 评论条目占位：三条足以覆盖常见留言量，高度接近真实列表 */}
@@ -144,7 +144,7 @@ export default function Guestbook() {
           transition={{ delay: 0.3 }}
         >
           <Suspense fallback={<GuestbookSkeleton />}>
-            <LazyGiscusGuestbookBoard />
+            <LazyTwikooGuestbookBoard />
           </Suspense>
         </motion.div>
       </div>

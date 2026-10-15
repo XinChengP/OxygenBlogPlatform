@@ -52,6 +52,10 @@ const eslintConfig = [
       "public/**",
       "electron/**",
       "admin-backup/**",
+      // Twikoo 评论后端的部署副本：属于独立的 Cloudflare Workers 项目，
+      // 有自己的 package.json 与依赖，其 .js 文件不在本仓库的 tsconfig 范围内，
+      // 用本仓库的 TypeScript 解析器去 lint 会直接报「不在项目内」的错误。
+      "cloudflare/**",
       "*.config.*",
       "**/*.test.ts",
       "src/setting/**",

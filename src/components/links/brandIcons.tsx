@@ -104,7 +104,7 @@ const ICON_FIELD_BRANDS: Record<string, BrandIconName> = {
  */
 const ICON_FIELD_LUCIDE: Record<string, React.ComponentType<{ className?: string }>> = {
   music: Music,            // Howler.js 音频库
-  giscus: MessagesSquare,  // 评论系统
+  twikoo: MessagesSquare,  // 评论系统
   live2d: PersonStanding,  // 看板娘
   particles: Sparkles,     // tsParticles 粒子
   recharts: BarChart3,     // 图表库

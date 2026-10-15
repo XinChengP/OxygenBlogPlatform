@@ -43,7 +43,8 @@
       window.location.hostname,
       'localhost',
       '127.0.0.1',
-      'giscus.app',
+      // 原 giscus.app 已移除：评论区迁移到 Twikoo 后前端脚本自托管在 /js/ 下，
+      // 已由 window.location.hostname 覆盖，不再需要放行第三方脚本域名。
       'v6.51.la',
       'sdk.51.la',
       'player.bilibili.com', // 允许B站视频嵌入

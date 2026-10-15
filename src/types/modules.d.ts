@@ -53,14 +53,16 @@ declare module '@/components/ScrollToTop' {
   export default ScrollToTop;
 }
 
-declare module '@/components/GiscusComments' {
-  interface GiscusCommentsProps {
-    id: string;
-    title?: string;
+declare module '@/components/TwikooComments' {
+  interface TwikooCommentsProps {
+    /** 文章 slug；留言板不使用 */
+    id?: string;
+    /** 评论区用途，决定评论路径的取值规则 */
+    type?: 'blog' | 'guestbook';
   }
   
-  const GiscusComments: React.FC<GiscusCommentsProps>;
-  export default GiscusComments;
+  const TwikooComments: React.FC<TwikooCommentsProps>;
+  export default TwikooComments;
 }
 
 declare module '@/components/CopyrightNotice' {

@@ -758,12 +758,12 @@ export const relatedLinks: RelatedLink[] = [
     tags: ['音乐', '播放器', '音频']
   },
   {
-    name: "Giscus",
-    url: "https://giscus.app/zh-CN",
-    description: "基于GitHub Discussions的评论系统，无服务器部署",
+    name: "Twikoo",
+    url: "https://twikoo.js.org/",
+    description: "轻量评论系统，后端部署在 Cloudflare Workers + D1 上，无需自建服务器",
     category: 'tool',
-    icon: "giscus",
-    tags: ['评论', 'GitHub', '免费']
+    icon: "twikoo",
+    tags: ['评论', 'Cloudflare', '免费']
   },
   {
     name: "Markdown编辑器",

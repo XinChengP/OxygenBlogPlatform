@@ -1,0 +1,221 @@
+/**
+ * Twikoo 评论区配色覆盖
+ *
+ * 【为什么需要这个文件】
+ * Twikoo 的样式表里几乎没有使用 CSS 变量，颜色是写死的 Element UI 调色板：
+ * 强调色 #409eff、次要文字 #999999、边框 rgba(144,147,153,0.31) 等。
+ * 这些值与本站的语义令牌（--primary / --muted-foreground / --border）无关，
+ * 不覆盖就会出现「整站天依蓝，评论区一片 Element 蓝」的割裂感。
+ * 另外 Twikoo 自带的暗色规则只覆盖表情弹窗（5 条），评论区主体在暗色模式下
+ * 依然是白底黑字，必须由本站补齐。
+ *
+ * 【为什么大量使用 !important】
+ * Twikoo 的 CSS 由 style-loader 在脚本执行时注入 <head>，时机在本站样式表之后。
+ * CSS 层叠中，同优先级下后出现者胜出，因此仅靠选择器权重持平的覆盖会失效。
+ * 这里选择 !important 而非「加深选择器前缀」的原因：
+ * 前者对 Twikoo 内部 DOM 结构的变化免疫，而后者依赖 .tk-main / .tk-input
+ * 这类具体层级 —— 上游调整结构时会静默失效，反而更难排查。
+ *
+ * 【作用域说明】
+ * 覆盖以 .twikoo 为前缀（Twikoo 根节点自带的类名），不会外溢到站点其他部分。
+ * 需要注意：Twikoo 的样式表里还包含一批**未加作用域**的 Element UI 基础样式
+ * （裸 .el-button、.el-input__inner 等），会全局注入。本站不使用这些类名，
+ * 因此没有冲突，无需处理。
+ */
+
+/* ============================================================
+   主题色
+   本站 --primary 是浅色调的天依蓝 #66ccff：它在深色底上是合适的强调色，
+   但在白底上作为文字色对比度不足。因此按主题分别取色：
+   亮色模式用更深的 --secondary，暗色模式用 --primary。
+   ============================================================ */
+.twikoo {
+  --tk-accent: var(--color-secondary);
+}
+
+.dark .twikoo {
+  --tk-accent: var(--color-primary);
+}
+
+/* ============================================================
+   强调色：操作链接、图标、悬停态、当前页码
+   ============================================================ */
+.twikoo .tk-action-link,
+.twikoo .tk-action-icon,
+.twikoo .tk-icon.__comments,
+.twikoo .tk-nick-link:hover {
+  color: var(--tk-accent) !important;
+}
+
+.twikoo .tk-pagination-pager.__current {
+  background-color: var(--tk-accent) !important;
+  color: var(--primary-foreground) !important;
+}
+
+/* ============================================================
+   次要文字：页脚署名、扩展信息
+   ============================================================ */
+.twikoo .tk-footer,
+.twikoo .tk-extras,
+.twikoo .tk-submit-action-icon.__markdown {
+  color: var(--muted-foreground) !important;
+}
+
+/* ============================================================
+   错误提示
+   ============================================================ */
+.twikoo .tk-comments-error,
+.twikoo .tk-error-message {
+  color: var(--destructive) !important;
+}
+
+/* ============================================================
+   标签（管理员、置顶等）
+   ============================================================ */
+.twikoo .tk-tag {
+  background-color: var(--muted) !important;
+  color: var(--muted-foreground) !important;
+  border: 1px solid var(--border) !important;
+}
+
+/* ============================================================
+   头像占位底色
+   ============================================================ */
+.twikoo .tk-avatar.tk-has-avatar {
+  background-color: var(--muted) !important;
+}
+
+.twikoo .tk-avatar .tk-avatar-img {
+  color: var(--muted-foreground) !important;
+}
+
+/* ============================================================
+   输入框与文本域
+   Twikoo 用 currentColor 让文字色继承页面，这部分不用管；
+   需要接管的是边框与聚焦态。
+   ============================================================ */
+.twikoo .el-input__inner,
+.twikoo .el-textarea__inner {
+  border-color: var(--border) !important;
+}
+
+.twikoo .el-input__inner:hover,
+.twikoo .el-textarea__inner:hover {
+  border-color: var(--ring) !important;
+}
+
+.twikoo .el-input__inner:focus,
+.twikoo .el-textarea__inner:focus {
+  border-color: var(--tk-accent) !important;
+}
+
+/* 输入框右下角字数统计 */
+.twikoo .el-textarea .el-input__count {
+  color: var(--muted-foreground) !important;
+}
+
+/* ============================================================
+   按钮
+   Twikoo 区分了主按钮（提交）与次级按钮，两者分别对齐站点的主色与描边按钮。
+   ============================================================ */
+.twikoo .el-button--primary:not(.is-disabled) {
+  background-color: var(--tk-accent) !important;
+  border-color: var(--tk-accent) !important;
+  color: var(--primary-foreground) !important;
+}
+
+.twikoo .el-button--primary.is-disabled {
+  background-color: var(--muted) !important;
+  border-color: var(--border) !important;
+  color: var(--muted-foreground) !important;
+}
+
+.twikoo .el-button:not(.el-button--primary):not(.el-button--text) {
+  background-color: transparent !important;
+  border-color: var(--border) !important;
+  color: var(--foreground) !important;
+}
+
+.twikoo .el-button:not(.el-button--primary):not(.el-button--text):hover,
+.twikoo .el-button:not(.el-button--primary):not(.el-button--text):focus {
+  border-color: var(--tk-accent) !important;
+  color: var(--tk-accent) !important;
+  background-color: var(--muted) !important;
+}
+
+/* ============================================================
+   引用区 / 预览框
+   ============================================================ */
+.twikoo .tk-preview-container {
+  border-color: var(--border) !important;
+  background-color: var(--muted) !important;
+}
+
+/* ============================================================
+   评论正文里的代码
+   复用站点的代码块令牌，避免出现「正文代码块是站点的深色主题、
+   评论里的代码块是 Element 浅灰」这种同一页面两套代码样式的情况。
+   ============================================================ */
+.twikoo .tk-content code {
+  background-color: var(--code-inline-bg) !important;
+  color: var(--code-inline-text) !important;
+  border: 1px solid var(--code-inline-border) !important;
+  border-radius: 0.25rem !important;
+  padding: 0.1em 0.35em !important;
+}
+
+.twikoo .tk-content pre {
+  background-color: var(--code-bg) !important;
+  border: 1px solid var(--code-border) !important;
+  border-radius: 0.5rem !important;
+}
+
+/* 代码块内部的 code 不应再叠加行内代码的背景与描边 */
+.twikoo .tk-content pre code {
+  background-color: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+}
+
+/* ============================================================
+   评论之间的分隔
+   ============================================================ */
+.twikoo .tk-comment {
+  border-top: 1px solid var(--border) !important;
+}
+
+/* 首条评论上方不加线：它紧跟在输入框之后，加线会显得多余 */
+.twikoo .tk-comments-container > .tk-comment:first-child {
+  border-top: none !important;
+}
+
+/* ============================================================
+   表情弹窗（OwO）
+   Twikoo 自带 [data-theme="dark"] 祖先选择器规则，组件已把该属性挂在容器上，
+   这里只补它没覆盖到的弹窗底色，使暗色模式下不出现白色浮层。
+   ============================================================ */
+.twikoo .OwO .OwO-body {
+  background-color: var(--popover) !important;
+  border-color: var(--border) !important;
+  color: var(--popover-foreground) !important;
+}
+
+.dark .twikoo .OwO .OwO-body {
+  background-color: var(--popover) !important;
+  color: var(--popover-foreground) !important;
+}
+
+.twikoo .OwO .OwO-body .OwO-bar {
+  border-color: var(--border) !important;
+}
+
+.twikoo .OwO .OwO-body .OwO-bar .OwO-packages li:hover,
+.twikoo .OwO .OwO-body .OwO-bar .OwO-packages .OwO-package-active {
+  color: var(--tk-accent) !important;
+}
+
+/* ============================================================
+   管理面板
+   Twikoo 的管理面板本身就是半透明黑色遮罩 + 白字的浮层设计，
+   与站点配色无关，属于独立覆盖层。这里不做改造，仅保证关闭按钮可见。
+   ============================================================ */

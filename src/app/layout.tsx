@@ -218,7 +218,20 @@ export default function RootLayout({
             ============================================ */}
 
         {/* 预连接到关键域名 - 提前建立连接减少延迟 */}
-        <link rel="preconnect" href="https://giscus.app" crossOrigin="anonymous" />
+        {/*
+          Twikoo 评论后端（Cloudflare Workers）。
+          地址是构建期注入的环境变量，未配置时不输出该标签，避免发出无效请求。
+          用 crossOrigin="anonymous" 而非带凭据的预连接：Twikoo 的登录态通过请求体里的
+          accessToken 传递、不使用 Cookie，对应的 XHR 属于匿名 CORS 请求，
+          只有落在同一个连接池里预连接才真正省下握手时间。
+        */}
+        {process.env.NEXT_PUBLIC_TWIKOO_ENV_ID && (
+          <link
+            rel="preconnect"
+            href={process.env.NEXT_PUBLIC_TWIKOO_ENV_ID}
+            crossOrigin="anonymous"
+          />
+        )}
         <link rel="preconnect" href="https://api.github.com" crossOrigin="anonymous" />
         {/*
           注：原 Google Fonts 手写字体（Ma Shan Zheng）加载链路已整体移除——
@@ -227,7 +240,9 @@ export default function RootLayout({
         */}
 
         {/* DNS预解析 - 加速第三方资源加载 */}
-        <link rel="dns-prefetch" href="https://giscus.app" />
+        {process.env.NEXT_PUBLIC_TWIKOO_ENV_ID && (
+          <link rel="dns-prefetch" href={process.env.NEXT_PUBLIC_TWIKOO_ENV_ID} />
+        )}
 
         {/* RSS订阅自动发现 - 让浏览器和RSS阅读器能够发现博客订阅 */}
         <link rel="alternate" type="application/rss+xml" title="歆橙的博客 RSS" href={`${BASE_URL}/rss.xml`} />
