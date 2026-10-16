@@ -19,3 +19,4 @@ build/
 admin-*
 admin_*
 src/app/admin/
+*.tsbuildinfo

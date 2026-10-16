@@ -101,6 +101,16 @@ export const EXTERNAL_SOURCES: ExternalSource[] = [
         directives: ['connect-src'] as CspDirectiveName[],
       }]
     : []),
+  {
+    // Twikoo 表情面板的数据源（OwO JSON，颜文字/Emoji/B站小电视三组）。
+    // 该请求不带 crossorigin 属性，但 fetch 默认走 cors 模式，仍受 connect-src 约束。
+    // 曾因漏登此域名导致表情按钮点不开：表情 JSON 被 CSP 静默拦截（控制台仅有一条
+    // 极简短的 "Failed to fetch"），OwO 面板初始化中断，按钮成为空壳 div。
+    // 若将来在管理面板把 EMOTION_CDN 改成其他地址，这里必须同步替换。
+    origin: 'https://owo.imaegoo.com',
+    desc: 'Twikoo 表情面板数据源（OwO 表情 JSON，默认公开源）',
+    directives: ['connect-src'] as CspDirectiveName[],
+  },
 
   // ===== 统计与监控 =====
   // 注：Google Analytics 已确认未接入（源码中无 gtag.js 加载代码），
