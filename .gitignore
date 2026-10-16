@@ -20,3 +20,4 @@ admin-*
 admin_*
 src/app/admin/
 *.tsbuildinfo
+.migration-tmp/

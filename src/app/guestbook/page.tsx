@@ -9,6 +9,9 @@ import { useTheme } from 'next-themes';
 import { motion } from 'framer-motion';
 import { MessageSquare } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
+// 静态引入：twikoo-theme.css 会被 Next 预加载，若只随 lazy 组件的异步 chunk
+// 加载，命中"preload 数秒内未使用"的浏览器警告。提到首屏 CSS 后警告消失。
+import '@/components/twikoo-theme.css';
 
 // 动态导入大型组件
 const LazyTwikooGuestbookBoard = lazy(() => import('@/components/TwikooGuestbookBoard'));

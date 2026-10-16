@@ -19,6 +19,9 @@ import {
 
 
 import 'katex/dist/katex.min.css';
+// 静态引入：与 guestbook 同理，twikoo-theme.css 随 lazy 组件异步加载会触发
+// "preload 未使用"警告，提到首屏 CSS 后消除。
+import '@/components/twikoo-theme.css';
 import { EndWord } from '../../../setting/blogSetting';
 import { useBackgroundStyle } from '../../../hooks/useBackgroundStyle';
 import { useTheme } from 'next-themes';

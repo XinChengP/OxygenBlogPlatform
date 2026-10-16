@@ -59,10 +59,16 @@ const GUESTBOOK_PATH = '/guestbook/';
  * 这个函数定义了「评论挂在哪个 key 下」，是与历史数据对齐的关键。
  *
  * 文章：沿用 giscus 原先的 pathname 映射规则，即浏览器地址栏路径。
- *   本站 next.config.ts 设置了 trailingSlash: true，所以路径恒定是
- *   `/blogs/<slug>/` 这种带尾斜杠的形态，不会出现同一篇文章两种写法的问题。
- *   这里刻意不手工拼 `/blogs/${slug}`，而是取 location.pathname：
- *   万一将来调整了文章路由，评论归属会自动跟着走，不需要改代码。
+ *   本站 next.config.ts 设置了 trailingSlash: true，所以**生产环境**的路径恒定是
+ *   `/blogs/<slug>/` 这种带尾斜杠的形态。这里刻意不手工拼 `/blogs/${slug}`，
+ *   而是取 location.pathname：万一将来调整了文章路由，评论归属会自动跟着走。
+ *
+ *   【尾斜杠必须归一化】Twikoo 后端按 url 字符串精确匹配评论归属，
+ *   同一页面的 `/blogs/x/` 与 `/blogs/x` 会被视为两篇文章、评论互相分裂
+ *   （上游 README 已警告过这一点）。生产环境两者恒等，但 **dev 服务器不做
+ *   尾斜杠重定向**，浏览器地址栏是 `/blogs/x`（无斜杠）——不归一化的话
+ *   本地开发时评论区永远显示为空（2026-10-17 实际踩过）。
+ *   因此这里统一补齐尾斜杠，保证任何环境下生成的 key 与生产一致。
  *
  * 留言板：giscus 时代用的是固定的讨论区词条 guestbook。
  *   迁移脚本需要把它映射到这里的 /guestbook/，因此写死为常量而非取自 URL，
@@ -74,8 +80,11 @@ const GUESTBOOK_PATH = '/guestbook/';
 export function getCommentPath(type: CommentType, slug?: string): string {
   if (type === 'guestbook') return GUESTBOOK_PATH;
 
-  // 服务端渲染阶段拿不到 window，此时返回空串；
+  // 服务端渲染阶段拿不到 window，此时返回带尾斜杠的规范形态；
   // 组件在客户端挂载后才会调用本函数，因此实际不会走到这个分支。
   if (typeof window === 'undefined') return slug ? `/blogs/${slug}/` : '';
-  return window.location.pathname;
+
+  const pathname = window.location.pathname;
+  // 已有其他尾字符（如 .xml）时不追加斜杠；此处路径均为目录形态，统一补齐
+  return pathname.endsWith('/') ? pathname : `${pathname}/`;
 }

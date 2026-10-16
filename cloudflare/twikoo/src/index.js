@@ -951,6 +951,14 @@ async function parse (comment, request) {
     commentDo.mailMd5 = md5(normalizeMail(commentDo.mail))
     commentDo.avatar = await getQQAvatar(comment.mail)
   }
+  // 博主自定义头像：管理面板配置 BLOGGER_AVATAR（完整图片 URL）后，
+  // 博主（BLOGGER_EMAIL 匹配）的评论一律用它，覆盖 QQ 头像与 Gravatar 兜底。
+  // 本站场景：博主用 QQ 邮箱但不希望 QQ 头像出现在评论区，
+  // 头像沿用与迁移历史评论一致的 GitHub 直链。
+  // 对应历史背景见 scripts/migration/export-giscus.mjs（迁移脚本同款 avatar 字段）。
+  if (isBloggerMail && config.BLOGGER_AVATAR) {
+    commentDo.avatar = config.BLOGGER_AVATAR
+  }
   return commentDo
 }
 
