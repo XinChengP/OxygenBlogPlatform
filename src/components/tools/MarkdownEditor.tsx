@@ -286,6 +286,72 @@ export default function MarkdownEditor({
   const [content, setContent] = useState(initialContent);
   const [previewMode, setPreviewMode] = useState<'edit' | 'preview' | 'split' | 'blog'>('edit');
   const [copiedCode, setCopiedCode] = useState<string>('');
+  const editorRef = useRef<HTMLTextAreaElement>(null);
+  const shortcutActionsRef = useRef<{
+    insertText: (before: string, after?: string) => void;
+    handleSave: () => void;
+  } | null>(null);
+  const historyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [draftRestored, setDraftRestored] = useState(false);
+  const [lastAutosave, setLastAutosave] = useState<number | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  // 恢复本地草稿（仅在没有传入初始内容时）
+  useEffect(() => {
+    if (initialContent) {
+      setDraftRestored(true);
+      return;
+    }
+    try {
+      const raw = localStorage.getItem('markdown-editor-draft');
+      if (raw) {
+        const draft = JSON.parse(raw) as { content?: string; updatedAt?: number };
+        if (typeof draft.content === 'string' && draft.content.trim()) {
+          setContent(draft.content);
+          setLastAutosave(draft.updatedAt ?? null);
+        }
+      }
+    } catch {
+      // 草稿损坏时忽略
+    }
+    setDraftRestored(true);
+  }, [initialContent]);
+
+  // 内容防抖写入本地草稿
+  useEffect(() => {
+    if (!draftRestored) return;
+    const timer = setTimeout(() => {
+      try {
+        const updatedAt = Date.now();
+        localStorage.setItem(
+          'markdown-editor-draft',
+          JSON.stringify({ content, updatedAt }),
+        );
+        setLastAutosave(updatedAt);
+      } catch {
+        // 隐私模式/配额不足时静默失败
+      }
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [content, draftRestored]);
+
+  // 未保存时离开页面给出浏览器提示
+  useEffect(() => {
+    if (!hasUnsavedChanges) return;
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
+  // 卸载时清理历史防抖定时器
+  useEffect(() => {
+    return () => {
+      if (historyTimerRef.current) clearTimeout(historyTimerRef.current);
+    };
+  }, []);
 
   // 监听内容变化，调用回调函数
   useEffect(() => {
@@ -536,6 +602,9 @@ export default function MarkdownEditor({
   const [isRendering, setIsRendering] = useState<boolean>(false);
   
   useEffect(() => {
+    // 编辑模式下不需要解析 Markdown
+    if (previewMode === 'edit') return;
+
     const updatePreview = async () => {
       if (!content.trim()) {
         setRenderedContent('');
@@ -559,7 +628,7 @@ export default function MarkdownEditor({
     // 防抖处理，避免频繁渲染
     const timeoutId = setTimeout(updatePreview, 300);
     return () => clearTimeout(timeoutId);
-  }, [content]);
+  }, [content, previewMode]);
 
   // 添加复制按钮事件委托
   useEffect(() => {
@@ -722,51 +791,61 @@ export default function MarkdownEditor({
   // 快捷键支持
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey || e.metaKey) {
-        switch (e.key) {
-          case 's':
-            e.preventDefault();
-            handleSave();
-            break;
-          case 'b':
-            e.preventDefault();
-            insertText('**', '**');
-            break;
-          case 'i':
-            e.preventDefault();
-            insertText('*', '*');
-            break;
-          case 'k':
-            e.preventDefault();
-            insertText('[', '](url)');
-            break;
-          case 'z':
-            e.preventDefault();
-            undo();
-            break;
-          case 'y':
-            e.preventDefault();
-            redo();
-            break;
-          case 'f':
-            e.preventDefault();
-            setShowFindReplace(!showFindReplace);
-            break;
-          case 'g':
-            e.preventDefault();
-            setShowFindReplace(!showFindReplace);
-            break;
-        }
+      if (!(e.ctrlKey || e.metaKey)) return;
+
+      const target = e.target as HTMLElement | null;
+      const inEditor = target === editorRef.current;
+
+      // 保存是页面级操作，焦点在元数据输入框时也应可用
+      if (e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        shortcutActionsRef.current?.handleSave();
+        return;
+      }
+
+      // 其余编辑快捷键只在编辑器 textarea 聚焦时生效，
+      // 避免在元数据/查找替换输入框里劫持 Ctrl+B/I/K/Z/F
+      if (!inEditor) return;
+
+      const actions = shortcutActionsRef.current;
+
+      switch (e.key.toLowerCase()) {
+        case 'b':
+          e.preventDefault();
+          actions?.insertText('**', '**');
+          break;
+        case 'i':
+          e.preventDefault();
+          actions?.insertText('*', '*');
+          break;
+        case 'k':
+          e.preventDefault();
+          actions?.insertText('[', '](url)');
+          break;
+        case 'z':
+          e.preventDefault();
+          if (e.shiftKey) redo();
+          else undo();
+          break;
+        case 'y':
+          e.preventDefault();
+          redo();
+          break;
+        case 'f':
+        case 'g':
+          e.preventDefault();
+          setShowFindReplace(prev => !prev);
+          break;
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [content, undo, redo, showFindReplace]);
+  }, [undo, redo]);
 
   // 监听文本选择
   const handleTextSelection = () => {
-    const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+    const textarea = editorRef.current;
     if (textarea) {
       const start = textarea.selectionStart;
       const end = textarea.selectionEnd;
@@ -780,7 +859,7 @@ export default function MarkdownEditor({
 
   // 插入文本到当前光标位置
   const insertText = useCallback((before: string, after: string = '') => {
-    const textarea = document.querySelector('textarea[name="markdown-content"]') as HTMLTextAreaElement;
+    const textarea = editorRef.current;
     if (!textarea) return;
 
     const start = textarea.selectionStart;
@@ -871,7 +950,7 @@ export default function MarkdownEditor({
 
   // 直接处理工具栏按钮点击，确保历史记录正确保存
   const handleToolbarAction = (before: string, after: string = '') => {
-    const textarea = document.querySelector('textarea[name="markdown-content"]') as HTMLTextAreaElement;
+    const textarea = editorRef.current;
     if (!textarea) return;
 
     const start = textarea.selectionStart;
@@ -1175,8 +1254,12 @@ seoDescription: "${blogMetadata.seoDescription}"
     
     // 显示保存成功反馈
     setSaved(true);
+    setHasUnsavedChanges(false);
     setTimeout(() => setSaved(false), 2000);
   };
+
+  // 快捷键 effect 在函数定义之前注册，这里把最新实现挂到 ref 上
+  shortcutActionsRef.current = { insertText, handleSave };
 
   // 新增功能函数
   // 查找替换功能
@@ -1420,7 +1503,15 @@ seoDescription: "${blogMetadata.seoDescription}"
   // 处理内容变化，自动检测并解析Frontmatter
   const handleContentChange = (newContent: string) => {
     setContent(newContent);
-    addToHistory(newContent);
+    setHasUnsavedChanges(true);
+    setSaved(false);
+
+    // 撤销栈按 600ms 空闲合并：输入过程中每个字符都入栈会让 Ctrl+Z 一次只退一个字符
+    if (historyTimerRef.current) clearTimeout(historyTimerRef.current);
+    historyTimerRef.current = setTimeout(() => {
+      addToHistory(newContent);
+      historyTimerRef.current = null;
+    }, 600);
     
     // 如果是博客模式，检测并解析Frontmatter
     if (blogMode) {
@@ -1474,7 +1565,7 @@ seoDescription: "${blogMetadata.seoDescription}"
 
           if (result.success) {
             // 在光标位置插入图片 Markdown
-            const textarea = document.querySelector('textarea[name="markdown-content"]') as HTMLTextAreaElement;
+            const textarea = editorRef.current;
             if (textarea) {
               const start = textarea.selectionStart;
               const end = textarea.selectionEnd;
@@ -1531,7 +1622,7 @@ seoDescription: "${blogMetadata.seoDescription}"
 
           if (result.success) {
             // 在光标位置插入图片 Markdown
-            const textarea = document.querySelector('textarea[name="markdown-content"]') as HTMLTextAreaElement;
+            const textarea = editorRef.current;
             if (textarea) {
               const start = textarea.selectionStart;
               const end = textarea.selectionEnd;
@@ -3035,17 +3126,17 @@ seoDescription: "${blogMetadata.seoDescription}"
 
 
       {/* 编辑器主体 */}
-      <div className="flex gap-4" style={{ height }}>
+      <div className="flex flex-col md:flex-row gap-4" style={{ height }}>
         {/* 博客模式下显示元数据面板 - 固定在左侧 */}
         {blogMode && showMetadataPanel && (
-          <div className="w-80 flex-shrink-0">
+          <div className="w-full md:w-80 flex-shrink-0">
             {renderBlogMetadataPanel()}
           </div>
         )}
         
         {/* 编辑区域 - 更紧凑 */}
         {(previewMode === 'edit' || previewMode === 'split') && (
-          <div className={`${previewMode === 'split' ? 'w-1/2' : blogMode && showMetadataPanel ? 'flex-1' : 'w-full'} rounded-lg border ${isDark ? 'border-gray-700/50' : 'border-gray-200/50'} overflow-hidden backdrop-blur-sm`}>
+          <div className={`${previewMode === 'split' ? 'w-full md:w-1/2 h-1/2 md:h-full' : blogMode && showMetadataPanel ? 'flex-1' : 'w-full'} rounded-lg border ${isDark ? 'border-gray-700/50' : 'border-gray-200/50'} overflow-hidden backdrop-blur-sm`}>
             <div className={`px-3 py-2 border-b ${isDark ? 'bg-gray-800/50 border-gray-700/50' : 'bg-gray-50/50 border-gray-200/50'} backdrop-blur-sm`}>
               <h3 className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                 编辑器
@@ -3059,6 +3150,7 @@ seoDescription: "${blogMetadata.seoDescription}"
                   handleContentChange(e.target.value);
                 }}
                 onSelect={handleTextSelection}
+                ref={editorRef}
                 onPaste={handlePasteImage}
                 onDrop={handleDropImage}
                 onDragOver={(e) => e.preventDefault()}
@@ -3068,12 +3160,15 @@ seoDescription: "${blogMetadata.seoDescription}"
                     : 'bg-white/50 text-gray-900 placeholder-gray-500'
                 } ${isUploadingImage ? 'opacity-50' : ''}`}
                 style={{ 
-                  fontSize: `${fontSize}px`,
+                  fontSize: `${Math.max(fontSize, 16)}px`,
                   lineHeight: '1.5'
                 }}
-                placeholder="请输入文本... 祝您使用愉快！支持粘贴或拖拽图片上传"
+                placeholder={
+                  process.env.NEXT_PUBLIC_IS_STATIC_EXPORT === 'true'
+                    ? '请输入 Markdown 文本…'
+                    : '请输入文本... 祝您使用愉快！支持粘贴或拖拽图片上传'
+                }
                 spellCheck={showSpellCheck}
-                disabled={isUploadingImage}
               />
               
               {/* 上传进度提示 */}
@@ -3099,18 +3194,21 @@ seoDescription: "${blogMetadata.seoDescription}"
 
         {/* 预览区域 - 修复背景透明问题 */}
         {(previewMode === 'preview' || previewMode === 'split') && (
-          <div className={`${previewMode === 'split' ? 'w-1/2' : blogMode && showMetadataPanel ? 'flex-1' : 'w-full'} rounded-lg border ${isDark ? 'border-gray-700/50' : 'border-gray-200/50'} overflow-hidden bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm`}>
+          <div className={`${previewMode === 'split' ? 'w-full md:w-1/2 h-1/2 md:h-full' : blogMode && showMetadataPanel ? 'flex-1' : 'w-full'} rounded-lg border ${isDark ? 'border-gray-700/50' : 'border-gray-200/50'} overflow-hidden bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm`}>
             <div className={`px-3 py-2 border-b ${isDark ? 'bg-gray-800/50 border-gray-700/50' : 'bg-gray-50/50 border-gray-200/50'} backdrop-blur-sm`}>
               <h3 className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                 预览
               </h3>
+              {isRendering && (
+                <span className="ml-2 text-xs text-muted-foreground">渲染中…</span>
+              )}
             </div>
             <div className={`h-full p-4 overflow-y-auto prose prose-sm max-w-none ${
               isDark 
                 ? 'prose-invert prose-headings:text-gray-100 prose-p:text-gray-300 prose-strong:text-gray-200 prose-em:text-gray-300 prose-code:text-gray-200 prose-blockquote:text-gray-300 prose-blockquote:border-gray-600' 
                 : 'prose-headings:text-gray-900 prose-p:text-gray-700 prose-strong:text-gray-900 prose-em:text-gray-700 prose-code:text-gray-800 prose-blockquote:text-gray-600 prose-blockquote:border-gray-300'
             }`}>
-              {isRendering ? (
+              {!renderedContent && isRendering ? (
                 <div className="flex items-center justify-center h-32">
                   <div className="flex items-center space-x-2 text-gray-500 dark:text-gray-400">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
@@ -3143,6 +3241,11 @@ seoDescription: "${blogMetadata.seoDescription}"
               {wordCount} 字
             </span>
             <span>{charCount} 字符</span>
+            {lastAutosave && (
+              <span className="hidden sm:inline text-green-600 dark:text-green-400">
+                已自动保存
+              </span>
+            )}
             <span className="hidden sm:inline">
               预计阅读时间{calculateReadingTime(content)}分钟
             </span>

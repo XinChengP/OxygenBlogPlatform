@@ -68,6 +68,15 @@
     // 如果是外部链接，不处理
     if (link.hostname !== window.location.hostname) return;
 
+    // 同页链接（含仅查询参数变化）不会触发路由切换，
+    // 若在这里加过渡类，没有任何逻辑会移除它，页面会一直半透明
+    if (
+      link.pathname === window.location.pathname &&
+      link.search === window.location.search
+    ) {
+      return;
+    }
+
     // 保存当前页面状态
     saveScrollPosition();
     

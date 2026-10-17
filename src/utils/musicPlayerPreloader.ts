@@ -2,14 +2,15 @@
 
 import { getAssetPath } from './assetUtils';
 import type { PlayMode } from '@/types/music';
+import { howlerPlayerManager } from './howlerPlayerManager';
 
 // ==================== 类型定义 ====================
 
 /**
  * 预加载优先级枚举
- * - high: 高优先级，立即加载（当前播放歌曲）
+ * - high: 高优先级，立即加载
  * - medium: 中优先级，延迟加载（下一首歌曲）
- * - low: 低优先级，空闲时加载（其他歌曲）
+ * - low: 低优先级，空闲时加载
  */
 export type PreloadPriority = 'high' | 'medium' | 'low';
 
@@ -28,20 +29,6 @@ export interface MusicResource {
 }
 
 /**
- * 预加载任务接口
- */
-interface PreloadTask {
-  /** 资源URL */
-  url: string;
-  /** 资源类型：audio 或 image */
-  type: 'audio' | 'image';
-  /** 优先级 */
-  priority: PreloadPriority;
-  /** Promise 实例 */
-  promise?: Promise<void>;
-}
-
-/**
  * 缓存资源信息接口
  */
 interface CachedResource {
@@ -51,12 +38,10 @@ interface CachedResource {
   type: 'audio' | 'image';
   /** 缓存时间戳 */
   cachedAt: number;
-  /** 资源大小（字节，可选） */
-  size?: number;
 }
 
 /**
- * 播放进度事件详情
+ * 播放进度事件详情（与 howlerPlayerManager 保持一致）
  */
 interface PlayProgressDetail {
   /** 当前播放时间（秒） */
@@ -67,6 +52,26 @@ interface PlayProgressDetail {
   progress: number;
   /** 当前歌曲索引 */
   currentIndex: number;
+  /** 下一首索引（管理器计算，不会推进随机队列） */
+  nextIndex: number;
+}
+
+/**
+ * 歌曲切换事件详情
+ */
+interface SongChangeEventDetail {
+  /** 新歌曲索引 */
+  index: number;
+  /** 下一首索引 */
+  nextIndex: number;
+}
+
+/**
+ * 播放模式变化事件详情
+ */
+interface PlayModeChangeEventDetail {
+  /** 新的播放模式 */
+  mode: PlayMode;
 }
 
 // ==================== 常量定义 ====================
@@ -74,8 +79,8 @@ interface PlayProgressDetail {
 /** 预加载触发阈值：播放进度达到此百分比时开始预加载下一首 */
 const PRELOAD_THRESHOLD = 80;
 
-/** 缓存过期时间：24小时（毫秒） */
-const CACHE_EXPIRE_TIME = 24 * 60 * 60 * 1000;
+/** 缓存过期时间：1小时（毫秒） */
+const CACHE_EXPIRE_TIME = 60 * 60 * 1000;
 
 /** 最大缓存资源数量 */
 const MAX_CACHE_SIZE = 100;
@@ -95,32 +100,29 @@ const LOW_PRIORITY_DELAY = 2000;
  * 音乐播放器预加载器
  * 负责智能预加载音乐资源，支持优先级加载、缓存管理和播放进度监听
  * 采用单例模式确保全局只有一个预加载器实例
+ *
+ * 【预加载策略】
+ * - 当前歌曲由 Howler 自己加载，预加载器不再重复请求；
+ * - 切歌时预加载管理器计算出的“下一首”；
+ * - 播放进度到 80% 时再次确认下一首已预加载；
+ * - 随机模式下直接使用管理器的随机队列 peek 结果，
+ *   不再自行随机猜歌（旧实现会每 250ms 预加载一首不同的歌）。
  */
 class MusicPlayerPreloader {
   /** 单例实例 */
   private static instance: MusicPlayerPreloader;
 
-  /** 已预加载的资源URL集合（用于快速判断是否已加载） */
-  private preloadedResources: Set<string> = new Set();
+  /** 资源缓存映射表：存储已缓存资源的详细信息 */
+  private resourceCache: Map<string, CachedResource> = new Map();
 
   /** 正在预加载的Promise映射表（防止重复加载） */
   private preloadPromises: Map<string, Promise<void>> = new Map();
-
-  /** 是否正在预加载中 */
-  private isPreloading: boolean = false;
-
-  // ==================== SubTask 6.3: 资源缓存策略 ====================
-
-  /** 资源缓存映射表：存储已缓存资源的详细信息 */
-  private resourceCache: Map<string, CachedResource> = new Map();
 
   /** 缓存的音频元素引用（用于复用Audio对象） */
   private audioCache: Map<string, HTMLAudioElement> = new Map();
 
   /** 缓存的图片元素引用（用于复用Image对象） */
   private imageCache: Map<string, HTMLImageElement> = new Map();
-
-  // ==================== SubTask 6.2: 智能预加载状态 ====================
 
   /** 当前播放列表 */
   private playlist: MusicResource[] = [];
@@ -131,25 +133,22 @@ class MusicPlayerPreloader {
   /** 当前播放模式 */
   private playMode: PlayMode = 'list';
 
-  /** 是否已设置播放进度监听 */
-  private progressListenerSetup: boolean = false;
+  /** 是否已设置管理器事件监听 */
+  private managerListenersSetup = false;
 
   /** 上一次预加载的索引（防止重复预加载） */
   private lastPreloadedIndex: number = -1;
 
-  // ==================== SubTask 6.4: 事件监听器管理 ====================
+  /** 管理器事件处理器引用（用于解绑） */
+  private boundProgressHandler: ((detail: PlayProgressDetail) => void) | null = null;
+  private boundSongChangeHandler: ((detail: SongChangeEventDetail) => void) | null = null;
+  private boundModeChangeHandler: ((detail: PlayModeChangeEventDetail) => void) | null = null;
 
-  /** 存储所有事件监听器的引用，用于清理 */
-  private eventListeners: Map<string, Map<Function, EventListener>> = new Map();
+  /** 延迟预加载定时器集合（用于清理） */
+  private pendingTimeouts: Set<ReturnType<typeof setTimeout>> = new Set();
 
-  /** 绑定的事件处理器引用（用于解绑） */
-  private boundProgressHandler: ((event: CustomEvent<PlayProgressDetail>) => void) | null = null;
-
-  /** 绑定的播放模式变化处理器引用 */
-  private boundModeChangeHandler: ((event: CustomEvent<{ mode: PlayMode }>) => void) | null = null;
-
-  /** 绑定的歌曲切换处理器引用 */
-  private boundSongChangeHandler: ((event: CustomEvent<{ index: number }>) => void) | null = null;
+  /** 上一次清理过期缓存的时间戳 */
+  private lastCacheCleanupAt = 0;
 
   /**
    * 私有构造函数，防止外部实例化
@@ -170,7 +169,129 @@ class MusicPlayerPreloader {
     return MusicPlayerPreloader.instance;
   }
 
-  // ==================== SubTask 6.1: 优先级加载 ====================
+  // ==================== 播放列表与事件监听 ====================
+
+  /**
+   * 设置播放列表信息（初始化时调用）
+   *
+   * @param playlist - 播放列表
+   * @param currentIndex - 当前播放索引
+   * @param playMode - 播放模式
+   */
+  setupPlaylist(playlist: MusicResource[], currentIndex: number = 0, playMode: PlayMode = 'list'): void {
+    this.updatePlaylist(playlist, currentIndex, playMode);
+
+    // 设置管理器事件监听
+    this.setupManagerListeners();
+
+    // 当前歌曲由 Howler 负责加载，这里只预加载下一首
+    this.preloadUpcoming('medium');
+  }
+
+  /**
+   * 更新播放列表（本地歌单合并在线歌单后调用）
+   *
+   * 不会重置缓存，也不会重复预加载当前歌曲。
+   *
+   * @param playlist - 新播放列表
+   * @param currentIndex - 当前播放索引
+   * @param playMode - 播放模式
+   */
+  updatePlaylist(playlist: MusicResource[], currentIndex: number = 0, playMode: PlayMode = 'list'): void {
+    this.playlist = playlist;
+    this.currentIndex = currentIndex;
+    this.playMode = playMode;
+    this.lastPreloadedIndex = -1;
+  }
+
+  /**
+   * 设置管理器事件监听
+   * 直接订阅管理器事件，不再依赖 window 上的 CustomEvent
+   */
+  private setupManagerListeners(): void {
+    if (this.managerListenersSetup) return;
+    if (typeof window === 'undefined') return;
+
+    this.boundProgressHandler = (detail: PlayProgressDetail) => {
+      this.handlePlayProgress(detail);
+    };
+
+    this.boundSongChangeHandler = (detail: SongChangeEventDetail) => {
+      this.handleSongChange(detail);
+    };
+
+    this.boundModeChangeHandler = (detail: PlayModeChangeEventDetail) => {
+      this.handlePlayModeChange(detail.mode);
+    };
+
+    howlerPlayerManager.addEventListener('play-progress', this.boundProgressHandler);
+    howlerPlayerManager.addEventListener('song-change', this.boundSongChangeHandler);
+    howlerPlayerManager.addEventListener('play-mode-change', this.boundModeChangeHandler);
+
+    this.managerListenersSetup = true;
+  }
+
+  /**
+   * 处理播放进度事件
+   * 当播放进度达到阈值时预加载管理器计算出的下一首
+   * @param detail - 播放进度详情
+   */
+  private handlePlayProgress(detail: PlayProgressDetail): void {
+    this.currentIndex = detail.currentIndex;
+
+    if (detail.progress < PRELOAD_THRESHOLD) return;
+    if (detail.nextIndex < 0 || detail.nextIndex >= this.playlist.length) return;
+    // 单曲循环时 nextIndex === currentIndex，不需要预加载
+    if (detail.nextIndex === detail.currentIndex) return;
+    // 已经预加载过同一首，避免重复请求
+    if (detail.nextIndex === this.lastPreloadedIndex) return;
+
+    this.lastPreloadedIndex = detail.nextIndex;
+    this.preloadSongAtIndex(detail.nextIndex, 'medium');
+  }
+
+  /**
+   * 处理歌曲切换事件
+   * @param detail - 歌曲切换详情
+   */
+  private handleSongChange(detail: SongChangeEventDetail): void {
+    this.currentIndex = detail.index;
+    this.lastPreloadedIndex = -1;
+
+    if (detail.nextIndex < 0 || detail.nextIndex >= this.playlist.length) return;
+    if (detail.nextIndex === detail.index) return;
+
+    this.lastPreloadedIndex = detail.nextIndex;
+    this.preloadSongAtIndex(detail.nextIndex, 'medium');
+  }
+
+  /**
+   * 处理播放模式变化
+   * @param mode - 新的播放模式
+   */
+  private handlePlayModeChange(mode: PlayMode): void {
+    this.playMode = mode;
+    // 播放模式变化时重置预加载状态
+    this.lastPreloadedIndex = -1;
+  }
+
+  /**
+   * 预加载管理器计算出的下一首
+   * @param priority - 预加载优先级
+   */
+  private preloadUpcoming(priority: PreloadPriority): void {
+    if (this.playMode === 'single') return;
+
+    const nextIndex = howlerPlayerManager.getUpcomingIndex();
+    if (nextIndex < 0 || nextIndex >= this.playlist.length) return;
+    if (nextIndex === this.currentIndex) return;
+    if (nextIndex === this.lastPreloadedIndex) return;
+
+    this.lastPreloadedIndex = nextIndex;
+    this.preloadSongAtIndex(nextIndex, priority);
+  }
+
+  // ==================== 优先级加载 ====================
 
   /**
    * 按优先级预加载资源
@@ -179,7 +300,6 @@ class MusicPlayerPreloader {
    * @param priority - 预加载优先级
    */
   async preloadWithPriority(resources: MusicResource[], priority: PreloadPriority): Promise<void> {
-    // 根据优先级确定延迟时间
     const delay = this.getDelayByPriority(priority);
 
     // 如果是高优先级，立即加载
@@ -211,6 +331,17 @@ class MusicPlayerPreloader {
   }
 
   /**
+   * 预加载指定索引的歌曲（带优先级）
+   * @param index - 歌曲索引
+   * @param priority - 优先级
+   */
+  async preloadSongAtIndex(index: number, priority: PreloadPriority = 'medium'): Promise<void> {
+    if (index < 0 || index >= this.playlist.length) return;
+    const resource = this.playlist[index];
+    await this.preloadWithPriority([resource], priority);
+  }
+
+  /**
    * 立即预加载资源（高优先级）
    * @param resources - 资源列表
    */
@@ -220,7 +351,7 @@ class MusicPlayerPreloader {
     for (const resource of resources) {
       // 处理音频URL路径
       const audioUrl = getAssetPath(resource.url);
-      
+
       // 预加载音频
       if (!this.isResourceCached(audioUrl)) {
         tasks.push(this.preloadAudio(audioUrl));
@@ -246,100 +377,23 @@ class MusicPlayerPreloader {
    */
   private async preloadResourcesWithDelay(resources: MusicResource[], delay: number): Promise<void> {
     return new Promise((resolve) => {
-      setTimeout(async () => {
-        await this.preloadResourcesImmediate(resources);
-        resolve();
+      const timeoutId = setTimeout(async () => {
+        this.pendingTimeouts.delete(timeoutId);
+        try {
+          await this.preloadResourcesImmediate(resources);
+        } finally {
+          resolve();
+        }
       }, delay);
+
+      this.pendingTimeouts.add(timeoutId);
     });
-  }
-
-  /**
-   * 预加载指定索引的歌曲（带优先级）
-   * @param index - 歌曲索引
-   * @param priority - 优先级
-   */
-  async preloadSongAtIndex(index: number, priority: PreloadPriority = 'medium'): Promise<void> {
-    if (index < 0 || index >= this.playlist.length) return;
-
-    const resource = this.playlist[index];
-    await this.preloadWithPriority([resource], priority);
   }
 
   // ==================== 基础预加载方法 ====================
 
   /**
-   * 预加载播放器关键资源
-   * Howler.js 通过 npm 依赖引入，无需动态加载外部 CSS/JS，
-   * 此方法保留空实现以兼容旧代码调用。
-   * @param basePath - 基础路径（保留参数以兼容旧调用）
-   */
-  async preloadPlayerResources(basePath: string = ''): Promise<void> {
-    // Howler.js 通过 npm 依赖引入，无需动态加载外部 CSS/JS
-    // 此方法保留空实现以兼容旧代码调用
-    return Promise.resolve();
-  }
-
-  /**
    * 预加载音频文件（只预加载元数据）
-   * @param audioUrls - 音频URL列表
-   */
-  async preloadAudioFiles(audioUrls: string[]): Promise<void> {
-    const audioPromises = audioUrls.map(url => this.preloadAudio(getAssetPath(url)));
-    await Promise.allSettled(audioPromises);
-  }
-
-  /**
-   * 预加载图片资源
-   * @param imageUrls - 图片URL列表
-   */
-  async preloadImages(imageUrls: string[]): Promise<void> {
-    const imagePromises = imageUrls.map(url => this.preloadImage(getAssetPath(url)));
-    await Promise.allSettled(imagePromises);
-  }
-
-  /**
-   * 预加载单个资源（使用link标签）
-   * @param url - 资源URL
-   */
-  private async preloadResource(url: string): Promise<void> {
-    if (this.preloadedResources.has(url)) return;
-
-    if (this.preloadPromises.has(url)) {
-      return this.preloadPromises.get(url);
-    }
-
-    const promise = this.loadResource(url);
-    this.preloadPromises.set(url, promise);
-
-    try {
-      await promise;
-      this.preloadedResources.add(url);
-      this.addToCache(url, url.endsWith('.mp3') || url.endsWith('.ogg') || url.endsWith('.wav') ? 'audio' : 'image');
-    } finally {
-      this.preloadPromises.delete(url);
-    }
-  }
-
-  /**
-   * 使用link标签加载资源
-   * @param url - 资源URL
-   */
-  private loadResource(url: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const link = document.createElement('link');
-      link.rel = 'preload';
-      link.as = url.endsWith('.css') ? 'style' : 'script';
-      link.href = url;
-
-      link.onload = () => resolve();
-      link.onerror = () => reject(new Error(`预加载资源失败: ${url}`));
-
-      document.head.appendChild(link);
-    });
-  }
-
-  /**
-   * 预加载音频文件
    * @param url - 音频URL
    */
   private preloadAudio(url: string): Promise<void> {
@@ -354,16 +408,24 @@ class MusicPlayerPreloader {
     const promise = new Promise<void>((resolve) => {
       // 尝试从缓存获取Audio元素
       let audio = this.audioCache.get(url);
-      
+
       if (!audio) {
         audio = new Audio();
         audio.preload = 'metadata'; // 只预加载元数据，节省带宽
         this.audioCache.set(url, audio);
       }
 
+      // 已经加载过元数据，直接复用
+      // 注意：audio.src 返回绝对 URL，而 url 可能是 /music/... 相对路径，
+      // 因此比较 getAttribute('src') 而不是 audio.src。
+      if (audio.getAttribute('src') === url && audio.readyState >= 1) {
+        this.addToCache(url, 'audio');
+        resolve();
+        return;
+      }
+
       // 元数据加载完成
       const handleLoadedMetadata = () => {
-        this.preloadedResources.add(url);
         this.addToCache(url, 'audio');
         cleanup();
         resolve();
@@ -371,28 +433,46 @@ class MusicPlayerPreloader {
 
       // 加载错误处理
       const handleError = () => {
-        // 即使失败也resolve，不影响主流程
+        // 失败时移除元素，允许下次重试
+        audio!.removeEventListener('loadedmetadata', handleLoadedMetadata);
+        audio!.removeEventListener('error', handleError);
+        audio!.removeAttribute('src');
+        this.audioCache.delete(url);
         cleanup();
+        // 即使失败也resolve，不影响主流程
         resolve();
       };
 
-      // 清理事件监听器
+      // 超时兜底：网络卡住时不让 Promise 永久挂起，避免后续预加载复用死 Promise
+      let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+      // 清理事件监听器与超时定时器
       const cleanup = () => {
         audio!.removeEventListener('loadedmetadata', handleLoadedMetadata);
         audio!.removeEventListener('error', handleError);
+        if (timeoutId !== null) {
+          clearTimeout(timeoutId);
+          timeoutId = null;
+        }
       };
+
+      timeoutId = setTimeout(() => {
+        cleanup();
+        this.audioCache.delete(url);
+        resolve();
+      }, 10000);
 
       audio.addEventListener('loadedmetadata', handleLoadedMetadata);
       audio.addEventListener('error', handleError);
 
       // 设置音频源
-      if (audio.src !== url) {
+      if (audio.getAttribute('src') !== url) {
         audio.src = url;
       }
     });
 
     this.preloadPromises.set(url, promise);
-    
+
     // 完成后清理Promise引用
     promise.finally(() => {
       this.preloadPromises.delete(url);
@@ -417,7 +497,7 @@ class MusicPlayerPreloader {
     const promise = new Promise<void>((resolve) => {
       // 尝试从缓存获取Image元素
       let img = this.imageCache.get(url);
-      
+
       if (!img) {
         img = new Image();
         this.imageCache.set(url, img);
@@ -425,7 +505,6 @@ class MusicPlayerPreloader {
 
       // 图片加载完成
       const handleLoad = () => {
-        this.preloadedResources.add(url);
         this.addToCache(url, 'image');
         cleanup();
         resolve();
@@ -433,8 +512,11 @@ class MusicPlayerPreloader {
 
       // 加载错误处理
       const handleError = () => {
+        img!.removeEventListener('load', handleLoad);
+        img!.removeEventListener('error', handleError);
+        img!.removeAttribute('src');
+        this.imageCache.delete(url);
         // 即使失败也resolve，不影响主流程
-        cleanup();
         resolve();
       };
 
@@ -448,13 +530,13 @@ class MusicPlayerPreloader {
       img.addEventListener('error', handleError);
 
       // 设置图片源
-      if (img.src !== url) {
+      if (img.getAttribute('src') !== url) {
         img.src = url;
       }
     });
 
     this.preloadPromises.set(url, promise);
-    
+
     // 完成后清理Promise引用
     promise.finally(() => {
       this.preloadPromises.delete(url);
@@ -463,187 +545,36 @@ class MusicPlayerPreloader {
     return promise;
   }
 
-  // ==================== SubTask 6.2: 智能预加载 ====================
+  // ==================== 缓存策略 ====================
 
   /**
-   * 设置播放列表信息
-   * @param playlist - 播放列表
-   * @param currentIndex - 当前播放索引
-   * @param playMode - 播放模式
-   */
-  setupPlaylist(playlist: MusicResource[], currentIndex: number = 0, playMode: PlayMode = 'list'): void {
-    this.playlist = playlist;
-    this.currentIndex = currentIndex;
-    this.playMode = playMode;
-    this.lastPreloadedIndex = -1; // 重置预加载状态
-
-    // 设置播放进度监听
-    this.setupProgressListener();
-
-    // 立即预加载当前歌曲（高优先级）
-    if (currentIndex >= 0 && currentIndex < playlist.length) {
-      this.preloadSongAtIndex(currentIndex, 'high');
-    }
-  }
-
-  /**
-   * 设置播放进度监听器
-   * 监听播放进度事件，在播放到80%时触发预加载
-   */
-  private setupProgressListener(): void {
-    if (this.progressListenerSetup || typeof window === 'undefined') return;
-
-    // 创建绑定的事件处理器
-    this.boundProgressHandler = (event: CustomEvent<PlayProgressDetail>) => {
-      this.handlePlayProgress(event.detail);
-    };
-
-    this.boundModeChangeHandler = (event: CustomEvent<{ mode: PlayMode }>) => {
-      this.handlePlayModeChange(event.detail.mode);
-    };
-
-    this.boundSongChangeHandler = (event: CustomEvent<{ index: number }>) => {
-      this.handleSongChange(event.detail.index);
-    };
-
-    // 监听播放进度事件
-    window.addEventListener('music-player:play-progress', this.boundProgressHandler as EventListener);
-
-    // 监听播放模式变化事件
-    window.addEventListener('music-player:play-mode-change', this.boundModeChangeHandler as EventListener);
-
-    // 监听歌曲切换事件
-    window.addEventListener('music-player:song-change', this.boundSongChangeHandler as EventListener);
-
-    this.progressListenerSetup = true;
-  }
-
-  /**
-   * 处理播放进度事件
-   * 当播放进度达到阈值时，根据播放模式预加载下一首
-   * @param detail - 播放进度详情
-   */
-  private handlePlayProgress(detail: PlayProgressDetail): void {
-    // 更新当前索引
-    this.currentIndex = detail.currentIndex;
-
-    // 当播放进度达到阈值时触发预加载
-    if (detail.progress >= PRELOAD_THRESHOLD) {
-      this.preloadNextByPlayMode();
-    }
-  }
-
-  /**
-   * 处理播放模式变化
-   * @param mode - 新的播放模式
-   */
-  private handlePlayModeChange(mode: PlayMode): void {
-    this.playMode = mode;
-    // 播放模式变化时重置预加载状态
-    this.lastPreloadedIndex = -1;
-  }
-
-  /**
-   * 处理歌曲切换事件
-   * @param index - 新的歌曲索引
-   */
-  private handleSongChange(index: number): void {
-    this.currentIndex = index;
-    // 歌曲切换时预加载当前歌曲（高优先级）
-    this.preloadSongAtIndex(index, 'high');
-  }
-
-  /**
-   * 根据播放模式预加载下一首歌曲
-   * - 顺序播放：预加载下一首
-   * - 随机播放：预加载随机一首
-   * - 单曲循环：不预加载
-   */
-  private preloadNextByPlayMode(): void {
-    // 单曲循环模式不预加载
-    if (this.playMode === 'single') {
-      return;
-    }
-
-    let nextIndex: number;
-
-    if (this.playMode === 'random') {
-      // 随机模式：随机选择一首（排除当前播放的）
-      nextIndex = this.getRandomIndex();
-    } else {
-      // 顺序播放：预加载下一首
-      nextIndex = (this.currentIndex + 1) % this.playlist.length;
-    }
-
-    // 防止重复预加载同一首
-    if (nextIndex === this.lastPreloadedIndex) {
-      return;
-    }
-
-    // 标记为已预加载
-    this.lastPreloadedIndex = nextIndex;
-
-    // 使用中优先级预加载
-    this.preloadSongAtIndex(nextIndex, 'medium');
-  }
-
-  /**
-   * 获取随机索引（排除当前播放的歌曲）
-   * @returns 随机索引
-   */
-  private getRandomIndex(): number {
-    if (this.playlist.length <= 1) return 0;
-
-    let randomIndex: number;
-    do {
-      randomIndex = Math.floor(Math.random() * this.playlist.length);
-    } while (randomIndex === this.currentIndex);
-
-    return randomIndex;
-  }
-
-  /**
-   * 更新当前播放索引
-   * @param index - 新的索引
-   */
-  updateCurrentIndex(index: number): void {
-    this.currentIndex = index;
-  }
-
-  /**
-   * 更新播放模式
-   * @param mode - 新的播放模式
-   */
-  updatePlayMode(mode: PlayMode): void {
-    this.playMode = mode;
-    this.lastPreloadedIndex = -1;
-  }
-
-  // ==================== SubTask 6.3: 资源缓存策略 ====================
-
-  /**
-   * 检查资源是否已缓存
+   * 检查资源是否已缓存（带 TTL）
    * @param url - 资源URL
    * @returns 是否已缓存
    */
   isResourceCached(url: string): boolean {
-    // 首先检查快速查找集合
-    if (this.preloadedResources.has(url)) {
-      return true;
-    }
+    this.maybeCleanExpiredCache();
 
-    // 然后检查详细缓存映射
     const cached = this.resourceCache.get(url);
-    if (cached) {
-      // 检查缓存是否过期
-      if (Date.now() - cached.cachedAt > CACHE_EXPIRE_TIME) {
-        this.resourceCache.delete(url);
-        return false;
-      }
-      return true;
+    if (!cached) return false;
+
+    if (Date.now() - cached.cachedAt > CACHE_EXPIRE_TIME) {
+      this.resourceCache.delete(url);
+      this.releaseCachedElement(url);
+      return false;
     }
 
-    return false;
+    return true;
+  }
+
+  /**
+   * 定期清理过期缓存（最多每 5 分钟一次）
+   */
+  private maybeCleanExpiredCache(): void {
+    const now = Date.now();
+    if (now - this.lastCacheCleanupAt < 5 * 60 * 1000) return;
+    this.lastCacheCleanupAt = now;
+    this.cleanExpiredCache();
   }
 
   /**
@@ -662,16 +593,40 @@ class MusicPlayerPreloader {
       type,
       cachedAt: Date.now(),
     });
+  }
 
-    // 同时添加到快速查找集合
-    this.preloadedResources.add(url);
+  /**
+   * 释放单个缓存资源对应的 DOM 元素
+   * @param url - 资源URL
+   */
+  private releaseCachedElement(url: string): void {
+    const audio = this.audioCache.get(url);
+    if (audio) {
+      try {
+        audio.pause();
+        audio.removeAttribute('src');
+        audio.load();
+      } catch {
+        // 忽略释放失败
+      }
+      this.audioCache.delete(url);
+    }
+
+    const image = this.imageCache.get(url);
+    if (image) {
+      try {
+        image.removeAttribute('src');
+      } catch {
+        // 忽略释放失败
+      }
+      this.imageCache.delete(url);
+    }
   }
 
   /**
    * 清理最旧的缓存
    */
   private cleanOldestCache(): void {
-    // 找到最旧的缓存项
     let oldestKey: string | null = null;
     let oldestTime = Infinity;
 
@@ -682,14 +637,9 @@ class MusicPlayerPreloader {
       }
     }
 
-    // 删除最旧的缓存
     if (oldestKey) {
       this.resourceCache.delete(oldestKey);
-      this.preloadedResources.delete(oldestKey);
-      
-      // 同时清理对应的元素缓存
-      this.audioCache.delete(oldestKey);
-      this.imageCache.delete(oldestKey);
+      this.releaseCachedElement(oldestKey);
     }
   }
 
@@ -706,12 +656,9 @@ class MusicPlayerPreloader {
       }
     }
 
-    // 删除过期缓存
     for (const key of expiredKeys) {
       this.resourceCache.delete(key);
-      this.preloadedResources.delete(key);
-      this.audioCache.delete(key);
-      this.imageCache.delete(key);
+      this.releaseCachedElement(key);
     }
   }
 
@@ -719,12 +666,17 @@ class MusicPlayerPreloader {
    * 清除所有缓存
    */
   clearCache(): void {
-    this.preloadedResources.clear();
-    this.preloadPromises.clear();
+    for (const url of [...this.audioCache.keys()]) {
+      this.releaseCachedElement(url);
+    }
+    for (const url of [...this.imageCache.keys()]) {
+      this.releaseCachedElement(url);
+    }
+
     this.resourceCache.clear();
+    this.preloadPromises.clear();
     this.audioCache.clear();
     this.imageCache.clear();
-    this.isPreloading = false;
     this.lastPreloadedIndex = -1;
   }
 
@@ -757,36 +709,36 @@ class MusicPlayerPreloader {
     };
   }
 
-  // ==================== SubTask 6.4: 事件监听器管理 ====================
+  // ==================== 清理 ====================
 
   /**
-   * 清理所有事件监听器
+   * 清理所有事件监听器和延迟任务
    * 防止内存泄漏
    */
   cleanup(): void {
-    // 移除播放进度监听器
-    if (this.boundProgressHandler && typeof window !== 'undefined') {
-      window.removeEventListener('music-player:play-progress', this.boundProgressHandler as EventListener);
+    // 移除管理器事件监听器
+    if (this.managerListenersSetup) {
+      if (this.boundProgressHandler) {
+        howlerPlayerManager.removeEventListener('play-progress', this.boundProgressHandler);
+      }
+      if (this.boundSongChangeHandler) {
+        howlerPlayerManager.removeEventListener('song-change', this.boundSongChangeHandler);
+      }
+      if (this.boundModeChangeHandler) {
+        howlerPlayerManager.removeEventListener('play-mode-change', this.boundModeChangeHandler);
+      }
+
       this.boundProgressHandler = null;
-    }
-
-    // 移除播放模式变化监听器
-    if (this.boundModeChangeHandler && typeof window !== 'undefined') {
-      window.removeEventListener('music-player:play-mode-change', this.boundModeChangeHandler as EventListener);
-      this.boundModeChangeHandler = null;
-    }
-
-    // 移除歌曲切换监听器
-    if (this.boundSongChangeHandler && typeof window !== 'undefined') {
-      window.removeEventListener('music-player:song-change', this.boundSongChangeHandler as EventListener);
       this.boundSongChangeHandler = null;
+      this.boundModeChangeHandler = null;
+      this.managerListenersSetup = false;
     }
 
-    // 清理所有存储的事件监听器引用
-    this.eventListeners.clear();
-
-    // 重置监听器设置标志
-    this.progressListenerSetup = false;
+    // 取消所有尚未执行的延迟预加载
+    for (const timeoutId of this.pendingTimeouts) {
+      clearTimeout(timeoutId);
+    }
+    this.pendingTimeouts.clear();
   }
 
   /**
@@ -807,38 +759,12 @@ class MusicPlayerPreloader {
     this.lastPreloadedIndex = -1;
   }
 
-  // ==================== 工具方法 ====================
-
   /**
    * 检查资源是否已预加载
    * @param url - 资源URL
-   * @returns 是否已预加载
    */
   isResourcePreloaded(url: string): boolean {
     return this.isResourceCached(getAssetPath(url));
-  }
-
-  /**
-   * 批量预加载音乐相关资源
-   * @param musicList - 音乐列表
-   * @param basePath - 基础路径
-   */
-  async preloadMusicResources(musicList: MusicResource[], basePath: string = ''): Promise<void> {
-    // 设置播放列表
-    this.setupPlaylist(musicList);
-
-    // 预加载播放器基础资源
-    await this.preloadPlayerResources(basePath);
-
-    // 提取音频和封面URL
-    const audioUrls = musicList.map(item => item.url).filter(Boolean);
-    const coverUrls = musicList.map(item => item.cover).filter(Boolean) as string[];
-
-    // 并行预加载
-    await Promise.all([
-      this.preloadAudioFiles(audioUrls),
-      this.preloadImages(coverUrls)
-    ]);
   }
 }
 

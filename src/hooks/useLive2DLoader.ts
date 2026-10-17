@@ -169,18 +169,38 @@ export function useLive2DLoader({
       // 修复：删除原先 5 秒无条件 resolve 的逻辑，
       // 现在只依赖 window.Live2D 出现才算成功；30s 仍兜底超时
       const modelLoadPromise = new Promise<void>((resolve, reject) => {
-        const timeoutId = setTimeout(() => reject(new Error('模型加载超时')), 30000);
+        let checkInterval: ReturnType<typeof setInterval> | null = null;
+
+        const stopPolling = () => {
+          if (checkInterval !== null) {
+            clearInterval(checkInterval);
+            checkInterval = null;
+          }
+        };
+
+        const timeoutId = setTimeout(() => {
+          stopPolling();
+          reject(new Error('模型加载超时'));
+        }, 30000);
+
         try {
           (window as any).loadlive2d('live2d', modelPath);
-          const checkInterval = setInterval(() => {
+          checkInterval = setInterval(() => {
+            if (!isMountedRef.current) {
+              stopPolling();
+              clearTimeout(timeoutId);
+              reject(new Error('组件已卸载'));
+              return;
+            }
             if ((window as any).Live2D) {
-              clearInterval(checkInterval);
+              stopPolling();
               clearTimeout(timeoutId);
               setLoadProgress(95);
               resolve();
             }
           }, 100);
         } catch (error) {
+          stopPolling();
           clearTimeout(timeoutId);
           reject(error);
         }

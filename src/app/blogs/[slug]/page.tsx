@@ -6,6 +6,7 @@ import ServerBlogMarkdown from '@/components/blogs/ServerBlogMarkdown';
 import 'highlight.js/styles/github-dark.css';
 import { formatBlogDate, calculateReadingTime } from '@/utils';
 import { getSortedRelatedPosts, type RelatedPost } from '@/utils/relatedPostsUtils';
+import { extractHeadings } from '@/utils/tocUtils';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 
@@ -516,6 +517,9 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
     series: blogData.series,
   });
 
+  // 正文原文已用于构建期渲染与目录提取，不再随客户端 props 传输
+  const { content: blogContent, ...blogForClient } = blogData;
+
   return (
     <>
       {/* JSON-LD 结构化数据：帮助搜索引擎理解文章与面包屑层级（详情见下方构建函数） */}
@@ -524,11 +528,13 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
         dangerouslySetInnerHTML={{ __html: buildStructuredData(blogData) }}
       />
       <ClientBlogDetail
-        blog={blogData}
+        blog={blogForClient}
         seriesArticles={seriesArticles}
         relatedArticles={relatedArticles}
         /* 正文在构建期渲染为静态 HTML，随 RSC payload 一并传给客户端骨架 */
-        renderedContent={<ServerBlogMarkdown content={blogData.content} />}
+        renderedContent={<ServerBlogMarkdown content={blogContent} />}
+        /* 目录同样在构建期提取，避免客户端重复解析整篇正文 */
+        tocItems={extractHeadings(blogContent)}
       />
     </>
   );

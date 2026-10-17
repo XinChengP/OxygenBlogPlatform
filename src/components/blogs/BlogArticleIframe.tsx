@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useEffect, useRef } from 'react';
 import { useBlogArticleAssets } from '@/components/blogs/BlogArticleContext';
 
 type MarkdownIframeProps = React.ComponentPropsWithoutRef<'iframe'> & {
@@ -25,6 +25,19 @@ export default function BlogArticleIframe({
 }: MarkdownIframeProps) {
   // node 为 react-markdown 注入的 hast 节点引用，解构弃置避免泄漏进 DOM 属性
   const { iframeRefs } = useBlogArticleAssets();
+  const localIframeRef = useRef<HTMLIFrameElement | null>(null);
+
+  // 挂载时登记 iframe，卸载时从共享数组移除，避免重复渲染导致数组膨胀
+  useEffect(() => {
+    const element = localIframeRef.current;
+    if (!element) return;
+    const refs = iframeRefs.current;
+    if (!refs.includes(element)) refs.push(element);
+    return () => {
+      const index = refs.indexOf(element);
+      if (index >= 0) refs.splice(index, 1);
+    };
+  }, [iframeRefs]);
 
   // 将字符串 "true" 转换为布尔值 true，确保传递布尔值给React属性
   const shouldAllowFullScreen = allowfullscreen === 'true' || allowfullscreen === true;
@@ -59,11 +72,7 @@ export default function BlogArticleIframe({
         {...props}
         className="w-full h-64 md:h-96 border-0"
         // 添加ref来跟踪iframe元素
-        ref={(el) => {
-          if (el) {
-            iframeRefs.current.push(el);
-          }
-        }}
+        ref={localIframeRef}
       />
     </div>
   );

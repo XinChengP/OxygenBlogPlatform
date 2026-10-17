@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { ClipboardIcon, CheckIcon } from '@heroicons/react/24/outline';
 import { copyToClipboard } from '@/utils/clipboard';
@@ -69,6 +69,14 @@ function CodeCopyButton({
 }: CodeCopyButtonProps) {
   const [isCopied, setIsCopied] = useState(false);
   const [isCopying, setIsCopying] = useState(false);
+  const [isError, setIsError] = useState(false);
+  const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+    };
+  }, []);
 
   /**
    * 复制代码到剪贴板
@@ -84,11 +92,14 @@ function CodeCopyButton({
 
       if (copied) {
         setIsCopied(true);
+        setIsError(false);
         onCopy?.();
 
         // 2秒后重置状态
-        setTimeout(() => {
+        if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+        resetTimerRef.current = setTimeout(() => {
           setIsCopied(false);
+          resetTimerRef.current = null;
         }, 2000);
       } else {
         throw new Error('复制失败');
@@ -97,7 +108,13 @@ function CodeCopyButton({
       const err = error instanceof Error ? error : new Error('复制失败');
       onError?.(err);
 
-      // 显示错误提示
+      // 给用户可见的失败反馈，而不是只打 console
+      setIsError(true);
+      if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+      resetTimerRef.current = setTimeout(() => {
+        setIsError(false);
+        resetTimerRef.current = null;
+      }, 2000);
       console.error('[CodeCopyButton] 复制失败:', err);
     } finally {
       setIsCopying(false);
@@ -137,15 +154,17 @@ function CodeCopyButton({
         transition-all duration-200
         ${isCopied 
           ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20' 
-          : 'text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary hover:bg-white/50 dark:hover:bg-black/20'
+          : isError
+            ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20'
+            : 'text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary hover:bg-white/50 dark:hover:bg-black/20'
         }
         disabled:opacity-50 disabled:cursor-not-allowed
         ${className}
       `}
       whileHover={{ scale: isCopying ? 1 : 1.05 }}
       whileTap={{ scale: isCopying ? 1 : 0.95 }}
-      title={isCopied ? successText : defaultText}
-      aria-label={isCopied ? successText : defaultText}
+      title={isError ? '复制失败' : isCopied ? successText : defaultText}
+      aria-label={isError ? '复制失败' : isCopied ? successText : defaultText}
     >
       <motion.div
         initial={false}
@@ -161,7 +180,7 @@ function CodeCopyButton({
       
       {showText && (
         <span className={config.text}>
-          {isCopied ? successText : defaultText}
+          {isError ? '复制失败' : isCopied ? successText : defaultText}
         </span>
       )}
 

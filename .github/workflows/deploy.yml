@@ -4,6 +4,9 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [ main ]
+    paths-ignore:
+      - 'README.md'
+      - 'LICENSE'
   # 允许手动触发
   workflow_dispatch:
 
@@ -16,7 +19,7 @@ permissions:
 # 确保只有一个部署任务同时运行
 concurrency:
   group: "pages"
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 # 全局环境变量 - 强制使用 Node.js 24
 env:
@@ -35,6 +38,14 @@ jobs:
         with:
           node-version: "24"
           cache: 'npm'
+
+      - name: Cache Next.js build
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: ${{ runner.os }}-next-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-next-
 
       - name: Install dependencies
         run: npm ci

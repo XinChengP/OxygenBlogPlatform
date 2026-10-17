@@ -1,3 +1,4 @@
+import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -33,6 +34,23 @@ import { blogSanitizeSchema } from '@/components/blogs/sanitizeSchema';
  * 交互性元素（代码块复制/折叠、图片灯箱、B 站播放器）映射到对应的
  * 客户端组件，水合后自动接管；纯展示映射复用 baseComponents，两端行为一致。
  */
+/**
+ * 从 React 子节点中提取纯文本
+ *
+ * react-markdown v10 不再向 code 组件传 inline 属性，行内代码与围栏代码
+ * 只能靠父节点（p vs pre）区分。这里在 pre 层接管围栏代码块，
+ * code 层只负责行内样式，避免把行内代码渲染成整块灰条。
+ */
+const nodeToText = (node: React.ReactNode): string => {
+  if (node == null || typeof node === 'boolean') return '';
+  if (typeof node === 'string' || typeof node === 'number') return String(node);
+  if (Array.isArray(node)) return node.map(nodeToText).join('');
+  if (React.isValidElement(node)) {
+    return nodeToText((node.props as { children?: React.ReactNode }).children);
+  }
+  return '';
+};
+
 export default function ServerBlogMarkdown({ content }: { content: string }) {
   return (
     <ReactMarkdown
@@ -45,24 +63,41 @@ export default function ServerBlogMarkdown({ content }: { content: string }) {
       rehypePlugins={[rehypeRaw, [rehypeSanitize, blogSanitizeSchema], rehypeKatex, rehypeSlug]}
       components={{
         ...baseComponents,
-        code({ className, children }) {
-          const match = /language-(\w+)/.exec(className || '');
-          const language = match ? normalizeLanguage(match[1]) : '';
-          const childrenString = String(children || '').replace(/\n$/, '');
+        // 围栏代码块由 pre 层接管：pre 的子节点是 code 元素，
+        // 可直接读取 language-* 与原始文本。
+        pre({ children }) {
+          const child = React.Children.toArray(children)[0];
+          if (!React.isValidElement(child)) {
+            return <>{children}</>;
+          }
 
-          // 带语言标注的代码块交给可折叠代码块组件，超长代码自动折叠
-          if (language) {
+          const { className, children: codeChildren } = child.props as {
+            className?: string;
+            children?: React.ReactNode;
+          };
+          const match = /language-(\w+)/.exec(className || '');
+          const code = nodeToText(codeChildren).replace(/\n$/, '');
+
+          if (match) {
+            const language = normalizeLanguage(match[1]);
             return (
               <ThemeAwareCodeBlock
-                code={childrenString}
+                code={code}
                 language={language}
                 displayName={getLanguageDisplayName(language)}
               />
             );
           }
 
-          // 无语言标注（行内代码与无语言块）：逐行灰条样式
-          return <PlainCodeLines childrenString={childrenString} />;
+          return <PlainCodeLines childrenString={code} />;
+        },
+        // 行内代码：保留正文流，不再输出块级灰条
+        code({ children }) {
+          return (
+            <code className="rounded-md bg-muted/80 px-1.5 py-0.5 font-mono text-[0.9em] text-foreground break-words">
+              {children}
+            </code>
+          );
         },
         img: (props) => <BlogArticleImage {...props} />,
         iframe: (props) => <BlogArticleIframe {...props} />,

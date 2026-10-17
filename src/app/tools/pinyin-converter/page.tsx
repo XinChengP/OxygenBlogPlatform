@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import BackgroundLayer from '@/components/BackgroundLayer';
 import { useTheme } from 'next-themes';
@@ -30,6 +30,20 @@ interface PinyinOptions {
   uFormat: 'ü' | 'v';
 }
 
+/**
+ * 转义将进入 innerHTML 的文本与属性值。
+ *
+ * 转换结果里既包含拼音库生成的内容，也包含用户原样输入的字符
+ * （nonChinese = keep 时），必须转义后再拼接高亮标记。
+ */
+const escapeHtml = (value: string): string =>
+  value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
 // 拼音转换器组件
 export default function PinyinConverter() {
   const { resolvedTheme } = useTheme();
@@ -39,6 +53,7 @@ export default function PinyinConverter() {
   const [outputText, setOutputText] = useState('');
   const [detailedResults, setDetailedResults] = useState<DetailedResult[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [pinyinConverter, setPinyinConverter] = useState<any>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editedOutput, setEditedOutput] = useState('');// 多音字选择状态
@@ -158,6 +173,7 @@ export default function PinyinConverter() {
             await checkAndInit();
           } catch (error) {
             console.error('初始化拼音转换器失败:', error);
+            setLoadError(true);
             setIsLoading(false);
             delete (window as any).__pinyinConverterLoading;
           }
@@ -165,6 +181,7 @@ export default function PinyinConverter() {
         
         script.onerror = () => {
           console.error('加载拼音转换器脚本失败');
+          setLoadError(true);
           setIsLoading(false);
           delete (window as any).__pinyinConverterLoading;
         };
@@ -178,6 +195,7 @@ export default function PinyinConverter() {
         };
       } catch (error) {
         console.error('加载拼音转换器失败:', error);
+        setLoadError(true);
         setIsLoading(false);
         delete (window as any).__pinyinConverterLoading;
       }
@@ -214,15 +232,16 @@ export default function PinyinConverter() {
   }, []);
 
   // 获取拼音首字母
-  const getPinyinInitials = useCallback((pinyin: string): string => {
+  const getPinyinInitials = useCallback((pinyin: string, lowercase = false): string => {
     // 移除声调符号和数字
     const cleanPinyin = pinyin.replace(/[āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]/g, (match) => {
       const toneMap: Record<string, string> = { 'ā': 'a', 'á': 'a', 'ǎ': 'a', 'à': 'a', 'ē': 'e', 'é': 'e', 'ě': 'e', 'è': 'e', 'ī': 'i', 'í': 'i', 'ǐ': 'i', 'ì': 'i', 'ō': 'o', 'ó': 'o', 'ǒ': 'o', 'ò': 'o', 'ū': 'u', 'ú': 'u', 'ǔ': 'u', 'ù': 'u', 'ǖ': 'ü', 'ǘ': 'ü', 'ǚ': 'ü', 'ǜ': 'ü' };
       return toneMap[match] || match;
     }).replace(/\d$/, ''); // 移除末尾的数字声调
 
-    // 获取首字母
-    return cleanPinyin.charAt(0).toUpperCase();
+    // 获取首字母；遵循用户的大小写设置
+    const initial = cleanPinyin.charAt(0);
+    return lowercase ? initial.toLowerCase() : initial.toUpperCase();
   }, []);
 
   // 转换 ü 为 v（根据用户设置）
@@ -305,9 +324,9 @@ export default function PinyinConverter() {
                 // 处理输出格式
                 let finalOutput = processedPinyin;
                 if (options.outputFormat === 'initials') {
-                  finalOutput = getPinyinInitials(processedPinyin);
+                  finalOutput = getPinyinInitials(processedPinyin, options.lowercase);
                 } else if (options.outputFormat === 'both') {
-                  const initials = getPinyinInitials(processedPinyin);
+                  const initials = getPinyinInitials(processedPinyin, options.lowercase);
                   finalOutput = `${processedPinyin}(${initials})`;
                 }
                 
@@ -332,7 +351,7 @@ export default function PinyinConverter() {
           // 处理 ü/v 格式
           pinyin = convertUFormat(pinyin, options.uFormat);
           if (options.outputFormat === 'both' && result.isHeteronym) {
-            const initials = getPinyinInitials(pinyin);
+            const initials = getPinyinInitials(pinyin, options.lowercase);
             return `${pinyin}(${initials})`;
           }
           return pinyin;
@@ -490,41 +509,32 @@ export default function PinyinConverter() {
     setIsEditing(!isEditing);
   }, [isEditing, editedOutput, outputText]);
 
-  // 初始转换 - 这个 useEffect 必须在所有其他 Hooks 之后调用
+  // 文本/选项/多音字选择变化时统一防抖转换
+  // 之前这里有两个依赖高度重叠的 effect，每次输入会执行两遍转换
   useEffect(() => {
-    if (inputText && pinyinConverter) {
-      const performConversion = async () => {
-        try {
-          const result = await convertToPinyin(inputText, options);
-          setOutputText(result.text);
-          setDetailedResults(result.detailed);
-        } catch (error) {
-          console.error('初始转换失败:', error);
-        }
-      };
-      performConversion();
-    }
-  }, [inputText, pinyinConverter, options, convertToPinyin]); // 添加convertToPinyin依赖
+    if (!inputText || !pinyinConverter) return;
 
-  // 当多音字选择变化时重新转换
-  useEffect(() => {
-    if (inputText && pinyinConverter) {
-      const performConversion = async () => {
-        try {
-          const result = await convertToPinyin(inputText, options);
-          setOutputText(result.text);
-          setDetailedResults(result.detailed);
-        } catch (error) {
-          console.error('多音字选择后转换失败:', error);
-        }
-      };
-      performConversion();
-    }
-  }, [heteronymSelections, convertToPinyin, inputText, options, pinyinConverter]); // 添加缺失的依赖
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        const result = await convertToPinyin(inputText, options);
+        if (cancelled) return;
+        setOutputText(result.text);
+        setDetailedResults(result.detailed);
+      } catch (error) {
+        console.error('拼音转换失败:', error);
+      }
+    }, 150);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [inputText, pinyinConverter, options, heteronymSelections, convertToPinyin]);
 
   // 高亮显示转换结果中的多音字拼音
   const highlightHeteronymInOutput = useCallback((outputText: string, detailedResults: DetailedResult[]) => {
-    if (!outputText || !detailedResults.length) return outputText;
+    if (!outputText || !detailedResults.length) return escapeHtml(outputText);
 
     // 直接重建输出，确保与detailedResults一一对应
     const parts = detailedResults.map((result, index) => {
@@ -564,9 +574,9 @@ export default function PinyinConverter() {
         // 处理输出格式
         let finalPinyin = processedPinyin;
         if (options.outputFormat === 'initials') {
-          finalPinyin = getPinyinInitials(processedPinyin);
+          finalPinyin = getPinyinInitials(processedPinyin, options.lowercase);
         } else if (options.outputFormat === 'both') {
-          const initials = getPinyinInitials(processedPinyin);
+          const initials = getPinyinInitials(processedPinyin, options.lowercase);
           finalPinyin = `${processedPinyin}(${initials})`;
         }
         
@@ -592,9 +602,9 @@ export default function PinyinConverter() {
         processedPinyin = convertUFormat(processedPinyin, options.uFormat);
         
         if (options.outputFormat === 'initials') {
-          expectedOutput = getPinyinInitials(processedPinyin);
+          expectedOutput = getPinyinInitials(processedPinyin, options.lowercase);
         } else if (options.outputFormat === 'both') {
-          const initials = getPinyinInitials(processedPinyin);
+          const initials = getPinyinInitials(processedPinyin, options.lowercase);
           expectedOutput = `${processedPinyin}(${initials})`;
         } else {
           expectedOutput = processedPinyin;
@@ -603,10 +613,11 @@ export default function PinyinConverter() {
       
       // 如果是多音字，添加高亮
       if (result.isHeteronym) {
-        return `<span class="bg-[#66ccff] bg-opacity-30 px-1 rounded font-bold cursor-pointer hover:bg-opacity-50 transition-all duration-200 heteronym-clickable" title="点击切换读音: ${result.origin}" data-char-index="${index}" data-char="${result.origin}" style="cursor: pointer;">${expectedOutput}</span>`;
+        const safeOrigin = escapeHtml(result.origin);
+        return `<span class="bg-[#66ccff] bg-opacity-30 px-1 rounded font-bold cursor-pointer hover:bg-opacity-50 transition-all duration-200 heteronym-clickable" title="点击切换读音: ${safeOrigin}" data-char-index="${index}" data-char="${safeOrigin}" style="cursor: pointer;">${escapeHtml(expectedOutput)}</span>`;
       }
       
-      return expectedOutput;
+      return escapeHtml(expectedOutput);
     });
     
     // 使用相同的分隔符连接
@@ -757,7 +768,7 @@ export default function PinyinConverter() {
 
   }, [handleOutputPinyinClick, detailedResults, heteronymSelections]); // 修复依赖数组 - options已经在handleOutputPinyinClick依赖中
 
-  // 如果组件未挂载，返回 null - 这必须在所有的 Hooks 之后
+  // 挂载前不渲染，避免主题相关样式造成水合不一致
   if (!mounted) {
     return null;
   }
@@ -767,6 +778,47 @@ export default function PinyinConverter() {
 
   const isDark = resolvedTheme === 'dark';
 
+  const pageShell = (children: React.ReactNode) => (
+    <main
+      className={`min-h-screen transition-colors duration-300 ${isDark ? 'dark' : ''} ${containerStyle.className}`}
+      style={containerStyle.style}
+    >
+      <BackgroundLayer />
+      {children}
+    </main>
+  );
+
+  if (isLoading) {
+    return pageShell(
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-[#66ccff]" />
+          <p className="text-gray-600 dark:text-gray-300">正在加载拼音数据...</p>
+        </div>
+      </div>,
+    );
+  }
+
+  if (loadError) {
+    return pageShell(
+      <div className="flex min-h-screen items-center justify-center px-4">
+        <div className="w-full max-w-md rounded-xl border border-border/50 bg-card/90 p-8 text-center backdrop-blur-md">
+          <p className="mb-2 text-lg font-semibold text-foreground">拼音数据加载失败</p>
+          <p className="mb-5 text-sm text-muted-foreground">
+            转换脚本可能被网络或浏览器拦截，请检查网络后重试。
+          </p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="rounded-full bg-[#66ccff] px-5 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
+          >
+            重新加载
+          </button>
+        </div>
+      </div>,
+    );
+  }
+
   return (
     <main 
       className={`min-h-screen transition-colors duration-300 ${isDark ? 'dark' : ''} ${containerStyle.className}`}
@@ -774,16 +826,6 @@ export default function PinyinConverter() {
     >
       <BackgroundLayer />
       
-      {/* 加载状态容器 */}
-      {isLoading && (
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#66ccff] mx-auto mb-4"></div>
-            <p className="text-gray-600 dark:text-gray-300">正在加载拼音数据...</p>
-          </div>
-        </div>
-      )}
-
       {/* 主内容区域 */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <PageHeader
@@ -1141,7 +1183,8 @@ export default function PinyinConverter() {
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
               {detailedResults
-                .filter(result => {
+                .map((result, originalIndex) => ({ result, originalIndex }))
+                .filter(({ result }) => {
                   // 隐藏非中文字符
                   if (hideNonChinese && result.isNonChinese) {
                     return false;
@@ -1152,14 +1195,15 @@ export default function PinyinConverter() {
                   }
                   return true;
                 })
-                .map((result, index) => {
-                  const charKey = `${result.origin}_${index}`;
+                .map(({ result, originalIndex }) => {
+                  // 使用原始索引，过滤后的索引会与输出高亮/选择状态错位
+                  const charKey = `${result.origin}_${originalIndex}`;
                   const userSelection = heteronymSelections[charKey];
                   const isSelected = userSelection !== undefined;
                   
                   return (
                     <div 
-                      key={index} 
+                      key={charKey} 
                       data-char-key={charKey}
                       className={`p-2 rounded-lg border transition-all duration-200 ${
                         isDark 

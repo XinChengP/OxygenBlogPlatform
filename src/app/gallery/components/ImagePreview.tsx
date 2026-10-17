@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PreviewImage } from '../../../types/gallery';
 import { useNavigationVisibility } from '@/contexts/NavigationVisibilityContext';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
+import { Z_INDEX } from '@/utils/zIndex';
 import {
   X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Maximize2,
   Move, Keyboard, Info, Tag
@@ -20,6 +22,9 @@ interface ImagePreviewProps {
 const ImagePreview = ({ images, initialImage, onClose }: ImagePreviewProps) => {
   // 获取导航栏可见性控制
   const { setVisibility } = useNavigationVisibility();
+
+  // 预览打开期间锁定页面滚动
+  useBodyScrollLock(true);
   
   // 计算初始图片索引
   const initialIndex = images.findIndex(img => img.id === initialImage.id);
@@ -185,7 +190,11 @@ const ImagePreview = ({ images, initialImage, onClose }: ImagePreviewProps) => {
   
   return (
     <motion.div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-md"
+      className="fixed inset-0 flex items-center justify-center bg-black/95 backdrop-blur-md"
+      style={{ zIndex: Z_INDEX.modalBackdrop }}
+      role="dialog"
+      aria-modal="true"
+      aria-label="图片预览"
       onClick={handleBackgroundClick}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -272,6 +281,8 @@ const ImagePreview = ({ images, initialImage, onClose }: ImagePreviewProps) => {
           <motion.button
             className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors"
             onClick={onClose}
+            autoFocus
+            aria-label="关闭图片预览"
             whileHover={{ scale: 1.1, rotate: 90 }}
             whileTap={{ scale: 0.9 }}
             title="关闭 (Esc)"

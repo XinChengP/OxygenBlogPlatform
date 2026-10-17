@@ -5,7 +5,7 @@
 
 'use client';
 
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useCallback, useContext, useMemo, useState, ReactNode } from 'react';
 
 interface NavigationVisibilityContextType {
   isVisible: boolean;
@@ -20,21 +20,21 @@ export function NavigationVisibilityProvider({ children }: { children: ReactNode
   const [isVisible, setIsVisible] = useState(true);
   const [isAtTop, setIsAtTop] = useState(true);
 
-  const setVisibility = (visible: boolean) => {
+  const setVisibility = useCallback((visible: boolean) => {
     setIsVisible(visible);
-  };
+  }, []);
 
-  const setAtTop = (atTop: boolean) => {
+  const setAtTop = useCallback((atTop: boolean) => {
     setIsAtTop(atTop);
-  };
+  }, []);
+
+  const value = useMemo(
+    () => ({ isVisible, isAtTop, setVisibility, setAtTop }),
+    [isVisible, isAtTop, setVisibility, setAtTop],
+  );
 
   return (
-    <NavigationVisibilityContext.Provider value={{
-      isVisible,
-      isAtTop,
-      setVisibility,
-      setAtTop
-    }}>
+    <NavigationVisibilityContext.Provider value={value}>
       {children}
     </NavigationVisibilityContext.Provider>
   );

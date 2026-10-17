@@ -64,25 +64,38 @@ export const getLanguageDisplayName = (language: string): string => {
 };
 
 /**
- * 由标题文本生成锚点 id
+ * 由纯文本生成锚点 id
  *
- * 原实现为 h1-h4 四份逐字相同的内联逻辑，现收敛为一个函数。
- * 规则保持不变：小写化，仅保留中英文、数字、空格与连字符，
+ * 规则：小写化，仅保留中英文、数字、空格与连字符，
  * 空白折叠为连字符，连续连字符合并，并去掉首尾连字符。
+ * 目录与正文标题共用该函数，保证两侧生成的 id 完全一致。
  */
-const headingId = (children: React.ReactNode): string => {
-  const text = typeof children === 'string'
-    ? children
-    : (Array.isArray(children) ? children : [children])
-        .map((child) => (typeof child === 'string' ? child : child?.toString() || ''))
-        .join('');
-  return text
+export const headingIdFromText = (text: string): string =>
+  text
     .toLowerCase()
     .replace(/[^\w\u4e00-\u9fff\s-]/g, '')
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '');
+
+/**
+ * 递归提取 React 子节点的纯文本
+ *
+ * 标题里可能包含 <code>/<strong>/<a> 等元素，
+ * 直接调用 child.toString() 会得到 [object Object]，导致锚点 id 与目录不一致。
+ */
+const reactNodeToText = (node: React.ReactNode): string => {
+  if (node === null || node === undefined || typeof node === 'boolean') return '';
+  if (typeof node === 'string' || typeof node === 'number') return String(node);
+  if (Array.isArray(node)) return node.map(reactNodeToText).join('');
+  if (React.isValidElement(node)) {
+    return reactNodeToText((node.props as { children?: React.ReactNode }).children);
+  }
+  return '';
 };
+
+const headingId = (children: React.ReactNode): string =>
+  headingIdFromText(reactNodeToText(children));
 
 interface ComponentProps {
   children?: React.ReactNode;
@@ -98,12 +111,17 @@ const headings = ([
   ['h4', 'text-lg font-medium mt-4 mb-2'],
 ] as const).reduce<Record<string, React.ComponentType<ComponentProps>>>((acc, [tag, className]) => {
   const Tag = tag;
-  acc[tag] = ({ children }: ComponentProps) =>
-    React.createElement(
+  acc[tag] = ({ children, node }: ComponentProps) => {
+    // 优先使用 rehype-slug 生成的 id：它已处理重复标题与特殊字符，
+    // 且与静态 HTML 中的锚点一致；缺失时回退到文本推导。
+    const rehypeId = (node as { properties?: { id?: unknown } } | undefined)?.properties?.id;
+    const id = typeof rehypeId === 'string' && rehypeId ? rehypeId : headingId(children);
+    return React.createElement(
       Tag,
-      { id: headingId(children), className: `${className} text-foreground no-underline` },
+      { id, className: `${className} text-foreground no-underline` },
       children
     );
+  };
   return acc;
 }, {});
 

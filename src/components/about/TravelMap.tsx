@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { motion } from 'framer-motion';
 import type { TravelLocation, TravelCategory } from '@/setting/AboutSetting';
 import { travelCategoryConfig } from '@/setting/AboutSetting';

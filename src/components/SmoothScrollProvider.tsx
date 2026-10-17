@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { initScrollManager, getScrollManager } from '@/utils/scrollManager';
+import { initScrollManager, getScrollManager, destroyScrollManager } from '@/utils/scrollManager';
 
 interface SmoothScrollProviderProps {
   children: React.ReactNode;
@@ -19,9 +19,10 @@ export default function SmoothScrollProvider({ children }: SmoothScrollProviderP
     setIsInitialized(true);
 
     return () => {
-      // 清理资源
+      // 清理资源：走 destroyScrollManager 才会把模块级单例置空
       if (scrollManagerRef.current) {
-        scrollManagerRef.current.destroy();
+        destroyScrollManager();
+        scrollManagerRef.current = null;
       }
     };
   }, []);
@@ -31,6 +32,7 @@ export default function SmoothScrollProvider({ children }: SmoothScrollProviderP
     if (!isInitialized) return;
 
     // 页面切换时的额外处理
+    let transitionTimer: ReturnType<typeof setTimeout> | null = null;
     const handleRouteChange = () => {
       /*
         music-player-active（音乐播放中禁用过渡）已改由 howlerPlayerManager
@@ -43,12 +45,16 @@ export default function SmoothScrollProvider({ children }: SmoothScrollProviderP
       document.documentElement.classList.add('page-transitioning');
 
       // 移除过渡效果
-      setTimeout(() => {
+      transitionTimer = setTimeout(() => {
         document.documentElement.classList.remove('page-transitioning');
       }, 100);
     };
 
     handleRouteChange();
+
+    return () => {
+      if (transitionTimer) clearTimeout(transitionTimer);
+    };
   }, [pathname, isInitialized]);
 
   return <>{children}</>;

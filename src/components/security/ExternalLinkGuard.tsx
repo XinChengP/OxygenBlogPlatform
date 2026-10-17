@@ -16,10 +16,13 @@
 
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { usePathname } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import RedirectNotice from './RedirectNotice';
 import { Live2DMessageHelper } from '@/utils/live2dMessageManager';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
+import { Z_INDEX } from '@/utils/zIndex';
 
 /**
  * 视为「站内」的额外域名白名单（部署主站 + 本地开发）
@@ -70,8 +73,12 @@ function isExternalLink(anchor: HTMLAnchorElement): boolean {
 }
 
 export default function ExternalLinkGuard(): React.ReactElement | null {
+  const pathname = usePathname();
   const [pendingUrl, setPendingUrl] = useState<string | null>(null);
   const [originAnchor, setOriginAnchor] = useState<HTMLAnchorElement | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useBodyScrollLock(!!pendingUrl);
 
   /**
    * 全局点击委托
@@ -136,26 +143,65 @@ export default function ExternalLinkGuard(): React.ReactElement | null {
     handleBack();
   }, [handleBack]);
 
-  // 弹窗打开时锁定页面滚动
+  // 路由变化时关闭弹窗，避免遮罩和滚动锁残留到新页面
+  useEffect(() => {
+    setPendingUrl(null);
+    setOriginAnchor(null);
+  }, [pathname]);
+
+  // 打开时聚焦弹窗内首个控件；Esc 关闭；Tab 焦点陷阱
   useEffect(() => {
     if (!pendingUrl) return;
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = originalOverflow;
+    const dialog = dialogRef.current;
+    const getFocusable = () =>
+      Array.from(
+        dialog?.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      ).filter((el) => el.offsetParent !== null);
+
+    getFocusable()[0]?.focus();
+
+    const handleKeydown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        handleClose();
+        return;
+      }
+      if (e.key !== 'Tab' || !dialog) return;
+
+      const items = getFocusable();
+      if (items.length === 0) return;
+
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
-  }, [pendingUrl]);
+
+    window.addEventListener('keydown', handleKeydown);
+    return () => window.removeEventListener('keydown', handleKeydown);
+  }, [pendingUrl, handleClose]);
 
   return (
     <AnimatePresence>
       {pendingUrl && (
         <motion.div
           key="external-link-guard"
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+          className="fixed inset-0 flex items-center justify-center p-4"
+          style={{ zIndex: Z_INDEX.modalBackdrop }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
+          role="dialog"
+          aria-modal="true"
+          aria-label="外部链接跳转提醒"
         >
           {/* 遮罩层 */}
           <div
@@ -166,7 +212,9 @@ export default function ExternalLinkGuard(): React.ReactElement | null {
 
           {/* 弹窗主体：入场缩放 + 位移过渡 */}
           <motion.div
+            ref={dialogRef}
             className="relative w-full max-w-md"
+            style={{ zIndex: Z_INDEX.modal }}
             initial={{ opacity: 0, scale: 0.92, y: 16 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 8 }}

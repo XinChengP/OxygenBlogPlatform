@@ -87,6 +87,15 @@ export default function BlogArticleImage({ src, alt, node, ...props }: MarkdownI
           setIsLandscape(target.naturalWidth > target.naturalHeight);
         }}
         onClick={handleImageClick}
+        role="button"
+        tabIndex={0}
+        aria-label={`查看大图：${alt || '图片'}`}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleImageClick();
+          }
+        }}
         {...props}
       />
       {alt && (

@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "ES2017",
+    "target": "ES2022",
     "lib": [
       "dom",
       "dom.iterable",
@@ -41,6 +41,13 @@
     "**/*.test.ts",
     "**/*.test.tsx",
     "admin-backup",
-    "**/admin-backup/**"
+    "**/admin-backup/**",
+    ".backup",
+    "**/.backup/**",
+    ".build-backup",
+    "**/.build-backup/**",
+    "build",
+    "out",
+    ".migration-tmp"
   ]
 }

@@ -1,66 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useBackgroundStyle } from '../hooks/useBackgroundStyle';
-
-interface TocItem {
-  id: string;
-  text: string;
-  level: number;
-}
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
+import type { TocItem } from '@/utils/tocUtils';
 
 interface TableOfContentsProps {
-  content: string;
+  items: TocItem[];
 }
-
-/**
- * 从 Markdown 内容中提取标题
- */
-const extractHeadings = (content: string): TocItem[] => {
-  const headings: TocItem[] = [];
-  const usedIds = new Set<string>();
-  
-  // 先移除代码块内容，避免代码块内的#被误识别为标题
-  const codeBlockRegex = /```[\s\S]*?```/g;
-  const inlineCodeRegex = /`[^`]*`/g;
-  
-  // 创建内容副本并移除代码块
-  let cleanContent = content
-    .replace(codeBlockRegex, '') // 移除代码块
-    .replace(inlineCodeRegex, ''); // 移除行内代码
-  
-  const headingRegex = /^(#{1,6})\s+(.+)$/gm;
-  let match;
-
-  while ((match = headingRegex.exec(cleanContent)) !== null) {
-    const level = match[1].length;
-    const text = match[2].trim();
-    
-    // 跳过空标题
-    if (!text) continue;
-    
-    // 使用与ClientBlogDetail中相同的ID生成逻辑
-    let baseId = text
-      .toLowerCase()
-      .replace(/[^\w\u4e00-\u9fff\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '');
-    
-    // 确保id唯一性
-    let id = baseId;
-    let counter = 1;
-    while (usedIds.has(id)) {
-      id = `${baseId}-${counter}`;
-      counter++;
-    }
-    usedIds.add(id);
-    
-    headings.push({ id, text, level });
-  }
-
-  return headings;
-};
 
 /**
  * 滚动到指定元素
@@ -71,39 +18,47 @@ const scrollToElement = (id: string) => {
   if (element) {
     const offset = 120;
     const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     window.scrollTo({
       top: elementPosition - offset,
-      behavior: 'smooth'
+      behavior: reduceMotion ? 'auto' : 'smooth'
     });
+    // 同步地址栏 hash，便于复制定位链接（replaceState 不会触发额外滚动）
+    history.replaceState(null, '', `#${encodeURIComponent(id)}`);
   }
 };
 
 /**
  * 获取当前激活的标题
+ * 传入挂载时缓存好的元素与 offsetTop，避免每个滚动事件都查询 DOM/读取布局
  */
-const getActiveHeading = (headings: TocItem[]): string => {
+const getActiveHeading = (
+  headings: TocItem[],
+  elements: Array<{ id: string; top: number }>,
+): string => {
   const scrollY = window.scrollY + 120;
   
-  for (let i = headings.length - 1; i >= 0; i--) {
-    const element = document.getElementById(headings[i].id);
-    if (element) {
-      const elementTop = element.offsetTop;
-      if (scrollY >= elementTop) {
-        return headings[i].id;
-      }
+  for (let i = elements.length - 1; i >= 0; i--) {
+    if (scrollY >= elements[i].top) {
+      return elements[i].id;
     }
   }
   
   return headings[0]?.id || '';
 };
 
-export default function TableOfContents({ content }: TableOfContentsProps) {
+export default function TableOfContents({ items }: TableOfContentsProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeId, setActiveId] = useState('');
   const [isMobile, setIsMobile] = useState(true); // 默认为移动端，避免闪烁
   const [isCollapsed, setIsCollapsed] = useState(true); // 默认收起
-  const headings = extractHeadings(content);
+  const headings = items;
+  const headingTopsRef = useRef<Array<{ id: string; top: number }>>([]);
+  const didInitCollapseRef = useRef(false);
+  const mobileTriggerRef = useRef<HTMLButtonElement>(null);
   const { isBackgroundEnabled } = useBackgroundStyle('blog-detail');
+
+  useBodyScrollLock(isMobile && isOpen);
 
   // 毛玻璃样式函数
   const getGlassStyle = (baseClasses: string) => {
@@ -113,35 +68,82 @@ export default function TableOfContents({ content }: TableOfContentsProps) {
     return `bg-card ${baseClasses} border-border`;
   };
 
+  // 缓存标题元素的文档偏移；窗口变化与内容稳定后重新测量
+  useEffect(() => {
+    const measure = () => {
+      headingTopsRef.current = headings
+        .map((heading) => {
+          const element = document.getElementById(heading.id);
+          return element
+            ? { id: heading.id, top: element.getBoundingClientRect().top + window.scrollY }
+            : null;
+        })
+        .filter((item): item is { id: string; top: number } => item !== null);
+    };
+
+    measure();
+    const timer = setTimeout(measure, 500);
+    window.addEventListener('resize', measure);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', measure);
+    };
+  }, [headings]);
+
+  // 仅首次按窗口宽度设置收起状态，之后保留用户的手动选择
   useEffect(() => {
     const checkMobile = () => {
       const mobile = window.innerWidth < 768;
       setIsMobile(mobile);
-      // 在小屏幕时自动收起桌面端目录
-      if (window.innerWidth < 1200 && !mobile) {
-        setIsCollapsed(true);
-      } else if (window.innerWidth >= 1200 && !mobile) {
-        setIsCollapsed(false);
+
+      if (!didInitCollapseRef.current) {
+        didInitCollapseRef.current = true;
+        setIsCollapsed(!mobile && window.innerWidth < 1200);
       }
     };
-    
+
     checkMobile();
-    window.addEventListener('resize', checkMobile);
-    
-    return () => window.removeEventListener('resize', checkMobile);
+    const mq = window.matchMedia('(max-width: 767px)');
+    mq.addEventListener('change', checkMobile);
+
+    return () => mq.removeEventListener('change', checkMobile);
   }, []);
 
+  // 滚动高亮：rAF 合并 + 使用缓存偏移，避免每个 scroll 事件读取 layout
   useEffect(() => {
+    let ticking = false;
+
     const handleScroll = () => {
-      const active = getActiveHeading(headings);
-      setActiveId(active);
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        ticking = false;
+        const active = getActiveHeading(headings, headingTopsRef.current);
+        setActiveId(prev => (prev === active ? prev : active));
+      });
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
 
     return () => window.removeEventListener('scroll', handleScroll);
   }, [headings]);
+
+  // 移动端抽屉：Esc 关闭并归还焦点
+  useEffect(() => {
+    if (!isMobile || !isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsOpen(false);
+        mobileTriggerRef.current?.focus();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isMobile, isOpen]);
 
   if (headings.length === 0) {
     return null;
@@ -152,7 +154,11 @@ export default function TableOfContents({ content }: TableOfContentsProps) {
       {/* 移动端触发按钮 */}
       {isMobile && (
         <button
+          ref={mobileTriggerRef}
           onClick={() => setIsOpen(!isOpen)}
+          aria-label={isOpen ? '关闭文章目录' : '打开文章目录'}
+          aria-expanded={isOpen}
+          aria-controls="article-toc"
           /*
             位置说明：不能沿用 bottom-6，否则会与右下角全局的 ScrollToTop 按钮组重叠。
             全局按钮组横向占用 right-6（24px）至 68px，纵向自底部 24px 起向上堆叠，
@@ -182,7 +188,11 @@ export default function TableOfContents({ content }: TableOfContentsProps) {
       {isOpen && isMobile && (
         <div
           className="fixed inset-0 bg-black/50 z-20 transition-opacity duration-300"
-          onClick={() => setIsOpen(false)}
+          onClick={() => {
+            setIsOpen(false);
+            mobileTriggerRef.current?.focus();
+          }}
+          aria-hidden="true"
         />
       )}
 
@@ -193,6 +203,9 @@ export default function TableOfContents({ content }: TableOfContentsProps) {
             onClick={() => setIsCollapsed(false)}
             className={getGlassStyle("p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors shadow-sm border")}
             title="展开目录"
+            aria-label="展开目录"
+            aria-expanded={false}
+            aria-controls="article-toc"
           >
             <svg 
               className="w-4 h-4" 
@@ -211,6 +224,12 @@ export default function TableOfContents({ content }: TableOfContentsProps) {
 
       {/* 目录侧边栏 */}
       <div
+        id="article-toc"
+        role={isMobile ? 'dialog' : undefined}
+        aria-modal={isMobile && isOpen ? true : undefined}
+        aria-label="文章大纲"
+        aria-hidden={isMobile ? !isOpen : isCollapsed}
+        inert={isMobile ? !isOpen : isCollapsed}
         className={`
           fixed z-30 transition-all duration-300 ease-in-out flex flex-col
           ${isMobile ? (
@@ -236,7 +255,11 @@ export default function TableOfContents({ content }: TableOfContentsProps) {
               <h3 className="text-sm font-medium text-foreground">文章大纲</h3>
             </div>
             <button
-              onClick={() => setIsOpen(false)}
+              onClick={() => {
+                setIsOpen(false);
+                mobileTriggerRef.current?.focus();
+              }}
+              aria-label="关闭文章目录"
               className="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -258,6 +281,9 @@ export default function TableOfContents({ content }: TableOfContentsProps) {
               onClick={() => setIsCollapsed(!isCollapsed)}
               className="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
               title={isCollapsed ? '展开目录' : '收起目录'}
+              aria-label={isCollapsed ? '展开目录' : '收起目录'}
+              aria-expanded={!isCollapsed}
+              aria-controls="article-toc"
             >
               <svg 
                 className={`w-4 h-4 transition-transform duration-200 ${

@@ -1,68 +1,53 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
   backgroundImage,
   enableBackground,
   backgroundMode,
-  backgroundFixed
 } from '@/setting/WebSetting';
-import { useTheme } from 'next-themes';
 import { getAssetPath } from '@/utils/assetUtils';
 import { usePathname } from 'next/navigation';
 
 /**
  * 网站背景组件
- * 使用 CSS background-image 在最底层显示背景图片
- * 在暗黑模式下添加黑色滤镜效果
- * 
- * 注意：所有 hooks 必须在条件返回之前调用，遵循 React Hooks 规则
+ *
+ * 直接在服务端输出背景层（不再等 hydration），避免首屏背景“弹出”；
+ * 暗色遮罩交给 CSS 的 .dark 选择器，无需读取 resolvedTheme。
+ * 容器本身是 fixed，不再额外设置 background-attachment: fixed
+ * （该属性在移动端会增加滚动重绘，且对 fixed 元素没有视觉收益）。
  */
 const BackgroundLayer = () => {
   const pathname = usePathname();
-  const { resolvedTheme } = useTheme();
-  const [isClient, setIsClient] = useState(false);
 
-  // 确保组件在客户端挂载后再渲染，避免主题不匹配
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  // 在所有 hooks 调用之后再进行条件返回
-  if (!isClient || !enableBackground || !backgroundImage || pathname?.startsWith('/admin')) {
+  if (!enableBackground || !backgroundImage || pathname?.startsWith('/admin')) {
     return null;
   }
 
-  // 使用工具函数处理背景图片路径，确保 GitHub Pages 兼容性
   const fullImagePath = getAssetPath(backgroundImage);
-
-  // 判断是否为暗黑模式
-  const isDark = resolvedTheme === 'dark';
-
-  const backgroundStyle = {
-    position: 'fixed' as const,
-    top: 0,
-    left: 0,
-    width: '100vw',
-    height: '100vh',
-    zIndex: -50,
-    // 暗色遮罩 0.4：介于原 0.3（白云贴卡片泛白）与 0.5（压得太狠）之间，
-    // 退为氛围层的同时保留插画细节
-    backgroundImage: isDark
-      ? `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url("${fullImagePath}")`
-      : `url("${fullImagePath}")`,
-    backgroundSize: backgroundMode === 'cover' ? 'cover' : backgroundMode === 'contain' ? 'contain' : 'cover',
-    backgroundPosition: 'center center',
-    backgroundRepeat: 'no-repeat',
-    backgroundAttachment: backgroundFixed ? 'fixed' : 'scroll',
-    pointerEvents: 'none' as const,
-  };
 
   return (
     <div
-      style={backgroundStyle}
       aria-hidden="true"
-    />
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: -50,
+        backgroundImage: `url("${fullImagePath}")`,
+        backgroundSize:
+          backgroundMode === 'cover'
+            ? 'cover'
+            : backgroundMode === 'contain'
+              ? 'contain'
+              : 'cover',
+        backgroundPosition: 'center center',
+        backgroundRepeat: 'no-repeat',
+        pointerEvents: 'none',
+      }}
+    >
+      {/* 暗色遮罩：由 .dark 类切换，无需 JS 参与 */}
+      <div className="absolute inset-0 hidden bg-black/40 dark:block" />
+    </div>
   );
 };
 

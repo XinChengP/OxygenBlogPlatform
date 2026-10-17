@@ -46,6 +46,13 @@ export class Live2DContextTracker {
   // 保存被包装前的 history.pushState，destroy 时还原，避免污染全局
   private originalPushState: typeof history.pushState | null = null;
   private isDestroyed = false;
+  // 保存绑定后的监听器，destroy 时才真正移除（匿名函数无法移除）
+  private activityListeners: Array<{ type: string; handler: EventListener }> = [];
+  private scrollHandler: (() => void) | null = null;
+  private popStateHandler: (() => void) | null = null;
+  private pushStateHandler: ((...args: Parameters<typeof history.pushState>) => void) | null = null;
+  // 活动计时器重置节流：鼠标移动不必每帧 clear/set 定时器
+  private lastActivityResetTime = 0;
 
   constructor() {
     this.context = this.getInitialContext();
@@ -87,21 +94,26 @@ export class Live2DContextTracker {
     // 监听用户活动
     const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
     activityEvents.forEach(event => {
-      window.addEventListener(event, () => this.onActivity(), { passive: true });
+      const handler = () => this.onActivity();
+      this.activityListeners.push({ type: event, handler });
+      window.addEventListener(event, handler, { passive: true });
     });
 
     // 监听滚动速度
-    window.addEventListener('scroll', () => this.onScroll(), { passive: true });
+    this.scrollHandler = () => this.onScroll();
+    window.addEventListener('scroll', this.scrollHandler, { passive: true });
 
     // 监听页面切换
-    window.addEventListener('popstate', () => this.onPageChange());
+    this.popStateHandler = () => this.onPageChange();
+    window.addEventListener('popstate', this.popStateHandler);
 
     // 监听路由变化（Next.js）：包装 pushState，destroy 时还原
     this.originalPushState = history.pushState;
-    history.pushState = (...args) => {
+    this.pushStateHandler = (...args) => {
       this.originalPushState!.apply(history, args);
       this.onPageChange();
     };
+    history.pushState = this.pushStateHandler;
   }
 
   private startTimers(): void {
@@ -120,8 +132,15 @@ export class Live2DContextTracker {
   }
 
   private onActivity(): void {
-    this.context.lastActivityTime = Date.now();
+    const now = Date.now();
+    this.context.lastActivityTime = now;
     this.context.isInactive = false;
+
+    // 5 秒内只重置一次定时器，避免 mousemove 高频 clear/set
+    if (this.inactiveTimer && now - this.lastActivityResetTime < 5000) {
+      return;
+    }
+    this.lastActivityResetTime = now;
 
     if (this.inactiveTimer) {
       clearTimeout(this.inactiveTimer);
@@ -225,6 +244,22 @@ export class Live2DContextTracker {
 
   destroy(): void {
     this.isDestroyed = true;
+
+    if (typeof window !== 'undefined') {
+      this.activityListeners.forEach(({ type, handler }) => {
+        window.removeEventListener(type, handler);
+      });
+      if (this.scrollHandler) {
+        window.removeEventListener('scroll', this.scrollHandler);
+      }
+      if (this.popStateHandler) {
+        window.removeEventListener('popstate', this.popStateHandler);
+      }
+    }
+    this.activityListeners = [];
+    this.scrollHandler = null;
+    this.popStateHandler = null;
+
     if (this.inactiveTimer) {
       clearTimeout(this.inactiveTimer);
       this.inactiveTimer = null;

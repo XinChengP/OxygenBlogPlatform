@@ -5,7 +5,7 @@ updatedAt: "2026-10-09"
 category: "技术"
 author: 歆橙
 language: "zh-CN"
-tags: ["游戏", "原石", "白嫖", "米哈游", "ac站"]
+tags: ["游戏", "原石", "白嫖", "米哈游", "ac站", "教程"]
 excerpt: "白嫖是正确的"
 coverImage: "/Blogabout/Genshin-free/cover.png"
 ---

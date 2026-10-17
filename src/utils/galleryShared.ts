@@ -706,6 +706,8 @@ export interface R2ImageEntry {
   path: string;          // 对象 key，同 GitHub 仓库相对路径
   size: number;          // 文件大小（字节）
   lastModified?: string; // 上传时间（ISO 字符串）
+  width?: number;        // 图片宽度（清单生成器可选提供）
+  height?: number;       // 图片高度（清单生成器可选提供）
 }
 
 /** R2 /manifest.json 的响应结构 */
@@ -745,6 +747,8 @@ export const parseR2ListToImages = (data: R2ListResponse): GalleryImage[] =>
         source: ImageSource.Remote,
         category: mainCategory,
         subCategory,
+        width: entry.width,
+        height: entry.height,
         size: entry.size,
         createdAt: entry.lastModified || new Date().toISOString(),
         updatedAt: entry.lastModified || new Date().toISOString()

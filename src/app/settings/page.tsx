@@ -7,10 +7,6 @@ import {
   setMusicPlayerVisibility, 
   onMusicPlayerVisibilityChange 
 } from '@/utils/musicPlayerVisibility';
-// 音乐播放器相关组件已隐藏 - 清理导入
-// import MusicPlayer from '@/components/MusicPlayer';
-// import MusicConfig from '@/components/MusicConfig';
-// import { Playlist } from '@/components/MusicPlayer';
 
 
 
@@ -18,9 +14,6 @@ export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [musicPlayerVisible, setMusicPlayerVisible] = useState(false);
-  // 音乐播放器相关状态已完全移除
-  // const [playlists, setPlaylists] = useState<Playlist[]>([]);
-  // const [showMusicConfig, setShowMusicConfig] = useState(false);
 
   /* 主题颜色说明：不再使用硬编码的十六进制色值 state（原 primaryColor 等），
      所有颜色直接引用 CSS 令牌（var(--primary) 等），亮暗模式自动适配，
@@ -39,13 +32,7 @@ export default function SettingsPage() {
     return () => {
       unsubscribe();
     };
-  }, [theme]);
-
-  // 音乐播放器相关函数已移除
-  // const handlePlaylistLoaded = (playlist: Playlist) => {
-  //   setPlaylists([playlist]);
-  //   setShowMusicConfig(false);
-  // };
+  }, []);
 
   // 处理音乐播放器显示状态切换
   const handleMusicPlayerToggle = () => {
@@ -244,7 +231,7 @@ export default function SettingsPage() {
 
               <div className="p-6 rounded-lg bg-muted/50">
                 <p className="text-sm mb-4 text-muted-foreground">
-                  控制右下角音乐播放器的显示状态。隐藏后，音乐播放将在后台继续运行。
+                  控制左侧音乐播放器的显示状态。隐藏后，音乐播放将在后台继续运行。
                 </p>
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
@@ -269,67 +256,7 @@ export default function SettingsPage() {
               </div>
             </div>
             
-            {/* 音乐播放器配置区块 - 已完全隐藏 */}
-            {/* <div className="mb-12">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-                <div className="flex items-center gap-3">
-                  <h2 className="text-2xl font-bold" style={{ color: isDark ? '#f1f5f9' : '#1e293b' }}>
-                    音乐播放器
-                  </h2>
-                  <span 
-                    className="px-3 py-1 rounded-full text-sm font-medium"
-                    style={{
-                      backgroundColor: isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)',
-                      color: isDark ? '#93c5fd' : '#3b82f6'
-                    }}
-                  >
-                    {playlists.length > 0 ? `${playlists.length} 个播放列表` : '无播放列表'}
-                  </span>
-                </div>
-                
-                <button
-                  onClick={() => setShowMusicConfig(!showMusicConfig)}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                    showMusicConfig
-                      ? 'bg-blue-500 text-white hover:bg-blue-600'
-                      : isDark
-                        ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
-                        : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                  }`}
-                >
-                  {showMusicConfig ? '隐藏配置' : '添加歌单'}
-                </button>
-              </div>
-              
-              音乐配置面板
-              {showMusicConfig && (
-                <div className={`mb-6 p-6 rounded-lg ${
-                  isDark ? 'bg-gray-700/50' : 'bg-gray-100/50'
-                }`}>
-                  <MusicConfig onPlaylistLoaded={handlePlaylistLoaded} />
-                </div>
-              )}
-              
-              {playlists.length > 0 ? (
-                <MusicPlayer playlists={playlists} />
-              ) : (
-                <div className={`p-8 rounded-lg text-center ${
-                  isDark ? 'bg-gray-700/50 text-gray-300' : 'bg-gray-100/50 text-gray-600'
-                }`}>
-                  <p className="mb-4">未添加音乐播放列表</p>
-                  <button
-                    onClick={() => setShowMusicConfig(true)}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                      isDark
-                        ? 'bg-blue-600 text-white hover:bg-blue-700'
-                        : 'bg-blue-500 text-white hover:bg-blue-600'
-                    }`}
-                  >
-                    添加歌单
-                  </button>
-                </div>
-              )}
-            </div> */}
+
           </div>
         </div>
       </div>

@@ -40,6 +40,10 @@ export default function ImageGrid({ images, className = '' }: ImageGridProps) {
 
     const handleKeyDown = (e: KeyboardEvent) => {
       switch (e.key) {
+        case 'Escape':
+          e.preventDefault();
+          setViewerOpen(false);
+          break;
         case 'ArrowLeft':
           e.preventDefault();
           if (currentIndex > 0) {
@@ -132,7 +136,8 @@ export default function ImageGrid({ images, className = '' }: ImageGridProps) {
           className="grid grid-cols-9 gap-1 cursor-grab active:cursor-grabbing"
           style={{
             userSelect: 'none',
-            touchAction: 'none',
+            // pan-y 允许页面纵向滚动，横向手势仍交给轮播逻辑处理
+            touchAction: 'pan-y',
             WebkitUserSelect: 'none',
             MozUserSelect: 'none',
             msUserSelect: 'none'
@@ -153,10 +158,19 @@ export default function ImageGrid({ images, className = '' }: ImageGridProps) {
             return (
               <div
                 key={actualIndex}
+                role="button"
+                tabIndex={0}
+                aria-label={`查看第 ${actualIndex + 1} 张图片`}
                 className={`aspect-square overflow-hidden rounded-md cursor-pointer relative group ${
                   isActive ? 'ring-2 ring-primary ring-offset-2' : ''
                 }`}
                 onClick={() => handleImageClick(actualIndex)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleImageClick(actualIndex);
+                  }
+                }}
                 style={{ cursor: 'pointer' }}
               >
                 <img

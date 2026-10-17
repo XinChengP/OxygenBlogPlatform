@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, lazy, Suspense } from 'react';
+import { useState, useCallback, useEffect, useRef, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { copyrightConfig } from '@/setting/blogSetting';
 import { copyToClipboard } from '@/utils/clipboard';
@@ -341,6 +341,15 @@ export default function BlogSharePanel({
 }: BlogSharePanelProps) {
   /** 复制成功状态，用于按钮文案与图标的临时切换 */
   const [isCopied, setIsCopied] = useState(false);
+  /** 复制失败状态 */
+  const [isCopyError, setIsCopyError] = useState(false);
+  const copyResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyResetTimerRef.current) clearTimeout(copyResetTimerRef.current);
+    };
+  }, []);
 
   /** 二维码面板展开状态 */
   const [showQrcode, setShowQrcode] = useState(false);
@@ -366,7 +375,7 @@ export default function BlogSharePanel({
    * 1. 本地开发时 window.location 为 localhost，复制出去对方无法访问
    * 2. 与版权声明组件中的「本文链接」保持完全一致，避免同一篇文章出现两个不同地址
    */
-  const articleUrl = `${copyrightConfig.siteUrl}/blogs/${encodeURIComponent(slug)}`;
+  const articleUrl = `${(process.env.NEXT_PUBLIC_SITE_URL || copyrightConfig.siteUrl).replace(/\/$/, '')}/blogs/${encodeURIComponent(slug)}/`;
 
   /** 摘要截断，避免部分平台因参数过长而拒绝生成分享卡片 */
   const summary = excerpt.slice(0, 100);
@@ -381,10 +390,22 @@ export default function BlogSharePanel({
 
     const copied = await copyToClipboard(articleUrl);
 
+    if (copyResetTimerRef.current) clearTimeout(copyResetTimerRef.current);
+
     if (copied) {
       setIsCopied(true);
+      setIsCopyError(false);
       // 2 秒后恢复默认文案，与 CodeCopyButton 的反馈节奏保持一致
-      setTimeout(() => setIsCopied(false), 2000);
+      copyResetTimerRef.current = setTimeout(() => {
+        setIsCopied(false);
+        copyResetTimerRef.current = null;
+      }, 2000);
+    } else {
+      setIsCopyError(true);
+      copyResetTimerRef.current = setTimeout(() => {
+        setIsCopyError(false);
+        copyResetTimerRef.current = null;
+      }, 2000);
     }
   }, [articleUrl, isCopied]);
 
@@ -463,9 +484,11 @@ export default function BlogSharePanel({
           className={`${BUTTON_BASE} ${
             isCopied
               ? 'border-green-500/40 bg-green-500/10 text-green-600 dark:text-green-400'
-              : 'border-border/50 text-muted-foreground hover:border-primary/40 hover:bg-primary/10 hover:text-primary'
+              : isCopyError
+                ? 'border-red-500/40 bg-red-500/10 text-red-600 dark:text-red-400'
+                : 'border-border/50 text-muted-foreground hover:border-primary/40 hover:bg-primary/10 hover:text-primary'
           }`}
-          aria-label={isCopied ? '链接已复制' : '复制文章链接'}
+          aria-label={isCopyError ? '复制失败，请手动复制' : isCopied ? '链接已复制' : '复制文章链接'}
         >
           {/*
             图标本身跟随按钮状态换色：

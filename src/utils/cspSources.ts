@@ -161,8 +161,13 @@ export const EXTERNAL_SOURCES: ExternalSource[] = [
     directives: ['connect-src'],
   },
   {
+    origin: 'https://api.qijieya.cn',
+    desc: '网易云音乐歌单 Meting API（主用：playlist 接口返回完整歌单）',
+    directives: ['connect-src'],
+  },
+  {
     origin: 'https://api.injahow.cn',
-    desc: '网易云音乐歌单 Meting API（原 api.i-meto.com 已下线）',
+    desc: '网易云音乐歌单 Meting API（备用：playlist 接口有服务端缓存，可能少歌）',
     directives: ['connect-src'],
   },
   {

@@ -2,7 +2,7 @@
 
 import { ThemeProvider as NextThemesProvider } from 'next-themes';
 import { type ThemeProviderProps } from 'next-themes';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTheme } from 'next-themes';
 
 /**
@@ -15,6 +15,7 @@ import { useTheme } from 'next-themes';
 function ThemeController() {
   const { resolvedTheme, theme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const skipInitialTransitionRef = useRef(true);
 
   useEffect(() => {
     setMounted(true);
@@ -24,6 +25,11 @@ function ThemeController() {
   // （配色本身由 .dark 类切换 CSS 令牌自动生效，这里只负责过渡动画）
   useEffect(() => {
     if (!mounted) return;
+    // 首次解析出主题时不要给全站加过渡，否则首帧会跑一遍通配符 transition
+    if (skipInitialTransitionRef.current) {
+      skipInitialTransitionRef.current = false;
+      return;
+    }
     document.documentElement.classList.add('theme-transitioning');
     const timer = setTimeout(() => {
       document.documentElement.classList.remove('theme-transitioning');
@@ -39,16 +45,21 @@ function ThemeController() {
     if (!mounted || theme !== 'system') return;
 
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    let transitionTimer: ReturnType<typeof setTimeout> | null = null;
 
     const handleSystemThemeChange = () => {
       document.documentElement.classList.add('theme-transitioning');
-      setTimeout(() => {
+      if (transitionTimer) clearTimeout(transitionTimer);
+      transitionTimer = setTimeout(() => {
         document.documentElement.classList.remove('theme-transitioning');
       }, 500);
     };
 
     mediaQuery.addEventListener('change', handleSystemThemeChange);
-    return () => mediaQuery.removeEventListener('change', handleSystemThemeChange);
+    return () => {
+      mediaQuery.removeEventListener('change', handleSystemThemeChange);
+      if (transitionTimer) clearTimeout(transitionTimer);
+    };
   }, [theme, mounted]);
 
   return null;

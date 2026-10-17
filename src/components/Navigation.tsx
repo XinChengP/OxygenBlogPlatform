@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,7 +8,9 @@ import { emojy, name } from '@/setting/NavigationSetting';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 import { useNavigationVisibility } from '@/contexts/NavigationVisibilityContext';
 import { Users, MessageSquare, Link2, User, ChevronDown, Search } from 'lucide-react';
-import { OPEN_SEARCH_EVENT } from '@/components/SearchDialog';
+import { OPEN_SEARCH_EVENT } from '@/utils/searchEvents';
+import { prefetchSearchIndex } from '@/utils/searchIndex';
+import { Z_INDEX } from '@/utils/zIndex';
 
 /**
  * 导航项类型定义
@@ -45,11 +47,13 @@ interface DropdownConfig {
  */
 const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [lastScrollY, setLastScrollY] = useState(0);
-  const [isNearTop, setIsNearTop] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const pathname = usePathname();
+  const lastScrollYRef = useRef(0);
+  const isNearTopRef = useRef(false);
+  const scrollTickingRef = useRef(false);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
   
   // 所有 hooks 必须在条件返回之前调用
   const { navigationStyle } = useBackgroundStyle('home');
@@ -126,24 +130,49 @@ const Navigation = () => {
    * 优化页面切换体验
    */
   const handleLinkClick = useCallback((e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    // 先关闭菜单，同页点击也不会让移动端菜单停留在展开状态
+    setIsMenuOpen(false);
+    setActiveDropdown(null);
+
     // 如果点击的是当前页面，滚动到顶部
     if (pathname === href) {
       e.preventDefault();
-      window.scrollTo({
-        top: 0,
-        behavior: 'smooth'
-      });
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+    }
+  }, [pathname]);
+
+  /**
+   * 下拉菜单键盘操作：Enter/Space/↓ 展开，Esc 收起
+   */
+  const handleDropdownKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>, label: string) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      setActiveDropdown(null);
+      const trigger = e.currentTarget.querySelector<HTMLButtonElement>('button');
+      trigger?.focus();
       return;
     }
 
-    // 移动端关闭菜单
-    setIsMenuOpen(false);
-    // 关闭下拉菜单
-    setActiveDropdown(null);
+    if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveDropdown(label);
+      // 等菜单挂载后再把焦点移到第一项
+      requestAnimationFrame(() => {
+        const firstItem = e.currentTarget.querySelector<HTMLAnchorElement>('[role="menu"] a');
+        firstItem?.focus();
+      });
+    }
+  }, []);
 
-    // 保存当前滚动位置
-    sessionStorage.setItem(`scrollPos_${pathname}`, window.scrollY.toString());
-  }, [pathname]);
+  /**
+   * 焦点离开整个下拉容器时收起，避免焦点陷阱失效
+   */
+  const handleDropdownBlur = useCallback((e: React.FocusEvent<HTMLDivElement>) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+      setActiveDropdown(null);
+    }
+  }, []);
 
   /**
    * 处理下拉菜单悬停
@@ -170,72 +199,103 @@ const Navigation = () => {
 
   /**
    * 监听滚动事件，添加滚动效果和隐藏/显示逻辑
+   *
+   * 使用 ref 保存上一次位置，effect 只绑定一次；
+   * rAF 合并同一帧内的多次 scroll 事件，避免每个事件都读写布局。
    */
   useEffect(() => {
     const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      
-      // 节流：只在滚动位置变化超过10px时更新状态
-      if (Math.abs(currentScrollY - lastScrollY) < 10) return;
-      
-      // 设置滚动状态
-      setIsScrolled(currentScrollY > 10);
-      
-      // 检查是否在页面顶部
-      setAtTop(currentScrollY <= 10);
-      
-      // 如果在首页，导航栏始终可见
-      if (pathname === '/') {
-        setVisibility(true);
-      } else {
-        // 如果鼠标在页面顶部附近，始终显示导航栏
-        if (isNearTop) {
+      if (scrollTickingRef.current) return;
+      scrollTickingRef.current = true;
+
+      requestAnimationFrame(() => {
+        scrollTickingRef.current = false;
+
+        const currentScrollY = window.scrollY;
+        const lastScrollY = lastScrollYRef.current;
+
+        setAtTop(currentScrollY <= 10);
+
+        if (pathname === '/') {
           setVisibility(true);
-        } else {
-          // 向下滚动超过100px时隐藏导航栏
-          if (currentScrollY > lastScrollY && currentScrollY > 100) {
-            setVisibility(false);
-          } 
-          // 向上滚动时显示导航栏
-          else if (currentScrollY < lastScrollY) {
-            setVisibility(true);
-          }
+        } else if (isNearTopRef.current) {
+          setVisibility(true);
+        } else if (currentScrollY > lastScrollY && currentScrollY > 100) {
+          setVisibility(false);
+        } else if (currentScrollY < lastScrollY) {
+          setVisibility(true);
         }
-      }
-      
-      setLastScrollY(currentScrollY);
+
+        lastScrollYRef.current = currentScrollY;
+      });
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastScrollY, isNearTop, pathname, setVisibility, setAtTop]);
+  }, [pathname, setVisibility, setAtTop]);
 
   /**
-   * 监听鼠标移动，检测是否在页面顶部区域
-   * 使用节流优化
+   * 鼠标靠近顶部时显示导航栏
+   * 首页导航始终可见，无需常驻 mousemove 监听
    */
   useEffect(() => {
-    let mouseMoveTimeout: NodeJS.Timeout;
-    
+    if (pathname === '/') return;
+
+    let rafId = 0;
     const handleMouseMove = (e: MouseEvent) => {
-      // 节流：只在鼠标移动事件触发后50ms更新状态
-      clearTimeout(mouseMoveTimeout);
-      mouseMoveTimeout = setTimeout(() => {
-        // 当鼠标在页面顶部100px区域内时，显示导航栏
-        setIsNearTop(e.clientY <= 100);
-      }, 50);
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = 0;
+        const nearTop = e.clientY <= 100;
+        if (nearTop === isNearTopRef.current) return;
+        isNearTopRef.current = nearTop;
+        if (nearTop) setVisibility(true);
+      });
     };
 
-    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
-      clearTimeout(mouseMoveTimeout);
+      if (rafId) cancelAnimationFrame(rafId);
     };
-  }, []);
+  }, [pathname, setVisibility]);
+
+  // 移动端菜单：Esc 关闭、点击外部关闭、路由变化关闭
+  useEffect(() => {
+    if (!isMenuOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsMenuOpen(false);
+        mobileMenuButtonRef.current?.focus();
+      }
+    };
+
+    const handlePointerDown = (e: PointerEvent) => {
+      const target = e.target as Node | null;
+      if (!target) return;
+      if (mobileMenuRef.current?.contains(target)) return;
+      if (mobileMenuButtonRef.current?.contains(target)) return;
+      setIsMenuOpen(false);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('pointerdown', handlePointerDown, true);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('pointerdown', handlePointerDown, true);
+    };
+  }, [isMenuOpen]);
+
+  useEffect(() => {
+    setIsMenuOpen(false);
+    setActiveDropdown(null);
+  }, [pathname]);
 
   // 导航栏样式 - 应用性能优化
   const navClassName = useMemo(() => {
-    return `fixed top-0 left-0 right-0 z-[100000] transition-all duration-300 gpu-accelerated ${
+    return `fixed top-0 left-0 right-0 transition-all duration-300 gpu-accelerated ${
       isAtTop
         ? 'bg-transparent dark:bg-transparent border-transparent'
         : 'glass-card border-b'
@@ -263,6 +323,7 @@ const Navigation = () => {
   const renderDropdown = useCallback((dropdown: DropdownConfig) => {
     const isDropdownActiveState = isDropdownActive(dropdown);
     const isOpen = activeDropdown === dropdown.label;
+    const menuId = `nav-dropdown-${dropdown.label}`;
     
     return (
       <div
@@ -270,11 +331,16 @@ const Navigation = () => {
         className="relative"
         onMouseEnter={() => handleDropdownEnter(dropdown.label)}
         onMouseLeave={handleDropdownLeave}
+        onKeyDown={(e) => handleDropdownKeyDown(e, dropdown.label)}
+        onBlur={handleDropdownBlur}
       >
         <button
+          type="button"
           className={getLinkClassName('', true, isDropdownActiveState)}
           aria-expanded={isOpen}
           aria-haspopup="true"
+          aria-controls={menuId}
+          onClick={() => setActiveDropdown(isOpen ? null : dropdown.label)}
         >
           {dropdown.label}
           <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
@@ -283,6 +349,8 @@ const Navigation = () => {
         <AnimatePresence>
           {isOpen && (
             <motion.div
+              id={menuId}
+              role="menu"
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
@@ -294,7 +362,9 @@ const Navigation = () => {
                   <Link
                     key={item.href}
                     href={item.href}
+                    role="menuitem"
                     onClick={(e) => handleLinkClick(e, item.href)}
+                    aria-current={isActive(item.href) ? 'page' : undefined}
                     className={`block px-4 py-2 text-sm transition-colors duration-200 ${
                       pathname === item.href
                         ? 'text-primary dark:text-primary bg-primary/10 dark:bg-primary/10'
@@ -310,7 +380,7 @@ const Navigation = () => {
         </AnimatePresence>
       </div>
     );
-  }, [activeDropdown, handleDropdownEnter, handleDropdownLeave, getLinkClassName, handleLinkClick, pathname, isAtTop, isDropdownActive]);
+  }, [activeDropdown, handleDropdownEnter, handleDropdownLeave, handleDropdownKeyDown, handleDropdownBlur, getLinkClassName, handleLinkClick, pathname, isActive, isDropdownActive]);
 
   // 后台页面不显示导航栏 - 在所有 hooks 调用之后再条件返回
   if (pathname.startsWith('/admin')) {
@@ -323,9 +393,11 @@ const Navigation = () => {
       className={navClassName}
       style={{
         ...navigationStyle.style,
+        zIndex: Z_INDEX.navigation,
         willChange: 'transform',
         transform: 'translateZ(0)',
       }}
+      inert={!isVisible}
       initial={{ y: 0 }}
       animate={{ y: isVisible ? 0 : -100 }}
       transition={{
@@ -352,6 +424,7 @@ const Navigation = () => {
                   key={item.href}
                   href={item.href}
                   onClick={(e) => handleLinkClick(e, item.href)}
+                  aria-current={isActive(item.href) ? 'page' : undefined}
                   className={getLinkClassName(item.href)}
                 >
                   {item.label}
@@ -368,6 +441,8 @@ const Navigation = () => {
               <button
                 type="button"
                 onClick={handleSearchClick}
+                onPointerEnter={prefetchSearchIndex}
+                onFocus={prefetchSearchIndex}
                 aria-label="搜索文章（快捷键 Ctrl+K）"
                 className={`px-2 xl:px-3 py-2 rounded-md transition-colors duration-300 ${
                   isAtTop
@@ -386,6 +461,8 @@ const Navigation = () => {
             <button
               type="button"
               onClick={handleSearchClick}
+              onPointerEnter={prefetchSearchIndex}
+              onFocus={prefetchSearchIndex}
               aria-label="搜索文章"
               className={`p-2 transition-colors duration-300 ${
                 isAtTop
@@ -396,6 +473,8 @@ const Navigation = () => {
               <Search className="w-6 h-6" />
             </button>
             <button
+              ref={mobileMenuButtonRef}
+              type="button"
               onClick={toggleMobileMenu}
               className={`transition-colors duration-300 ${
                 isAtTop 
@@ -403,6 +482,8 @@ const Navigation = () => {
                   : 'text-foreground hover:text-primary dark:hover:text-primary'
               } p-2`}
               aria-label="切换菜单"
+              aria-expanded={isMenuOpen}
+              aria-controls="mobile-nav-menu"
             >
               <svg 
                 className={`w-6 h-6 transition-transform duration-200 ${isMenuOpen ? 'rotate-90' : ''}`} 
@@ -426,7 +507,10 @@ const Navigation = () => {
     <AnimatePresence>
       {isMenuOpen && (
         <motion.div
-          className="lg:hidden fixed top-16 right-2 z-[100001]"
+          ref={mobileMenuRef}
+          id="mobile-nav-menu"
+          className="lg:hidden fixed top-16 right-2"
+          style={{ zIndex: Z_INDEX.mobileMenu }}
           initial={{ opacity: 0, x: 20, scale: 0.95 }}
           animate={{ opacity: 1, x: 0, scale: 1 }}
           exit={{ opacity: 0, x: 20, scale: 0.95 }}
@@ -444,6 +528,7 @@ const Navigation = () => {
                   key={item.href}
                   href={item.href}
                   onClick={(e) => handleLinkClick(e, item.href)}
+                  aria-current={isActive(item.href) ? 'page' : undefined}
                   className={`block px-4 py-2 rounded-xl text-base font-medium transition-all duration-200 text-right ${
                     pathname === item.href
                       ? 'text-primary dark:text-primary bg-primary/10 dark:bg-primary/10'
@@ -468,6 +553,7 @@ const Navigation = () => {
                   key={item.href}
                   href={item.href}
                   onClick={(e) => handleLinkClick(e, item.href)}
+                  aria-current={isActive(item.href) ? 'page' : undefined}
                   className={`block px-4 py-2 rounded-xl text-base font-medium transition-all duration-200 text-right ${
                     pathname === item.href
                       ? 'text-primary dark:text-primary bg-primary/10 dark:bg-primary/10'
@@ -492,6 +578,7 @@ const Navigation = () => {
                   key={item.href}
                   href={item.href}
                   onClick={(e) => handleLinkClick(e, item.href)}
+                  aria-current={isActive(item.href) ? 'page' : undefined}
                   className={`block px-4 py-2 rounded-xl text-base font-medium transition-all duration-200 text-right ${
                     pathname === item.href
                       ? 'text-primary dark:text-primary bg-primary/10 dark:bg-primary/10'

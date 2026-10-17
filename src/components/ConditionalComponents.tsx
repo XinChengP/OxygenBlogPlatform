@@ -3,10 +3,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import ScrollToTop from './ScrollToTop';
-import { isLanternDisplayPeriod } from '@/utils/lunarDateUtils';
 
-// 动态导入红灯笼组件，减少首屏 bundle 体积和 hydration 开销
+// 动态导入浮动控件与灯笼，减少首屏 bundle 体积和 hydration 开销
+const ScrollToTop = dynamic(() => import('./ScrollToTop'), { ssr: false });
 const Lantern = dynamic(() => import('./Lantern'), { ssr: false });
 
 // 使用 React.memo 减少不必要的渲染
@@ -15,8 +14,17 @@ export default React.memo(function ConditionalComponents() {
   const [showLanterns, setShowLanterns] = useState(false);
 
   // 显示灯笼（根据农历日期：北方小年到元宵节期间）
+  // 农历库只在客户端按需加载，不进入首屏依赖图
   useEffect(() => {
-    setShowLanterns(isLanternDisplayPeriod());
+    let cancelled = false;
+    import('@/utils/lunarDateUtils')
+      .then(({ isLanternDisplayPeriod }) => {
+        if (!cancelled) setShowLanterns(isLanternDisplayPeriod());
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // 计算是否需要显示 ScrollToTop 组件

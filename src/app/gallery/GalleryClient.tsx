@@ -37,7 +37,7 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
   // 获取背景样式和容器样式
   const { containerStyle } = useBackgroundStyle('gallery');
 
-  // 初始化画廊状态
+  // 初始化画廊状态（分类筛选从 URL 恢复，便于分享与前进后退）
   const [state, setState] = useState<GalleryState>({
     images: initialImages,
     categories: initialCategories as ImageCategoryTree[],
@@ -48,6 +48,21 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
     isLoading: false,
     error: null
   });
+
+  // 浏览器前进/后退或首次挂载时同步筛选状态
+  useEffect(() => {
+    const syncFromUrl = () => {
+      const params = new URLSearchParams(window.location.search);
+      setState(prev => ({
+        ...prev,
+        selectedCategory: params.get('category'),
+        selectedSubCategory: params.get('sub'),
+      }));
+    };
+    syncFromUrl();
+    window.addEventListener('popstate', syncFromUrl);
+    return () => window.removeEventListener('popstate', syncFromUrl);
+  }, []);
 
   // 滚动节流定时器引用
   const scrollThrottleRef = useRef<number>(0);
@@ -133,6 +148,19 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
       selectedCategory: category,
       selectedSubCategory: subCategory || null
     }));
+
+    // 同步到 URL（静态导出下查询参数只在客户端生效）
+    const params = new URLSearchParams(window.location.search);
+    if (category) params.set('category', category);
+    else params.delete('category');
+    if (subCategory) params.set('sub', subCategory);
+    else params.delete('sub');
+    const query = params.toString();
+    window.history.replaceState(
+      null,
+      '',
+      `${window.location.pathname}${query ? `?${query}` : ''}`,
+    );
 
     // 发送分类切换事件给Live2D
     emitLive2DEvent(Live2DEvents.INFO, {

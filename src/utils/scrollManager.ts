@@ -14,6 +14,7 @@ export class AdvancedScrollManager {
   private readonly STORAGE_KEY = 'advanced-scroll-positions';
   private readonly HISTORY_KEY = 'navigation-history';
   private hasRestored = false;
+  private destroyed = false;
 
   // 存储事件处理函数引用，确保 destroy 时能正确移除
   private boundHandlers: {
@@ -193,11 +194,16 @@ export class AdvancedScrollManager {
     return Object.fromEntries(this.scrollPositions);
   }
 
+  public isDestroyed(): boolean {
+    return this.destroyed;
+  }
+
   public getNavigationHistory(): string[] {
     return [...this.navigationHistory];
   }
 
   public destroy(): void {
+    this.destroyed = true;
     if (this.scrollRestorationTimeout) {
       clearTimeout(this.scrollRestorationTimeout);
     }
@@ -220,7 +226,9 @@ export class AdvancedScrollManager {
 let globalScrollManager: AdvancedScrollManager | null = null;
 
 export function initScrollManager(): AdvancedScrollManager {
-  if (!globalScrollManager) {
+  // StrictMode/HMR 下 Provider 会 mount → cleanup → mount；
+  // 已销毁的实例必须重建，否则监听器不会重新注册。
+  if (!globalScrollManager || globalScrollManager.isDestroyed()) {
     globalScrollManager = new AdvancedScrollManager();
   }
   return globalScrollManager;

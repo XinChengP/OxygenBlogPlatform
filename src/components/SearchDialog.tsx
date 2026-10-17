@@ -1,46 +1,22 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Fuse from 'fuse.js';
 import type { IFuseOptions, FuseResult, FuseResultMatch, RangeTuple } from 'fuse.js';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X, FileText, Loader2, CornerDownLeft } from 'lucide-react';
-import { getAssetPath } from '@/utils/assetUtils';
-
-/**
- * 搜索索引条目类型
- * 与 src/app/search-index.json/route.ts 的输出结构保持一致
- */
-interface SearchIndexEntry {
-  /** 文章标识，用于跳转 /blogs/[slug] */
-  slug: string;
-  /** 文章标题 */
-  title: string;
-  /** 分类 */
-  category: string;
-  /** 标签列表 */
-  tags: string[];
-  /** 摘要 */
-  excerpt: string;
-  /** 发布日期 */
-  date: string;
-  /** 正文纯文本 */
-  plainContent: string;
-}
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
+import { Z_INDEX } from '@/utils/zIndex';
+import { loadSearchIndex } from '@/utils/searchIndex';
+import type { SearchIndexEntry } from '@/utils/searchIndex';
+import { OPEN_SEARCH_EVENT, consumeSearchOpenRequest } from '@/utils/searchEvents';
 
 /**
  * fuse.js 搜索结果中的命中信息
  * 直接复用 fuse.js 官方类型，indices 为 [start, end] 闭区间元组的只读数组
  */
 type SearchMatch = FuseResultMatch;
-
-/**
- * 唤起搜索框的自定义事件名
- * Navigation 组件的搜索按钮通过派发该事件打开弹窗，
- * 避免导航与弹窗之间建立状态依赖（解耦）
- */
-export const OPEN_SEARCH_EVENT = 'oxygen:open-search';
 
 /** 搜索结果最大返回条数 */
 const MAX_RESULTS = 8;
@@ -69,35 +45,6 @@ const fuseOptions: IFuseOptions<SearchIndexEntry> = {
   // 中文没有空格分词，最小匹配一个字符即可
   minMatchCharLength: 1,
 };
-
-// 索引数据模块级缓存：整个站点的所有 SearchDialog 实例共享，只 fetch 一次
-let cachedIndex: SearchIndexEntry[] | null = null;
-let pendingFetch: Promise<SearchIndexEntry[]> | null = null;
-
-/**
- * 加载搜索索引（按需 fetch，带模块级缓存与请求去重）
- * 多次并发调用会复用同一个进行中的请求，避免重复下载
- */
-async function loadSearchIndex(): Promise<SearchIndexEntry[]> {
-  if (cachedIndex) return cachedIndex;
-  if (pendingFetch) return pendingFetch;
-
-  pendingFetch = fetch(getAssetPath('/search-index.json'))
-    .then((res) => {
-      if (!res.ok) throw new Error(`索引加载失败（${res.status}）`);
-      return res.json() as Promise<SearchIndexEntry[]>;
-    })
-    .then((data) => {
-      cachedIndex = data;
-      return data;
-    })
-    .finally(() => {
-      // 无论成功失败都清空进行中的请求，失败后允许重试
-      pendingFetch = null;
-    });
-
-  return pendingFetch;
-}
 
 /**
  * 合并重叠/相邻的命中区间
@@ -172,15 +119,16 @@ function buildContentSnippet(
 ): { text: string; indices: RangeTuple[] } | null {
   if (!indices || indices.length === 0 || !content) return null;
 
-  // 命中位置（fuse 的 indices 基于 code unit，中文 BMP 字符无偏移问题）
-  const firstHit = indices[0][0];
+  // fuse 返回的 indices 不保证按位置升序，先排序再取最早命中
+  const sortedIndices = [...indices].sort((a, b) => a[0] - b[0]);
+  const firstHit = sortedIndices[0][0];
   const start = Math.max(0, firstHit - SNIPPET_RADIUS);
   const end = Math.min(content.length, firstHit + SNIPPET_RADIUS);
   const text = `${start > 0 ? '…' : ''}${content.slice(start, end)}${end < content.length ? '…' : ''}`;
 
   // 平移命中区间到片段内部，供高亮渲染
   const offset = start + (start > 0 ? 1 : 0);
-  const shifted = indices
+  const shifted = sortedIndices
     .map(([s, e]) => [s - offset, e - offset] as RangeTuple)
     .filter(([s, e]) => e >= 0 && s < text.length);
 
@@ -199,6 +147,8 @@ const RESULT_BASE_CLASS =
 
 export default function SearchDialog() {
   const router = useRouter();
+  const pathname = usePathname();
+  const isAdminRoute = pathname?.startsWith('/admin') ?? false;
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [index, setIndex] = useState<SearchIndexEntry[] | null>(null);
@@ -207,6 +157,11 @@ export default function SearchDialog() {
   const [activeIndex, setActiveIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const previousPathnameRef = useRef(pathname);
+
+  useBodyScrollLock(isOpen);
 
   /** fuse 实例：索引加载完成后重建 */
   const fuse = useMemo(
@@ -229,7 +184,7 @@ export default function SearchDialog() {
     setQuery('');
     setActiveIndex(-1);
     setLoadError(null);
-    if (!index && !pendingFetch) {
+    if (!index) {
       loadSearchIndex()
         .then(setIndex)
         .catch((err: Error) => setLoadError(err.message || '索引加载失败'));
@@ -239,21 +194,74 @@ export default function SearchDialog() {
   /** 关闭弹窗 */
   const closeDialog = useCallback(() => setIsOpen(false), []);
 
+  // 懒加载期间记录的打开意图：挂载后立即打开
+  useEffect(() => {
+    if (consumeSearchOpenRequest()) openDialog();
+  }, [openDialog]);
+
+  /** 索引加载失败后重试 */
+  const retryLoadIndex = useCallback(() => {
+    setLoadError(null);
+    loadSearchIndex()
+      .then(setIndex)
+      .catch((err: Error) => setLoadError(err.message || '索引加载失败'));
+  }, []);
+
   // 全局快捷键与自定义事件监听
   useEffect(() => {
     const handleKeydown = (e: KeyboardEvent) => {
-      // Ctrl+K（Windows）/ Cmd+K（Mac）唤起；openDialog 幂等，重复触发无害
+      const target = e.target as HTMLElement | null;
+      const isEditable = !!target?.closest(
+        'input, textarea, select, [contenteditable="true"], [contenteditable=""]',
+      );
+
+      // Ctrl+K（Windows）/ Cmd+K（Mac）唤起；输入框/后台页面不拦截
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        if (isEditable || isAdminRoute) return;
         e.preventDefault();
         openDialog();
         return;
       }
+
+      if (!isOpen) return;
+
       // Esc 关闭（焦点不在输入框时也能关闭）
       if (e.key === 'Escape') {
         closeDialog();
+        return;
+      }
+
+      // Tab 焦点陷阱：把焦点限制在弹窗内
+      if (e.key === 'Tab') {
+        const dialog = dialogRef.current;
+        if (!dialog) return;
+        const focusable = Array.from(
+          dialog.querySelectorAll<HTMLElement>(
+            'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+          ),
+        ).filter((el) => el.offsetParent !== null);
+        if (focusable.length === 0) {
+          e.preventDefault();
+          return;
+        }
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        const active = document.activeElement;
+
+        if (e.shiftKey && (active === first || !dialog.contains(active))) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && (active === last || !dialog.contains(active))) {
+          e.preventDefault();
+          first.focus();
+        }
       }
     };
-    const handleOpenEvent = () => openDialog();
+    const handleOpenEvent = () => {
+      consumeSearchOpenRequest();
+      openDialog();
+    };
 
     window.addEventListener('keydown', handleKeydown);
     window.addEventListener(OPEN_SEARCH_EVENT, handleOpenEvent);
@@ -261,24 +269,24 @@ export default function SearchDialog() {
       window.removeEventListener('keydown', handleKeydown);
       window.removeEventListener(OPEN_SEARCH_EVENT, handleOpenEvent);
     };
-  }, [openDialog, closeDialog]);
+  }, [openDialog, closeDialog, isAdminRoute, isOpen]);
 
-  // 弹窗打开期间锁定页面滚动，关闭后恢复
+  // 路由变化时强制关闭，避免弹窗停留在新页面上（首次挂载不触发）
+  useEffect(() => {
+    if (previousPathnameRef.current === pathname) return;
+    previousPathnameRef.current = pathname;
+    setIsOpen(false);
+  }, [pathname]);
+
+  // 打开时记录焦点并聚焦输入框，关闭后把焦点还给触发元素
   useEffect(() => {
     if (!isOpen) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
+    const timer = setTimeout(() => inputRef.current?.focus(), 50);
     return () => {
-      document.body.style.overflow = previousOverflow;
+      clearTimeout(timer);
+      previousFocusRef.current?.focus?.();
     };
-  }, [isOpen]);
-
-  // 打开后聚焦输入框（等动画挂载完成）
-  useEffect(() => {
-    if (isOpen) {
-      const timer = setTimeout(() => inputRef.current?.focus(), 50);
-      return () => clearTimeout(timer);
-    }
   }, [isOpen]);
 
   // 查询变化时重置选中项
@@ -291,7 +299,8 @@ export default function SearchDialog() {
   const goToPost = useCallback(
     (slug: string) => {
       closeDialog();
-      router.push(`/blogs/${encodeURIComponent(slug)}`);
+      // trailingSlash: true，静态导出产物为 /blogs/<slug>/index.html
+      router.push(`/blogs/${encodeURIComponent(slug)}/`);
     },
     [closeDialog, router],
   );
@@ -346,6 +355,7 @@ export default function SearchDialog() {
     return (
       <div
         key={item.slug}
+        id={`search-result-${displayIndex}`}
         data-result-index={displayIndex}
         role="option"
         aria-selected={isActive}
@@ -396,6 +406,7 @@ export default function SearchDialog() {
           return (
             <div
               key={item.slug}
+              id={`search-result-${i}`}
               data-result-index={i}
               role="option"
               aria-selected={isActive}
@@ -422,6 +433,9 @@ export default function SearchDialog() {
     );
   };
 
+  // 后台页面不提供前台搜索
+  if (isAdminRoute) return null;
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -431,18 +445,21 @@ export default function SearchDialog() {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15 }}
-          className="fixed inset-0 z-[100] flex items-start justify-center bg-black/40 backdrop-blur-sm px-4 pt-[12vh]"
+          className="fixed inset-0 flex items-start justify-center bg-black/40 backdrop-blur-sm px-4 pt-[12vh]"
+          style={{ zIndex: Z_INDEX.modalBackdrop }}
           onClick={closeDialog}
           role="dialog"
           aria-modal="true"
           aria-label="站内搜索"
         >
           <motion.div
+            ref={dialogRef}
             initial={{ opacity: 0, scale: 0.96, y: -12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: -12 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
             className="w-full max-w-2xl overflow-hidden rounded-xl border border-border bg-card/95 shadow-card backdrop-blur-md"
+            style={{ zIndex: Z_INDEX.modal }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* 搜索输入区 */}
@@ -457,6 +474,11 @@ export default function SearchDialog() {
                 placeholder="搜索文章，标题、标签或正文…"
                 className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/50"
                 aria-label="搜索关键词"
+                role="combobox"
+                aria-expanded={isOpen}
+                aria-controls="search-result-list"
+                aria-autocomplete="list"
+                aria-activedescendant={activeIndex >= 0 ? `search-result-${activeIndex}` : undefined}
               />
               <button
                 type="button"
@@ -469,7 +491,16 @@ export default function SearchDialog() {
             </div>
 
             {/* 结果区域：区分加载中 / 加载失败 / 正常渲染 */}
-            <div ref={listRef} role="listbox" aria-label="搜索结果" className="max-h-[50vh] overflow-y-auto">
+            <span role="status" aria-live="polite" className="sr-only">
+              {index && query.trim() ? `${results.length} 条搜索结果` : ''}
+            </span>
+            <div
+              ref={listRef}
+              id="search-result-list"
+              role="listbox"
+              aria-label="搜索结果"
+              className="max-h-[50vh] overflow-y-auto"
+            >
               {!index && !loadError && (
                 <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -477,8 +508,15 @@ export default function SearchDialog() {
                 </div>
               )}
               {loadError && (
-                <div className="py-10 text-center text-sm text-muted-foreground">
-                  {loadError}，请稍后重试
+                <div className="flex flex-col items-center gap-3 py-10 text-center text-sm text-muted-foreground">
+                  <span>{loadError}，请稍后重试</span>
+                  <button
+                    type="button"
+                    onClick={retryLoadIndex}
+                    className="rounded-full bg-primary/10 px-3 py-1.5 text-xs text-primary transition-colors hover:bg-primary/20"
+                  >
+                    重新加载
+                  </button>
                 </div>
               )}
               {index && query.trim() === '' && renderRecentList()}

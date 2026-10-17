@@ -63,6 +63,7 @@ const baseConfig = {
       { protocol: 'https', hostname: 'raw.githubusercontent.com' },
       { protocol: 'https', hostname: 'cdn.jsdelivr.net' },
       { protocol: 'https', hostname: 'cdnjs.cloudflare.com' },
+      { protocol: 'https', hostname: 'api.qijieya.cn' },
       { protocol: 'https', hostname: 'api.injahow.cn' },
       { protocol: 'https', hostname: 'i0.hdslb.com' },
       { protocol: 'https', hostname: 'i1.hdslb.com' },

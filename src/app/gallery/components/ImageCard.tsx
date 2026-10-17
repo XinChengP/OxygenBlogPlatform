@@ -20,15 +20,18 @@ const ImageCard = ({ image, onClick, index, priority = 'low' }: ImageCardProps) 
   // 图片加载状态
   const [loadStatus, setLoadStatus] = useState<ImageLoadStatus>('loading');
   const [retryCount, setRetryCount] = useState(0);
-  const [currentSrc, setCurrentSrc] = useState(image.src);
+  const [retryToken, setRetryToken] = useState(0);
+  const [usingFallback, setUsingFallback] = useState(false);
+  const [naturalRatio, setNaturalRatio] = useState<number | null>(
+    image.width && image.height ? image.width / image.height : null,
+  );
   const maxRetries = 3;
   const hasFallback = !!image.fallbackSrc;
-  const hasSwitchedToFallback = currentSrc === image.fallbackSrc;
 
   // 展签编号：01、02……
   const plaqueNo = String(index + 1).padStart(2, '0');
-  // 原始宽高比例（缺失时用 4:5 竖幅兜底，避免加载时跳动）
-  const aspectRatio = image.width && image.height ? image.width / image.height : 4 / 5;
+  // 优先使用真实比例；清单未提供宽高时先按 4:5 占位，加载完成后用 naturalWidth 校正
+  const aspectRatio = naturalRatio ?? 4 / 5;
 
   // 重试计时器引用
   const retryTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -38,16 +41,34 @@ const ImageCard = ({ image, onClick, index, priority = 'low' }: ImageCardProps) 
     return getAssetPath(path);
   }, []);
 
+  const baseSrc = usingFallback && image.fallbackSrc
+    ? processImagePath(image.fallbackSrc)
+    : image.src;
+
+  // 重试时追加一次性参数，强制浏览器重新发起请求（同一失败 URL 不会再次触发 error）
+  const currentSrc = retryToken === 0
+    ? baseSrc
+    : `${baseSrc}${baseSrc.includes('?') ? '&' : '?'}_retry=${retryToken}`;
+
   // 重置图片状态 - 使用useCallback优化
   const resetImageState = useCallback(() => {
     setLoadStatus('loading');
     setRetryCount(0);
-    setCurrentSrc(processImagePath(image.src));
-  }, [image.src, processImagePath]);
+    setRetryToken(0);
+    setUsingFallback(false);
+    setNaturalRatio(
+      image.width && image.height ? image.width / image.height : null,
+    );
+  }, [image.src, image.width, image.height]);
 
   // 图片加载成功处理
-  const handleImageLoad = () => {
+  const handleImageLoad = (event: React.SyntheticEvent<HTMLImageElement>) => {
     setLoadStatus('loaded');
+    // 清单缺失宽高时，用真实尺寸校正比例，避免所有图片被裁成 4:5
+    const { naturalWidth, naturalHeight } = event.currentTarget;
+    if (naturalWidth > 0 && naturalHeight > 0) {
+      setNaturalRatio(naturalWidth / naturalHeight);
+    }
     if (retryTimerRef.current) {
       clearTimeout(retryTimerRef.current);
       retryTimerRef.current = null;
@@ -58,7 +79,8 @@ const ImageCard = ({ image, onClick, index, priority = 'low' }: ImageCardProps) 
   const handleImageError = () => {
     if (retryCount < maxRetries) {
       setLoadStatus('loading');
-      setRetryCount(prev => prev + 1);
+      const nextRetry = retryCount + 1;
+      setRetryCount(nextRetry);
 
       if (retryTimerRef.current) {
         clearTimeout(retryTimerRef.current);
@@ -66,11 +88,14 @@ const ImageCard = ({ image, onClick, index, priority = 'low' }: ImageCardProps) 
 
       const waitTime = 1000 * Math.pow(2, retryCount);
       retryTimerRef.current = setTimeout(() => {
+        // 换一个带时间戳的 URL，浏览器才会真正重新请求
+        setRetryToken(token => token + 1);
         setLoadStatus('loading');
       }, waitTime);
-    } else if (!hasSwitchedToFallback && hasFallback) {
-      setCurrentSrc(processImagePath(image.fallbackSrc!));
+    } else if (!usingFallback && hasFallback) {
+      setUsingFallback(true);
       setRetryCount(0);
+      setRetryToken(0);
       setLoadStatus('loading');
     } else {
       setLoadStatus('failed');
@@ -95,6 +120,15 @@ const ImageCard = ({ image, onClick, index, priority = 'low' }: ImageCardProps) 
     <motion.figure
       className="group cursor-pointer"
       onClick={onClick}
+      role="button"
+      tabIndex={0}
+      aria-label={`查看作品：${image.alt}`}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick();
+        }
+      }}
       whileHover={{ y: -4 }}
       transition={{ duration: 0.25 }}
     >
@@ -143,6 +177,8 @@ const ImageCard = ({ image, onClick, index, priority = 'low' }: ImageCardProps) 
                 e.stopPropagation();
                 setLoadStatus('loading');
                 setRetryCount(0);
+                setUsingFallback(false);
+                setRetryToken(token => token + 1);
               }}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, lazy, Suspense, useEffect, useRef, useCallback } from 'react';
+import { useState, lazy, Suspense, useEffect, useRef, useCallback, useMemo } from 'react';
 
 import { motion, AnimatePresence } from 'framer-motion';
 import ImagePreview from '../../../app/gallery/components/ImagePreview';
@@ -31,6 +31,7 @@ import { copyToClipboard } from '@/utils/clipboard';
 import { BlogArticleProvider } from '../../../components/blogs/BlogArticleContext';
 import BlogSharePanel from '../../../components/blogs/BlogSharePanel';
 import RelatedPosts from '../../../components/blogs/RelatedPosts';
+import type { TocItem } from '@/utils/tocUtils';
 
 // 动态导入大型组件，优化初始加载性能
 const LazyTableOfContents = lazy(() => import('../../../components/TableOfContents'));
@@ -45,7 +46,8 @@ interface BlogPost {
   tags: string[];
   readTime: number;
   excerpt: string;
-  content: string;
+  /** 正文原文仅用于构建期渲染，客户端不再需要 */
+  content?: string;
   slug: string;
   author?: string;
   series?: string;
@@ -95,6 +97,8 @@ interface ClientBlogDetailProps {
    * 本组件只负责提供灯箱/iframe 等交互资源（经 BlogArticleContext）。
    */
   renderedContent: React.ReactNode;
+  /** 服务端从 Markdown 提取的目录项，客户端不再接收正文原文 */
+  tocItems: TocItem[];
 }
 
 // 互动功能Hook - 已移除点赞、收藏、浏览统计功能（分享功能见 BlogSharePanel 组件）
@@ -124,6 +128,7 @@ export default function ClientBlogDetail({
   seriesArticles,
   relatedArticles = [],
   renderedContent,
+  tocItems,
 }: ClientBlogDetailProps) {
   const { theme, resolvedTheme } = useTheme();
   const { containerStyle } = useBackgroundStyle('blog-detail');
@@ -235,6 +240,17 @@ export default function ClientBlogDetail({
     setLightboxImage(image);
     setIsPreviewOpen(true);
   }, []);
+
+  // Provider value 固定引用，避免阅读进度每次变化都让正文消费者重渲染
+  const articleContextValue = useMemo(
+    () => ({
+      imageSrcSetRef,
+      articleImagesRef,
+      iframeRefs,
+      onImageClick: handleImageClick,
+    }),
+    [handleImageClick],
+  );
 
   // 复制密码功能
   useEffect(() => {
@@ -538,7 +554,7 @@ export default function ClientBlogDetail({
                   </div>
                 </div>
               }>
-                <LazyTableOfContents content={blog.content} />
+                <LazyTableOfContents items={tocItems} />
               </Suspense>
             </div>
           </header>
@@ -604,12 +620,7 @@ export default function ClientBlogDetail({
                   （BlogArticleImage / BlogArticleIframe / ThemeAwareCodeBlock）。
                 */}
                 <BlogArticleProvider
-                  value={{
-                    imageSrcSetRef,
-                    articleImagesRef,
-                    iframeRefs,
-                    onImageClick: handleImageClick,
-                  }}
+                  value={articleContextValue}
                 >
                   {renderedContent}
                 </BlogArticleProvider>

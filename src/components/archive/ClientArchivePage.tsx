@@ -2,11 +2,12 @@
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { motion, useMotionValue } from 'framer-motion';
+import { motion, useMotionValue, animate } from 'framer-motion';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 import { Pin, Clock, BookOpen, Calendar } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 import { Live2DMessageHelper } from '@/utils/live2dMessageManager';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 /**
  * 博客文章接口
@@ -292,6 +293,19 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
   const [tagPosts, setTagPosts] = useState<BlogPost[]>([]);
   // 卡片标签区放不下、被 +N 收起时，用这个状态承载「查看该文全部标签」浮层
   const [tagOverflowPost, setTagOverflowPost] = useState<BlogPost | null>(null);
+
+  // 浮层打开时锁定页面滚动，并支持 Esc 关闭
+  useBodyScrollLock(showTagModal || !!tagOverflowPost);
+  useEffect(() => {
+    if (!showTagModal && !tagOverflowPost) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      setShowTagModal(false);
+      setTagOverflowPost(null);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showTagModal, tagOverflowPost]);
 
   // ── 响应式状态 ──
   // 初始值与服务端渲染保持一致（桌面端布局），避免水合不一致报错；
@@ -688,6 +702,18 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
               dragMomentum
               dragElastic={0.1}
               dragConstraints={dragConstraints}
+              role="region"
+              aria-label="文章时光河流，可使用左右方向键浏览"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+                e.preventDefault();
+                const step = Math.max(240, viewWidth * 0.6);
+                const nextX = e.key === 'ArrowLeft'
+                  ? Math.min(initialX, riverX.get() + step)
+                  : Math.max(dragConstraints.left, riverX.get() - step);
+                animate(riverX, nextX, { duration: 0.25, ease: 'easeOut' });
+              }}
               style={{
                 x: riverX,
                 /*
@@ -711,7 +737,7 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
                 }, 100);
               }}
               draggable={false}
-              className="cursor-grab active:cursor-grabbing"
+              className="cursor-grab active:cursor-grabbing rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70"
             >
               <svg
                 width={totalWidth}
@@ -1257,12 +1283,19 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
 
       {/* 标签筛选浮层 */}
       {showTagModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          onClick={closeTagModal}
+          role="dialog"
+          aria-modal="true"
+          aria-label="标签筛选"
+        >
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ duration: 0.3, type: "spring", damping: 25 }}
             className={getGlassStyle("w-full max-w-2xl max-h-[80vh] overflow-y-auto rounded-2xl p-6 border shadow-2xl")}
+            onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center mb-6">
               <div>
@@ -1275,6 +1308,7 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
               </div>
               <button
                 onClick={closeTagModal}
+                aria-label="关闭标签筛选"
                 className="w-10 h-10 rounded-full bg-muted/50 hover:bg-primary/10 flex items-center justify-center text-muted-foreground hover:text-primary transition-all duration-300"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1358,6 +1392,9 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
           onClick={() => setTagOverflowPost(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="文章全部标签"
         >
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -1373,6 +1410,7 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
               </div>
               <button
                 onClick={() => setTagOverflowPost(null)}
+                aria-label="关闭全部标签"
                 className="w-10 h-10 shrink-0 rounded-full bg-muted/50 hover:bg-primary/10 flex items-center justify-center text-muted-foreground hover:text-primary transition-all duration-300"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

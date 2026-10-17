@@ -16,6 +16,7 @@
 
 import React, { useEffect, ReactNode } from 'react';
 import { generateCSPString, getCurrentCSP } from '@/utils/cspConfig';
+import { getAssetPath } from '@/utils/assetUtils';
 import { useHijackingProtection } from './HijackingProtector';
 
 /**
@@ -82,7 +83,7 @@ function IntegrityCheckLoader(): null {
     
     // 创建脚本元素
     const script = document.createElement('script');
-    script.src = '/js/integrity-check.js';
+    script.src = getAssetPath('/js/integrity-check.js');
     script.async = true;
     script.setAttribute('data-integrity-check', 'true');
     
@@ -171,7 +172,7 @@ export default function SecurityProvider({
     enableDOMMonitoring: !isDev, // 开发环境禁用DOM监控
     enableScriptMonitoring: !isDev, // 开发环境禁用脚本监控
     enableNetworkMonitoring: true,
-    checkInterval: isDev ? 30000 : 5000, // 开发环境降低检查频率
+    checkInterval: isDev ? 30000 : 15000, // 生产环境 15s 检查一次，降低常驻开销
     onHijackingDetected: (type, details) => {
       // 开发环境下只记录日志，不显示错误
       if (isDev) {

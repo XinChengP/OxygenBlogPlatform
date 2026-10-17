@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 import BackgroundLayer from "@/components/BackgroundLayer";
 import ConditionalComponents from "@/components/ConditionalComponents";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import MotionPreferenceProvider from "@/components/MotionPreferenceProvider";
 import SmoothScrollProvider from "@/components/SmoothScrollProvider";
 
 import { NavigationVisibilityProvider } from "@/contexts/NavigationVisibilityContext";
@@ -13,9 +14,10 @@ import SecurityProvider from "@/components/security/SecurityProvider";
 import ExternalLinkGuard from "@/components/security/ExternalLinkGuard";
 import Live2DDynamicLoader from "@/components/Live2DDynamicLoader";
 import MusicPlayerController from "@/components/MusicPlayerController";
-import SearchDialog from "@/components/SearchDialog";
+import LazySearchDialog from "@/components/LazySearchDialog";
 import { enableBackground, backgroundImage } from "@/setting/WebSetting";
 import { getAssetPath } from "@/utils/assetUtils";
+import { generateCSPString, productionCSP } from "@/utils/cspConfig";
 
 /**
  * 站点基础URL配置
@@ -225,6 +227,15 @@ export default function RootLayout({
           accessToken 传递、不使用 Cookie，对应的 XHR 属于匿名 CORS 请求，
           只有落在同一个连接池里预连接才真正省下握手时间。
         */}
+        {/*
+          静态导出的 HTML 中没有 HTTP 响应头，CSP 必须在构建期写入 meta，
+          否则要等 JS 水合后才由 SecurityProvider 注入，期间页面没有策略保护。
+        */}
+        <meta
+          httpEquiv="Content-Security-Policy"
+          content={generateCSPString(productionCSP)}
+        />
+
         {process.env.NEXT_PUBLIC_TWIKOO_ENV_ID && (
           <link
             rel="preconnect"
@@ -349,10 +360,10 @@ export default function RootLayout({
         />
 
         {/* 主题初始化脚本 - 外部文件减少 HTML 体积（须同步执行以避免主题闪烁） */}
-        <script src="/js/theme-init.js" />
+        <script src={getAssetPath('/js/theme-init.js')} />
 
         {/* 动态标题脚本 - 非关键功能，defer 延迟执行不阻塞解析 */}
-        <script src="/js/dynamic-title.js" defer />
+        <script src={getAssetPath('/js/dynamic-title.js')} defer />
       </head>
       <body
         className="antialiased text-foreground transition-colors duration-300"
@@ -362,7 +373,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         {/* 平滑导航脚本 - 使用普通script标签 */}
-        <script src="/js/smooth-navigation.js" defer />
+        <script src={getAssetPath('/js/smooth-navigation.js')} defer />
         {/* 安全保护提供者 - 提供CSP、防劫持、完整性检测等安全功能 */}
         <SecurityProvider
           enableCSP={true}
@@ -376,6 +387,7 @@ export default function RootLayout({
             disableTransitionOnChange={false}
             storageKey="theme"
           >
+            <MotionPreferenceProvider>
             <NavigationVisibilityProvider>
               <SmoothScrollProvider>
                 <BackgroundLayer />
@@ -387,10 +399,11 @@ export default function RootLayout({
                 <ConditionalComponents />
                 {/* 外部链接跳转提醒 - 拦截全站外链点击并弹出安全提示 */}
                 <ExternalLinkGuard />
-                {/* 站内搜索弹窗 - Ctrl+K 或导航栏按钮唤起 */}
-                <SearchDialog />
+                {/* 站内搜索弹窗 - Ctrl+K 或导航栏按钮唤起（首次唤起时才加载代码） */}
+                <LazySearchDialog />
               </SmoothScrollProvider>
             </NavigationVisibilityProvider>
+            </MotionPreferenceProvider>
           </ThemeProvider>
         </SecurityProvider>
         {/* 51la 网站统计 - 用于追踪访客数据 */}

@@ -882,8 +882,7 @@ html:not(.music-player-active) body {
   }
 }
 
-/* Leaflet 地图样式 */
-@import "leaflet/dist/leaflet.css";
+/* Leaflet 地图样式由 TravelMap 组件按需引入，避免全站携带地图 CSS */
 
 .leaflet-container {
   font-family: inherit;
@@ -952,3 +951,15 @@ html:not(.music-player-active) body {
   border: none !important;
 }
 
+
+/* ==================== 音乐播放器 ==================== */
+
+/*
+  播放列表中“正在播放”的跳动音条。
+  原先定义在 MusicPlayer 的 styled-jsx 里，但列表已拆到 PlaylistPanel，
+  这里改为全局 keyframes，供 Tailwind 的 animate-[music-bar_...] 使用。
+*/
+@keyframes music-bar {
+  0%, 100% { transform: scaleY(0.5); }
+  50% { transform: scaleY(1); }
+}

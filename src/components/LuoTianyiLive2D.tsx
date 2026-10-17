@@ -14,6 +14,75 @@ interface LuoTianyiLive2DProps {
   hidden?: boolean;
 }
 
+/**
+ * 注册页面级交互消息（鼠标悬停标题/导航、点击看板娘）
+ *
+ * 放在模块作用域，引用恒定，避免组件每次渲染都生成新函数、
+ * 导致 useLive2DLoader 的 loadLive2D 依赖变化并反复重建加载监听。
+ */
+function setupLive2DMessageSystem(_basePath: string, signal: AbortSignal): void {
+  if (signal.aborted) return;
+  if ((window as any).messageSystemInitialized) return;
+  (window as any).messageSystemInitialized = true;
+
+  const triggerLimits = {
+    mouseover: new Map<string, number>(),
+    click: new Map<string, number>(),
+  };
+  const THROTTLE_DELAY = 2000;
+
+  const messageConfig = {
+    mouseover: [
+      { selector: '.title a, h1, h2, h3', text: InteractionMessages.TITLE_HOVER.messages },
+      { selector: ".searchbox, input[type='search']", text: InteractionMessages.SEARCH_HOVER.messages },
+      { selector: 'nav a, .nav-link, .navigation a, header a, .navbar a, .menu-item a', text: InteractionMessages.NAVIGATION_HOVER.messages },
+    ],
+    click: [
+      { selector: '#landlord #live2d', text: InteractionMessages.LIVE2D_CLICK.messages },
+    ],
+  };
+
+  const setupThrottledEvents = () => {
+    if (signal.aborted) return;
+
+    const renderTip = (text: string, data: any) => {
+      if (data && data.text) return text.replace(/{text}/g, data.text || '');
+      return text;
+    };
+
+    const createHandler = (tips: any, eventType: 'mouseover' | 'click') => (e: Event) => {
+      if (live2dMessageManager.isInFireworksMode()) return;
+      const target = e.target as HTMLElement;
+      if (!target.matches(tips.selector)) return;
+
+      // 节流判断在前，stopPropagation 在后——避免无意义地阻断不相关事件
+      const now = Date.now();
+      const lastTrigger = triggerLimits[eventType].get(tips.selector) || 0;
+      if (now - lastTrigger < THROTTLE_DELAY) return;
+      triggerLimits[eventType].set(tips.selector, now);
+
+      // 节流通过后才阻断事件传播
+      e.stopPropagation();
+
+      let text = Array.isArray(tips.text) ? tips.text[Math.floor(Math.random() * tips.text.length)] : tips.text;
+      text = renderTip(text, { text: target.textContent || '' });
+      (window as any).showMessage(text);
+    };
+
+    messageConfig.mouseover.forEach((tips: any) => {
+      document.addEventListener('mouseover', createHandler(tips, 'mouseover'), { signal } as any);
+    });
+    messageConfig.click.forEach((tips: any) => {
+      document.addEventListener('click', createHandler(tips, 'click'), { signal } as any);
+    });
+  };
+
+  const timeoutId = setTimeout(() => {
+    if (!signal.aborted) setupThrottledEvents();
+  }, 1000);
+  signal.addEventListener('abort', () => clearTimeout(timeoutId));
+}
+
 export default function LuoTianyiLive2D({ hidden = false }: LuoTianyiLive2DProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fadeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -119,7 +188,7 @@ export default function LuoTianyiLive2D({ hidden = false }: LuoTianyiLive2DProps
     setIsModelReady,
     setMessage,
     setMessageOpacity,
-    setupMessageSystem,
+    setupMessageSystem: setupLive2DMessageSystem,
     messageAbortRef,
   });
 
@@ -171,9 +240,9 @@ export default function LuoTianyiLive2D({ hidden = false }: LuoTianyiLive2DProps
   }, []);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setTimeout(() => showSmartPageMessage(), 3000);
-    }
+    if (typeof window === 'undefined') return;
+    const timer = setTimeout(() => showSmartPageMessage(), 3000);
+    return () => clearTimeout(timer);
   }, [showSmartPageMessage]);
 
   const handleThemeChange = useCallback((event: any) => {
@@ -187,14 +256,16 @@ export default function LuoTianyiLive2D({ hidden = false }: LuoTianyiLive2DProps
   }, []);
 
   useEffect(() => {
+    if (isMobileDevice) return;
     const interval = setInterval(checkPageStayTime, 60000);
     return () => clearInterval(interval);
-  }, [checkPageStayTime]);
+  }, [checkPageStayTime, isMobileDevice]);
 
   // 一言定时器：每 45 秒从 v1.hitokoto.cn 拉一句随机句子显示
   // 使用递归 setTimeout：页面隐藏时暂停请求，连续失败时按退避间隔重试
   useEffect(() => {
-    if (hidden) return;
+    if (hidden || isMobileDevice) return;
+
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | null = null;
     let failureCount = 0;
@@ -228,7 +299,7 @@ export default function LuoTianyiLive2D({ hidden = false }: LuoTianyiLive2DProps
       cancelled = true;
       if (timer) clearTimeout(timer);
     };
-  }, [updateMessage, hidden]);
+  }, [updateMessage, hidden, isMobileDevice]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -283,14 +354,15 @@ export default function LuoTianyiLive2D({ hidden = false }: LuoTianyiLive2DProps
     if (hasLoadedRef.current) return;
     hasLoadedRef.current = true;
 
-    live2dMessageManager.startContextListening();
-
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     setIsMobileDevice(isMobile);
     if (isMobile) {
       setIsVisible(false);
       return;
     }
+
+    // 移动端不加载看板娘，也不启动上下文监听
+    live2dMessageManager.startContextListening();
     setIsVisible(true);
 
     const eventListeners: Array<{ type: string; listener: EventListenerOrEventListenerObject }> = [];
@@ -349,71 +421,6 @@ export default function LuoTianyiLive2D({ hidden = false }: LuoTianyiLive2DProps
     };
   }, [handleThemeChange, updateMessage]);
 
-  function setupMessageSystem(_basePath: string, signal: AbortSignal) {
-    if (signal.aborted) return;
-    if ((window as any).messageSystemInitialized) return;
-    (window as any).messageSystemInitialized = true;
-
-    const triggerLimits = {
-      mouseover: new Map<string, number>(),
-      click: new Map<string, number>(),
-    };
-    const THROTTLE_DELAY = 2000;
-
-    // 注意：window.showMessage 桥接已在组件挂载时的 useEffect 中完成，
-    // 这里不再重复设置。message.js 已删除，不会有竞态覆盖问题。
-
-    const messageConfig = {
-      mouseover: [
-        { selector: '.title a, h1, h2, h3', text: InteractionMessages.TITLE_HOVER.messages },
-        { selector: ".searchbox, input[type='search']", text: InteractionMessages.SEARCH_HOVER.messages },
-        { selector: 'nav a, .nav-link, .navigation a, header a, .navbar a, .menu-item a', text: InteractionMessages.NAVIGATION_HOVER.messages },
-      ],
-      click: [
-        { selector: '#landlord #live2d', text: InteractionMessages.LIVE2D_CLICK.messages },
-      ],
-    };
-
-    const setupThrottledEvents = () => {
-      if (signal.aborted) return;
-
-      const renderTip = (text: string, data: any) => {
-        if (data && data.text) return text.replace(/{text}/g, data.text || '');
-        return text;
-      };
-
-      const createHandler = (tips: any, eventType: 'mouseover' | 'click') => (e: Event) => {
-        if (live2dMessageManager.isInFireworksMode()) return;
-        const target = e.target as HTMLElement;
-        if (!target.matches(tips.selector)) return;
-
-        // 节流判断在前，stopPropagation 在后——避免无意义地阻断不相关事件
-        const now = Date.now();
-        const lastTrigger = triggerLimits[eventType].get(tips.selector) || 0;
-        if (now - lastTrigger < THROTTLE_DELAY) return;
-        triggerLimits[eventType].set(tips.selector, now);
-
-        // 节流通过后才阻断事件传播
-        e.stopPropagation();
-
-        let text = Array.isArray(tips.text) ? tips.text[Math.floor(Math.random() * tips.text.length)] : tips.text;
-        text = renderTip(text, { text: target.textContent || '' });
-        (window as any).showMessage(text);
-      };
-
-      messageConfig.mouseover.forEach((tips: any) => {
-        document.addEventListener('mouseover', createHandler(tips, 'mouseover'), { signal } as any);
-      });
-      messageConfig.click.forEach((tips: any) => {
-        document.addEventListener('click', createHandler(tips, 'click'), { signal } as any);
-      });
-    };
-
-    const timeoutId = setTimeout(() => {
-      if (!signal.aborted) setupThrottledEvents();
-    }, 1000);
-    signal.addEventListener('abort', () => clearTimeout(timeoutId));
-  }
 
   const toggleVisibility = useCallback(() => setIsVisible((v) => !v), []);
 

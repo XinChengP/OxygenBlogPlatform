@@ -21,6 +21,13 @@ export type PlayMode = 'list' | 'random' | 'single';
 export interface MusicPlayerState {
   /** 当前播放索引，表示播放列表中的歌曲位置 */
   index: number;
+  /**
+   * 当前歌曲的稳定标识（歌名 + 歌手 + 来源）
+   *
+   * 在线歌单会动态变化（834 首且顺序可能调整），只存 index 会在下次
+   * 加载时恢复到错误的歌曲；有 songKey 时优先按歌曲身份恢复。
+   */
+  songKey?: string;
   /** 播放进度，单位为秒 */
   currentTime: number;
   /** 是否处于暂停状态，true 表示暂停，false 表示播放中 */

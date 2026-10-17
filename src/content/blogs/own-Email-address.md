@@ -1,12 +1,13 @@
 ---
 title: "如何打造一个自定义域名邮箱"
 date: "2026-10-14"
+updatedAt: "2026-10-18"
 category: "技术"
 author: 歆橙
 language: "zh-CN"
 tags: ["cloudflare", "email-routing", "域名邮箱", "dns", "教程"]
 excerpt: "用自己域名搭建一个免费的域名邮箱"
-coverImage: "/Blogabout/own-Email-address/cover.png"
+coverImage: "/Blogabout/own-Email-address/cover.jpg"
 ---
 
 # 如何打造一个自定义域名邮箱？
@@ -100,9 +101,13 @@ ps：以前发的忘记截图了，重发了一个（
 
 <div style="display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; margin: 24px 0;">
   <div style="flex: 1 1 0; min-width: 0;">
-    <img src="/Blogabout/own-Email-address/6.png" alt="发邮件" />
+    <img src="/Blogabout/own-Email-address/6.png" alt="给byd发邮件" />
   </div>
   <div style="flex: 1 1 0; min-width: 0;">
-    <img src="/Blogabout/own-Email-address/7.png" alt="收到邮件" />
+    <img src="/Blogabout/own-Email-address/7.png" alt="亲爱的byd收到邮件" />
   </div>
 </div>
+
+### 10.18凌晨编
+
+&emsp;&emsp;没想到啊没想到，随便整的发邮件功能在几天后的评论区重构方面用到了，可喜可贺可喜可贺awa

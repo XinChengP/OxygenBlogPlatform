@@ -1,15 +1,22 @@
 /**
  * 音乐配置管理器
- * 
+ *
  * 功能说明：
  * 1. 加载音乐配置文件（music.json）
  * 2. 验证配置格式是否正确
  * 3. 提供默认配置作为降级方案
  * 4. 使用 getAssetPath 处理所有资源路径，确保 GitHub Pages 兼容性
- * 
+ * 5. 在线歌单优先，本地歌单仅作兜底
+ *
+ * 加载顺序：
+ * - 在线歌单成功时只展示在线歌单，本地歌曲不会混入；
+ * - 在线歌单失败/为空时才回退到本地歌单；
+ * - 首次初始化会等待在线歌单结果，避免先把本地歌单当成网易云歌单展示；
+ * - 管理器已初始化后的刷新在后台进行，不打断当前播放。
+ *
  * @author 歆橙
- * @version 3.0
- * @date 2026-05-07
+ * @version 4.0
+ * @date 2026-10-17
  */
 
 import { getAssetPath } from '@/utils/assetUtils';
@@ -20,6 +27,22 @@ import { neteasePlaylistService } from '@/services/neteasePlaylistService';
 export type { MusicSource, ProcessedAudioItem };
 
 /**
+ * 在线歌单失败时保留旧列表的最长时间
+ *
+ * Meting 返回的音频 URL 是临时签名地址（约 20 分钟有效），
+ * 超过这个时间后旧列表基本无法播放，应清空并回退到本地歌单。
+ */
+const ONLINE_SONGS_MAX_STALE_MS = 15 * 60 * 1000;
+
+/**
+ * 同一个页面会话内在线歌单的复用时间
+ *
+ * 超过这个时间后再调用 loadOnlineProcessedAudioListAsync() 会重新请求，
+ * 避免 SPA 长时间停留时列表永远不更新。手动刷新会忽略该 TTL。
+ */
+const ONLINE_SONGS_TTL_MS = 2 * 60 * 1000;
+
+/**
  * AI 爬虫 User-Agent 关键词列表
  *
  * 说明：匹配列表中的任意一个关键词（不区分大小写），即可判定为 AI 爬虫。
@@ -28,10 +51,13 @@ export type { MusicSource, ProcessedAudioItem };
  * 1. AI 产品爬虫：Claude、GPT、Perplexity、字节跳动、华为等
  * 2. SEO 工具爬虫：Semrush、Ahrefs、Majestic 等
  * 3. 其他不想被爬取敏感数据的产品：Amazon、Apple 等
+ *
+ * 【注意】关键词必须全部小写：detectAiCrawler 会先把 UA 转小写再比较。
+ * 之前 'claudeBot' 带大写 B，导致 Claude 爬虫实际上从未被拦截。
  */
 const AI_CRAWLER_UA_KEYWORDS = [
   // AI 产品
-  'claudeBot',           // Anthropic Claude
+  'claudebot',           // Anthropic Claude
   'anthropic',           // Anthropic 其他产品
   'gptbot',              // OpenAI GPT
   'chatgpt-user',        // ChatGPT 用户爬虫
@@ -59,8 +85,11 @@ const AI_CRAWLER_UA_KEYWORDS = [
 /**
  * 检测当前客户端是否为 AI 爬虫
  *
- * 仅在浏览器环境（typeof window !== 'undefined'）下有效。
+ * 仅在浏览器环境（typeof navigator !== 'undefined'）下有效。
  * 在服务端（SSR）或缺少 User-Agent 时返回 false（不拦截，让页面正常渲染）。
+ *
+ * 说明：该检测只能影响会执行 JS 的爬虫；不执行 JS 的爬虫本来也不会触发
+ * 客户端的在线歌单请求，所以这里的作用是减少被无头浏览器抓取完整歌单。
  *
  * @returns 是否为 AI 爬虫
  */
@@ -88,8 +117,10 @@ export interface NeteaseSourceConfig {
   enabled: boolean;
   /** 歌单 ID */
   playlistId: string;
-  /** Meting API 地址 */
+  /** Meting API 地址（主 API） */
   api: string;
+  /** 备用 Meting API 地址（主 API 失败时按顺序尝试） */
+  fallbackApis?: string[];
   /** 描述信息 */
   description?: string;
 }
@@ -146,10 +177,12 @@ export interface MusicConfig {
  * 默认音乐配置
  * 当配置文件加载失败或格式验证不通过时使用此配置
  * 确保播放器始终有可播放的内容
+ *
+ * 封面已统一转为 256×256 WebP（原图最大 5.9MB，实际只显示 48px）。
  */
 const DEFAULT_MUSIC_CONFIG: MusicConfig = {
-  version: "3.1",
-  lastUpdated: "2026-06-24",
+  version: "4.0",
+  lastUpdated: "2026-10-17",
   description: "默认音乐配置（降级方案）",
   sources: {
     local: {
@@ -159,8 +192,10 @@ const DEFAULT_MUSIC_CONFIG: MusicConfig = {
     netease: {
       enabled: true,
       playlistId: "14349636887",
-      // 原 api.i-meto.com 已下线，更换为 injahow 公共 Meting API
-      api: "https://api.injahow.cn/meting/",
+      // qijieya 的 playlist 接口返回完整歌单；injahow 作为备用
+      // （injahow 的 playlist 接口有服务端缓存，实测会少 5 首）
+      api: "https://api.qijieya.cn/meting/",
+      fallbackApis: ["https://api.injahow.cn/meting/"],
       description: "网易云音乐歌单（通过 Meting API 加载）"
     }
   },
@@ -170,7 +205,7 @@ const DEFAULT_MUSIC_CONFIG: MusicConfig = {
       name: "一半一半",
       artist: "洛天依",
       url: "/music/一半一半 - 洛天依.mp3",
-      cover: "/music/covers/一半一半 - 洛天依.jpg",
+      cover: "/music/covers/一半一半 - 洛天依.webp",
       lrc: "/music/lyrics/一半一半 - 洛天依.lrc",
       source: "local"
     },
@@ -179,7 +214,7 @@ const DEFAULT_MUSIC_CONFIG: MusicConfig = {
       name: "三月雨",
       artist: "洛天依",
       url: "/music/三月雨 - 洛天依.mp3",
-      cover: "/music/covers/三月雨 - 洛天依.png",
+      cover: "/music/covers/三月雨 - 洛天依.webp",
       lrc: "/music/lyrics/三月雨 - 洛天依.lrc",
       source: "local"
     },
@@ -188,7 +223,7 @@ const DEFAULT_MUSIC_CONFIG: MusicConfig = {
       name: "夏虫",
       artist: "洛天依",
       url: "/music/夏虫 - 洛天依.mp3",
-      cover: "/music/covers/夏虫 - 洛天依.jpg",
+      cover: "/music/covers/夏虫 - 洛天依.webp",
       lrc: "/music/lyrics/夏虫 - 洛天依.lrc",
       source: "local"
     },
@@ -197,7 +232,7 @@ const DEFAULT_MUSIC_CONFIG: MusicConfig = {
       name: "天星问",
       artist: "洛天依",
       url: "/music/天星问 - 洛天依.mp3",
-      cover: "/music/covers/天星问 - 洛天依.jpg",
+      cover: "/music/covers/天星问 - 洛天依.webp",
       lrc: "/music/lyrics/天星问 - 洛天依.lrc",
       source: "local"
     },
@@ -206,7 +241,7 @@ const DEFAULT_MUSIC_CONFIG: MusicConfig = {
       name: "流光 (Light Me Up)",
       artist: "洛天依",
       url: "/music/流光 (Light Me Up) - 洛天依.mp3",
-      cover: "/music/covers/流光 (Light Me Up) - 洛天依.jpg",
+      cover: "/music/covers/流光 (Light Me Up) - 洛天依.webp",
       lrc: "/music/lyrics/流光 (Light Me Up) - 洛天依.lrc",
       source: "local"
     },
@@ -215,7 +250,7 @@ const DEFAULT_MUSIC_CONFIG: MusicConfig = {
       name: "啥啊",
       artist: "洛天依",
       url: "/music/啥啊 - 洛天依.mp3",
-      cover: "/music/covers/啥啊 - 洛天依.jpg",
+      cover: "/music/covers/啥啊 - 洛天依.webp",
       lrc: "/music/lyrics/啥啊 - 洛天依.lrc",
       source: "local"
     },
@@ -224,7 +259,7 @@ const DEFAULT_MUSIC_CONFIG: MusicConfig = {
       name: "异样的风暴中心",
       artist: "洛天依",
       url: "/music/异样的风暴中心 - 洛天依.mp3",
-      cover: "/music/covers/异样的风暴中心 - 洛天依.jpg",
+      cover: "/music/covers/异样的风暴中心 - 洛天依.webp",
       lrc: "/music/lyrics/异样的风暴中心 - 洛天依.lrc",
       source: "local"
     },
@@ -233,7 +268,7 @@ const DEFAULT_MUSIC_CONFIG: MusicConfig = {
       name: "歌行四方",
       artist: "洛天依",
       url: "/music/歌行四方 - 洛天依.mp3",
-      cover: "/music/covers/歌行四方 - 洛天依.jpg",
+      cover: "/music/covers/歌行四方 - 洛天依.webp",
       lrc: "/music/lyrics/歌行四方 - 洛天依.lrc",
       source: "local"
     },
@@ -242,7 +277,7 @@ const DEFAULT_MUSIC_CONFIG: MusicConfig = {
       name: "蝴蝶",
       artist: "洛天依",
       url: "/music/蝴蝶 - 洛天依.mp3",
-      cover: "/music/covers/蝴蝶 - 洛天依.jpg",
+      cover: "/music/covers/蝴蝶 - 洛天依.webp",
       lrc: "/music/lyrics/蝴蝶 - 洛天依.lrc",
       source: "local"
     },
@@ -251,7 +286,7 @@ const DEFAULT_MUSIC_CONFIG: MusicConfig = {
       name: "白石溪",
       artist: "洛天依、乐正绫",
       url: "/music/白石溪 - 洛天依、乐正绫.mp3",
-      cover: "/music/covers/白石溪 - 洛天依、乐正绫.png",
+      cover: "/music/covers/白石溪 - 洛天依、乐正绫.webp",
       lrc: "/music/lyrics/白石溪 - 洛天依、乐正绫.lrc",
       source: "local"
     }
@@ -261,7 +296,7 @@ const DEFAULT_MUSIC_CONFIG: MusicConfig = {
 /**
  * 验证歌曲配置是否有效
  * 检查必需字段是否存在且类型正确
- * 
+ *
  * @param song - 待验证的歌曲配置对象
  * @returns 如果配置有效返回 true，否则返回 false
  */
@@ -302,7 +337,7 @@ function validateSongConfig(song: unknown): song is SongConfig {
 /**
  * 验证完整的音乐配置文件格式
  * 检查配置结构是否正确，所有必需字段是否存在
- * 
+ *
  * @param config - 待验证的配置对象
  * @returns 如果配置格式有效返回 true，否则返回 false
  */
@@ -353,7 +388,7 @@ function validateMusicConfig(config: unknown): config is MusicConfig {
 /**
  * 处理单个歌曲配置，转换所有资源路径
  * 使用 getAssetPath 确保路径在 GitHub Pages 环境下正确
- * 
+ *
  * @param song - 原始歌曲配置
  * @returns 处理后的音频项，所有路径已转换
  */
@@ -390,21 +425,33 @@ function processSongConfig(song: SongConfig): ProcessedAudioItem {
 class MusicConfigManager {
   /** 单例实例 */
   private static instance: MusicConfigManager;
-  
-  /** 当前加载的配置 */
+
+  /** 当前加载的配置（music.json，仅包含本地歌曲） */
   private config: MusicConfig | null = null;
 
-  /** 从网易云音乐加载的歌曲列表（已处理为可直接播放的格式） */
-  private neteaseSongs: ProcessedAudioItem[] = [];
+  /** 本地歌曲（已处理为可直接播放的格式） */
+  private localSongs: ProcessedAudioItem[] = [];
 
-  /** 配置是否已加载 */
+  /** 在线歌曲（网易云，已处理为可直接播放的格式） */
+  private onlineSongs: ProcessedAudioItem[] = [];
+
+  /** 在线歌曲最近一次成功加载的时间戳（用于判断旧列表是否还值得保留） */
+  private onlineSongsCachedAt = 0;
+
+  /** 本地配置是否已加载 */
   private isLoaded = false;
 
-  /** 是否正在加载中（防止重复加载） */
+  /** 是否正在加载本地配置中（防止重复加载） */
   private isLoading = false;
 
-  /** 加载 Promise 缓存，用于并发请求时复用 */
+  /** 本地配置加载 Promise 缓存，用于并发请求时复用 */
   private loadPromise: Promise<MusicConfig> | null = null;
+
+  /** 在线歌单是否已尝试加载完成（失败时保持 false，便于后续重试） */
+  private onlineLoaded = false;
+
+  /** 在线歌单加载 Promise 缓存（防止并发重复请求） */
+  private onlineLoadPromise: Promise<ProcessedAudioItem[]> | null = null;
 
   /**
    * 私有构造函数，防止外部实例化
@@ -423,9 +470,12 @@ class MusicConfigManager {
   }
 
   /**
-   * 加载音乐配置文件
+   * 加载本地音乐配置文件
    * 从 /content/music.json 加载配置，验证格式并缓存
-   * 
+   *
+   * 注意：本方法不再等待网易云歌单，避免第三方接口拖慢首屏。
+   * 在线歌单请调用 loadOnlineProcessedAudioListAsync()。
+   *
    * @returns Promise<MusicConfig> 加载完成的配置对象
    */
   public async loadConfig(): Promise<MusicConfig> {
@@ -454,9 +504,9 @@ class MusicConfigManager {
   }
 
   /**
-   * 实际执行配置获取的方法
+   * 实际执行本地配置获取的方法
    * 支持客户端和服务端两种环境
-   * 
+   *
    * @returns Promise<MusicConfig> 配置对象
    */
   private async fetchConfig(): Promise<MusicConfig> {
@@ -467,10 +517,10 @@ class MusicConfigManager {
       if (typeof window !== 'undefined') {
         // 使用 getAssetPath 处理配置文件路径，确保 GitHub Pages 兼容性
         const configPath = getAssetPath('/content/music.json');
-        
+
         const response = await fetch(configPath, {
-          // 使用 cache: 'no-store' 确保获取最新配置
-          cache: 'no-store'
+          // 允许浏览器按 HTTP 缓存策略复用；静态文件部署时通常带 ETag/Last-Modified
+          cache: 'default'
         });
 
         if (!response.ok) {
@@ -482,15 +532,14 @@ class MusicConfigManager {
         // 在服务端环境中，使用文件系统读取
         const fs = await import('fs');
         const path = await import('path');
-        
+
         // 服务端从 public 目录读取配置文件
         const configFilePath = path.join(process.cwd(), 'public', 'content', 'music.json');
-        
+
         // 检查文件是否存在
         if (!fs.existsSync(configFilePath)) {
           console.warn('[MusicConfigManager] 配置文件不存在，使用默认配置');
-          this.config = DEFAULT_MUSIC_CONFIG;
-          this.isLoaded = true;
+          this.applyLocalConfig(DEFAULT_MUSIC_CONFIG);
           return DEFAULT_MUSIC_CONFIG;
         }
 
@@ -501,64 +550,163 @@ class MusicConfigManager {
       // 验证配置格式
       if (!validateMusicConfig(config)) {
         console.warn('[MusicConfigManager] 配置格式验证失败，使用默认配置');
-        this.config = DEFAULT_MUSIC_CONFIG;
-        this.isLoaded = true;
+        this.applyLocalConfig(DEFAULT_MUSIC_CONFIG);
         return DEFAULT_MUSIC_CONFIG;
       }
 
       // 过滤出本地歌曲
       const localSongs = config.songs.filter(song => song.source === 'local' || !song.source);
-      
+
       // 如果没有本地歌曲，使用默认配置中的本地歌曲
-      if (localSongs.length === 0) {
-        console.warn('[MusicConfigManager] 没有可用的本地音乐，使用默认配置');
-        config.songs = [...DEFAULT_MUSIC_CONFIG.songs];
-      } else {
-        config.songs = [...localSongs];
-      }
+      config.songs = localSongs.length > 0
+        ? [...localSongs]
+        : [...DEFAULT_MUSIC_CONFIG.songs];
 
-      // 在客户端环境中，如果启用了网易云音乐歌单，则异步加载
-      // 网易云歌曲单独保存，因为它们的字段与本地歌曲配置不同（不需要 id）
-      this.neteaseSongs = [];
-      if (typeof window !== 'undefined') {
-        const neteaseConfig = config.sources?.netease;
-        // 【反爬防护】检测 AI 爬虫 User-Agent，对它们跳过网易云歌单加载
-        // 保留传统搜索引擎（Googlebot、Bingbot 等），只屏蔽 AI 产品和 SEO 工具爬虫
-        const isAiCrawler = detectAiCrawler();
-        if (neteaseConfig && neteaseConfig.enabled && !isAiCrawler) {
-          try {
-            const neteaseResult = await neteasePlaylistService.loadPlaylist(neteaseConfig);
-            if (neteaseResult.success && neteaseResult.songs.length > 0) {
-              this.neteaseSongs = neteaseResult.songs;
-              console.log(`[MusicConfigManager] 已加载网易云歌单，共 ${neteaseResult.songs.length} 首歌曲`);
-            } else if (!neteaseResult.success) {
-              console.warn('[MusicConfigManager] 网易云歌单加载失败:', neteaseResult.error);
-            }
-          } catch (error) {
-            console.warn('[MusicConfigManager] 加载网易云歌单时出错:', error);
-          }
-        }
-      }
+      this.applyLocalConfig(config);
 
-      this.config = config;
-      this.isLoaded = true;
-      const totalSongs = config.songs.length + this.neteaseSongs.length;
-      console.log(`[MusicConfigManager] 配置加载成功，共 ${totalSongs} 首歌曲（本地 ${config.songs.length} 首，网易云 ${this.neteaseSongs.length} 首）`);
+      console.log(`[MusicConfigManager] 本地配置加载成功，共 ${this.localSongs.length} 首歌曲`);
       return config;
     } catch (error) {
       // 加载失败时使用默认配置作为降级方案
       console.error('[MusicConfigManager] 加载配置文件失败:', error);
       console.log('[MusicConfigManager] 使用默认配置作为降级方案');
-      this.config = DEFAULT_MUSIC_CONFIG;
-      this.isLoaded = true;
+      this.applyLocalConfig(DEFAULT_MUSIC_CONFIG);
       return DEFAULT_MUSIC_CONFIG;
+    }
+  }
+
+  /**
+   * 应用本地配置并生成处理后的本地歌曲列表
+   */
+  private applyLocalConfig(config: MusicConfig): void {
+    this.config = config;
+    this.localSongs = config.songs
+      .filter(song => song.source === 'local' || !song.source)
+      .map(processSongConfig);
+    this.isLoaded = true;
+  }
+
+  /**
+   * 加载在线歌单（网易云）
+   *
+   * 该方法与本地配置解耦。在线歌单成功时，它才是播放器的主列表；
+   * 失败时才回退到本地歌单。
+   *
+   * @param options.forceRefresh 是否忽略所有缓存强制请求最新数据
+   * @returns Promise<ProcessedAudioItem[]> 在线歌曲列表
+   */
+  public async loadOnlineProcessedAudioListAsync(
+    options: { forceRefresh?: boolean } = {}
+  ): Promise<ProcessedAudioItem[]> {
+    const forceRefresh = options.forceRefresh === true;
+
+    // 已经成功加载过且仍在复用期内，直接返回缓存
+    if (
+      !forceRefresh &&
+      this.onlineLoaded &&
+      this.onlineSongs.length > 0 &&
+      Date.now() - this.onlineSongsCachedAt < ONLINE_SONGS_TTL_MS
+    ) {
+      return [...this.onlineSongs];
+    }
+
+    // 正在加载中：
+    // - 普通调用复用同一个 Promise；
+    // - 强制刷新则等当前请求结束后再发起一次，避免并发覆盖。
+    if (this.onlineLoadPromise) {
+      if (!forceRefresh) {
+        return this.onlineLoadPromise;
+      }
+      try {
+        await this.onlineLoadPromise;
+      } catch {
+        // 忽略上一次请求的错误，继续强制刷新
+      }
+    }
+
+    this.onlineLoadPromise = this.fetchOnlineSongs(forceRefresh);
+
+    try {
+      return await this.onlineLoadPromise;
+    } finally {
+      this.onlineLoadPromise = null;
+    }
+  }
+
+  /**
+   * 实际加载在线歌单
+   * @param forceRefresh 是否绕过网易云服务的内存/localStorage 缓存
+   */
+  private async fetchOnlineSongs(forceRefresh: boolean): Promise<ProcessedAudioItem[]> {
+    if (typeof window === 'undefined') return [];
+
+    const neteaseConfig = this.getConfig().sources?.netease;
+
+    if (!neteaseConfig?.enabled) {
+      this.onlineSongs = [];
+      this.onlineSongsCachedAt = 0;
+      this.onlineLoaded = true;
+      return [];
+    }
+
+    // 【反爬防护】检测 AI 爬虫 User-Agent，对它们跳过网易云歌单加载
+    // 保留传统搜索引擎（Googlebot、Bingbot 等），只屏蔽 AI 产品和 SEO 工具爬虫
+    if (detectAiCrawler()) {
+      console.log('[MusicConfigManager] 检测到 AI 爬虫 UA，跳过在线歌单加载');
+      this.onlineSongs = [];
+      this.onlineSongsCachedAt = 0;
+      this.onlineLoaded = true;
+      return [];
+    }
+
+    try {
+      const neteaseResult = await neteasePlaylistService.loadPlaylist(
+        neteaseConfig,
+        { forceRefresh }
+      );
+      if (neteaseResult.success && neteaseResult.songs.length > 0) {
+        this.onlineSongs = neteaseResult.songs;
+        this.onlineSongsCachedAt = Date.now();
+        this.onlineLoaded = true;
+        console.log(`[MusicConfigManager] 已加载网易云歌单，共 ${neteaseResult.songs.length} 首歌曲`);
+      } else {
+        // 失败时保留已加载的在线歌单：
+        // - 全页刷新时本来就没有旧数据，结果仍是空；
+        // - 同一页面内从首页切回内容页时，避免列表闪回本地 10 首。
+        // onlineLoaded 保持 false，允许用户点击重试或下次启用时再次加载。
+        this.onlineLoaded = false;
+        this.dropExpiredOnlineSongs();
+        if (!neteaseResult.success) {
+          console.warn('[MusicConfigManager] 网易云歌单加载失败:', neteaseResult.error);
+        }
+      }
+    } catch (error) {
+      this.onlineLoaded = false;
+      this.dropExpiredOnlineSongs();
+      console.warn('[MusicConfigManager] 加载网易云歌单时出错:', error);
+    }
+
+    return [...this.onlineSongs];
+  }
+
+  /**
+   * 在线歌单加载失败时，根据缓存年龄决定是否丢弃旧列表
+   *
+   * - 15 分钟内：保留旧列表，避免同一页面内切页回来时列表闪回本地 10 首；
+   * - 超过 15 分钟：签名 URL 基本失效，清空并回退到本地歌单。
+   */
+  private dropExpiredOnlineSongs(): void {
+    if (this.onlineSongs.length === 0) return;
+    if (Date.now() - this.onlineSongsCachedAt > ONLINE_SONGS_MAX_STALE_MS) {
+      this.onlineSongs = [];
+      this.onlineSongsCachedAt = 0;
     }
   }
 
   /**
    * 同步获取已加载的配置
    * 如果配置未加载，返回默认配置
-   * 
+   *
    * @returns MusicConfig 配置对象
    */
   public getConfig(): MusicConfig {
@@ -570,51 +718,65 @@ class MusicConfigManager {
 
   /**
    * 获取处理后的音频列表
-   * 所有资源路径已通过 getAssetPath 处理，可直接用于 Howler.js 播放器
-   * 优先使用网易云歌单，网易云不可用时自动降级为本地音乐
-   * 
+   *
+   * 规则：在线歌单可用时只返回在线歌单；在线歌单为空/加载失败时才返回本地歌单。
+   * 本地歌单只作为兜底，不会混入网易云歌单。
+   *
    * @returns ProcessedAudioItem[] 处理后的音频列表
    */
   public getProcessedAudioList(): ProcessedAudioItem[] {
-    // 网易云歌单正常加载时，优先播放网易云歌曲
-    if (this.neteaseSongs.length > 0) {
-      return [...this.neteaseSongs];
+    if (this.onlineSongs.length > 0) {
+      return [...this.onlineSongs];
     }
-
-    // 【降级方案】网易云歌单为空时回退到本地音乐
-    // 为空的原因可能是：Meting 接口请求失败、歌单配置未启用、被反爬规则拦截
-    // 若不回退，播放器将没有任何内容可播，用户只能看到空的播放列表
-    return this.getLocalProcessedList();
+    return [...this.localSongs];
   }
 
   /**
    * 获取本地音乐的处理后列表
-   * 从已加载的配置中筛出本地歌曲，并批量转换资源路径
-   * 当配置文件本身加载失败时，getConfig() 会返回默认配置中的 10 首本地歌曲
-   * 
+   *
    * @returns ProcessedAudioItem[] 本地音乐列表
    */
-  private getLocalProcessedList(): ProcessedAudioItem[] {
-    return this.getConfig()
-      .songs
-      .filter(song => song.source === 'local' || !song.source)
-      .map(processSongConfig);
+  public getLocalProcessedAudioList(): ProcessedAudioItem[] {
+    return [...this.localSongs];
   }
 
   /**
-   * 异步获取处理后的音频列表
-   * 先确保配置已加载，再返回处理后的列表
-   * 
+   * 获取在线音乐的处理后列表
+   *
+   * @returns ProcessedAudioItem[] 在线音乐列表
+   */
+  public getOnlineProcessedAudioList(): ProcessedAudioItem[] {
+    return [...this.onlineSongs];
+  }
+
+  /**
+   * 异步获取本地音乐列表（只等待 music.json，不等待在线歌单）
+   *
+   * @returns Promise<ProcessedAudioItem[]> 本地音乐列表
+   */
+  public async getLocalProcessedAudioListAsync(): Promise<ProcessedAudioItem[]> {
+    await this.loadConfig();
+    return this.getLocalProcessedAudioList();
+  }
+
+  /**
+   * 异步获取音频列表（在线优先，失败时本地兜底）
+   *
+   * 注意：该方法会等待在线歌单结果（主 API + 备用 API 的超时时间）。
+   * MusicPlayer 首次初始化使用它，避免先把本地歌单当成网易云歌单展示；
+   * 已初始化后的刷新请直接调用 loadOnlineProcessedAudioListAsync()。
+   *
    * @returns Promise<ProcessedAudioItem[]> 处理后的音频列表
    */
   public async getProcessedAudioListAsync(): Promise<ProcessedAudioItem[]> {
     await this.loadConfig();
+    await this.loadOnlineProcessedAudioListAsync();
     return this.getProcessedAudioList();
   }
 
   /**
    * 根据 ID 获取歌曲配置
-   * 
+   *
    * @param id - 歌曲唯一标识符
    * @returns SongConfig | undefined 歌曲配置，如果未找到返回 undefined
    */
@@ -626,14 +788,14 @@ class MusicConfigManager {
   /**
    * 根据名称搜索歌曲
    * 支持模糊匹配，返回所有名称包含搜索词的歌曲
-   * 
+   *
    * @param name - 搜索的歌曲名称
    * @returns SongConfig[] 匹配的歌曲列表
    */
   public searchSongsByName(name: string): SongConfig[] {
     const config = this.getConfig();
     const lowerName = name.toLowerCase();
-    return config.songs.filter(song => 
+    return config.songs.filter(song =>
       song.name.toLowerCase().includes(lowerName)
     );
   }
@@ -641,21 +803,21 @@ class MusicConfigManager {
   /**
    * 根据歌手筛选歌曲
    * 支持模糊匹配，返回所有歌手名包含搜索词的歌曲
-   * 
+   *
    * @param artist - 搜索的歌手名称
    * @returns SongConfig[] 匹配的歌曲列表
    */
   public filterSongsByArtist(artist: string): SongConfig[] {
     const config = this.getConfig();
     const lowerArtist = artist.toLowerCase();
-    return config.songs.filter(song => 
+    return config.songs.filter(song =>
       song.artist.toLowerCase().includes(lowerArtist)
     );
   }
 
   /**
    * 根据音乐源筛选歌曲
-   * 
+   *
    * @param source - 音乐源类型
    * @returns SongConfig[] 匹配的歌曲列表
    */
@@ -665,28 +827,28 @@ class MusicConfigManager {
   }
 
   /**
-   * 获取歌曲总数
-   * 
+   * 获取歌曲总数（本地 + 已加载的在线歌曲）
+   *
    * @returns number 歌曲总数
    */
   public getSongCount(): number {
-    const config = this.getConfig();
-    return config.songs.length;
+    return this.getProcessedAudioList().length;
   }
 
   /**
    * 获取特定来源的歌曲数量
-   * 
+   *
    * @param source - 音乐源类型
    * @returns number 歌曲数量
    */
   public getSongCountBySource(source: MusicSource): number {
-    return this.filterSongsBySource(source).length;
+    if (source === 'local') return this.localSongs.length;
+    return this.onlineSongs.length;
   }
 
   /**
    * 检查配置是否已加载
-   * 
+   *
    * @returns boolean 是否已加载
    */
   public isConfigLoaded(): boolean {
@@ -700,10 +862,14 @@ class MusicConfigManager {
    */
   public reset(): void {
     this.config = null;
-    this.neteaseSongs = [];
+    this.localSongs = [];
+    this.onlineSongs = [];
+    this.onlineSongsCachedAt = 0;
     this.isLoaded = false;
     this.isLoading = false;
     this.loadPromise = null;
+    this.onlineLoaded = false;
+    this.onlineLoadPromise = null;
     // 同时清空网易云歌单服务缓存，确保下次重新加载最新数据
     neteasePlaylistService.clearCache();
     console.log('[MusicConfigManager] 配置已重置');

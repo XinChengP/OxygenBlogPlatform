@@ -111,11 +111,6 @@ interface ClientMomentsPageProps {
 }
 
 function ClientMomentsPage({ moments, blogCount, blogTotalWordCount, blogs, categoryCount, tagCount, todoConfig }: ClientMomentsPageProps) {
-  console.log('Received stats from server:', {
-    categoryCount,
-    tagCount
-  });
-
   // 页面加载时发送Live2D欢迎消息
   useEffect(() => {
     Live2DMessageHelper.showMomentsMessage('PAGE_VISIT');

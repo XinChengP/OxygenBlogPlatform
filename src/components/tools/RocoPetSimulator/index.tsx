@@ -745,22 +745,32 @@ export default function RocoPetSimulator() {
   }, [showNotification, activeOfficialBannedPets, officialBannedPets, bannedPets]);
 
   // 添加到阵容
-  const addToLineup = useCallback((petId: number) => {
+  const addToLineup = useCallback((petId: number, silent = false) => {
     // 禁赛宠物（含官方每周禁赛）不能进入阵容，此处统一拦截，覆盖点击、右键与批量添加等入口
     if (allBannedPets.includes(petId)) {
       const bannedPet = getPetById(petId);
-      showNotification(`${bannedPet?.name || '该宠物'} 处于禁赛状态，无法加入阵容`, 'error');
+      if (!silent) showNotification(`${bannedPet?.name || '该宠物'} 处于禁赛状态，无法加入阵容`, 'error');
       return false;
     }
 
     if (lineup.length >= 6) {
-      Live2DMessageHelper.showRocoSimulatorMessage('LINEUP_FULL');
-      showNotification('阵容已满，最多6只宠物', 'error');
+      if (!silent) {
+        Live2DMessageHelper.showRocoSimulatorMessage('LINEUP_FULL');
+        showNotification('阵容已满，最多6只宠物', 'error');
+      }
       return false;
     }
 
     if (lineup.includes(petId)) {
-      showNotification('该宠物已在阵容中', 'error');
+      if (!silent) showNotification('该宠物已在阵容中', 'error');
+      return false;
+    }
+
+    // 总魔力值上限 16：与页面说明保持一致，避免生成非法阵容
+    const pet = getPetById(petId);
+    const totalMagic = lineup.reduce((sum, id) => sum + (getPetById(id)?.magic || 0), 0);
+    if (pet && totalMagic + pet.magic > 16) {
+      if (!silent) showNotification('阵容总魔力值不能超过 16', 'error');
       return false;
     }
 
@@ -769,8 +779,10 @@ export default function RocoPetSimulator() {
       if (arePetsExclusive(petId, existingId)) {
         const pet1 = getPetById(petId);
         const pet2 = getPetById(existingId);
-        Live2DMessageHelper.showRocoSimulatorMessage('EXCLUSIVE_CONFLICT');
-        showNotification(`${pet1?.name} 与 ${pet2?.name} 互斥，无法同时参赛`, 'error');
+        if (!silent) {
+          Live2DMessageHelper.showRocoSimulatorMessage('EXCLUSIVE_CONFLICT');
+          showNotification(`${pet1?.name} 与 ${pet2?.name} 互斥，无法同时参赛`, 'error');
+        }
         return false;
       }
     }
@@ -801,8 +813,10 @@ export default function RocoPetSimulator() {
     }
 
     setLineup(prev => [...prev, petId]);
-    Live2DMessageHelper.showRocoSimulatorMessage('ADD_TO_LINEUP');
-    showNotification('已添加到阵容');
+    if (!silent) {
+      Live2DMessageHelper.showRocoSimulatorMessage('ADD_TO_LINEUP');
+      showNotification('已添加到阵容');
+    }
     return true;
   }, [lineup, selectedTalents, showNotification, allBannedPets]);
 
@@ -1036,18 +1050,21 @@ export default function RocoPetSimulator() {
       return;
     }
 
-    let addedCount = 0;
+    const slots = Math.max(0, 6 - lineup.length);
+    if (slots === 0) {
+      showNotification('阵容已满，无法添加更多宠物', 'error');
+      return;
+    }
+
+    let magicTotal = lineup.reduce((sum, id) => sum + (getPetById(id)?.magic || 0), 0);
+    const accepted: Pet[] = [];
+    const acceptedIds = new Set<number>(lineup);
     const failed: string[] = [];
     const alreadyInLineup: string[] = [];
+    const overLimit: string[] = [];
 
     uniqueInputs.forEach(input => {
-      // 检查是否已在阵容中
       const petId = parseInt(input);
-      if (!isNaN(petId) && lineup.includes(petId)) {
-        alreadyInLineup.push(input);
-        return;
-      }
-
       let pet: Pet | undefined;
 
       if (!isNaN(petId)) {
@@ -1057,22 +1074,41 @@ export default function RocoPetSimulator() {
         pet = pets.find(p => p.name === input) || pets.find(p => p.name.includes(input));
       }
 
-      if (pet) {
-        // 再次检查是否已在阵容中（通过名称查找时）
-        if (lineup.includes(pet.id)) {
-          alreadyInLineup.push(input);
-          return;
-        }
-
-        if (addToLineup(pet.id)) {
-          addedCount++;
-        } else {
-          failed.push(input);
-        }
-      } else {
+      if (!pet) {
         failed.push(input);
+        return;
       }
+      if (acceptedIds.has(pet.id)) {
+        alreadyInLineup.push(input);
+        return;
+      }
+      if (allBannedPets.includes(pet.id)) {
+        failed.push(input);
+        return;
+      }
+      // 先按最终阵容做原子校验：数量、互斥、总魔力都在写入前判断
+      if (accepted.length >= slots) {
+        overLimit.push(input);
+        return;
+      }
+      const prospectiveIds = [...lineup, ...accepted.map(p => p.id)];
+      if (prospectiveIds.some(id => arePetsExclusive(pet!.id, id))) {
+        failed.push(input);
+        return;
+      }
+      if (magicTotal + pet.magic > 16) {
+        overLimit.push(input);
+        return;
+      }
+
+      accepted.push(pet);
+      acceptedIds.add(pet.id);
+      magicTotal += pet.magic;
     });
+
+    // 一次性提交，避免循环中 addToLineup 读到旧的 lineup 闭包
+    accepted.forEach(pet => addToLineup(pet.id, true));
+    const addedCount = accepted.length;
 
     // 构建通知消息
     const messages: string[] = [];
@@ -1082,18 +1118,21 @@ export default function RocoPetSimulator() {
     if (alreadyInLineup.length > 0) {
       messages.push(`${alreadyInLineup.length} 个宠物已在阵容中`);
     }
+    if (overLimit.length > 0) {
+      messages.push(`${overLimit.length} 个超出数量或魔力上限: ${overLimit.join(', ')}`);
+    }
     if (failed.length > 0) {
-      messages.push(`${failed.length} 个未找到: ${failed.join(', ')}`);
+      messages.push(`${failed.length} 个未找到或不可用: ${failed.join(', ')}`);
     }
 
     if (messages.length > 0) {
-      const hasError = failed.length > 0 || alreadyInLineup.length > 0;
+      const hasError = failed.length > 0 || alreadyInLineup.length > 0 || overLimit.length > 0;
       showNotification(messages.join('；'), hasError ? 'error' : 'success');
     }
 
     setBatchInput('');
     setModals(prev => ({ ...prev, batchLineup: false }));
-  }, [batchInput, addToLineup, showNotification, lineup, pets]);
+  }, [batchInput, addToLineup, showNotification, lineup, pets, allBannedPets]);
 
   // 计算总魔力值
   const totalMagic = useMemo(() => {
@@ -1240,8 +1279,17 @@ export default function RocoPetSimulator() {
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         whileHover={{ scale: 1.05 }}
-        className={`relative flex flex-col items-center p-1 rounded-lg cursor-pointer transition-colors min-h-[80px] hover:bg-[var(--color-accent)]/10 ${inLineup ? 'ring-2 ring-green-500 bg-green-500/10' : ''} ${isOwned && !isBatchMode ? (isDark ? 'bg-green-900/20' : 'bg-green-50/50') : ''} ${isBatchSelected ? 'ring-2 ring-[var(--color-primary)]' : ''}`}
+        className={`relative flex flex-col items-center p-1 rounded-lg cursor-pointer transition-colors min-h-[80px] hover:bg-[var(--color-accent)]/10 [content-visibility:auto] [contain-intrinsic-size:96px] ${inLineup ? 'ring-2 ring-green-500 bg-green-500/10' : ''} ${isOwned && !isBatchMode ? (isDark ? 'bg-green-900/20' : 'bg-green-50/50') : ''} ${isBatchSelected ? 'ring-2 ring-[var(--color-primary)]' : ''}`}
         onClick={handlePetCardClick}
+        role="button"
+        tabIndex={0}
+        aria-label={`${pet.name}，点击${inLineup ? '移出' : '加入'}阵容`}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handlePetCardClick();
+          }
+        }}
         onContextMenu={(e) => handleContextMenu(e, pet.id, context === 'banned' ? 'banned' : context === 'lineup' ? 'lineup' : 'list')}
       >
         {/* 批量选择复选框 - 选中态用主题主色 */}
@@ -1268,6 +1316,8 @@ export default function RocoPetSimulator() {
             alt={pet.name}
             onLoad={handlePetImageLoad}
             onError={handlePetImageError}
+            loading="lazy"
+            decoding="async"
             className={`${imgSize} rounded-lg object-cover border-2 ${
               context === 'banned' ? 'border-red-500' :
               context === 'lineup' ? getMagicColor(pet.magic).border :
@@ -1329,6 +1379,28 @@ export default function RocoPetSimulator() {
         >
           {pet.name}
         </span>
+        {/* 触屏/键盘可用的更多操作入口（替代仅右键可用的菜单） */}
+        <button
+          type="button"
+          aria-label={`更多操作：${pet.name}`}
+          title="更多操作"
+          onClick={(e) => {
+            e.stopPropagation();
+            const rect = e.currentTarget.getBoundingClientRect();
+            handleContextMenu(
+              {
+                preventDefault: () => undefined,
+                clientX: rect.left,
+                clientY: rect.bottom,
+              } as React.MouseEvent,
+              pet.id,
+              context === 'banned' ? 'banned' : context === 'lineup' ? 'lineup' : 'list',
+            );
+          }}
+          className="absolute bottom-0 right-0 px-1 text-[10px] leading-none text-[var(--color-muted-foreground)] hover:text-[var(--color-primary)]"
+        >
+          ⋯
+        </button>
       </motion.div>
     );
   }, [allBannedPets, activeOfficialBannedPets, lineup, selectedTalents, showSkinButton, getPetImageUrl, getPetImageUrlWithCache, getTalentImageUrl, getLocalPetImageUrl, getLocalTalentImageUrl, handleContextMenu, isDark, getMagicColor, isBatchMode, selectedBatchPets, togglePetOwnership, addToLineup, removeFromLineup]);

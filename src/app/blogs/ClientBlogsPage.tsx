@@ -33,7 +33,31 @@ interface ClientBlogsPageProps {
 
 export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagCount }: ClientBlogsPageProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [urlReady, setUrlReady] = useState(false);
   const { containerStyle, isBackgroundEnabled } = useBackgroundStyle('blogs');
+
+  // 分类从 URL 恢复；浏览器前进/后退时同步
+  useEffect(() => {
+    const syncFromUrl = () => {
+      const category = new URLSearchParams(window.location.search).get('category');
+      setSelectedCategory(category || 'all');
+    };
+    syncFromUrl();
+    setUrlReady(true);
+    window.addEventListener('popstate', syncFromUrl);
+    return () => window.removeEventListener('popstate', syncFromUrl);
+  }, []);
+
+  // 分类写入 URL（replaceState 不会触发路由跳转，也不受静态导出限制）
+  useEffect(() => {
+    if (!urlReady) return;
+    const params = new URLSearchParams(window.location.search);
+    if (selectedCategory === 'all') params.delete('category');
+    else params.set('category', selectedCategory);
+    const query = params.toString();
+    const nextUrl = `${window.location.pathname}${query ? `?${query}` : ''}`;
+    window.history.replaceState(null, '', nextUrl);
+  }, [selectedCategory, urlReady]);
 
   // 获取卡片样式类名
   // 内容流中的文章卡片默认使用近实色背景（bg-card/95），
@@ -72,8 +96,8 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
   };
 
   const filteredAndSortedPosts = useMemo(() => {
-    let filtered = selectedCategory === 'all'
-      ? initialPosts
+    const filtered = selectedCategory === 'all'
+      ? [...initialPosts]
       : initialPosts.filter(post => post.category === selectedCategory);
 
     return filtered.sort((a, b) => {
@@ -212,7 +236,7 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
                       {post.coverImage ? (
                         <div className="relative h-48 sm:h-56 overflow-hidden">
                           <motion.div className="absolute inset-0" whileHover={{ scale: 1.05 }} transition={{ duration: 0.4 }}>
-                            <img src={post.coverImage} alt={post.title} className="w-full h-full object-cover" width={400} height={225} />
+                            <img src={post.coverImage} alt={post.title} className="w-full h-full object-cover" width={400} height={225} loading="lazy" decoding="async" />
                           </motion.div>
                           <motion.div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0" whileHover={{ opacity: 1 }} transition={{ duration: 0.4 }} />
                           <div className="absolute top-3 left-3 flex items-center gap-2">
@@ -284,7 +308,7 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
                             {post.author && (
                               <div className="flex items-center gap-2 group/author">
                                 {post.author.avatar && (
-                                  <img src={getAssetPath(post.author.avatar)} alt={post.author.name} className="rounded-full object-cover ring-2 ring-background group-hover/author:ring-primary transition-all duration-300" width={28} height={28} />
+                                  <img src={getAssetPath(post.author.avatar)} alt={post.author.name} className="rounded-full object-cover ring-2 ring-background group-hover/author:ring-primary transition-all duration-300" width={28} height={28} loading="lazy" decoding="async" />
                                 )}
                                 <span className="text-xs sm:text-sm text-muted-foreground group-hover/author:text-foreground transition-colors truncate font-medium">{post.author.name}</span>
                               </div>
