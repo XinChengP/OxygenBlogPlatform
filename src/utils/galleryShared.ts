@@ -658,7 +658,11 @@ export const parseGitHubTreeToImages = (
     const encodedImagePath = decodedPath.split('/').map(encodeURIComponent).join('/');
     // 仅在明确要求绕过图片缓存时追加时间戳（默认不追加，保护 CDN 缓存）
     const cacheBuster = bustImageCache ? `?t=${Date.now()}` : '';
-    const jsdelivrUrl = `https://cdn.jsdelivr.net/gh/${config.owner}/${config.repo}@${config.branch}/${encodedImagePath}${cacheBuster}`;
+    // 注意：图床仓库已远超 jsDelivr 的 50MB 仓库服务上限，主域名 cdn.jsdelivr.net
+    // 会 301 慢速重定向到 raw.githubusercontent.com（实测 40 秒传不完一张 260KB 图）。
+    // testingcf.jsdelivr.net 是 jsDelivr 官方多 CDN 备用域名（走 Cloudflare 边缘），
+    // 实测对该仓库直接 200 返回内容，故作为主 URL 使用。
+    const jsdelivrUrl = `https://testingcf.jsdelivr.net/gh/${config.owner}/${config.repo}@${config.branch}/${encodedImagePath}${cacheBuster}`;
 
     // 构造 GitHub raw URL 作为备用
     const githubRawUrl = `https://raw.githubusercontent.com/${config.owner}/${config.repo}/${config.branch}/${encodedImagePath}`;
@@ -680,15 +684,114 @@ export const parseGitHubTreeToImages = (
 };
 
 // ============================================================
-// 浏览器端实时拉取
+// R2 图床源（Cloudflare R2 + Worker 自定义域）
+// ============================================================
+
+/**
+ * R2 图床访问地址（Workers Static Assets 自定义域，沿用 R2 时代的常量名）
+ *
+ * 实际实现（2026-10-17）：图片 + 清单都作为 Worker gallery-assets 的静态资产部署，
+ * - GET {R2_IMAGE_BASE}/manifest.json 返回图片清单（CORS 开放，缓存 2 分钟）
+ * - GET {R2_IMAGE_BASE}/{图片相对路径} 直出图片，缓存 1 天
+ *
+ * 清单 path 与 GitHub 图床仓库相对路径一致（LTYpicture/...），
+ * 分类映射逻辑（mapPathToCategory）无需任何改动即可复用。
+ *
+ * 为什么不用 workers.dev：该域名在大陆无法访问，访客必须走自有域。
+ */
+export const R2_IMAGE_BASE = 'https://img.xinchengp.cn';
+
+/** R2 /manifest.json 返回的单个图片条目 */
+export interface R2ImageEntry {
+  path: string;          // 对象 key，同 GitHub 仓库相对路径
+  size: number;          // 文件大小（字节）
+  lastModified?: string; // 上传时间（ISO 字符串）
+}
+
+/** R2 /manifest.json 的响应结构 */
+export interface R2ListResponse {
+  generatedAt: string;
+  count: number;
+  images: R2ImageEntry[];
+}
+
+/** 拼接 R2 图片 URL（对每段路径做 URL 编码，兼容中文和 & 等特殊字符） */
+export const r2ImageUrl = (path: string): string =>
+  `${R2_IMAGE_BASE}/${path.split('/').map(encodeURIComponent).join('/')}`;
+
+/** 拼接 jsDelivr 官方备用域名 URL（作为 R2 图片的保底地址） */
+export const jsDelivrFallbackUrl = (path: string): string =>
+  `https://testingcf.jsdelivr.net/gh/${GITHUB_IMAGE_REPO_CONFIG.owner}/${GITHUB_IMAGE_REPO_CONFIG.repo}@${GITHUB_IMAGE_REPO_CONFIG.branch}/${path.split('/').map(encodeURIComponent).join('/')}`;
+
+/**
+ * 将 R2 清单解析为画廊图片数组（纯函数，两端共用）
+ * @param data - /list 接口的 JSON
+ */
+export const parseR2ListToImages = (data: R2ListResponse): GalleryImage[] =>
+  (data.images || [])
+    .filter(entry => isImageFile(entry.path))
+    .map(entry => {
+      // 字符串截取替代 path.dirname / path.basename（同构约束）
+      const lastSlash = entry.path.lastIndexOf('/');
+      const dirPath = lastSlash > 0 ? entry.path.slice(0, lastSlash) : '';
+      const fileName = entry.path.slice(lastSlash + 1);
+      const { mainCategory, subCategory } = mapPathToCategory(dirPath);
+
+      return {
+        id: generateImageId(entry.path),
+        src: r2ImageUrl(entry.path),
+        fallbackSrc: jsDelivrFallbackUrl(entry.path),
+        alt: fileName.replace(/\.[^.]+$/, ''),
+        source: ImageSource.Remote,
+        category: mainCategory,
+        subCategory,
+        size: entry.size,
+        createdAt: entry.lastModified || new Date().toISOString(),
+        updatedAt: entry.lastModified || new Date().toISOString()
+      };
+    });
+
+/**
+ * 浏览器端从 R2 拉取图片清单（静态 manifest.json，见 cloudflare/gallery-assets）
+ * 失败时抛出错误，由调用方（fetchRemoteImagesWithFallback）决定回退策略
+ */
+export const fetchR2ImagesInBrowser = async (): Promise<GalleryImage[]> => {
+  const response = await fetch(`${R2_IMAGE_BASE}/manifest.json`, {
+    headers: { Accept: 'application/json' },
+    cache: 'no-cache'
+  });
+  if (!response.ok) {
+    throw new Error(`R2 list error: ${response.status} ${response.statusText}`);
+  }
+  const data = await response.json() as R2ListResponse;
+  return parseR2ListToImages(data);
+};
+
+/**
+ * 浏览器端带回退链的远程图片拉取：R2 优先，失败回退 GitHub Trees API
+ * 回退是静默的：R2 尚未上线或偶发故障时画廊照常工作
+ */
+export const fetchRemoteImagesWithFallback = async (): Promise<GalleryImage[]> => {
+  try {
+    const r2Images = await fetchR2ImagesInBrowser();
+    if (r2Images.length > 0) return r2Images;
+    console.warn('[Gallery] R2 清单为空，回退到 GitHub Trees API');
+  } catch (error) {
+    console.warn('[Gallery] R2 清单拉取失败，回退到 GitHub Trees API:',
+      error instanceof Error ? error.message : '未知错误');
+  }
+  return fetchRemoteImagesInBrowser();
+};
+
+// ============================================================
+// GitHub Trees API 浏览器端实时拉取（R2 的回退源）
 // ============================================================
 
 /**
  * 判断错误是否为 GitHub API 限流（HTTP 403 rate limit exceeded）
  * 与服务端版本语义一致：限流按整点重置，退避重试无意义，应直接降级
  */
-const isRateLimitError = (error: unknown): boolean => {
-  const message = error instanceof Error ? error.message : String(error);
+const isRateLimitError = (error: unknown): boolean => {  const message = error instanceof Error ? error.message : String(error);
   return message.includes('403') || /rate limit/i.test(message);
 };
 

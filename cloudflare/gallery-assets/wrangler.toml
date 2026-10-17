@@ -1,0 +1,31 @@
+#:schema node_modules/wrangler/config-schema.json
+#
+# 画廊图床 Worker（Workers Static Assets 托管，纯静态）
+#
+# 原理：图床图片 + manifest.json 清单都作为静态资产部署，走 Cloudflare 边缘。
+# 不挂任何动态脚本——曾经用 Worker 脚本给 /list 出清单，但 ASSETS binding
+# 内部路由在部分运行时版本会误走出站网络导致 500，静态直出 100% 可靠。
+# CORS/缓存头由 assets/_headers 静态规则提供。
+#
+# 选型依据（免费档实测足够）：
+# - 静态资产请求免费不限量，不消耗 Workers 请求配额
+# - 每版本最多 20,000 个文件（图床 559 张图）
+# - 单文件上限 25 MiB（超大原图由 compress-oversized.mjs 预处理）
+# - 自定义域免费绑定（证书自动签发）
+#
+# 路由（全部静态直出）：
+# - /manifest.json   图片清单（画廊浏览器端刷新数据源，CORS 开放，缓存 2 分钟）
+# - /LTYpicture/**   图片直出（key 同 GitHub 仓库相对路径，缓存 1 天）
+
+name = "gallery-assets"
+compatibility_date = "2025-05-05"
+
+# 图片资产目录：同步脚本把图床 LTYpicture + manifest.json + _headers 平铺进来
+[assets]
+directory = "./assets"
+
+# 自定义域：xinchengp.cn zone 在本账号内，部署时自动建 DNS 与证书。
+# 注意：workers.dev 域名在大陆不可达，访客必须走此自定义域。
+[[routes]]
+pattern = "img.xinchengp.cn"
+custom_domain = true

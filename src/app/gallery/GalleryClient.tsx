@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { GalleryImage, ImageCategoryTree, GalleryState, ImageSource } from '../../types/gallery';
 import {
   filterImagesByCategory,
-  fetchRemoteImagesInBrowser,
+  fetchRemoteImagesWithFallback,
   buildCategoryTree
 } from '../../utils/galleryShared';
 import ImageCard from './components/ImageCard';
@@ -76,8 +76,8 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
         // 缓存读取/解析失败不影响主流程，直接走实时拉取
       }
 
-      // 2. 无有效缓存时实时拉取最新目录树（内部已处理重试与限流降级）
-      const freshImages = cachedImages ?? await fetchRemoteImagesInBrowser();
+      // 2. 无有效缓存时实时拉取（R2 优先，失败静默回退 GitHub Trees API）
+      const freshImages = cachedImages ?? await fetchRemoteImagesWithFallback();
 
       // 组件已卸载或拉取失败（返回空数组）时静默退出，保留构建期兜底数据
       if (cancelled || freshImages.length === 0) return;
@@ -297,6 +297,13 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
   const pillActive = 'bg-primary text-primary-foreground border-primary font-medium';
   const pillIdle = 'border-border text-muted-foreground hover:text-foreground hover:border-primary/40 bg-card/50';
 
+  // 表情包图片多为小尺寸方形，沿用美图的列数会单行过大，
+  // 选中表情包（含其子分类）时切换为更密的列数，其余分类维持原布局
+  const isEmoticonView = state.selectedCategory === '表情包';
+  const masonryClass = isEmoticonView
+    ? 'columns-3 sm:columns-4 lg:columns-5 xl:columns-6 gap-4'
+    : 'columns-2 sm:columns-3 xl:columns-4 gap-5';
+
   return (
     <div className={containerStyle.className} style={containerStyle.style}>
       <div className="max-w-[1440px] mx-auto px-4 sm:px-8 pb-24">
@@ -386,7 +393,7 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
         {/* ===== 瀑布流展区 ===== */}
         {filteredImages.length > 0 ? (
           <motion.div
-            className="columns-2 sm:columns-3 xl:columns-4 gap-5"
+            className={masonryClass}
             initial="hidden"
             animate="visible"
             variants={{
@@ -397,7 +404,7 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
             {filteredImages.map((image, index) => (
               <motion.div
                 key={image.id}
-                className="mb-6 break-inside-avoid"
+                className={isEmoticonView ? 'mb-4 break-inside-avoid' : 'mb-6 break-inside-avoid'}
                 variants={{
                   hidden: { opacity: 0, y: 24 },
                   visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }

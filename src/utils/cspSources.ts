@@ -170,6 +170,11 @@ export const EXTERNAL_SOURCES: ExternalSource[] = [
     desc: '洛克王国天梯赛每周禁赛数据接口（roco-team 阵容模拟器）',
     directives: ['connect-src'],
   },
+  {
+    origin: 'https://img.xinchengp.cn',
+    desc: '画廊图床（Workers Static Assets）：manifest 清单 fetch + 图片直出',
+    directives: ['img-src', 'connect-src'],
+  },
 
   // ===== 第三方嵌入 =====
   {

@@ -1,0 +1,4 @@
+# 部署产物：图片资产与清单由 deploy 脚本生成，不入库
+assets/
+.wrangler/
+tree.json
