@@ -11,8 +11,8 @@
   "scripts": {
     "dev": "next dev -p 7120",
     "build": "next build --webpack",
-    "build:pages": "node scripts/prepare-static-export.js prepare && next build --webpack && node scripts/prepare-static-export.js restore",
-    "build:static": "node scripts/prepare-static-export.js prepare && next build --webpack && node scripts/prepare-static-export.js restore",
+    "build:pages": "node scripts/build-pages.js",
+    "build:static": "node scripts/build-pages.js",
     "start": "next start",
     "serve": "node scripts/serve-static.js",
     "lint": "eslint src",

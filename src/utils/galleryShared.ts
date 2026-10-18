@@ -761,6 +761,21 @@ export const parseR2ListToImages = (data: R2ListResponse): GalleryImage[] =>
     });
 
 /**
+ * R2 清单请求超时时间（毫秒）
+ *
+ * 为什么必须设超时：
+ * 构建期 /gallery 页面会先拉 R2 清单，再决定是否回退 GitHub Trees。
+ * 实测该清单仅 117 KB，但本机网络下单次请求可能耗时 21 秒甚至更久，
+ * 而 Next.js 静态生成单个页面超过 60 秒就会判定失败并重试，
+ * 最终导致整个静态导出构建中止。GitHub Trees 实测约 1 秒，
+ * 因此宁可超时后快速回退，也不能让一个可选的加速源拖垮构建。
+ *
+ * 浏览器端画廊实时刷新也复用本函数，超时后同样回退 GitHub API，
+ * 避免用户打开画廊时长时间停在加载态。
+ */
+const R2_MANIFEST_TIMEOUT_MS = 10000;
+
+/**
  * 从 R2 图床拉取图片清单（同构函数：服务端与浏览器端共用同一份实现）
  *
  * 用途：
@@ -769,19 +784,37 @@ export const parseR2ListToImages = (data: R2ListResponse): GalleryImage[] =>
  *   避免先渲染一遍原图卡片、客户端刷新后又整体替换一次
  *
  * 失败时抛出错误，由调用方（fetchRemoteImagesWithFallback / getAllImages）决定回退策略
+ * 超时视为失败：抛出明确错误，调用方据此立即回退 GitHub Trees
  */
 export const fetchR2Images = async (options?: {
   forceRefresh?: boolean; // 服务端管理场景强制刷新时使用，浏览器例行刷新传 false
 }): Promise<GalleryImage[]> => {
-  const response = await fetch(`${R2_IMAGE_BASE}/manifest.json`, {
-    headers: { Accept: 'application/json' },
-    cache: options?.forceRefresh ? 'no-cache' : 'default'
-  });
-  if (!response.ok) {
-    throw new Error(`R2 list error: ${response.status} ${response.statusText}`);
+  // 用 AbortController 实现超时：fetch 自身没有内置超时参数，
+  // 网络半通（能建连但不返回数据）时可能挂起很久。
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), R2_MANIFEST_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(`${R2_IMAGE_BASE}/manifest.json`, {
+      headers: { Accept: 'application/json' },
+      cache: options?.forceRefresh ? 'no-cache' : 'default',
+      signal: controller.signal
+    });
+    if (!response.ok) {
+      throw new Error(`R2 list error: ${response.status} ${response.statusText}`);
+    }
+    const data = await response.json() as R2ListResponse;
+    return parseR2ListToImages(data);
+  } catch (error) {
+    // 主动中止时，把 AbortError 转成带中文说明的超时错误，便于日志定位
+    if (controller.signal.aborted) {
+      throw new Error(`R2 manifest 请求超时（超过 ${R2_MANIFEST_TIMEOUT_MS} 毫秒）`);
+    }
+    throw error;
+  } finally {
+    // 无论成功失败都清理定时器，避免残留计时器阻止 Node 进程退出
+    clearTimeout(timeoutId);
   }
-  const data = await response.json() as R2ListResponse;
-  return parseR2ListToImages(data);
 };
 
 /**
