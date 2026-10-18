@@ -62,13 +62,12 @@ export const productionCSP: CSPDirectives = {
   
   // 脚本来源控制
   // 'self' - 同源脚本
-  // 'unsafe-inline' - 允许内联脚本（Next.js需要）
-  // 'unsafe-eval' - 允许eval（部分库需要）
+  // 'unsafe-inline' - 静态导出下 Next.js 会内联启动脚本，且 meta 标签无法下发 nonce，故必须保留
+  // 不保留 'unsafe-eval' - 生产代码不使用 eval/new Function，移除后可显著收窄脚本注入面
   // 其余外部域名统一由 cspSources.ts 提供
   'script-src': [
     "'self'",
     "'unsafe-inline'",
-    "'unsafe-eval'",
     ...getSourcesForDirective('script-src'),
   ],
   
@@ -151,6 +150,35 @@ export const developmentCSP: CSPDirectives = {
     'data:',
     'blob:',
     '*', // 开发环境允许所有图片
+  ],
+  /*
+    开发环境额外放行 'unsafe-eval'：
+    React Refresh 与部分调试工具在开发模式下会使用 eval 执行动态代码。
+    该放宽仅存在于开发环境，生产环境（productionCSP）已移除。
+  */
+  'script-src': [
+    "'self'",
+    "'unsafe-inline'",
+    "'unsafe-eval'",
+    ...getSourcesForDirective('script-src'),
+  ],
+};
+
+/**
+ * 开发服务器响应头专用 CSP
+ *
+ * 与 developmentCSP 的区别：
+ * - connect-src / img-src 维持生产环境的严格策略，避免开发服务器的宽松策略
+ *   掩盖真实的 CSP 拦截问题；
+ * - 仅额外放行 'unsafe-eval'，供 React Refresh 与调试工具使用。
+ */
+export const developmentServerCSP: CSPDirectives = {
+  ...productionCSP,
+  'script-src': [
+    "'self'",
+    "'unsafe-inline'",
+    "'unsafe-eval'",
+    ...getSourcesForDirective('script-src'),
   ],
 };
 

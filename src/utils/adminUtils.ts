@@ -213,6 +213,13 @@ function xorDecrypt(encryptedText: string, key: string): string {
 
 /**
  * 加密并存储 Token
+ *
+ * 存储位置为 sessionStorage（会话级）而非 localStorage：
+ * - 刷新页面仍保留登录状态；
+ * - 关闭标签页后 Token 自动失效，显著缩短被 XSS 窃取后的可利用窗口。
+ *
+ * 注意：XOR 只是混淆，不是真正的加密，不能作为安全边界；
+ * 真正的防护来自缩短存储周期与收紧 CSP。
  * @param token GitHub Token
  */
 export function encryptAndStoreToken(token: string): void {
@@ -223,12 +230,17 @@ export function encryptAndStoreToken(token: string): void {
   const encryptedToken = xorEncrypt(token, ENCRYPTION_KEY)
 
   if (typeof window !== 'undefined') {
-    localStorage.setItem(`${STORAGE_PREFIX}token`, encryptedToken)
+    sessionStorage.setItem(`${STORAGE_PREFIX}token`, encryptedToken)
+    // 清理历史版本遗留在 localStorage 中的长期 Token，避免继续暴露
+    localStorage.removeItem(`${STORAGE_PREFIX}token`)
   }
 }
 
 /**
  * 获取并解密 Token
+ *
+ * 优先读取 sessionStorage；若发现旧版本遗留在 localStorage 的 Token，
+ * 会迁移到 sessionStorage 并立即删除旧值。
  * @returns 解密后的 Token 或 null
  */
 export function getDecryptedToken(): string | null {
@@ -236,7 +248,18 @@ export function getDecryptedToken(): string | null {
     return null
   }
 
-  const encryptedToken = localStorage.getItem(`${STORAGE_PREFIX}token`)
+  const storageKey = `${STORAGE_PREFIX}token`
+  let encryptedToken = sessionStorage.getItem(storageKey)
+
+  // 兼容旧版本：把 localStorage 中的持久化 Token 迁移为会话级存储
+  if (!encryptedToken) {
+    const legacyToken = localStorage.getItem(storageKey)
+    if (legacyToken) {
+      sessionStorage.setItem(storageKey, legacyToken)
+      localStorage.removeItem(storageKey)
+      encryptedToken = legacyToken
+    }
+  }
 
   if (!encryptedToken) {
     return null
@@ -249,9 +272,11 @@ export function getDecryptedToken(): string | null {
 
 /**
  * 清除存储的 Token
+ * 同时清理 sessionStorage 与历史版本可能残留的 localStorage
  */
 export function clearStoredToken(): void {
   if (typeof window !== 'undefined') {
+    sessionStorage.removeItem(`${STORAGE_PREFIX}token`)
     localStorage.removeItem(`${STORAGE_PREFIX}token`)
   }
 }

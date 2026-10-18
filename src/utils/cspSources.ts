@@ -69,8 +69,13 @@ export const EXTERNAL_SOURCES: ExternalSource[] = [
   // ===== GitHub 相关 =====
   {
     origin: 'https://*.github.io',
-    desc: 'GitHub Pages 站点自身（脚本、图片、iframe 嵌入，以及允许被其页面嵌入本站）',
-    directives: ['script-src', 'img-src', 'frame-src', 'frame-ancestors'],
+    /*
+      历史 GitHub Pages 域名，仅保留图片放行。
+      当前站点已使用自定义域名，不需要从 github.io 加载脚本、嵌入 iframe，
+      也不允许 github.io 页面嵌入本站，避免任意 GitHub Pages 用户获得脚本执行或点击劫持入口。
+    */
+    desc: 'GitHub Pages 历史图片资源（仅图片，不再放行脚本与 iframe）',
+    directives: ['img-src'],
   },
   {
     origin: 'https://*.githubusercontent.com',

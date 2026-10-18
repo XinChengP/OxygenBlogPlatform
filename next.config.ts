@@ -15,7 +15,7 @@
   这里使用相对路径而非 @/ 别名：next.config.ts 由 Next.js 在 Node 构建环境加载，
   此时 tsconfig 的 path 别名未必生效，相对路径最稳妥。
 */
-import { productionCSP, generateCSPString } from './src/utils/cspConfig';
+import { productionCSP, developmentServerCSP, generateCSPString } from './src/utils/cspConfig';
 
 const isStaticExport = process.env.NODE_ENV !== 'development' && 
   (String(process.env.STATIC_EXPORT).toLowerCase() === 'true' || 
@@ -164,19 +164,21 @@ const devConfig = {
               开发服务器的 CSP 响应头。
 
               白名单不再在此硬编码：域名统一登记在 src/utils/cspSources.ts，
-              由 src/utils/cspConfig.ts 的 productionCSP 按指令组装，
-              这里只负责把它序列化成字符串。
+              由 src/utils/cspConfig.ts 按指令组装，这里只负责把它序列化成字符串。
 
-              这里刻意使用 productionCSP 而非 developmentCSP：
-              developmentCSP 仅用于浏览器端 meta 注入时的宽松调试
-              （其 connect-src 被放宽为 *），若拿来做开发服务器响应头，
-              会与线上策略差异过大，从而掩盖真实的 CSP 拦截问题。
+              这里使用 developmentServerCSP 而非 productionCSP：
+              它仅额外放行 'unsafe-eval'（React Refresh / 调试工具需要），
+              connect-src 等其余指令与线上完全一致，
+              既避免开发环境被 eval 拦截，也不会像 developmentCSP 那样放宽连接来源、
+              从而掩盖真实的 CSP 拦截问题。
 
               includeFrameAncestors: true —— 这里是 HTTP 响应头场景，
               frame-ancestors 指令可以且需要下发（meta 标签不支持该指令）。
             */
             key: 'Content-Security-Policy',
-            value: generateCSPString(productionCSP, { includeFrameAncestors: true }),
+            value: isDev
+              ? generateCSPString(developmentServerCSP, { includeFrameAncestors: true })
+              : generateCSPString(productionCSP, { includeFrameAncestors: true }),
           },
         ],
       },

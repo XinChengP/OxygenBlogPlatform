@@ -21,3 +21,6 @@ admin_*
 src/app/admin/
 *.tsbuildinfo
 .migration-tmp/
+
+# Trae AI 配置、规则与本地文档（个人环境相关，不纳入版本控制）
+.trae/

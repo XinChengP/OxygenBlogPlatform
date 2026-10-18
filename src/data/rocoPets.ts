@@ -1754,6 +1754,11 @@ export class AccountManager {
    * 优先级：Cookie > localStorage
    */
   private loadAccounts(): AccountPets[] {
+    // 服务端预渲染阶段没有 localStorage，直接返回空数组，
+    // 避免模块顶层实例化 AccountManager 时抛出 ReferenceError
+    if (typeof window === 'undefined') {
+      return [];
+    }
     try {
       // 优先从 Cookie 读取
       const cookieData = getCookie(ACCOUNT_STORAGE_KEY);
@@ -1776,6 +1781,10 @@ export class AccountManager {
    * 同时写入 Cookie 和 localStorage
    */
   private saveAccounts(): void {
+    // 服务端没有持久化存储，跳过写入（构造函数中的默认账号初始化同样适用）
+    if (typeof window === 'undefined') {
+      return;
+    }
     try {
       const data = JSON.stringify(this.accounts);
       // 写入 Cookie（GitHub Pages 兼容）
@@ -1791,6 +1800,10 @@ export class AccountManager {
    * 加载当前选中的账号
    */
   private loadCurrentAccount(): string {
+    // 服务端预渲染阶段没有浏览器存储，返回默认账号名
+    if (typeof window === 'undefined') {
+      return '默认账号';
+    }
     try {
       const cookieCurrent = getCookie(CURRENT_ACCOUNT_KEY);
       if (cookieCurrent) return cookieCurrent;
@@ -1806,6 +1819,10 @@ export class AccountManager {
    * 保存当前选中的账号
    */
   private saveCurrentAccount(): void {
+    // 服务端没有持久化存储，跳过写入
+    if (typeof window === 'undefined') {
+      return;
+    }
     try {
       setCookie(CURRENT_ACCOUNT_KEY, this.currentAccount, 365);
       localStorage.setItem(CURRENT_ACCOUNT_KEY, this.currentAccount);

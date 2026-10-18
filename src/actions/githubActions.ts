@@ -6,7 +6,7 @@
  * 使用 simple-git 库执行 Git 操作
  */
 
-import simpleGit, { SimpleGit } from 'simple-git';
+import { simpleGit, SimpleGit } from 'simple-git';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import path from 'path';
