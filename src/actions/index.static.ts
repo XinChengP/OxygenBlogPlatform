@@ -220,7 +220,17 @@ export const batchToggleBlogHidden = async (_ids: string[], _hidden: boolean): P
 // Changelog Actions
 // ============================================
 export type ChangelogType = 'feature' | 'optimize' | 'fix' | 'docs' | 'style' | 'refactor';
-export type ChangelogAchievement = 'tired' | 'exhausted' | 'smallButComplete' | 'lively';
+export type ChangelogAchievement =
+  | 'tired'
+  | 'exhausted'
+  | 'smallButComplete'
+  | 'lively'
+  | 'brief'
+  | 'bugSquasher'
+  | 'allRounder'
+  | 'verbose'
+  | 'streak'
+  | 'monthlyGrind';
 
 export interface Changelog {
   id: string;

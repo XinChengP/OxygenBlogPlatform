@@ -8,6 +8,7 @@ import {
   Changelog,
   ChangelogType,
   calculateAchievements,
+  countPlainChars,
 } from '@/types/changelogTypes';
 import { parseFrontMatter } from '@/utils/frontMatterUtils';
 
@@ -96,9 +97,12 @@ export function getServerChangelogs(): Changelog[] {
       // body 行数 = 总文件行数 - frontmatter 结束行号 - 1
       const contentLineCount = frontmatterEnd !== -1 ? lines.length - frontmatterEnd - 1 : lines.length;
 
-      // 计算成就
+      // 统计正文纯文本字数（剔除代码块与 markdown 符号），用于「洋洋洒洒」判定
+      const charCount = countPlainChars(body);
+
+      // 计算单篇成就
       const commits = (metadata.commits as string[]) || [];
-      const achievements = calculateAchievements(commits, contentLineCount);
+      const achievements = calculateAchievements({ commits, contentLineCount, charCount });
 
       // 读取自定义荣誉
       const honors = (metadata.honors as { name: string; color: string }[]) || [];
@@ -122,6 +126,9 @@ export function getServerChangelogs(): Changelog[] {
       const dateB = new Date(b.date).getTime();
       return dateB - dateA;
     });
+
+    // 追加跨篇成就（连更不辍 / 月度劳模）：依赖全部日志的上下文，无法在单篇判定中得出
+    applyGlobalAchievements(changelogs);
   } catch (error) {
     console.error('读取开发日志文件失败:', error);
   }
@@ -176,5 +183,77 @@ export function changelogsDirExists(): boolean {
     return fs.existsSync(changelogsDir) && fs.statSync(changelogsDir).isDirectory();
   } catch {
     return false;
+  }
+}
+
+/** 「连更不辍」所需的连续更新天数 */
+const STREAK_DAYS = 7;
+
+/** 「月度劳模」所需的单月日志篇数 */
+const MONTHLY_GRIND_COUNT = 15;
+
+/**
+ * 把 YYYY-MM-DD 转换成「距 1970-01-01 的天数」
+ *
+ * 用 UTC 解析避免本地时区带来的日期偏移；只用于判断两天是否相邻，
+ * 非法日期返回 0（该篇不会参与连续段判定）。
+ *
+ * @param date 标准格式日期字符串
+ * @returns 天数序号
+ */
+function toDayNumber(date: string): number {
+  const timestamp = Date.parse(`${date}T00:00:00Z`);
+  return Number.isNaN(timestamp) ? 0 : Math.floor(timestamp / 86400000);
+}
+
+/**
+ * 计算并追加跨篇成就
+ *
+ * 这两类成就依赖全部日志的上下文，无法在单篇判定中得出：
+ * - 连更不辍：日志按日期升序排列后，找出相邻日期恰好相差 1 天的连续段；
+ *   段长达到 7 天及以上时，授予该连续段的**最后一天**（连续更新收官那天）——
+ *   段中途就给标签会被后续日志「接续」而显得语义不完整，
+ *   授予收官那天才代表「这一段连续更新正式完成」；
+ * - 月度劳模：按月份累计篇数，达到 15 篇时授予当月第 15 篇（达标那一刻）。
+ *   注意该成就一旦授予不会因后续日志删除而回收，历史记录保持稳定。
+ *
+ * @param changelogs 全部日志（会就地修改各篇的 achievements 字段）
+ */
+function applyGlobalAchievements(changelogs: Changelog[]): void {
+  if (changelogs.length === 0) return;
+
+  // 独立排序，避免依赖调用方传入的顺序
+  const asc = [...changelogs].sort((a, b) => toDayNumber(a.date) - toDayNumber(b.date));
+
+  // ---- 连更不辍：扫描连续段，授予该段最后一天 ----
+  let segmentStart = 0;
+  for (let i = 1; i <= asc.length; i++) {
+    const stillContiguous =
+      i < asc.length && toDayNumber(asc[i].date) - toDayNumber(asc[i - 1].date) === 1;
+
+    if (!stillContiguous) {
+      const segmentLength = i - segmentStart;
+      if (segmentLength >= STREAK_DAYS) {
+        // i - 1 即该连续段的最后一天
+        const milestone = asc[i - 1];
+        // 防御性去重：同一篇只授予一次
+        if (!milestone.achievements.includes('streak')) {
+          milestone.achievements.push('streak');
+        }
+      }
+      segmentStart = i;
+    }
+  }
+
+  // ---- 月度劳模：按月累计，第 15 篇达标 ----
+  const monthCounter = new Map<string, number>();
+  for (const changelog of asc) {
+    const monthKey = changelog.date.slice(0, 7); // YYYY-MM
+    const count = (monthCounter.get(monthKey) || 0) + 1;
+    monthCounter.set(monthKey, count);
+
+    if (count === MONTHLY_GRIND_COUNT && !changelog.achievements.includes('monthlyGrind')) {
+      changelog.achievements.push('monthlyGrind');
+    }
   }
 }

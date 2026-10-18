@@ -19,12 +19,32 @@ export type ChangelogType = 'feature' | 'optimize' | 'fix' | 'docs' | 'style' | 
 
 /**
  * 成就类型定义
+ *
+ * 单篇维度（由 calculateAchievements 判定）：
  * - tired: 略感疲惫 - 关联提交数量 >= 10 且 < 20
  * - exhausted: 肝爆了 - 关联提交数量 >= 20
  * - smallButComplete: 麻雀虽小五脏俱全 - 关联提交 = 1 且 日志行数 > 55
- * - lively: 人声鼎沸 - 预留成就类型
+ * - lively: 人声鼎沸 - 日志行数 >= 100（超长篇，不论提交数量）
+ * - brief: 一笔带过 - 日志行数 < 18（那天只随手记了一笔）
+ * - bugSquasher: 除虫日 - 当天所有提交都是修复（fix）
+ * - allRounder: 面面俱到 - 提交覆盖 >= 4 种类型前缀
+ * - verbose: 洋洋洒洒 - 正文中文字数 >= 2500
+ *
+ * 跨篇维度（由 changelogUtils 在读取全部日志后统一计算）：
+ * - streak: 连更不辍 - 连续 7 天以上每天都有日志（授予该连续段的最后一天）
+ * - monthlyGrind: 月度劳模 - 单月日志 >= 15 篇（授予当月第 15 篇；已授予不回收）
  */
-export type ChangelogAchievement = 'tired' | 'exhausted' | 'smallButComplete' | 'lively';
+export type ChangelogAchievement =
+  | 'tired'
+  | 'exhausted'
+  | 'smallButComplete'
+  | 'lively'
+  | 'brief'
+  | 'bugSquasher'
+  | 'allRounder'
+  | 'verbose'
+  | 'streak'
+  | 'monthlyGrind';
 
 /**
  * 自定义荣誉接口
@@ -280,31 +300,157 @@ export function getTypeStats(changelogs: Changelog[]): { type: ChangelogType; la
 }
 
 /**
- * 成就配置映射
- * 定义每个成就的名称和颜色
+ * 成就分组
+ * 用于「成就说明」弹窗的分节排版：
+ * - commitCount: 按当天关联提交数量判定
+ * - length: 按日志正文篇幅判定
+ * - commitType: 按当天提交的类型分布判定
+ * - global: 需要全部日志上下文，跨篇统计得出
  */
-const achievementConfig: Record<ChangelogAchievement, { label: string; color: string; priority: number }> = {
-  tired: { label: '略感疲惫', color: '#7366ff', priority: 1 },
-  exhausted: { label: '肝爆了', color: '#e566ff', priority: 2 },
-  smallButComplete: { label: '麻雀虽小五脏俱全', color: '#ff66a6', priority: 3 },
-  lively: { label: '人声鼎沸', color: '#ff9966', priority: 4 },
+export type AchievementGroup = 'commitCount' | 'length' | 'commitType' | 'global';
+
+/** 分组展示顺序（弹窗内自上而下） */
+export const ACHIEVEMENT_GROUP_ORDER: AchievementGroup[] = [
+  'commitCount',
+  'length',
+  'commitType',
+  'global',
+];
+
+/** 分组标题映射 */
+const achievementGroupLabels: Record<AchievementGroup, string> = {
+  commitCount: '提交数量',
+  length: '篇幅长短',
+  commitType: '提交类型',
+  global: '跨篇统计',
+};
+
+/**
+ * 获取成就分组的标题
+ * @param group 分组键
+ * @returns 中文标题
+ */
+export function getAchievementGroupLabel(group: AchievementGroup): string {
+  return achievementGroupLabels[group] || group;
+}
+
+const achievementConfig: Record<
+  ChangelogAchievement,
+  {
+    label: string;
+    color: string;
+    priority: number;
+    condition: string;
+    scope: 'single' | 'global';
+    group: AchievementGroup;
+  }
+> = {
+  tired: { label: '略感疲惫', color: '#7366ff', priority: 1, condition: '关联提交数量 10 ~ 19 条', scope: 'single', group: 'commitCount' },
+  exhausted: { label: '肝爆了', color: '#e566ff', priority: 2, condition: '关联提交数量 20 条及以上', scope: 'single', group: 'commitCount' },
+  smallButComplete: { label: '麻雀虽小五脏俱全', color: '#ff66a6', priority: 3, condition: '仅 1 条提交，正文超过 55 行', scope: 'single', group: 'length' },
+  lively: { label: '人声鼎沸', color: '#ff9966', priority: 4, condition: '正文 100 行及以上', scope: 'single', group: 'length' },
+  brief: { label: '一笔带过', color: '#66ffbf', priority: 5, condition: '正文不足 18 行', scope: 'single', group: 'length' },
+  monthlyGrind: { label: '月度劳模', color: '#80ff66', priority: 6, condition: '单月日志达到 15 篇', scope: 'global', group: 'global' },
+  streak: { label: '连更不辍', color: '#f2ff66', priority: 7, condition: '连续 7 天每天都有日志（授予该段最后一天）', scope: 'global', group: 'global' },
+  allRounder: { label: '面面俱到', color: '#9966ff', priority: 8, condition: '当天提交覆盖 4 种及以上类型', scope: 'single', group: 'commitType' },
+  bugSquasher: { label: '除虫日', color: '#ff66cc', priority: 9, condition: '当天所有提交都是修复（fix）', scope: 'single', group: 'commitType' },
+  verbose: { label: '洋洋洒洒', color: '#66ccff', priority: 10, condition: '正文中文字数 2500 及以上', scope: 'single', group: 'length' },
 };
 
 /**
  * 预留颜色（用于后续拓展）
- * #f2ff66, #80ff66, #66ffbf
+ * #cc99ff, #99ffcc
  */
 
 /**
- * 计算日志获得的成就
- * @param commits 关联提交数组
- * @param contentLineCount 日志内容行数
+ * 成就说明条目
+ * 供「成就说明」弹窗展示，内容取自 achievementConfig，保证单一数据源
+ */
+export interface AchievementDescription {
+  /** 成就类型键名 */
+  key: ChangelogAchievement;
+  /** 中文名称 */
+  label: string;
+  /** 标签颜色 */
+  color: string;
+  /** 触发条件的文字说明 */
+  condition: string;
+  /** 判定范围：single 单篇判定 / global 跨篇统计 */
+  scope: 'single' | 'global';
+  /** 所属分组（弹窗排版用） */
+  group: AchievementGroup;
+  /** 展示排序（数值越小越靠前） */
+  priority: number;
+}
+
+/**
+ * 获取按展示优先级排列的成就说明列表
+ * @returns 成就说明数组（priority 升序）
+ */
+export function getAchievementDescriptions(): AchievementDescription[] {
+  return (Object.keys(achievementConfig) as ChangelogAchievement[])
+    .map((key) => ({ key, ...achievementConfig[key] }))
+    .sort((a, b) => a.priority - b.priority);
+}
+
+/**
+ * 提取提交信息的类型前缀
+ *
+ * 提交信息遵循 conventional commits 风格（如 "feat(blog): xxx"、"fix: xxx"），
+ * 取前缀用于判断当天提交的类型分布；没有前缀（如 "更新日志"）返回 null。
+ *
+ * @param commit 单条提交信息
+ * @returns 小写前缀，或 null
+ */
+export function getCommitPrefix(commit: string): string | null {
+  const matched = commit.match(/^([a-zA-Z]+)(\(|:|!)/);
+  return matched ? matched[1].toLowerCase() : null;
+}
+
+/**
+ * 统计正文的纯文本字数
+ *
+ * 先剔除代码块（代码不算「写作篇幅」），再去掉常见 markdown 符号，
+ * 最后统计非空白字符数。与行数口径互补：表格多的日志行数高、字数未必多，
+ * 因此「洋洋洒洒」用字数判定，而「人声鼎沸」用行数判定。
+ *
+ * 纯字符串处理，无任何环境依赖，服务端与客户端均可调用。
+ *
+ * @param body 日志正文（不含 frontmatter）
+ * @returns 纯文本字符数
+ */
+export function countPlainChars(body: string): number {
+  return body
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/[#*>`|\[\]()!~-]/g, '')
+    .replace(/\s/g, '').length;
+}
+
+/**
+ * 单篇成就判定的输入数据
+ */
+export interface AchievementInput {
+  /** 关联的提交信息数组 */
+  commits: string[];
+  /** 日志正文行数（原始行数，不 trim） */
+  contentLineCount: number;
+  /** 日志正文的中文字数（已剔除 markdown 符号与代码块） */
+  charCount: number;
+}
+
+/**
+ * 计算单篇日志获得的成就
+ *
+ * 判定维度：提交数量、日志行数、提交类型分布、正文中文字数。
+ * 多数日志的提交数量集中在 1~5 条，因此提交数相关的成就门槛刻意设高保持稀有；
+ * 篇幅相关的成就（人声鼎沸 / 洋洋洒洒 / 一笔带过）覆盖长短两端。
+ * 跨篇成就（连更不辍 / 月度劳模）不在此处判定。
+ *
+ * @param input 判定所需数据
  * @returns 成就类型数组
  */
-export function calculateAchievements(
-  commits: string[],
-  contentLineCount: number
-): ChangelogAchievement[] {
+export function calculateAchievements(input: AchievementInput): ChangelogAchievement[] {
+  const { commits, contentLineCount, charCount } = input;
   const achievements: ChangelogAchievement[] = [];
 
   // 略感疲惫: 关联提交数量 >= 10 且 < 20
@@ -320,6 +466,36 @@ export function calculateAchievements(
   // 麻雀虽小五脏俱全: 关联提交 = 1 且 日志行数 > 55
   if (commits.length === 1 && contentLineCount > 55) {
     achievements.push('smallButComplete');
+  }
+
+  // 人声鼎沸: 日志行数 >= 100，篇幅极长的长篇记录
+  // 与提交数量无关，单篇深耕同样可以获得
+  if (contentLineCount >= 100) {
+    achievements.push('lively');
+  }
+
+  // 一笔带过: 日志行数 < 18，那天只随手记了一笔
+  // 门槛由 20 收紧到 18（实测命中从 10 篇降至 4 篇），避免短日志普遍拿标签
+  if (contentLineCount < 18) {
+    achievements.push('brief');
+  }
+
+  // 除虫日: 当天所有提交都是修复（fix），且至少有一条提交
+  const prefixes = commits.map(getCommitPrefix);
+  if (commits.length > 0 && prefixes.every((prefix) => prefix === 'fix')) {
+    achievements.push('bugSquasher');
+  }
+
+  // 面面俱到: 提交覆盖 >= 4 种类型前缀（无前缀的提交不计入种类）
+  const uniquePrefixes = new Set(prefixes.filter((prefix): prefix is string => prefix !== null));
+  if (uniquePrefixes.size >= 4) {
+    achievements.push('allRounder');
+  }
+
+  // 洋洋洒洒: 正文中文字数 >= 2500
+  // 与「人声鼎沸」按行数判定不同：表格多的日志行数高但字数未必多
+  if (charCount >= 2500) {
+    achievements.push('verbose');
   }
 
   return achievements;

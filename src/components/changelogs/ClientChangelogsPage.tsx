@@ -11,7 +11,10 @@ import {
   getChangelogTypeLabel,
   getAchievementLabel,
   getAchievementColor,
-  sortAchievementsByPriority
+  sortAchievementsByPriority,
+  getAchievementDescriptions,
+  getAchievementGroupLabel,
+  ACHIEVEMENT_GROUP_ORDER
 } from '@/types/changelogTypes';
 import PageHeader from '@/components/ui/PageHeader';
 import dynamic from 'next/dynamic';
@@ -19,6 +22,8 @@ import dynamic from 'next/dynamic';
 const TimeStatsChart = dynamic(() => import('./TimeStatsChart'), { ssr: false });
 const TypeStatsChart = dynamic(() => import('./TypeStatsChart'), { ssr: false });
 import { Live2DMessageHelper } from '@/utils/live2dMessageManager';
+// 全站层级令牌：成就说明弹窗的层级统一走这里
+import { Z_INDEX } from '@/utils/zIndex';
 
 // 通用 Markdown 组件属性
 type MarkdownComponentProps = {
@@ -68,6 +73,23 @@ const changelogsMarkdownComponents: React.ComponentProps<typeof ReactMarkdown>['
 };
 
 /**
+ * 成就说明分组数据（静态数据，与 achievementConfig 同源）
+ * 按 ACHIEVEMENT_GROUP_ORDER 顺序整理为「分组标题 + 条目」，
+ * 弹窗按分节渲染；提取到模块级，避免每次渲染重复计算。
+ */
+const achievementGroups = ACHIEVEMENT_GROUP_ORDER.map((group) => ({
+  group,
+  label: getAchievementGroupLabel(group),
+  items: getAchievementDescriptions().filter((item) => item.group === group),
+}));
+
+/** 成就总数（用于弹窗顶部说明） */
+const achievementTotalCount = achievementGroups.reduce(
+  (total, section) => total + section.items.length,
+  0
+);
+
+/**
  * 时间统计项接口
  */
 interface TimeStatItem {
@@ -103,10 +125,32 @@ function ClientChangelogsPage({ changelogs, blogTimeStats, momentTimeStats }: Cl
   // key 为日志 id，value 为是否展开
   const [expandedLogs, setExpandedLogs] = useState<Record<string, boolean>>({});
 
+  // 成就说明弹窗的显示状态
+  const [showAchievementGuide, setShowAchievementGuide] = useState(false);
+
+  // 刻意不使用 useBodyScrollLock：它会给 body 设置 overflow: hidden，
+  // 这会让右侧 lg:sticky 的统计栏失去粘性定位、回落到文档流原位；
+  // 当用户已滚动到页面中段时，该位置在视口之外，看起来就像卡片「消失」。
+  // 弹窗内容不长，且已有 Esc 与点击遮罩两种关闭方式，因此这里不锁定页面滚动。
+
   // 页面加载时发送Live2D欢迎消息
   useEffect(() => {
     Live2DMessageHelper.showChangelogsMessage('PAGE_VISIT');
   }, []);
+
+  // 按下 Esc 关闭成就说明弹窗
+  useEffect(() => {
+    if (!showAchievementGuide) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowAchievementGuide(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showAchievementGuide]);
 
   /**
    * 切换日志的展开/收起状态
@@ -270,10 +314,119 @@ function ClientChangelogsPage({ changelogs, blogTimeStats, momentTimeStats }: Cl
             <div className="space-y-4 lg:sticky lg:top-24">
               <TimeStatsChart changelogs={changelogs} blogTimeStats={blogTimeStats} momentTimeStats={momentTimeStats} />
               <TypeStatsChart changelogs={changelogs} blogTimeStats={blogTimeStats} momentTimeStats={momentTimeStats} />
+
+              {/* 成就说明入口：点击弹出全部成就的触发条件说明 */}
+              <button
+                type="button"
+                onClick={() => setShowAchievementGuide(true)}
+                className="w-full flex items-center justify-center gap-2 p-3 rounded-xl border transition-all duration-300 backdrop-blur-md bg-card/90 border-border shadow-lg supports-[backdrop-filter]:bg-card/75 hover:shadow-xl hover:border-primary/40 text-sm text-muted-foreground hover:text-foreground"
+              >
+                {/* 奖杯图标 */}
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M8 4h8v5a4 4 0 01-8 0V4z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M8 5H6a2 2 0 000 4h2M16 5h2a2 2 0 010 4h-2M12 13v3M9 20h6" />
+                </svg>
+                <span>查看成就说明</span>
+              </button>
             </div>
           </div>
         </div>
       </div>
+
+      {/* 成就说明弹窗：列出全部成就的名称、颜色与触发条件 */}
+      {showAchievementGuide && (
+        <div
+          className="fixed inset-0 flex items-center justify-center p-4 sm:p-6"
+          style={{ zIndex: Z_INDEX.modalBackdrop }}
+        >
+          {/* 遮罩层：点击空白处关闭；只做半透明压暗、不加模糊
+              —— 网站统计卡片本身是毛玻璃样式，再叠加一层 blur 会让它
+              看起来像「消失」，去掉模糊后背景仍可正常辨认 */}
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setShowAchievementGuide(false)}
+            aria-hidden="true"
+          />
+
+          {/* 弹窗主体 */}
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="achievement-guide-title"
+            className="relative w-full max-w-lg max-h-[80vh] flex flex-col rounded-xl border border-border bg-card/95 backdrop-blur-md shadow-2xl overflow-hidden"
+            style={{ zIndex: Z_INDEX.modal }}
+          >
+            {/* 头部：标题与关闭按钮 */}
+            <div className="flex items-center justify-between px-5 py-3 border-b border-border/50">
+              <h3
+                id="achievement-guide-title"
+                className="text-base font-bold flex items-center gap-2 bg-gradient-to-r from-primary via-primary/80 to-accent bg-clip-text text-transparent"
+              >
+                <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M8 4h8v5a4 4 0 01-8 0V4z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M8 5H6a2 2 0 000 4h2M16 5h2a2 2 0 010 4h-2M12 13v3M9 20h6" />
+                </svg>
+                成就说明
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowAchievementGuide(false)}
+                aria-label="关闭成就说明"
+                className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* 内容区：可滚动 */}
+            <div className="px-5 py-3 overflow-y-auto">
+              <p className="text-xs text-muted-foreground mb-3">
+                共 {achievementTotalCount} 种成就，随日志自动计算，无需手动申请。
+              </p>
+
+              {/* 按维度分组展示，每组一个小标题 */}
+              <div className="space-y-3.5">
+                {achievementGroups.map((section) => (
+                  <div key={section.group}>
+                    <h4 className="text-xs font-semibold text-foreground mb-1.5 flex items-center gap-1.5">
+                      <span className="w-1 h-3 rounded-full bg-primary" aria-hidden="true" />
+                      {section.label}
+                    </h4>
+                    <ul className="space-y-2">
+                      {section.items.map((item) => (
+                        <li key={item.key} className="flex items-start gap-3">
+                          {/* 成就标签：与日志卡片上的样式保持一致 */}
+                          <span
+                            className="flex-shrink-0 text-xs px-2 py-0.5 rounded-full text-white font-medium mt-0.5"
+                            style={{ backgroundColor: item.color }}
+                          >
+                            {item.label}
+                          </span>
+                          <span className="text-sm text-foreground break-words">{item.condition}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+
+              {/* 自定义荣誉：一句简单介绍，不展开配置细节 */}
+              <div className="mt-4 pt-3 border-t border-border/50">
+                <h4 className="text-xs font-semibold text-foreground mb-1.5 flex items-center gap-1.5">
+                  <span className="w-1 h-3 rounded-full bg-primary" aria-hidden="true" />
+                  自定义荣誉
+                </h4>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  除自动成就外，日志还可在 frontmatter 里手动挂上自定义荣誉标签
+                  （如纪念版本、特别致谢），与自动成就并排显示在日志卡片头部。
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
