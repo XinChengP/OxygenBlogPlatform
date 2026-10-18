@@ -743,6 +743,41 @@ html:not(.music-player-active) body {
 }
 
 /**
+ * 画廊卡片入场动画
+ *
+ * 说明：画廊最多 559 张卡片，若每张都挂动画实例会在 20 秒内持续占用主线程
+ * 与合成线程（原实现用 framer-motion staggerChildren 0.04 累加）。
+ * 现改为一次性 CSS 动画，且由组件用内联 animationDelay 把错峰上限压到 24 张，
+ * 其余卡片延迟为 0，整体入场在 1 秒内结束。
+ */
+@keyframes galleryCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.gallery-card-in {
+  animation: galleryCardIn 0.45s ease-out both;
+}
+
+/**
+ * 画廊卡片离屏渲染跳过
+ *
+ * content-visibility: auto 让浏览器跳过视口外子树的绘制与样式计算；
+ * contain-intrinsic-size 的 auto 关键字让浏览器记住卡片首次渲染后的真实尺寸，
+ * 滚动回看时按记忆尺寸布局，避免高度估算偏差导致的位置跳动。
+ */
+.gallery-card-visible {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 420px;
+}
+
+/**
  * 包含性布局优化
  * 限制样式计算范围，提升性能
  */

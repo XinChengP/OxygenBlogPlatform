@@ -6,20 +6,27 @@
  *  1. 通过 GitHub Trees API 拉取图床仓库 Eiheir/Luo_Tianyi_Image 的文件清单
  *  2. 下载 LTYpicture/** 下的图片到 ./assets/LTYpicture/**（跳过本地已存在且
  *     大小一致的文件，增量省流量；manager/ 等仓库代码不下载）
- *  3. 生成 ./assets/manifest.json（图片清单，画廊浏览器端数据源）
+ *  3. 生成 ./assets/manifest.json（含真实宽高，供画廊前端消除瀑布流重排）
+ *     并为每张图生成 ./assets/thumbs/**.webp 缩略图（宽 640，画廊卡片使用）
  *  4. npx wrangler deploy（首次部署上传全部资产，后续 wrangler 按内容哈希增量）
  *
  * 用法：
- *   node deploy-local.mjs                 # 全量同步 + 部署
- *   node deploy-local.mjs --manifest-only # 只重建清单并部署（不动图片文件）
- *   node deploy-local.mjs --dry-run       # 只拉清单生成 manifest，不下载不部署
+ *   node deploy-local.mjs                 # 联网拉取 + 下载 → 生成缩略图/清单 → 部署
+ *   node deploy-local.mjs --local <图床仓库克隆路径>
+ *                                        # 从本机克隆同步图片（不联网），再生成与部署
+ *                                        # 例：--local "W:\Web\洛佬の美图"
+ *   node deploy-local.mjs --manifest-only # 复用本地图片重建缩略图与清单后部署
+ *   node deploy-local.mjs --dry-run       # 只生成清单与缩略图，不部署
  *
  * 图片 URL 约定：https://img.xinchengp.cn/{仓库相对路径}
+ * 缩略图 URL 约定：https://img.xinchengp.cn/thumbs/{仓库相对路径去扩展名}.webp
  */
 
-import { existsSync, mkdirSync, writeFileSync, statSync, readFileSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { existsSync, mkdirSync, writeFileSync, statSync, readFileSync, readdirSync, copyFileSync, unlinkSync } from 'node:fs';
+import { join, dirname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+// 清单与缩略图生成逻辑抽到 build-manifest.mjs，供本脚本与图床仓库 CI 共用（单一事实来源）
+import { buildGalleryAssets } from './build-manifest.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -45,12 +52,90 @@ const CONFIG = {
 const args = process.argv.slice(2);
 const dryRun = args.includes('--dry-run');
 const manifestOnly = args.includes('--manifest-only');
+// --local <图床仓库克隆路径>：直接从本机克隆的图床仓库同步图片，
+// 跳过联网拉取与下载（1.7GB 下载在部分网络环境下既慢又容易被 hosts 劫持）
+const localIndex = args.indexOf('--local');
+const localRepoPath = localIndex !== -1 ? args[localIndex + 1] : null;
+const localOnly = localIndex !== -1;
 
 const isImage = (p) => {
   const dot = p.lastIndexOf('.');
   if (dot <= 0) return false;
   return CONFIG.extensions.includes(p.slice(dot).toLowerCase());
 };
+
+/** 递归收集目录下的图片文件（返回相对 root 的 key，使用 / 分隔） */
+function collectImages(root) {
+  const found = [];
+  const walk = (dir) => {
+    for (const name of readdirSync(dir)) {
+      const full = join(dir, name);
+      if (statSync(full).isDirectory()) {
+        walk(full);
+      } else if (isImage(name)) {
+        found.push(relative(root, full).split('\\').join('/'));
+      }
+    }
+  };
+  walk(root);
+  return found;
+}
+
+/**
+ * 从本机克隆的图床仓库同步图片到 assets/
+ *
+ * 同步语义为「镜像」：本地克隆是唯一事实来源，因此会
+ *  - 复制克隆里有、assets 里没有的图片
+ *  - 覆盖大小不一致的图片（图床侧替换过原图）
+ *  - 删除 assets 里多余的文件（图床侧已删除/改名）
+ * 例外：overridden.json 登记过的路径保留 assets 里的压缩版本
+ * （这些原图超出 Workers 单文件上限，直接覆盖会导致部署被拒）
+ */
+function syncFromLocalClone(repoPath) {
+  const sourceRoot = join(repoPath, CONFIG.imagePrefix);
+  if (!existsSync(sourceRoot)) {
+    throw new Error(`找不到本地图床图片目录：${sourceRoot}`);
+  }
+
+  const overridePath = join(__dirname, 'overridden.json');
+  const overrides = existsSync(overridePath) ? JSON.parse(readFileSync(overridePath, 'utf-8')) : {};
+
+  const sourceKeys = collectImages(sourceRoot);
+  const destRoot = CONFIG.assetsDir;
+  const destPrefixDir = join(destRoot, CONFIG.imagePrefix);
+  const destKeys = existsSync(destPrefixDir) ? collectImages(destPrefixDir) : [];
+
+  let copied = 0, updated = 0, removed = 0;
+  for (const key of sourceKeys) {
+    // key 相对 LTYpicture 目录（不含前缀），访问路径与 assets 落盘路径都要补回前缀
+    const srcFile = join(sourceRoot, key);
+    const fullKey = `${CONFIG.imagePrefix}${key}`;
+    const destFile = join(destRoot, fullKey);
+    if (overrides[fullKey] && existsSync(destFile)) continue; // 保留本地压缩版本
+
+    if (!existsSync(destFile)) {
+      mkdirSync(dirname(destFile), { recursive: true });
+      copyFileSync(srcFile, destFile);
+      copied++;
+    } else if (statSync(destFile).size !== statSync(srcFile).size) {
+      copyFileSync(srcFile, destFile);
+      updated++;
+    }
+  }
+
+  // 清理 assets 里源仓库已不存在的文件（删除/改名同步），登记过压缩版本的路径保留
+  const sourceSet = new Set(sourceKeys);
+  for (const key of destKeys) {
+    if (sourceSet.has(key)) continue;
+    const fullKey = `${CONFIG.imagePrefix}${key}`;
+    if (overrides[fullKey]) continue;
+    unlinkSync(join(destRoot, fullKey));
+    removed++;
+  }
+
+  console.log(`   同步完成：新增 ${copied} 张，更新 ${updated} 张，删除 ${removed} 张，源共 ${sourceKeys.length} 张`);
+  return sourceKeys.length;
+}
 
 /** 拉取图床目录树，过滤出 LTYpicture/ 下的图片
  * 源优先级：GitHub Trees API → 本地缓存 tree.json（可手工放置，见 README）→ jsDelivr 数据 API
@@ -164,48 +249,63 @@ async function downloadOne(entry) {
 }
 
 async function main() {
-  console.log('① 拉取图床目录树...');
-  const entries = await fetchTree();
-  const totalMB = (entries.reduce((s, e) => s + e.size, 0) / 1024 / 1024).toFixed(0);
-  console.log(`   图片 ${entries.length} 张，共 ${totalMB} MB`);
+  let sourceCount = null;
 
-  // 生成 manifest（/list 数据源）
-  const manifest = {
-    generatedAt: new Date().toISOString(),
-    count: entries.length,
-    images: entries.map((e) => ({ path: e.path, size: e.size })),
-  };
+  // ===== ① 图片就位 =====
+  if (localOnly) {
+    // 本机克隆模式：不联网，图片以克隆的图床仓库为准
+    if (!localRepoPath) {
+      throw new Error('--local 需要跟一个图床仓库克隆路径，例如 --local "W:\\Web\\洛佬の美图"');
+    }
+    console.log(`① 使用本机图床仓库克隆：${localRepoPath}`);
+    if (manifestOnly) {
+      console.log('   已指定 --manifest-only，跳过图片同步（仅重建缩略图与清单）');
+    } else {
+      sourceCount = syncFromLocalClone(localRepoPath);
+    }
+  } else {
+    console.log('① 拉取图床目录树...');
+    const entries = await fetchTree();
+    const totalMB = (entries.reduce((s, e) => s + e.size, 0) / 1024 / 1024).toFixed(0);
+    sourceCount = entries.length;
+    console.log(`   图片 ${entries.length} 张，共 ${totalMB} MB`);
+
+    if (manifestOnly) {
+      console.log('   已指定 --manifest-only，跳过图片下载');
+    } else {
+      console.log('   下载图片到 assets/（增量，跳过已存在文件）...');
+      let done = 0, skipped = 0;
+      const queue = [...entries];
+      await Promise.all(
+        Array.from({ length: CONFIG.concurrency }, async () => {
+          while (queue.length) {
+            const entry = queue.shift();
+            if (!entry) break;
+            const r = await downloadOne(entry);
+            r === 'skip' ? skipped++ : done++;
+            if ((done + skipped) % 50 === 0) console.log(`   进度 ${done + skipped}/${entries.length}`);
+          }
+        })
+      );
+      console.log(`   下载 ${done} 张，跳过（已存在）${skipped} 张`);
+    }
+  }
+
+  // ===== ② 生成缩略图与清单 =====
+  // 清单需要真实宽高（前端据此消除瀑布流重排），缩略图供画廊卡片使用
+  console.log('② 生成缩略图与 manifest.json...');
+  const generated = await buildGalleryAssets({ root: CONFIG.assetsDir, out: CONFIG.assetsDir });
+  if (sourceCount !== null && sourceCount !== generated.count) {
+    console.warn(`   ⚠ 清单张数（${generated.count}）与图源张数（${sourceCount}）不一致，请检查是否有未同步的文件`);
+  }
 
   if (dryRun) {
-    mkdirSync(CONFIG.assetsDir, { recursive: true });
-    writeFileSync(join(CONFIG.assetsDir, 'manifest.json'), JSON.stringify(manifest));
-    console.log('✔ dry-run：manifest.json 已生成，未下载图片、未部署');
+    console.log('✔ dry-run 完成：清单与缩略图已生成，未部署');
     return;
   }
 
-  if (!manifestOnly) {
-    console.log('② 下载图片到 assets/（增量，跳过已存在文件）...');
-    let done = 0, skipped = 0;
-    const queue = [...entries];
-    await Promise.all(
-      Array.from({ length: CONFIG.concurrency }, async () => {
-        while (queue.length) {
-          const entry = queue.shift();
-          if (!entry) break;
-          const r = await downloadOne(entry);
-          r === 'skip' ? skipped++ : done++;
-          if ((done + skipped) % 50 === 0) console.log(`   进度 ${done + skipped}/${entries.length}`);
-        }
-      })
-    );
-    console.log(`   下载 ${done} 张，跳过（已存在）${skipped} 张`);
-  }
-
-  console.log('③ 写入 manifest.json...');
-  writeFileSync(join(CONFIG.assetsDir, 'manifest.json'), JSON.stringify(manifest));
-  console.log(`   ${manifest.count} 张，generatedAt=${manifest.generatedAt}`);
-
-  console.log('④ wrangler deploy（资产按内容哈希增量上传）...');
+  // ===== ③ 部署 =====
+  console.log('③ wrangler deploy（资产按内容哈希增量上传）...');
   const { execSync } = await import('node:child_process');
   execSync('npx wrangler deploy', { cwd: __dirname, stdio: 'inherit' });
   console.log('✔ 部署完成：https://img.xinchengp.cn/manifest.json');

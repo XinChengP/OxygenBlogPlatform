@@ -500,9 +500,13 @@ const ImagePreview = ({ images, initialImage, onClose }: ImagePreviewProps) => {
                 whileTap={{ scale: 0.95 }}
               >
                 <img
-                  src={img.src}
+                  // 底部缩略图条用缩略图（thumbnail）渲染：宽 48px 的格子若加载原图，
+                  // 单张动辄 2~3MB，5 格就要下载十几 MB，是预览面板卡顿的来源
+                  src={img.thumbnail || img.src}
                   alt={img.alt}
                   className="w-full h-full object-cover"
+                  loading="lazy"
+                  decoding="async"
                 />
               </motion.button>
             );

@@ -14,6 +14,7 @@ import {
   filterImagesByCategory,
   getCategorySortOrder,
   parseGitHubTreeToImages,
+  fetchR2Images,
   GitHubTreeResponse
 } from './galleryShared';
 
@@ -450,23 +451,40 @@ export const getAllImages = async (options?: {
   // 获取本地图片
   const localImages = getAllLocalImages();
 
-  // 获取远程图片（GitHub图床）
+  // 获取远程图片：优先走图床 R2 清单，回退 GitHub Trees API
+  // 为什么优先 R2 清单：清单里带缩略图路径（宽 640 WebP）与真实宽高，
+  // 静态 HTML 首帧就能用缩略图渲染并算准图片比例，既省流量又消除瀑布流重排；
+  // Trees API 只有路径信息，拿不到缩略图与宽高，只能回退使用。
   // 配置统一引用共享常量，与浏览器端实时刷新保持同一数据源，避免多处硬编码
   let remoteImages: GalleryImage[] = [];
   try {
-    remoteImages = await getRemoteImages({ ...GITHUB_IMAGE_REPO_CONFIG }, options);
-  } catch (error) {
-    // 详细记录错误信息
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.warn('[Gallery] 获取远程图片失败，仅显示本地图片:', errorMessage);
-
-    // 如果是 hosts 劫持导致的连接拒绝，给出更明确的操作指引
-    if (errorMessage.includes('ECONNREFUSED_HOSTS')) {
-      console.warn('[Gallery] 提示: hosts 把 GitHub 域名指向了本地但无服务监听，请启动 Watt Toolkit 并开启 GitHub 加速，或清理 hosts 条目');
+    remoteImages = await fetchR2Images({ forceRefresh: options?.forceRefresh });
+    if (remoteImages.length === 0) {
+      console.warn('[Gallery] R2 清单为空，回退 GitHub Trees API');
     }
-
-    // 远程图片获取失败时，只返回本地图片
+  } catch (error) {
+    // R2 不可达（未部署/边缘异常/网络受限）时静默降级，不影响画廊可用性
+    console.warn('[Gallery] R2 清单不可用，回退 GitHub Trees API:',
+      error instanceof Error ? error.message : '未知错误');
     remoteImages = [];
+  }
+
+  if (remoteImages.length === 0) {
+    try {
+      remoteImages = await getRemoteImages({ ...GITHUB_IMAGE_REPO_CONFIG }, options);
+    } catch (error) {
+      // 详细记录错误信息
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.warn('[Gallery] 获取远程图片失败，仅显示本地图片:', errorMessage);
+
+      // 如果是 hosts 劫持导致的连接拒绝，给出更明确的操作指引
+      if (errorMessage.includes('ECONNREFUSED_HOSTS')) {
+        console.warn('[Gallery] 提示: hosts 把 GitHub 域名指向了本地但无服务监听，请启动 Watt Toolkit 并开启 GitHub 加速，或清理 hosts 条目');
+      }
+
+      // 远程图片获取失败时，只返回本地图片
+      remoteImages = [];
+    }
   }
 
   // 合并所有图片

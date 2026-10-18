@@ -12,7 +12,7 @@ export interface PreviewImage {
   src: string; // 图片URL
   alt: string; // 图片描述
   category?: string; // 分类名称（可选）
-  thumbnail?: string; // 缩略图URL（可选）
+  thumbnail?: string; // 缩略图URL（可选）：画廊列表卡片用缩略图渲染，避免下载解码原图；缺失时回退 src
 }
 
 // 图片信息类型

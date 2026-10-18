@@ -25,6 +25,22 @@ interface GalleryClientProps {
 // 首屏优先加载的图片数量
 const INITIAL_LOAD_COUNT = 20;
 
+// 错峰入场动画的卡片数量上限。
+// 原实现用 framer-motion staggerChildren 让每张卡片依次延迟 0.04s，559 张图会拖出
+// 约 22 秒的连续动画、持续占用主线程；现改为一次性 CSS 动画并将错峰限制在 24 张内。
+const MAX_STAGGER_COUNT = 24;
+
+/**
+ * 生成图片列表签名，用于判断实时刷新回来的数据是否与当前展示完全一致
+ *
+ * 签名包含 id、宽高与是否带缩略图：清单新增缩略图或补上宽高时签名会变化，
+ * 必须让状态更新生效；而只有轻微无关变化时则可安全跳过整树重渲染。
+ */
+const buildImagesSignature = (images: GalleryImage[]): string =>
+  images
+    .map(img => `${img.id}:${img.width ?? ''}x${img.height ?? ''}:${img.thumbnail ? 1 : 0}`)
+    .join('|');
+
 // ===== 浏览器端实时刷新的会话级缓存 =====
 // 缓存键：存放在 sessionStorage（标签页会话内有效），记录最近一次成功拉取的图床数据
 const REMOTE_REFRESH_CACHE_KEY = 'gallery_remote_refresh_cache';
@@ -97,7 +113,13 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
       // 组件已卸载或拉取失败（返回空数组）时静默退出，保留构建期兜底数据
       if (cancelled || freshImages.length === 0) return;
 
-      // 3. 拉取成功且数据来自实时请求时，写入会话缓存（写入失败静默忽略）
+      // 3. 与当前展示的远程数据完全一致时直接退出：
+      //    跳过 setState，避免 559 张卡片再整体渲染一次（首屏等于渲染两遍的卡顿来源之一），
+      //    也省掉重复的 sessionStorage 写入
+      const currentRemoteImages = initialImages.filter(img => img.source === ImageSource.Remote);
+      if (buildImagesSignature(freshImages) === buildImagesSignature(currentRemoteImages)) return;
+
+      // 4. 拉取成功且数据来自实时请求时，写入会话缓存（写入失败静默忽略）
       if (!cachedImages) {
         try {
           sessionStorage.setItem(
@@ -109,7 +131,7 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
         }
       }
 
-      // 4. 合并数据：本地图片保留，远程图片整体替换为最新版本，并重算分类树
+      // 5. 合并数据：本地图片保留，远程图片整体替换为最新版本，并重算分类树
       //    （替换而非合并可正确同步图床侧的删除与移动）
       setState(prev => {
         const localImages = prev.images.filter(img => img.source === ImageSource.Local);
@@ -420,23 +442,21 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
 
         {/* ===== 瀑布流展区 ===== */}
         {filteredImages.length > 0 ? (
-          <motion.div
-            className={masonryClass}
-            initial="hidden"
-            animate="visible"
-            variants={{
-              hidden: { opacity: 0 },
-              visible: { opacity: 1, transition: { staggerChildren: 0.04 } }
-            }}
-          >
+          /*
+            渲染策略（性能）：
+            - 不再用 framer-motion 的 staggerChildren 逐个动画：559 张卡片会产生
+              559 个动画实例并持续约 22 秒，是进入页面卡顿的主因。
+            - 改为一次性 CSS 入场动画（gallery-card-in），并用内联 animationDelay
+              只让前 MAX_STAGGER_COUNT 张错峰，其余延迟为 0，整体 1 秒内结束。
+            - 卡片外层加 gallery-card-visible（content-visibility: auto）：
+              视口外的卡片由浏览器跳过绘制与样式计算，等效于轻量虚拟化。
+          */
+          <div className={masonryClass}>
             {filteredImages.map((image, index) => (
-              <motion.div
+              <div
                 key={image.id}
-                className={isEmoticonView ? 'mb-4 break-inside-avoid' : 'mb-6 break-inside-avoid'}
-                variants={{
-                  hidden: { opacity: 0, y: 24 },
-                  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
-                }}
+                className={`gallery-card-visible gallery-card-in ${isEmoticonView ? 'mb-4' : 'mb-6'} break-inside-avoid`}
+                style={{ animationDelay: `${Math.min(index, MAX_STAGGER_COUNT) * 0.03}s` }}
               >
                 <ImageCard
                   image={image}
@@ -445,9 +465,9 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
                   // 前 INITIAL_LOAD_COUNT 张图片设置高优先级，其余懒加载
                   priority={index < INITIAL_LOAD_COUNT ? 'high' : 'low'}
                 />
-              </motion.div>
+              </div>
             ))}
-          </motion.div>
+          </div>
         ) : (
           /* 空状态设计 */
           <motion.div

@@ -11,26 +11,29 @@
 ```
 GitHub 图床仓库 (Eiheir/Luo_Tianyi_Image)
    │ push LTYpicture/** 触发 GitHub Action（排除 manager/ 等代码）
-   │  1. 生成 manifest.json（图片清单）
+   │  1. build-manifest.mjs 生成缩略图 + manifest.json（含宽高）
    │  2. wrangler deploy（增量上传资产 + 部署 Worker）
    ▼
 Worker gallery-assets  @ img.xinchengp.cn
-   ├─ /list            脚本读 manifest.json 返回清单（缓存 2 分钟）
-   └─ /LTYpicture/**   静态资产直出（边缘缓存）
+   ├─ /manifest.json   图片清单（含 width/height/thumb，画廊浏览器端刷新数据源）
+   ├─ /thumbs/**       缩略图（宽 640 WebP，画廊卡片使用，避免下载解码原图）
+   └─ /LTYpicture/**   原图直出（边缘缓存，预览大图使用）
    ▼
-画廊页面：浏览器端拉 /list 刷新；失败静默回退 GitHub Trees API（testingcf 镜像）
+画廊页面：浏览器端拉 /manifest.json 刷新；失败静默回退 GitHub Trees API（testingcf 镜像）
 ```
 
 ## 目录结构
 
 ```
 gallery-assets/
-├── wrangler.toml      # Worker 配置（assets 目录、/list 拦截、自定义域）
-├── src/index.js       # 仅处理 /list；图片由静态资产直出不经过脚本
+├── wrangler.toml      # Worker 配置（assets 目录、自定义域）
+├── build-manifest.mjs # 缩略图 + 清单生成（本机脚本与 CI 共用，单一事实来源）
 ├── assets/            # 部署时生成的图片资产（gitignore，不入库）
 │   ├── manifest.json
+│   ├── thumbs/        # 缩略图：thumbs/LTYpicture/**.webp
 │   └── LTYpicture/...
-└── deploy-local.mjs   # 本机手动部署脚本（拉取图床 → 生成清单 → wrangler deploy）
+├── compress-oversized.mjs # 一次性压缩超限原图
+└── deploy-local.mjs   # 本机手动部署脚本（拉取图床 → 生成缩略图/清单 → wrangler deploy）
 ```
 
 ## 部署
@@ -39,14 +42,16 @@ gallery-assets/
 
 ```bash
 # 前置：npx wrangler login 已登录 Cloudflare（本账号 Workers 可用，无需绑卡）
-node deploy-local.mjs            # 全量：拉取图床全部图片到 assets/ 并部署
-node deploy-local.mjs --manifest-only   # 只重新生成清单并部署（图片已就位时）
+node deploy-local.mjs            # 全量：拉取图床全部图片到 assets/、生成缩略图与清单并部署
+node deploy-local.mjs --manifest-only   # 图片已就位时：只重建缩略图与清单再部署
+node build-manifest.mjs          # 仅本机生成缩略图与清单（不部署，用于校验）
 ```
 
 ### 图床自动同步（日常）
 
 图床仓库的 GitHub Action（`sync-to-r2.yml`，名称沿用）在 push `LTYpicture/**`
-时自动执行与上面相同的流程：checkout 图床 → 生成 manifest → wrangler deploy。
+时自动执行：checkout 图床 → 拉取博客仓库的 Worker 骨架 → 调用
+`worker/build-manifest.mjs` 生成缩略图与清单 → wrangler deploy。
 需要图床仓库配置两个 Secrets：
 
 - `CLOUDFLARE_API_TOKEN`：Cloudflare API Token，权限模板
@@ -54,9 +59,14 @@ node deploy-local.mjs --manifest-only   # 只重新生成清单并部署（图�
   zone 资源为 xinchengp.cn 和账号资源为本账号
 - `CLOUDFLARE_ACCOUNT_ID`：账号 ID（仪表盘右栏可见）
 
+> CI 中需先 `npm install --no-save sharp`（缩略图生成依赖），再执行
+> `node worker/build-manifest.mjs --root . --out worker/assets`
+
 ## 画廊侧约定
 
-- 清单接口：`GET /list` → `{ generatedAt, count, images: [{path,size,lastModified}] }`
+- 清单接口：`GET /manifest.json` → `{ generatedAt, count, images: [{ path, size, width, height, thumb }] }`
+  - `thumb` 为缩略图相对路径（如 `thumbs/LTYpicture/xx/001.webp`），缺失时前端自动回退原图
 - 图片 URL：`GET /{path}`，path 同 GitHub 仓库相对路径（`LTYpicture/...`）
+- 缩略图 URL：`GET /{thumb}`
 - 画廊代码（`src/utils/galleryShared.ts` 的 `R2_IMAGE_BASE` 常量，沿用原名）指向
-  `https://img.xinchengp.cn`，R2 不可用时自动回退 testingcf 镜像
+  `https://img.xinchengp.cn`，不可用时自动回退 testingcf 镜像

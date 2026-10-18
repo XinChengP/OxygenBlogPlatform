@@ -706,8 +706,9 @@ export interface R2ImageEntry {
   path: string;          // 对象 key，同 GitHub 仓库相对路径
   size: number;          // 文件大小（字节）
   lastModified?: string; // 上传时间（ISO 字符串）
-  width?: number;        // 图片宽度（清单生成器可选提供）
-  height?: number;       // 图片高度（清单生成器可选提供）
+  width?: number;        // 图片宽度（清单生成器提供，用于首帧算出正确比例、消除重排）
+  height?: number;       // 图片高度（同上）
+  thumb?: string;        // 缩略图相对路径（如 thumbs/LTYpicture/xx/001.webp），缺失则回退原图
 }
 
 /** R2 /manifest.json 的响应结构 */
@@ -741,7 +742,11 @@ export const parseR2ListToImages = (data: R2ListResponse): GalleryImage[] =>
 
       return {
         id: generateImageId(entry.path),
+        // src 始终是原图：点开预览需要清晰大图
         src: r2ImageUrl(entry.path),
+        // thumbnail 是缩略图（宽 640 WebP，约原图 1/20 体积）：画廊卡片用它，避免下载解码大图
+        // 清单未提供 thumb 时保持 undefined，卡片自动回退 src，老版本清单也不会报错
+        thumbnail: entry.thumb ? r2ImageUrl(entry.thumb) : undefined,
         fallbackSrc: jsDelivrFallbackUrl(entry.path),
         alt: fileName.replace(/\.[^.]+$/, ''),
         source: ImageSource.Remote,
@@ -756,13 +761,21 @@ export const parseR2ListToImages = (data: R2ListResponse): GalleryImage[] =>
     });
 
 /**
- * 浏览器端从 R2 拉取图片清单（静态 manifest.json，见 cloudflare/gallery-assets）
- * 失败时抛出错误，由调用方（fetchRemoteImagesWithFallback）决定回退策略
+ * 从 R2 图床拉取图片清单（同构函数：服务端与浏览器端共用同一份实现）
+ *
+ * 用途：
+ * - 浏览器端：画廊挂载后的实时刷新（新图无需重新构建部署即可识别）
+ * - 服务端：构建期优先用它作为初始数据，使静态 HTML 首帧就带上缩略图与真实宽高，
+ *   避免先渲染一遍原图卡片、客户端刷新后又整体替换一次
+ *
+ * 失败时抛出错误，由调用方（fetchRemoteImagesWithFallback / getAllImages）决定回退策略
  */
-export const fetchR2ImagesInBrowser = async (): Promise<GalleryImage[]> => {
+export const fetchR2Images = async (options?: {
+  forceRefresh?: boolean; // 服务端管理场景强制刷新时使用，浏览器例行刷新传 false
+}): Promise<GalleryImage[]> => {
   const response = await fetch(`${R2_IMAGE_BASE}/manifest.json`, {
     headers: { Accept: 'application/json' },
-    cache: 'no-cache'
+    cache: options?.forceRefresh ? 'no-cache' : 'default'
   });
   if (!response.ok) {
     throw new Error(`R2 list error: ${response.status} ${response.statusText}`);
@@ -777,7 +790,7 @@ export const fetchR2ImagesInBrowser = async (): Promise<GalleryImage[]> => {
  */
 export const fetchRemoteImagesWithFallback = async (): Promise<GalleryImage[]> => {
   try {
-    const r2Images = await fetchR2ImagesInBrowser();
+    const r2Images = await fetchR2Images();
     if (r2Images.length > 0) return r2Images;
     console.warn('[Gallery] R2 清单为空，回退到 GitHub Trees API');
   } catch (error) {
