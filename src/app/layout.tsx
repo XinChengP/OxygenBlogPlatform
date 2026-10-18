@@ -17,7 +17,7 @@ import MusicPlayerController from "@/components/MusicPlayerController";
 import LazySearchDialog from "@/components/LazySearchDialog";
 import { enableBackground, backgroundImage } from "@/setting/WebSetting";
 import { getAssetPath } from "@/utils/assetUtils";
-import { generateCSPString, productionCSP } from "@/utils/cspConfig";
+import { generateCSPString, productionCSP, developmentCSP } from "@/utils/cspConfig";
 
 /**
  * 站点基础URL配置
@@ -230,10 +230,20 @@ export default function RootLayout({
         {/*
           静态导出的 HTML 中没有 HTTP 响应头，CSP 必须在构建期写入 meta，
           否则要等 JS 水合后才由 SecurityProvider 注入，期间页面没有策略保护。
+
+          这里必须按环境选择策略：
+          - 生产环境用 productionCSP（严格，已移除 unsafe-eval）；
+          - 开发环境用 developmentCSP（额外放行 unsafe-eval）。
+          若开发环境也写入 productionCSP，会与 next.config.ts 下发的开发服务器响应头
+          取交集，把 dev 必需的 eval 能力裁掉，导致 React 调试功能直接报
+          “eval() is not supported in this environment”（错误发生在水合之前，
+          SecurityProvider 的事后覆盖来不及生效）。
         */}
         <meta
           httpEquiv="Content-Security-Policy"
-          content={generateCSPString(productionCSP)}
+          content={generateCSPString(
+            process.env.NODE_ENV === 'development' ? developmentCSP : productionCSP
+          )}
         />
 
         {process.env.NEXT_PUBLIC_TWIKOO_ENV_ID && (
