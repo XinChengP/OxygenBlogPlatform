@@ -853,6 +853,33 @@ html:not(.music-player-active) body {
 }
 
 /**
+ * 首页背景特效画布
+ * 位于 BackgroundLayer（z-index: -50）之上、首页内容（z-index: 10）之下。
+ * 只在首页由 HomeBackgroundFX 挂载，其它页面不会创建这个元素。
+ */
+.home-fx {
+  position: fixed;
+  inset: 0;
+  z-index: -40;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1.2s ease;
+}
+
+.home-fx[data-ready="true"] {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-fx {
+    transition: none;
+  }
+}
+
+/**
  * 首页特定优化
  * 针对首页 Hero 区域的性能优化
  */
