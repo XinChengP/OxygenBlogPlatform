@@ -135,8 +135,12 @@
   function isAllowedDomain(url) {
     try {
       const urlObj = new URL(url);
+      /*
+        使用「完全相等 或 以 .域名 结尾」的严格匹配，
+        避免 includes 匹配把 evil-xinchengp.cn 这类伪造域名误判为本站。
+      */
       return CONFIG.allowedScriptDomains.some(domain => 
-        urlObj.hostname.includes(domain)
+        urlObj.hostname === domain || urlObj.hostname.endsWith('.' + domain)
       );
     } catch {
       // 相对路径视为允许
@@ -586,20 +590,65 @@
 
   /**
    * 防止窗口被劫持
+   *
+   * 拦截策略（按顺序判断）：
+   * 1. 无目标地址（浏览器默认 about:blank）时原样放行，不属于外链跳转场景；
+   * 2. 只允许 http/https 协议，拦截 javascript:、data: 等可执行脚本的危险协议；
+   * 3. 同源地址与脚本白名单域名直接放行（站内跳转、B站视频、统计脚本等）；
+   * 4. 站外 http/https 链接仅在「用户主动操作」触发时放行，
+   *    避免第三方脚本在没有用户交互的情况下自动弹出窗口。
+   *
+   * 注意：不能继续用 allowedScriptDomains 去拦站外链接。
+   * 该白名单的语义是「允许加载脚本的来源」，而用户点击外链（如跳转提醒弹窗、
+   * 分享面板）本质是主动出站，目标域名必然不在脚本白名单内，
+   * 用白名单拦截会导致所有站外跳转被静默吞掉（window.open 返回 null）。
    */
   function protectWindow() {
     // 防止window.open被滥用
     const originalOpen = window.open;
-    
+
     window.open = function(url, target, features) {
       Logger.info('拦截到window.open调用', { url, target });
-      
-      // 可以在这里添加白名单检查
-      if (url && !isAllowedDomain(url)) {
-        Logger.warn('阻止打开未授权的窗口', url);
+
+      // 未提供地址时交给浏览器默认行为（通常打开 about:blank）
+      if (!url) {
+        return originalOpen.apply(window, arguments);
+      }
+
+      // 解析目标地址，解析失败说明地址不合法，直接拦截
+      let targetUrl = null;
+      try {
+        targetUrl = new URL(String(url), window.location.href);
+      } catch {
+        Logger.warn('阻止打开无法解析的窗口地址', url);
         return null;
       }
-      
+
+      // 仅放行常规网页协议，拦截 javascript:/data: 等危险协议
+      if (targetUrl.protocol !== 'http:' && targetUrl.protocol !== 'https:') {
+        Logger.warn('阻止打开非 http(s) 协议的窗口', url);
+        return null;
+      }
+
+      // 同源地址与既有白名单域名放行
+      if (isAllowedDomain(targetUrl.href)) {
+        return originalOpen.apply(window, arguments);
+      }
+
+      /*
+        站外链接：判断本次调用是否由用户手势（真实点击/按键）触发。
+        navigator.userActivation 在 Chrome 等现代浏览器中可用；
+        旧浏览器没有该 API 时无法判断，按放行处理，避免误伤正常的外链跳转。
+      */
+      const hasUserGesture = navigator.userActivation
+        ? navigator.userActivation.isActive
+        : true;
+
+      if (!hasUserGesture) {
+        Logger.warn('阻止打开未授权的窗口（非用户主动触发）', url);
+        return null;
+      }
+
       return originalOpen.apply(window, arguments);
     };
   }
