@@ -275,7 +275,25 @@ function AdminTable<T extends Record<string, any>>({
                     column.sortable && 'cursor-pointer select-none hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors',
                     column.width && `w-[${column.width}]`
                   )}
+                  aria-sort={
+                    column.sortable
+                      ? sortConfig?.[0] === column.key
+                        ? sortConfig[1] === 'asc'
+                          ? 'ascending'
+                          : 'descending'
+                        : 'none'
+                      : undefined
+                  }
+                  tabIndex={column.sortable ? 0 : undefined}
                   onClick={() => column.sortable && handleSort(String(column.key))}
+                  onKeyDown={(event) => {
+                    // 可排序表头需要支持键盘触发，不能只依赖 onClick
+                    if (!column.sortable) return;
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      handleSort(String(column.key));
+                    }
+                  }}
                 >
                   <div className={cn(
                     'flex items-center space-x-1',

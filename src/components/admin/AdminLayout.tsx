@@ -11,6 +11,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import AdminSidebar from './AdminSidebar';
+import { getAvatarPath, name as siteAuthorName } from '@/setting/AboutSetting';
 
 /**
  * 管理后台布局组件属性接口
@@ -209,14 +210,14 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               <div className="flex items-center space-x-3 pl-2 pr-3 py-1.5 rounded-xl">
                 <div className="relative">
                   <img
-                    src="/星球卑.jpg"
-                    alt="XinchengP"
+                    src={getAvatarPath()}
+                    alt={siteAuthorName}
                     className="w-9 h-9 rounded-xl object-cover shadow-lg shadow-[#66ccff]/20"
                   />
                   <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-900" />
                 </div>
                 <div className="hidden md:block text-left">
-                  <p className="text-sm font-bold text-gray-800 dark:text-gray-100">XinchengP</p>
+                  <p className="text-sm font-bold text-gray-800 dark:text-gray-100">{siteAuthorName}</p>
                 </div>
               </div>
             </div>

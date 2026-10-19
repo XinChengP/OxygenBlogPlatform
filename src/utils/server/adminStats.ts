@@ -352,7 +352,8 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 
     if (fs.existsSync(blogsDir) && fs.statSync(blogsDir).isDirectory()) {
       const blogFiles = fs.readdirSync(blogsDir).filter((file: string) => file.endsWith('.md'));
-      blogCount = blogFiles.length + 1; // 显示数量 = 实际文件数量 + 1
+      // 直接使用实际文件数量，不再人为 +1（否则每次增删后统计都与实际不符）
+      blogCount = blogFiles.length;
 
       // 计算本月新增文章数和分类统计
       const currentMonth = new Date().getMonth();
@@ -411,7 +412,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 
     if (fs.existsSync(momentsDir) && fs.statSync(momentsDir).isDirectory()) {
       const momentFiles = fs.readdirSync(momentsDir).filter((file: string) => file.endsWith('.md'));
-      momentCount = momentFiles.length + 1; // 显示数量 = 实际文件数量 + 1
+      momentCount = momentFiles.length;
 
       // 统计动态字数
       momentFiles.forEach((file: string) => {
@@ -449,7 +450,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 
     if (fs.existsSync(changelogsDir) && fs.statSync(changelogsDir).isDirectory()) {
       const changelogFiles = fs.readdirSync(changelogsDir).filter((file: string) => file.endsWith('.md'));
-      changelogCount = changelogFiles.length + 1; // 显示数量 = 实际文件数量 + 1
+      changelogCount = changelogFiles.length;
 
       // 遍历所有日志文件
       changelogFiles.forEach((file: string) => {
@@ -566,7 +567,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       todoCount,
       todoCompletedCount,
       categoryStats,
-      categoryCount: categoryMap.size + 1,
+      categoryCount: categoryMap.size,
       tagStats,
       totalTagCount: tagMap.size,
       changelogs,

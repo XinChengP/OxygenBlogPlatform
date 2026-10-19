@@ -7,11 +7,12 @@
  */
 
 import { simpleGit, SimpleGit } from 'simple-git';
-import { exec } from 'child_process';
+import { exec, execFile } from 'child_process';
 import { promisify } from 'util';
 import path from 'path';
 
 const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 /**
  * Git 操作结果接口
@@ -400,8 +401,11 @@ export async function pushToGitHub(message?: string): Promise<GitPushResult> {
       }
     }
 
-    // 收集所有需要推送的文件
+    // 收集所有需要推送的文件（包含已暂存的文件，否则展示的推送清单不完整）
     const pushedFiles: string[] = [];
+    if (status.staged.length > 0) {
+      pushedFiles.push(...status.staged);
+    }
     if (status.modified.length > 0) {
       pushedFiles.push(...status.modified);
     }
@@ -448,24 +452,22 @@ export async function pushToGitHub(message?: string): Promise<GitPushResult> {
     try {
       // 尝试推送到当前分支的跟踪分支
       await git.push(remoteName, currentBranch);
-    } catch (pushError) {
-      // 如果推送失败，尝试设置上游分支并推送
-      const commonUpstreamBranches = ['main', 'master', 'develop'];
-      let pushed = false;
-
-      for (const upstreamBranch of commonUpstreamBranches) {
-        try {
-          await git.push(remoteName, `${currentBranch}:${upstreamBranch}`, ['--set-upstream']);
-          pushed = true;
-          break;
-        } catch {
-          continue;
-        }
-      }
-
-      // 如果还是失败，尝试直接推送当前分支并设置上游
-      if (!pushed) {
+    } catch {
+      /*
+        只允许「推送当前分支并设置上游」这一种兜底。
+        原实现在失败时循环把本地分支强推到 main/master/develop，
+        一旦远程主干存在，就可能把主干内容覆盖成本地分支，属于危险副作用。
+      */
+      try {
         await git.push(remoteName, currentBranch, ['--set-upstream']);
+      } catch (retryError) {
+        const reason = retryError instanceof Error ? retryError.message : '未知错误';
+        return {
+          success: false,
+          message: `提交已创建，但推送失败：${reason}`,
+          commitHash,
+          pushedFiles: [...new Set(pushedFiles)],
+        };
       }
     }
 
@@ -658,11 +660,16 @@ export async function getCommitHistory(
       return [];
     }
 
-    const git = getGit();
-
-    const { stdout } = await execAsync(
-      `git log --pretty=format:"%H|%s|%ad|%an" --date=iso -n ${count}`,
-      { cwd: repoPath }
+    /*
+      count 来自客户端，直接拼进 shell 会被注入（如 "10; 任意命令"）。
+      改用 execFile 传参数数组，并把数量收敛到 1-100。
+      %x1f 是不可见分隔符，避免提交信息里出现 | 时解析错位。
+    */
+    const safeCount = Math.min(Math.max(Number(count) || 10, 1), 100);
+    const { stdout } = await execFileAsync(
+      'git',
+      ['log', '--pretty=format:%H%x1f%s%x1f%ad%x1f%an', '--date=iso', '-n', String(safeCount)],
+      { cwd: repoPath, maxBuffer: 10 * 1024 * 1024 }
     );
 
     if (!stdout.trim()) {
@@ -670,7 +677,7 @@ export async function getCommitHistory(
     }
 
     const commits = stdout.trim().split('\n').map(line => {
-      const [hash, message, date, author] = line.split('|');
+      const [hash, message, date, author] = line.split('\x1f');
       return { hash, message, date, author };
     });
 

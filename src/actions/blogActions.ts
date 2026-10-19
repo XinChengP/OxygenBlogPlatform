@@ -74,6 +74,38 @@ import matter from 'gray-matter';
 const BLOGS_DIR = path.join(process.cwd(), 'src', 'content', 'blogs');
 
 /**
+ * 合法的博客 slug
+ * 只允许字母、数字、中文、点、下划线与连字符，禁止路径分隔符。
+ */
+const BLOG_SLUG_PATTERN = /^[A-Za-z0-9\u4e00-\u9fa5._-]+$/;
+
+/**
+ * 将 slug 解析为博客目录内的绝对文件路径
+ *
+ * 安全要点：
+ * 1. slug 直接来自前端表单，必须先做字符白名单校验；
+ * 2. 拒绝 `..`，避免 `../../public/x` 这类路径穿越；
+ * 3. path.resolve 后再做目录边界校验，作为最后一道防线。
+ *
+ * @param slug 博客 slug
+ * @returns 安全的绝对路径；非法时返回 null
+ */
+function resolveBlogFilePath(slug: string): string | null {
+  if (typeof slug !== 'string' || !BLOG_SLUG_PATTERN.test(slug) || slug.includes('..')) {
+    return null;
+  }
+
+  const root = path.resolve(BLOGS_DIR);
+  const target = path.resolve(root, `${slug}.md`);
+
+  if (!target.startsWith(root + path.sep)) {
+    return null;
+  }
+
+  return target;
+}
+
+/**
  * 确保博客目录存在
  */
 async function ensureBlogsDir(): Promise<void> {
@@ -224,7 +256,10 @@ async function readBlogFile(slug: string): Promise<BlogPost | null> {
   }
 
   try {
-    const filePath = path.join(BLOGS_DIR, `${slug}.md`);
+    const filePath = resolveBlogFilePath(slug);
+    if (!filePath) {
+      return null;
+    }
     const content = await fs.readFile(filePath, 'utf-8');
     const parsed = matter(content);
     const body = parsed.content;
@@ -271,7 +306,10 @@ async function writeBlogFile(slug: string, data: BlogPostData & { date: string }
   }
 
   await ensureBlogsDir();
-  const filePath = path.join(BLOGS_DIR, `${slug}.md`);
+  const filePath = resolveBlogFilePath(slug);
+  if (!filePath) {
+    throw new Error(`非法博客 slug: ${slug}`);
+  }
 
   let existingData: Record<string, unknown> | undefined;
   if (existingContent) {
@@ -294,7 +332,10 @@ async function deleteBlogFile(slug: string): Promise<void> {
     return;
   }
   
-  const filePath = path.join(BLOGS_DIR, `${slug}.md`);
+  const filePath = resolveBlogFilePath(slug);
+  if (!filePath) {
+    throw new Error(`非法博客 slug: ${slug}`);
+  }
   await fs.unlink(filePath);
 }
 
@@ -376,7 +417,15 @@ export async function createBlog(data: BlogPostData): Promise<ActionResult<BlogP
       return { success: false, message: 'Content cannot be empty' };
     }
 
-    const slug = data.slug || generateSlug(data.title);
+    /*
+      slug 可能直接来自前端表单：
+      1. 空标题（纯符号/emoji）生成的 slug 为空，会写出 `.md` 孤儿文件，这里兜底为时间戳；
+      2. 非法字符（路径分隔符、..）必须直接拒绝，交给 resolveBlogFilePath 之前先拦一次。
+    */
+    const slug = data.slug?.trim() || generateSlug(data.title) || `post-${Date.now()}`;
+    if (!BLOG_SLUG_PATTERN.test(slug) || slug.includes('..')) {
+      return { success: false, message: '标题或 slug 包含非法字符' };
+    }
     const date = data.date || new Date().toISOString().split('T')[0];
 
     // 检查文件是否已存在
@@ -424,7 +473,10 @@ export async function updateBlog(
     }
 
     // 读取原始文件内容，用于保留 frontmatter 中的未知字段和格式
-    const filePath = path.join(BLOGS_DIR, `${slug}.md`);
+    const filePath = resolveBlogFilePath(slug);
+    if (!filePath) {
+      return { success: false, message: '非法博客 slug' };
+    }
     const existingContent = await fs.readFile(filePath, 'utf-8');
 
     const updatedData: BlogPostData & { date: string; updatedAt?: string } = {
@@ -545,7 +597,9 @@ export async function batchUpdateBlogCategory(slugs: string[], category: string)
 
     let updatedCount = 0;
     for (const slug of slugs) {
-      const filePath = path.join(BLOGS_DIR, `${slug}.md`);
+      // 跳过非法 slug，避免批量操作被路径穿越利用
+      const filePath = resolveBlogFilePath(slug);
+      if (!filePath) continue;
       const existingContent = await fs.readFile(filePath, 'utf-8').catch(() => null);
       const existingBlog = existingContent ? await readBlogFile(slug) : null;
       if (existingBlog && existingContent) {
@@ -624,7 +678,10 @@ export async function saveBlogMarkdown(slug: string, content: string): Promise<A
     }
 
     // 读取原始文件内容，用于保留 frontmatter 中的未知字段
-    const filePath = path.join(BLOGS_DIR, `${slug}.md`);
+    const filePath = resolveBlogFilePath(slug);
+    if (!filePath) {
+      return { success: false, message: '非法博客 slug' };
+    }
     const existingContent = await fs.readFile(filePath, 'utf-8');
 
     await writeBlogFile(slug, {
@@ -701,7 +758,9 @@ export async function batchToggleBlogHidden(slugs: string[], hidden: boolean): P
 
     let updatedCount = 0;
     for (const slug of slugs) {
-      const filePath = path.join(BLOGS_DIR, `${slug}.md`);
+      // 跳过非法 slug，避免批量操作被路径穿越利用
+      const filePath = resolveBlogFilePath(slug);
+      if (!filePath) continue;
       const existingContent = await fs.readFile(filePath, 'utf-8').catch(() => null);
       const existingBlog = existingContent ? await readBlogFile(slug) : null;
       if (existingBlog && existingContent) {

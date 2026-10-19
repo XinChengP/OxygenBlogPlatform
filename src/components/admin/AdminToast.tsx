@@ -108,6 +108,8 @@ const ToastItemComponent: React.FC<{
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -20, scale: 0.95 }}
       transition={{ duration: 0.2 }}
+      role="status"
+      aria-live="polite"
       className={cn(
         'flex items-center space-x-3 px-4 py-3 rounded-lg shadow-lg',
         'text-white',
@@ -121,6 +123,7 @@ const ToastItemComponent: React.FC<{
       {/* 关闭按钮 */}
       <button
         onClick={() => onClose(toast.id)}
+        aria-label="关闭提示"
         className="flex-shrink-0 p-1 rounded hover:bg-white/20 transition-colors"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -304,6 +307,8 @@ export const AdminToast: React.FC<AdminToastProps> = ({
 
   return (
     <motion.div
+      role="status"
+      aria-live="polite"
       initial={{ opacity: 0, y: -20, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -20, scale: 0.95 }}
@@ -319,6 +324,7 @@ export const AdminToast: React.FC<AdminToastProps> = ({
       {onClose && (
         <button
           onClick={onClose}
+          aria-label="关闭提示"
           className="flex-shrink-0 p-1 rounded hover:bg-white/20 transition-colors"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

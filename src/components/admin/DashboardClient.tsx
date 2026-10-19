@@ -18,7 +18,6 @@ import {
   ArrowRight,
   ExternalLink,
   Database,
-  HelpCircle,
   LayoutDashboard,
   ChevronRight,
   ScrollText,
@@ -270,21 +269,13 @@ const StatOverviewCard: React.FC<StatOverviewCardProps> = ({
 interface CategoryPieChartProps {
   /** 分类数据 */
   categories: { name: string; count: number }[];
-  /** 选中的分类 */
-  selectedCategory: string | null;
-  /** 选择回调 */
-  onSelect: (name: string | null) => void;
 }
 
 /**
  * 文章分类环形图组件
  * 使用 recharts 绘制，与日志类型分布图保持一致
  */
-const CategoryPieChart: React.FC<CategoryPieChartProps> = ({
-  categories,
-  selectedCategory,
-  onSelect,
-}) => {
+const CategoryPieChart: React.FC<CategoryPieChartProps> = ({ categories }) => {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
   // 颜色配置（排除天依蓝 #66ccff，只给洛天依分类使用）
@@ -578,13 +569,13 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
  */
 interface TagCloudProps {
   tags: { name: string; count: number }[];
-  /** 选中的标签 */
-  selectedTag: string | null;
-  /** 选择回调 */
-  onSelect: (name: string | null) => void;
 }
 
-const TagCloud: React.FC<TagCloudProps> = ({ tags, selectedTag, onSelect }) => {
+/**
+ * 标签云组件
+ * 仅做展示与悬停反馈，不再提供无效的「选中筛选」交互
+ */
+const TagCloud: React.FC<TagCloudProps> = ({ tags }) => {
   if (tags.length === 0) {
     return (
       <div className="text-center text-gray-400 dark:text-gray-500 py-8">
@@ -632,7 +623,6 @@ const TagCloud: React.FC<TagCloudProps> = ({ tags, selectedTag, onSelect }) => {
     >
       {tags.slice(0, 25).map((tag, index) => {
         const weight = getFontSize(tag.count);
-        const isSelected = selectedTag === tag.name;
         const color = tagColors[index % tagColors.length];
         
         return (
@@ -641,68 +631,42 @@ const TagCloud: React.FC<TagCloudProps> = ({ tags, selectedTag, onSelect }) => {
             initial={{ opacity: 0, scale: 0.5 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ 
-              delay: index * 0.03,
+              delay: Math.min(index, 10) * 0.03,
               type: "spring",
               stiffness: 200,
               damping: 15
             }}
             className="inline-block mx-1"
           >
-            <motion.button
+            <motion.span
               data-weight={weight}
-              onClick={() => onSelect(isSelected ? null : tag.name)}
               whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              className={cn(
-                'relative inline-block px-2 py-1 no-underline transition-all duration-300',
-                'rounded-lg hover:rounded-xl',
-                isSelected && 'bg-[#66ccff]/10'
-              )}
+              className="relative inline-block px-2 py-1 no-underline transition-all duration-300 rounded-lg hover:rounded-xl"
               style={{
                 fontSize: `${0.6 + weight * 0.15}rem`,
-                color: isSelected ? '#66ccff' : color.normal,
+                color: color.normal,
               }}
               onMouseEnter={(e) => {
-                if (!isSelected) {
-                  e.currentTarget.style.color = color.hover;
-                }
+                e.currentTarget.style.color = color.hover;
               }}
               onMouseLeave={(e) => {
-                if (!isSelected) {
-                  e.currentTarget.style.color = color.normal;
-                }
+                e.currentTarget.style.color = color.normal;
               }}
             >
               {/* 标签文字 */}
               <span className="relative z-10 font-medium">{tag.name}</span>
               
               {/* 权重显示（小数字） */}
-              <sup 
-                className={cn(
-                  'ml-0.5 text-[0.5em] opacity-60',
-                  isSelected && 'text-[#66ccff]'
-                )}
-              >
+              <sup className="ml-0.5 text-[0.5em] opacity-60">
                 {tag.count}
               </sup>
-              
-              {/* 选中指示器 */}
-              {isSelected && (
-                <motion.div
-                  layoutId="selectedTag"
-                  className="absolute inset-0 border-2 border-[#66ccff] rounded-lg -z-10"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.2 }}
-                />
-              )}
               
               {/* 悬停背景 */}
               <div 
                 className="absolute inset-0 rounded-lg opacity-0 hover:opacity-100 transition-opacity duration-300 -z-10"
                 style={{ backgroundColor: `${color.normal}15` }}
               />
-            </motion.button>
+            </motion.span>
           </motion.li>
         );
       })}
@@ -861,10 +825,6 @@ const BackgroundDecoration = () => (
  * 采用左右自适应布局：左侧65%-70%核心操作区，右侧30%-35%辅助信息区
  */
 const DashboardClient: React.FC<DashboardClientProps> = ({ stats }) => {
-  // 筛选状态
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedTag, setSelectedTag] = useState<string | null>(null);
-
   // 转换 changelogs 数据格式，并映射旧类型到新类型
   const changelogsData: Changelog[] = useMemo(() => {
     // 旧类型映射表
@@ -1004,11 +964,7 @@ const DashboardClient: React.FC<DashboardClientProps> = ({ stats }) => {
           <motion.div variants={itemVariants}>
             <div className="grid grid-cols-2 gap-6">
               {/* 文章分类分布 - 始终显示 */}
-              <CategoryPieChart
-                categories={stats.categoryStats}
-                selectedCategory={selectedCategory}
-                onSelect={setSelectedCategory}
-              />
+              <CategoryPieChart categories={stats.categoryStats} />
               {/* 更新日志类型分布 - 有数据时显示 */}
               {changelogsData.length > 0 && (
                 <TypeStatsChart changelogs={changelogsData} title="日志类型分布" />
@@ -1030,22 +986,8 @@ const DashboardClient: React.FC<DashboardClientProps> = ({ stats }) => {
         <div className="xl:col-span-4 space-y-6">
           {/* 第一模块：热门标签 - 标签云/瀑布流 */}
           <motion.div variants={itemVariants}>
-            <AdminCard 
-              title="热门标签"
-              actions={selectedTag && (
-                <button
-                  onClick={() => setSelectedTag(null)}
-                  className="text-sm text-[#66ccff] hover:underline"
-                >
-                  清除
-                </button>
-              )}
-            >
-              <TagCloud
-                tags={stats.tagStats}
-                selectedTag={selectedTag}
-                onSelect={setSelectedTag}
-              />
+            <AdminCard title="热门标签">
+              <TagCloud tags={stats.tagStats} />
             </AdminCard>
           </motion.div>
 
@@ -1188,11 +1130,6 @@ const DashboardClient: React.FC<DashboardClientProps> = ({ stats }) => {
                   icon={Settings}
                   label="系统设置"
                   href="/admin/settings"
-                />
-                <QuickLink
-                  icon={HelpCircle}
-                  label="帮助中心"
-                  href="/admin/help"
                 />
               </div>
             </AdminCard>

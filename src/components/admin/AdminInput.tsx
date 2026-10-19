@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useId, useState } from 'react';
 import { cn } from '@/utils/cn';
 
 /**
@@ -73,6 +73,8 @@ const AdminInput: React.FC<AdminInputProps> = ({
 }) => {
   // 密码可见性状态
   const [showPassword, setShowPassword] = useState(false);
+  // 用于把 label 与 input 正确关联，点击标签即可聚焦输入框
+  const inputId = useId();
 
   // 判断是否为密码类型
   const isPasswordType = type === 'password';
@@ -98,7 +100,7 @@ const AdminInput: React.FC<AdminInputProps> = ({
     <div className={cn('w-full', className)}>
       {/* 标签区域 */}
       {label && (
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+        <label htmlFor={inputId} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
           {label}
           {/* 必填标记 */}
           {required && <span className="text-red-500 ml-1">*</span>}
@@ -116,6 +118,7 @@ const AdminInput: React.FC<AdminInputProps> = ({
 
         {/* 输入框 */}
         <input
+          id={inputId}
           type={actualType}
           value={value}
           onChange={handleChange}
@@ -156,7 +159,7 @@ const AdminInput: React.FC<AdminInputProps> = ({
             type="button"
             onClick={togglePasswordVisibility}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-            tabIndex={-1}
+            aria-label={showPassword ? '隐藏密码' : '显示密码'}
           >
             {showPassword ? (
               // 睁眼图标

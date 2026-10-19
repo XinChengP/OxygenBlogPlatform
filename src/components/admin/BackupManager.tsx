@@ -121,7 +121,8 @@ export default function BackupManager({ className = '' }: BackupManagerProps) {
           totalCommits: result.totalCommits || 0,
           lastBackup: result.lastBackup || '',
           trackedFiles: result.trackedFiles || 0,
-          isGitRepo: result.totalCommits !== undefined,
+          // 使用服务端显式返回的 isGitRepo，不能再用 totalCommits 是否存在来推断
+          isGitRepo: result.isGitRepo ?? false,
           hasRemote: result.hasRemote || false,
           remoteUrl: result.remoteUrl || '',
         });
@@ -206,15 +207,26 @@ export default function BackupManager({ className = '' }: BackupManagerProps) {
   };
 
   /**
-   * 关闭恢复对话框
+   * 重置恢复对话框状态（不检查 isRestoring）
+   *
+   * 恢复成功时仍处于 isRestoring = true，如果复用 closeRestoreModal 会被
+   * 「恢复中不允许关闭」的判断拦截，导致弹窗永远关不掉、还能重复执行覆盖。
+   * 因此把「清理状态」与「用户主动关闭」拆成两个函数。
    */
-  const closeRestoreModal = () => {
-    if (isRestoring) return; // 恢复中不允许关闭
+  const resetRestoreModal = () => {
     setRestoreModalOpen(false);
     setRestoreStep('confirm');
     setRestorePassword('');
     setPasswordError('');
     setSelectedCommitHash(undefined);
+  };
+
+  /**
+   * 关闭恢复对话框（恢复过程中禁止用户关闭）
+   */
+  const closeRestoreModal = () => {
+    if (isRestoring) return; // 恢复中不允许关闭
+    resetRestoreModal();
   };
 
   /**
@@ -245,14 +257,19 @@ export default function BackupManager({ className = '' }: BackupManagerProps) {
 
       if (result.success) {
         toast.success(result.message);
-        closeRestoreModal();
+        // 成功后直接重置状态，不能走 closeRestoreModal（此时 isRestoring 仍为 true）
+        resetRestoreModal();
       } else {
-        // 密码错误或恢复失败
-        if (result.message.includes('密码') || result.message.includes('认证')) {
+        // 密码错误或恢复失败：兼容中英文两种返回文案
+        if (
+          result.message.includes('密码') ||
+          result.message.includes('认证') ||
+          result.message.toLowerCase().includes('password')
+        ) {
           setPasswordError(result.message);
         } else {
           toast.error(result.message);
-          closeRestoreModal();
+          resetRestoreModal();
         }
       }
     } catch (error) {
@@ -268,7 +285,11 @@ export default function BackupManager({ className = '' }: BackupManagerProps) {
    */
   const handleTabChange = (tab: 'backup' | 'history' | 'restore' | 'push') => {
     setActiveTab(tab);
-    if (tab === 'history' && history.length === 0) {
+    /*
+      历史记录与版本恢复都依赖 history 数据。
+      原实现只在切到 history 时加载，直接点「版本恢复」会永远显示空列表。
+    */
+    if ((tab === 'history' || tab === 'restore') && history.length === 0) {
       loadHistory();
     }
   };
@@ -338,13 +359,21 @@ export default function BackupManager({ className = '' }: BackupManagerProps) {
 
     setIsPushing(true);
     try {
-      const result = await pushToRemote();
+      /*
+        必须把配置面板中的 pushConfig 传进去，否则 Token 输入框形同虚设：
+        pushToRemote 只有拿到 config.token 才会把它拼进临时推送地址。
+        Token 仅保存在组件内存中，不写入 git 配置。
+      */
+      const result = await pushToRemote(pushConfig.remoteUrl ? pushConfig : undefined);
       if (result.success) {
         toast.success(result.message);
         await loadRemoteInfo();
       } else {
-        // 如果推送失败且提示未配置远程仓库，显示配置面板
-        if (result.message.includes('未配置远程仓库')) {
+        // 兼容中英文的「未配置远程仓库」提示
+        if (
+          result.message.includes('未配置远程仓库') ||
+          result.message.toLowerCase().includes('remote repository not configured')
+        ) {
           setShowPushConfig(true);
         } else {
           toast.error(result.message);
@@ -993,10 +1022,11 @@ export default function BackupManager({ className = '' }: BackupManagerProps) {
                           )}
                         </div>
 
-                        {/* 密码提示 */}
+                        {/* 密码提示：不再展示固定默认密码，避免把弱口令写死在界面上 */}
                         <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
                           <p className="text-xs text-blue-600 dark:text-blue-400">
-                            <strong>默认密码：</strong>admin123（可在系统设置中修改）
+                            恢复密码保存在本地 <code>admin-backup/.restore-password</code>，
+                            可在「系统设置 → 安全设置」中修改。
                           </p>
                         </div>
                       </div>

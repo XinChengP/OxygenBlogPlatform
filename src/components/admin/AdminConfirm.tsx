@@ -107,6 +107,21 @@ const AdminConfirm: React.FC<AdminConfirmProps> = ({
       if (event.key === 'Escape') {
         onClose();
       } else if (event.key === 'Enter') {
+        /*
+          只在焦点不处于输入控件时响应回车。
+          原实现监听 document，确认框打开时用户在页面其他输入框按回车
+          也会直接执行确认（例如删除），属于高风险误操作。
+        */
+        const target = event.target as HTMLElement | null;
+        if (
+          target &&
+          (target.tagName === 'INPUT' ||
+            target.tagName === 'TEXTAREA' ||
+            target.tagName === 'SELECT' ||
+            target.isContentEditable)
+        ) {
+          return;
+        }
         onConfirm();
       }
     },

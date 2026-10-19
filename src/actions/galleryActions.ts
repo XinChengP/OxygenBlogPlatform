@@ -47,6 +47,28 @@ import { revalidatePath } from 'next/cache';
 const GALLERY_ROOT = path.join(process.cwd(), 'public');
 
 /**
+ * 将客户端传入的相对路径解析为 public 目录内的绝对路径
+ *
+ * 安全要点：
+ * 1. 必须使用 path.resolve，它会消解 `..`，传 `../public-evil` 时结果落在 public 之外；
+ * 2. 比较边界时必须带路径分隔符，否则 `...\public-evil` 也能通过 `startsWith(root)`；
+ * 3. 传入绝对路径时 path.resolve 会直接丢弃 root，同样会被边界判断拦截。
+ *
+ * @param relativePath 相对于 public 的路径
+ * @returns 安全的绝对路径；越界时返回 null
+ */
+function resolveGalleryPath(relativePath: string): string | null {
+  const root = path.resolve(GALLERY_ROOT);
+  const target = path.resolve(root, relativePath || '');
+
+  if (target !== root && !target.startsWith(root + path.sep)) {
+    return null;
+  }
+
+  return target;
+}
+
+/**
  * 扫描目录获取图片列表
  * @param dirPath 目录路径（相对于 public）
  * @returns 图片列表
@@ -56,7 +78,10 @@ async function scanDirectory(dirPath: string): Promise<GalleryImage[]> {
     return [];
   }
   
-  const fullPath = path.join(GALLERY_ROOT, dirPath);
+  const fullPath = resolveGalleryPath(dirPath);
+  if (!fullPath) {
+    return [];
+  }
   const images: GalleryImage[] = [];
 
   try {
@@ -80,8 +105,12 @@ async function scanDirectory(dirPath: string): Promise<GalleryImage[]> {
           src: `/${id}`,
           alt: entry.name,
           source: 'local' as ImageSource,
-          category: path.dirname(dirPath) || dirPath,
-          subCategory: path.basename(dirPath),
+          /*
+            分类取路径第一段。原实现用 path.dirname，顶层目录（如 LTY_Picture）
+            会返回 "."，导致前端出现名为 "." 的分类。
+          */
+          category: dirPath.split(/[\\/]/)[0] || '未分类',
+          subCategory: dirPath.split(/[\\/]/).slice(1).join('/') || undefined,
           createdAt: stats.birthtime.toISOString(),
           updatedAt: stats.mtime.toISOString(),
           size: stats.size,
@@ -134,13 +163,18 @@ export async function getLocalGalleryImages(scanPath: string = ''): Promise<Gall
 
     // 如果指定了扫描路径，额外扫描该路径
     if (scanPath) {
-      const customPath = path.join(GALLERY_ROOT, scanPath);
-      try {
-        await fs.access(customPath);
-        const images = await scanDirectory(scanPath);
-        allImages.push(...images);
-      } catch {
-        // 目录不存在，跳过
+      const customPath = resolveGalleryPath(scanPath);
+      // 越界路径直接忽略，避免通过 ../ 枚举项目外目录
+      if (!customPath) {
+        console.warn('拒绝扫描越界路径:', scanPath);
+      } else {
+        try {
+          await fs.access(customPath);
+          const images = await scanDirectory(scanPath);
+          allImages.push(...images);
+        } catch {
+          // 目录不存在，跳过
+        }
       }
     }
 
@@ -166,13 +200,15 @@ export async function deleteLocalImage(imagePath: string): Promise<{ success: bo
   }
   
   try {
-    // 安全检查：确保路径在 public 目录下
-    const normalizedPath = path.normalize(imagePath).replace(/^\.+(\\|\/)/, '');
-    const fullPath = path.join(GALLERY_ROOT, normalizedPath);
-    
-    // 确保路径在 GALLERY_ROOT 内
-    if (!fullPath.startsWith(GALLERY_ROOT)) {
+    // 使用统一的路径解析：拦截 ../ 穿越与绝对路径
+    const fullPath = resolveGalleryPath(imagePath);
+    if (!fullPath || fullPath === path.resolve(GALLERY_ROOT)) {
       return { success: false, message: '无效的图片路径' };
+    }
+
+    // 只允许删除图片文件，避免通过构造路径删除 robots.txt 等站点关键静态文件
+    if (!isImageFile(fullPath)) {
+      return { success: false, message: '只能删除图片文件' };
     }
 
     await fs.access(fullPath);
@@ -259,12 +295,15 @@ export async function uploadLocalImage(
       return { success: false, message: '不支持的文件类型' };
     }
 
-    // 安全检查路径
-    const normalizedPath = path.normalize(uploadPath).replace(/^\.+(\\|\/)/, '');
-    const targetDir = path.join(GALLERY_ROOT, normalizedPath);
-    
-    // 确保路径在 GALLERY_ROOT 内
-    if (!targetDir.startsWith(GALLERY_ROOT)) {
+    // 限制单文件体积，避免一次性把超大文件读入内存
+    const MAX_FILE_SIZE = 10 * 1024 * 1024;
+    if (file.size > MAX_FILE_SIZE) {
+      return { success: false, message: '图片大小不能超过 10MB' };
+    }
+
+    // 安全解析上传目录，拦截 ../ 与绝对路径
+    const targetDir = resolveGalleryPath(uploadPath);
+    if (!targetDir) {
       return { success: false, message: '无效的上传路径' };
     }
 
@@ -275,7 +314,9 @@ export async function uploadLocalImage(
     const timestamp = Date.now();
     const ext = path.extname(file.name);
     const baseName = path.basename(file.name, ext);
-    const safeName = `${baseName}_${timestamp}${ext}`;
+    // 过滤 Windows 文件名非法字符，避免在本地写入失败
+    const safeBaseName = baseName.replace(/[<>:"/\\|?*\x00-\x1f]/g, '_').trim() || 'image';
+    const safeName = `${safeBaseName}_${timestamp}${ext}`;
     const filePath = path.join(targetDir, safeName);
 
     // 写入文件
@@ -285,6 +326,9 @@ export async function uploadLocalImage(
     // 获取文件信息
     const stats = await fs.stat(filePath);
     const relativePath = path.relative(GALLERY_ROOT, filePath).replace(/\\/g, '/');
+
+    // 上传路径相对 public，用于生成图片分类与访问地址
+    const normalizedPath = path.relative(path.resolve(GALLERY_ROOT), targetDir).replace(/\\/g, '/');
 
     const image: GalleryImage = {
       id: relativePath,
@@ -323,10 +367,10 @@ export async function getLocalGalleryDirectoryTree(
   }
   
   try {
-    const fullPath = path.join(GALLERY_ROOT, basePath);
+    const fullPath = resolveGalleryPath(basePath);
     
-    // 安全检查
-    if (!fullPath.startsWith(GALLERY_ROOT)) {
+    // 安全检查：拦截 ../ 穿越与绝对路径
+    if (!fullPath) {
       return { success: false, message: '无效的路径', data: [] };
     }
 
@@ -387,10 +431,10 @@ export async function getLocalGallerySubDirectories(
   }
   
   try {
-    const fullPath = path.join(GALLERY_ROOT, basePath);
+    const fullPath = resolveGalleryPath(basePath);
     
-    // 安全检查
-    if (!fullPath.startsWith(GALLERY_ROOT)) {
+    // 安全检查：拦截 ../ 穿越与绝对路径
+    if (!fullPath) {
       return { success: false, message: '无效的路径', data: [] };
     }
 

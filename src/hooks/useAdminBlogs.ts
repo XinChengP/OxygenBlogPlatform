@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { getBlogList } from '@/actions/blogActions';
 
 /**
  * 博客文章接口
@@ -86,8 +87,8 @@ export interface UseAdminBlogsReturn {
   pagination: PaginationInfo;
   /** 筛选选项 */
   filterOptions: FilterOptions;
-  /** 刷新数据（客户端重新筛选） */
-  refresh: () => void;
+  /** 刷新数据（重新从服务端读取最新列表） */
+  refresh: () => Promise<void>;
   /** 更新筛选条件 */
   updateFilters: (filters: Partial<UseAdminBlogsOptions>) => void;
   /** 当前筛选条件 */
@@ -223,14 +224,30 @@ export function useAdminBlogs(options: UseAdminBlogsOptions = {}): UseAdminBlogs
   }, [allBlogs, currentFilters]);
 
   /**
-   * 刷新数据（重置筛选条件）
+   * 刷新数据
+   *
+   * 关键点：删除、隐藏、批量改分类之后必须重新向服务端读取文件列表，
+   * 只重置筛选条件不会更新 allBlogs，界面会继续显示已被删除的文章。
    */
-  const refresh = useCallback(() => {
-    setCurrentFilters({
-      ...defaultOptions,
-      ...options,
-    });
-  }, [options]);
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const latest = await getBlogList();
+      setAllBlogs(latest);
+
+      // 用最新数据补充分类与标签选项，同时保留服务端下发的预设分类
+      setFilterOptions(prev => ({
+        categories: [...new Set([...prev.categories, ...latest.map(blog => blog.category).filter(Boolean)])],
+        tags: [...new Set([...prev.tags, ...latest.flatMap(blog => blog.tags)])],
+      }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '刷新文章列表失败');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   /**
    * 更新筛选条件

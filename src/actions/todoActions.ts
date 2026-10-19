@@ -34,8 +34,16 @@ async function readTodoFile(): Promise<TodoConfig> {
   try {
     const content = await fs.readFile(TODO_FILE_PATH, 'utf-8');
     return JSON.parse(content) as TodoConfig;
-  } catch {
-    return { title: 'Todo List', showStats: true, items: [] };
+  } catch (error) {
+    /*
+      只有「文件确实不存在」才能安全地返回空配置。
+      JSON 语法损坏、权限不足等异常必须继续向上抛出：
+      否则任意一次写操作都会把空配置覆盖回 todo.json，导致全部待办永久丢失。
+    */
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return { title: 'Todo List', showStats: true, items: [] };
+    }
+    throw error;
   }
 }
 
@@ -52,7 +60,20 @@ async function writeTodoFile(data: TodoConfig): Promise<void> {
   } catch {
     await fs.mkdir(dir, { recursive: true });
   }
-  await fs.writeFile(TODO_FILE_PATH, JSON.stringify(data, null, 2), 'utf-8');
+
+  /*
+    先写临时文件再重命名，避免写入过程中断（进程退出、磁盘满）把原文件截断成半截 JSON。
+    rename 在同目录内是原子操作，Windows 下 Node 也会覆盖已存在的目标文件。
+  */
+  const tempPath = `${TODO_FILE_PATH}.tmp`;
+  await fs.writeFile(tempPath, JSON.stringify(data, null, 2), 'utf-8');
+  try {
+    await fs.rename(tempPath, TODO_FILE_PATH);
+  } catch (error) {
+    // 重命名失败时清理临时文件，避免残留脏数据
+    await fs.rm(tempPath, { force: true });
+    throw error;
+  }
 }
 
 /**
@@ -177,6 +198,10 @@ export async function updateTodoItem(
     const item = config.items[itemIndex];
     
     if (data.content !== undefined) {
+      // 与创建逻辑保持一致：不允许把待办内容改成空白
+      if (!data.content.trim()) {
+        return { success: false, message: 'Content cannot be empty' };
+      }
       item.content = data.content.trim();
     }
     if (data.priority !== undefined) {

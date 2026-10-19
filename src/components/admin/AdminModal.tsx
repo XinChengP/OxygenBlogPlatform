@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useId, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/utils/cn';
 
@@ -52,6 +52,26 @@ const AdminModal: React.FC<AdminModalProps> = ({
   maskClosable = true,
   className,
 }) => {
+  // 用于无障碍关联标题，并管理打开/关闭时的焦点
+  const titleId = useId();
+  const contentRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+
+  /**
+   * 打开时记录原焦点并聚焦弹窗，关闭时把焦点归还给触发元素
+   */
+  useEffect(() => {
+    if (!open) return;
+
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
+    const timer = window.setTimeout(() => contentRef.current?.focus(), 50);
+
+    return () => {
+      window.clearTimeout(timer);
+      previousFocusRef.current?.focus?.();
+    };
+  }, [open]);
+
   /**
    * 处理 ESC 键关闭
    */
@@ -120,6 +140,11 @@ const AdminModal: React.FC<AdminModalProps> = ({
 
           {/* 模态框内容 */}
           <motion.div
+            ref={contentRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+            tabIndex={-1}
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -137,7 +162,7 @@ const AdminModal: React.FC<AdminModalProps> = ({
             {/* 头部 */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200/50 dark:border-gray-700/50">
               {/* 标题 */}
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              <h3 id={titleId} className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {title}
               </h3>
 

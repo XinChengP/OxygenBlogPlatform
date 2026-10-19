@@ -13,6 +13,7 @@ import {
   formatFileSize,
   generateImageFileName,
   copyToClipboard,
+  clearStoredToken,
 } from '@/utils/adminUtils';
 import {
   validateImageFile,
@@ -727,7 +728,7 @@ export function useGallerySettings() {
     setIsConnected(false);
     setRepoInfo(null);
     
-    const { clearStoredToken } = require('@/utils/adminUtils');
+    // 使用静态导入的函数，避免在客户端代码里使用 require
     clearStoredToken();
   }, []);
 
