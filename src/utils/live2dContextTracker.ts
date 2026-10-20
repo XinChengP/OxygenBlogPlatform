@@ -91,16 +91,21 @@ export class Live2DContextTracker {
   private setupEventListeners(): void {
     if (typeof window === 'undefined') return;
 
-    // 监听用户活动
-    const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+    // 监听用户活动。
+    // 不再监听 mousemove：它是全站最高频的事件，而 onActivity 内部本身
+    // 只按 5 秒粒度重置状态，用 pointerdown/keydown/touchstart 足够。
+    const activityEvents = ['pointerdown', 'keydown', 'touchstart'];
     activityEvents.forEach(event => {
       const handler = () => this.onActivity();
       this.activityListeners.push({ type: event, handler });
       window.addEventListener(event, handler, { passive: true });
     });
 
-    // 监听滚动速度
-    this.scrollHandler = () => this.onScroll();
+    // 监听滚动速度；滚动同时视为用户活动，合并为一个监听器
+    this.scrollHandler = () => {
+      this.onActivity();
+      this.onScroll();
+    };
     window.addEventListener('scroll', this.scrollHandler, { passive: true });
 
     // 监听页面切换

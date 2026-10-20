@@ -166,15 +166,21 @@ export default function SecurityProvider({
   // 判断是否在开发环境
   const isDev = isDevelopment();
 
-  // 启动防劫持保护（开发环境下降低监控频率）
+  // 启动防劫持保护。
+  //
+  // 性能取舍（第四批）：
+  // - DOM/脚本 MutationObserver 会监听整个 document 的 childList/attributes，
+  //   在 React 水合、画廊/动态列表渲染时产生大量记录与递归 querySelectorAll，
+  //   是首屏和滚动卡顿的常驻来源。静态博客已有 CSP + iframe 逃逸，
+  //   生产环境关闭这两类监控，只保留低成本的 iframe 检查和网络请求检查。
+  // - 检查间隔从 15s 放宽到 60s；iframe 检查本身只读 window 属性，成本极低。
   useHijackingProtection({
     enableIframeEscape: true,
-    enableDOMMonitoring: !isDev, // 开发环境禁用DOM监控
-    enableScriptMonitoring: !isDev, // 开发环境禁用脚本监控
+    enableDOMMonitoring: false,
+    enableScriptMonitoring: false,
     enableNetworkMonitoring: true,
-    checkInterval: isDev ? 30000 : 15000, // 生产环境 15s 检查一次，降低常驻开销
+    checkInterval: isDev ? 30000 : 60000,
     onHijackingDetected: (type, details) => {
-      // 开发环境下只记录日志，不显示错误
       if (isDev) {
         console.log(`[安全] 检测到潜在问题: ${type}`, details);
         return;
@@ -189,7 +195,10 @@ export default function SecurityProvider({
       {/* CSP策略注入 */}
       {enableCSP && <CSPMetaTag cspContent={cspContent} />}
       
-      {/* 完整性检测 - 生产环境才启用 */}
+      {/*
+        完整性检测脚本默认不加载：它自带 5 秒 setInterval + 全文档 MutationObserver，
+        而关键元素/脚本校验对静态博客的收益有限。需要时显式传 enableIntegrityCheck=true。
+      */}
       {enableIntegrityCheck && !isDev && <IntegrityCheckLoader />}
       
       {/* 安全监控 */}

@@ -9,14 +9,10 @@ var RENDERER = {
 	WATCH_INTERVAL : 200,
 
 	init : function(){
-		// 关键修复：动画循环一旦启动就永不停止（render 内部持续 requestAnimationFrame），
-		// 若不先取消旧循环，重复调用 init（例如页脚组件卸载后重新挂载）会让
-		// render 每帧执行次数 +1，小鱼状态推进速度成倍加快，且越积越快。
-		// 因此 init 的第一步永远是停掉可能存在的旧循环，保证全局只有一条渲染循环。
-		if(this.rafId){
-			cancelAnimationFrame(this.rafId);
-			this.rafId = 0;
-		}
+		// 重复 init 前先停掉旧循环、旧监听器和离屏观察器，避免越积越多
+		this.teardown();
+		this.paused = false;
+		this.isVisible = true;
 		// 关键修复：setParameters 在页脚容器缺失时返回 false，
 		// 此时必须立即放弃本次初始化，否则 setup/bindEvent/render 会在
 		// 没有画布的状态下继续执行并抛出异常。
@@ -27,6 +23,31 @@ var RENDERER = {
 		this.setup();
 		this.bindEvent();
 		this.render();
+	},
+	/**
+	 * 停止渲染循环并解绑上一次初始化留下的监听器/观察器。
+	 */
+	teardown : function(){
+		if(this.rafId){
+			cancelAnimationFrame(this.rafId);
+			this.rafId = 0;
+		}
+		if(this.boundWatchWindowSize){
+			window.removeEventListener('resize', this.boundWatchWindowSize);
+		}
+		if(this.container && this.boundStartEpicenter){
+			this.container.removeEventListener('mouseenter', this.boundStartEpicenter);
+		}
+		if(this.container && this.boundMoveEpicenter){
+			this.container.removeEventListener('mousemove', this.boundMoveEpicenter);
+		}
+		if(this.boundVisibilityChange){
+			document.removeEventListener('visibilitychange', this.boundVisibilityChange);
+		}
+		if(this.visibilityObserver){
+			this.visibilityObserver.disconnect();
+			this.visibilityObserver = null;
+		}
 	},
 	setParameters : function(){
 		// 原实现基于 jQuery，现为等价的原生 DOM 操作
@@ -79,8 +100,12 @@ var RENDERER = {
 		this.boundWatchWindowSize = this.watchWindowSize;
 		this.jdugeToStopResize = this.jdugeToStopResize.bind(this);
 		this.startEpicenter = this.startEpicenter.bind(this);
+		this.boundStartEpicenter = this.startEpicenter;
 		this.moveEpicenter = this.moveEpicenter.bind(this);
+		this.boundMoveEpicenter = this.moveEpicenter;
 		this.reverseVertical = this.reverseVertical.bind(this);
+		this.handleVisibilityChange = this.handleVisibilityChange.bind(this);
+		this.boundVisibilityChange = this.handleVisibilityChange;
 		this.render = this.render.bind(this);
 	},
 	setup : function(){
@@ -96,6 +121,8 @@ var RENDERER = {
 		this.canvas.width = this.width;
 		this.canvas.height = this.height;
 		this.reverse = false;
+		// 缓存颜色，避免 render 每帧 getComputedStyle 造成强制样式计算
+		this.containerColor = getComputedStyle(this.container).color || 'rgba(102, 204, 255, 0.35)';
 
 		this.fishes.push(new FISH(this));
 		this.createSurfacePoints();
@@ -123,10 +150,53 @@ var RENDERER = {
 			this.setup();
 		}
 	},
+	handleVisibilityChange : function(){
+		if(document.hidden){
+			this.paused = true;
+			if(this.rafId){
+				cancelAnimationFrame(this.rafId);
+				this.rafId = 0;
+			}
+			return;
+		}
+		if(this.isVisible){
+			this.paused = false;
+			this.resumeRender();
+		}
+	},
+	resumeRender : function(){
+		if(this.rafId) return;
+		if(this.context && this.container){
+			// 主题切换后颜色可能变化，恢复时重新缓存一次
+			this.containerColor = getComputedStyle(this.container).color || this.containerColor;
+		}
+		this.render();
+	},
 	bindEvent : function(){
-		window.addEventListener('resize', this.watchWindowSize);
-		this.container.addEventListener('mouseenter', this.startEpicenter);
-		this.container.addEventListener('mousemove', this.moveEpicenter);
+		window.addEventListener('resize', this.boundWatchWindowSize);
+		this.container.addEventListener('mouseenter', this.boundStartEpicenter);
+		this.container.addEventListener('mousemove', this.boundMoveEpicenter);
+		document.addEventListener('visibilitychange', this.boundVisibilityChange);
+
+		// 只有页脚进入视口附近时才渲染；离屏后停止 rAF。
+		if(typeof IntersectionObserver !== 'undefined'){
+			var self = this;
+			this.visibilityObserver = new IntersectionObserver(function(entries){
+				var entry = entries[0];
+				self.isVisible = !!(entry && entry.isIntersecting);
+				if(self.isVisible){
+					self.paused = false;
+					self.resumeRender();
+				}else{
+					self.paused = true;
+					if(self.rafId){
+						cancelAnimationFrame(self.rafId);
+						self.rafId = 0;
+					}
+				}
+			}, { rootMargin: '0px' });
+			this.visibilityObserver.observe(this.container);
+		}
 	},
 	/*
 		光标相对容器的坐标。
@@ -187,14 +257,18 @@ var RENDERER = {
 		}
 	},
 	render : function(){
+		// 离屏 / 后台标签页 / 已暂停时不再排下一帧，避免常驻 rAF
+		if(this.paused || document.hidden || !this.isVisible || !this.context){
+			this.rafId = 0;
+			return;
+		}
 		// 记录每次注册的帧回调 id，供 init 在重新启动循环前取消旧循环，
 		// 防止多条循环叠加导致小鱼运动速度成倍加快
 		this.rafId = requestAnimationFrame(this.render);
 		this.controlStatus();
 		this.context.clearRect(0, 0, this.width, this.height);
-		// 读取容器上设置的 CSS color 属性，实现与页脚主题色统一
-		// 默认使用浅色半透明作为降级方案
-		this.context.fillStyle = getComputedStyle(this.container).color || 'rgba(102, 204, 255, 0.35)';
+		// 使用 setup/resume 时缓存的颜色，避免每帧 getComputedStyle 触发强制样式计算
+		this.context.fillStyle = this.containerColor || 'rgba(102, 204, 255, 0.35)';
 		
 		for(var i = 0, count = this.fishes.length; i < count; i++){
 			this.fishes[i].render(this.context);

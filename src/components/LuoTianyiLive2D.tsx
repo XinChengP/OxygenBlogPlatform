@@ -313,7 +313,7 @@ export default function LuoTianyiLive2D({ hidden = false }: LuoTianyiLive2DProps
       detectReadingProgress();
       lastProgressMessage = now;
     };
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [detectReadingProgress]);
 

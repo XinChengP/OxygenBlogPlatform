@@ -265,6 +265,19 @@
   }
 }
 
+/*
+  移动端导航栏降级：固定导航的 backdrop-filter 在滚动时每帧重算模糊，
+  低端机是典型掉帧点。移动端改用更实的半透明底色，关闭模糊；
+  首页顶部仍是透明导航（没有 .glass-card），不受影响。
+*/
+@media (max-width: 767px) {
+  .nav-glass.glass-card {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background-color: var(--glass-bg-strong);
+  }
+}
+
 /* 代码块主题样式优化 */
 .code-block {
   background-color: var(--code-bg);

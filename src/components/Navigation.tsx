@@ -294,7 +294,7 @@ const Navigation = () => {
 
   // 导航栏样式 - 应用性能优化
   const navClassName = useMemo(() => {
-    return `fixed top-0 left-0 right-0 transition-all duration-300 gpu-accelerated ${
+    return `fixed top-0 left-0 right-0 transition-all duration-300 gpu-accelerated nav-glass ${
       isAtTop
         ? 'bg-transparent dark:bg-transparent border-transparent'
         : 'glass-card border-b'

@@ -315,7 +315,8 @@ export default function RootLayout({
 
         {/* 注意：移除不必要的预加载以避免浏览器警告
             - favicon.ico 不需要预加载，浏览器会自动请求
-            - smooth-navigation.js 通过Script组件加载，不需要预加载
+            - 滚动位置管理统一由 SmoothScrollProvider/scrollManager 负责，
+              不再额外加载 public/js/smooth-navigation.js
         */}
 
         {/* 分块（chunk）加载失败自动恢复脚本
@@ -401,13 +402,13 @@ export default function RootLayout({
         }}
         suppressHydrationWarning
       >
-        {/* 平滑导航脚本 - 使用普通script标签 */}
-        <script src={getAssetPath('/js/smooth-navigation.js')} defer />
-        {/* 安全保护提供者 - 提供CSP、防劫持、完整性检测等安全功能 */}
+        {/* 安全保护提供者 - 提供 CSP、防劫持与网络请求检查。
+            完整性检测脚本默认关闭：5 秒定时 + 全文档 MutationObserver 的常驻开销
+            对静态博客收益有限；需要时把 enableIntegrityCheck 改为 true。 */}
         <SecurityProvider
           enableCSP={true}
           enableHijackingProtection={true}
-          enableIntegrityCheck={true}
+          enableIntegrityCheck={false}
         >
           <ThemeProvider
             attribute="class"

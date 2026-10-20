@@ -320,7 +320,7 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
     };
 
     // 添加滚动事件监听
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
 
     return () => {
       // 清除定时器

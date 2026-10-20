@@ -50,6 +50,20 @@ function FlyingFish() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    // 移动端 / 减少动态效果 / 省流模式直接不加载小鱼脚本：
+    // 之前只是 CSS display:none，fish.js 仍会创建 canvas 并常驻 rAF。
+    const navigatorWithHints = navigator as Navigator & {
+      connection?: { saveData?: boolean };
+    };
+    if (
+      window.matchMedia('(pointer: coarse)').matches ||
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+      navigatorWithHints.connection?.saveData ||
+      window.innerWidth < 768
+    ) {
+      return;
+    }
+
     // 捕获阶段拦截小鱼容器内部的点击冒泡，避免误触发页面上层的点击行为。
     // 注意：本 effect 依赖 pathname，每次路由切换都会重新执行，
     // 因此必须使用具名函数并在清理函数中解绑，防止监听器无限堆积
@@ -92,8 +106,9 @@ function FlyingFish() {
     }
 
     const fishPath = getAssetPath('/js/fish.js');
-
-    loadScript(fishPath)
+    // /js 静态脚本在部署环境可能被长缓存；加版本号让本次性能改动立即生效
+    const fishVersion = '20261020b';
+    loadScript(`${fishPath}?v=${fishVersion}`)
       .then(() => {
         isLoadedRef.current = true;
         restoreFish();
@@ -177,36 +192,27 @@ function Footer() {
   const launchDate = useMemo(() => new Date('2025-11-06T20:00:00'), []);
   const runTimeRef = useRef<HTMLSpanElement>(null);
 
-  // 实时更新运行时间 - 使用 ref 直接操作 DOM，避免 React re-render
+  // 实时更新运行时间 - 使用 ref 直接操作 DOM，避免 React re-render。
+  // 每秒用 setInterval 更新即可，不再用 rAF 每帧检查时间（常驻 60fps 唤醒无意义）。
   useEffect(() => {
-    let animationFrameId: number;
-    let lastUpdateTime = 0;
-    const UPDATE_INTERVAL = 1000; // 每秒更新一次
+    if (pathname.startsWith('/admin')) return;
 
-    const updateRunTime = (currentTime: number) => {
-      // 控制更新频率，避免过度渲染
-      if (currentTime - lastUpdateTime >= UPDATE_INTERVAL) {
-        const now = new Date();
-        const diff = now.getTime() - launchDate.getTime();
-        if (runTimeRef.current) {
-          runTimeRef.current.textContent = diff < 0
-            ? `距离上线还有 ${formatTime(-diff)}`
-            : `已陪你走下去：${formatTime(diff)}`;
-        }
-        lastUpdateTime = currentTime;
-      }
-      animationFrameId = requestAnimationFrame(updateRunTime);
-    };
-
-    // 立即执行一次
-    updateRunTime(performance.now());
-
-    return () => {
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
+    const updateRunTime = () => {
+      if (document.hidden) return;
+      const now = new Date();
+      const diff = now.getTime() - launchDate.getTime();
+      if (runTimeRef.current) {
+        runTimeRef.current.textContent = diff < 0
+          ? `距离上线还有 ${formatTime(-diff)}`
+          : `已陪你走下去：${formatTime(diff)}`;
       }
     };
-  }, [launchDate]);
+
+    updateRunTime();
+    const timer = setInterval(updateRunTime, 1000);
+
+    return () => clearInterval(timer);
+  }, [launchDate, pathname]);
 
   // 后台页面不显示页脚 - 在所有 hooks 调用之后再条件返回
   if (pathname.startsWith('/admin')) {

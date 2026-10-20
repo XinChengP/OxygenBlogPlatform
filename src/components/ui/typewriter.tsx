@@ -1,150 +1,115 @@
-"use client"
+'use client';
 
-import { useEffect, useState } from "react"
-import { animate, motion, useMotionValue, useTransform } from "framer-motion"
+import { useEffect, useState } from 'react';
 
 /**
- * Typewriter 组件 - 打字机效果
- * 性能优化：使用 will-change 和 GPU 加速
+ * 打字机组件
+ *
+ * 性能说明（第四批）：
+ * - 原实现用 framer-motion 的 animate() + repeat: Infinity 常驻动画循环，
+ *   首页加载后每帧都在更新 motion value，即使标签页不可见也占主线程。
+ * - 现在改为 setTimeout 状态机：打字 60ms/字、删除 30ms/字、整句停留 1.5s；
+ *   标签页隐藏时暂停，prefers-reduced-motion 时直接显示静态文本。
+ * - 这样首页不再需要 framer-motion，首载可少一个约 41KB(gzip) 的 chunk。
  */
 export interface ITypewriterProps {
-  delay: number
-  texts: string[]
-  baseText?: string
+  delay: number;
+  texts: string[];
+  baseText?: string;
 }
 
-function Typewriter({ delay, texts, baseText = "" }: ITypewriterProps) {
-  const [animationComplete, setAnimationComplete] = useState(false)
-  const count = useMotionValue(0)
-  const rounded = useTransform(count, (latest) => Math.round(latest))
-  const displayText = useTransform(rounded, (latest) =>
-    baseText.slice(0, latest)
-  )
+const TYPE_INTERVAL_MS = 60;
+const DELETE_INTERVAL_MS = 30;
+const HOLD_FULL_MS = 1500;
+const HOLD_EMPTY_MS = 500;
+
+export default function Typewriter({ delay, texts, baseText = '' }: ITypewriterProps) {
+  const [displayText, setDisplayText] = useState(baseText);
+  const [started, setStarted] = useState(false);
+  const [textIndex, setTextIndex] = useState(0);
+  const [charIndex, setCharIndex] = useState(0);
+  const [deleting, setDeleting] = useState(false);
+  const [isHidden, setIsHidden] = useState(false);
+  const [reduceMotion, setReduceMotion] = useState(false);
+
+  // 减少动态效果：只显示第一句静态文本
+  useEffect(() => {
+    const query = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const sync = () => setReduceMotion(query.matches);
+    sync();
+    query.addEventListener?.('change', sync);
+    return () => query.removeEventListener?.('change', sync);
+  }, []);
+
+  // 页面隐藏时暂停打字，避免后台定时器继续更新 DOM
+  useEffect(() => {
+    const sync = () => setIsHidden(document.hidden);
+    sync();
+    document.addEventListener('visibilitychange', sync);
+    return () => document.removeEventListener('visibilitychange', sync);
+  }, []);
+
+  // 保留原来的入场节奏：delay + 1 秒后开始循环
+  useEffect(() => {
+    if (reduceMotion) {
+      setDisplayText(texts[0] || baseText);
+      return;
+    }
+    const timer = setTimeout(() => {
+      setDisplayText('');
+      setStarted(true);
+    }, Math.max(0, delay + 1) * 1000);
+    return () => clearTimeout(timer);
+  }, [delay, reduceMotion, texts, baseText]);
 
   useEffect(() => {
-    // 使用 requestAnimationFrame 优化动画触发时机
-    const startAnimation = () => {
-      const controls = animate(count, baseText.length, {
-        type: "tween",
-        delay,
-        duration: 2, // 从1改为2，让基础文本动画变慢
-        ease: "easeInOut",
-        onComplete: () => setAnimationComplete(true),
-      })
-      return controls
-    }
-    
-    let controls: ReturnType<typeof animate> | null = null
-    
-    // 延迟启动动画，避免阻塞首屏渲染
-    const timer = setTimeout(() => {
-      controls = startAnimation()
-    }, 100)
-    
-    return () => {
-      clearTimeout(timer)
-      if (controls && controls.stop) {
-        controls.stop()
+    if (!started || isHidden || reduceMotion || texts.length === 0) return;
+
+    const currentText = texts[textIndex % texts.length] || '';
+    let timer: ReturnType<typeof setTimeout>;
+
+    if (!deleting) {
+      if (charIndex < currentText.length) {
+        timer = setTimeout(() => {
+          const next = charIndex + 1;
+          setDisplayText(currentText.slice(0, next));
+          setCharIndex(next);
+        }, TYPE_INTERVAL_MS);
+      } else {
+        // 整句显示完整后停留一会再删除
+        timer = setTimeout(() => setDeleting(true), HOLD_FULL_MS);
       }
+    } else if (charIndex > 0) {
+      timer = setTimeout(() => {
+        const next = charIndex - 1;
+        setDisplayText(currentText.slice(0, next));
+        setCharIndex(next);
+      }, DELETE_INTERVAL_MS);
+    } else {
+      // 删除空后切下一句
+      timer = setTimeout(() => {
+        setDeleting(false);
+        setTextIndex(index => (index + 1) % texts.length);
+      }, HOLD_EMPTY_MS);
     }
-  }, [count, baseText.length, delay])
+
+    return () => clearTimeout(timer);
+  }, [started, isHidden, reduceMotion, textIndex, charIndex, deleting, texts]);
 
   return (
-    <span style={{ willChange: "contents" }}>
-      {/* 应用GPU加速 */}
-      <motion.span style={{ willChange: "contents" }}>{displayText}</motion.span>
-      {animationComplete && (
-        <RepeatedTextAnimation texts={texts} delay={delay + 1} />
-      )}
+    <span>
+      <span>{displayText}</span>
       <BlinkingCursor />
     </span>
-  )
+  );
 }
 
-export default Typewriter;
-
-export interface IRepeatedTextAnimationProps {
-  delay: number
-  texts: string[]
-}
-
-const defaultTexts = [
-  "quiz page with questions and answers",
-  "blog Article Details Page Layout",
-  "ecommerce dashboard with a sidebar",
-  "ui like platform.openai.com....",
-  "buttttton",
-  "aop that tracks non-standard split sleep cycles",
-  "transparent card to showcase achievements of a user",
-]
-
-/**
- * 重复文本动画组件 - 性能优化版本
- */
-function RepeatedTextAnimation({
-  delay,
-  texts = defaultTexts,
-}: IRepeatedTextAnimationProps) {
-  const textIndex = useMotionValue(0)
-
-  const baseText = useTransform(textIndex, (latest) => texts[latest] || "")
-  const count = useMotionValue(0)
-  const rounded = useTransform(count, (latest) => Math.round(latest))
-  const displayText = useTransform(rounded, (latest) =>
-    baseText.get().slice(0, latest)
-  )
-  const updatedThisRound = useMotionValue(true)
-
-  useEffect(() => {
-    // 使用 requestAnimationFrame 优化动画
-    let animation: ReturnType<typeof animate> | null = null
-    
-    const startAnimation = () => {
-      animation = animate(count, 60, {
-        type: "tween",
-        delay,
-        duration: 2, // 从1改为2，让重复文本动画变慢
-        ease: "easeIn",
-        repeat: Infinity,
-        repeatType: "reverse",
-        repeatDelay: 1,
-        onUpdate(latest) {
-          if (updatedThisRound.get() && latest > 0) {
-            updatedThisRound.set(false)
-          } else if (!updatedThisRound.get() && latest === 0) {
-            textIndex.set((textIndex.get() + 1) % texts.length)
-            updatedThisRound.set(true)
-          }
-        },
-      })
-    }
-    
-    // 延迟启动，避免阻塞首屏
-    const timer = setTimeout(startAnimation, 100)
-    
-    return () => {
-      clearTimeout(timer)
-      if (animation && animation.stop) {
-        animation.stop()
-      }
-    }
-  }, [count, delay, textIndex, texts, updatedThisRound])
-
-  // 应用GPU加速
-  return <motion.span className="inline" style={{ willChange: "contents" }}>{displayText}</motion.span>
-}
-
-/**
- * 闪烁光标组件 - 使用CSS动画替代JS动画以提升性能
- */
+/** 闪烁光标 - 纯 CSS 动画 */
 function BlinkingCursor() {
   return (
     <span
       className="inline-block h-8 w-[1px] translate-y-1 bg-neutral-900 dark:bg-neutral-100"
-      style={{
-        animation: "blink 1s linear infinite",
-        willChange: "opacity",
-      }}
+      style={{ animation: 'blink 1s linear infinite' }}
     />
-  )
+  );
 }
