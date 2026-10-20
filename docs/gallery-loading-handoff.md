@@ -10,13 +10,10 @@
 
 - 前端页面本身不慢：静态产物约 **0.5 秒**渲染出首批卡片；点击回调 **100ms 内**就能打开灯箱。
 - 主要瓶颈在 **`img.xinchengp.cn` 的访问链路**：默认 DNS 下 12KB 缩略图会 **30 秒超时**，38KB 缩略图要 **10 秒**；同一张图用优选 IP `162.159.138.116` 只要 **1.03 秒**。
-- 第二瓶颈是 **原图过大**：732 张原图中位数 **1.34MB**，最大 **21.96MB**，24 张超过 10MB；灯箱以前直接加载原图，点击后会长时间空白。
-- 前端已做兜底：网格只加载缩略图、绝不回退原图；灯箱先用缩略图即时显示、高清后台加载；图库刷新改为手动；首批只渲染 24 张。
-- 图床侧当前最需要做三件事（2026-10-20 已处理，结果见 9.5；P0-1 受本机链路限制，仅能缓解）：
-  1. **排查 `img.xinchengp.cn` 的边缘 IP/DNS 选择**（本机实测为到 104.21/172.67 边缘的链路问题，不是 Worker 本身）。
-  2. **生成并部署 `large/` 高清预览图（建议 1600 宽 WebP）**，让灯箱不再直接拉十几 MB 原图。
-  3. **补齐 `/large/*` 的 `_headers`（CORS + 长缓存）**，并更新图床仓库的自动部署 Action。
-- 截至 2026-10-20 19:30：732 张图 **全部已有 640 缩略图**（约 **31MB**）；`large/` 已生成并部署（1600 宽 WebP，**90.8MB**），详见 9.5 节。
+- 第二瓶颈是 **原图过大**：732 张原图中位数 **1.34MB**，最大 **21.96MB**，24 张超过 10MB。灯箱现在先用缩略图立即出图，再后台加载 `large`（1600 宽 WebP）；工具栏提供“下载原图”入口，需要最高清晰度时可直接下载原图。
+- 前端已做兜底：网格只加载缩略图、绝不回退原图；灯箱 thumb → large（缺失时回退原图）；图库刷新改为手动；首批只渲染 24 张。
+- 图床侧当前最需要做的是 **排查 `img.xinchengp.cn` 的边缘 IP/DNS 选择**（本机实测为到 104.21/172.67 边缘的链路问题，不是 Worker 本身）。`large/` 已部署且重新被灯箱使用。
+- 截至 2026-10-20：732 张图 **全部已有 640 缩略图**（约 **31MB**）；`large/` 已生成并部署（1600 宽 WebP，**90.8MB**），详见 9.5 节；灯箱使用 `large`，并新增“下载原图”，见 9.6。
 
 ---
 
@@ -41,7 +38,7 @@ Cloudflare Workers Static Assets
 博客 /gallery 页面（Next.js 静态导出）
   ├─ 构建期拉 manifest，生成首屏快照
   ├─ 浏览器端手动“刷新图库”时再拉 manifest
-  └─ 卡片只加载 thumbs；灯箱先 thumbs、再 large 或原图
+  └─ 卡片只加载 thumbs；灯箱先 thumbs、再 large（或原图），并提供“下载原图”
 ```
 
 关键路径：
@@ -155,6 +152,7 @@ thumbnail(R2 640) → src(R2 原图) → fallbackSrc(jsDelivr 原图)
 - 高清加载中显示“高清加载中…”；20 秒未完成显示“高清加载较慢，当前为缩略图”。
 - 切换上一张/下一张时在绘制前重置为新缩略图，不会闪旧图。
 - 高清加载失败时保留缩略图并提示。
+- 工具栏新增“下载原图”入口：始终指向 `currentImage.src`（原图），不受预览使用 `large` 影响；按钮提示里显示原图大小。
 
 ### 4.3 manifest 刷新
 
@@ -181,6 +179,7 @@ thumbnail(R2 640) → src(R2 原图) → fallbackSrc(jsDelivr 原图)
 | 缺少 `thumb`，原图 ≤512KB | 网格直接使用原图 |
 | manifest 请求失败 | 使用构建期快照；手动刷新显示错误提示 |
 | `large` 请求失败 | 保留缩略图并提示“高清加载失败，当前为缩略图” |
+| 用户点击“下载原图” | 始终打开/下载 `src` 原图，与 `large` 无关 |
 
 ---
 
@@ -416,6 +415,7 @@ curl -s -D - -o /dev/null https://img.xinchengp.cn/manifest.json \
 - [ ] 打开 10 秒内不自动请求 `manifest.json`。
 - [ ] 点击卡片灯箱立即出现，主图先是缩略图，并显示“高清加载中…”。
 - [ ] 高清完成后主图切到 `large`（有 large 时）或原图。
+- [ ] 工具栏“下载原图”指向 `currentImage.src`，提示含原图大小，点击不会关闭灯箱。
 - [ ] “加载更多作品”每次增加 24 张。
 - [ ] “刷新图库”按钮点击后显示“刷新中…”，完成后新图出现或提示失败。
 
@@ -533,13 +533,24 @@ done
    - 浏览器实测：首批 24 张全部只请求 `/thumbs/`；点击卡片后主图先显示缩略图，随后切换到 `/large/...webp`。
 3. **`_headers` 已补充 `/large/*`**
    - 规则已写入博客仓库 `cloudflare/gallery-assets/assets/_headers`，图床部署时随 `assets/` 同步。
+4. **灯箱策略最终版（2026-10-20 晚）**
+   - 曾短暂改为“灯箱只加载原图、不展示压缩 WebP”，随后按产品要求撤回：恢复 thumb 先出、后台加载 `large`。
+   - 新增工具栏“下载原图”：始终指向 `currentImage.src`，并在提示中显示原图大小；预览继续使用 `large` 以保证打开速度。
+   - `large/` 继续被前端使用，不需要回滚。
 
-### 仍待完成
+### 仍待完成（2026-10-20 20:00 更新）
 
-- [ ] 博客仓库：`cloudflare/gallery-assets/assets/_headers` 目前是未跟踪文件（`.gitignore` 已放行），需要 `git add` 后随博客仓库提交/推送。
-- [ ] 图床仓库：`sync-to-r2.yml` 的 `--large-width 1600` 改动仍在本地工作区，需要 commit/push；推送后下一次图片 push 才会按新流程生成 `large`。
+- [x] 博客仓库：`_headers`、`build-manifest.mjs`、`deploy-local.mjs`、`docs/` 等已提交并推送（`969c4bc`）。
+- [x] 图床仓库：`sync-to-r2.yml`、`WORKERS_DEPLOY_SETUP.md`、`scripts/gallery-assets/` 已提交并推送（`9f02537`）。
+- [x] 补齐 60 张新增图片：图床仓库实际 **792 张**，此前线上仅 732 张；已用本机部署同步并生成 `thumb`/`large`，manifest `count=792`，Worker 版本 `584881dd-9c0d-48db-8bd6-8a81cb7ff555`；博客线上快照已重建为 792 条。
+- [ ] **图床仓库 Actions Secrets 为空**：历史 Action 全部因 `CLOUDFLARE_API_TOKEN` 为空失败（日志：`In a non-interactive environment ...`）。需在仓库 Settings → Secrets and variables → Actions 配置：
+  - `CLOUDFLARE_API_TOKEN`：Cloudflare 仪表盘创建 "Edit Cloudflare Workers" Token
+  - `CLOUDFLARE_ACCOUNT_ID`：`0418adb034c3403123a31edf40244986`
+  未配置前，后续 push 图片不会自动部署，只能继续本机 `deploy-local.mjs`。
 - [ ] 本机：hosts 第 34 行补 `img.xinchengp.cn` 并 `ipconfig /flushdns`（管理员权限）；默认 DNS 慢的问题仍存在，优选 IP 下缩略图 48KB 约 0.3–1 秒。
 - [ ] 全访客：默认 DNS 的慢边缘仍需图床侧从域名/线路层面解决；`large` 已把灯箱流量从十几 MB 降到百 KB 级，但网格缩略图仍依赖图床链路。
+
+> 20:00 复核：线上画廊静态快照已是 792 条 `thumbnail` / 792 条 `large`，新增的 `heng/0297` 等图片可见。
 
 ---
 
@@ -549,7 +560,7 @@ done
 |---|---|
 | `src/app/gallery/GalleryClient.tsx` | 首批 24 张、手动刷新、分类、增量渲染 |
 | `src/app/gallery/components/ImageCard.tsx` | 网格卡片；只加载 thumb，8 秒超时，不回退原图 |
-| `src/app/gallery/components/ImagePreview.tsx` | 灯箱；缩略图先出、large/原图后台加载 |
+| `src/app/gallery/components/ImagePreview.tsx` | 灯箱；缩略图先出、large 后台加载、下载原图 |
 | `src/utils/galleryShared.ts` | manifest 解析、`R2_IMAGE_BASE`、`large` 字段 |
 | `src/types/gallery.ts` | `thumbnail` / `large` / `ImageLoadStatus` 类型 |
 | `src/app/layout.tsx` | `img.xinchengp.cn` preconnect |
