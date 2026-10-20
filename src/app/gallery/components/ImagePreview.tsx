@@ -8,8 +8,15 @@ import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { Z_INDEX } from '@/utils/zIndex';
 import {
   X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Maximize2,
-  Move, Keyboard, Info, Tag, Loader2
+  Move, Keyboard, Info, Tag, Loader2, Download
 } from 'lucide-react';
+
+/** 下载按钮提示用的文件大小格式化 */
+const formatFileSize = (bytes?: number): string => {
+  if (!bytes || bytes <= 0) return '';
+  const mb = bytes / 1024 / 1024;
+  return mb >= 1 ? `${mb.toFixed(1)}MB` : `${Math.max(1, Math.round(bytes / 1024))}KB`;
+};
 
 // ImagePreview组件属性
 interface ImagePreviewProps {
@@ -42,8 +49,8 @@ const ImagePreview = ({ images, initialImage, onClose }: ImagePreviewProps) => {
   const currentImage = images[currentIndex];
 
   /*
-    灯箱先用 640 缩略图立即出图，再在后台加载高清图（large 或原图）。
-    原图可能有 15-20MB，图床慢时直接等原图会出现“点了没反应”的空白。
+    灯箱先用 640 缩略图立即出图，再在后台加载 large（没有 large 时回退原图）。
+    “下载原图”入口始终指向 currentImage.src，不受预览使用 large 的影响。
   */
   const thumbSrc = currentImage.thumbnail || currentImage.src;
   const hdSrc = currentImage.large || currentImage.src;
@@ -313,6 +320,20 @@ const ImagePreview = ({ images, initialImage, onClose }: ImagePreviewProps) => {
         
         {/* 右侧：操作按钮 */}
         <div className="flex items-center gap-1">
+          {/* 原图下载：始终指向 currentImage.src，不受灯箱预览使用 large 的影响 */}
+          <a
+            href={currentImage.src}
+            download
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(event) => event.stopPropagation()}
+            className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+            title={`下载原图${currentImage.size ? `（${formatFileSize(currentImage.size)}）` : ''}`}
+            aria-label="下载原图"
+          >
+            <Download className="w-4 h-4" />
+          </a>
+
           <motion.button
             className={`p-2 rounded-full transition-colors ${showInfo ? 'text-primary bg-primary/20' : 'text-white/80 hover:text-white hover:bg-white/10'}`}
             onClick={() => setShowInfo(prev => !prev)}
@@ -415,7 +436,7 @@ const ImagePreview = ({ images, initialImage, onClose }: ImagePreviewProps) => {
             {hdStatus === 'slow' ? '高清加载较慢，当前为缩略图' : '高清加载失败，当前为缩略图'}
           </div>
         ) : null}
-        
+
         {/* 拖拽提示 */}
         {scale > 1 && !isDragging && (
           <motion.div 

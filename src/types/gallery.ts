@@ -14,6 +14,7 @@ export interface PreviewImage {
   category?: string; // 分类名称（可选）
   thumbnail?: string; // 缩略图URL（可选）：画廊列表卡片用缩略图渲染，避免下载解码原图；缺失时回退 src
   large?: string; // 高清预览图URL（可选）：优先于 src，用于避免灯箱直接加载十几 MB 原图
+  size?: number; // 原图体积（字节，可选）：灯箱“下载原图”提示用
 }
 
 // 图片信息类型
