@@ -106,10 +106,17 @@ function main() {
 
   try {
     // 步骤 2：执行生产构建（webpack，避免 Turbopack 生产构建偶发缺 chunk）
+    // 显式注入静态导出标记：next.config.ts 在读取配置时可能早于 .env.production
+    // 的加载，不能依赖 env 文件里的 STATIC_EXPORT。
     const build = spawnSync(process.execPath, [resolveNextBin(), 'build', '--webpack'], {
       cwd: projectRoot,
       stdio: 'inherit',
-      env: process.env,
+      env: {
+        ...process.env,
+        NODE_ENV: 'production',
+        STATIC_EXPORT: 'true',
+        NEXT_PRIVATE_STATIC_EXPORT: 'true',
+      },
     });
     buildStatus = build.status === null ? 1 : build.status;
   } finally {

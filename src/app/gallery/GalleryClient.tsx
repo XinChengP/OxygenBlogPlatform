@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { useState, useMemo, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GalleryImage, ImageCategoryTree, GalleryState, ImageSource } from '../../types/gallery';
 import {
@@ -8,6 +8,7 @@ import {
   fetchRemoteImagesWithFallback,
   buildCategoryTree
 } from '../../utils/galleryShared';
+import { buildGalleryRows } from '../../utils/galleryLayout';
 import ImageCard from './components/ImageCard';
 import ImagePreview from './components/ImagePreview';
 import { useBackgroundStyle } from '../../hooks/useBackgroundStyle';
@@ -16,7 +17,7 @@ import { Live2DMessageHelper } from '../../utils/live2dMessageManager';
 import { ArrowRight, X, RefreshCw } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 
-// GalleryClient组件属性
+// 画廊客户端组件属性
 interface GalleryClientProps {
   initialImages: GalleryImage[];
   initialCategories: ImageCategoryTree[];
@@ -25,14 +26,18 @@ interface GalleryClientProps {
 // 首屏优先加载的图片数量
 const INITIAL_LOAD_COUNT = 8;
 
-// 错峰入场动画的卡片数量上限。
-// 原实现用 framer-motion staggerChildren 让每张卡片依次延迟 0.04s，559 张图会拖出
-// 约 22 秒的连续动画、持续占用主线程；现改为一次性 CSS 动画并将错峰限制在 24 张内。
-const MAX_STAGGER_COUNT = 24;
+// 横向行布局每批追加的行数。桌面端约 4-5 张/行，6 行约等于原来的 24 张。
+const ROW_BATCH_SIZE = 6;
 
-// 每批渲染的卡片数量。图床较慢时，首屏一次请求几十张缩略图会互相争抢连接；
-// 24 张足够铺满桌面/手机首屏，滚动接近底部时再追加。
-const GALLERY_BATCH_SIZE = 24;
+// 入场动画的错峰行数上限，避免整页行一起延迟
+const MAX_STAGGER_ROWS = 8;
+
+// 服务端渲染时的默认内容宽度；客户端测量后会替换为真实宽度
+const DEFAULT_CONTAINER_WIDTH = 1200;
+
+// 客户端首帧用 useLayoutEffect 在绘制前量宽度，服务端降级为 useEffect
+const useIsomorphicLayoutEffect =
+  typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 /**
  * 生成图片列表签名，用于判断实时刷新回来的数据是否与当前展示完全一致
@@ -62,9 +67,67 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
     error: null
   });
 
-  // 增量渲染：当前已渲染的卡片数量与滚动加载哨兵
-  const [visibleCount, setVisibleCount] = useState(GALLERY_BATCH_SIZE);
+  // 增量渲染：当前已渲染的行数与滚动加载哨兵
+  const [visibleRowCount, setVisibleRowCount] = useState(ROW_BATCH_SIZE);
   const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  // 横向行布局依赖真实内容宽度；服务端先按默认宽度生成，客户端绘制前校正
+  const galleryWidthRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(DEFAULT_CONTAINER_WIDTH);
+
+  useIsomorphicLayoutEffect(() => {
+    const target = galleryWidthRef.current;
+    if (!target) return;
+
+    let frame = 0;
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const applyWidth = () => {
+      const width = target.clientWidth;
+      if (width > 0) {
+        setContainerWidth(prev => (Math.abs(prev - width) < 1 ? prev : width));
+      }
+    };
+
+    const scheduleWidthCheck = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        frame = requestAnimationFrame(applyWidth);
+      }, 120);
+    };
+
+    applyWidth();
+    // 静态导出首帧的宽度可能在字体/滚动条布局稳定前测到旧值，
+    // 这里补几次延迟复测；真实浏览器窗口缩放仍由 observer/resize 负责。
+    const settleTimers = [80, 250, 800].map(ms => setTimeout(applyWidth, ms));
+    const clearSettleTimers = () => {
+      settleTimers.forEach(timer => clearTimeout(timer));
+    };
+
+    // ResizeObserver 在真实浏览器里足够，但部分内嵌/模拟环境不派发观察回调，
+    // 这里再用 window.resize 兜底；两者都经过 120ms 防抖。
+    window.addEventListener('resize', scheduleWidthCheck);
+
+    if (typeof ResizeObserver === 'undefined') {
+      return () => {
+        window.removeEventListener('resize', scheduleWidthCheck);
+        clearSettleTimers();
+        if (debounceTimer) clearTimeout(debounceTimer);
+        if (frame) cancelAnimationFrame(frame);
+      };
+    }
+
+    const observer = new ResizeObserver(scheduleWidthCheck);
+    observer.observe(target);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', scheduleWidthCheck);
+      clearSettleTimers();
+      if (debounceTimer) clearTimeout(debounceTimer);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, []);
 
   // 浏览器前进/后退或首次挂载时同步筛选状态
   useEffect(() => {
@@ -75,6 +138,7 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
         selectedCategory: params.get('category'),
         selectedSubCategory: params.get('sub'),
       }));
+      setVisibleRowCount(ROW_BATCH_SIZE);
     };
     syncFromUrl();
     window.addEventListener('popstate', syncFromUrl);
@@ -152,19 +216,41 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
     return filterImagesByCategory(state.images, state.selectedCategory, state.selectedSubCategory);
   }, [state.images, state.selectedCategory, state.selectedSubCategory]);
 
-  // 切换分类后回到第一批，避免沿用上一个分类的已加载数量
-  useEffect(() => {
-    setVisibleCount(GALLERY_BATCH_SIZE);
-  }, [state.selectedCategory, state.selectedSubCategory]);
-
-  const visibleImages = useMemo(
-    () => filteredImages.slice(0, visibleCount),
-    [filteredImages, visibleCount]
+  /*
+    行布局是 append-stable 的关键：先从完整图片列表一次性算出所有行，
+    渲染时只按行数截取。后续追加批次只会新增末尾的行，已有行的 DOM、
+    尺寸和位置都不变，不会再出现 CSS 多列瀑布流那种整页重排。
+  */
+  const rows = useMemo(
+    () => buildGalleryRows(filteredImages, containerWidth),
+    [filteredImages, containerWidth]
   );
 
-  // 接近底部时追加下一批；同时保留手动按钮，供无 IntersectionObserver 的环境使用
+  // 切换分类后回到第一批，避免沿用上一个分类的已加载行数
   useEffect(() => {
-    if (visibleCount >= filteredImages.length) return;
+    setVisibleRowCount(ROW_BATCH_SIZE);
+  }, [state.selectedCategory, state.selectedSubCategory]);
+
+  const visibleRows = useMemo(
+    () => rows.slice(0, visibleRowCount),
+    [rows, visibleRowCount]
+  );
+
+  // 当前已展示的图片（按行 flatten，用于计数）
+  const visibleImages = useMemo(
+    () => visibleRows.flatMap(row => row.items.map(item => item.image)),
+    [visibleRows]
+  );
+
+  // 灯箱按视觉顺序翻页：横竖方穿插后的顺序与用户看到的顺序一致
+  const orderedImages = useMemo(
+    () => rows.flatMap(row => row.items.map(item => item.image)),
+    [rows]
+  );
+
+  // 接近底部时追加下一批行；同时保留手动按钮，供无 IntersectionObserver 的环境使用
+  useEffect(() => {
+    if (visibleRowCount >= rows.length) return;
     if (typeof IntersectionObserver === 'undefined') return;
 
     const target = loadMoreRef.current;
@@ -173,8 +259,8 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
     const observer = new IntersectionObserver(
       entries => {
         if (entries.some(entry => entry.isIntersecting)) {
-          setVisibleCount(count =>
-            Math.min(count + GALLERY_BATCH_SIZE, filteredImages.length)
+          setVisibleRowCount(count =>
+            Math.min(count + ROW_BATCH_SIZE, rows.length)
           );
         }
       },
@@ -183,7 +269,7 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
 
     observer.observe(target);
     return () => observer.disconnect();
-  }, [visibleCount, filteredImages.length]);
+  }, [visibleRowCount, rows.length]);
 
   // 当前选中主分类的子分类列表
   const activeSubCategories = useMemo(() => {
@@ -193,6 +279,7 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
 
   // 处理分类选择
   const handleCategoryChange = (category: string | null, subCategory?: string | null) => {
+    setVisibleRowCount(ROW_BATCH_SIZE);
     setState(prev => ({
       ...prev,
       selectedCategory: category,
@@ -375,13 +462,6 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
   const pillActive = 'bg-primary text-primary-foreground border-primary font-medium';
   const pillIdle = 'border-border text-muted-foreground hover:text-foreground hover:border-primary/40 bg-card/50';
 
-  // 表情包图片多为小尺寸方形，沿用美图的列数会单行过大，
-  // 选中表情包（含其子分类）时切换为更密的列数，其余分类维持原布局
-  const isEmoticonView = state.selectedCategory === '表情包';
-  const masonryClass = isEmoticonView
-    ? 'columns-3 sm:columns-4 lg:columns-5 xl:columns-6 gap-4'
-    : 'columns-2 sm:columns-3 xl:columns-4 gap-5';
-
   return (
     <div className={containerStyle.className} style={containerStyle.style}>
       <div className="max-w-[1440px] mx-auto px-4 sm:px-8 pb-24">
@@ -486,43 +566,57 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
           )}
         </motion.nav>
 
-        {/* ===== 瀑布流展区 ===== */}
+        {/* 宽度测量锚点：横向行布局需要真实内容宽度 */}
+        <div ref={galleryWidthRef} aria-hidden className="h-0 w-full" />
+
+        {/* ===== 横向行展区 ===== */}
         {filteredImages.length > 0 ? (
           /*
-            渲染策略（性能）：
-            - 不再用 framer-motion 的 staggerChildren 逐个动画：559 张卡片会产生
-              559 个动画实例并持续约 22 秒，是进入页面卡顿的主因。
-            - 改为一次性 CSS 入场动画（gallery-card-in），并用内联 animationDelay
-              只让前 MAX_STAGGER_COUNT 张错峰，其余延迟为 0，整体 1 秒内结束。
-            - 卡片外层加 gallery-card-visible（content-visibility: auto）：
-              视口外的卡片由浏览器跳过绘制与样式计算，等效于轻量虚拟化。
+            渲染策略（稳定性与性能）：
+            - 行列表由 buildGalleryRows 从完整图片列表一次性算出，按行截取渲染。
+              追加批次只新增末尾行，已有行的 DOM、尺寸和位置都不变，消除滚动
+              加载时 CSS 多列瀑布流整页重排的问题。
+            - 每行用一次 CSS 入场动画，只给前 MAX_STAGGER_ROWS 行错峰，
+              避免几百个动画实例持续占用主线程。
+            - 行容器加 gallery-row-visible（content-visibility: auto）：
+              视口外的行由浏览器跳过绘制与样式计算，等效于轻量虚拟化。
           */
           <>
-            <div className={masonryClass}>
-              {visibleImages.map((image, index) => (
+            <div className="flex flex-col overflow-x-clip">
+              {visibleRows.map((row, rowIndex) => (
                 <div
-                  key={image.id}
-                  className={`gallery-card-visible gallery-card-in ${isEmoticonView ? 'mb-4' : 'mb-6'} break-inside-avoid`}
-                  style={{ animationDelay: `${Math.min(index, MAX_STAGGER_COUNT) * 0.03}s` }}
+                  key={row.id}
+                  className="gallery-row gallery-row-visible gallery-card-in"
+                  style={{
+                    gap: `${row.gap}px`,
+                    marginBottom: `${row.kind === 'emoticon' ? (containerWidth < 768 ? 12 : 16) : (containerWidth < 480 ? 18 : 24)}px`,
+                    animationDelay: rowIndex < MAX_STAGGER_ROWS ? `${rowIndex * 0.04}s` : '0s',
+                    containIntrinsicSize: `auto ${row.height + 2}px`,
+                  }}
                 >
-                  <ImageCard
-                    image={image}
-                    onClick={() => handleImageClick(image)}
-                    index={index}
-                    // 前 INITIAL_LOAD_COUNT 张图片设置高优先级，其余懒加载
-                    priority={index < INITIAL_LOAD_COUNT ? 'high' : 'low'}
-                  />
+                  {row.items.map(item => (
+                    <ImageCard
+                      key={item.image.id}
+                      image={item.image}
+                      onClick={() => handleImageClick(item.image)}
+                      index={item.index}
+                      // 前 INITIAL_LOAD_COUNT 张图片设置高优先级，其余懒加载
+                      priority={item.index < INITIAL_LOAD_COUNT ? 'high' : 'low'}
+                      displayWidth={item.width}
+                      displayHeight={row.height}
+                    />
+                  ))}
                 </div>
               ))}
             </div>
 
-            {visibleCount < filteredImages.length ? (
+            {visibleRowCount < rows.length ? (
               <div ref={loadMoreRef} className="mt-10 flex flex-col items-center gap-2">
                 <button
                   type="button"
                   onClick={() =>
-                    setVisibleCount(count =>
-                      Math.min(count + GALLERY_BATCH_SIZE, filteredImages.length)
+                    setVisibleRowCount(count =>
+                      Math.min(count + ROW_BATCH_SIZE, rows.length)
                     )
                   }
                   className="px-5 py-2.5 rounded-full border border-border bg-card/90 text-sm text-foreground hover:border-primary/40 hover:text-primary transition-colors shadow-card"
@@ -530,11 +624,11 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
                   加载更多作品
                 </button>
                 <span className="text-xs text-muted-foreground tabular-nums">
-                  已显示 {visibleCount} / {filteredImages.length}
+                  已显示 {visibleImages.length} / {filteredImages.length}
                 </span>
               </div>
             ) : (
-              filteredImages.length > GALLERY_BATCH_SIZE && (
+              rows.length > ROW_BATCH_SIZE && (
                 <p className="mt-10 text-center text-xs text-muted-foreground tabular-nums">
                   已显示全部 {filteredImages.length} 件作品
                 </p>
@@ -573,7 +667,7 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
       {/* 图片预览 */}
       {state.isPreviewOpen && state.selectedImage && (
         <ImagePreview
-          images={filteredImages}
+          images={orderedImages}
           initialImage={state.selectedImage}
           onClose={handleClosePreview}
         />

@@ -12,6 +12,10 @@ interface ImageCardProps {
   index: number;
   /** 图片加载优先级：high=首屏立即加载，low=懒加载 */
   priority?: 'high' | 'low';
+  /** 横向行布局给出的格子宽度（像素）；不传时按瀑布流比例自适应 */
+  displayWidth?: number;
+  /** 横向行布局给出的画框高度（像素）；不传时用图片比例 */
+  displayHeight?: number;
 }
 
 // 单个缩略图的最大自动重试次数
@@ -21,7 +25,7 @@ const THUMB_TIMEOUT_MS = 8000;
 // 没有缩略图时，只有明确知道原图很小才允许直接使用原图
 const SMALL_ORIGINAL_LIMIT = 512 * 1024;
 
-// ImageCard组件 — 展签式卡片：自然比例图片 + 美术馆图注
+// ImageCard组件 — 图片画框：悬停显示标题与编号
 /**
  * 性能说明（画廊页面卡顿治理）：
  *  1. 卡片只加载清单里的缩略图（640 WebP）。原图也可能有十几 MB，
@@ -33,7 +37,14 @@ const SMALL_ORIGINAL_LIMIT = 512 * 1024;
  *     会持续占用合成线程，现改为纯 CSS 阴影过渡。
  *  4. 图片比例优先取清单宽高（构建期用 sharp 读出），首帧即占好正确位置。
  */
-const ImageCard = ({ image, onClick, index, priority = 'low' }: ImageCardProps) => {
+const ImageCard = ({
+  image,
+  onClick,
+  index,
+  priority = 'low',
+  displayWidth,
+  displayHeight,
+}: ImageCardProps) => {
   // 图片加载状态
   const [loadStatus, setLoadStatus] = useState<ImageLoadStatus>('loading');
   const [retryCount, setRetryCount] = useState(0);
@@ -61,6 +72,7 @@ const ImageCard = ({ image, onClick, index, priority = 'low' }: ImageCardProps) 
   const aspectRatio = knownRatio ?? naturalRatio ?? 4 / 5;
 
   const retryTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
 
   // 当前实际请求地址；重试时追加一次性参数，强制浏览器重新发起请求
   const currentSrc = retryToken === 0
@@ -92,6 +104,37 @@ const ImageCard = ({ image, onClick, index, priority = 'low' }: ImageCardProps) 
 
     return () => clearTimeout(timer);
   }, [currentSrc]);
+
+  // 服务端直出的图片可能在水合前就完成加载，React 的 onLoad 不会触发。
+  // 这里直接给原生 img 挂 load/error：挂载时若已 complete 立即结算，
+  // 否则等原生事件，避免图片已下载却一直停留在骨架屏。
+  useEffect(() => {
+    const img = imgRef.current;
+    if (!img) return;
+
+    const settle = () => {
+      if (img.naturalWidth > 0) {
+        setLoadStatus('loaded');
+        if (!knownRatio) {
+          setNaturalRatio(img.naturalWidth / img.naturalHeight);
+        }
+      } else {
+        setLoadStatus('failed');
+      }
+    };
+
+    if (img.complete) {
+      settle();
+      return;
+    }
+
+    img.addEventListener('load', settle);
+    img.addEventListener('error', settle);
+    return () => {
+      img.removeEventListener('load', settle);
+      img.removeEventListener('error', settle);
+    };
+  }, [currentSrc, knownRatio]);
 
   // 组件卸载时清除计时器
   useEffect(() => {
@@ -150,6 +193,11 @@ const ImageCard = ({ image, onClick, index, priority = 'low' }: ImageCardProps) 
       role="button"
       tabIndex={0}
       aria-label={`查看作品：${image.alt}`}
+      style={
+        displayWidth
+          ? { width: `${displayWidth}px`, flex: '0 0 auto' }
+          : undefined
+      }
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
@@ -160,7 +208,11 @@ const ImageCard = ({ image, onClick, index, priority = 'low' }: ImageCardProps) 
       {/* 画框：细边框 + 略偏移的底衬阴影，营造装裱感（悬停只加深阴影，不做位移/缩放） */}
       <div
         className="relative overflow-hidden rounded-lg border border-border/70 bg-muted/40 shadow-card group-hover:shadow-[var(--card-shadow-hover)] transition-shadow duration-300"
-        style={{ aspectRatio }}
+        style={
+          displayHeight
+            ? { height: `${displayHeight}px`, width: '100%' }
+            : { aspectRatio }
+        }
       >
         {/* 加载中状态 - 骨架屏效果 */}
         {loadStatus === 'loading' && (
@@ -175,6 +227,7 @@ const ImageCard = ({ image, onClick, index, priority = 'low' }: ImageCardProps) 
 
         {currentSrc && (
           <img
+            ref={imgRef}
             src={currentSrc}
             alt={image.alt}
             width={image.width}
@@ -225,21 +278,6 @@ const ImageCard = ({ image, onClick, index, priority = 'low' }: ImageCardProps) 
           {plaqueNo}
         </span>
       </div>
-
-      {/* 展签图注：半透明底托保证任意背景上可读，编号 + 标题 + 分类 */}
-      <figcaption className="pt-2.5">
-        <div className="inline-flex items-baseline gap-2.5 max-w-full rounded-md bg-card/90 border border-border/40 px-2.5 py-1.5 shadow-sm">
-          <span className="text-[11px] font-semibold text-primary tabular-nums shrink-0">
-            {plaqueNo}
-          </span>
-          <span className="text-[13px] text-foreground/95 truncate">
-            {image.alt}
-          </span>
-          <span className="ml-auto text-[10px] uppercase tracking-[0.15em] text-muted-foreground shrink-0">
-            {image.category}
-          </span>
-        </div>
-      </figcaption>
     </figure>
   );
 };
