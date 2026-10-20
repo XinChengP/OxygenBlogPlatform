@@ -27,11 +27,13 @@ export * from './browserCompatibility';
   需要时请直接从各自模块路径导入。
 */
 
-// Live2D事件发射器
-export * from './live2dEventEmitter';
-
-// Live2D消息管理器
-export * from './live2dMessageManager';
+/*
+  Live2D 事件总线与消息管理器刻意不在此处 re-export：
+  首页 Meteors 只是为了 cn 从 '@/utils' 导入，如果 barrel 继续导出
+  live2dMessageManager，webpack 会把约 12KB(gzip) 的消息系统打进首页，
+  即使首页从不显示看板娘。使用方请直接从 '@/utils/live2dMessageManager'
+  或 '@/utils/live2dEventEmitter' 导入。
+*/
 
 // 脚本加载工具
 export * from './loadScript';

@@ -34,8 +34,8 @@ import RelatedPosts from '../../../components/blogs/RelatedPosts';
 import type { TocItem } from '@/utils/tocUtils';
 import {
   buildResponsiveSrcSet,
-  getResponsiveImageEntry,
 } from '@/utils/responsiveImage';
+import { getResponsiveImageEntry } from '@/utils/blogResponsiveImage';
 
 // 动态导入大型组件，优化初始加载性能
 const LazyTableOfContents = lazy(() => import('../../../components/TableOfContents'));

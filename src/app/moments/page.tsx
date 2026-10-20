@@ -4,6 +4,7 @@ import path from 'path';
 import { getServerMoments, getBlogCount, getServerBlogs, getBlogTotalWordCount } from '@/utils/momentsUtils';
 import { parseFrontMatter } from '@/utils/frontMatterUtils';
 import ClientMomentsPage from '@/components/moments/ClientMomentsPage';
+import MomentMarkdown from '@/components/moments/MomentMarkdown';
 import type { TodoConfig } from '@/types/todo';
 import type { Metadata } from 'next';
 
@@ -121,8 +122,14 @@ console.log('Server-side stats:', { categoryCount, tagCount });
 
 // 服务器端组件导出
 export default function MomentsPage() {
+  // 构建期把动态 Markdown 渲染成 ReactNode，客户端不再加载 Markdown 解析栈
+  const momentsWithContent = moments.map(moment => ({
+    ...moment,
+    renderedContent: <MomentMarkdown content={moment.content} />,
+  }));
+
   return <ClientMomentsPage 
-    moments={moments} 
+    moments={momentsWithContent} 
     blogCount={blogCount} 
     blogTotalWordCount={blogTotalWordCount}
     blogs={blogs} 

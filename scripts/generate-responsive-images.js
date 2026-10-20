@@ -25,12 +25,16 @@ const CONTENT_DIR = path.join(ROOT, 'src/content/blogs');
 const PUBLIC_DIR = path.join(ROOT, 'public');
 const OUTPUT_DIR = path.join(PUBLIC_DIR, '_responsive');
 const MANIFEST_PATH = path.join(ROOT, 'src/data/blogImageManifest.json');
+const BACKGROUND_MANIFEST_PATH = path.join(ROOT, 'src/data/backgroundImageManifest.json');
+const WEB_SETTING_PATH = path.join(ROOT, 'src/setting/WebSetting.ts');
 
 const TARGET_WIDTHS = [640, 1280, 1920];
+const BACKGROUND_WIDTHS = [640, 1280, 1920, 2560];
 const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.avif']);
 // 小图不生成变体，但仍记录尺寸供 <img width/height> 使用
 const MIN_VARIANT_WIDTH = 641;
 const WEBP_QUALITY = 78;
+const BACKGROUND_WEBP_QUALITY = 80;
 
 function walkMarkdown(dir) {
   const files = [];
@@ -120,6 +124,39 @@ function outputPathOf(publicPath, width, hash) {
   };
 }
 
+/**
+ * 从 WebSetting.ts 读取背景图配置（不直接 import TS）。
+ */
+function getBackgroundPublicPath() {
+  try {
+    const text = fs.readFileSync(WEB_SETTING_PATH, 'utf8');
+    const match = text.match(/backgroundImage\s*=\s*["']([^"']+)["']/);
+    if (!match) return null;
+    return normalizePublicPath(`/${match[1]}`);
+  } catch {
+    return null;
+  }
+}
+
+function backgroundOutputPath(publicPath, width, hash) {
+  const segments = decodePathSegments(publicPath);
+  const fileName = segments.pop();
+  const ext = path.extname(fileName);
+  const baseName = fileName.slice(0, -ext.length);
+  const variantName = `${baseName}-${width}-${hash}.webp`;
+  return {
+    publicPath: `/_responsive/background/${variantName}`,
+    filePath: path.join(OUTPUT_DIR, 'background', variantName),
+  };
+}
+
+function variantsExist(entry) {
+  if (!entry || !Array.isArray(entry.variants)) return false;
+  return entry.variants.every(variant =>
+    fs.existsSync(path.join(PUBLIC_DIR, ...decodePathSegments(variant.path)))
+  );
+}
+
 function loadJson(file, fallback) {
   try {
     return JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -146,8 +183,25 @@ async function generate() {
   }
   const sources = imageSources.filter(publicPath => !missingSources.includes(publicPath));
 
+  const backgroundPublicPath = getBackgroundPublicPath();
+  let backgroundEntry = null;
+  if (backgroundPublicPath) {
+    const backgroundFile = sourceFileOf(backgroundPublicPath);
+    if (fs.existsSync(backgroundFile)) {
+      const buffer = fs.readFileSync(backgroundFile);
+      backgroundEntry = {
+        publicPath: backgroundPublicPath,
+        buffer,
+        hash: crypto.createHash('sha1').update(buffer).digest('hex').slice(0, 8),
+      };
+    } else {
+      console.warn(`[responsive] 背景图不存在，跳过：${backgroundPublicPath}`);
+    }
+  }
+
   const existingManifest = loadJson(MANIFEST_PATH, { images: {} });
   const existingImages = existingManifest.images || {};
+  const existingBackground = loadJson(BACKGROUND_MANIFEST_PATH, null);
 
   // 先读取所有源图并计算内容哈希：哈希与清单一致、且变体文件都在，才跳过。
   // 不使用 node_modules/.cache，因为 start-dev.bat 每次启动都会删除它。
@@ -163,16 +217,14 @@ async function generate() {
     prepared.length === Object.keys(existingImages).length &&
     prepared.every(({ publicPath }) => publicPath in existingImages);
 
-  const upToDate = sameSourceSet && prepared.every(({ publicPath, hash }) => {
+  const blogUpToDate = sameSourceSet && prepared.every(({ publicPath, hash }) => {
     const entry = existingImages[publicPath];
-    if (!entry || entry.hash !== hash) return false;
-    if (!Array.isArray(entry.variants)) return false;
-    return entry.variants.every(variant =>
-      fs.existsSync(path.join(PUBLIC_DIR, ...decodePathSegments(variant.path)))
-    );
+    return entry && entry.hash === hash && variantsExist(entry);
   });
+  const backgroundUpToDate = !backgroundEntry ||
+    (existingBackground?.hash === backgroundEntry.hash && variantsExist(existingBackground));
 
-  if (upToDate) {
+  if (blogUpToDate && backgroundUpToDate) {
     console.log(`[responsive] 图片无变化，跳过生成（${sources.length} 张源图）`);
     return;
   }
@@ -224,8 +276,59 @@ async function generate() {
     manifest.images[publicPath] = entry;
   }
 
+  let backgroundManifest = null;
+  if (backgroundEntry) {
+    const metadata = await sharp(backgroundEntry.buffer).metadata();
+    const width = metadata.autoOrient?.width ?? metadata.width;
+    const height = metadata.autoOrient?.height ?? metadata.height;
+
+    if (width && height) {
+      backgroundManifest = {
+        hash: backgroundEntry.hash,
+        source: backgroundEntry.publicPath,
+        width,
+        height,
+        variants: [],
+      };
+
+      for (const targetWidth of BACKGROUND_WIDTHS) {
+        if (targetWidth >= width) continue;
+        const { publicPath: variantPublicPath, filePath } = backgroundOutputPath(
+          backgroundEntry.publicPath,
+          targetWidth,
+          backgroundEntry.hash
+        );
+        fs.mkdirSync(path.dirname(filePath), { recursive: true });
+
+        await sharp(backgroundEntry.buffer)
+          .rotate()
+          .resize({ width: targetWidth, withoutEnlargement: true })
+          .webp({ quality: BACKGROUND_WEBP_QUALITY, effort: 4, smartSubsample: true })
+          .toFile(filePath);
+
+        const variantSize = fs.statSync(filePath).size;
+        outputBytes += variantSize;
+        variantCount += 1;
+        backgroundManifest.variants.push({
+          width: targetWidth,
+          height: Math.round((height * targetWidth) / width),
+          path: variantPublicPath,
+        });
+      }
+    }
+  }
+
   fs.mkdirSync(path.dirname(MANIFEST_PATH), { recursive: true });
   fs.writeFileSync(MANIFEST_PATH, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
+
+  if (backgroundManifest) {
+    fs.mkdirSync(path.dirname(BACKGROUND_MANIFEST_PATH), { recursive: true });
+    fs.writeFileSync(
+      BACKGROUND_MANIFEST_PATH,
+      `${JSON.stringify(backgroundManifest, null, 2)}\n`,
+      'utf8'
+    );
+  }
 
   console.log(
     `[responsive] 完成：${sources.length} 张源图，生成 ${variantCount} 个 WebP 变体，合计 ${formatBytes(outputBytes)}`,

@@ -54,5 +54,15 @@ const changelogs = getServerChangelogs();
 
 // 服务器端组件导出
 export default function ChangelogsPage() {
-  return <ClientChangelogsPage changelogs={changelogs} />;
+  /*
+    正文由 scripts/generate-changelog-html.tsx 在构建期渲染成独立 HTML 片段，
+    页面初始只下发日志元数据；这里把 content 置空，避免 RSC 重复携带全文。
+    图表组件仍按 Changelog 类型接收数据，因此保留 content 字段。
+  */
+  const changelogsWithoutContent = changelogs.map(changelog => ({
+    ...changelog,
+    content: '',
+  }));
+
+  return <ClientChangelogsPage changelogs={changelogsWithoutContent} />;
 }

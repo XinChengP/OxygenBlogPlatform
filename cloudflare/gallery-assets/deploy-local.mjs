@@ -57,6 +57,9 @@ const manifestOnly = args.includes('--manifest-only');
 const localIndex = args.indexOf('--local');
 const localRepoPath = localIndex !== -1 ? args[localIndex + 1] : null;
 const localOnly = localIndex !== -1;
+// --large-width 1600：同时生成灯箱用的高清预览图（会增加 Worker 资产体积）
+const largeWidthIndex = args.indexOf('--large-width');
+const largeWidth = largeWidthIndex !== -1 ? Number(args[largeWidthIndex + 1]) || 0 : 0;
 
 const isImage = (p) => {
   const dot = p.lastIndexOf('.');
@@ -294,7 +297,7 @@ async function main() {
   // ===== ② 生成缩略图与清单 =====
   // 清单需要真实宽高（前端据此消除瀑布流重排），缩略图供画廊卡片使用
   console.log('② 生成缩略图与 manifest.json...');
-  const generated = await buildGalleryAssets({ root: CONFIG.assetsDir, out: CONFIG.assetsDir });
+  const generated = await buildGalleryAssets({ root: CONFIG.assetsDir, out: CONFIG.assetsDir, largeWidth });
   if (sourceCount !== null && sourceCount !== generated.count) {
     console.warn(`   ⚠ 清单张数（${generated.count}）与图源张数（${sourceCount}）不一致，请检查是否有未同步的文件`);
   }

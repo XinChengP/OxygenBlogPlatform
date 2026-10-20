@@ -726,19 +726,24 @@ html:not(.music-player-active) body {
  * 首页 Hero 入场
  *
  * 标题、副标题与按钮必须在静态 HTML 里直接存在（LCP / SEO），
- * 因此不再使用 ssr:false 的 BoxReveal，改为纯 CSS：
- * - 内容只做位移动画，任何时刻都不隐藏文字；
- * - 遮罩层从 scaleX(1) 收缩到 scaleX(0)，保留原来的“揭示”观感；
- * - 减少动态效果时直接禁用动画，遮罩基础态为 scaleX(0)，不会盖住文字。
+ * 因此不再使用 ssr:false 的 BoxReveal，改为纯 CSS。
+ *
+ * 参数按原 BoxReveal 对齐：
+ * - 内容：opacity 0→1、translateY(75px)→0，0.25s 延迟，0.5s ease-out；
+ * - 遮罩：从整块收缩到右边缘（原实现的 left 0→100%），0.5s ease-in，
+ *   即从左往右揭开；使用 scaleX + transform-origin:right 模拟，避免动画 left；
+ * - 减少动态效果时禁用动画，内容基础态为完全可见、遮罩为基础态 scaleX(0)。
  */
 .hero-reveal {
   position: relative;
-  overflow: hidden;
   width: fit-content;
+  overflow: hidden;
+  contain: layout style paint;
 }
 
 .hero-reveal > * {
-  animation: hero-rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform, opacity;
+  animation: hero-rise 0.5s ease-out 0.25s both;
 }
 
 .hero-reveal::after {
@@ -748,19 +753,10 @@ html:not(.music-player-active) body {
   z-index: 20;
   background: var(--primary);
   transform: scaleX(0);
-  transform-origin: left center;
-  animation: hero-mask 0.55s cubic-bezier(0.7, 0, 0.84, 0) both;
+  transform-origin: right center;
+  will-change: transform;
+  animation: hero-mask 0.5s ease-in both;
   pointer-events: none;
-}
-
-.hero-reveal--delay-1 > *,
-.hero-reveal--delay-1::after {
-  animation-delay: 0.08s;
-}
-
-.hero-reveal--delay-2 > *,
-.hero-reveal--delay-2::after {
-  animation-delay: 0.16s;
 }
 
 @keyframes hero-mask {
@@ -769,8 +765,14 @@ html:not(.music-player-active) body {
 }
 
 @keyframes hero-rise {
-  from { transform: translateY(18px); }
-  to { transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(75px) translateZ(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) translateZ(0);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

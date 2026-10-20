@@ -45,13 +45,20 @@ gallery-assets/
 node deploy-local.mjs            # 全量：拉取图床全部图片到 assets/、生成缩略图与清单并部署
 node deploy-local.mjs --manifest-only   # 图片已就位时：只重建缩略图与清单再部署
 node build-manifest.mjs          # 仅本机生成缩略图与清单（不部署，用于校验）
+
+# 可选：同时生成灯箱用的高清预览图（large/，建议 1280 或 1600 宽）
+# 会让 Worker 资产数量/体积增加约一倍，部署前确认未超过 Workers 限额
+node deploy-local.mjs --large-width 1600
+node build-manifest.mjs --large-width 1600
 ```
 
 ### 图床自动同步（日常）
 
 图床仓库的 GitHub Action（`sync-to-r2.yml`，名称沿用）在 push `LTYpicture/**`
 时自动执行：checkout 图床 → 拉取博客仓库的 Worker 骨架 → 调用
-`worker/build-manifest.mjs` 生成缩略图与清单 → wrangler deploy。
+`worker/build-manifest.mjs --large-width 1600` 生成缩略图、高清预览图与清单 →
+wrangler deploy。`worker/assets/_headers` 随骨架部署；图床仓库另有
+`scripts/gallery-assets/` CI 副本，骨架版本缺少 `--large-width`/`_headers` 时兜底。
 需要图床仓库配置两个 Secrets：
 
 - `CLOUDFLARE_API_TOKEN`：Cloudflare API Token，权限模板
@@ -59,14 +66,17 @@ node build-manifest.mjs          # 仅本机生成缩略图与清单（不部署
   zone 资源为 xinchengp.cn 和账号资源为本账号
 - `CLOUDFLARE_ACCOUNT_ID`：账号 ID（仪表盘右栏可见）
 
-> CI 中需先 `npm install --no-save sharp`（缩略图生成依赖），再执行
-> `node worker/build-manifest.mjs --root . --out worker/assets`
+> CI 中需先 `npm install --no-save sharp`（缩略图生成依赖），把 `LTYpicture/`
+> 平铺进 `worker/assets/`，再执行
+> `node worker/build-manifest.mjs --root worker/assets --out worker/assets --large-width 1600`
 
 ## 画廊侧约定
 
-- 清单接口：`GET /manifest.json` → `{ generatedAt, count, images: [{ path, size, width, height, thumb }] }`
+- 清单接口：`GET /manifest.json` → `{ generatedAt, count, images: [{ path, size, width, height, thumb, large? }] }`
   - `thumb` 为缩略图相对路径（如 `thumbs/LTYpicture/xx/001.webp`），缺失时前端自动回退原图
+  - `large` 为可选高清预览图（如 `large/LTYpicture/xx/001.webp`），灯箱优先使用；缺失时回退原图
 - 图片 URL：`GET /{path}`，path 同 GitHub 仓库相对路径（`LTYpicture/...`）
 - 缩略图 URL：`GET /{thumb}`
+- 高清预览图 URL：`GET /{large}`
 - 画廊代码（`src/utils/galleryShared.ts` 的 `R2_IMAGE_BASE` 常量，沿用原名）指向
   `https://img.xinchengp.cn`，不可用时自动回退 testingcf 镜像

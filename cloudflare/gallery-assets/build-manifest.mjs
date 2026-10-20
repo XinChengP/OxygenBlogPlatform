@@ -13,8 +13,9 @@
  *     → 本脚本用 sharp 读出真实宽高写进清单，前端首帧即可算出正确比例，零重排。
  *
  * 产出（写入 --out 目录）：
- *  - <out>/manifest.json   清单，条目为 { path, size, width, height, thumb }
+ *  - <out>/manifest.json   清单，条目为 { path, size, width, height, thumb, large? }
  *  - <out>/thumbs/<path>.webp  缩略图（相对路径与图片一一对应，扩展名统一 .webp）
+ *  - <out>/large/<path>.webp   可选高清预览图（传 --large-width 时生成，如 1600）
  *
  * 用法：
  *  node build-manifest.mjs --root <含图片前缀目录的根目录> --out <资产输出目录>
@@ -23,6 +24,7 @@
  *   --prefix 图片目录名前缀，默认 LTYpicture
  *   --width  缩略图宽度，默认 640
  *   --quality 缩略图质量，默认 72
+ *   --large-width 高清预览图宽度；不传则不生成 large/（避免增加 Worker 资产体积）
  *
  * 依赖：sharp（本机复用博客项目 node_modules；CI 中需 npm install sharp）
  */
@@ -93,6 +95,7 @@ const loadSharp = async () => {
  * @param {string} [options.prefix] 图片目录名前缀，默认 LTYpicture
  * @param {number} [options.width]  缩略图宽度，默认 640
  * @param {number} [options.quality] 缩略图质量，默认 72
+ * @param {number} [options.largeWidth] 高清预览图宽度；0 表示不生成 large/
  * @param {number} [options.concurrency] 并行处理数，默认 4（限制内存峰值）
  * @returns {Promise<{count:number, thumbsCreated:number, thumbsSkipped:number}>}
  */
@@ -103,6 +106,7 @@ export const buildGalleryAssets = async (options) => {
     prefix = 'LTYpicture',
     width = 640,
     quality = 72,
+    largeWidth = 0,
     concurrency = 4,
   } = options;
 
@@ -113,14 +117,23 @@ export const buildGalleryAssets = async (options) => {
 
   const sharp = await loadSharp();
   const files = walkImages(sourceDir);
-  console.log(`扫描到 ${files.length} 张图片，开始生成缩略图（宽 ${width}，质量 ${quality}）...`);
+  const largeEnabled = largeWidth > 0;
+  console.log(
+    `扫描到 ${files.length} 张图片，开始生成缩略图（宽 ${width}，质量 ${quality}）` +
+    (largeEnabled ? `，高清预览图（宽 ${largeWidth}）` : '') +
+    '...'
+  );
 
   const thumbsDir = join(out, 'thumbs');
+  const largeDir = join(out, 'large');
   mkdirSync(thumbsDir, { recursive: true });
+  if (largeEnabled) mkdirSync(largeDir, { recursive: true });
 
   const images = [];
   let created = 0;
   let skipped = 0;
+  let largeCreated = 0;
+  let largeSkipped = 0;
 
   // 队列式并发：避免一次性把 559 张图全部丢给 sharp 造成内存峰值
   const queue = [...files];
@@ -162,12 +175,35 @@ export const buildGalleryAssets = async (options) => {
           created++;
         }
 
+        // 可选：生成灯箱用的高清预览图，避免前端直接加载十几 MB 原图
+        let largeKey;
+        if (largeEnabled) {
+          largeKey = `large/${key.replace(/\.[^.]+$/, '.webp')}`;
+          const largeFile = join(out, largeKey);
+          let needLarge = true;
+          if (existsSync(largeFile)) {
+            if (statSync(largeFile).mtimeMs >= statSync(srcFile).mtimeMs) {
+              needLarge = false;
+              largeSkipped++;
+            }
+          }
+          if (needLarge) {
+            mkdirSync(dirname(largeFile), { recursive: true });
+            await sharp(srcFile, { limitInputPixels: false })
+              .resize({ width: largeWidth, withoutEnlargement: true })
+              .webp({ quality: Math.max(quality, 78), effort: 4 })
+              .toFile(largeFile);
+            largeCreated++;
+          }
+        }
+
         images.push({
           path: key,
           size: statSync(srcFile).size,
           width: imgWidth,
           height: imgHeight,
           thumb: thumbKey,
+          ...(largeKey ? { large: largeKey } : {}),
         });
 
         if ((created + skipped) % 50 === 0) {
@@ -182,7 +218,10 @@ export const buildGalleryAssets = async (options) => {
 
   // 清理孤儿缩略图：原图被删除或改名后，对应的 .webp 会滞留在 thumbs 目录里，
   // 既不会被清单引用，又会白白占用部署体积（Workers 每版本有文件数上限）
-  const orphanRemoved = removeOrphanThumbs(thumbsDir, images);
+  const orphanRemoved = removeOrphanVariants(thumbsDir, images);
+  const largeOrphanRemoved = largeEnabled
+    ? removeOrphanVariants(largeDir, images)
+    : 0;
 
   const manifest = {
     generatedAt: new Date().toISOString(),
@@ -194,39 +233,42 @@ export const buildGalleryAssets = async (options) => {
 
   console.log(`✔ 清单已写入：${join(out, 'manifest.json')}（${images.length} 张）`);
   console.log(`✔ 缩略图：新建 ${created} 张，跳过（已是最新）${skipped} 张，清理孤儿 ${orphanRemoved} 张`);
+  if (largeEnabled) {
+    console.log(`✔ 高清预览图：新建 ${largeCreated} 张，跳过 ${largeSkipped} 张，清理孤儿 ${largeOrphanRemoved} 张`);
+  }
 
   return { count: images.length, thumbsCreated: created, thumbsSkipped: skipped, orphansRemoved: orphanRemoved };
 };
 
 /**
- * 删除没有对应原图的孤儿缩略图
+ * 删除没有对应原图的孤儿缩略图 / 高清预览图
  *
- * 判定方式：缩略图相对路径去掉 `.webp` 后缀后得到「无扩展名的资源基名」，
+ * 判定方式：变体相对路径去掉 `.webp` 后缀后得到「无扩展名的资源基名」，
  * 与清单里原图路径去掉扩展名后的基名做精确比对（如 001.jpg 与 001.png 都对应 001.webp），
  * 基名不在清单里即视为孤儿并删除。
  *
- * @param thumbsDir - 缩略图根目录
+ * @param variantsDir - thumbs/ 或 large/ 目录
  * @param images - 已构建的清单条目（含原图相对路径）
- * @returns 删除的缩略图数量
+ * @returns 删除的文件数量
  */
-const removeOrphanThumbs = (thumbsDir, images) => {
-  if (!existsSync(thumbsDir)) return 0;
+const removeOrphanVariants = (variantsDir, images) => {
+  if (!existsSync(variantsDir)) return 0;
 
   // 有效基名集合：把清单里的原图路径去掉扩展名
   const validBaseNames = new Set(images.map(item => item.path.replace(/\.[^.]+$/, '')));
 
   let removed = 0;
-  const walkThumbs = (dir) => {
+  const walkVariants = (dir) => {
     for (const name of readdirSync(dir)) {
       const full = join(dir, name);
       if (statSync(full).isDirectory()) {
-        walkThumbs(full);
+        walkVariants(full);
         continue;
       }
       if (!name.toLowerCase().endsWith('.webp')) continue;
 
-      // 相对 thumbs 目录的路径 → 拼回资源基名（与清单 path 同构，便于比对）
-      const baseName = relative(thumbsDir, full)
+      // 相对变体目录的路径 → 拼回资源基名（与清单 path 同构，便于比对）
+      const baseName = relative(variantsDir, full)
         .split('\\')
         .join('/')
         .replace(/\.webp$/i, '');
@@ -236,7 +278,7 @@ const removeOrphanThumbs = (thumbsDir, images) => {
       }
     }
   };
-  walkThumbs(thumbsDir);
+  walkVariants(variantsDir);
 
   return removed;
 };
@@ -258,6 +300,7 @@ if (process.argv[1] && process.argv[1].endsWith('build-manifest.mjs')) {
     prefix: typeof args.prefix === 'string' ? args.prefix : 'LTYpicture',
     width: Number(args.width) || 640,
     quality: Number(args.quality) || 72,
+    largeWidth: Number(args['large-width']) || 0,
   }).catch((error) => {
     console.error('✘ 构建失败:', error.message);
     process.exit(1);

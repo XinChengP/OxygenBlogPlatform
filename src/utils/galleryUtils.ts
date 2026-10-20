@@ -14,8 +14,9 @@ import {
   filterImagesByCategory,
   getCategorySortOrder,
   parseGitHubTreeToImages,
-  fetchR2Images,
-  GitHubTreeResponse
+  parseR2ListToImages,
+  GitHubTreeResponse,
+  R2ListResponse
 } from './galleryShared';
 
 // 对外保持原有的导出接口不变：其他模块原先从本文件导入这些成员，
@@ -80,7 +81,18 @@ const isHostnameMisconfigured = (hostname: string): boolean => {
   return externalDomains.includes(hostname);
 };
 
-const serverHttpsFetch = <T = unknown>(url: string, headers: Record<string, string>): Promise<T> => {
+interface ServerFetchOptions {
+  /** 指定解析到的 IP（用于绕开问题 DNS；仍保留原域名的 SNI/Host） */
+  lookupIp?: string;
+  /** 请求超时，默认 30 秒 */
+  timeoutMs?: number;
+}
+
+const serverHttpsFetch = <T = unknown>(
+  url: string,
+  headers: Record<string, string>,
+  fetchOptions?: ServerFetchOptions
+): Promise<T> => {
   return new Promise((resolve, reject) => {
     if (!https) {
       reject(new Error('HTTPS module not available'));
@@ -88,6 +100,7 @@ const serverHttpsFetch = <T = unknown>(url: string, headers: Record<string, stri
     }
 
     const parsedUrl = new URL(url);
+    const timeoutMs = fetchOptions?.timeoutMs ?? 30000;
 
     // 调试日志：输出解析后的URL信息
     console.log('[Gallery] HTTPS请求配置:', {
@@ -95,6 +108,7 @@ const serverHttpsFetch = <T = unknown>(url: string, headers: Record<string, stri
       主机名: parsedUrl.hostname,
       端口: parsedUrl.port || 443,
       路径: parsedUrl.pathname + parsedUrl.search,
+      指定IP: fetchOptions?.lookupIp || '默认DNS',
       NODE_ENV: process.env.NODE_ENV
     });
 
@@ -106,7 +120,7 @@ const serverHttpsFetch = <T = unknown>(url: string, headers: Record<string, stri
     const agent = new httpsModule.Agent({
       rejectUnauthorized: process.env.NODE_ENV === 'production', // 生产环境严格验证，开发环境允许自签名证书
       // 设置超时时间
-      timeout: 30000,
+      timeout: timeoutMs,
     });
 
     const options = {
@@ -117,7 +131,17 @@ const serverHttpsFetch = <T = unknown>(url: string, headers: Record<string, stri
       headers: headers,
       agent: agent, // 使用自定义 agent 替代默认的 false
       // 添加lookup选项以使用IPv4优先，避免某些网络环境下的DNS解析问题
-      family: 4
+      family: 4,
+      ...(fetchOptions?.lookupIp
+        ? {
+            // 保留 hostname 作为 SNI/Host，仅把 DNS 解析结果替换为指定 IP
+            lookup: (
+              _hostname: string,
+              _opts: unknown,
+              callback: (err: NodeJS.ErrnoException | null, address: string, family: number) => void
+            ) => callback(null, fetchOptions.lookupIp as string, 4),
+          }
+        : {}),
     };
 
     const req = https.request(options, (res: import('http').IncomingMessage) => {
@@ -164,13 +188,55 @@ const serverHttpsFetch = <T = unknown>(url: string, headers: Record<string, stri
       }
     });
 
-    req.setTimeout(30000, () => {
+    req.setTimeout(timeoutMs, () => {
       req.destroy();
       reject(new Error('Request timeout'));
     });
 
     req.end();
   });
+};
+
+/**
+ * 构建期/服务端拉取 R2 清单
+ *
+ * 问题网络下默认 DNS 可能把 img.xinchengp.cn 解析到很慢的边缘 IP，
+ * 10–30 秒才能返回 100KB 的 manifest。构建期如果只依赖默认 DNS，
+ * 很容易超时后退回 GitHub Trees——那份数据没有 thumb/宽高/large，
+ * 静态首屏会丢失缩略图。
+ *
+ * 策略：先给默认 DNS 8 秒，再依次用已知的 Cloudflare 优选 IP
+ * （保留原域名作为 SNI/Host）各 12 秒。全部失败才让调用方回退 GitHub。
+ */
+const R2_MANIFEST_URL = 'https://img.xinchengp.cn/manifest.json';
+const R2_MANIFEST_FALLBACK_IPS = ['162.159.138.116', '162.159.154.208'];
+
+const fetchR2ImagesForServer = async (): Promise<GalleryImage[]> => {
+  const attempts: ServerFetchOptions[] = [
+    { timeoutMs: 8000 },
+    ...R2_MANIFEST_FALLBACK_IPS.map(ip => ({ lookupIp: ip, timeoutMs: 12000 })),
+  ];
+
+  let lastError: unknown;
+
+  for (const attempt of attempts) {
+    try {
+      const data = await serverHttpsFetch<R2ListResponse>(R2_MANIFEST_URL, {
+        Accept: 'application/json',
+      }, attempt);
+      const images = parseR2ListToImages(data);
+      if (images.length > 0) return images;
+      lastError = new Error('R2 manifest 为空');
+    } catch (error) {
+      lastError = error;
+      console.warn(
+        `[Gallery] R2 manifest 拉取失败（${attempt.lookupIp || '默认DNS'}）：`,
+        error instanceof Error ? error.message : '未知错误'
+      );
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error('R2 manifest 请求失败');
 };
 
 /**
@@ -458,7 +524,7 @@ export const getAllImages = async (options?: {
   // 配置统一引用共享常量，与浏览器端实时刷新保持同一数据源，避免多处硬编码
   let remoteImages: GalleryImage[] = [];
   try {
-    remoteImages = await fetchR2Images({ forceRefresh: options?.forceRefresh });
+    remoteImages = await fetchR2ImagesForServer();
     if (remoteImages.length === 0) {
       console.warn('[Gallery] R2 清单为空，回退 GitHub Trees API');
     }

@@ -709,6 +709,7 @@ export interface R2ImageEntry {
   width?: number;        // 图片宽度（清单生成器提供，用于首帧算出正确比例、消除重排）
   height?: number;       // 图片高度（同上）
   thumb?: string;        // 缩略图相对路径（如 thumbs/LTYpicture/xx/001.webp），缺失则回退原图
+  large?: string;        // 高清预览图相对路径（1280/1920 WebP）；缺失时前端回退原图
 }
 
 /** R2 /manifest.json 的响应结构 */
@@ -742,11 +743,13 @@ export const parseR2ListToImages = (data: R2ListResponse): GalleryImage[] =>
 
       return {
         id: generateImageId(entry.path),
-        // src 始终是原图：点开预览需要清晰大图
+        // src 始终是原图：作为最终清晰度兜底
         src: r2ImageUrl(entry.path),
         // thumbnail 是缩略图（宽 640 WebP，约原图 1/20 体积）：画廊卡片用它，避免下载解码大图
-        // 清单未提供 thumb 时保持 undefined，卡片自动回退 src，老版本清单也不会报错
+        // 清单未提供 thumb 时保持 undefined，卡片自动回退原图，老版本清单也不会报错
         thumbnail: entry.thumb ? r2ImageUrl(entry.thumb) : undefined,
+        // large 是可选的中间尺寸（如 1280/1920 WebP）：灯箱优先用它，避免直接拉原图
+        large: entry.large ? r2ImageUrl(entry.large) : undefined,
         fallbackSrc: jsDelivrFallbackUrl(entry.path),
         alt: fileName.replace(/\.[^.]+$/, ''),
         source: ImageSource.Remote,
@@ -763,17 +766,16 @@ export const parseR2ListToImages = (data: R2ListResponse): GalleryImage[] =>
 /**
  * R2 清单请求超时时间（毫秒）
  *
- * 为什么必须设超时：
  * 构建期 /gallery 页面会先拉 R2 清单，再决定是否回退 GitHub Trees。
- * 实测该清单仅 117 KB，但本机网络下单次请求可能耗时 21 秒甚至更久，
- * 而 Next.js 静态生成单个页面超过 60 秒就会判定失败并重试，
- * 最终导致整个静态导出构建中止。GitHub Trees 实测约 1 秒，
- * 因此宁可超时后快速回退，也不能让一个可选的加速源拖垮构建。
+ * 实测该清单约 160KB，问题网络下单次请求可能耗时 20 秒左右；
+ * 10 秒超时会让构建期退回到没有 thumb/宽高/large 的 GitHub Trees 快照，
+ * 导致静态首屏卡片丢失缩略图。这里放宽到 25 秒，仍低于 Next 静态生成
+ * 单页 60 秒的失败阈值；超时后继续回退 GitHub Trees。
  *
- * 浏览器端画廊实时刷新也复用本函数，超时后同样回退 GitHub API，
- * 避免用户打开画廊时长时间停在加载态。
+ * 浏览器端手动“刷新图库”也复用本函数；用户主动触发，等待 25 秒可接受，
+ * 超时后同样回退 GitHub API 并显示错误提示。
  */
-const R2_MANIFEST_TIMEOUT_MS = 10000;
+const R2_MANIFEST_TIMEOUT_MS = 25000;
 
 /**
  * 从 R2 图床拉取图片清单（同构函数：服务端与浏览器端共用同一份实现）

@@ -42,9 +42,10 @@ import { getAssetPath } from '@/utils/assetUtils';
 import { copyToClipboard } from '@/utils/clipboard';
 import dynamic from 'next/dynamic';
 
-// 动态导入 Leaflet 地图组件（避免 SSR 问题）
+// 动态导入 Leaflet 地图组件。
+// 外层 DeferredMount 保证只在浏览器进入视口后渲染，因此不需要 ssr:false；
+// 后者会让静态导出页 bailout 到 client-side rendering。
 const TravelMap = dynamic(() => import('@/components/about/TravelMap'), {
-  ssr: false,
   loading: () => (
     <div className="w-full h-[450px] rounded-2xl border border-border bg-muted/20 animate-pulse flex items-center justify-center">
       <span className="text-muted-foreground text-sm">加载地图中...</span>
@@ -125,9 +126,9 @@ import {
   type AnimeConfig,
 } from '@/setting/AboutSetting';
 // 技能雷达卡片组件（独立文件，避免主文件过长）
-// recharts 约 155KB gzip，改为进入视口附近再加载，别进首屏 chunk
+// recharts 约 155KB gzip，改为进入视口附近再加载，别进首屏 chunk。
+// DeferredMount 已保证客户端才渲染，无需 ssr:false。
 const SkillRadarCard = dynamic(() => import('@/components/about/SkillRadarCard'), {
-  ssr: false,
   loading: () => (
     <div className="h-[360px] rounded-2xl border border-border bg-muted/20 animate-pulse" />
   ),

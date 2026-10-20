@@ -1,0 +1,28 @@
+{
+  "hash": "4810345f",
+  "source": "/镜境.webp",
+  "width": 2844,
+  "height": 1600,
+  "variants": [
+    {
+      "width": 640,
+      "height": 360,
+      "path": "/_responsive/background/镜境-640-4810345f.webp"
+    },
+    {
+      "width": 1280,
+      "height": 720,
+      "path": "/_responsive/background/镜境-1280-4810345f.webp"
+    },
+    {
+      "width": 1920,
+      "height": 1080,
+      "path": "/_responsive/background/镜境-1920-4810345f.webp"
+    },
+    {
+      "width": 2560,
+      "height": 1440,
+      "path": "/_responsive/background/镜境-2560-4810345f.webp"
+    }
+  ]
+}

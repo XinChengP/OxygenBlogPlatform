@@ -17,6 +17,8 @@ import LazySearchDialog from "@/components/LazySearchDialog";
 import { enableBackground, backgroundImage } from "@/setting/WebSetting";
 import { getAssetPath } from "@/utils/assetUtils";
 import { generateCSPString, productionCSP, developmentCSP } from "@/utils/cspConfig";
+import backgroundImageManifest from "@/data/backgroundImageManifest.json";
+import { buildResponsiveSrcSet } from "@/utils/responsiveImage";
 
 /**
  * 站点基础URL配置
@@ -211,6 +213,14 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const backgroundSource = backgroundImage
+    ? `/${backgroundImage.replace(/^\/+/, '')}`
+    : '';
+  const backgroundSrcSet =
+    enableBackground && backgroundImage && backgroundImageManifest.source === backgroundSource
+      ? buildResponsiveSrcSet(backgroundImageManifest)
+      : undefined;
+
   return (
     <html lang="zh-CN" data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
@@ -253,6 +263,9 @@ export default function RootLayout({
           />
         )}
         <link rel="preconnect" href="https://api.github.com" crossOrigin="anonymous" />
+        {/* 画廊图床：首屏缩略图都来自这里，提前建连可少一次 TLS 握手等待 */}
+        <link rel="preconnect" href="https://img.xinchengp.cn" />
+        <link rel="dns-prefetch" href="https://img.xinchengp.cn" />
         {/*
           注：原 Google Fonts 手写字体（Ma Shan Zheng）加载链路已整体移除——
           字体在其目标网络环境下无法从 fonts.gstatic.com 下载（92 个分片 0 成功），
@@ -268,11 +281,18 @@ export default function RootLayout({
         <link rel="alternate" type="application/rss+xml" title="歆橙的博客 RSS" href={`${BASE_URL}/rss.xml`} />
 
         {/* 背景图片预加载
-            BackgroundLayer 会在客户端挂载后才设置背景图 URL，若不在此预加载，
-            背景要等 JS 水合后才开始下载，拖慢全站最大内容元素（LCP）。
+            背景图在静态 HTML 中以 <img srcset> 输出，这里声明候选集，
+            浏览器可提前按视口/DPR 选中合适档位，避免手机下载 460KB 原图。
             仅在背景功能开启且配置了图片时输出，避免无效请求。 */}
         {enableBackground && backgroundImage && (
-          <link rel="preload" as="image" href={getAssetPath(`/${backgroundImage}`)} />
+          <link
+            rel="preload"
+            as="image"
+            href={getAssetPath(`/${backgroundImage}`)}
+            imageSrcSet={backgroundSrcSet}
+            imageSizes="100vw"
+            fetchPriority="high"
+          />
         )}
 
 

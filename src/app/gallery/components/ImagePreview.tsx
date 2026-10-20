@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PreviewImage } from '../../../types/gallery';
 import { useNavigationVisibility } from '@/contexts/NavigationVisibilityContext';
@@ -8,7 +8,7 @@ import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { Z_INDEX } from '@/utils/zIndex';
 import {
   X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Maximize2,
-  Move, Keyboard, Info, Tag
+  Move, Keyboard, Info, Tag, Loader2
 } from 'lucide-react';
 
 // ImagePreview组件属性
@@ -40,6 +40,61 @@ const ImagePreview = ({ images, initialImage, onClose }: ImagePreviewProps) => {
   
   // 获取当前图片
   const currentImage = images[currentIndex];
+
+  /*
+    灯箱先用 640 缩略图立即出图，再在后台加载高清图（large 或原图）。
+    原图可能有 15-20MB，图床慢时直接等原图会出现“点了没反应”的空白。
+  */
+  const thumbSrc = currentImage.thumbnail || currentImage.src;
+  const hdSrc = currentImage.large || currentImage.src;
+  const [previewSrc, setPreviewSrc] = useState(thumbSrc);
+  const [hdStatus, setHdStatus] = useState<'ready' | 'loading' | 'error' | 'slow'>(
+    hdSrc === thumbSrc ? 'ready' : 'loading'
+  );
+
+  // 用 layout effect：切换上一张/下一张时在绘制前把主图重置为新缩略图，
+  // 避免先闪一帧上一张的高清图。
+  useLayoutEffect(() => {
+    const thumb = currentImage.thumbnail || currentImage.src;
+    const hd = currentImage.large || currentImage.src;
+
+    setPreviewSrc(thumb);
+
+    if (hd === thumb) {
+      setHdStatus('ready');
+      return;
+    }
+
+    setHdStatus('loading');
+    let cancelled = false;
+    let slowTimer: ReturnType<typeof setTimeout> | null = null;
+    const preloader = new Image();
+
+    // 原图可能十几 MB，图床慢时不能一直显示“高清加载中”
+    slowTimer = setTimeout(() => {
+      if (!cancelled) setHdStatus('slow');
+    }, 20000);
+
+    preloader.onload = () => {
+      if (slowTimer) clearTimeout(slowTimer);
+      if (cancelled) return;
+      setPreviewSrc(hd);
+      setHdStatus('ready');
+    };
+    preloader.onerror = () => {
+      if (slowTimer) clearTimeout(slowTimer);
+      if (!cancelled) setHdStatus('error');
+    };
+    preloader.src = hd;
+
+    return () => {
+      cancelled = true;
+      if (slowTimer) clearTimeout(slowTimer);
+      preloader.onload = null;
+      preloader.onerror = null;
+      preloader.src = '';
+    };
+  }, [currentImage]);
   
   // 容器引用
   const containerRef = useRef<HTMLDivElement>(null);
@@ -338,7 +393,7 @@ const ImagePreview = ({ images, initialImage, onClose }: ImagePreviewProps) => {
         key={currentImage.id}
       >
         <motion.img
-          src={currentImage.src}
+          src={previewSrc}
           alt={currentImage.alt}
           className="max-w-full max-h-[85vh] object-contain rounded-lg select-none"
           style={{
@@ -347,6 +402,19 @@ const ImagePreview = ({ images, initialImage, onClose }: ImagePreviewProps) => {
           }}
           draggable={false}
         />
+
+        {/* 高清图加载状态：缩略图已经可见，这里只做轻量提示 */}
+        {hdStatus === 'loading' && (
+          <div className="pointer-events-none absolute right-3 top-3 z-10 flex items-center gap-2 rounded-full bg-black/55 px-3 py-1.5 text-xs text-white/85 backdrop-blur-sm">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            高清加载中…
+          </div>
+        )}
+        {hdStatus === 'error' || hdStatus === 'slow' ? (
+          <div className="pointer-events-none absolute right-3 top-3 z-10 rounded-full bg-black/55 px-3 py-1.5 text-xs text-white/70 backdrop-blur-sm">
+            {hdStatus === 'slow' ? '高清加载较慢，当前为缩略图' : '高清加载失败，当前为缩略图'}
+          </div>
+        ) : null}
         
         {/* 拖拽提示 */}
         {scale > 1 && !isDragging && (

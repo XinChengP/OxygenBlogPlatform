@@ -1,4 +1,6 @@
 # 部署产物：图片资产与清单由 deploy 脚本生成，不入库
-assets/
+# 例外：_headers 是源文件（CI 也要用），需要能随仓库提交
+assets/**
+!assets/_headers
 .wrangler/
 tree.json

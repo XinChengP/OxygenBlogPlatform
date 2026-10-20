@@ -18,6 +18,7 @@ const { spawnSync } = require('child_process');
 const projectRoot = path.join(__dirname, '..');
 const prepareScript = path.join(__dirname, 'prepare-static-export.js');
 const responsiveImagesScript = path.join(__dirname, 'generate-responsive-images.js');
+const changelogHtmlScript = path.join(__dirname, 'generate-changelog-html.tsx');
 
 /**
  * 生成博客正文图片的响应式 WebP 变体。
@@ -28,6 +29,25 @@ const responsiveImagesScript = path.join(__dirname, 'generate-responsive-images.
  */
 function runResponsiveImages() {
   const result = spawnSync(process.execPath, [responsiveImagesScript], {
+    cwd: projectRoot,
+    stdio: 'inherit',
+  });
+  return result.status === null ? 1 : result.status;
+}
+
+/**
+ * 预渲染开发日志正文，输出 public/_changelog-content/。
+ *
+ * 使用 tsx 在 Next 构建之外执行，避免服务端组件导入 react-dom/server。
+ * @returns {number} 退出码
+ */
+function runChangelogHtml() {
+  const tsxCli = path.join(
+    path.dirname(require.resolve('tsx/package.json')),
+    'dist',
+    'cli.mjs'
+  );
+  const result = spawnSync(process.execPath, [tsxCli, changelogHtmlScript], {
     cwd: projectRoot,
     stdio: 'inherit',
   });
@@ -64,6 +84,13 @@ function main() {
   if (responsiveStatus !== 0) {
     console.error('响应式图片生成失败，构建已终止。');
     process.exit(responsiveStatus);
+  }
+
+  // 步骤 0.1：预渲染开发日志正文片段（客户端按需加载）
+  const changelogStatus = runChangelogHtml();
+  if (changelogStatus !== 0) {
+    console.error('开发日志正文预渲染失败，构建已终止。');
+    process.exit(changelogStatus);
   }
 
   // 步骤 1：替换 actions 为静态导出空实现

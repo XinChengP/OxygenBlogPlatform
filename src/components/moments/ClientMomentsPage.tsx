@@ -1,107 +1,26 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import remarkEmoji from 'remark-emoji';
-import remarkBreaks from 'remark-breaks';
-import rehypeHighlight from 'rehype-highlight';
-import rehypeRaw from 'rehype-raw';
-import rehypeSanitize from 'rehype-sanitize';
-import { blogSanitizeSchema } from '@/components/blogs/sanitizeSchema';
 import ImageGrid from './ImageGrid';
 import TimeProgressWidget from './TimeProgressWidget';
 import TodoWidget from './TodoWidget';
 import { getAvatarPath, name } from '@/setting/AboutSetting';
 import type { TodoConfig } from '@/types/todo';
 import PageHeader from '@/components/ui/PageHeader';
-import { getAssetPath } from '@/utils/assetUtils';
 import { Live2DMessageHelper } from '@/utils/live2dMessageManager';
 
-// react-markdown 组件回调的额外属性
-type MarkdownExtraProps = { node?: unknown };
-type MarkdownCodeProps = React.ComponentPropsWithoutRef<'code'> & MarkdownExtraProps & { inline?: boolean };
-
-// 通用 Markdown 组件属性
-type MarkdownComponentProps = {
-  children?: React.ReactNode;
-  className?: string;
-  [key: string]: any;
-};
-
-/**
- * 个人动态页面的 Markdown 渲染组件配置
- * 提取为模块级常量，避免每次渲染都创建新的组件引用
- * 防止 react-markdown 因 components 引用变化而重新构建组件树
- */
-const momentsMarkdownComponents: React.ComponentProps<typeof ReactMarkdown>['components'] = {
-  h1: ({ node, ...props }: MarkdownComponentProps) => <h1 className="text-2xl font-bold mb-4 text-foreground" {...props} />,
-  h2: ({ node, ...props }: MarkdownComponentProps) => <h2 className="text-xl font-semibold mb-3 text-foreground" {...props} />,
-  h3: ({ node, ...props }: MarkdownComponentProps) => <h3 className="text-lg font-medium mb-2 text-foreground" {...props} />,
-  h4: ({ node, ...props }: MarkdownComponentProps) => <h4 className="text-base font-medium mb-2 text-foreground" {...props} />,
-  p: ({ node, ...props }: MarkdownComponentProps) => <p className="mb-3 leading-relaxed" {...props} />,
-  ul: ({ node, ...props }: MarkdownComponentProps) => <ul className="list-disc pl-6 mb-3 space-y-1" {...props} />,
-  ol: ({ node, ...props }: MarkdownComponentProps) => <ol className="list-decimal pl-6 mb-3 space-y-1" {...props} />,
-  li: ({ node, ...props }: MarkdownComponentProps) => <li className="mb-1" {...props} />,
-  blockquote: ({ node, ...props }: MarkdownComponentProps) => (
-    <blockquote className="border-l-4 border-primary/50 bg-primary/5 pl-4 py-2 italic mb-3 rounded-r-lg" {...props} />
-  ),
-  strong: ({ node, ...props }: MarkdownComponentProps) => <strong className="font-bold text-foreground" {...props} />,
-  em: ({ node, ...props }: MarkdownComponentProps) => <em className="italic" {...props} />,
-  del: ({ node, ...props }: MarkdownComponentProps) => <del className="line-through text-muted-foreground" {...props} />,
-  hr: ({ node, ...props }: MarkdownComponentProps) => <hr className="my-4 border-border" {...props} />,
-  a: ({ href, children, ...props }: { href?: string; children?: React.ReactNode; [key: string]: any }) => (
-    <a
-      href={href}
-      className="text-primary hover:text-primary/80 underline decoration-wavy hover:decoration-solid transition-all duration-200"
-      target={href?.startsWith('http') ? '_blank' : undefined}
-      rel={href?.startsWith('http') ? 'noopener noreferrer' : undefined}
-      {...props}
-    >
-      {children}
-    </a>
-  ),
-  img: ({ src, alt, ...props }: React.ComponentPropsWithoutRef<'img'> & MarkdownExtraProps) => {
-    const processedSrc = typeof src === 'string' ? (src ? getAssetPath(src) : src) : src;
-    return (
-      <img
-        src={processedSrc}
-        alt={alt || ''}
-        className="max-w-full h-auto rounded-lg my-2"
-        loading="lazy"
-        {...props}
-      />
-    );
-  },
-  code: ({ node, className, children, ...props }: MarkdownCodeProps) => {
-    const match = /language-(\w+)/.exec(className || '');
-    const inline = !match;
-    if (inline) {
-      return <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono" {...props}>{children}</code>;
-    }
-    return (
-      <pre className="bg-muted p-3 rounded-lg overflow-x-auto mb-3 text-sm">
-        <code className={className} {...props}>{children}</code>
-      </pre>
-    );
-  },
-  pre: ({ node, children, ...props }: MarkdownComponentProps) => (
-    <pre className="bg-muted p-3 rounded-lg overflow-x-auto mb-3 text-sm" {...props}>{children}</pre>
-  ),
-  table: ({ node, ...props }: MarkdownComponentProps) => (
-    <div className="overflow-x-auto my-3">
-      <table className="min-w-full border-collapse border border-border rounded-lg" {...props} />
-    </div>
-  ),
-  thead: ({ node, ...props }: MarkdownComponentProps) => <thead className="bg-muted/50" {...props} />,
-  tbody: ({ node, ...props }: MarkdownComponentProps) => <tbody className="divide-y divide-border" {...props} />,
-  tr: ({ node, ...props }: MarkdownComponentProps) => <tr className="hover:bg-muted/30 transition-colors" {...props} />,
-  th: ({ node, ...props }: MarkdownComponentProps) => <th className="px-3 py-2 text-left text-sm font-medium border-b border-border" {...props} />,
-  td: ({ node, ...props }: MarkdownComponentProps) => <td className="px-3 py-2 text-sm border-b border-border" {...props} />,
-};
-
 interface ClientMomentsPageProps {
-  moments: Array<{ id: string; time: string; content: string; tags: string[]; images?: string[]; pinned?: boolean; filePath: string }>;
+  moments: Array<{
+    id: string;
+    time: string;
+    content: string;
+    tags: string[];
+    images?: string[];
+    pinned?: boolean;
+    filePath: string;
+    /** 构建期由 MomentMarkdown 渲染好的正文 */
+    renderedContent: React.ReactNode;
+  }>;
   blogCount: number;
   blogTotalWordCount: number;
   blogs: Array<{ id: string; title: string; date: string; updatedAt?: string; category?: string; tags?: string[] }>;
@@ -170,7 +89,7 @@ function ClientMomentsPage({ moments, blogCount, blogTotalWordCount, blogs, cate
               
               return allItems.map(item => {
                 if (item.type === 'moment') {
-                  const moment = item.data as { id: string; time: string; content: string; tags: string[]; images?: string[]; pinned?: boolean; filePath: string };
+                  const moment = item.data as { id: string; time: string; content: string; tags: string[]; images?: string[]; pinned?: boolean; filePath: string; renderedContent: React.ReactNode };
                   return (
                     <div
                       key={moment.id}
@@ -202,16 +121,9 @@ function ClientMomentsPage({ moments, blogCount, blogTotalWordCount, blogs, cate
                           </span>
                         )}
                       </div>
-                      {/* 动态内容区域 */}
+                      {/* 动态内容区域：正文已在构建期由 MomentMarkdown 渲染 */}
                       <div className="text-foreground text-sm leading-relaxed">
-                        <ReactMarkdown
-                          remarkPlugins={[remarkGfm, remarkEmoji, remarkBreaks]}
-                          /* rehypeRaw 展开原始 HTML 后立即清洗，再交给高亮（顺序见 sanitizeSchema.ts） */
-                          rehypePlugins={[rehypeRaw, [rehypeSanitize, blogSanitizeSchema], rehypeHighlight]}
-                          components={momentsMarkdownComponents}
-                        >
-                          {moment.content}
-                        </ReactMarkdown>
+                        {moment.renderedContent}
                         
                         {/* 图片九宫格 */}
                         {moment.images && moment.images.length > 0 && (

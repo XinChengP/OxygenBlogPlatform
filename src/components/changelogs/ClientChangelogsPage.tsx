@@ -1,10 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import remarkEmoji from 'remark-emoji';
-import rehypeHighlight from 'rehype-highlight';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Changelog,
   getChangelogTypeColor,
@@ -20,58 +16,15 @@ import PageHeader from '@/components/ui/PageHeader';
 import dynamic from 'next/dynamic';
 import DeferredMount from '@/components/core/DeferredMount';
 
-const TimeStatsChart = dynamic(() => import('./TimeStatsChart'), { ssr: false });
-const TypeStatsChart = dynamic(() => import('./TypeStatsChart'), { ssr: false });
+// DeferredMount 保证图表只在进入视口后才会被客户端渲染，
+// 因此不需要 dynamic 的 ssr:false；后者会让整个静态页面
+// bailout 到 client-side rendering，直接访问时停留在骨架屏。
+const TimeStatsChart = dynamic(() => import('./TimeStatsChart'));
+const TypeStatsChart = dynamic(() => import('./TypeStatsChart'));
 import { Live2DMessageHelper } from '@/utils/live2dMessageManager';
+import { getAssetPath } from '@/utils/assetUtils';
 // 全站层级令牌：成就说明弹窗的层级统一走这里
 import { Z_INDEX } from '@/utils/zIndex';
-
-// 通用 Markdown 组件属性
-type MarkdownComponentProps = {
-  children?: React.ReactNode;
-  className?: string;
-  [key: string]: any;
-};
-
-/**
- * 开发日志页面的 Markdown 渲染组件配置
- * 提取为模块级常量，避免每次渲染都创建新的组件引用
- * 防止 react-markdown 因 components 引用变化而重新构建组件树
- */
-const changelogsMarkdownComponents: React.ComponentProps<typeof ReactMarkdown>['components'] = {
-  // 标题样式 - 添加自动换行
-  h1: ({ node, ...props }: MarkdownComponentProps) => <h1 className="text-2xl font-bold mb-4 break-words whitespace-normal" {...props} />,
-  h2: ({ node, ...props }: MarkdownComponentProps) => <h2 className="text-xl font-semibold mb-3 break-words whitespace-normal" {...props} />,
-  h3: ({ node, ...props }: MarkdownComponentProps) => <h3 className="text-lg font-medium mb-2 break-words whitespace-normal" {...props} />,
-  h4: ({ node, ...props }: MarkdownComponentProps) => <h4 className="text-base font-medium mb-2 break-words whitespace-normal" {...props} />,
-  h5: ({ node, ...props }: MarkdownComponentProps) => <h5 className="text-sm font-medium mb-1 break-words whitespace-normal" {...props} />,
-  h6: ({ node, ...props }: MarkdownComponentProps) => <h6 className="text-xs font-medium mb-1 break-words whitespace-normal" {...props} />,
-  // 段落样式 - 强制自动换行
-  p: ({ node, ...props }: MarkdownComponentProps) => <p className="mb-2 break-words whitespace-normal overflow-wrap-anywhere" {...props} />,
-  // 列表样式
-  ul: ({ node, ...props }: MarkdownComponentProps) => <ul className="list-disc pl-6 mb-2 break-words" {...props} />,
-  ol: ({ node, ...props }: MarkdownComponentProps) => <ol className="list-decimal pl-6 mb-2 break-words" {...props} />,
-  li: ({ node, ...props }: MarkdownComponentProps) => <li className="mb-1 break-words whitespace-normal" {...props} />,
-  // 引用样式
-  blockquote: ({ node, ...props }: MarkdownComponentProps) => <blockquote className="border-l-4 border-primary pl-4 italic mb-2 break-words whitespace-normal" {...props} />,
-  // 强调样式
-  strong: ({ node, ...props }: MarkdownComponentProps) => <strong className="font-bold break-words" {...props} />,
-  em: ({ node, ...props }: MarkdownComponentProps) => <em className="italic break-words" {...props} />,
-  // 链接样式
-  a: ({ node, ...props }: MarkdownComponentProps) => <a className="text-primary hover:underline break-words" {...props} />,
-  // 代码样式
-  code: ({ node, className, children, ...props }: MarkdownComponentProps) => {
-    const inline = !className || !className.includes('language-');
-    if (inline) {
-      return <code className="bg-muted px-1 rounded break-words whitespace-normal" {...props}>{children}</code>;
-    }
-    return <pre className="bg-muted p-3 rounded overflow-x-auto mb-2" {...props}><code>{children}</code></pre>;
-  },
-  // 表格样式
-  table: ({ node, ...props }: MarkdownComponentProps) => <div className="overflow-x-auto mb-2"><table className="w-full border-collapse" {...props} /></div>,
-  th: ({ node, ...props }: MarkdownComponentProps) => <th className="border border-border px-2 py-1 text-left break-words" {...props} />,
-  td: ({ node, ...props }: MarkdownComponentProps) => <td className="border border-border px-2 py-1 break-words" {...props} />,
-};
 
 /**
  * 成就说明分组数据（静态数据，与 achievementConfig 同源）
@@ -129,6 +82,54 @@ function ClientChangelogsPage({ changelogs, blogTimeStats, momentTimeStats }: Cl
   // 成就说明弹窗的显示状态
   const [showAchievementGuide, setShowAchievementGuide] = useState(false);
 
+  // 日志正文按需加载：初始只下发元数据，首次展开/悬停时才取对应 HTML 片段
+  const [htmlCache, setHtmlCache] = useState<Record<string, string>>({});
+  const [htmlLoading, setHtmlLoading] = useState<Record<string, boolean>>({});
+  const htmlRequestsRef = useRef<Set<string>>(new Set());
+
+  const loadChangelogHtml = useCallback((id: string) => {
+    if (htmlCache[id] || htmlRequestsRef.current.has(id)) return;
+
+    htmlRequestsRef.current.add(id);
+    setHtmlLoading(prev => ({ ...prev, [id]: true }));
+
+    fetch(getAssetPath(`/_changelog-content/${encodeURIComponent(id)}.html`))
+      .then(response => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.text();
+      })
+      .then(html => {
+        setHtmlCache(prev => ({ ...prev, [id]: html }));
+      })
+      .catch(() => {
+        setHtmlCache(prev => ({
+          ...prev,
+          [id]: '<p>日志正文加载失败，请刷新重试。</p>',
+        }));
+      })
+      .finally(() => {
+        htmlRequestsRef.current.delete(id);
+        setHtmlLoading(prev => {
+          const next = { ...prev };
+          delete next[id];
+          return next;
+        });
+      });
+  }, [htmlCache]);
+
+  /**
+   * 切换日志的展开/收起状态
+   * @param id 日志 ID
+   */
+  const toggleExpand = (id: string) => {
+    const willExpand = !expandedLogs[id];
+    setExpandedLogs(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+    if (willExpand) loadChangelogHtml(id);
+  };
+
   // 刻意不使用 useBodyScrollLock：它会给 body 设置 overflow: hidden，
   // 这会让右侧 lg:sticky 的统计栏失去粘性定位、回落到文档流原位；
   // 当用户已滚动到页面中段时，该位置在视口之外，看起来就像卡片「消失」。
@@ -152,17 +153,6 @@ function ClientChangelogsPage({ changelogs, blogTimeStats, momentTimeStats }: Cl
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [showAchievementGuide]);
-
-  /**
-   * 切换日志的展开/收起状态
-   * @param id 日志 ID
-   */
-  const toggleExpand = (id: string) => {
-    setExpandedLogs(prev => ({
-      ...prev,
-      [id]: !prev[id]
-    }));
-  };
 
   return (
     <div className="min-h-screen">
@@ -256,6 +246,8 @@ function ClientChangelogsPage({ changelogs, blogTimeStats, momentTimeStats }: Cl
                           {/* 展开/收起按钮 */}
                           <button
                             onClick={() => toggleExpand(changelog.id)}
+                            onPointerEnter={() => loadChangelogHtml(changelog.id)}
+                            onFocus={() => loadChangelogHtml(changelog.id)}
                             className="text-sm text-primary hover:text-primary/80 transition-colors mb-2 flex items-center gap-1"
                           >
                             {expandedLogs[changelog.id] ? (
@@ -275,16 +267,16 @@ function ClientChangelogsPage({ changelogs, blogTimeStats, momentTimeStats }: Cl
                             )}
                           </button>
 
-                          {/* 可展开的内容区域 */}
+                          {/* 可展开的内容区域：正文按需从构建期生成的 HTML 片段加载 */}
                           {expandedLogs[changelog.id] && (
                             <div className="text-foreground text-sm mt-3 pt-3 border-t border-border/30 overflow-hidden break-words">
-                              <ReactMarkdown
-                                remarkPlugins={[remarkGfm, remarkEmoji]}
-                                rehypePlugins={[rehypeHighlight]}
-                                components={changelogsMarkdownComponents}
-                              >
-                                {changelog.content}
-                              </ReactMarkdown>
+                              {htmlCache[changelog.id] ? (
+                                <div dangerouslySetInnerHTML={{ __html: htmlCache[changelog.id] }} />
+                              ) : (
+                                <p className="py-2 text-muted-foreground">
+                                  {htmlLoading[changelog.id] ? '日志正文加载中…' : '展开后加载正文…'}
+                                </p>
+                              )}
 
                               {/* 关联的 Git 提交信息 */}
                               {changelog.commits && changelog.commits.length > 0 && (

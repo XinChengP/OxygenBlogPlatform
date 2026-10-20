@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GalleryImage, ImageCategoryTree, GalleryState, ImageSource } from '../../types/gallery';
 import {
@@ -13,7 +13,7 @@ import ImagePreview from './components/ImagePreview';
 import { useBackgroundStyle } from '../../hooks/useBackgroundStyle';
 import { live2dEventEmitter, Live2DEvents, emitLive2DEvent } from '../../utils/live2dEventEmitter';
 import { Live2DMessageHelper } from '../../utils/live2dMessageManager';
-import { ArrowRight, X } from 'lucide-react';
+import { ArrowRight, X, RefreshCw } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 
 // GalleryClient组件属性
@@ -23,12 +23,16 @@ interface GalleryClientProps {
 }
 
 // 首屏优先加载的图片数量
-const INITIAL_LOAD_COUNT = 20;
+const INITIAL_LOAD_COUNT = 8;
 
 // 错峰入场动画的卡片数量上限。
 // 原实现用 framer-motion staggerChildren 让每张卡片依次延迟 0.04s，559 张图会拖出
 // 约 22 秒的连续动画、持续占用主线程；现改为一次性 CSS 动画并将错峰限制在 24 张内。
 const MAX_STAGGER_COUNT = 24;
+
+// 每批渲染的卡片数量。图床较慢时，首屏一次请求几十张缩略图会互相争抢连接；
+// 24 张足够铺满桌面/手机首屏，滚动接近底部时再追加。
+const GALLERY_BATCH_SIZE = 24;
 
 /**
  * 生成图片列表签名，用于判断实时刷新回来的数据是否与当前展示完全一致
@@ -40,13 +44,6 @@ const buildImagesSignature = (images: GalleryImage[]): string =>
   images
     .map(img => `${img.id}:${img.width ?? ''}x${img.height ?? ''}:${img.thumbnail ? 1 : 0}`)
     .join('|');
-
-// ===== 浏览器端实时刷新的会话级缓存 =====
-// 缓存键：存放在 sessionStorage（标签页会话内有效），记录最近一次成功拉取的图床数据
-const REMOTE_REFRESH_CACHE_KEY = 'gallery_remote_refresh_cache';
-// 缓存有效期：5 分钟。未认证的 GitHub API 配额为 60 次/小时/IP，
-// 设置有效期可避免用户频繁切换页面时重复请求触发限流
-const REMOTE_REFRESH_CACHE_TTL = 5 * 60 * 1000;
 
 // GalleryClient组件
 const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps) => {
@@ -64,6 +61,10 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
     isLoading: false,
     error: null
   });
+
+  // 增量渲染：当前已渲染的卡片数量与滚动加载哨兵
+  const [visibleCount, setVisibleCount] = useState(GALLERY_BATCH_SIZE);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   // 浏览器前进/后退或首次挂载时同步筛选状态
   useEffect(() => {
@@ -83,58 +84,52 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
   // 滚动节流定时器引用
   const scrollThrottleRef = useRef<number>(0);
 
-  // ===== 浏览器端实时刷新图床数据 =====
-  // 背景：本站为静态导出站点，首屏数据（initialImages）是构建时抓取的快照，
-  // 图床仓库新增文件夹后快照不会变化。此副作用在页面挂载后由浏览器直接
-  // 调用 GitHub Trees API 拉取最新目录树，使新文件夹无需重新构建部署即可识别。
+  // ===== 浏览器端手动刷新图床数据 =====
+  // 首屏直接使用构建期快照，不在挂载时自动拉 manifest：
+  // 图床慢时一次刷新要 10-20 秒，还会在后台替换图片列表、打断用户浏览。
+  // 需要识别图床新增文件夹时，由用户点击“刷新图库”触发。
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshError, setRefreshError] = useState<string | null>(null);
+  const refreshInFlightRef = useRef(false);
+  const mountedRef = useRef(true);
+
   useEffect(() => {
-    // 取消标志：组件卸载后丢弃迟到的响应，避免对已卸载组件更新状态
-    let cancelled = false;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
-    const refreshRemoteImages = async () => {
-      // 1. 优先读取会话级缓存（5 分钟内有效），避免重复请求触发 GitHub API 限流
-      let cachedImages: GalleryImage[] | null = null;
-      try {
-        const cached = sessionStorage.getItem(REMOTE_REFRESH_CACHE_KEY);
-        if (cached) {
-          const parsed = JSON.parse(cached) as { images?: GalleryImage[]; timestamp?: number };
-          if (Array.isArray(parsed.images) && parsed.timestamp &&
-              Date.now() - parsed.timestamp < REMOTE_REFRESH_CACHE_TTL) {
-            cachedImages = parsed.images;
-          }
-        }
-      } catch {
-        // 缓存读取/解析失败不影响主流程，直接走实时拉取
+  const refreshRemoteImages = useCallback(async () => {
+    if (refreshInFlightRef.current) return;
+
+    refreshInFlightRef.current = true;
+    setIsRefreshing(true);
+    setRefreshError(null);
+
+    try {
+      const freshImages = await fetchRemoteImagesWithFallback();
+
+      if (!mountedRef.current) return;
+      if (freshImages.length === 0) {
+        setRefreshError('图库刷新失败，请稍后重试');
+        return;
       }
 
-      // 2. 无有效缓存时实时拉取（R2 优先，失败静默回退 GitHub Trees API）
-      const freshImages = cachedImages ?? await fetchRemoteImagesWithFallback();
-
-      // 组件已卸载或拉取失败（返回空数组）时静默退出，保留构建期兜底数据
-      if (cancelled || freshImages.length === 0) return;
-
-      // 3. 与当前展示的远程数据完全一致时直接退出：
-      //    跳过 setState，避免 559 张卡片再整体渲染一次（首屏等于渲染两遍的卡顿来源之一），
-      //    也省掉重复的 sessionStorage 写入
-      const currentRemoteImages = initialImages.filter(img => img.source === ImageSource.Remote);
-      if (buildImagesSignature(freshImages) === buildImagesSignature(currentRemoteImages)) return;
-
-      // 4. 拉取成功且数据来自实时请求时，写入会话缓存（写入失败静默忽略）
-      if (!cachedImages) {
-        try {
-          sessionStorage.setItem(
-            REMOTE_REFRESH_CACHE_KEY,
-            JSON.stringify({ images: freshImages, timestamp: Date.now() })
-          );
-        } catch {
-          // 图片数量过多导致存储超限时放弃缓存，不影响本次展示
-        }
-      }
-
-      // 5. 合并数据：本地图片保留，远程图片整体替换为最新版本，并重算分类树
-      //    （替换而非合并可正确同步图床侧的删除与移动）
       setState(prev => {
-        const localImages = prev.images.filter(img => img.source === ImageSource.Local);
+        const currentRemoteImages = prev.images.filter(
+          img => img.source === ImageSource.Remote
+        );
+        // 数据完全一致时跳过 setState，避免整树重渲染
+        if (
+          buildImagesSignature(freshImages) ===
+          buildImagesSignature(currentRemoteImages)
+        ) {
+          return prev;
+        }
+
+        const localImages = prev.images.filter(
+          img => img.source === ImageSource.Local
+        );
         const mergedImages = [...localImages, ...freshImages];
         return {
           ...prev,
@@ -142,20 +137,53 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
           categories: buildCategoryTree(mergedImages),
         };
       });
-    };
-
-    refreshRemoteImages();
-
-    return () => {
-      cancelled = true;
-    };
-    // 仅在组件挂载时执行一次：数据刷新与用户交互状态无关
+    } catch {
+      if (mountedRef.current) {
+        setRefreshError('图库刷新失败，请稍后重试');
+      }
+    } finally {
+      refreshInFlightRef.current = false;
+      if (mountedRef.current) setIsRefreshing(false);
+    }
   }, []);
 
   // 根据选中的分类和子分类过滤图片
   const filteredImages = useMemo(() => {
     return filterImagesByCategory(state.images, state.selectedCategory, state.selectedSubCategory);
   }, [state.images, state.selectedCategory, state.selectedSubCategory]);
+
+  // 切换分类后回到第一批，避免沿用上一个分类的已加载数量
+  useEffect(() => {
+    setVisibleCount(GALLERY_BATCH_SIZE);
+  }, [state.selectedCategory, state.selectedSubCategory]);
+
+  const visibleImages = useMemo(
+    () => filteredImages.slice(0, visibleCount),
+    [filteredImages, visibleCount]
+  );
+
+  // 接近底部时追加下一批；同时保留手动按钮，供无 IntersectionObserver 的环境使用
+  useEffect(() => {
+    if (visibleCount >= filteredImages.length) return;
+    if (typeof IntersectionObserver === 'undefined') return;
+
+    const target = loadMoreRef.current;
+    if (!target) return;
+
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries.some(entry => entry.isIntersecting)) {
+          setVisibleCount(count =>
+            Math.min(count + GALLERY_BATCH_SIZE, filteredImages.length)
+          );
+        }
+      },
+      { rootMargin: '600px 0px' }
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [visibleCount, filteredImages.length]);
 
   // 当前选中主分类的子分类列表
   const activeSubCategories = useMemo(() => {
@@ -372,6 +400,24 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.15 }}
         >
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-xs text-muted-foreground tabular-nums">
+              已展示 {visibleImages.length} / {filteredImages.length} 件作品
+            </span>
+            <button
+              type="button"
+              onClick={refreshRemoteImages}
+              disabled={isRefreshing}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card/80 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary disabled:cursor-wait disabled:opacity-60"
+              title="重新拉取图床清单，识别新上传的图片"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+              {isRefreshing ? '刷新中…' : '刷新图库'}
+            </button>
+          </div>
+          {refreshError && (
+            <p className="text-xs text-destructive" role="alert">{refreshError}</p>
+          )}
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => handleCategoryChange(null)}
@@ -451,23 +497,50 @@ const GalleryClient = ({ initialImages, initialCategories }: GalleryClientProps)
             - 卡片外层加 gallery-card-visible（content-visibility: auto）：
               视口外的卡片由浏览器跳过绘制与样式计算，等效于轻量虚拟化。
           */
-          <div className={masonryClass}>
-            {filteredImages.map((image, index) => (
-              <div
-                key={image.id}
-                className={`gallery-card-visible gallery-card-in ${isEmoticonView ? 'mb-4' : 'mb-6'} break-inside-avoid`}
-                style={{ animationDelay: `${Math.min(index, MAX_STAGGER_COUNT) * 0.03}s` }}
-              >
-                <ImageCard
-                  image={image}
-                  onClick={() => handleImageClick(image)}
-                  index={index}
-                  // 前 INITIAL_LOAD_COUNT 张图片设置高优先级，其余懒加载
-                  priority={index < INITIAL_LOAD_COUNT ? 'high' : 'low'}
-                />
+          <>
+            <div className={masonryClass}>
+              {visibleImages.map((image, index) => (
+                <div
+                  key={image.id}
+                  className={`gallery-card-visible gallery-card-in ${isEmoticonView ? 'mb-4' : 'mb-6'} break-inside-avoid`}
+                  style={{ animationDelay: `${Math.min(index, MAX_STAGGER_COUNT) * 0.03}s` }}
+                >
+                  <ImageCard
+                    image={image}
+                    onClick={() => handleImageClick(image)}
+                    index={index}
+                    // 前 INITIAL_LOAD_COUNT 张图片设置高优先级，其余懒加载
+                    priority={index < INITIAL_LOAD_COUNT ? 'high' : 'low'}
+                  />
+                </div>
+              ))}
+            </div>
+
+            {visibleCount < filteredImages.length ? (
+              <div ref={loadMoreRef} className="mt-10 flex flex-col items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setVisibleCount(count =>
+                      Math.min(count + GALLERY_BATCH_SIZE, filteredImages.length)
+                    )
+                  }
+                  className="px-5 py-2.5 rounded-full border border-border bg-card/90 text-sm text-foreground hover:border-primary/40 hover:text-primary transition-colors shadow-card"
+                >
+                  加载更多作品
+                </button>
+                <span className="text-xs text-muted-foreground tabular-nums">
+                  已显示 {visibleCount} / {filteredImages.length}
+                </span>
               </div>
-            ))}
-          </div>
+            ) : (
+              filteredImages.length > GALLERY_BATCH_SIZE && (
+                <p className="mt-10 text-center text-xs text-muted-foreground tabular-nums">
+                  已显示全部 {filteredImages.length} 件作品
+                </p>
+              )
+            )}
+          </>
         ) : (
           /* 空状态设计 */
           <motion.div

@@ -49,7 +49,7 @@ export default function Home() {
             </div>
 
             {/* 副标题 */}
-            <div className="hero-reveal hero-reveal--delay-1">
+            <div className="hero-reveal">
               <h2 className="mt-3 text-lg sm:text-xl lg:text-[1.6rem] font-light text-white/90 tracking-wide title gpu-accelerated">
                 {subTitle}
                 <span className={`${subTitleBlueDecorationClass} text-gradient-animate font-semibold`}>{subTitleBlueDecoration}</span>
@@ -63,7 +63,7 @@ export default function Home() {
             </div>
 
             {/* 按钮组 */}
-            <div className="hero-reveal hero-reveal--delay-2">
+            <div className="hero-reveal">
               <div className="flex gap-3 sm:gap-4 justify-center mt-8">
                 <button
                   className="bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-xl font-semibold text-sm

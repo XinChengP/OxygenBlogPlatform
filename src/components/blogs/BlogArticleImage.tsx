@@ -7,8 +7,8 @@ import { isVideoUrl, type MarkdownImgProps } from '@/components/blogs/BlogMarkdo
 import { useBlogArticleAssets } from '@/components/blogs/BlogArticleContext';
 import {
   buildResponsiveSrcSet,
-  getResponsiveImageEntry,
 } from '@/utils/responsiveImage';
+import { getResponsiveImageEntry } from '@/utils/blogResponsiveImage';
 
 /**
  * 博客正文图片（客户端交互件）
