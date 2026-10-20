@@ -7,7 +7,7 @@ author: 歆橙
 language: "zh-CN"
 tags: ["MMD", "STL", "Blender", "3D打印", "建模"]
 excerpt: "佬啊，佬啊，怎么是纸片啊。。。不怼"
-coverImage: "/Blogabout/mmd-turnto-stl/cover.png"
+coverImage: "/Blogabout/mmd-turnto-stl/cover.jpg"
 hidden: true
 ---
 
