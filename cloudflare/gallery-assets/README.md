@@ -72,9 +72,11 @@ wrangler deploy。`worker/assets/_headers` 随骨架部署；图床仓库另有
 
 ## 画廊侧约定
 
-- 清单接口：`GET /manifest.json` → `{ generatedAt, count, images: [{ path, size, width, height, thumb, large? }] }`
-  - `thumb` 为缩略图相对路径（如 `thumbs/LTYpicture/xx/001.webp`），缺失时前端自动回退原图
-  - `large` 为可选高清预览图（如 `large/LTYpicture/xx/001.webp`），灯箱优先使用；缺失时回退原图
+- 清单接口：`GET /manifest.json` → `{ generatedAt, count, images: [{ path, size, width, height, hash, thumb, large? }] }`
+  - `thumb` 为缩略图相对路径（如 `thumbs/LTYpicture/xx/001-<hash>.webp`），缺失时前端自动回退原图
+  - `large` 为可选高清预览图（如 `large/LTYpicture/xx/001-<hash>.webp`），灯箱优先使用；缺失时回退原图
+  - **变体文件名包含源图内容哈希**：图库管理器重排/去重导致同一序号换图时，thumb/large 会自动换 URL，
+    不会出现“网格还是旧图、灯箱已是新图”的错位，也不会命中 7 天 CDN 缓存
 - 图片 URL：`GET /{path}`，path 同 GitHub 仓库相对路径（`LTYpicture/...`）
 - 缩略图 URL：`GET /{thumb}`
 - 高清预览图 URL：`GET /{large}`

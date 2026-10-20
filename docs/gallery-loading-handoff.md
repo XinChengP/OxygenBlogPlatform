@@ -554,7 +554,62 @@ done
 
 ---
 
-## 10. 相关文件索引
+## 10. 预览图与原图错位：根因与修复（2026-10-20 追加）
+
+### 现象
+
+画廊网格里点开某张图，灯箱显示的原图有时与卡片缩略图不是同一张；图库管理器做“编号规整/查重清理”后更容易出现。
+
+### 根因
+
+1. **管理器会重排原图序号**
+   - `manager/core/organize.js` 的 `renumberDirectory` 会把删除留下的空洞压缩为 1..N，例如 `0050.png → 0049.png`、`0051.jpg → 0050.jpg`。
+   - 图床仓库提交历史中可看到大量这类 rename（2026-10-18 的 470 项变更）。
+2. **缩略图按固定路径复用**
+   - `build-manifest.mjs` 旧逻辑：`thumbs/<原路径>.webp` 已存在且 mtime 不早于源图时跳过。
+   - rename 会保留源文件 mtime，目标序号上的旧缩略图往往“看起来更新”，于是继续被复用；但该序号对应的原图已经换成另一张。
+3. **CDN/浏览器长缓存**
+   - `_headers` 给 `thumbs/*` 7 天缓存；即使重新生成并覆盖同名文件，旧缓存仍可能继续展示旧缩略图。
+4. **实测抽样**
+   - 对重排后的 `0049/0050/0059` 下载缩略图与原图做 dHash 对比：
+     - `0049` 汉明距离 6（基本一致）
+     - `0050` 汉明距离 31（不一致）
+     - `0059` 汉明距离 28（不一致）
+
+结论：不是前端灯箱取错索引，而是**缩略图文件内容与当前原图不对应**。网格用 thumb、灯箱用 large/原图，自然出现“预览图和实际对不上”。
+
+### 已实施的修复
+
+1. **缩略图/高清图改为内容寻址**
+   - `build-manifest.mjs` 读取源图并计算 SHA-1 前 8 位，变体文件名改为：
+     - `thumbs/<原路径去扩展名>-<hash>.webp`
+     - `large/<原路径去扩展名>-<hash>.webp`
+   - 同一序号换图时 hash 改变，URL 自动变化，既不会复用旧文件，也不会命中 7 天缓存。
+   - manifest 条目增加 `hash` 字段；孤儿清理改为“删除没有被当前 manifest 引用的变体”。
+   - 博客仓库 `cloudflare/gallery-assets/build-manifest.mjs` 与图床仓库 `scripts/gallery-assets/build-manifest.mjs` 已同步。
+2. **管理器查重清理自动压缩序号**
+   - 新增 `POST /api/duplicates/keep-best`：把组内非保留图移入回收站，然后把保留图改名为**同目录组内最小序号**。
+   - 例：heng 组 `0003 / 0007 / 0011` 保留 `0007` → 其余移入回收站 → `0007` 自动改名为 `0003`。
+   - 目标序号被同目录其他文件占用时**不覆盖**，保留原名并提示；部分移入回收站失败时也不改名。
+   - “保留最高清”按钮对 MD5 完全重复组和 dHash 相似组都生效。
+   - `图片命名规则.md` 和 manager README 已补充该约定。
+
+### 上线还需要做
+
+- [ ] 图床仓库：提交并推送 `scripts/gallery-assets/build-manifest.mjs`（已同步内容寻址逻辑），然后手动触发/等待 `sync-to-r2.yml` 重新生成 hashed thumbs/large。
+- [ ] 博客仓库：提交 `cloudflare/gallery-assets/build-manifest.mjs`；下一次静态构建会用新 manifest，或用户点“刷新图库”立即拉取。
+- [ ] 部署后抽查 manifest 的 `thumb`/`large` 是否带 `-<hash>`，并确认同一序号换图后 URL 变化。
+- [ ] 老 Worker 资产由新版本部署覆盖/清理；旧 URL 仍可能被 CDN 缓存，但 manifest 不再引用它们。
+
+### 验收
+
+- 图库管理器：选择一组相似图 → “保留最高清” → 保留图序号变为组内最小；若目标被占用，界面提示“未改名”。
+- 画廊：重排/去重后重新部署，网格缩略图与灯箱原图一致；DevTools 中 thumb/large URL 带内容哈希。
+- `build-manifest.mjs` 本地可用 2–3 张图快速验证：改图内容前后 manifest 的 `hash`/`thumb` 必须变化。
+
+---
+
+## 11. 相关文件索引
 
 | 文件 | 作用 |
 |---|---|
@@ -564,7 +619,10 @@ done
 | `src/utils/galleryShared.ts` | manifest 解析、`R2_IMAGE_BASE`、`large` 字段 |
 | `src/types/gallery.ts` | `thumbnail` / `large` / `ImageLoadStatus` 类型 |
 | `src/app/layout.tsx` | `img.xinchengp.cn` preconnect |
-| `cloudflare/gallery-assets/build-manifest.mjs` | 缩略图、manifest、`--large-width` |
+| `cloudflare/gallery-assets/build-manifest.mjs` | 缩略图、manifest、`--large-width`、内容哈希命名 |
 | `cloudflare/gallery-assets/deploy-local.mjs` | 本机部署，支持 `--large-width` |
 | `cloudflare/gallery-assets/assets/_headers` | manifest/原图/缩略图/large 的 CORS 与缓存 |
 | `cloudflare/gallery-assets/README.md` | 图床部署与画廊侧约定 |
+| `洛佬の美图/manager/core/organize.js` | 编号规整；去重后 `compactKeptSequence` 压缩保留图序号 |
+| `洛佬の美图/manager/server.js` | `/api/duplicates/keep-best`：移回收站 + 自动改最小序号 |
+| `洛佬の美图/manager/public/app.js` | 查重面板“保留最高清”入口与结果提示 |
