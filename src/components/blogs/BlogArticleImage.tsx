@@ -5,6 +5,10 @@ import { getAssetPath } from '@/utils/assetUtils';
 import type { PreviewImage } from '@/types/gallery';
 import { isVideoUrl, type MarkdownImgProps } from '@/components/blogs/BlogMarkdownBase';
 import { useBlogArticleAssets } from '@/components/blogs/BlogArticleContext';
+import {
+  buildResponsiveSrcSet,
+  getResponsiveImageEntry,
+} from '@/utils/responsiveImage';
 
 /**
  * 博客正文图片（客户端交互件）
@@ -12,16 +16,37 @@ import { useBlogArticleAssets } from '@/components/blogs/BlogArticleContext';
  * 正文由服务端构建期渲染，本组件以客户端组件身份嵌入：
  * - 渲染时是普通 <img>，因此图片直接出现在静态 HTML 中（SEO 可见）
  * - 水合后把图片注册进文章灯箱列表，点击可放大并左右切换
- * - 通过 onLoad 获取自然尺寸，横图放宽限制、竖图限宽 400px
+ * - 构建期为每张图生成 640/1280/1920 WebP 变体，按视口选择，
+ *   手机不再下载并解码 4000px 以上的原图
  */
 export default function BlogArticleImage({ src, alt, node, ...props }: MarkdownImgProps) {
   // node 是 react-markdown 注入的 hast 节点引用，解构出来弃置，
   // 避免随 ...props 展开成 DOM 属性（node="[object Object]"）
   const { imageSrcSetRef, articleImagesRef, onImageClick } = useBlogArticleAssets();
-  const [isLandscape, setIsLandscape] = useState(false);
+
+  /*
+    清单键使用未加 basePath 的原始路径；getAssetPath 只负责部署前缀，
+    若用它查清单，在非根路径部署时会查不到。
+  */
+  const responsiveEntry = getResponsiveImageEntry(typeof src === 'string' ? src : null);
+
+  /*
+    有清单尺寸时首帧就能确定横竖图，SSR HTML 与首屏布局直接正确；
+    没有清单（外链、SVG 等）时仍用原来的 onLoad 探测兜底。
+  */
+  const [detectedLandscape, setDetectedLandscape] = useState(false);
+  const isLandscape = responsiveEntry
+    ? responsiveEntry.width > responsiveEntry.height
+    : detectedLandscape;
 
   // 处理 GitHub Pages 基础路径
   const processedSrc = typeof src === 'string' && src ? getAssetPath(src) : src;
+  const responsiveSrcSet = buildResponsiveSrcSet(responsiveEntry);
+  const responsiveSizes = responsiveEntry
+    ? responsiveEntry.width > responsiveEntry.height
+      ? '(max-width: 768px) 100vw, 896px'
+      : '(max-width: 480px) 100vw, 400px'
+    : undefined;
 
   // 如果处理后的地址是视频文件，则使用 video 标签渲染
   // 视频不加入文章图片灯箱，也不支持点击放大
@@ -46,11 +71,10 @@ export default function BlogArticleImage({ src, alt, node, ...props }: MarkdownI
     );
   }
 
-  // 按出现顺序收集文章内图片到灯箱列表（保持与旧实现一致的渲染期收集）
-  // 必须在渲染期而非 useEffect：ClientBlogDetail 挂载时会清空一次列表以清除
-  // 路由切换/热更新的残留，而子组件的 effect 先于父组件执行，若在此处注册
-  // 会被那次清空抹掉且再无重跑时机，灯箱列表将永远为空、点击无响应；
-  // 渲染期收集则会在随后 mounted 状态更新触发的重渲染中自动补齐。
+  // 按出现顺序收集文章内图片到灯箱列表（保持渲染期收集）
+  // 必须在渲染期而非 useEffect：ClientBlogDetail 在 slug 变化时会于渲染阶段
+  // 清空列表，子组件随后渲染并重新注册；若放在 effect 里，父组件的 effect
+  // 晚于子组件渲染执行，会把刚注册的图片全部抹掉，灯箱列表将永远为空。
   // imageSrcSetRef 去重保证 StrictMode 双渲染 / 重复挂载不会重复收集。
   if (typeof processedSrc === 'string' && processedSrc && !imageSrcSetRef.current.has(processedSrc)) {
     imageSrcSetRef.current.add(processedSrc);
@@ -76,15 +100,21 @@ export default function BlogArticleImage({ src, alt, node, ...props }: MarkdownI
     <>
       <img
         src={processedSrc}
+        srcSet={responsiveSrcSet}
+        sizes={responsiveSizes}
+        width={responsiveEntry?.width}
+        height={responsiveEntry?.height}
         alt={alt || '图片'}
         className={`rounded-xl shadow-lg mx-auto h-auto my-4 cursor-pointer hover:opacity-90 transition-opacity ${
           isLandscape ? 'max-w-full' : 'max-w-[400px]'
         }`}
         loading="lazy"
-        // 使用 img 标签自身的 onLoad 事件获取自然尺寸，避免 new Image() 产生额外预加载请求
+        decoding="async"
+        // 有构建期尺寸时不再需要 onLoad 探测；外链/无清单图片仍走兜底
         onLoad={(e) => {
+          if (responsiveEntry) return;
           const target = e.currentTarget;
-          setIsLandscape(target.naturalWidth > target.naturalHeight);
+          setDetectedLandscape(target.naturalWidth > target.naturalHeight);
         }}
         onClick={handleImageClick}
         role="button"

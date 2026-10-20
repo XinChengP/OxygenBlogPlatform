@@ -723,6 +723,119 @@ html:not(.music-player-active) body {
 }
 
 /**
+ * 首页 Hero 入场
+ *
+ * 标题、副标题与按钮必须在静态 HTML 里直接存在（LCP / SEO），
+ * 因此不再使用 ssr:false 的 BoxReveal，改为纯 CSS：
+ * - 内容只做位移动画，任何时刻都不隐藏文字；
+ * - 遮罩层从 scaleX(1) 收缩到 scaleX(0)，保留原来的“揭示”观感；
+ * - 减少动态效果时直接禁用动画，遮罩基础态为 scaleX(0)，不会盖住文字。
+ */
+.hero-reveal {
+  position: relative;
+  overflow: hidden;
+  width: fit-content;
+}
+
+.hero-reveal > * {
+  animation: hero-rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.hero-reveal::after {
+  content: '';
+  position: absolute;
+  inset: 4px 0;
+  z-index: 20;
+  background: var(--primary);
+  transform: scaleX(0);
+  transform-origin: left center;
+  animation: hero-mask 0.55s cubic-bezier(0.7, 0, 0.84, 0) both;
+  pointer-events: none;
+}
+
+.hero-reveal--delay-1 > *,
+.hero-reveal--delay-1::after {
+  animation-delay: 0.08s;
+}
+
+.hero-reveal--delay-2 > *,
+.hero-reveal--delay-2::after {
+  animation-delay: 0.16s;
+}
+
+@keyframes hero-mask {
+  0% { transform: scaleX(1); }
+  100% { transform: scaleX(0); }
+}
+
+@keyframes hero-rise {
+  from { transform: translateY(18px); }
+  to { transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-reveal > *,
+  .hero-reveal::after {
+    animation: none;
+  }
+}
+
+/**
+ * 导航下拉与移动端气泡菜单的入场动画。
+ *
+ * 导航是全局组件，原先用 framer-motion 做这两个小动画，
+ * 会把整个动画库（约 41KB gzip）带进每页首载包。
+ * 现在只保留入场动画；关闭时直接卸载，省掉退出动画的复杂度。
+ */
+@keyframes nav-dropdown-in {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes nav-pop-in {
+  from { opacity: 0; transform: translate(20px, 0) scale(0.95); }
+  to { opacity: 1; transform: translate(0, 0) scale(1); }
+}
+
+.nav-dropdown-in {
+  animation: nav-dropdown-in 0.2s ease-out both;
+}
+
+.nav-pop-in {
+  animation: nav-pop-in 0.2s ease-out both;
+}
+
+/**
+ * 外链确认弹窗入场动画（低频交互，纯 CSS 即可）
+ */
+@keyframes guard-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes guard-dialog-in {
+  from { opacity: 0; transform: translateY(16px) scale(0.92); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.guard-backdrop-in {
+  animation: guard-backdrop-in 0.2s ease-out both;
+}
+
+.guard-dialog-in {
+  animation: guard-dialog-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-dropdown-in,
+  .nav-pop-in,
+  .guard-backdrop-in,
+  .guard-dialog-in {
+    animation: none;
+  }
+}
+
+/**
  * 动画性能优化类
  * 用于频繁动画的元素
  */

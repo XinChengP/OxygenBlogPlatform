@@ -4,7 +4,6 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import { name, aWord, year } from '@/setting/FooterSetting';
 import { usePathname } from 'next/navigation';
 import { getAssetPath } from '@/utils/assetUtils';
-import { motion } from 'framer-motion';
 
 /**
  * 动态加载外部脚本工具函数
@@ -218,13 +217,7 @@ function Footer() {
     <footer className="relative min-h-[300px] flex flex-col justify-end !border-none overflow-hidden">
       {/* 底部小鱼特效 - 作为页脚背景 */}
       <FlyingFish />
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        viewport={{ once: true }}
-        className="relative z-10 mx-auto px-4 sm:px-6 lg:px-8 py-8"
-      >
+      <div className="relative z-10 mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* 两栏布局：用 justify-between 拉开两端，gap 只保底防贴边；
             原 md:gap-108（27rem）过于极端，中等宽度的桌面屏会把两栏内容挤到容器边缘 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:justify-between">
@@ -311,7 +304,7 @@ function Footer() {
             </div>
           </div>
         </div>
-      </motion.div>
+      </div>
     </footer>
   );
 }

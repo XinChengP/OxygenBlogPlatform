@@ -5,7 +5,6 @@ import Footer from "@/components/Footer";
 import BackgroundLayer from "@/components/BackgroundLayer";
 import ConditionalComponents from "@/components/ConditionalComponents";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import MotionPreferenceProvider from "@/components/MotionPreferenceProvider";
 import SmoothScrollProvider from "@/components/SmoothScrollProvider";
 
 import { NavigationVisibilityProvider } from "@/contexts/NavigationVisibilityContext";
@@ -397,7 +396,12 @@ export default function RootLayout({
             disableTransitionOnChange={false}
             storageKey="theme"
           >
-            <MotionPreferenceProvider>
+            {/*
+              不再用 MotionConfig 包整个应用：它会静态引入 framer-motion，
+              把 41KB(gzip) 的动画库塞进每一页的首载包。
+              减少动态效果统一交给 globals.css 的 prefers-reduced-motion 规则；
+              仍需 JS 动画的页面（首页、about 等）各自按路由加载 framer-motion。
+            */}
             <NavigationVisibilityProvider>
               <SmoothScrollProvider>
                 <BackgroundLayer />
@@ -413,7 +417,6 @@ export default function RootLayout({
                 <LazySearchDialog />
               </SmoothScrollProvider>
             </NavigationVisibilityProvider>
-            </MotionPreferenceProvider>
           </ThemeProvider>
         </SecurityProvider>
         {/* 51la 网站统计 - 用于追踪访客数据 */}

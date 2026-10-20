@@ -17,6 +17,22 @@ const { spawnSync } = require('child_process');
 
 const projectRoot = path.join(__dirname, '..');
 const prepareScript = path.join(__dirname, 'prepare-static-export.js');
+const responsiveImagesScript = path.join(__dirname, 'generate-responsive-images.js');
+
+/**
+ * 生成博客正文图片的响应式 WebP 变体。
+ *
+ * 必须在 next build 之前执行：BlogArticleImage 会在构建期导入
+ * src/data/blogImageManifest.json，清单与变体文件需要先就位。
+ * @returns {number} 退出码
+ */
+function runResponsiveImages() {
+  const result = spawnSync(process.execPath, [responsiveImagesScript], {
+    cwd: projectRoot,
+    stdio: 'inherit',
+  });
+  return result.status === null ? 1 : result.status;
+}
 
 /**
  * 执行 prepare-static-export.js 的指定子命令
@@ -43,6 +59,13 @@ function resolveNextBin() {
 }
 
 function main() {
+  // 步骤 0：生成博客正文图片的响应式变体与尺寸清单
+  const responsiveStatus = runResponsiveImages();
+  if (responsiveStatus !== 0) {
+    console.error('响应式图片生成失败，构建已终止。');
+    process.exit(responsiveStatus);
+  }
+
   // 步骤 1：替换 actions 为静态导出空实现
   const prepareStatus = runPrepareScript('prepare');
   if (prepareStatus !== 0) {

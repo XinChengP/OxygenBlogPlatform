@@ -18,11 +18,30 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
-import { AnimatePresence, motion } from 'framer-motion';
-import RedirectNotice from './RedirectNotice';
-import { Live2DMessageHelper } from '@/utils/live2dMessageManager';
+import dynamic from 'next/dynamic';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { Z_INDEX } from '@/utils/zIndex';
+
+/*
+  RedirectNotice 只在第一次点击外链时渲染，没必要把它（以及它依赖的
+  framer-motion / 剪贴板 / Live2D 消息系统）打进全站首载包。
+*/
+const RedirectNotice = dynamic(() => import('./RedirectNotice'), {
+  ssr: false,
+  loading: () => <div className="h-48" />,
+});
+
+/**
+ * 点外链时再加载看板娘消息模块。
+ *
+ * live2dMessageManager 连同 contextTracker、消息文案约 12KB(gzip)，
+ * 而外链确认是低频事件，静态导入会让每一页都为它付费。
+ */
+function notifyLive2D(type: 'BLOCKED' | 'CONTINUE' | 'BACK' | 'COPY'): void {
+  void import('@/utils/live2dMessageManager')
+    .then(({ Live2DMessageHelper }) => Live2DMessageHelper.showExternalLinkMessage(type))
+    .catch(() => undefined);
+}
 
 /**
  * 视为「站内」的额外域名白名单（部署主站 + 本地开发）
@@ -102,7 +121,7 @@ export default function ExternalLinkGuard(): React.ReactElement | null {
       setPendingUrl(anchor.href);
       setOriginAnchor(anchor);
       // 看板娘提示：即将离开本站
-      Live2DMessageHelper.showExternalLinkMessage('BLOCKED');
+      notifyLive2D('BLOCKED');
     };
 
     document.addEventListener('click', handleClick, true);
@@ -119,7 +138,7 @@ export default function ExternalLinkGuard(): React.ReactElement | null {
     setPendingUrl(null);
     setOriginAnchor(null);
     // 看板娘提示：送别
-    Live2DMessageHelper.showExternalLinkMessage('CONTINUE');
+    notifyLive2D('CONTINUE');
     // 新标签页打开目标链接
     window.open(pendingUrl, '_blank', 'noopener,noreferrer');
   }, [pendingUrl]);
@@ -133,7 +152,7 @@ export default function ExternalLinkGuard(): React.ReactElement | null {
     setPendingUrl(null);
     setOriginAnchor(null);
     // 看板娘提示：留下来了
-    Live2DMessageHelper.showExternalLinkMessage('BACK');
+    notifyLive2D('BACK');
   }, [originAnchor]);
 
   /**
@@ -189,16 +208,12 @@ export default function ExternalLinkGuard(): React.ReactElement | null {
   }, [pendingUrl, handleClose]);
 
   return (
-    <AnimatePresence>
+    <>
       {pendingUrl && (
-        <motion.div
+        <div
           key="external-link-guard"
-          className="fixed inset-0 flex items-center justify-center p-4"
+          className="guard-backdrop-in fixed inset-0 flex items-center justify-center p-4"
           style={{ zIndex: Z_INDEX.modalBackdrop }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
           role="dialog"
           aria-modal="true"
           aria-label="外部链接跳转提醒"
@@ -210,15 +225,11 @@ export default function ExternalLinkGuard(): React.ReactElement | null {
             aria-hidden="true"
           />
 
-          {/* 弹窗主体：入场缩放 + 位移过渡 */}
-          <motion.div
+          {/* 弹窗主体：入场缩放 + 位移过渡（纯 CSS，避免为这一低频弹窗全局引入 framer-motion） */}
+          <div
             ref={dialogRef}
-            className="relative w-full max-w-md"
+            className="guard-dialog-in relative w-full max-w-md"
             style={{ zIndex: Z_INDEX.modal }}
-            initial={{ opacity: 0, scale: 0.92, y: 16 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 8 }}
-            transition={{ type: 'spring', stiffness: 280, damping: 24 }}
           >
             <RedirectNotice
               url={pendingUrl}
@@ -227,9 +238,9 @@ export default function ExternalLinkGuard(): React.ReactElement | null {
               onBack={handleBack}
               onClose={handleClose}
             />
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
       )}
-    </AnimatePresence>
+    </>
   );
 }

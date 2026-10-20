@@ -59,7 +59,9 @@ echo.
 start "Blog Dev Server" npm run dev
 
 echo Waiting for server to start...
-set MAX_WAIT=60
+REM 新增/修改博客图片时，predev 会先生成响应式 WebP（约 40 秒），
+REM 因此等待上限放宽到 120 秒；图片无变化时 predev 只做哈希校验，通常 1 秒内完成。
+set MAX_WAIT=120
 set WAIT_COUNT=0
 
 :WAIT_SERVER

@@ -125,9 +125,16 @@ import {
   type AnimeConfig,
 } from '@/setting/AboutSetting';
 // 技能雷达卡片组件（独立文件，避免主文件过长）
-import SkillRadarCard from '@/components/about/SkillRadarCard';
+// recharts 约 155KB gzip，改为进入视口附近再加载，别进首屏 chunk
+const SkillRadarCard = dynamic(() => import('@/components/about/SkillRadarCard'), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[360px] rounded-2xl border border-border bg-muted/20 animate-pulse" />
+  ),
+});
 // 个人偏好 Top N 卡片（歌曲排行 + 语录墙合并）
 import TopFavoritesCard from '@/components/about/TopFavoritesCard';
+import DeferredMount from '@/components/core/DeferredMount';
 
 /**
  * Lucide 图标映射表
@@ -1730,7 +1737,9 @@ export default function AboutPage() {
                 {/* 技能雷达 + 旅行足迹 - 桌面端左右并排，移动端上下堆叠 */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* 技能雷达卡片（左半） */}
-                  <SkillRadarCard skills={skillList} evaluation={skillEvaluation} />
+                  <DeferredMount minHeight={360}>
+                    <SkillRadarCard skills={skillList} evaluation={skillEvaluation} />
+                  </DeferredMount>
 
                   {/* 旅行足迹卡片（右半） */}
                   <motion.div
@@ -1749,7 +1758,9 @@ export default function AboutPage() {
                       </motion.div>
                       <h3 className="text-xl font-semibold text-foreground">旅行足迹</h3>
                     </div>
-                    <TravelMap locations={travelLocations} />
+                    <DeferredMount minHeight={450}>
+                      <TravelMap locations={travelLocations} />
+                    </DeferredMount>
                   </motion.div>
                 </div>
               </div>

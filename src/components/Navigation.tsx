@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
 import { emojy, name } from '@/setting/NavigationSetting';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 import { useNavigationVisibility } from '@/contexts/NavigationVisibilityContext';
@@ -346,38 +345,32 @@ const Navigation = () => {
           <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
         </button>
         
-        <AnimatePresence>
-          {isOpen && (
-            <motion.div
-              id={menuId}
-              role="menu"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-              className={`absolute top-full left-0 mt-1 min-w-[8rem] rounded-lg shadow-lg border overflow-hidden glass-card`}
-            >
-              <div className="py-1">
-                {dropdown.items.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    role="menuitem"
-                    onClick={(e) => handleLinkClick(e, item.href)}
-                    aria-current={isActive(item.href) ? 'page' : undefined}
-                    className={`block px-4 py-2 text-sm transition-colors duration-200 ${
-                      pathname === item.href
-                        ? 'text-primary dark:text-primary bg-primary/10 dark:bg-primary/10'
-                        : 'text-foreground hover:text-primary dark:hover:text-primary hover:bg-muted/60'
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {isOpen && (
+          <div
+            id={menuId}
+            role="menu"
+            className="nav-dropdown-in absolute top-full left-0 mt-1 min-w-[8rem] rounded-lg shadow-lg border overflow-hidden glass-card"
+          >
+            <div className="py-1">
+              {dropdown.items.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  role="menuitem"
+                  onClick={(e) => handleLinkClick(e, item.href)}
+                  aria-current={isActive(item.href) ? 'page' : undefined}
+                  className={`block px-4 py-2 text-sm transition-colors duration-200 ${
+                    pathname === item.href
+                      ? 'text-primary dark:text-primary bg-primary/10 dark:bg-primary/10'
+                      : 'text-foreground hover:text-primary dark:hover:text-primary hover:bg-muted/60'
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     );
   }, [activeDropdown, handleDropdownEnter, handleDropdownLeave, handleDropdownKeyDown, handleDropdownBlur, getLinkClassName, handleLinkClick, pathname, isActive, isDropdownActive]);
@@ -389,23 +382,16 @@ const Navigation = () => {
   
   return (
     <>
-    <motion.nav
+    <nav
       className={navClassName}
       style={{
         ...navigationStyle.style,
         zIndex: Z_INDEX.navigation,
         willChange: 'transform',
-        transform: 'translateZ(0)',
+        transform: isVisible ? 'translateY(0)' : 'translateY(-100%)',
+        transition: 'transform 0.3s ease-in-out, background-color 0.3s, border-color 0.3s',
       }}
       inert={!isVisible}
-      initial={{ y: 0 }}
-      animate={{ y: isVisible ? 0 : -100 }}
-      transition={{
-        duration: 0.3,
-        ease: "easeInOut",
-        // 使用 will-change 优化动画性能
-        type: "tween"
-      }}
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
@@ -501,21 +487,16 @@ const Navigation = () => {
           </div>
         </div>
       </div>
-    </motion.nav>
+    </nav>
     
     {/* Mobile menu - 右侧气泡式菜单（放在导航栏外部，使用 Portal 方式定位） */}
-    <AnimatePresence>
-      {isMenuOpen && (
-        <motion.div
-          ref={mobileMenuRef}
-          id="mobile-nav-menu"
-          className="lg:hidden fixed top-16 right-2"
-          style={{ zIndex: Z_INDEX.mobileMenu }}
-          initial={{ opacity: 0, x: 20, scale: 0.95 }}
-          animate={{ opacity: 1, x: 0, scale: 1 }}
-          exit={{ opacity: 0, x: 20, scale: 0.95 }}
-          transition={{ duration: 0.2, ease: "easeOut" }}
-        >
+    {isMenuOpen && (
+      <div
+        ref={mobileMenuRef}
+        id="mobile-nav-menu"
+        className="nav-pop-in lg:hidden fixed top-16 right-2"
+        style={{ zIndex: Z_INDEX.mobileMenu }}
+      >
           {/* 气泡式菜单容器 - 浮层固定用毛玻璃，不随 isAtTop 变化 */}
           <div className={`
             min-w-[140px] rounded-2xl shadow-xl border glass-card-strong
@@ -590,9 +571,8 @@ const Navigation = () => {
               ))}
             </div>
           </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+        </div>
+    )}
   </>);
 };
 

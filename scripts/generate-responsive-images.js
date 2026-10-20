@@ -1,0 +1,238 @@
+/**
+ * 博客正文图片响应式变体生成脚本
+ *
+ * 背景：
+ * 本站为静态导出（output: 'export'），next/image 的运行时优化端点不存在，
+ * 正文图片此前直接引用手机拍的原图（最大 7000×3640 / 7680×4320），
+ * 手机端也要下载十几 MB 并解码上百 MB 的位图。
+ *
+ * 本脚本在构建前扫描所有博客 Markdown（图片语法、HTML <img>、frontmatter
+ * coverImage），用 sharp 生成 640/1280/1920 三档 WebP，并输出尺寸清单
+ * src/data/blogImageManifest.json，供 BlogArticleImage / 封面图构造 srcset。
+ *
+ * 产物位置：public/_responsive/（已加入 .gitignore，由构建流程生成）
+ * 缓存：node_modules/.cache/blog-responsive-images.json，源图未变化时直接跳过。
+ */
+
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+const matter = require('gray-matter');
+const sharp = require('sharp');
+
+const ROOT = path.join(__dirname, '..');
+const CONTENT_DIR = path.join(ROOT, 'src/content/blogs');
+const PUBLIC_DIR = path.join(ROOT, 'public');
+const OUTPUT_DIR = path.join(PUBLIC_DIR, '_responsive');
+const MANIFEST_PATH = path.join(ROOT, 'src/data/blogImageManifest.json');
+
+const TARGET_WIDTHS = [640, 1280, 1920];
+const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.avif']);
+// 小图不生成变体，但仍记录尺寸供 <img width/height> 使用
+const MIN_VARIANT_WIDTH = 641;
+const WEBP_QUALITY = 78;
+
+function walkMarkdown(dir) {
+  const files = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) files.push(...walkMarkdown(full));
+    else if (entry.name.endsWith('.md')) files.push(full);
+  }
+  return files;
+}
+
+function stripQuery(raw) {
+  const hashIndex = raw.search(/[?#]/);
+  return hashIndex === -1 ? raw : raw.slice(0, hashIndex);
+}
+
+/**
+ * 与 src/app/blogs/[slug]/page.tsx 的路径归一化保持一致：
+ * ./x、../x、裸相对路径都映射到 public 根下的绝对路径。
+ */
+function normalizePublicPath(raw) {
+  const value = stripQuery(raw.trim());
+  if (!value) return null;
+  if (/^(https?:|data:|blob:|mailto:|tel:|#)/i.test(value)) return null;
+  if (value.startsWith('//')) return null;
+
+  let publicPath = value;
+  if (publicPath.startsWith('./')) publicPath = publicPath.slice(2);
+  else if (publicPath.startsWith('../')) publicPath = publicPath.replace(/^\.\.\//, '');
+  if (!publicPath.startsWith('/')) publicPath = `/${publicPath}`;
+  return publicPath;
+}
+
+function decodePathSegments(publicPath) {
+  return publicPath
+    .split('/')
+    .filter(Boolean)
+    .map(segment => {
+      try {
+        return decodeURIComponent(segment);
+      } catch {
+        return segment;
+      }
+    });
+}
+
+function collectSources() {
+  const sources = new Set();
+  for (const file of walkMarkdown(CONTENT_DIR)) {
+    const raw = fs.readFileSync(file, 'utf8');
+    const { data, content } = matter(raw);
+
+    // Markdown 图片语法 ![](path)
+    for (const match of content.matchAll(/!\[[^\]]*\]\(\s*<?([^)\s>]+)>?/g)) {
+      const normalized = normalizePublicPath(match[1]);
+      if (normalized) sources.add(normalized);
+    }
+
+    // 正文里的原生 <img src="...">
+    for (const match of content.matchAll(/<img\b[^>]*\bsrc=["']([^"']+)["']/gi)) {
+      const normalized = normalizePublicPath(match[1]);
+      if (normalized) sources.add(normalized);
+    }
+
+    // 封面图（frontmatter）
+    if (typeof data.coverImage === 'string') {
+      const normalized = normalizePublicPath(data.coverImage);
+      if (normalized) sources.add(normalized);
+    }
+  }
+  return [...sources].sort();
+}
+
+function sourceFileOf(publicPath) {
+  return path.join(PUBLIC_DIR, ...decodePathSegments(publicPath));
+}
+
+function outputPathOf(publicPath, width, hash) {
+  const segments = decodePathSegments(publicPath);
+  const fileName = segments.pop();
+  const ext = path.extname(fileName);
+  const baseName = fileName.slice(0, -ext.length);
+  const variantName = `${baseName}-${width}-${hash}.webp`;
+  return {
+    publicPath: `/_responsive/${[...segments, variantName].join('/')}`,
+    filePath: path.join(OUTPUT_DIR, ...segments, variantName),
+  };
+}
+
+function loadJson(file, fallback) {
+  try {
+    return JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch {
+    return fallback;
+  }
+}
+
+function formatBytes(bytes) {
+  return `${(bytes / 1024 / 1024).toFixed(1)}MB`;
+}
+
+async function generate() {
+  const imageSources = collectSources().filter(publicPath =>
+    IMAGE_EXTENSIONS.has(path.extname(publicPath).toLowerCase())
+  );
+  const missingSources = imageSources.filter(
+    publicPath => !fs.existsSync(sourceFileOf(publicPath))
+  );
+  if (missingSources.length > 0) {
+    console.warn(
+      `[responsive] 跳过 ${missingSources.length} 张不存在的图片：${missingSources.join('、')}`
+    );
+  }
+  const sources = imageSources.filter(publicPath => !missingSources.includes(publicPath));
+
+  const existingManifest = loadJson(MANIFEST_PATH, { images: {} });
+  const existingImages = existingManifest.images || {};
+
+  // 先读取所有源图并计算内容哈希：哈希与清单一致、且变体文件都在，才跳过。
+  // 不使用 node_modules/.cache，因为 start-dev.bat 每次启动都会删除它。
+  const prepared = sources.map(publicPath => {
+    const file = sourceFileOf(publicPath);
+    const stat = fs.statSync(file);
+    const buffer = fs.readFileSync(file);
+    const hash = crypto.createHash('sha1').update(buffer).digest('hex').slice(0, 8);
+    return { publicPath, stat, buffer, hash };
+  });
+
+  const sameSourceSet =
+    prepared.length === Object.keys(existingImages).length &&
+    prepared.every(({ publicPath }) => publicPath in existingImages);
+
+  const upToDate = sameSourceSet && prepared.every(({ publicPath, hash }) => {
+    const entry = existingImages[publicPath];
+    if (!entry || entry.hash !== hash) return false;
+    if (!Array.isArray(entry.variants)) return false;
+    return entry.variants.every(variant =>
+      fs.existsSync(path.join(PUBLIC_DIR, ...decodePathSegments(variant.path)))
+    );
+  });
+
+  if (upToDate) {
+    console.log(`[responsive] 图片无变化，跳过生成（${sources.length} 张源图）`);
+    return;
+  }
+
+  fs.rmSync(OUTPUT_DIR, { recursive: true, force: true });
+  fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+
+  const manifest = { images: {} };
+  let variantCount = 0;
+  let outputBytes = 0;
+
+  for (const { publicPath, buffer, hash } of prepared) {
+
+    const metadata = await sharp(buffer).metadata();
+    // 手机照片常带 EXIF 旋转；autoOrient 给出旋转后的真实宽高
+    const width = metadata.autoOrient?.width ?? metadata.width;
+    const height = metadata.autoOrient?.height ?? metadata.height;
+
+    if (!width || !height) {
+      console.warn(`[responsive] 无法读取尺寸，跳过：${publicPath}`);
+      continue;
+    }
+
+    const entry = { hash, width, height, variants: [] };
+
+    if (width >= MIN_VARIANT_WIDTH) {
+      for (const targetWidth of TARGET_WIDTHS) {
+        if (targetWidth >= width) continue;
+        const { publicPath: variantPublicPath, filePath } = outputPathOf(publicPath, targetWidth, hash);
+        fs.mkdirSync(path.dirname(filePath), { recursive: true });
+
+        await sharp(buffer)
+          .rotate()
+          .resize({ width: targetWidth, withoutEnlargement: true })
+          .webp({ quality: WEBP_QUALITY, effort: 4, smartSubsample: true })
+          .toFile(filePath);
+
+        const variantSize = fs.statSync(filePath).size;
+        outputBytes += variantSize;
+        variantCount += 1;
+        entry.variants.push({
+          width: targetWidth,
+          height: Math.round((height * targetWidth) / width),
+          path: variantPublicPath,
+        });
+      }
+    }
+
+    manifest.images[publicPath] = entry;
+  }
+
+  fs.mkdirSync(path.dirname(MANIFEST_PATH), { recursive: true });
+  fs.writeFileSync(MANIFEST_PATH, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
+
+  console.log(
+    `[responsive] 完成：${sources.length} 张源图，生成 ${variantCount} 个 WebP 变体，合计 ${formatBytes(outputBytes)}`,
+  );
+}
+
+generate().catch(error => {
+  console.error('[responsive] 生成失败：', error);
+  process.exit(1);
+});

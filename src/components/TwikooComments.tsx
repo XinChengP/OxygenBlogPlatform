@@ -100,6 +100,15 @@ export default function TwikooComments({ id, type = 'blog' }: TwikooCommentsProp
    * 让 Twikoo 只替换内层节点，外层容器始终留在文档中，问题就不存在了。
    */
   const wrapperRef = useRef<HTMLDivElement>(null);
+  /**
+   * 观察用的外层容器。
+   *
+   * 评论区在文章/留言板底部，脚本约 470KB，不能在挂载时就和正文抢带宽。
+   * 用 IntersectionObserver 提前 400px 预加载；容器保留 min-height，
+   * 避免从占位切到真实评论区时把页面下方内容顶开。
+   */
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [shouldLoad, setShouldLoad] = useState(false);
 
   // 站点实际生效的主题（next-themes 会把 system 解析为 light / dark）
   const { resolvedTheme } = useTheme();
@@ -115,6 +124,32 @@ export default function TwikooComments({ id, type = 'blog' }: TwikooCommentsProp
   const [path, setPath] = useState<string | null>(null);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // 老浏览器没有 IntersectionObserver：直接加载，避免评论区永远空白
+    if (typeof IntersectionObserver === 'undefined') {
+      setShouldLoad(true);
+      return;
+    }
+
+    const target = containerRef.current;
+    if (!target) return;
+
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries.some(entry => entry.isIntersecting)) {
+          setShouldLoad(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '400px 0px' }
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
     setPath(getCommentPath(type, id));
   }, [type, id]);
 
@@ -122,8 +157,10 @@ export default function TwikooComments({ id, type = 'blog' }: TwikooCommentsProp
     if (resolvedTheme) setThemeReady(true);
   }, [resolvedTheme]);
 
-  // 创建并初始化评论区：路径变化（切换文章）或主题就绪后执行
+  // 创建并初始化评论区：进入预加载范围、路径变化或主题就绪后执行
   useEffect(() => {
+    if (!shouldLoad) return;
+
     const wrapper = wrapperRef.current;
     if (!wrapper || !themeReady || !path) return;
     if (!isTwikooConfigured) return;
@@ -169,7 +206,7 @@ export default function TwikooComments({ id, type = 'blog' }: TwikooCommentsProp
     return () => {
       cancelled = true;
     };
-  }, [path, themeReady]);
+  }, [path, themeReady, shouldLoad]);
 
   // 未配置后端时不渲染空白，而是给出明确原因，便于区分「没配」与「配错」
   if (!isTwikooConfigured) {
@@ -186,14 +223,22 @@ export default function TwikooComments({ id, type = 'blog' }: TwikooCommentsProp
   }
 
   return (
-    <div className="w-full">
+    <div ref={containerRef} className="w-full min-h-[240px]">
+      {!shouldLoad && (
+        <div className="flex min-h-[240px] items-center justify-center rounded-xl border border-border/50 bg-muted/20 text-sm text-muted-foreground">
+          评论加载中…
+        </div>
+      )}
+
       {/*
         data-theme 供 Twikoo 自带样式使用：
         它的 CSS 里有一组以 [data-theme="dark"] 为祖先选择器的规则（覆盖表情弹窗配色），
         挂上该属性即可让这部分跟随站点主题，而不是跟随操作系统。
         评论区主体的配色由 twikoo-theme.css 按 .dark 作用域覆盖。
       */}
-      <div ref={wrapperRef} className="w-full" data-theme={resolvedTheme === 'dark' ? 'dark' : 'light'} />
+      {shouldLoad && (
+        <div ref={wrapperRef} className="w-full" data-theme={resolvedTheme === 'dark' ? 'dark' : 'light'} />
+      )}
 
       {error && (
         <p className="mt-3 text-sm text-destructive" role="alert">

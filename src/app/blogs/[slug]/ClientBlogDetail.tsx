@@ -32,6 +32,10 @@ import { BlogArticleProvider } from '../../../components/blogs/BlogArticleContex
 import BlogSharePanel from '../../../components/blogs/BlogSharePanel';
 import RelatedPosts from '../../../components/blogs/RelatedPosts';
 import type { TocItem } from '@/utils/tocUtils';
+import {
+  buildResponsiveSrcSet,
+  getResponsiveImageEntry,
+} from '@/utils/responsiveImage';
 
 // 动态导入大型组件，优化初始加载性能
 const LazyTableOfContents = lazy(() => import('../../../components/TableOfContents'));
@@ -132,6 +136,9 @@ export default function ClientBlogDetail({
 }: ClientBlogDetailProps) {
   const { theme, resolvedTheme } = useTheme();
   const { containerStyle } = useBackgroundStyle('blog-detail');
+  // 封面图同样走构建期变体清单，避免手机下载 4200px 原图
+  const coverEntry = getResponsiveImageEntry(blog.coverImage);
+  const coverSrcSet = buildResponsiveSrcSet(coverEntry);
   const [mounted, setMounted] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<PreviewImage | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -139,6 +146,21 @@ export default function ClientBlogDetail({
   const articleImagesRef = useRef<PreviewImage[]>([]);
   const imageSrcSetRef = useRef<Set<string>>(new Set());
   const iframeRefs = useRef<Array<HTMLIFrameElement | null>>([]);
+  const articleSlugRef = useRef(blog.slug);
+
+  /*
+    路由切换到另一篇文章时，必须在渲染子内容之前清空图片收集列表。
+
+    不能放在 useEffect 里：父组件的 effect 晚于子组件渲染执行，
+    会把 BlogArticleImage 刚刚注册好的图片全部抹掉；旧实现依赖每张图
+    onLoad 改 state 触发重渲染来补救，而现在有构建期尺寸的图片不会再
+    因 onLoad 重渲染，灯箱列表就会一直是空的。
+  */
+  if (articleSlugRef.current !== blog.slug) {
+    articleSlugRef.current = blog.slug;
+    imageSrcSetRef.current.clear();
+    articleImagesRef.current = [];
+  }
 
   // 确保组件已挂载，避免 SSR 期间 theme 为 null
   useEffect(() => {
@@ -183,12 +205,6 @@ export default function ClientBlogDetail({
         window.cancelAnimationFrame(frameId);
       }
     };
-  }, []);
-
-  // 组件挂载时清空图片收集列表，防止路由切换或热更新后残留旧数据
-  useEffect(() => {
-    imageSrcSetRef.current.clear();
-    articleImagesRef.current = [];
   }, []);
 
   // 在挂载前使用默认主题
@@ -435,9 +451,13 @@ export default function ClientBlogDetail({
               <div className="mb-6 rounded-2xl overflow-hidden shadow-2xl">
                 <img
                   src={blog.coverImage}
+                  srcSet={coverSrcSet}
+                  sizes="(max-width: 768px) 100vw, 896px"
+                  width={coverEntry?.width ?? 800}
+                  height={coverEntry?.height ?? 384}
                   alt={blog.title}
-                  width={800}
-                  height={384}
+                  decoding="async"
+                  fetchPriority="high"
                   className="w-full h-64 md:h-96 object-cover transform hover:scale-105 transition-transform duration-500"
                 />
               </div>

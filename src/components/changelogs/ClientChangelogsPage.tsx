@@ -18,6 +18,7 @@ import {
 } from '@/types/changelogTypes';
 import PageHeader from '@/components/ui/PageHeader';
 import dynamic from 'next/dynamic';
+import DeferredMount from '@/components/core/DeferredMount';
 
 const TimeStatsChart = dynamic(() => import('./TimeStatsChart'), { ssr: false });
 const TypeStatsChart = dynamic(() => import('./TypeStatsChart'), { ssr: false });
@@ -312,8 +313,12 @@ function ClientChangelogsPage({ changelogs, blogTimeStats, momentTimeStats }: Cl
           {/* 右侧：统计图表（固定 30% 宽度） */}
           <div className="w-full lg:w-[30%] flex-shrink-0 flex-grow-0">
             <div className="space-y-4 lg:sticky lg:top-24">
-              <TimeStatsChart changelogs={changelogs} blogTimeStats={blogTimeStats} momentTimeStats={momentTimeStats} />
-              <TypeStatsChart changelogs={changelogs} blogTimeStats={blogTimeStats} momentTimeStats={momentTimeStats} />
+              <DeferredMount minHeight={320}>
+                <TimeStatsChart changelogs={changelogs} blogTimeStats={blogTimeStats} momentTimeStats={momentTimeStats} />
+              </DeferredMount>
+              <DeferredMount minHeight={280}>
+                <TypeStatsChart changelogs={changelogs} blogTimeStats={blogTimeStats} momentTimeStats={momentTimeStats} />
+              </DeferredMount>
 
               {/* 成就说明入口：点击弹出全部成就的触发条件说明 */}
               <button

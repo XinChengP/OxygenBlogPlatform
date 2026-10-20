@@ -29,3 +29,6 @@ src/app/admin/
 .venv/
 .build-backup/
 .backup/
+
+# 构建期生成的响应式图片变体（清单 src/data/blogImageManifest.json 保留）
+public/_responsive/
