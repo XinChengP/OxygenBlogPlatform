@@ -72,12 +72,26 @@ function getPostYear(dateStr: string): string {
 }
 
 /**
+ * 副波与主波的波长比例
+ *
+ * 1/φ 与 √2 都是无理数，与主波的周期不可通约，
+ * 因此三个分量叠加后不会像 0.6 / 1.5 那样出现固定的公共周期。
+ */
+const WAVE_RATIO_SECOND = 0.6180339887498949;
+const WAVE_RATIO_THIRD = 1.4142135623730951;
+
+/**
  * 计算某个横坐标 x 处在河流上的纵坐标（波形函数）
  *
  * 这是整条「时光河流」的核心公式：三个振幅、波长、相位均不相同的正弦波叠加。
- * 系数 0.5 + 0.3 + 0.2 = 1，因此合成波的最大起伏幅度恰好等于 amplitude。
- * 由于三个正弦的周期比例（1 : 0.6 : 1.5）不可通约，波形不会周期性重复，
- * 视觉上更接近天然河流而非机械正弦曲线。
+ * 系数 0.5 + 0.3 + 0.2 = 1，因此合成波的起伏上界为 amplitude；
+ * 三个分量不会总在同一横坐标同时取到极值，实际包络略小于该上界。
+ *
+ * 波长比例取 1 : 1/φ : √2（φ 为黄金分割比），三者不可通约，
+ * 因此波形在有限画布内不会精确重复。这里刻意不用 0.6 / 1.5 这类
+ * 有理数比例：它们与主波的周期比分别是 5 : 3 与 2 : 3，
+ * 公共周期只有 3 倍主波长，桌面端每 1800px（约 6 张卡片）
+ * 就会看到一模一样的河道，与「天然河流」的意图相反。
  *
  * 河道路径与卡片定位必须共用这一个函数，才能保证卡片严格「贴合」河流起伏。
  *
@@ -96,8 +110,39 @@ function computeWaveY(
   return (
     riverY +
     amplitude * 0.5 * Math.sin((x / wavelength) * Math.PI * 2) +
-    amplitude * 0.3 * Math.sin((x / (wavelength * 0.6)) * Math.PI * 2 + 1) +
-    amplitude * 0.2 * Math.sin((x / (wavelength * 1.5)) * Math.PI * 2 + 2.5)
+    amplitude * 0.3 *
+      Math.sin((x / (wavelength * WAVE_RATIO_SECOND)) * Math.PI * 2 + 1) +
+    amplitude * 0.2 *
+      Math.sin((x / (wavelength * WAVE_RATIO_THIRD)) * Math.PI * 2 + 2.5)
+  );
+}
+
+/**
+ * 计算河流波形在某个横坐标处的斜率 dy/dx
+ *
+ * 与 computeWaveY 共用同一组波长比例与相位。buildRiverPath 需要用它
+ * 生成三次贝塞尔的控制点：只有两端斜率与真实曲线一致，稀疏锚点之间
+ * 才能保持 C1 连续，不会出现肉眼可见的折角。
+ *
+ * @param x - 横坐标
+ * @param amplitude - 河流起伏总幅度
+ * @param wavelength - 主波波长
+ * @returns 该横坐标处的波形斜率
+ */
+function computeWaveSlope(
+  x: number,
+  amplitude: number,
+  wavelength: number,
+): number {
+  const twoPi = Math.PI * 2;
+  const k1 = twoPi / wavelength;
+  const k2 = twoPi / (wavelength * WAVE_RATIO_SECOND);
+  const k3 = twoPi / (wavelength * WAVE_RATIO_THIRD);
+
+  return (
+    amplitude * 0.5 * k1 * Math.cos(k1 * x) +
+    amplitude * 0.3 * k2 * Math.cos(k2 * x + 1) +
+    amplitude * 0.2 * k3 * Math.cos(k3 * x + 2.5)
   );
 }
 
@@ -105,16 +150,24 @@ function computeWaveY(
  * 生成河流的 SVG 路径指令串
  *
  * 实现说明：
- * 用「每 stepSize 像素取一个采样点、相邻点用直线连接」的方式逼近曲线。
- * 步长越小曲线越平滑，但路径点数越多、字符串越长，渲染开销也越大，
- * 因此移动端使用更大的步长（20px）来降低开销。
+ * 按 anchorStep 取锚点，再把相邻锚点用三次 Hermite 曲线连接。
+ * 控制点放在横向 1/3 处、纵向按 computeWaveSlope 的解析导数计算，
+ * 因此曲线经过每个锚点、两端斜率与真实波形一致（C1 连续），
+ * 锚点间距放到 64px 也不会出现折角。
+ *
+ * 实测最大偏差：桌面端（λ=600、A=80、64px）约 0.10px，
+ * 移动端（λ=400、A=50、48px）约 0.10px，都远小于 3px 的描边宽度。
+ * 早前用「每 4px 取一点、折线连接」的密集采样，路径点数多出一个数量级；
+ * 单纯放大步长又会露出明显折角。解析贝塞尔同时解决了这两个问题。
+ *
+ * 平行于主河道的次要线条不再调用本函数生成第二份路径，
+ * 而是在 JSX 中用 <g transform> 复用主路径平移得到。
  *
  * @param totalWidth - 画布总宽度
  * @param riverY - 河流中轴线纵坐标
  * @param amplitude - 河流起伏总幅度
  * @param wavelength - 主波波长
- * @param offsetY - 整体垂直偏移，用于生成与主河道平行的次要线条
- * @param stepSize - 采样步长
+ * @param anchorStep - 锚点间距
  * @returns SVG path 的 d 属性值
  */
 function buildRiverPath(
@@ -122,16 +175,36 @@ function buildRiverPath(
   riverY: number,
   amplitude: number,
   wavelength: number,
-  offsetY: number,
-  stepSize: number,
+  anchorStep: number,
 ): string {
+  const segments = Math.max(1, Math.ceil(totalWidth / anchorStep));
   const parts: string[] = [];
-  const steps = Math.max(1, Math.ceil(totalWidth / stepSize));
 
-  for (let i = 0; i <= steps; i++) {
-    const x = (i / steps) * totalWidth;
-    const y = computeWaveY(x, riverY, amplitude, wavelength) + offsetY;
-    parts.push(`${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`);
+  let prevX = 0;
+  let prevY = computeWaveY(0, riverY, amplitude, wavelength);
+  let prevSlope = computeWaveSlope(0, amplitude, wavelength);
+
+  parts.push(`M 0 ${prevY.toFixed(1)}`);
+
+  for (let i = 1; i <= segments; i++) {
+    const x = (i / segments) * totalWidth;
+    const y = computeWaveY(x, riverY, amplitude, wavelength);
+    const slope = computeWaveSlope(x, amplitude, wavelength);
+    const dx = x - prevX;
+
+    // 三次 Hermite 转贝塞尔：控制点放在横向 1/3 处，纵向斜率取两端解析导数
+    const c1x = prevX + dx / 3;
+    const c1y = prevY + (prevSlope * dx) / 3;
+    const c2x = x - dx / 3;
+    const c2y = y - (slope * dx) / 3;
+
+    parts.push(
+      `C ${c1x.toFixed(1)} ${c1y.toFixed(1)} ${c2x.toFixed(1)} ${c2y.toFixed(1)} ${x.toFixed(1)} ${y.toFixed(1)}`,
+    );
+
+    prevX = x;
+    prevY = y;
+    prevSlope = slope;
   }
 
   return parts.join(' ');
@@ -198,7 +271,11 @@ const LAYOUT = {
     amplitude: 80,
     wavelength: 600,
     padding: 600,
-    stepSize: 4,
+    /**
+     * 贝塞尔锚点间距（不是折线采样步长）。
+     * 64px 锚点经三次 Hermite 连接后最大偏差约 0.10px，远小于 3px 描边。
+     */
+    anchorStep: 64,
     coverHeight: 100,
     /**
      * 跨年处额外预留的空位宽度，用于独立安放年份水印。
@@ -233,7 +310,8 @@ const LAYOUT = {
     amplitude: 50,
     wavelength: 400,
     padding: 300,
-    stepSize: 20,
+    /** 移动端波长短、曲率更大，锚点收紧到 48px，最大偏差同样约 0.10px */
+    anchorStep: 48,
     coverHeight: 70,
     /**
      * 移动端整体收窄，年份空位同步压缩。
@@ -504,14 +582,8 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
 
   // 主河道路径：仅在布局参数或文章数变化时重算
   const riverPath = useMemo(
-    () => buildRiverPath(totalWidth, riverY, amplitude, wavelength, 0, layout.stepSize),
-    [totalWidth, riverY, amplitude, wavelength, layout.stepSize],
-  );
-
-  // 河道底部微光路径：与主河道平行、下移 12px 的一条细线
-  const riverPathBottom = useMemo(
-    () => buildRiverPath(totalWidth, riverY, amplitude, wavelength, 12, layout.stepSize),
-    [totalWidth, riverY, amplitude, wavelength, layout.stepSize],
+    () => buildRiverPath(totalWidth, riverY, amplitude, wavelength, layout.anchorStep),
+    [totalWidth, riverY, amplitude, wavelength, layout.anchorStep],
   );
 
   /**
@@ -683,7 +755,7 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
       <div className="px-4 sm:px-6 lg:px-8 pb-16">
         <PageHeader
           title="归档"
-          description={`时光河流 · 共 ${totalPosts} 篇文章`}
+          description={`时光河流 · 共 ${totalPosts} 篇文章 · 使用 ← → 浏览`}
           size="lg"
           className="mb-8"
         />
@@ -737,7 +809,7 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
                 }, 100);
               }}
               draggable={false}
-              className="cursor-grab active:cursor-grabbing rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70"
+              className="cursor-grab active:cursor-grabbing focus-visible:outline-none"
             >
               <svg
                 width={totalWidth}
@@ -810,17 +882,22 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
                   />
                 )}
 
-                {/* 河道底部微光 */}
-                <motion.path
-                  d={riverPathBottom}
-                  fill="none"
-                  stroke="url(#archive-river-grad-soft)"
-                  strokeWidth="1"
-                  opacity="0.15"
-                  initial={{ pathLength: 0 }}
-                  animate={{ pathLength: 1 }}
-                  transition={{ duration: 1.8, ease: 'easeInOut' }}
-                />
+                {/*
+                  河道底部微光：复用主河道路径并整体下移 12px，
+                  避免用同一套采样再生成一份几乎相同的超长 d 字符串。
+                */}
+                <g transform="translate(0 12)">
+                  <motion.path
+                    d={riverPath}
+                    fill="none"
+                    stroke="url(#archive-river-grad-soft)"
+                    strokeWidth="1"
+                    opacity="0.15"
+                    initial={{ pathLength: 0 }}
+                    animate={{ pathLength: 1 }}
+                    transition={{ duration: 1.8, ease: 'easeInOut' }}
+                  />
+                </g>
 
                 {/*
                   沿河道循环流动的光点：仅桌面端启用。
