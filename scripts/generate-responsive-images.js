@@ -10,7 +10,9 @@
  *   1. 博客 Markdown：图片语法、HTML <img>、frontmatter coverImage
  *   2. 瞬间 Moments Markdown：frontmatter images 数组、图片语法、HTML <img>
  *   3. About 页配置 src/setting/AboutSetting.ts：其中引用的所有站内图片
- * 用 sharp 生成 640/1280/1920 三档 WebP（GIF 生成动画 WebP，保留动效），
+ * 用 sharp 生成 640/1280/1920 三档 WebP（GIF 生成动画 WebP，保留动效）；
+ * 原图宽度在 641~1920 之间时额外补一档原尺寸，避免 960/1080 宽的原图
+ * 只剩 640 档可选、在桌面端被放大后发糊。
  * 并输出尺寸清单 src/data/blogImageManifest.json，供各处组件构造 srcset。
  *
  * 产物位置：public/_responsive/（已加入 .gitignore，由构建流程生成）
@@ -34,11 +36,23 @@ const BACKGROUND_MANIFEST_PATH = path.join(ROOT, 'src/data/backgroundImageManife
 const WEB_SETTING_PATH = path.join(ROOT, 'src/setting/WebSetting.ts');
 
 const TARGET_WIDTHS = [640, 1280, 1920];
+/*
+ * 关于页顶部三张「关于我 / 关于本站 / 关于域名」封面是页面门面，
+ * 收起时约 287px 宽，但用户要求固定使用 1080 档，不允许落到 640。
+ * 这三张原图都宽于 1080，这里单独补一档 1080 WebP。
+ */
+const FIXED_WIDTH_SOURCES = new Map([
+  ['/aboutme/1.jpg', 1080],
+  ['/aboutme/3.jpeg', 1080],
+  ['/aboutme/2.png', 1080],
+]);
 const BACKGROUND_WIDTHS = [640, 1280, 1920, 2560];
 const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.avif', '.gif']);
 // 小图不生成变体，但仍记录尺寸供 <img width/height> 使用
 const MIN_VARIANT_WIDTH = 641;
-const WEBP_QUALITY = 78;
+// 78 在动漫插画的大面积渐变上会出现可见的糊边；82 的体积增幅很小，
+// 同尺寸下肉眼已接近原图，兼顾画廊/正文的带宽预算。
+const WEBP_QUALITY = 82;
 // 动图多帧编码是 CPU 密集操作，effort 调低一档换取可接受的构建时长
 const WEBP_ANIMATED_EFFORT = 3;
 const BACKGROUND_WEBP_QUALITY = 80;
@@ -308,8 +322,23 @@ async function generate() {
     const entry = { hash, width, height, variants: [] };
 
     if (width >= MIN_VARIANT_WIDTH) {
-      for (const targetWidth of TARGET_WIDTHS) {
-        if (targetWidth >= width) continue;
+      /*
+        常规档位只取小于原图宽度的值；再为 641~1920 的原图补一档原尺寸。
+        否则宽度 960/1080/1280 的图只会有 640 档，srcset 会让浏览器
+        选择 640 再放大到桌面容器宽度，这是 About 番剧封面发糊的主因。
+      */
+      const variantWidths = TARGET_WIDTHS.filter((targetWidth) => targetWidth < width);
+      if (width <= 1920 && !variantWidths.includes(width)) {
+        variantWidths.push(width);
+      }
+      // 门面图额外补固定档位（当前只有顶部三张 1080 档）
+      const fixedWidth = FIXED_WIDTH_SOURCES.get(publicPath);
+      if (fixedWidth && fixedWidth < width && !variantWidths.includes(fixedWidth)) {
+        variantWidths.push(fixedWidth);
+      }
+      variantWidths.sort((a, b) => a - b);
+
+      for (const targetWidth of variantWidths) {
         const { publicPath: variantPublicPath, filePath } = outputPathOf(publicPath, targetWidth, hash);
         fs.mkdirSync(path.dirname(filePath), { recursive: true });
 

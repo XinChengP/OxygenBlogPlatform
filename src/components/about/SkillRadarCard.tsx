@@ -109,7 +109,7 @@ export default function SkillRadarCard({ skills, evaluation, className = '' }: S
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-100px' }}
       transition={{ duration: 0.6, delay: 0.5 }}
-      className={`relative flex flex-col rounded-2xl border overflow-hidden backdrop-blur-md bg-card/90 border-border shadow-lg supports-[backdrop-filter]:bg-card/75 p-6 ${className}`}
+      className={`relative flex flex-col min-h-[360px] rounded-2xl border overflow-hidden backdrop-blur-md bg-card/90 border-border shadow-lg supports-[backdrop-filter]:bg-card/75 p-6 ${className}`}
     >
       {/* 卡片标题 */}
       <div className="flex items-center gap-2 mb-2">
@@ -122,9 +122,11 @@ export default function SkillRadarCard({ skills, evaluation, className = '' }: S
         <h3 className="text-xl font-semibold text-foreground">我的技能</h3>
       </div>
 
-      {/* 雷达图主体（撑满剩余空间，不留白） */}
-      <div className="flex-1 min-h-0">
-        <ResponsiveContainer width="100%" height="100%">
+      {/* 雷达图主体（撑满剩余空间，不留白）
+          min-h 是高度链的兜底：卡片在移动端/单列网格里没有外部拉伸高度时，
+          flex-1 仍需要一个非零高度，ResponsiveContainer 才能量出画布尺寸。 */}
+      <div className="flex-1 min-h-[300px]">
+        <ResponsiveContainer width="100%" height="100%" minHeight={300}>
           <RadarChart cx="50%" cy="50%" outerRadius="72%" data={chartData}>
             {/* 背景网格 - 虚线多边形层次 */}
             <PolarGrid

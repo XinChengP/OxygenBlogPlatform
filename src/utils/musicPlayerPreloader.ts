@@ -130,8 +130,8 @@ class MusicPlayerPreloader {
   /** 当前播放索引 */
   private currentIndex: number = -1;
 
-  /** 当前播放模式 */
-  private playMode: PlayMode = 'list';
+  /** 当前播放模式（默认随机播放，与管理器保持一致） */
+  private playMode: PlayMode = 'random';
 
   /** 是否已设置管理器事件监听 */
   private managerListenersSetup = false;
@@ -178,7 +178,7 @@ class MusicPlayerPreloader {
    * @param currentIndex - 当前播放索引
    * @param playMode - 播放模式
    */
-  setupPlaylist(playlist: MusicResource[], currentIndex: number = 0, playMode: PlayMode = 'list'): void {
+  setupPlaylist(playlist: MusicResource[], currentIndex: number = 0, playMode: PlayMode = 'random'): void {
     this.updatePlaylist(playlist, currentIndex, playMode);
 
     // 设置管理器事件监听
@@ -197,7 +197,7 @@ class MusicPlayerPreloader {
    * @param currentIndex - 当前播放索引
    * @param playMode - 播放模式
    */
-  updatePlaylist(playlist: MusicResource[], currentIndex: number = 0, playMode: PlayMode = 'list'): void {
+  updatePlaylist(playlist: MusicResource[], currentIndex: number = 0, playMode: PlayMode = 'random'): void {
     this.playlist = playlist;
     this.currentIndex = currentIndex;
     this.playMode = playMode;
@@ -755,7 +755,7 @@ class MusicPlayerPreloader {
     // 重置状态
     this.playlist = [];
     this.currentIndex = -1;
-    this.playMode = 'list';
+    this.playMode = 'random';
     this.lastPreloadedIndex = -1;
   }
 

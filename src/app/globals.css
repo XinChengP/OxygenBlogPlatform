@@ -715,8 +715,11 @@ html.music-player-active {
   transition: none !important;
 }
 
-/* 页面加载时的淡入效果 - 排除音乐播放器 */
-html:not(.music-player-active) body {
+/* 页面加载时的淡入效果
+   只在首次加载播放一次：不要把这条规则和 music-player-active 绑定。
+   否则切歌/暂停时移除该类会让选择器重新匹配，body 动画从 opacity 0.8 重播，
+   整页透出白色画布，表现为白屏闪烁。 */
+body {
   animation: pageFadeIn 0.2s ease-out;
 }
 

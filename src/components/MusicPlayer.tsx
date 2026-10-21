@@ -173,8 +173,8 @@ const MusicPlayerComponent = function MusicPlayer({
   /** 是否正在加载播放器（用于显示加载状态提示） */
   const [isLoading, setIsLoading] = useState(true);
 
-  /** 当前播放模式 */
-  const [playMode, setPlayMode] = useState<PlayMode>('list');
+  /** 当前播放模式（默认随机播放，与管理器保持一致） */
+  const [playMode, setPlayMode] = useState<PlayMode>('random');
 
   /** 是否正在播放 */
   const [isPlaying, setIsPlaying] = useState(false);

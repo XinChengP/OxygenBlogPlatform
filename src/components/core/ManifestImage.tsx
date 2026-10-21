@@ -14,6 +14,11 @@ interface ManifestImageProps
    * 用于告诉浏览器实际占位宽度，让它避免下载过大的档位
    */
   sizes: string;
+  /**
+   * 固定使用清单中指定宽度的变体，不再参与 srcset 选档。
+   * 用于「页面门面」类图片：希望无论视口/DPR 如何都稳定使用同一档。
+   */
+  fixedVariantWidth?: number;
 }
 
 /**
@@ -30,15 +35,27 @@ interface ManifestImageProps
 export default function ManifestImage({
   src,
   sizes,
+  fixedVariantWidth,
   alt = '',
   loading = 'lazy',
   decoding = 'async',
   ...rest
 }: ManifestImageProps) {
   const entry = getResponsiveImageEntry(typeof src === 'string' ? src : null);
-  const srcSet = buildResponsiveSrcSet(entry);
-  const processedSrc =
-    typeof src === 'string' && !src.startsWith('http') && !src.startsWith('data:')
+  /*
+    固定档位模式：直接指向清单中该宽度的变体，不输出 srcset。
+    这样浏览器不会再按 sizes/DPR 重新选档，切换/重挂载时也不会换图。
+    指定档位缺失时退回该图最大的一档，至少比原图小。
+  */
+  const fixedVariant =
+    fixedVariantWidth && entry
+      ? entry.variants.find(variant => variant.width === fixedVariantWidth) ??
+        entry.variants[entry.variants.length - 1]
+      : null;
+  const srcSet = fixedVariant ? undefined : buildResponsiveSrcSet(entry);
+  const processedSrc = fixedVariant
+    ? getAssetPath(fixedVariant.path)
+    : typeof src === 'string' && !src.startsWith('http') && !src.startsWith('data:')
       ? getAssetPath(src)
       : src;
 
@@ -47,8 +64,8 @@ export default function ManifestImage({
       src={processedSrc}
       srcSet={srcSet}
       sizes={srcSet ? sizes : undefined}
-      width={entry?.width}
-      height={entry?.height}
+      width={fixedVariant?.width ?? entry?.width}
+      height={fixedVariant?.height ?? entry?.height}
       alt={alt}
       loading={loading}
       decoding={decoding}

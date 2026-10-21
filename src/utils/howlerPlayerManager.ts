@@ -187,8 +187,8 @@ class HowlerPlayerManager {
   /** 当前播放索引 */
   private currentIndex = 0;
 
-  /** 当前播放模式 */
-  private playMode: PlayMode = 'list';
+  /** 当前播放模式（默认随机播放） */
+  private playMode: PlayMode = 'random';
 
   /** 当前 Howl 音频实例 */
   private howl: Howl | null = null;

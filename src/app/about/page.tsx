@@ -598,10 +598,13 @@ function AnimeCard({ animeList }: { animeList: AnimeConfig[] }) {
               className={`snap-start w-full h-full relative overflow-hidden ${anime.link ? 'cursor-pointer' : ''}`}
             >
               {/* 番剧封面：原实现直接引用原图（最大 3.6MB/张，7 张同容器同时触发），
-                  换成构建期 640/1280 WebP 变体，滚到本区域时下载量降一个数量级 */}
+                  换成构建期 WebP 变体，滚到本区域时下载量降一个数量级。
+                  这里的 sizes 必须按实际显示宽度填写：该容器是右列 16:9 的整宽卡片
+                  （桌面约 830px），原先写 320px 会让浏览器只选 640 档，
+                  把 960/1080 宽的原图降采样后再放大，肉眼就是糊的。 */}
               <ManifestImage
                 src={anime.coverImage}
-                sizes="(max-width: 640px) 80vw, 320px"
+                sizes="(max-width: 1024px) 100vw, 830px"
                 alt={anime.name}
                 className="absolute w-full h-full object-cover"
                 style={{
@@ -704,10 +707,14 @@ function GameLibraryAccordionPanel({
         whileHover={{ scale: 1.08 }}
         transition={{ duration: 0.6, ease: 'easeOut' }}
       >
-        {/* 游戏封面：同样改为响应式变体（9 张原图合计约 4.3MB，现多为几十 KB） */}
+        {/* 游戏封面：同样改为响应式变体（9 张原图合计约 4.3MB，现多为几十 KB）。
+            这里必须固定按展开后的宽度选档，不能随 isActive 改成 224px：
+            sizes 一变，浏览器就会重新选一个更小的变体并重新解码，
+            展开/收起瞬间会出现明显的闪图。统一用 672px 后，
+            收起状态虽然多下载一点，但切换时 currentSrc 不变。 */}
         <ManifestImage
           src={game.coverImage}
-          sizes="(max-width: 768px) 100vw, 480px"
+          sizes="(max-width: 1024px) 60vw, 672px"
           alt={game.name}
           className="absolute left-0 w-full object-cover"
           style={{
@@ -974,9 +981,13 @@ function HorizontalAccordionPanel({
           >
             {/* 封面图片容器 - 添加悬停缩放 */}
             <motion.div className="absolute inset-0 overflow-hidden" whileHover={{ scale: 1.06 }}>
+              {/* 顶部三张「关于」封面是页面门面：固定按 1080 档选图，
+                  不跟随面板宽度落到 640。收起/展开时 sizes 不变，
+                  也不会因为切换而重新选档。 */}
               <ManifestImage
                 src={section.coverImage}
-                sizes="(max-width: 768px) 100vw, 480px"
+                sizes="1080px"
+                fixedVariantWidth={1080}
                 alt={section.title}
                 className="absolute left-0 w-full object-cover transition-transform duration-700 ease-out"
                 style={{
@@ -1740,9 +1751,12 @@ export default function AboutPage() {
 
                 {/* 技能雷达 + 旅行足迹 - 桌面端左右并排，移动端上下堆叠 */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* 技能雷达卡片（左半） */}
-                  <DeferredMount minHeight={360}>
-                    <SkillRadarCard skills={skillList} evaluation={skillEvaluation} />
+                  {/* 技能雷达卡片（左半）
+                      h-full 必须同时给包装层和卡片：DeferredMount 的 div 是网格项，
+                      不把高度继续传给卡片时，卡片内的 flex-1 图表区会塌成 0，
+                      雷达图就只剩标题、看不见图形。 */}
+                  <DeferredMount minHeight={360} className="h-full">
+                    <SkillRadarCard skills={skillList} evaluation={skillEvaluation} className="h-full" />
                   </DeferredMount>
 
                   {/* 旅行足迹卡片（右半） */}
