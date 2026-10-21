@@ -33,11 +33,56 @@ interface SearchIndexEntry {
 }
 
 /**
+ * 常见 HTML 命名实体解码表
+ *
+ * 正文里用 &emsp; / &nbsp; 之类做排版空格的写法很常见，
+ * 只剥标签不解码的话，搜索摘要会把这些实体原样显示出来。
+ * 空格类实体统一解码为普通空格，随后由空白归并逻辑清理。
+ */
+const NAMED_ENTITIES: Record<string, string> = {
+  nbsp: ' ',
+  emsp: ' ',
+  ensp: ' ',
+  thinsp: ' ',
+  amp: '&',
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  apos: "'",
+  ldquo: '“',
+  rdquo: '”',
+  lsquo: '‘',
+  rsquo: '’',
+  hellip: '…',
+  mdash: '—',
+  ndash: '–',
+  middot: '·',
+};
+
+/**
+ * 解码单个 HTML 实体（命名实体或十进制/十六进制数字实体）
+ * 未识别的命名实体保持原样，避免误伤普通文本中的 & 符号
+ */
+function decodeHtmlEntity(entity: string): string {
+  const numeric = /^&#(?:x([0-9a-f]+)|(\d+));$/i.exec(entity);
+  if (numeric) {
+    const codePoint = Number.parseInt(numeric[1] ?? numeric[2], numeric[1] ? 16 : 10);
+    if (Number.isFinite(codePoint) && codePoint > 0 && codePoint <= 0x10ffff) {
+      return String.fromCodePoint(codePoint);
+    }
+    return '';
+  }
+
+  const name = entity.slice(1, -1).toLowerCase();
+  return NAMED_ENTITIES[name] ?? entity;
+}
+
+/**
  * 去除 Markdown 语法，提取可供全文检索的纯文本
  *
  * 处理策略：保留代码块内部的代码文字（它们也是可检索内容），
  * 仅剥离围栏标记与语言标识；其余常见语法（标题、强调、链接、图片、
- * 行内代码、引用、列表标记、分隔线、HTML 标签）一律清理为可读文本。
+ * 行内代码、引用、列表标记、分隔线、HTML 标签、HTML 实体）一律清理为可读文本。
  *
  * @param markdown - frontmatter 之后的 Markdown 原文
  * @returns 清理后的纯文本（未截断）
@@ -71,6 +116,8 @@ function stripMarkdownSyntax(markdown: string): string {
     .replace(/^\s*([-*_]\s*){3,}$/gm, '')
     // HTML 标签（B站嵌入、视频等增强语法残留）
     .replace(/<[^>]+>/g, ' ')
+    // HTML 实体（&emsp;、&nbsp; 等）：解码后再由下方空白归并清理
+    .replace(/&(?:#x[0-9a-f]+|#\d+|[a-z][a-z0-9]*);/gi, decodeHtmlEntity)
     // 合并多余空白，避免索引中大量无意义空白
     .replace(/\n{2,}/g, '\n')
     .replace(/[ \t]{2,}/g, ' ')

@@ -124,10 +124,13 @@ function buildContentSnippet(
   const firstHit = sortedIndices[0][0];
   const start = Math.max(0, firstHit - SNIPPET_RADIUS);
   const end = Math.min(content.length, firstHit + SNIPPET_RADIUS);
-  const text = `${start > 0 ? '…' : ''}${content.slice(start, end)}${end < content.length ? '…' : ''}`;
+  const prefix = start > 0 ? '…' : '';
+  const text = `${prefix}${content.slice(start, end)}${end < content.length ? '…' : ''}`;
 
   // 平移命中区间到片段内部，供高亮渲染
-  const offset = start + (start > 0 ? 1 : 0);
+  // 前缀省略号也占 1 个字符，偏移量为 start - prefix.length（不是 start + 1，
+  // 方向反了会让高亮整体左移 2 个字符）
+  const offset = start - prefix.length;
   const shifted = sortedIndices
     .map(([s, e]) => [s - offset, e - offset] as RangeTuple)
     .filter(([s, e]) => e >= 0 && s < text.length);

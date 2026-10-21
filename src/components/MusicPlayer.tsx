@@ -1093,8 +1093,12 @@ const MusicPlayerComponent = function MusicPlayer({
                       decoding="async"
                       draggable={false}
                       onError={() => setCoverError(true)}
-                      className={`w-full h-full object-cover ${isPlaying ? 'animate-spin motion-reduce:animate-none' : ''}`}
-                      style={{ animationDuration: '8s' }}
+                      className="w-full h-full object-cover animate-spin motion-reduce:animate-none"
+                      style={{
+                        animationDuration: '8s',
+                        // 暂停时冻结在当前角度，而不是移除 animation 导致封面瞬间回正
+                        animationPlayState: isPlaying ? 'running' : 'paused',
+                      }}
                     />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-[#66ccff]/30 to-[#0099cc]/30 flex items-center justify-center">
@@ -1103,16 +1107,6 @@ const MusicPlayerComponent = function MusicPlayer({
                       </svg>
                     </div>
                   )}
-                  {/* 播放状态指示器 */}
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 hover:opacity-100 transition-opacity">
-                    <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
-                      {isPlaying ? (
-                        <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
-                      ) : (
-                        <path d="M8 5v14l11-7z" />
-                      )}
-                    </svg>
-                  </div>
                 </div>
 
                 {/* 歌曲信息 */}
