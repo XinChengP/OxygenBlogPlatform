@@ -99,7 +99,9 @@ Cloudflare Workers Static Assets
 - 当前大小约 **116KB**，`generatedAt=2026-10-18`，`count=732`
 - 缓存：`Cache-Control: public, max-age=120`（2 分钟）
 - CORS：`Access-Control-Allow-Origin: *`
-- 当前字段（2026-10-20 19:30 起）：`path, size, width, height, thumb, large`（732/732 完整）
+- 当前字段（2026-10-21 起）：`path, size, width, height, hash, thumb, large?, animated?`
+  - 动图（GIF/APNG/动态 WebP）的 `thumb` 指向 `-anim.webp` 动态 WebP，网格保留动画；
+  - 动图不生成 `large`，灯箱的 `large` 回退到原始 GIF/APNG，动画不会丢失。
 
 ---
 
@@ -175,6 +177,7 @@ thumbnail(R2 640) → src(R2 原图) → fallbackSrc(jsDelivr 原图)
 |---|---|
 | 只有 `thumb`，没有 `large` | 网格正常；灯箱先显示 thumb，再加载原图 |
 | `thumb` + `large` | 网格 thumb；灯箱先 thumb，再加载 `large`（推荐） |
+| 动图 `thumb`（`-anim.webp`），无 `large` | 网格播放动态 WebP；灯箱回退原始 GIF/APNG，继续播放 |
 | 缺少 `thumb`，原图 >512KB | 网格显示“暂无可用缩略图”（不会拉原图） |
 | 缺少 `thumb`，原图 ≤512KB | 网格直接使用原图 |
 | manifest 请求失败 | 使用构建期快照；手动刷新显示错误提示 |

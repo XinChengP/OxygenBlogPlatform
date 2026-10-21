@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { categories } from '@/setting/blogSetting';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 import { getAssetPath } from '@/utils/assetUtils';
+import ManifestImage from '@/components/core/ManifestImage';
 import { Calendar, ArrowRight, BookOpen, Pin, Tag } from 'lucide-react';
 import live2dMessageManager, { Live2DMessageHelper } from '@/utils/live2dMessageManager';
 import PageHeader from '@/components/ui/PageHeader';
@@ -236,7 +237,15 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
                       {post.coverImage ? (
                         <div className="relative h-48 sm:h-56 overflow-hidden">
                           <motion.div className="absolute inset-0" whileHover={{ scale: 1.05 }} transition={{ duration: 0.4 }}>
-                            <img src={post.coverImage} alt={post.title} className="w-full h-full object-cover" width={400} height={225} loading="lazy" decoding="async" />
+                            {/* 封面走响应式变体（GIF 封面也会换成动图 WebP，2.4MB→约 480KB） */}
+                            <ManifestImage
+                              src={post.coverImage}
+                              sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 400px"
+                              alt={post.title}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                              decoding="async"
+                            />
                           </motion.div>
                           <motion.div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0" whileHover={{ opacity: 1 }} transition={{ duration: 0.4 }} />
                           <div className="absolute top-3 left-3 flex items-center gap-2">

@@ -72,11 +72,14 @@ wrangler deploy。`worker/assets/_headers` 随骨架部署；图床仓库另有
 
 ## 画廊侧约定
 
-- 清单接口：`GET /manifest.json` → `{ generatedAt, count, images: [{ path, size, width, height, hash, thumb, large? }] }`
+- 清单接口：`GET /manifest.json` → `{ generatedAt, count, images: [{ path, size, width, height, hash, thumb, large?, animated? }] }`
   - `thumb` 为缩略图相对路径（如 `thumbs/LTYpicture/xx/001-<hash>.webp`），缺失时前端自动回退原图
+  - 多帧源（GIF/APNG/动态 WebP）的 `thumb` 是**动态 WebP**，文件名带 `-anim`（如 `001-<hash>-anim.webp`），网格里保留动画
   - `large` 为可选高清预览图（如 `large/LTYpicture/xx/001-<hash>.webp`），灯箱优先使用；缺失时回退原图
+  - 动图源不生成 `large`，灯箱直接回退原始 GIF/APNG，避免再生成一份体积不可控的动态大图；`animated: true` 便于排查
   - **变体文件名包含源图内容哈希**：图库管理器重排/去重导致同一序号换图时，thumb/large 会自动换 URL，
     不会出现“网格还是旧图、灯箱已是新图”的错位，也不会命中 7 天 CDN 缓存
+  - 动图缩略图使用独立文件名，旧的静态首帧缩略图会被构建脚本作为孤儿清理
 - 图片 URL：`GET /{path}`，path 同 GitHub 仓库相对路径（`LTYpicture/...`）
 - 缩略图 URL：`GET /{thumb}`
 - 高清预览图 URL：`GET /{large}`

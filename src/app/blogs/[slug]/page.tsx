@@ -3,6 +3,7 @@ import path from 'path';
 import matter from 'gray-matter';
 import ClientBlogDetail from '@/app/blogs/[slug]/ClientBlogDetail';
 import ServerBlogMarkdown from '@/components/blogs/ServerBlogMarkdown';
+import RouteResourceHints from '@/components/RouteResourceHints';
 import 'highlight.js/styles/github-dark.css';
 import { formatBlogDate, calculateReadingTime } from '@/utils';
 import { getSortedRelatedPosts, type RelatedPost } from '@/utils/relatedPostsUtils';
@@ -522,6 +523,8 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
 
   return (
     <>
+      {/* 详情页评论区使用 Twikoo（组件内部懒加载脚本），仅在这里提前建连 */}
+      <RouteResourceHints origins={[process.env.NEXT_PUBLIC_TWIKOO_ENV_ID]} />
       {/* JSON-LD 结构化数据：帮助搜索引擎理解文章与面包屑层级（详情见下方构建函数） */}
       <script
         type="application/ld+json"

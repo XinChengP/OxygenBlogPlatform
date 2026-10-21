@@ -36,6 +36,7 @@ import { Cover } from '@/components/ui/cover';
 import { EvervaultCard, Icon } from '@/components/ui/evervault-card';
 import OptimizedIcon from '@/components/core/OptimizedIcon';
 import OptimizedImage from '@/components/core/OptimizedImage';
+import ManifestImage from '@/components/core/ManifestImage';
 import PageHeader from '@/components/ui/PageHeader';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 import { getAssetPath } from '@/utils/assetUtils';
@@ -596,8 +597,11 @@ function AnimeCard({ animeList }: { animeList: AnimeConfig[] }) {
               key={anime.id}
               className={`snap-start w-full h-full relative overflow-hidden ${anime.link ? 'cursor-pointer' : ''}`}
             >
-              <img
+              {/* 番剧封面：原实现直接引用原图（最大 3.6MB/张，7 张同容器同时触发），
+                  换成构建期 640/1280 WebP 变体，滚到本区域时下载量降一个数量级 */}
+              <ManifestImage
                 src={anime.coverImage}
+                sizes="(max-width: 640px) 80vw, 320px"
                 alt={anime.name}
                 className="absolute w-full h-full object-cover"
                 style={{
@@ -700,8 +704,10 @@ function GameLibraryAccordionPanel({
         whileHover={{ scale: 1.08 }}
         transition={{ duration: 0.6, ease: 'easeOut' }}
       >
-        <img
-          src={getAssetPath(game.coverImage)}
+        {/* 游戏封面：同样改为响应式变体（9 张原图合计约 4.3MB，现多为几十 KB） */}
+        <ManifestImage
+          src={game.coverImage}
+          sizes="(max-width: 768px) 100vw, 480px"
           alt={game.name}
           className="absolute left-0 w-full object-cover"
           style={{
@@ -968,8 +974,9 @@ function HorizontalAccordionPanel({
           >
             {/* 封面图片容器 - 添加悬停缩放 */}
             <motion.div className="absolute inset-0 overflow-hidden" whileHover={{ scale: 1.06 }}>
-              <img
-                src={getAssetPath(section.coverImage)}
+              <ManifestImage
+                src={section.coverImage}
+                sizes="(max-width: 768px) 100vw, 480px"
                 alt={section.title}
                 className="absolute left-0 w-full object-cover transition-transform duration-700 ease-out"
                 style={{
@@ -1618,14 +1625,12 @@ export default function AboutPage() {
                                 </p>
                               </div>
                               <div className="h-28 w-28 shrink-0 rounded-xl overflow-hidden shadow-md order-1 sm:order-2">
-                                <OptimizedImage
+                                {/* 112px 小缩略图：原来仍拉取 0.5MB 级原图，改用 640 档变体 */}
+                                <ManifestImage
                                   src={game.coverImage}
+                                  sizes="112px"
                                   alt={game.name}
-                                  width={112}
-                                  height={112}
-                                  className="w-full h-full"
-                                  objectFit="cover"
-                                  borderRadius="0.75rem"
+                                  className="w-full h-full object-cover rounded-xl"
                                   loading="lazy"
                                 />
                               </div>
@@ -1680,14 +1685,12 @@ export default function AboutPage() {
                                 </p>
                               </div>
                               <div className="h-28 w-28 shrink-0 rounded-xl overflow-hidden shadow-md order-1 sm:order-2">
-                                <OptimizedImage
+                                {/* 112px 小缩略图：同样改用 640 档变体，避免拉取原图 */}
+                                <ManifestImage
                                   src={game.coverImage}
+                                  sizes="112px"
                                   alt={game.name}
-                                  width={112}
-                                  height={112}
-                                  className="w-full h-full"
-                                  objectFit="cover"
-                                  borderRadius="0.75rem"
+                                  className="w-full h-full object-cover rounded-xl"
                                   loading="lazy"
                                 />
                               </div>

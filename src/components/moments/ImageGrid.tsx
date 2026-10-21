@@ -1,10 +1,17 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { getResponsiveImageEntry } from '@/utils/blogResponsiveImage';
+import { buildResponsiveSrcSet } from '@/utils/responsiveImage';
 
 interface ImageGridProps {
   images: string[];
   className?: string;
+}
+
+/** 网格缩略图 srcset：清单中无条目（外链/扫描缺失）时返回 undefined */
+function thumbnailSrcSetOf(src: string): string | undefined {
+  return buildResponsiveSrcSet(getResponsiveImageEntry(src));
 }
 
 export default function ImageGrid({ images, className = '' }: ImageGridProps) {
@@ -173,8 +180,13 @@ export default function ImageGrid({ images, className = '' }: ImageGridProps) {
                 }}
                 style={{ cursor: 'pointer' }}
               >
+                {/* 九宫格缩略图：原实现直接引用 1MB 级原图，
+                    改用构建期变体（GIF 缩略图为动图 WebP），
+                    点开查看器时仍加载原图以保证清晰度 */}
                 <img
                   src={image}
+                  srcSet={thumbnailSrcSetOf(image)}
+                  sizes="(max-width: 640px) 31vw, 224px"
                   alt={`图片 ${actualIndex + 1}`}
                   className={`w-full h-full object-cover transition-all duration-300 ${
                     isActive ? 'scale-105 brightness-105' : 'group-hover:scale-105'

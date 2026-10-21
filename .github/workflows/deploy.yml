@@ -118,3 +118,22 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Checkout (for purge script)
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (for purge script)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Purge Cloudflare HTML cache
+        continue-on-error: true
+        env:
+          # 未配置这两个 secret 时脚本会静默跳过，不影响部署本身。
+          # 创建方式见 docs/cloudflare-optimization.md「部署后自动刷新缓存」
+          CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          # 部署完成后从线上读取最新 sitemap，拿到全站 HTML 页面清单
+          SITEMAP_URL: https://blog.xinchengp.cn/sitemap.xml
+        run: node scripts/purge-cloudflare-html.mjs

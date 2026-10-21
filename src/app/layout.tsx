@@ -14,11 +14,9 @@ import ExternalLinkGuard from "@/components/security/ExternalLinkGuard";
 import Live2DDynamicLoader from "@/components/Live2DDynamicLoader";
 import MusicPlayerController from "@/components/MusicPlayerController";
 import LazySearchDialog from "@/components/LazySearchDialog";
-import { enableBackground, backgroundImage } from "@/setting/WebSetting";
+import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
 import { getAssetPath } from "@/utils/assetUtils";
 import { generateCSPString, productionCSP, developmentCSP } from "@/utils/cspConfig";
-import backgroundImageManifest from "@/data/backgroundImageManifest.json";
-import { buildResponsiveSrcSet } from "@/utils/responsiveImage";
 
 /**
  * 站点基础URL配置
@@ -213,14 +211,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const backgroundSource = backgroundImage
-    ? `/${backgroundImage.replace(/^\/+/, '')}`
-    : '';
-  const backgroundSrcSet =
-    enableBackground && backgroundImage && backgroundImageManifest.source === backgroundSource
-      ? buildResponsiveSrcSet(backgroundImageManifest)
-      : undefined;
-
   return (
     <html lang="zh-CN" data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
@@ -255,47 +245,27 @@ export default function RootLayout({
           )}
         />
 
-        {process.env.NEXT_PUBLIC_TWIKOO_ENV_ID && (
-          <link
-            rel="preconnect"
-            href={process.env.NEXT_PUBLIC_TWIKOO_ENV_ID}
-            crossOrigin="anonymous"
-          />
-        )}
-        <link rel="preconnect" href="https://api.github.com" crossOrigin="anonymous" />
-        {/* 画廊图床：首屏缩略图都来自这里，提前建连可少一次 TLS 握手等待 */}
-        <link rel="preconnect" href="https://img.xinchengp.cn" />
-        <link rel="dns-prefetch" href="https://img.xinchengp.cn" />
+        {/*
+          第三方资源连接提示按页面下发，不在全局 head 挂载：
+          原先每个页面都会对 twikoo / api.github.com / img.xinchengp.cn
+          提前建连（DNS + TLS 握手），即使页面根本不用它们。
+          现在由实际用到的页面通过 src/components/RouteResourceHints.tsx 按需输出。
+        */}
         {/*
           注：原 Google Fonts 手写字体（Ma Shan Zheng）加载链路已整体移除——
           字体在其目标网络环境下无法从 fonts.gstatic.com 下载（92 个分片 0 成功），
           全站也从未有 CSS 规则引用它，属于纯无效请求。
         */}
 
-        {/* DNS预解析 - 加速第三方资源加载 */}
-        {process.env.NEXT_PUBLIC_TWIKOO_ENV_ID && (
-          <link rel="dns-prefetch" href={process.env.NEXT_PUBLIC_TWIKOO_ENV_ID} />
-        )}
-
         {/* RSS订阅自动发现 - 让浏览器和RSS阅读器能够发现博客订阅 */}
         <link rel="alternate" type="application/rss+xml" title="歆橙的博客 RSS" href={`${BASE_URL}/rss.xml`} />
 
-        {/* 背景图片预加载
-            背景图在静态 HTML 中以 <img srcset> 输出，这里声明候选集，
-            浏览器可提前按视口/DPR 选中合适档位，避免手机下载 460KB 原图。
-            仅在背景功能开启且配置了图片时输出，避免无效请求。 */}
-        {enableBackground && backgroundImage && (
-          <link
-            rel="preload"
-            as="image"
-            href={getAssetPath(`/${backgroundImage}`)}
-            imageSrcSet={backgroundSrcSet}
-            imageSizes="100vw"
-            fetchPriority="high"
-          />
-        )}
-
-
+        {/*
+          背景图 preload 不再手动输出：
+          - React 19 会依据 <img fetchPriority="high" srcSet> 自动提升探测并下发 preload，
+            原先这里的手写 link 与之重复（首页 HTML 中出现了两条相同 preload）；
+          - 非首页由 BackgroundLayer 把 fetchPriority 降为 low，不与文章首图/标题抢带宽。
+        */}
 
         {/* 字体预加载 - 使用font-display: swap避免FOIT */}
         <style dangerouslySetInnerHTML={{__html:`
@@ -389,8 +359,33 @@ export default function RootLayout({
           }}
         />
 
-        {/* 主题初始化脚本 - 外部文件减少 HTML 体积（须同步执行以避免主题闪烁） */}
-        <script src={getAssetPath('/js/theme-init.js')} />
+        {/*
+          主题初始化脚本 - 内联执行以避免主题闪烁。
+
+          原实现是外链 /js/theme-init.js：它是全 head 唯一的同步外链脚本，
+          任何页面首帧渲染都要先等一次完整 RTT 才能继续解析，
+          高延迟网络下把整个页面的首屏时间直接后移一个 RTT。
+          脚本本体只有约 700 字节，内联的成本远小于一次 RTT。
+          内容必须与 public/js/theme-init.js 保持一致（两者同步修改）。
+        */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var theme = localStorage.getItem('theme') || 'system';
+                  var systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                  var resolvedTheme = theme === 'system' ? systemTheme : theme;
+                  if (resolvedTheme === 'dark') {
+                    document.documentElement.classList.add('dark');
+                  } else {
+                    document.documentElement.classList.remove('dark');
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
 
         {/* 动态标题脚本 - 非关键功能，defer 延迟执行不阻塞解析 */}
         <script src={getAssetPath('/js/dynamic-title.js')} defer />
@@ -442,6 +437,8 @@ export default function RootLayout({
         </SecurityProvider>
         {/* 51la 网站统计 - 用于追踪访客数据 */}
         <Analytics />
+        {/* Service Worker 注册（仅生产环境启用，开发模式不生效） */}
+        <ServiceWorkerRegistrar />
         {/* Live2D 看板娘 - 放在 layout 中保持跨页面挂载 */}
         <Live2DDynamicLoader />
         {/* 音乐播放器 - 放在 layout 中保持跨页面挂载 */}

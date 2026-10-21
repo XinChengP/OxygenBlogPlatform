@@ -53,10 +53,16 @@ export default function BlogArticleImage({ src, alt, node, ...props }: MarkdownI
   if (typeof processedSrc === 'string' && isVideoUrl(processedSrc)) {
     return (
       <>
+        {/*
+          preload="none"：站内个别视频单文件达 48MB，mobile 数据网络下
+          即使 metadata 也可能拉取几百 KB；完全不预加载，用户点击播放后再下载，
+          代价是点击后稍晚出现首帧画面，换取页面加载与流量可控。
+        */}
         <video
           src={processedSrc}
           controls
-          preload="metadata"
+          preload="none"
+          playsInline
           className="rounded-xl shadow-lg mx-auto h-auto my-4 max-w-full block"
         >
           您的浏览器不支持视频播放，请

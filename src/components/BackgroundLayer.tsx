@@ -40,6 +40,14 @@ const BackgroundLayer = () => {
   const objectFit: React.CSSProperties['objectFit'] =
     String(backgroundMode) === 'contain' ? 'contain' : 'cover';
 
+  /*
+    首页把背景图标记为高优先级，React 会据此自动下发 preload，
+    它是首页首屏的主体视觉、也是 LCP 候选；
+    其余页面降为 low，高延迟网络下不再与文章首图、标题文字抢带宽，
+    浏览器依然会提前按 sizes/srcset 选中合适档位。
+  */
+  const isHome = pathname === '/';
+
   return (
     <div
       aria-hidden="true"
@@ -56,7 +64,7 @@ const BackgroundLayer = () => {
         srcSet={responsiveSrcSet}
         sizes="100vw"
         alt=""
-        fetchPriority="high"
+        fetchPriority={isHome ? 'high' : 'low'}
         decoding="async"
         className="absolute inset-0 w-full h-full"
         style={{ objectFit, objectPosition: 'center center' }}

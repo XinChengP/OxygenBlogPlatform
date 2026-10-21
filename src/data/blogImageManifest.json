@@ -872,6 +872,12 @@
       "height": 602,
       "variants": []
     },
+    "/Blogabout/blogs-crash-diary/23.gif": {
+      "hash": "0dd90c21",
+      "width": 155,
+      "height": 155,
+      "variants": []
+    },
     "/Blogabout/blogs-crash-diary/3.jpg": {
       "hash": "77a829fc",
       "width": 48,
@@ -1004,6 +1010,12 @@
       "height": 640,
       "variants": []
     },
+    "/Blogabout/blogs-crash-diary/sllh.gif": {
+      "hash": "38166a38",
+      "width": 588,
+      "height": 102,
+      "variants": []
+    },
     "/Blogabout/blogs-crash-diary/touxiang1.jpg": {
       "hash": "7a2c133d",
       "width": 500,
@@ -1052,6 +1064,12 @@
       "height": 640,
       "variants": []
     },
+    "/Blogabout/blogs-crash-diary/zhenlou.gif": {
+      "hash": "776bf7e8",
+      "width": 300,
+      "height": 197,
+      "variants": []
+    },
     "/Blogabout/blogs-crash-diary/zhenlou.jpg": {
       "hash": "371535cc",
       "width": 427,
@@ -1063,6 +1081,28 @@
       "width": 478,
       "height": 570,
       "variants": []
+    },
+    "/Blogabout/fadian/cover.gif": {
+      "hash": "7f3dc8c7",
+      "width": 2048,
+      "height": 2048,
+      "variants": [
+        {
+          "width": 640,
+          "height": 640,
+          "path": "/_responsive/Blogabout/fadian/cover-640-7f3dc8c7.webp"
+        },
+        {
+          "width": 1280,
+          "height": 1280,
+          "path": "/_responsive/Blogabout/fadian/cover-1280-7f3dc8c7.webp"
+        },
+        {
+          "width": 1920,
+          "height": 1920,
+          "path": "/_responsive/Blogabout/fadian/cover-1920-7f3dc8c7.webp"
+        }
+      ]
     },
     "/Blogabout/fischer-robot-experience/1.jpg": {
       "hash": "2809c42c",
@@ -2323,6 +2363,836 @@
           "width": 1920,
           "height": 1192,
           "path": "/_responsive/Blogabout/weimingming-docx/cover-1920-9b23c262.webp"
+        }
+      ]
+    },
+    "/LTY_Picture/2.jpeg": {
+      "hash": "e8e7e0c9",
+      "width": 2000,
+      "height": 1125,
+      "variants": [
+        {
+          "width": 640,
+          "height": 360,
+          "path": "/_responsive/LTY_Picture/2-640-e8e7e0c9.webp"
+        },
+        {
+          "width": 1280,
+          "height": 720,
+          "path": "/_responsive/LTY_Picture/2-1280-e8e7e0c9.webp"
+        },
+        {
+          "width": 1920,
+          "height": 1080,
+          "path": "/_responsive/LTY_Picture/2-1920-e8e7e0c9.webp"
+        }
+      ]
+    },
+    "/LTY_Picture/3.png": {
+      "hash": "a420763d",
+      "width": 1920,
+      "height": 1352,
+      "variants": [
+        {
+          "width": 640,
+          "height": 451,
+          "path": "/_responsive/LTY_Picture/3-640-a420763d.webp"
+        },
+        {
+          "width": 1280,
+          "height": 901,
+          "path": "/_responsive/LTY_Picture/3-1280-a420763d.webp"
+        }
+      ]
+    },
+    "/LTY_Picture/4.png": {
+      "hash": "c8f411eb",
+      "width": 1920,
+      "height": 1080,
+      "variants": [
+        {
+          "width": 640,
+          "height": 360,
+          "path": "/_responsive/LTY_Picture/4-640-c8f411eb.webp"
+        },
+        {
+          "width": 1280,
+          "height": 720,
+          "path": "/_responsive/LTY_Picture/4-1280-c8f411eb.webp"
+        }
+      ]
+    },
+    "/LTY_Picture/光与影.png": {
+      "hash": "536d73b2",
+      "width": 2844,
+      "height": 1600,
+      "variants": [
+        {
+          "width": 640,
+          "height": 360,
+          "path": "/_responsive/LTY_Picture/光与影-640-536d73b2.webp"
+        },
+        {
+          "width": 1280,
+          "height": 720,
+          "path": "/_responsive/LTY_Picture/光与影-1280-536d73b2.webp"
+        },
+        {
+          "width": 1920,
+          "height": 1080,
+          "path": "/_responsive/LTY_Picture/光与影-1920-536d73b2.webp"
+        }
+      ]
+    },
+    "/LTY_Picture/别害怕了.jpg": {
+      "hash": "4eb49f0a",
+      "width": 1920,
+      "height": 1080,
+      "variants": [
+        {
+          "width": 640,
+          "height": 360,
+          "path": "/_responsive/LTY_Picture/别害怕了-640-4eb49f0a.webp"
+        },
+        {
+          "width": 1280,
+          "height": 720,
+          "path": "/_responsive/LTY_Picture/别害怕了-1280-4eb49f0a.webp"
+        }
+      ]
+    },
+    "/LTY_Picture/勾指起誓.jpg": {
+      "hash": "d72df413",
+      "width": 6912,
+      "height": 3888,
+      "variants": [
+        {
+          "width": 640,
+          "height": 360,
+          "path": "/_responsive/LTY_Picture/勾指起誓-640-d72df413.webp"
+        },
+        {
+          "width": 1280,
+          "height": 720,
+          "path": "/_responsive/LTY_Picture/勾指起誓-1280-d72df413.webp"
+        },
+        {
+          "width": 1920,
+          "height": 1080,
+          "path": "/_responsive/LTY_Picture/勾指起誓-1920-d72df413.webp"
+        }
+      ]
+    },
+    "/LTY_Picture/北望去.jpg": {
+      "hash": "e326cbe5",
+      "width": 7680,
+      "height": 4320,
+      "variants": [
+        {
+          "width": 640,
+          "height": 360,
+          "path": "/_responsive/LTY_Picture/北望去-640-e326cbe5.webp"
+        },
+        {
+          "width": 1280,
+          "height": 720,
+          "path": "/_responsive/LTY_Picture/北望去-1280-e326cbe5.webp"
+        },
+        {
+          "width": 1920,
+          "height": 1080,
+          "path": "/_responsive/LTY_Picture/北望去-1920-e326cbe5.webp"
+        }
+      ]
+    },
+    "/LTY_Picture/南风.png": {
+      "hash": "6815daa0",
+      "width": 4535,
+      "height": 2551,
+      "variants": [
+        {
+          "width": 640,
+          "height": 360,
+          "path": "/_responsive/LTY_Picture/南风-640-6815daa0.webp"
+        },
+        {
+          "width": 1280,
+          "height": 720,
+          "path": "/_responsive/LTY_Picture/南风-1280-6815daa0.webp"
+        },
+        {
+          "width": 1920,
+          "height": 1080,
+          "path": "/_responsive/LTY_Picture/南风-1920-6815daa0.webp"
+        }
+      ]
+    },
+    "/LTY_Picture/成都场.png": {
+      "hash": "4b89f272",
+      "width": 4320,
+      "height": 2430,
+      "variants": [
+        {
+          "width": 640,
+          "height": 360,
+          "path": "/_responsive/LTY_Picture/成都场-640-4b89f272.webp"
+        },
+        {
+          "width": 1280,
+          "height": 720,
+          "path": "/_responsive/LTY_Picture/成都场-1280-4b89f272.webp"
+        },
+        {
+          "width": 1920,
+          "height": 1080,
+          "path": "/_responsive/LTY_Picture/成都场-1920-4b89f272.webp"
+        }
+      ]
+    },
+    "/LTY_Picture/星球卑.jpg": {
+      "hash": "0949bee9",
+      "width": 1920,
+      "height": 1080,
+      "variants": [
+        {
+          "width": 640,
+          "height": 360,
+          "path": "/_responsive/LTY_Picture/星球卑-640-0949bee9.webp"
+        },
+        {
+          "width": 1280,
+          "height": 720,
+          "path": "/_responsive/LTY_Picture/星球卑-1280-0949bee9.webp"
+        }
+      ]
+    },
+    "/LTY_Picture/权御天下2025.png": {
+      "hash": "cc4c4348",
+      "width": 1921,
+      "height": 1080,
+      "variants": [
+        {
+          "width": 640,
+          "height": 360,
+          "path": "/_responsive/LTY_Picture/权御天下2025-640-cc4c4348.webp"
+        },
+        {
+          "width": 1280,
+          "height": 720,
+          "path": "/_responsive/LTY_Picture/权御天下2025-1280-cc4c4348.webp"
+        },
+        {
+          "width": 1920,
+          "height": 1079,
+          "path": "/_responsive/LTY_Picture/权御天下2025-1920-cc4c4348.webp"
+        }
+      ]
+    },
+    "/LTY_Picture/枯柴.png": {
+      "hash": "baf8115d",
+      "width": 1927,
+      "height": 1084,
+      "variants": [
+        {
+          "width": 640,
+          "height": 360,
+          "path": "/_responsive/LTY_Picture/枯柴-640-baf8115d.webp"
+        },
+        {
+          "width": 1280,
+          "height": 720,
+          "path": "/_responsive/LTY_Picture/枯柴-1280-baf8115d.webp"
+        },
+        {
+          "width": 1920,
+          "height": 1080,
+          "path": "/_responsive/LTY_Picture/枯柴-1920-baf8115d.webp"
+        }
+      ]
+    },
+    "/LTY_Picture/流光light me up.jpg": {
+      "hash": "f97ae19f",
+      "width": 1920,
+      "height": 1080,
+      "variants": [
+        {
+          "width": 640,
+          "height": 360,
+          "path": "/_responsive/LTY_Picture/流光light me up-640-f97ae19f.webp"
+        },
+        {
+          "width": 1280,
+          "height": 720,
+          "path": "/_responsive/LTY_Picture/流光light me up-1280-f97ae19f.webp"
+        }
+      ]
+    },
+    "/Momentsabout/1E8BE4F651523E868B19A46946DE9724_1780825588168.jpg": {
+      "hash": "a8dbfdf3",
+      "width": 1092,
+      "height": 1080,
+      "variants": [
+        {
+          "width": 640,
+          "height": 633,
+          "path": "/_responsive/Momentsabout/1E8BE4F651523E868B19A46946DE9724_1780825588168-640-a8dbfdf3.webp"
+        }
+      ]
+    },
+    "/Momentsabout/74b84d4b4ec7899c2bc0b1497307010d5f97fb7c_1780851132387.jpg": {
+      "hash": "74b84d4b",
+      "width": 1919,
+      "height": 1080,
+      "variants": [
+        {
+          "width": 640,
+          "height": 360,
+          "path": "/_responsive/Momentsabout/74b84d4b4ec7899c2bc0b1497307010d5f97fb7c_1780851132387-640-74b84d4b.webp"
+        },
+        {
+          "width": 1280,
+          "height": 720,
+          "path": "/_responsive/Momentsabout/74b84d4b4ec7899c2bc0b1497307010d5f97fb7c_1780851132387-1280-74b84d4b.webp"
+        }
+      ]
+    },
+    "/Momentsabout/811573a8a309a317ddab8532e2dc3c1c_1792340684609.jpg": {
+      "hash": "6c41d832",
+      "width": 1264,
+      "height": 3448,
+      "variants": [
+        {
+          "width": 640,
+          "height": 1746,
+          "path": "/_responsive/Momentsabout/811573a8a309a317ddab8532e2dc3c1c_1792340684609-640-6c41d832.webp"
+        }
+      ]
+    },
+    "/Momentsabout/8ae142df-8980-453c-b508-4401bb2e3a86_1781714135546.png": {
+      "hash": "9e352cf7",
+      "width": 1080,
+      "height": 812,
+      "variants": [
+        {
+          "width": 640,
+          "height": 481,
+          "path": "/_responsive/Momentsabout/8ae142df-8980-453c-b508-4401bb2e3a86_1781714135546-640-9e352cf7.webp"
+        }
+      ]
+    },
+    "/Momentsabout/E66FF5537B7C7A2FC8712446BFFB1F6E_1791614597826.jpg": {
+      "hash": "b09af995",
+      "width": 1920,
+      "height": 887,
+      "variants": [
+        {
+          "width": 640,
+          "height": 296,
+          "path": "/_responsive/Momentsabout/E66FF5537B7C7A2FC8712446BFFB1F6E_1791614597826-640-b09af995.webp"
+        },
+        {
+          "width": 1280,
+          "height": 591,
+          "path": "/_responsive/Momentsabout/E66FF5537B7C7A2FC8712446BFFB1F6E_1791614597826-1280-b09af995.webp"
+        }
+      ]
+    },
+    "/Momentsabout/haoye.gif": {
+      "hash": "86754a14",
+      "width": 480,
+      "height": 480,
+      "variants": []
+    },
+    "/Momentsabout/image-1772378163845-az5hvq.gif": {
+      "hash": "83447b19",
+      "width": 640,
+      "height": 360,
+      "variants": []
+    },
+    "/Momentsabout/image-1772378164003-9lhpm6.jpg": {
+      "hash": "a401d68a",
+      "width": 1636,
+      "height": 1159,
+      "variants": [
+        {
+          "width": 640,
+          "height": 453,
+          "path": "/_responsive/Momentsabout/image-1772378164003-9lhpm6-640-a401d68a.webp"
+        },
+        {
+          "width": 1280,
+          "height": 907,
+          "path": "/_responsive/Momentsabout/image-1772378164003-9lhpm6-1280-a401d68a.webp"
+        }
+      ]
+    },
+    "/Momentsabout/image-1772378164162-7h4l40.jpg": {
+      "hash": "92022b1c",
+      "width": 1440,
+      "height": 1920,
+      "variants": [
+        {
+          "width": 640,
+          "height": 853,
+          "path": "/_responsive/Momentsabout/image-1772378164162-7h4l40-640-92022b1c.webp"
+        },
+        {
+          "width": 1280,
+          "height": 1707,
+          "path": "/_responsive/Momentsabout/image-1772378164162-7h4l40-1280-92022b1c.webp"
+        }
+      ]
+    },
+    "/Momentsabout/image-1772985084939-iro58y.jpg": {
+      "hash": "891d477f",
+      "width": 1600,
+      "height": 1600,
+      "variants": [
+        {
+          "width": 640,
+          "height": 640,
+          "path": "/_responsive/Momentsabout/image-1772985084939-iro58y-640-891d477f.webp"
+        },
+        {
+          "width": 1280,
+          "height": 1280,
+          "path": "/_responsive/Momentsabout/image-1772985084939-iro58y-1280-891d477f.webp"
+        }
+      ]
+    },
+    "/Momentsabout/image-1773420276196-bm7mpr.jpg": {
+      "hash": "374dbb0d",
+      "width": 2160,
+      "height": 1080,
+      "variants": [
+        {
+          "width": 640,
+          "height": 320,
+          "path": "/_responsive/Momentsabout/image-1773420276196-bm7mpr-640-374dbb0d.webp"
+        },
+        {
+          "width": 1280,
+          "height": 640,
+          "path": "/_responsive/Momentsabout/image-1773420276196-bm7mpr-1280-374dbb0d.webp"
+        },
+        {
+          "width": 1920,
+          "height": 960,
+          "path": "/_responsive/Momentsabout/image-1773420276196-bm7mpr-1920-374dbb0d.webp"
+        }
+      ]
+    },
+    "/Momentsabout/image-1774192787818-wsntrk.jpg": {
+      "hash": "0484bd7e",
+      "width": 1080,
+      "height": 1080,
+      "variants": [
+        {
+          "width": 640,
+          "height": 640,
+          "path": "/_responsive/Momentsabout/image-1774192787818-wsntrk-640-0484bd7e.webp"
+        }
+      ]
+    },
+    "/Momentsabout/image-1774371136042-couxid.png": {
+      "hash": "ef1350ea",
+      "width": 1765,
+      "height": 2612,
+      "variants": [
+        {
+          "width": 640,
+          "height": 947,
+          "path": "/_responsive/Momentsabout/image-1774371136042-couxid-640-ef1350ea.webp"
+        },
+        {
+          "width": 1280,
+          "height": 1894,
+          "path": "/_responsive/Momentsabout/image-1774371136042-couxid-1280-ef1350ea.webp"
+        }
+      ]
+    },
+    "/Momentsabout/image-1775715971235-si2ku1.jpg": {
+      "hash": "22fcd6cf",
+      "width": 980,
+      "height": 1168,
+      "variants": [
+        {
+          "width": 640,
+          "height": 763,
+          "path": "/_responsive/Momentsabout/image-1775715971235-si2ku1-640-22fcd6cf.webp"
+        }
+      ]
+    },
+    "/Momentsabout/image-1775848674388-75g68b.gif": {
+      "hash": "c3ca625f",
+      "width": 770,
+      "height": 776,
+      "variants": [
+        {
+          "width": 640,
+          "height": 645,
+          "path": "/_responsive/Momentsabout/image-1775848674388-75g68b-640-c3ca625f.webp"
+        }
+      ]
+    },
+    "/Momentsabout/image-1776005224771-ks4is8.gif": {
+      "hash": "c00c5581",
+      "width": 162,
+      "height": 162,
+      "variants": []
+    },
+    "/Momentsabout/image-1776508758570-rcni8t.jpg": {
+      "hash": "b5988944",
+      "width": 360,
+      "height": 372,
+      "variants": []
+    },
+    "/Momentsabout/nmdai.gif": {
+      "hash": "e10858eb",
+      "width": 282,
+      "height": 282,
+      "variants": []
+    },
+    "/Momentsabout/shenmo_1782647723179.png": {
+      "hash": "13587027",
+      "width": 663,
+      "height": 672,
+      "variants": [
+        {
+          "width": 640,
+          "height": 649,
+          "path": "/_responsive/Momentsabout/shenmo_1782647723179-640-13587027.webp"
+        }
+      ]
+    },
+    "/Momentsabout/yinian_1782647723229.png": {
+      "hash": "87d63a0f",
+      "width": 660,
+      "height": 674,
+      "variants": [
+        {
+          "width": 640,
+          "height": 654,
+          "path": "/_responsive/Momentsabout/yinian_1782647723229-640-87d63a0f.webp"
+        }
+      ]
+    },
+    "/aboutme/1.jpg": {
+      "hash": "7b806de9",
+      "width": 1600,
+      "height": 900,
+      "variants": [
+        {
+          "width": 640,
+          "height": 360,
+          "path": "/_responsive/aboutme/1-640-7b806de9.webp"
+        },
+        {
+          "width": 1280,
+          "height": 720,
+          "path": "/_responsive/aboutme/1-1280-7b806de9.webp"
+        }
+      ]
+    },
+    "/aboutme/2.png": {
+      "hash": "ff1bc726",
+      "width": 1242,
+      "height": 1863,
+      "variants": [
+        {
+          "width": 640,
+          "height": 960,
+          "path": "/_responsive/aboutme/2-640-ff1bc726.webp"
+        }
+      ]
+    },
+    "/aboutme/3.jpeg": {
+      "hash": "dded58b8",
+      "width": 1947,
+      "height": 1494,
+      "variants": [
+        {
+          "width": 640,
+          "height": 491,
+          "path": "/_responsive/aboutme/3-640-dded58b8.webp"
+        },
+        {
+          "width": 1280,
+          "height": 982,
+          "path": "/_responsive/aboutme/3-1280-dded58b8.webp"
+        },
+        {
+          "width": 1920,
+          "height": 1473,
+          "path": "/_responsive/aboutme/3-1920-dded58b8.webp"
+        }
+      ]
+    },
+    "/aboutme/anime/Myqt.webp": {
+      "hash": "2207b59e",
+      "width": 1080,
+      "height": 1512,
+      "variants": [
+        {
+          "width": 640,
+          "height": 896,
+          "path": "/_responsive/aboutme/anime/Myqt-640-2207b59e.webp"
+        }
+      ]
+    },
+    "/aboutme/anime/mnzl.png": {
+      "hash": "0c590c7b",
+      "width": 1772,
+      "height": 1003,
+      "variants": [
+        {
+          "width": 640,
+          "height": 362,
+          "path": "/_responsive/aboutme/anime/mnzl-640-0c590c7b.webp"
+        },
+        {
+          "width": 1280,
+          "height": 725,
+          "path": "/_responsive/aboutme/anime/mnzl-1280-0c590c7b.webp"
+        }
+      ]
+    },
+    "/aboutme/anime/railgun.jpg": {
+      "hash": "05b0fc49",
+      "width": 960,
+      "height": 1280,
+      "variants": [
+        {
+          "width": 640,
+          "height": 853,
+          "path": "/_responsive/aboutme/anime/railgun-640-05b0fc49.webp"
+        }
+      ]
+    },
+    "/aboutme/anime/railgunS.jpg": {
+      "hash": "f6a773cc",
+      "width": 840,
+      "height": 1120,
+      "variants": [
+        {
+          "width": 640,
+          "height": 853,
+          "path": "/_responsive/aboutme/anime/railgunS-640-f6a773cc.webp"
+        }
+      ]
+    },
+    "/aboutme/anime/railgunT.jpg": {
+      "hash": "4a480f86",
+      "width": 960,
+      "height": 1280,
+      "variants": [
+        {
+          "width": 640,
+          "height": 853,
+          "path": "/_responsive/aboutme/anime/railgunT-640-4a480f86.webp"
+        }
+      ]
+    },
+    "/aboutme/anime/wosan-logic.jpg": {
+      "hash": "81d4c191",
+      "width": 960,
+      "height": 600,
+      "variants": [
+        {
+          "width": 640,
+          "height": 400,
+          "path": "/_responsive/aboutme/anime/wosan-logic-640-81d4c191.webp"
+        }
+      ]
+    },
+    "/aboutme/anime/zbhz.jpg": {
+      "hash": "5b654f12",
+      "width": 1146,
+      "height": 717,
+      "variants": [
+        {
+          "width": 640,
+          "height": 400,
+          "path": "/_responsive/aboutme/anime/zbhz-640-5b654f12.webp"
+        }
+      ]
+    },
+    "/aboutme/games/Biped.jpg": {
+      "hash": "0fcb6b58",
+      "width": 460,
+      "height": 215,
+      "variants": []
+    },
+    "/aboutme/games/Dancingline.jpg": {
+      "hash": "7e995a74",
+      "width": 1899,
+      "height": 1089,
+      "variants": [
+        {
+          "width": 640,
+          "height": 367,
+          "path": "/_responsive/aboutme/games/Dancingline-640-7e995a74.webp"
+        },
+        {
+          "width": 1280,
+          "height": 734,
+          "path": "/_responsive/aboutme/games/Dancingline-1280-7e995a74.webp"
+        }
+      ]
+    },
+    "/aboutme/games/Genshinimpact.jpg": {
+      "hash": "5fd52706",
+      "width": 3840,
+      "height": 2160,
+      "variants": [
+        {
+          "width": 640,
+          "height": 360,
+          "path": "/_responsive/aboutme/games/Genshinimpact-640-5fd52706.webp"
+        },
+        {
+          "width": 1280,
+          "height": 720,
+          "path": "/_responsive/aboutme/games/Genshinimpact-1280-5fd52706.webp"
+        },
+        {
+          "width": 1920,
+          "height": 1080,
+          "path": "/_responsive/aboutme/games/Genshinimpact-1920-5fd52706.webp"
+        }
+      ]
+    },
+    "/aboutme/games/Minecraft.jpg": {
+      "hash": "1fe42e2a",
+      "width": 2560,
+      "height": 1566,
+      "variants": [
+        {
+          "width": 640,
+          "height": 392,
+          "path": "/_responsive/aboutme/games/Minecraft-640-1fe42e2a.webp"
+        },
+        {
+          "width": 1280,
+          "height": 783,
+          "path": "/_responsive/aboutme/games/Minecraft-1280-1fe42e2a.webp"
+        },
+        {
+          "width": 1920,
+          "height": 1175,
+          "path": "/_responsive/aboutme/games/Minecraft-1920-1fe42e2a.webp"
+        }
+      ]
+    },
+    "/aboutme/games/Rocokingdom.jpg": {
+      "hash": "ac13d904",
+      "width": 2529,
+      "height": 1429,
+      "variants": [
+        {
+          "width": 640,
+          "height": 362,
+          "path": "/_responsive/aboutme/games/Rocokingdom-640-ac13d904.webp"
+        },
+        {
+          "width": 1280,
+          "height": 723,
+          "path": "/_responsive/aboutme/games/Rocokingdom-1280-ac13d904.webp"
+        },
+        {
+          "width": 1920,
+          "height": 1085,
+          "path": "/_responsive/aboutme/games/Rocokingdom-1920-ac13d904.webp"
+        }
+      ]
+    },
+    "/aboutme/games/UntitledGoose.jpg": {
+      "hash": "6be494a9",
+      "width": 1024,
+      "height": 700,
+      "variants": [
+        {
+          "width": 640,
+          "height": 438,
+          "path": "/_responsive/aboutme/games/UntitledGoose-640-6be494a9.webp"
+        }
+      ]
+    },
+    "/aboutme/games/deliverme.jpg": {
+      "hash": "4514e56a",
+      "width": 1888,
+      "height": 1062,
+      "variants": [
+        {
+          "width": 640,
+          "height": 360,
+          "path": "/_responsive/aboutme/games/deliverme-640-4514e56a.webp"
+        },
+        {
+          "width": 1280,
+          "height": 720,
+          "path": "/_responsive/aboutme/games/deliverme-1280-4514e56a.webp"
+        }
+      ]
+    },
+    "/aboutme/games/ittakestwo.jpg": {
+      "hash": "2eabfc11",
+      "width": 1440,
+      "height": 1080,
+      "variants": [
+        {
+          "width": 640,
+          "height": 480,
+          "path": "/_responsive/aboutme/games/ittakestwo-640-2eabfc11.webp"
+        },
+        {
+          "width": 1280,
+          "height": 960,
+          "path": "/_responsive/aboutme/games/ittakestwo-1280-2eabfc11.webp"
+        }
+      ]
+    },
+    "/aboutme/games/whmx.jpg": {
+      "hash": "b25f40ff",
+      "width": 4810,
+      "height": 2800,
+      "variants": [
+        {
+          "width": 640,
+          "height": 373,
+          "path": "/_responsive/aboutme/games/whmx-640-b25f40ff.webp"
+        },
+        {
+          "width": 1280,
+          "height": 745,
+          "path": "/_responsive/aboutme/games/whmx-1280-b25f40ff.webp"
+        },
+        {
+          "width": 1920,
+          "height": 1118,
+          "path": "/_responsive/aboutme/games/whmx-1920-b25f40ff.webp"
+        }
+      ]
+    },
+    "/aboutme/musiclistcover/gexingsifang.jpg": {
+      "hash": "4dc83eb9",
+      "width": 3000,
+      "height": 3000,
+      "variants": [
+        {
+          "width": 640,
+          "height": 640,
+          "path": "/_responsive/aboutme/musiclistcover/gexingsifang-640-4dc83eb9.webp"
+        },
+        {
+          "width": 1280,
+          "height": 1280,
+          "path": "/_responsive/aboutme/musiclistcover/gexingsifang-1280-4dc83eb9.webp"
+        },
+        {
+          "width": 1920,
+          "height": 1920,
+          "path": "/_responsive/aboutme/musiclistcover/gexingsifang-1920-4dc83eb9.webp"
         }
       ]
     }

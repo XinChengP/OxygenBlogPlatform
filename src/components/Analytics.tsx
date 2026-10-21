@@ -30,7 +30,29 @@ const LA_CONFIG = {
   SDK_URL: '//sdk.51.la/js-sdk-pro.min.js',
   /** 是否启用 hash 模式（GitHub Pages 静态部署建议启用） */
   HASH_MODE: true,
+  /**
+   * 是否上报真实用户性能指标（TTFB / LCP / DCL / Load）
+   * 用于定位「部分设备/部分省份访问慢」问题，不采集任何页面内容。
+   * 可通过环境变量关闭：NEXT_PUBLIC_DISABLE_PERF_TRACKING=true
+   */
+  TRACK_PERFORMANCE: String(process.env.NEXT_PUBLIC_DISABLE_PERF_TRACKING).toLowerCase() !== 'true',
 };
+
+/** 真实用户性能指标（页面维度，仅采集一次） */
+interface PerfMetrics {
+  /** 首字节时间（ms） */
+  ttfb?: number;
+  /** DOMContentLoaded 时间（ms） */
+  domInteractive?: number;
+  /** load 事件时间（ms） */
+  pageLoad?: number;
+  /** 最大内容绘制时间（ms，可能为空：用户过早切走） */
+  lcp?: number;
+  /** 有效网络类型（4g / 3g / slow-2g...） */
+  effectiveType?: string;
+  /** 是否省流量模式 */
+  saveData?: boolean;
+}
 
 /**
  * 检查 51la SDK 是否已加载并初始化
@@ -241,6 +263,75 @@ export default function Analytics(): React.ReactElement | null {
   // 使用 ref 确保初始化只执行一次
   const initializedRef = useRef(false);
 
+  // 真实用户性能指标：SDK 未就绪先采集，初始化完成后统一上报
+  const perfRef = useRef<PerfMetrics>({});
+  const perfReportedRef = useRef(false);
+
+  /**
+   * 采集真实用户性能指标
+   * - LCP 通过 PerformanceObserver 监听，用户首次交互后读取最后一条
+   * - 其余字段来自 Navigation Timing V2 与 Network Information API
+   * 只上报数字与网络类型，不包含页面内容；异常时静默失败。
+   */
+  useEffect(() => {
+    if (!LA_CONFIG.TRACK_PERFORMANCE) return;
+    if (typeof window === 'undefined') return;
+
+    let lcpValue: number | undefined;
+
+    if ('PerformanceObserver' in window) {
+      try {
+        const observer = new PerformanceObserver((list) => {
+          const entries = list.getEntries();
+          if (entries.length > 0) {
+            lcpValue = entries[entries.length - 1].startTime;
+          }
+        });
+        observer.observe({ type: 'largest-contentful-paint', buffered: true });
+        // LCP 在用户首次交互（或 load 后 8s）后即为最终值
+        const stop = () => {
+          try { observer.disconnect(); } catch { /* 已断开 */ }
+        };
+        window.addEventListener('pointerdown', stop, { once: true });
+        window.addEventListener('keydown', stop, { once: true });
+        window.setTimeout(stop, 8000);
+      } catch {
+        // 浏览器不支持该 entry type（如部分旧 WebView），跳过 LCP
+      }
+    }
+
+    const collect = () => {
+      try {
+        const nav = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
+        const conn = (navigator as Navigator & {
+          connection?: { effectiveType?: string; saveData?: boolean };
+        }).connection;
+
+        perfRef.current = {
+          ttfb: nav ? Math.round(nav.responseStart) : undefined,
+          domInteractive: nav ? Math.round(nav.domInteractive) : undefined,
+          pageLoad: nav ? Math.round(nav.loadEventEnd) : undefined,
+          lcp: lcpValue !== undefined ? Math.round(lcpValue) : undefined,
+          effectiveType: conn?.effectiveType,
+          saveData: conn?.saveData === true ? true : undefined,
+        };
+
+        if (!perfReportedRef.current && isLAReady()) {
+          perfReportedRef.current = true;
+          trackEvent('页面性能', { ...perfRef.current });
+        }
+      } catch {
+        // 性能上报失败不影响站点功能
+      }
+    };
+
+    if (document.readyState === 'complete') {
+      window.setTimeout(collect, 1500);
+    } else {
+      window.addEventListener('load', () => window.setTimeout(collect, 1500), { once: true });
+    }
+  }, []);
+
   /**
    * SDK 加载完成后的回调
    */
@@ -248,6 +339,15 @@ export default function Analytics(): React.ReactElement | null {
     if (!initializedRef.current) {
       initializedRef.current = true;
       initAnalytics();
+      // 指标可能先于 SDK 就绪，这里做一次补发
+      if (
+        LA_CONFIG.TRACK_PERFORMANCE &&
+        !perfReportedRef.current &&
+        Object.keys(perfRef.current).length > 0
+      ) {
+        perfReportedRef.current = true;
+        trackEvent('页面性能', { ...perfRef.current });
+      }
     }
   }, []);
 
@@ -269,11 +369,17 @@ export default function Analytics(): React.ReactElement | null {
     };
   }, []);
 
+  {/*
+    lazyOnload：统计脚本不再以 afterInteractive 抢占首屏资源。
+    原策略会让 React 在 <head> 生成 <link rel="preload" as="script">，
+    36KB 的第三方 SDK 与 LCP 关键资源竞争带宽；
+    lazyOnload 在页面 load 完成后再加载，不影响统计事件本身。
+  */}
   return (
     <Script
       id="LA_COLLECT"
       src={LA_CONFIG.SDK_URL}
-      strategy="afterInteractive"
+      strategy="lazyOnload"
       onLoad={handleScriptLoad}
       onError={handleScriptError}
       // 设置 charset 确保中文正确显示

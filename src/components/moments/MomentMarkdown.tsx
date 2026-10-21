@@ -8,6 +8,8 @@ import rehypeRaw from 'rehype-raw';
 import rehypeSanitize from 'rehype-sanitize';
 import { blogSanitizeSchema } from '@/components/blogs/sanitizeSchema';
 import { getAssetPath } from '@/utils/assetUtils';
+import { getResponsiveImageEntry } from '@/utils/blogResponsiveImage';
+import { buildResponsiveSrcSet } from '@/utils/responsiveImage';
 
 /**
  * 个人动态的构建期 Markdown 渲染器（服务端组件）
@@ -57,9 +59,17 @@ const momentsMarkdownComponents: React.ComponentProps<typeof ReactMarkdown>['com
   ),
   img: ({ src, alt, ...props }: React.ComponentPropsWithoutRef<'img'> & MarkdownExtraProps) => {
     const processedSrc = typeof src === 'string' ? (src ? getAssetPath(src) : src) : src;
+    // 正文图片复用构建期响应式清单（GIF 输出动图 WebP 变体），
+    // 清单缺失时（外链/SVG）退化为普通图片
+    const responsiveEntry = getResponsiveImageEntry(typeof src === 'string' ? src : null);
+    const responsiveSrcSet = buildResponsiveSrcSet(responsiveEntry);
     return (
       <img
         src={processedSrc}
+        srcSet={responsiveSrcSet}
+        sizes={responsiveSrcSet ? '(max-width: 640px) 100vw, 640px' : undefined}
+        width={responsiveEntry?.width}
+        height={responsiveEntry?.height}
         alt={alt || ''}
         className="max-w-full h-auto rounded-lg my-2"
         loading="lazy"

@@ -9,6 +9,7 @@ import { useTheme } from 'next-themes';
 import { motion } from 'framer-motion';
 import { MessageSquare } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
+import RouteResourceHints from '@/components/RouteResourceHints';
 // 静态引入：twikoo-theme.css 会被 Next 预加载，若只随 lazy 组件的异步 chunk
 // 加载，命中"preload 数秒内未使用"的浏览器警告。提到首屏 CSS 后警告消失。
 import '@/components/twikoo-theme.css';
@@ -90,6 +91,8 @@ export default function Guestbook() {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
+      {/* 留言板使用 Twikoo 后端，仅在此页提前建连 */}
+      <RouteResourceHints origins={[process.env.NEXT_PUBLIC_TWIKOO_ENV_ID]} />
       {/* 背景装饰元素 - 添加柔和的渐变背景 */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* 左上角装饰圆 */}

@@ -1,5 +1,6 @@
 import { getAllImages, getAllCategories } from '../../utils/galleryUtils';
 import GalleryClient from './GalleryClient';
+import RouteResourceHints from '@/components/RouteResourceHints';
 import type { Metadata } from 'next';
 
 /**
@@ -63,7 +64,13 @@ const GalleryPage = async () => {
     subCategories: c.subCategories?.map(s => s.name)
   })));
 
-  return <GalleryClient initialImages={images} initialCategories={categories} />;
+  return (
+    <>
+      {/* 画廊首屏缩略图全部来自图床 img.xinchengp.cn，仅本页提前建连 */}
+      <RouteResourceHints origins={['https://img.xinchengp.cn']} />
+      <GalleryClient initialImages={images} initialCategories={categories} />
+    </>
+  );
 };
 
 export default GalleryPage;
