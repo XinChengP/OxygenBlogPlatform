@@ -25,6 +25,7 @@ import { Live2DMessageHelper } from '@/utils/live2dMessageManager';
 import { getAssetPath } from '@/utils/assetUtils';
 // 全站层级令牌：成就说明弹窗的层级统一走这里
 import { Z_INDEX } from '@/utils/zIndex';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 /**
  * 成就说明分组数据（静态数据，与 achievementConfig 同源）
@@ -130,10 +131,10 @@ function ClientChangelogsPage({ changelogs, blogTimeStats, momentTimeStats }: Cl
     if (willExpand) loadChangelogHtml(id);
   };
 
-  // 刻意不使用 useBodyScrollLock：它会给 body 设置 overflow: hidden，
-  // 这会让右侧 lg:sticky 的统计栏失去粘性定位、回落到文档流原位；
-  // 当用户已滚动到页面中段时，该位置在视口之外，看起来就像卡片「消失」。
-  // 弹窗内容不长，且已有 Esc 与点击遮罩两种关闭方式，因此这里不锁定页面滚动。
+  // 弹窗打开时锁定页面滚动
+  // useBodyScrollLock 已改为「不改动布局、保存并还原滚动位置」的实现，
+  // 不会再让右侧 lg:sticky 统计栏失效，也不会在关闭后回到顶部
+  useBodyScrollLock(showAchievementGuide);
 
   // 页面加载时发送Live2D欢迎消息
   useEffect(() => {

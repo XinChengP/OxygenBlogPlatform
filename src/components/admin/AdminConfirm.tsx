@@ -4,6 +4,9 @@ import React, { useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/utils/cn';
 import AdminButton from './AdminButton';
+// 用全站统一的滚动锁替代直接设置 body overflow，
+// 避免破坏 sticky 侧栏与丢失滚动位置
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 /**
  * 确认对话框类型
@@ -140,17 +143,9 @@ const AdminConfirm: React.FC<AdminConfirmProps> = ({
 
   /**
    * 打开时禁止背景滚动
+   * 统一走 useBodyScrollLock：不改变布局、保留滚动位置
    */
-  useEffect(() => {
-    if (open) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [open]);
+  useBodyScrollLock(open);
 
   /**
    * 处理确认操作
