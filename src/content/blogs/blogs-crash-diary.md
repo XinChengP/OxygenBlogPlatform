@@ -202,7 +202,9 @@ coverImage: "/Blogabout/blogs-crash-diary/cover.jpg"
     <span>2楼&emsp;&emsp;</span>
 </div>
 
-`XinchengP:炮✌️出G，只为正E！`
+```
+XinchengP:炮✌️出G，只为正E！
+```
 
 ---
 
@@ -257,7 +259,9 @@ Allenwdk 回复 Eiheir：毁了a
     <span>4楼&emsp;&emsp;</span>
 </div>
 
-`XinchengP:盲生你发现了华点（手动滑稽）`
+```
+XinchengP:盲生你发现了华点（手动滑稽）
+```
 
 ---
 <br>
@@ -558,7 +562,9 @@ XinchengP 回复 123fjj：我不到啊
     <span>15楼&emsp;&emsp;</span>
 </div>
 
-`XinchengP：这辈子有了（`
+```
+XinchengP：这辈子有了（
+```
 
 ---
 
@@ -657,7 +663,9 @@ UNbearab1e(yjs爸爸)：yjs你先别急，我还要嘲笑你呢
 </div>
 
 
-`XinchengP：疜佽ㄚ𝕚錠（手动滑稽）`
+```
+XinchengP：疜佽ㄚ𝕚錠（手动滑稽）
+```
 
 ---
 
@@ -682,6 +690,8 @@ UNbearab1e(yjs爸爸)：yjs你先别急，我还要嘲笑你呢
     <span>19楼&emsp;&emsp;</span>
 </div>
 
-`XinchengP：hyw`
+```
+XinchengP：hyw
+```
 
 ---

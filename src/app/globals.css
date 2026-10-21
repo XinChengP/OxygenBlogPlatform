@@ -298,13 +298,21 @@ pre code {
 }
 
 /* 强制博客文章代码块内容区域透明，覆盖 react-syntax-highlighter 主题和 prose 默认背景 */
-/* 覆盖 react-markdown 默认生成的 pre 标签和 prose 默认样式 */
+/* 只作用于代码块；不能选中裸 code，否则行内代码的胶囊底色也会被一并抹掉 */
 .prose pre,
-.prose code,
-.prose pre code,
-.prose div code {
+.prose pre code {
   background-color: transparent !important;
   background: transparent !important;
+}
+
+/*
+  @tailwindcss/typography 默认用反引号包裹 code（::before/::after）来模拟行内代码。
+  本站行内代码用胶囊底色标识，反引号会以普通字符露在正文里，这里统一去掉。
+  围栏代码块内的 code 同样受益，避免首尾多出反引号。
+*/
+.prose code::before,
+.prose code::after {
+  content: none !important;
 }
 
 /* 直接覆盖 react-syntax-highlighter 生成的带 language-* 类名的元素 */

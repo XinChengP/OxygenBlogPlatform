@@ -621,11 +621,9 @@ export default function ClientBlogDetail({
               }
 
               /* 强制代码块内容区域透明，覆盖 react-syntax-highlighter 主题和 prose 默认背景 */
-              /* 使用 :global() 突破 styled-jsx 作用域限制，确保能匹配到动态生成的代码元素 */
+              /* 使用 :global() 突破 styled-jsx 作用域限制；只选 pre，避免行内 code 丢失胶囊底色 */
               .prose :global(pre),
-              .prose :global(code),
-              .prose :global(pre code),
-              .prose :global(div code) {
+              .prose :global(pre code) {
                 background-color: transparent !important;
                 background: transparent !important;
               }
