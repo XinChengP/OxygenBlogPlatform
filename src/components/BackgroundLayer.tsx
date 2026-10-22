@@ -10,6 +10,7 @@ import { getAssetPath } from '@/utils/assetUtils';
 import { usePathname } from 'next/navigation';
 import backgroundImageManifest from '@/data/backgroundImageManifest.json';
 import { buildResponsiveSrcSet } from '@/utils/responsiveImage';
+import { useResponsiveImageFallback } from '@/hooks/useResponsiveImageFallback';
 
 /**
  * 网站背景组件
@@ -24,16 +25,29 @@ import { buildResponsiveSrcSet } from '@/utils/responsiveImage';
 const BackgroundLayer = () => {
   const pathname = usePathname();
 
-  if (!enableBackground || !backgroundImage || pathname?.startsWith('/admin')) {
-    return null;
-  }
-
   const fullImagePath = getAssetPath(backgroundImage);
   const configuredSource = `/${backgroundImage.replace(/^\/+/, '')}`;
   const manifestIsCurrent = backgroundImageManifest.source === configuredSource;
   const responsiveSrcSet = manifestIsCurrent
     ? buildResponsiveSrcSet(backgroundImageManifest)
     : undefined;
+
+  /*
+    背景变体缺失时回退原图。
+    Hook 放在下面的条件 return 之前：后台页会提前 return null，
+    若 Hook 在其后调用，前台/后台切换会改变 Hook 调用顺序并触发 React 报错。
+  */
+  const {
+    srcSet: finalSrcSet,
+    sizes: finalSizes,
+    imgKey,
+    imgRef,
+    onError: handleImageError,
+  } = useResponsiveImageFallback(responsiveSrcSet, '100vw');
+
+  if (!enableBackground || !backgroundImage || pathname?.startsWith('/admin')) {
+    return null;
+  }
 
   // backgroundMode 在 WebSetting 中是字面量联合，直接比较会被 TS 判定为无重叠；
   // 用 String 保留未来改成 contain 时的运行期配置能力。
@@ -60,10 +74,14 @@ const BackgroundLayer = () => {
       }}
     >
       <img
+        // 背景变体全部 404 时（例如生成中断）重建元素并改用原图，避免整站空白背景
+        key={imgKey}
+        ref={imgRef}
         src={fullImagePath}
-        srcSet={responsiveSrcSet}
-        sizes="100vw"
+        srcSet={finalSrcSet}
+        sizes={finalSizes}
         alt=""
+        onError={handleImageError}
         fetchPriority={isHome ? 'high' : 'low'}
         decoding="async"
         className="absolute inset-0 w-full h-full"

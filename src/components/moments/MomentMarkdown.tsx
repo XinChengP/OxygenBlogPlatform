@@ -7,9 +7,7 @@ import rehypeHighlight from 'rehype-highlight';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize from 'rehype-sanitize';
 import { blogSanitizeSchema } from '@/components/blogs/sanitizeSchema';
-import { getAssetPath } from '@/utils/assetUtils';
-import { getResponsiveImageEntry } from '@/utils/blogResponsiveImage';
-import { buildResponsiveSrcSet } from '@/utils/responsiveImage';
+import ManifestImage from '@/components/core/ManifestImage';
 
 /**
  * 个人动态的构建期 Markdown 渲染器（服务端组件）
@@ -57,19 +55,18 @@ const momentsMarkdownComponents: React.ComponentProps<typeof ReactMarkdown>['com
       {children}
     </a>
   ),
-  img: ({ src, alt, ...props }: React.ComponentPropsWithoutRef<'img'> & MarkdownExtraProps) => {
-    const processedSrc = typeof src === 'string' ? (src ? getAssetPath(src) : src) : src;
-    // 正文图片复用构建期响应式清单（GIF 输出动图 WebP 变体），
-    // 清单缺失时（外链/SVG）退化为普通图片
-    const responsiveEntry = getResponsiveImageEntry(typeof src === 'string' ? src : null);
-    const responsiveSrcSet = buildResponsiveSrcSet(responsiveEntry);
+  img: ({ src, alt, node, ...props }: React.ComponentPropsWithoutRef<'img'> & MarkdownExtraProps) => {
+    /*
+      改用客户端组件 ManifestImage。
+      本文件是服务端组件，服务端渲染出的 <img> 无法绑定 onError，
+      而构建期变体缺失时需要靠 error 事件回退原图。
+      ManifestImage 内部同样会查响应式清单生成 srcset（GIF 输出动图 WebP），
+      清单无条目（外链/SVG）时退化为普通 <img>，与原行为一致。
+    */
     return (
-      <img
-        src={processedSrc}
-        srcSet={responsiveSrcSet}
-        sizes={responsiveSrcSet ? '(max-width: 640px) 100vw, 640px' : undefined}
-        width={responsiveEntry?.width}
-        height={responsiveEntry?.height}
+      <ManifestImage
+        src={typeof src === 'string' ? src : ''}
+        sizes="(max-width: 640px) 100vw, 640px"
         alt={alt || ''}
         className="max-w-full h-auto rounded-lg my-2"
         loading="lazy"

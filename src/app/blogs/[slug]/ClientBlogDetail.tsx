@@ -36,6 +36,7 @@ import {
   buildResponsiveSrcSet,
 } from '@/utils/responsiveImage';
 import { getResponsiveImageEntry } from '@/utils/blogResponsiveImage';
+import { useResponsiveImageFallback } from '@/hooks/useResponsiveImageFallback';
 
 // 动态导入大型组件，优化初始加载性能
 const LazyTableOfContents = lazy(() => import('../../../components/TableOfContents'));
@@ -139,6 +140,17 @@ export default function ClientBlogDetail({
   // 封面图同样走构建期变体清单，避免手机下载 4200px 原图
   const coverEntry = getResponsiveImageEntry(blog.coverImage);
   const coverSrcSet = buildResponsiveSrcSet(coverEntry);
+  /*
+    封面变体缺失时回退原图。
+    与其他 Hook 同层调用，且位于所有条件渲染之前，保证调用顺序稳定。
+  */
+  const {
+    srcSet: coverFinalSrcSet,
+    sizes: coverFinalSizes,
+    imgKey: coverImgKey,
+    imgRef: coverImgRef,
+    onError: handleCoverError,
+  } = useResponsiveImageFallback(coverSrcSet, '(max-width: 768px) 100vw, 896px');
   const [mounted, setMounted] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<PreviewImage | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -450,9 +462,13 @@ export default function ClientBlogDetail({
             {blog.coverImage && (
               <div className="mb-6 rounded-2xl overflow-hidden shadow-2xl">
                 <img
+                  // 变体失败后重建元素并丢弃 srcset，改用 src 原图
+                  key={coverImgKey}
+                  ref={coverImgRef}
                   src={blog.coverImage}
-                  srcSet={coverSrcSet}
-                  sizes="(max-width: 768px) 100vw, 896px"
+                  srcSet={coverFinalSrcSet}
+                  sizes={coverFinalSizes}
+                  onError={handleCoverError}
                   width={coverEntry?.width ?? 800}
                   height={coverEntry?.height ?? 384}
                   alt={blog.title}

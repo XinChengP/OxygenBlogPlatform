@@ -4,6 +4,7 @@ import React from 'react';
 import { getAssetPath } from '@/utils/assetUtils';
 import { getResponsiveImageEntry } from '@/utils/blogResponsiveImage';
 import { buildResponsiveSrcSet } from '@/utils/responsiveImage';
+import { useResponsiveImageFallback } from '@/hooks/useResponsiveImageFallback';
 
 interface ManifestImageProps
   extends Omit<React.ImgHTMLAttributes<HTMLImageElement>, 'src'> {
@@ -53,23 +54,44 @@ export default function ManifestImage({
         entry.variants[entry.variants.length - 1]
       : null;
   const srcSet = fixedVariant ? undefined : buildResponsiveSrcSet(entry);
-  const processedSrc = fixedVariant
-    ? getAssetPath(fixedVariant.path)
-    : typeof src === 'string' && !src.startsWith('http') && !src.startsWith('data:')
+  // 原图地址：站内路径补 basePath，外链/data 保持原样。变体 404 时回退到这里
+  const originalSrc =
+    typeof src === 'string' && !src.startsWith('http') && !src.startsWith('data:')
       ? getAssetPath(src)
       : src;
+  const processedSrc = fixedVariant ? getAssetPath(fixedVariant.path) : originalSrc;
+
+  /*
+    固定档位模式不输出 srcset，但 src 直接指向变体文件，同样可能 404，
+    因此把「存在变体引用」显式传给 hook（fixedVariant 或 srcSet 二者有其一）。
+  */
+  const {
+    failed,
+    srcSet: finalSrcSet,
+    sizes: finalSizes,
+    imgKey,
+    imgRef,
+    onError: handleImageError,
+  } = useResponsiveImageFallback(srcSet, srcSet ? sizes : undefined, Boolean(fixedVariant || srcSet));
 
   return (
     <img
-      src={processedSrc}
-      srcSet={srcSet}
-      sizes={srcSet ? sizes : undefined}
-      width={fixedVariant?.width ?? entry?.width}
-      height={fixedVariant?.height ?? entry?.height}
+      // 变体失败后 key 变化会重建元素，确保浏览器重新请求原图
+      key={imgKey}
+      ref={imgRef}
+      // 失败后改用原图；固定档位模式失败也回到原图，而不是继续指向缺失的变体
+      src={failed ? originalSrc : processedSrc}
+      srcSet={finalSrcSet}
+      sizes={finalSizes}
+      // 回退原图时宽高改用清单里的原图尺寸，避免沿用变体档位尺寸造成比例偏差
+      width={failed ? entry?.width : (fixedVariant?.width ?? entry?.width)}
+      height={failed ? entry?.height : (fixedVariant?.height ?? entry?.height)}
       alt={alt}
       loading={loading}
       decoding={decoding}
       {...rest}
+      // 放在 ...rest 之后：调用方透传的同名属性不会覆盖兜底逻辑
+      onError={handleImageError}
     />
   );
 }

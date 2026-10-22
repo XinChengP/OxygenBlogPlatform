@@ -18,14 +18,50 @@ export default function ImageGrid({ images, className = '' }: ImageGridProps) {
   const [viewerOpen, setViewerOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [carouselStartIndex, setCarouselStartIndex] = useState(0);
+  /*
+    记录缩略图变体加载失败的图片路径。
+    这里不能用 useResponsiveImageFallback：缩略图在 map 循环里渲染，
+    循环中不允许调用 Hook。改为按路径记录失败集合，效果等价。
+  */
+  const [failedThumbnails, setFailedThumbnails] = useState<Set<string>>(() => new Set());
+  // 缩略图元素引用表，用于水合后补检「水合前就已加载失败」的图片
+  const thumbnailRefs = useRef<Map<string, HTMLImageElement>>(new Map());
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [startIndex, setStartIndex] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
 
+  /*
+    水合后的失败补检：SSR 输出的 <img> 在解析 HTML 时就开始请求，
+    可能在水合绑定 onError 之前就已 404，事件会被错过。
+    complete 为 true 且 naturalWidth 为 0 即表示已结束但没拿到图像。
+  */
+  useEffect(() => {
+    const newlyFailed: string[] = [];
+    thumbnailRefs.current.forEach((img, src) => {
+      if (img.complete && img.naturalWidth === 0) newlyFailed.push(src);
+    });
+    if (newlyFailed.length === 0) return;
+    setFailedThumbnails((prev) => {
+      const next = new Set(prev);
+      newlyFailed.forEach((src) => next.add(src));
+      return next;
+    });
+  }, [images]);
+
   if (!images || images.length === 0) {
     return null;
   }
+
+  // 记录某张缩略图的变体加载失败；已记录过则返回同一 Set 引用，避免多余重渲染
+  const handleThumbnailError = (src: string) => {
+    setFailedThumbnails((prev) => {
+      if (prev.has(src)) return prev;
+      const next = new Set(prev);
+      next.add(src);
+      return next;
+    });
+  };
 
   const handleImageClick = (index: number) => {
     // 内嵌查看器逻辑：点击打开，再次点击同一张关闭
@@ -184,9 +220,17 @@ export default function ImageGrid({ images, className = '' }: ImageGridProps) {
                     改用构建期变体（GIF 缩略图为动图 WebP），
                     点开查看器时仍加载原图以保证清晰度 */}
                 <img
+                  // 变体缺失时重建元素并改用原图，避免整格空白
+                  key={failedThumbnails.has(image) ? 'original' : 'responsive'}
+                  ref={(el) => {
+                    // 记录元素引用供补检使用；卸载时移除，避免持有失效节点
+                    if (el) thumbnailRefs.current.set(image, el);
+                    else thumbnailRefs.current.delete(image);
+                  }}
                   src={image}
-                  srcSet={thumbnailSrcSetOf(image)}
-                  sizes="(max-width: 640px) 31vw, 224px"
+                  srcSet={failedThumbnails.has(image) ? undefined : thumbnailSrcSetOf(image)}
+                  sizes={failedThumbnails.has(image) ? undefined : '(max-width: 640px) 31vw, 224px'}
+                  onError={() => handleThumbnailError(image)}
                   alt={`图片 ${actualIndex + 1}`}
                   className={`w-full h-full object-cover transition-all duration-300 ${
                     isActive ? 'scale-105 brightness-105' : 'group-hover:scale-105'

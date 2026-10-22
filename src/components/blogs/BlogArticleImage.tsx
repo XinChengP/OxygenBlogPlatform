@@ -9,6 +9,7 @@ import {
   buildResponsiveSrcSet,
 } from '@/utils/responsiveImage';
 import { getResponsiveImageEntry } from '@/utils/blogResponsiveImage';
+import { useResponsiveImageFallback } from '@/hooks/useResponsiveImageFallback';
 
 /**
  * 博客正文图片（客户端交互件）
@@ -47,6 +48,19 @@ export default function BlogArticleImage({ src, alt, node, ...props }: MarkdownI
       ? '(max-width: 768px) 100vw, 896px'
       : '(max-width: 480px) 100vw, 400px'
     : undefined;
+
+  /*
+    变体缺失时的原图兜底。
+    必须放在下面的视频分支 return 之前：Hook 不允许在提前 return 之后调用，
+    否则同一组件在「图片/视频」两种渲染路径间切换时会触发 Hooks 顺序错误。
+  */
+  const {
+    srcSet: finalSrcSet,
+    sizes: finalSizes,
+    imgKey,
+    imgRef,
+    onError: handleImageError,
+  } = useResponsiveImageFallback(responsiveSrcSet, responsiveSizes);
 
   // 如果处理后的地址是视频文件，则使用 video 标签渲染
   // 视频不加入文章图片灯箱，也不支持点击放大
@@ -105,9 +119,12 @@ export default function BlogArticleImage({ src, alt, node, ...props }: MarkdownI
     // 使用 React.Fragment 避免添加额外元素，防止在 p 标签内嵌套块级元素
     <>
       <img
+        // 变体加载失败后 key 变化会重建元素，确保浏览器重新请求原图
+        key={imgKey}
+        ref={imgRef}
         src={processedSrc}
-        srcSet={responsiveSrcSet}
-        sizes={responsiveSizes}
+        srcSet={finalSrcSet}
+        sizes={finalSizes}
         width={responsiveEntry?.width}
         height={responsiveEntry?.height}
         alt={alt || '图片'}
@@ -133,6 +150,8 @@ export default function BlogArticleImage({ src, alt, node, ...props }: MarkdownI
           }
         }}
         {...props}
+        // 放在 ...props 之后：markdown 透传的同名属性不会覆盖兜底逻辑
+        onError={handleImageError}
       />
       {alt && (
         // 使用 em 标签显示图片描述，避免嵌套块级元素

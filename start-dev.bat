@@ -59,15 +59,23 @@ echo.
 start "Blog Dev Server" npm run dev
 
 echo Waiting for server to start...
-REM 新增/修改博客图片时，predev 会先生成响应式 WebP（约 40 秒），
-REM 因此等待上限放宽到 120 秒；图片无变化时 predev 只做哈希校验，通常 1 秒内完成。
-set MAX_WAIT=120
+REM 新增/修改图片时，predev 会全量重建 public/_responsive 下的 WebP 变体，
+REM 实测约 100 秒（218 张源图 / 487 个变体 / 47MB），机器负载高时更久；
+REM 图片无变化时 predev 只做哈希校验，通常 1 秒内完成。
+REM 等待上限设为 600 秒，避免把「正在生成图片」误判为启动失败，
+REM 用户关掉窗口会导致生成中断，留下残缺产物、页面大面积破图。
+set MAX_WAIT=600
 set WAIT_COUNT=0
 
 :WAIT_SERVER
 ping -n 2 127.0.0.1 >nul
 set /a WAIT_COUNT+=1
-echo Checking server... [%WAIT_COUNT%/%MAX_WAIT%]
+REM 前 150 次轮询更可能处在图片生成阶段，提示语单独区分，避免误以为卡死
+if !WAIT_COUNT! lss 150 (
+    echo 正在生成响应式图片并启动服务，请勿关闭窗口... [!WAIT_COUNT!/%MAX_WAIT%]
+) else (
+    echo Checking server... [!WAIT_COUNT!/%MAX_WAIT%]
+)
 
 powershell -Command "try { $r = Invoke-WebRequest -Uri 'http://localhost:7120' -TimeoutSec 2 -UseBasicParsing; exit 0 } catch { exit 1 }" >nul 2>&1
 
@@ -81,8 +89,11 @@ if !WAIT_COUNT! lss !MAX_WAIT! (
 )
 
 echo.
-echo Server failed to start within %MAX_WAIT% seconds
-echo Please check if port 7120 is already in use.
+echo 等待 %MAX_WAIT% 秒后开发服务器仍未就绪。
+echo 请不要直接关闭上面弹出的 "Blog Dev Server" 窗口：
+echo 图片生成可能仍在进行，强制关闭会留下残缺的 public/_responsive 产物，
+echo 导致页面大面积破图（此时需要重新执行 npm run generate:responsive 修复）。
+echo 请先查看该窗口的输出，确认是否真的报错；也请检查 7120 端口是否被占用。
 pause
 exit /b 1
 
