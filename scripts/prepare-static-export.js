@@ -18,6 +18,7 @@ const filesToReplace = [
   'githubActions.ts',
   'settingsActions.ts',
   'blogActions.ts',
+  'galleryManagerActions.ts',
 ];
 
 // 需要替换的子目录文件列表

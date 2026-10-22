@@ -200,6 +200,17 @@ export const EXTERNAL_SOURCES: ExternalSource[] = [
     directives: ['connect-src'],
   },
   {
+    /*
+      本机图床管理器（洛佬の美图，默认 http://127.0.0.1:3210）探活。
+      后台「图床管理」页会 fetch /api/health 判断服务是否启动，
+      未放行时请求会被 CSP 静默拦截，页面会一直显示「未启动」。
+      仅本机回环地址，不扩大对外暴露面。
+    */
+    origin: 'http://127.0.0.1:*',
+    desc: '本机图床管理器探活（洛佬の美图）',
+    directives: ['connect-src'],
+  },
+  {
     origin: 'ws://localhost:*',
     desc: '本地开发 WebSocket（热更新、Turbopack 通信）',
     directives: ['connect-src'],

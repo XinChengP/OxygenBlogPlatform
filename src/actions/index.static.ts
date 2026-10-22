@@ -94,6 +94,25 @@ export const getLocalGallerySubDirectories = async (_path?: string) => ({ succes
 export type DirectoryTree = { name: string; path: string; type: 'file' | 'directory'; children?: DirectoryTree[] };
 
 // ============================================
+// Gallery Manager Actions
+// ============================================
+export interface GalleryManagerProcessStatus {
+  available: boolean;
+  running: boolean;
+  pid: number | null;
+  port: number;
+}
+
+export const getGalleryManagerStatus = async (): Promise<GalleryManagerProcessStatus> => ({
+  available: false,
+  running: false,
+  pid: null,
+  port: 3210,
+});
+export const startGalleryManager = async () => ({ success: false, message: '静态导出模式不支持此功能' });
+export const stopGalleryManager = async () => ({ success: false, message: '静态导出模式不支持此功能' });
+
+// ============================================
 // Moment Actions
 // ============================================
 export const getMomentList = async (_page?: number, _pageSize?: number): Promise<{ success: boolean; message: string; data: Moment[]; pagination: { page: number; pageSize: number; total: number; totalPages: number } }> => ({ success: false, message: '静态导出模式不支持此功能', data: [], pagination: { page: 1, pageSize: 10, total: 0, totalPages: 0 } });

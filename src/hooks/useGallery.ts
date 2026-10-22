@@ -1,68 +1,32 @@
 'use client';
 
 /**
- * 图床管理 Hook
- * 用于管理本地和远程图床的图片资源
+ * 本地图床管理 Hook
+ *
+ * 【改造说明】
+ * 后台原先的「远程图床」依赖 GitHub Token 与 githubApi 服务，现已统一由
+ * 独立的本地图床管理器（洛佬の美图，http://127.0.0.1:3210）接管。
+ * 因此本 Hook 只保留本地图床（public 目录图片）的浏览、上传与删除能力，
+ * 不再包含任何 GitHub 远程逻辑，避免留下永不执行的死分支。
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { GalleryImage, ImageSource } from '@/types/gallery';
-import {
-  getDecryptedToken,
-  getAdminConfig,
-  formatFileSize,
-  generateImageFileName,
-  copyToClipboard,
-  clearStoredToken,
-} from '@/utils/adminUtils';
-import {
-  validateImageFile,
-  compressImage,
-  blobToBase64,
-  getImageDimensions,
-} from '@/utils/imageUtils';
-import {
-  getImagesFromRepo,
-  uploadImageToGitHub,
-  deleteImageFromGitHub,
-  getImageDownloadUrl,
-  getRepositoryInfo,
-  handleGitHubError,
-  GitHubConfig,
-} from '@/services/githubApi';
+import { useState, useEffect, useCallback } from 'react';
+import { GalleryImage } from '@/types/gallery';
+import { copyToClipboard } from '@/utils/adminUtils';
+import { validateImageFile } from '@/utils/imageUtils';
 import {
   getLocalGalleryImages,
   deleteLocalImage,
-  getLocalGalleryStats,
   uploadLocalImage,
-  getLocalGalleryDirectoryTree,
-  getLocalGallerySubDirectories,
-  DirectoryTree,
 } from '@/actions/galleryActions';
-
-/**
- * 图床配置接口
- */
-export interface GalleryConfig {
-  /** GitHub 仓库所有者 */
-  owner: string;
-  /** GitHub 仓库名称 */
-  repo: string;
-  /** GitHub 分支名称 */
-  branch: string;
-  /** 默认上传路径 */
-  defaultPath: string;
-}
 
 /**
  * Hook 选项接口
  */
 export interface UseGalleryOptions {
-  /** 图片来源：本地或远程 */
-  source: 'local' | 'remote';
-  /** 初始路径（可选） */
+  /** 初始扫描路径（可选，空字符串表示整个 public 目录） */
   path?: string;
-  /** 是否自动加载 */
+  /** 是否在挂载后自动加载 */
   autoLoad?: boolean;
 }
 
@@ -90,171 +54,46 @@ export interface UseGalleryReturn {
   loading: boolean;
   /** 错误信息 */
   error: string | null;
-  /** 上传图片 */
+  /** 上传单张图片 */
   uploadImage: (file: File, path?: string) => Promise<boolean>;
-  /** 批量上传图片 */
+  /** 批量上传图片（串行执行） */
   uploadImages: (files: File[], path?: string) => Promise<boolean>;
-  /** 删除图片 */
-  deleteImage: (path: string, sha?: string) => Promise<boolean>;
+  /** 删除单张图片 */
+  deleteImage: (path: string) => Promise<boolean>;
   /** 批量删除图片 */
-  deleteImages: (images: Array<{ path: string; sha?: string }>) => Promise<boolean>;
-  /** 刷新图片列表 */
+  deleteImages: (paths: string[]) => Promise<boolean>;
+  /** 重新扫描本地图片 */
   refresh: () => void;
-  /** 刷新配置状态 */
-  refreshConfig: () => void;
   /** 复制图片链接 */
   copyImageLink: (image: GalleryImage) => Promise<boolean>;
   /** 上传进度列表 */
   uploadProgress: UploadProgress[];
-  /** 是否已配置 */
-  isConfigured: boolean;
-  /** 图床配置 */
-  config: GalleryConfig | null;
-  /** 存储统计 */
-  storageStats: {
-    totalImages: number;
-    totalSize: string;
-    localCount: number;
-    remoteCount: number;
-  };
 }
 
 /**
- * 默认图床配置
- */
-const DEFAULT_GALLERY_CONFIG: GalleryConfig = {
-  owner: 'Eiheir',
-  repo: 'Luo_Tianyi_Image',
-  branch: 'main',
-  defaultPath: 'LTYpicture',
-};
-
-/**
- * 图床管理 Hook
- * 用于管理本地和远程图床的图片资源
- * 
+ * 本地图床管理 Hook
+ *
  * @param options - Hook 选项
- * @returns 图床管理功能和状态
- * 
+ * @returns 本地图床管理功能和状态
+ *
  * @example
  * ```tsx
  * const { images, loading, uploadImage, deleteImage, refresh } = useGallery({
- *   source: 'remote',
  *   autoLoad: true,
  * });
  * ```
  */
 export function useGallery(options: UseGalleryOptions): UseGalleryReturn {
-  const { source, path = '', autoLoad = true } = options;
+  const { path = '', autoLoad = true } = options;
 
   // 状态管理
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<UploadProgress[]>([]);
-  const [config, setConfig] = useState<GalleryConfig | null>(null);
-  const [isConfigured, setIsConfigured] = useState(false);
 
   /**
- * 刷新配置状态
- * 当用户在设置页面保存配置后调用此方法
- */
-  const refreshConfig = useCallback(() => {
-    try {
-      // 重新加载配置
-      const adminConfig = getAdminConfig();
-      
-      if (adminConfig && adminConfig.imageRepo) {
-        const [owner, repo] = adminConfig.imageRepo.split('/');
-        setConfig({
-          owner: owner || DEFAULT_GALLERY_CONFIG.owner,
-          repo: repo || DEFAULT_GALLERY_CONFIG.repo,
-          branch: adminConfig.githubBranch || DEFAULT_GALLERY_CONFIG.branch,
-          defaultPath: DEFAULT_GALLERY_CONFIG.defaultPath,
-        });
-      } else {
-        setConfig(DEFAULT_GALLERY_CONFIG);
-      }
-      
-      // 重新检查 Token
-      const token = getDecryptedToken();
-      setIsConfigured(!!token);
-    } catch (err) {
-        console.error('刷新图床配置失败:', err);
-        setConfig(DEFAULT_GALLERY_CONFIG);
-        setIsConfigured(false);
-      }
-    }, []);
-
-  /**
-   * 初始化配置
-   * 从本地存储加载图床配置
-   */
-  useEffect(() => {
-    const loadConfig = () => {
-      try {
-        // 尝试从本地存储获取配置
-        const adminConfig = getAdminConfig();
-        
-        if (adminConfig && adminConfig.imageRepo) {
-          // 解析 imageRepo 格式：owner/repo
-          const [owner, repo] = adminConfig.imageRepo.split('/');
-          setConfig({
-            owner: owner || DEFAULT_GALLERY_CONFIG.owner,
-            repo: repo || DEFAULT_GALLERY_CONFIG.repo,
-            branch: adminConfig.githubBranch || DEFAULT_GALLERY_CONFIG.branch,
-            defaultPath: DEFAULT_GALLERY_CONFIG.defaultPath,
-          });
-        } else {
-          // 使用默认配置
-          setConfig(DEFAULT_GALLERY_CONFIG);
-        }
-        
-        // 检查是否已配置 Token
-        const token = getDecryptedToken();
-        setIsConfigured(!!token);
-      } catch (err) {
-        console.error('加载图床配置失败:', err);
-        setConfig(DEFAULT_GALLERY_CONFIG);
-        setIsConfigured(false);
-      }
-    };
-
-    loadConfig();
-    
-    // 监听 storage 事件，当配置在其他页面更新时刷新
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'admin_token' || e.key === 'admin_config') {
-        loadConfig();
-      }
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, []);
-
-  /**
-   * 获取 GitHub 配置
-   */
-  const getGitHubConfig = useCallback((): GitHubConfig | null => {
-    const token = getDecryptedToken();
-    if (!token || !config) {
-      return null;
-    }
-
-    return {
-      owner: config.owner,
-      repo: config.repo,
-      branch: config.branch,
-      token,
-    };
-  }, [config]);
-
-  /**
-   * 加载图片列表
+   * 通过 Server Action 扫描 public 目录下的本地图片
    */
   const loadImages = useCallback(async () => {
     if (!autoLoad) return;
@@ -263,96 +102,40 @@ export function useGallery(options: UseGalleryOptions): UseGalleryReturn {
     setError(null);
 
     try {
-      if (source === 'remote') {
-        // 加载远程图片
-        const githubConfig = getGitHubConfig();
-        
-        if (!githubConfig) {
-          // 如果没有配置 Token，使用公开 API 获取图片列表
-          const imagesData = await getImagesFromRepo({
-            owner: config?.owner || DEFAULT_GALLERY_CONFIG.owner,
-            repo: config?.repo || DEFAULT_GALLERY_CONFIG.repo,
-            branch: config?.branch || DEFAULT_GALLERY_CONFIG.branch,
-            token: '', // 公开仓库不需要 Token
-          }, path);
-
-          interface GitHubImageItem {
-            sha?: string;
-            path: string;
-            name: string;
-          }
-
-          const galleryImages: GalleryImage[] = imagesData.map((item: GitHubImageItem) => ({
-            id: item.sha || item.path,
-            src: getImageDownloadUrl({
-              owner: config?.owner || DEFAULT_GALLERY_CONFIG.owner,
-              repo: config?.repo || DEFAULT_GALLERY_CONFIG.repo,
-              branch: config?.branch || DEFAULT_GALLERY_CONFIG.branch,
-              token: '',
-            }, item.path),
-            alt: item.name,
-            source: ImageSource.Remote,
-            category: path.split('/')[0] || '默认',
-            createdAt: new Date().toISOString(),
-          }));
-
-          setImages(galleryImages);
-        } else {
-          // 使用认证 API 获取图片列表
-          const imagesData = await getImagesFromRepo(githubConfig, path);
-
-          interface GitHubImageItem {
-            sha?: string;
-            path: string;
-            name: string;
-          }
-
-          const galleryImages: GalleryImage[] = imagesData.map((item: GitHubImageItem) => ({
-            id: item.sha || item.path,
-            src: getImageDownloadUrl(githubConfig, item.path),
-            alt: item.name,
-            source: ImageSource.Remote,
-            category: path.split('/')[0] || '默认',
-            createdAt: new Date().toISOString(),
-          }));
-
-          setImages(galleryImages);
-        }
-      } else {
-        // 本地图片通过 Server Action 获取
-        const localImages = await getLocalGalleryImages(path);
-        setImages(localImages);
-      }
+      const localImages = await getLocalGalleryImages(path);
+      setImages(localImages);
     } catch (err) {
+      // 本地读取失败时保留原始错误信息，便于定位目录权限等问题
       const errorMessage = err instanceof Error ? err.message : '加载图片失败';
-      setError(handleGitHubError(err) || errorMessage);
-      console.error('加载图片失败:', err);
+      setError(errorMessage);
+      console.error('加载本地图片失败:', err);
     } finally {
       setLoading(false);
     }
-  }, [source, path, autoLoad, config, getGitHubConfig]);
+  }, [path, autoLoad]);
 
   /**
-   * 组件挂载时自动加载
+   * 组件挂载或路径变化时自动加载
+   * 改造后不再等待 GitHub 配置初始化，直接扫描本地目录
    */
   useEffect(() => {
-    if (autoLoad && config) {
+    if (autoLoad) {
       loadImages();
     }
-  }, [autoLoad, config, loadImages]);
+  }, [autoLoad, loadImages]);
 
   /**
-   * 上传单个图片
+   * 上传单张图片到本地 public 目录
    */
   const uploadImage = useCallback(async (file: File, uploadPath?: string): Promise<boolean> => {
-    // 验证文件
+    // 复用统一的图片校验（格式、体积等）
     const validation = validateImageFile(file);
     if (!validation.valid) {
       setError(validation.error || '文件验证失败');
       return false;
     }
 
-    // 添加上传进度
+    // 先插入一条「上传中」进度项
     setUploadProgress(prev => [...prev, {
       fileName: file.name,
       progress: 0,
@@ -360,106 +143,51 @@ export function useGallery(options: UseGalleryOptions): UseGalleryReturn {
     }]);
 
     try {
-      if (source === 'local') {
-        // 本地上传
-        const formData = new FormData();
-        formData.append('file', file);
+      const formData = new FormData();
+      formData.append('file', file);
 
-        const targetPath = uploadPath || config?.defaultPath || 'LTY_Picture';
-        const result = await uploadLocalImage(formData, targetPath);
+      // 未指定目录时使用本地图床的默认目录
+      const targetPath = uploadPath || 'LTY_Picture';
+      const result = await uploadLocalImage(formData, targetPath);
 
-        if (result.success && result.image) {
-          // 更新进度为成功
-          setUploadProgress(prev => prev.map(p => 
-            p.fileName === file.name ? { ...p, progress: 100, status: 'success' } : p
-          ));
-
-          // 添加到图片列表
-          setImages(prev => [result.image!, ...prev]);
-
-          // 3秒后移除进度项
-          setTimeout(() => {
-            setUploadProgress(prev => prev.filter(p => p.fileName !== file.name));
-          }, 3000);
-
-          return true;
-        } else {
-          throw new Error(result.message);
-        }
-      } else {
-        // 远程上传（GitHub）
-        const githubConfig = getGitHubConfig();
-        if (!githubConfig) {
-          setError('请先配置 GitHub Token');
-          return false;
-        }
-
-        // 压缩图片
-        const compressedBlob = await compressImage(file, {
-          maxWidth: 1920,
-          maxHeight: 1920,
-          quality: 0.85,
-          format: 'image/webp',
-        });
-
-        // 更新进度
-        setUploadProgress(prev => prev.map(p => 
-          p.fileName === file.name ? { ...p, progress: 50 } : p
-        ));
-
-        // 生成文件名
-        const fileName = generateImageFileName(file.name);
-        const targetPath = uploadPath || config?.defaultPath || '';
-        const fullPath = targetPath ? `${targetPath}/${fileName}` : fileName;
-
-        // 上传到 GitHub
-        const result = await uploadImageToGitHub(githubConfig, file, fullPath);
-
-        // 更新进度为成功
-        setUploadProgress(prev => prev.map(p => 
-          p.fileName === file.name ? { ...p, progress: 100, status: 'success' } : p
-        ));
-
-        // 添加到图片列表
-        const newImage: GalleryImage = {
-          id: result.sha,
-          src: result.url,
-          alt: fileName,
-          source: ImageSource.Remote,
-          category: targetPath.split('/')[0] || '默认',
-          createdAt: new Date().toISOString(),
-        };
-
-        setImages(prev => [newImage, ...prev]);
-
-        // 3秒后移除进度项
-        setTimeout(() => {
-          setUploadProgress(prev => prev.filter(p => p.fileName !== file.name));
-        }, 3000);
-
-        return true;
+      if (!result.success || !result.image) {
+        throw new Error(result.message || '上传失败');
       }
+
+      // 标记进度完成
+      setUploadProgress(prev => prev.map(p =>
+        p.fileName === file.name ? { ...p, progress: 100, status: 'success' } : p
+      ));
+
+      // 新图片置于列表首位
+      setImages(prev => [result.image!, ...prev]);
+
+      // 3 秒后移除已完成进度项
+      setTimeout(() => {
+        setUploadProgress(prev => prev.filter(p => p.fileName !== file.name));
+      }, 3000);
+
+      return true;
     } catch (err) {
-      const errorMessage = source === 'local' 
-        ? (err instanceof Error ? err.message : '上传失败')
-        : (handleGitHubError(err) || '上传失败');
+      const errorMessage = err instanceof Error ? err.message : '上传失败';
       setError(errorMessage);
-      
-      // 更新进度为失败
-      setUploadProgress(prev => prev.map(p => 
+
+      // 保留失败进度项并展示原因，方便用户重试
+      setUploadProgress(prev => prev.map(p =>
         p.fileName === file.name ? { ...p, status: 'error', error: errorMessage } : p
       ));
 
       return false;
     }
-  }, [source, config, getGitHubConfig]);
+  }, []);
 
   /**
    * 批量上传图片
+   * 串行执行，避免多个 Server Action 同时写目录造成文件覆盖
    */
   const uploadImages = useCallback(async (files: File[], uploadPath?: string): Promise<boolean> => {
     let successCount = 0;
-    
+
     for (const file of files) {
       const success = await uploadImage(file, uploadPath);
       if (success) successCount++;
@@ -469,92 +197,52 @@ export function useGallery(options: UseGalleryOptions): UseGalleryReturn {
   }, [uploadImage]);
 
   /**
-   * 删除单个图片
+   * 删除单张本地图片
    */
-  const deleteImage = useCallback(async (imagePath: string, sha?: string): Promise<boolean> => {
-    if (source === 'local') {
-      // 本地图片使用 Server Action 删除
-      try {
-        const result = await deleteLocalImage(imagePath);
-        if (result.success) {
-          // 从列表中移除
-          setImages(prev => prev.filter(img => img.src !== imagePath));
-          return true;
-        } else {
-          setError(result.message);
-          return false;
-        }
-      } catch (err) {
-        setError('删除本地图片失败');
+  const deleteImage = useCallback(async (imagePath: string): Promise<boolean> => {
+    try {
+      const result = await deleteLocalImage(imagePath);
+      if (!result.success) {
+        setError(result.message);
         return false;
       }
-    }
 
-    const githubConfig = getGitHubConfig();
-    if (!githubConfig) {
-      setError('请先配置 GitHub Token');
-      return false;
-    }
-
-    try {
-      await deleteImageFromGitHub(githubConfig, imagePath, sha);
-      
-      // 从列表中移除
-      setImages(prev => prev.filter(img => {
-        const imgPath = img.src.split('/').slice(-2).join('/');
-        return imgPath !== imagePath;
-      }));
-
+      // 从列表中移除（本地图片的 src 即文件路径）
+      setImages(prev => prev.filter(img => img.src !== imagePath));
       return true;
     } catch (err) {
-      setError(handleGitHubError(err) || '删除失败');
+      setError('删除本地图片失败');
       return false;
     }
-  }, [source, getGitHubConfig]);
+  }, []);
 
   /**
    * 批量删除图片
    */
-  const deleteImages = useCallback(async (imageList: Array<{ path: string; sha?: string }>): Promise<boolean> => {
+  const deleteImages = useCallback(async (paths: string[]): Promise<boolean> => {
     let successCount = 0;
-    
-    for (const image of imageList) {
-      const success = await deleteImage(image.path, image.sha);
+
+    for (const imagePath of paths) {
+      const success = await deleteImage(imagePath);
       if (success) successCount++;
     }
 
-    return successCount === imageList.length;
+    return successCount === paths.length;
   }, [deleteImage]);
 
   /**
-   * 刷新图片列表
+   * 重新扫描本地图片
    */
   const refresh = useCallback(() => {
     loadImages();
   }, [loadImages]);
 
   /**
-   * 复制图片链接
+   * 复制图片链接（统一走 adminUtils 的剪贴板实现）
    */
   const copyImageLink = useCallback(async (image: GalleryImage): Promise<boolean> => {
-    const link = image.src;
-    return copyToClipboard(link);
+    return copyToClipboard(image.src);
   }, []);
-
-  /**
-   * 计算存储统计
-   */
-  const storageStats = useMemo(() => {
-    const localImages = images.filter(img => img.source === ImageSource.Local);
-    const remoteImages = images.filter(img => img.source === ImageSource.Remote);
-
-    return {
-      totalImages: images.length,
-      totalSize: formatFileSize(images.length * 500 * 1024), // 估算大小
-      localCount: localImages.length,
-      remoteCount: remoteImages.length,
-    };
-  }, [images]);
 
   return {
     images,
@@ -565,185 +253,8 @@ export function useGallery(options: UseGalleryOptions): UseGalleryReturn {
     deleteImage,
     deleteImages,
     refresh,
-    refreshConfig,
     copyImageLink,
     uploadProgress,
-    isConfigured,
-    config,
-    storageStats,
-  };
-}
-
-/**
- * 图床设置 Hook
- * 用于管理图床配置和连接状态
- */
-export function useGallerySettings() {
-  const [token, setToken] = useState<string>('');
-  const [config, setConfig] = useState<GalleryConfig>(DEFAULT_GALLERY_CONFIG);
-  const [isConnected, setIsConnected] = useState(false);
-  const [isTesting, setIsTesting] = useState(false);
-  const [repoInfo, setRepoInfo] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  /**
-   * 加载已保存的配置并验证连接状态
-   */
-  useEffect(() => {
-    const loadSavedConfig = async () => {
-      const savedToken = getDecryptedToken();
-      if (savedToken) {
-        setToken(savedToken);
-        
-        // 加载配置
-        const adminConfig = getAdminConfig();
-        const loadedConfig: GalleryConfig = {
-          owner: adminConfig?.githubOwner || DEFAULT_GALLERY_CONFIG.owner,
-          repo: adminConfig?.githubRepo?.split('/')[1] || DEFAULT_GALLERY_CONFIG.repo,
-          branch: adminConfig?.githubBranch || DEFAULT_GALLERY_CONFIG.branch,
-          defaultPath: DEFAULT_GALLERY_CONFIG.defaultPath,
-        };
-        
-        setConfig(loadedConfig);
-        
-        // 自动验证已保存的 Token 是否有效
-        try {
-          const githubConfig: GitHubConfig = {
-            owner: loadedConfig.owner,
-            repo: loadedConfig.repo,
-            branch: loadedConfig.branch,
-            token: savedToken,
-          };
-          
-          const info = await getRepositoryInfo(githubConfig);
-          setRepoInfo(info);
-          setIsConnected(true);
-        } catch (err) {
-          // Token 可能已过期或无效，但不显示错误，让用户手动测试
-          console.warn('已保存的 Token 验证失败:', err);
-          setIsConnected(false);
-        }
-      } else {
-        // 没有 Token，加载默认配置
-        const adminConfig = getAdminConfig();
-        if (adminConfig) {
-          setConfig(prev => ({
-            ...prev,
-            owner: adminConfig.githubOwner || prev.owner,
-            repo: adminConfig.githubRepo?.split('/')[1] || prev.repo,
-            branch: adminConfig.githubBranch || prev.branch,
-          }));
-        }
-      }
-    };
-
-    loadSavedConfig();
-  }, []);
-
-  /**
-   * 测试 GitHub 连接
-   * 会验证 Token 格式并尝试获取仓库信息
-   */
-  const testConnection = useCallback(async (): Promise<boolean> => {
-    if (!token) {
-      setError('请输入 GitHub Token');
-      return false;
-    }
-
-    // 验证 Token 格式
-    const trimmedToken = token.trim();
-    const validPrefixes = ['ghp_', 'github_pat_', 'gho_', 'ghu_', 'ghs_', 'ghr_'];
-    const hasValidPrefix = validPrefixes.some(prefix => trimmedToken.startsWith(prefix));
-    
-    if (!hasValidPrefix) {
-      setError('Token 格式无效。请确保使用以 ghp_ 或 github_pat_ 开头的 GitHub Token');
-      return false;
-    }
-
-    // 验证 Token 长度
-    if (trimmedToken.startsWith('ghp_') && trimmedToken.length < 40) {
-      setError('经典 Token 长度不足。请确保完整复制了 Token');
-      return false;
-    }
-    
-    if (trimmedToken.startsWith('github_pat_') && trimmedToken.length < 50) {
-      setError('Fine-grained Token 长度不足。请确保完整复制了 Token');
-      return false;
-    }
-
-    setIsTesting(true);
-    setError(null);
-
-    try {
-      const githubConfig: GitHubConfig = {
-        owner: config.owner,
-        repo: config.repo,
-        branch: config.branch,
-        token: trimmedToken,
-      };
-
-      const info = await getRepositoryInfo(githubConfig);
-      setRepoInfo(info);
-      setIsConnected(true);
-      return true;
-    } catch (err) {
-      const errorMessage = handleGitHubError(err) || '连接失败';
-      setError(errorMessage);
-      setIsConnected(false);
-      return false;
-    } finally {
-      setIsTesting(false);
-    }
-  }, [token, config]);
-
-  /**
-   * 保存配置
-   */
-  const saveConfig = useCallback(async (): Promise<boolean> => {
-    // 先测试连接
-    const success = await testConnection();
-    if (!success) return false;
-
-    // 保存 Token
-    const { encryptAndStoreToken, saveAdminConfig } = await import('@/utils/adminUtils');
-    encryptAndStoreToken(token);
-    
-    saveAdminConfig({
-      githubOwner: config.owner,
-      githubRepo: `${config.owner}/${config.repo}`,
-      githubBranch: config.branch,
-      imageRepo: `${config.owner}/${config.repo}`,
-      theme: 'system',
-    });
-
-    return true;
-  }, [token, config, testConnection]);
-
-  /**
-   * 清除配置
-   */
-  const clearConfig = useCallback(() => {
-    setToken('');
-    setConfig(DEFAULT_GALLERY_CONFIG);
-    setIsConnected(false);
-    setRepoInfo(null);
-    
-    // 使用静态导入的函数，避免在客户端代码里使用 require
-    clearStoredToken();
-  }, []);
-
-  return {
-    token,
-    setToken,
-    config,
-    setConfig,
-    isConnected,
-    isTesting,
-    repoInfo,
-    error,
-    testConnection,
-    saveConfig,
-    clearConfig,
   };
 }
 

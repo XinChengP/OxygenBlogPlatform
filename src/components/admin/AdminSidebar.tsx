@@ -12,7 +12,7 @@ import {
   ChevronDown,
   MessageSquare,
   FolderOpen,
-  Cloud,
+  Server,
   CheckSquare,
   Database,
   History,
@@ -293,10 +293,11 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
           icon: FolderOpen,
         },
         {
-          id: 'gallery-remote',
-          label: '远程图床',
+          // 原「远程图床」已由本地图床管理器替代，路由沿用旧地址避免书签失效
+          id: 'gallery-manager',
+          label: '图床管理器',
           href: '/admin/gallery/remote',
-          icon: Cloud,
+          icon: Server,
         },
       ],
     },
