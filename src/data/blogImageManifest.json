@@ -2906,6 +2906,28 @@
       "height": 435,
       "variants": []
     },
+    "/Blogabout/usb-rescue-record/cover.jpg": {
+      "hash": "67aac620",
+      "width": 1573,
+      "height": 725,
+      "variants": [
+        {
+          "width": 640,
+          "height": 295,
+          "path": "/_responsive/Blogabout/usb-rescue-record/cover-640-67aac620.webp"
+        },
+        {
+          "width": 1280,
+          "height": 590,
+          "path": "/_responsive/Blogabout/usb-rescue-record/cover-1280-67aac620.webp"
+        },
+        {
+          "width": 1573,
+          "height": 725,
+          "path": "/_responsive/Blogabout/usb-rescue-record/cover-1573-67aac620.webp"
+        }
+      ]
+    },
     "/Blogabout/usb-rescue-record/hyw.png": {
       "hash": "a637d624",
       "width": 1143,
