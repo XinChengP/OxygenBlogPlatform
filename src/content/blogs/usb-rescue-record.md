@@ -3,8 +3,8 @@ title: "“我不要，就这样~等到了惊蛰后盼霜降”"
 date: "2026-10-25"
 updatedAt: "2026-10-25"
 author: 歆橙
-category: "日常"
-tags: ["数据恢复", "U盘"]
+category: "技术"
+tags: ["数据恢复", "U盘", "DMDE", "RAW"]
 excerpt: "U盘抢（划去）救援记录"
 coverImage: "/Blogabout/usb-rescue-record/cover.jpg"
 ---
@@ -96,16 +96,23 @@ coverImage: "/Blogabout/usb-rescue-record/cover.jpg"
     display: block;
   }
 
-  /* 软件对比表格：内容居中、按列竖排 */
-  table th,
-  table td {
+  /*
+    软件对比表格：内容居中、按列竖排。
+    选择器限定在 .min-w-full 上，只作用于 Markdown 渲染出的表格
+    （BlogMarkdownBase 的 table 组件固定加了这个类），
+    避免 style 标签里的全局 table th / td 规则污染页面上的其他表格。
+    注意：CSS 注释里不要再出现尖括号包起来的标签名，服务端与客户端
+    对这段文本的转义方式不一致，会触发 hydration 不匹配。
+  */
+  table.min-w-full th,
+  table.min-w-full td {
     text-align: center !important;
     white-space: normal !important;
     vertical-align: middle;
     padding: 12px 10px !important;
   }
 
-  table img {
+  table.min-w-full img {
     width: auto !important;
     height: auto !important;
     max-width: 100% !important;
@@ -344,16 +351,13 @@ coverImage: "/Blogabout/usb-rescue-record/cover.jpg"
 
 &emsp;&emsp;既然充电器没带，那么电脑里的东西要转移到家里的台式机上。
 
-&emsp;&emsp;最方便的就是u盘转移了。起初无逝发生，非常良好，花了半个多小时就把本项目拷到u盘上了（不用github拉取的原因是github上文件不全，有好多被gitignore了），兴许是拷完了有点急，直接拔出来了没有安全弹出，结果查到台式机上显示：
+&emsp;&emsp;最方便的就是U盘转移了。起初无逝发生，非常良好，花了半个多小时就把本项目拷到U盘上了（不用GitHub拉取的原因是GitHub上文件不全，有好多被gitignore了），兴许是拷完了有点急，直接拔出来了没有安全弹出，结果插到台式机上显示：
 
-![丸辣](/Blogabout/usb-rescue-record/1.png)
+![U盘变成RAW格式，无法访问](/Blogabout/usb-rescue-record/1.png)
 
-&emsp;&emsp;用chkdsk检查了一下u盘
+&emsp;&emsp;用chkdsk检查了一下U盘
 
 ```cmd
-Microsoft Windows [版本 10.0.26200.8875]
-(c) Microsoft Corporation。保留所有权利。
-
 C:\Users\admin>chkdsk D: /f
 文件系统的类型是 RAW。
 CHKDSK 无法供 RAW 驱动器使用。
@@ -367,41 +371,56 @@ CHKDSK 无法供 RAW 驱动器使用。
 
 | DiskGenius | DMDE |
 | :---: | :---: |
-| ![扫出来了](/Blogabout/usb-rescue-record/1-1.png) | ![扫出来了](/Blogabout/usb-rescue-record/3-1.png) |
-| ![！？贵贵？！](/Blogabout/usb-rescue-record/1-2.png) | 也有限制，特麻烦 |
+| ![DiskGenius 扫描出十万多个文件](/Blogabout/usb-rescue-record/1-1.png) | ![DMDE 列出能恢复的项目文件](/Blogabout/usb-rescue-record/3-1.png) |
+| ![DiskGenius 恢复要买专业版](/Blogabout/usb-rescue-record/1-2.png) | 也有限制，特麻烦 |
 
 ## 寄，嘛都没扫出来啊
 
 | testdisk | R-Linux | Windows File Recovery | Power Data Recovery |
 | :---: | :---: | :---: | :---: |
-| ![寄](/Blogabout/usb-rescue-record/2-1.png) | ![8支持](/Blogabout/usb-rescue-record/4-1.png) | ![8彳亍](/Blogabout/usb-rescue-record/5-1.png) | ![寄寄寄寄](/Blogabout/usb-rescue-record/6-1.png) |
+| ![testdisk 没扫出文件](/Blogabout/usb-rescue-record/2-1.png) | ![R-Linux 不支持这个分区](/Blogabout/usb-rescue-record/4-1.png) | ![Windows File Recovery 扫不出结果](/Blogabout/usb-rescue-record/5-1.png) | ![Power Data Recovery 没扫出文件](/Blogabout/usb-rescue-record/6-1.png) |
 
-&emsp;&emsp;这些是动用了各种方式淘到的恢复软件（ai搜索，搜索引擎，py交易），要么就是能扫出来但是不免费，要么就是免费但是扫不出来，逆天了
+&emsp;&emsp;这些是动用了各种方式淘到的恢复软件（AI搜索，搜索引擎，py交易），要么就是能扫出来但是不免费，要么就是免费但是扫不出来，逆天了
 
 # 我不要，就这样——
 
+&emsp;&emsp;其实里面最重要的文件已经恢复（课上的成品），但是我还想更进一步——把所有的文件全部~~抢~~救回来（没错就是本博客项目的拷贝）
+
 &emsp;&emsp;身为资深白嫖党，能不花钱就不花钱（我嘞个整个pro版本要200多米，太贵了（其实一块钱我也不想花））
 
-&emsp;&emsp;我瞄准了Dmde，虽然免费版有导出限制，但不像坑人的DiskGenius有64kb的限制，它的限制是单文件夹/4000文件，理论上有足够的时间就能白嫖的方式导出所有文件。
+&emsp;&emsp;我瞄准了DMDE，虽然免费版有导出限制，但不像坑人的DiskGenius有64kb的限制，它的限制是单文件夹/4000文件，理论上有足够的时间就能白嫖的方式导出所有文件。
 
-&emsp;&emsp;手动是不可能手动的，让ai大人给我写一个脚本，模拟手动导出。
+&emsp;&emsp;手动是不可能手动的，让AI大人给我写一个脚本，模拟手动导出。
 
-&emsp;&emsp;先把我的损坏的u盘用Dmde导出镜像，幸亏家里台式机磁盘空间大，一锅装的下。。。（
+&emsp;&emsp;先把我的损坏的U盘用DMDE导出镜像，幸亏家里台式机磁盘空间大，一锅装的下。。。（
 
-![导出镜像](/Blogabout/usb-rescue-record/Mirror.png)
+![DMDE 导出整个磁盘的镜像](/Blogabout/usb-rescue-record/Mirror.png)
 
-&emsp;&emsp;然后，用ai大人对着这个镜像哐哐训练，最后也是有点效果（？）
+&emsp;&emsp;然后，用AI大人对着这个镜像哐哐训练，熟悉DMDE软件的操作和弹窗，最后也是有点效果（？），挺不稳定的，老是出错
 
-&emsp;&emsp;最后是可以修复出数据的，至于效率。。。慢到发指
+&emsp;&emsp;最后肯定可以修复出数据的（理论上），至于效率。。。慢到发指，我这等了一个小时就还没搞完一个文件夹，果断放弃
 
 # 我想静静了。。。
 
-&emsp;&emsp;真要等脚本给我导出来，黄花菜都凉了a，只能另寻僻径了
+&emsp;&emsp;真要等脚本给我导出来，黄花菜都凉了a，只能另辟蹊径了
 
-&emsp;&emsp;本来我想让ai大人继续帮我优化脚本的，但是吧逆天ai大人对着我的损坏镜像一同捣鼓，结果就这么给我恢复了？！
+&emsp;&emsp;本来我想让AI大人继续帮我优化脚本的，但是吧逆天AI大人对着我的损坏镜像一同捣鼓，结果就这么给我把文件从镜像里直接抠出来了？！
 
 &emsp;&emsp;我这之前捣鼓一天两夜那算啥啊
 
-![。 。 。](/Blogabout/usb-rescue-record/hyw.png)
+![对着它发呆](/Blogabout/usb-rescue-record/hyw.png)
+
+![AI 把文件全部找了回来](/Blogabout/usb-rescue-record/ok.png)
 
 &emsp;&emsp;道心破碎，卒
+
+# 霜降战神计划破产（雾）
+
+&emsp;&emsp;盼来了霜降，同时U盘也是在这一天炸的23333，本来打算好好整整我这小博客的（哦悲）
+
+&emsp;&emsp;一天两夜的成果：[GitHub：XinChengP/Free-Dmde](https://github.com/XinChengP/Free-Dmde)
+
+&emsp;&emsp;收录了吭哧吭哧一天两夜干出来的脚本和AI大人用于恢复的脚本
+
+&emsp;&emsp;血的教训啊孩子们，以后用U盘啥的一定要安全弹出再拔下来。得亏我这平时不用U盘，里面没有非常重要的文件，恢复的需求没那么大，我才有心情搞这个玩意o(╥﹏╥)o
+

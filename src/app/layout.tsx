@@ -301,7 +301,13 @@ export default function RootLayout({
             为防止分块真的缺失时陷入无限刷新，同一会话内最多自动刷新 2 次，
             并且只有在上次刷新距今 60 秒内才继续计数（超时则重新计数）。
 
-            必须内联执行：若把这段兜底逻辑也打成独立分块，它自身会先因分块加载失败而失效。 */}
+            必须内联执行：若把这段兜底逻辑也打成独立分块，它自身会先因分块加载失败而失效。
+
+            注：开发环境 React 19 会打印 "Encountered a script tag while rendering
+            React component"，这是内联 <script> 的已知提示，生产构建不输出。
+            不要改用 next/script：它的 beforeInteractive 只是把脚本推进 __next_s 队列，
+            由 app-bootstrap 分块（next/dist/client/app-bootstrap.js）按序执行，
+            也就是要等主包加载成功才生效——恰好在本脚本要兜底的场景里完全失效。 */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -367,6 +373,7 @@ export default function RootLayout({
           高延迟网络下把整个页面的首屏时间直接后移一个 RTT。
           脚本本体只有约 700 字节，内联的成本远小于一次 RTT。
           内容必须与 public/js/theme-init.js 保持一致（两者同步修改）。
+          同样必须内联：改成 next/script 会推迟到主包加载后才执行，首屏就会闪一下主题。
         */}
         <script
           dangerouslySetInnerHTML={{

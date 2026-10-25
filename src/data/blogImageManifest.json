@@ -710,6 +710,72 @@
         }
       ]
     },
+    "/Blogabout/Xingqiubei/cover.webp": {
+      "hash": "256ddbf0",
+      "width": 1510,
+      "height": 1080,
+      "variants": [
+        {
+          "width": 640,
+          "height": 458,
+          "path": "/_responsive/Blogabout/Xingqiubei/cover-640-256ddbf0.webp"
+        },
+        {
+          "width": 1280,
+          "height": 915,
+          "path": "/_responsive/Blogabout/Xingqiubei/cover-1280-256ddbf0.webp"
+        },
+        {
+          "width": 1510,
+          "height": 1080,
+          "path": "/_responsive/Blogabout/Xingqiubei/cover-1510-256ddbf0.webp"
+        }
+      ]
+    },
+    "/Blogabout/Xingqiubei/picture.webp": {
+      "hash": "12941dd9",
+      "width": 7000,
+      "height": 3640,
+      "variants": [
+        {
+          "width": 640,
+          "height": 333,
+          "path": "/_responsive/Blogabout/Xingqiubei/picture-640-12941dd9.webp"
+        },
+        {
+          "width": 1280,
+          "height": 666,
+          "path": "/_responsive/Blogabout/Xingqiubei/picture-1280-12941dd9.webp"
+        },
+        {
+          "width": 1920,
+          "height": 998,
+          "path": "/_responsive/Blogabout/Xingqiubei/picture-1920-12941dd9.webp"
+        }
+      ]
+    },
+    "/Blogabout/Xingqiubei/picture2.webp": {
+      "hash": "a53ca4d3",
+      "width": 1920,
+      "height": 1080,
+      "variants": [
+        {
+          "width": 640,
+          "height": 360,
+          "path": "/_responsive/Blogabout/Xingqiubei/picture2-640-a53ca4d3.webp"
+        },
+        {
+          "width": 1280,
+          "height": 720,
+          "path": "/_responsive/Blogabout/Xingqiubei/picture2-1280-a53ca4d3.webp"
+        },
+        {
+          "width": 1920,
+          "height": 1080,
+          "path": "/_responsive/Blogabout/Xingqiubei/picture2-1920-a53ca4d3.webp"
+        }
+      ]
+    },
     "/Blogabout/benou/benou.webp": {
       "hash": "17a43e86",
       "width": 1920,
@@ -2700,6 +2766,199 @@
           "width": 1920,
           "height": 1114,
           "path": "/_responsive/Blogabout/s41-master/cover-1920-eb5c36e8.webp"
+        }
+      ]
+    },
+    "/Blogabout/usb-rescue-record/1-1.png": {
+      "hash": "625ec0ee",
+      "width": 1214,
+      "height": 913,
+      "variants": [
+        {
+          "width": 640,
+          "height": 481,
+          "path": "/_responsive/Blogabout/usb-rescue-record/1-1-640-625ec0ee.webp"
+        },
+        {
+          "width": 1214,
+          "height": 913,
+          "path": "/_responsive/Blogabout/usb-rescue-record/1-1-1214-625ec0ee.webp"
+        }
+      ]
+    },
+    "/Blogabout/usb-rescue-record/1-2.png": {
+      "hash": "da6b286c",
+      "width": 490,
+      "height": 508,
+      "variants": []
+    },
+    "/Blogabout/usb-rescue-record/1.gif": {
+      "hash": "4d80bc90",
+      "width": 512,
+      "height": 512,
+      "variants": []
+    },
+    "/Blogabout/usb-rescue-record/1.png": {
+      "hash": "49ec875f",
+      "width": 352,
+      "height": 153,
+      "variants": []
+    },
+    "/Blogabout/usb-rescue-record/2-1.png": {
+      "hash": "b7fd6bd1",
+      "width": 979,
+      "height": 512,
+      "variants": [
+        {
+          "width": 640,
+          "height": 335,
+          "path": "/_responsive/Blogabout/usb-rescue-record/2-1-640-b7fd6bd1.webp"
+        },
+        {
+          "width": 979,
+          "height": 512,
+          "path": "/_responsive/Blogabout/usb-rescue-record/2-1-979-b7fd6bd1.webp"
+        }
+      ]
+    },
+    "/Blogabout/usb-rescue-record/2.gif": {
+      "hash": "8efe5d85",
+      "width": 512,
+      "height": 512,
+      "variants": []
+    },
+    "/Blogabout/usb-rescue-record/3-1.png": {
+      "hash": "c6fb9db2",
+      "width": 1426,
+      "height": 782,
+      "variants": [
+        {
+          "width": 640,
+          "height": 351,
+          "path": "/_responsive/Blogabout/usb-rescue-record/3-1-640-c6fb9db2.webp"
+        },
+        {
+          "width": 1280,
+          "height": 702,
+          "path": "/_responsive/Blogabout/usb-rescue-record/3-1-1280-c6fb9db2.webp"
+        },
+        {
+          "width": 1426,
+          "height": 782,
+          "path": "/_responsive/Blogabout/usb-rescue-record/3-1-1426-c6fb9db2.webp"
+        }
+      ]
+    },
+    "/Blogabout/usb-rescue-record/4-1.png": {
+      "hash": "02f4783d",
+      "width": 962,
+      "height": 632,
+      "variants": [
+        {
+          "width": 640,
+          "height": 420,
+          "path": "/_responsive/Blogabout/usb-rescue-record/4-1-640-02f4783d.webp"
+        },
+        {
+          "width": 962,
+          "height": 632,
+          "path": "/_responsive/Blogabout/usb-rescue-record/4-1-962-02f4783d.webp"
+        }
+      ]
+    },
+    "/Blogabout/usb-rescue-record/5-1.png": {
+      "hash": "69f133d8",
+      "width": 979,
+      "height": 512,
+      "variants": [
+        {
+          "width": 640,
+          "height": 335,
+          "path": "/_responsive/Blogabout/usb-rescue-record/5-1-640-69f133d8.webp"
+        },
+        {
+          "width": 979,
+          "height": 512,
+          "path": "/_responsive/Blogabout/usb-rescue-record/5-1-979-69f133d8.webp"
+        }
+      ]
+    },
+    "/Blogabout/usb-rescue-record/6-1.png": {
+      "hash": "228f0493",
+      "width": 736,
+      "height": 563,
+      "variants": [
+        {
+          "width": 640,
+          "height": 490,
+          "path": "/_responsive/Blogabout/usb-rescue-record/6-1-640-228f0493.webp"
+        },
+        {
+          "width": 736,
+          "height": 563,
+          "path": "/_responsive/Blogabout/usb-rescue-record/6-1-736-228f0493.webp"
+        }
+      ]
+    },
+    "/Blogabout/usb-rescue-record/Mirror.png": {
+      "hash": "e58a26f5",
+      "width": 492,
+      "height": 435,
+      "variants": []
+    },
+    "/Blogabout/usb-rescue-record/hyw.png": {
+      "hash": "a637d624",
+      "width": 1143,
+      "height": 340,
+      "variants": [
+        {
+          "width": 640,
+          "height": 190,
+          "path": "/_responsive/Blogabout/usb-rescue-record/hyw-640-a637d624.webp"
+        },
+        {
+          "width": 1143,
+          "height": 340,
+          "path": "/_responsive/Blogabout/usb-rescue-record/hyw-1143-a637d624.webp"
+        }
+      ]
+    },
+    "/Blogabout/usb-rescue-record/ok.png": {
+      "hash": "21bda257",
+      "width": 871,
+      "height": 763,
+      "variants": [
+        {
+          "width": 640,
+          "height": 561,
+          "path": "/_responsive/Blogabout/usb-rescue-record/ok-640-21bda257.webp"
+        },
+        {
+          "width": 871,
+          "height": 763,
+          "path": "/_responsive/Blogabout/usb-rescue-record/ok-871-21bda257.webp"
+        }
+      ]
+    },
+    "/Blogabout/weimingming-docx/cover.jpg": {
+      "hash": "9b23c262",
+      "width": 3485,
+      "height": 2164,
+      "variants": [
+        {
+          "width": 640,
+          "height": 397,
+          "path": "/_responsive/Blogabout/weimingming-docx/cover-640-9b23c262.webp"
+        },
+        {
+          "width": 1280,
+          "height": 795,
+          "path": "/_responsive/Blogabout/weimingming-docx/cover-1280-9b23c262.webp"
+        },
+        {
+          "width": 1920,
+          "height": 1192,
+          "path": "/_responsive/Blogabout/weimingming-docx/cover-1920-9b23c262.webp"
         }
       ]
     },
