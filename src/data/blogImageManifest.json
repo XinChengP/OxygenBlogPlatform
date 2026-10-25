@@ -710,72 +710,6 @@
         }
       ]
     },
-    "/Blogabout/Xingqiubei/cover.webp": {
-      "hash": "256ddbf0",
-      "width": 1510,
-      "height": 1080,
-      "variants": [
-        {
-          "width": 640,
-          "height": 458,
-          "path": "/_responsive/Blogabout/Xingqiubei/cover-640-256ddbf0.webp"
-        },
-        {
-          "width": 1280,
-          "height": 915,
-          "path": "/_responsive/Blogabout/Xingqiubei/cover-1280-256ddbf0.webp"
-        },
-        {
-          "width": 1510,
-          "height": 1080,
-          "path": "/_responsive/Blogabout/Xingqiubei/cover-1510-256ddbf0.webp"
-        }
-      ]
-    },
-    "/Blogabout/Xingqiubei/picture.webp": {
-      "hash": "12941dd9",
-      "width": 7000,
-      "height": 3640,
-      "variants": [
-        {
-          "width": 640,
-          "height": 333,
-          "path": "/_responsive/Blogabout/Xingqiubei/picture-640-12941dd9.webp"
-        },
-        {
-          "width": 1280,
-          "height": 666,
-          "path": "/_responsive/Blogabout/Xingqiubei/picture-1280-12941dd9.webp"
-        },
-        {
-          "width": 1920,
-          "height": 998,
-          "path": "/_responsive/Blogabout/Xingqiubei/picture-1920-12941dd9.webp"
-        }
-      ]
-    },
-    "/Blogabout/Xingqiubei/picture2.webp": {
-      "hash": "a53ca4d3",
-      "width": 1920,
-      "height": 1080,
-      "variants": [
-        {
-          "width": 640,
-          "height": 360,
-          "path": "/_responsive/Blogabout/Xingqiubei/picture2-640-a53ca4d3.webp"
-        },
-        {
-          "width": 1280,
-          "height": 720,
-          "path": "/_responsive/Blogabout/Xingqiubei/picture2-1280-a53ca4d3.webp"
-        },
-        {
-          "width": 1920,
-          "height": 1080,
-          "path": "/_responsive/Blogabout/Xingqiubei/picture2-1920-a53ca4d3.webp"
-        }
-      ]
-    },
     "/Blogabout/benou/benou.webp": {
       "hash": "17a43e86",
       "width": 1920,
@@ -2766,28 +2700,6 @@
           "width": 1920,
           "height": 1114,
           "path": "/_responsive/Blogabout/s41-master/cover-1920-eb5c36e8.webp"
-        }
-      ]
-    },
-    "/Blogabout/weimingming-docx/cover.jpg": {
-      "hash": "9b23c262",
-      "width": 3485,
-      "height": 2164,
-      "variants": [
-        {
-          "width": 640,
-          "height": 397,
-          "path": "/_responsive/Blogabout/weimingming-docx/cover-640-9b23c262.webp"
-        },
-        {
-          "width": 1280,
-          "height": 795,
-          "path": "/_responsive/Blogabout/weimingming-docx/cover-1280-9b23c262.webp"
-        },
-        {
-          "width": 1920,
-          "height": 1192,
-          "path": "/_responsive/Blogabout/weimingming-docx/cover-1920-9b23c262.webp"
         }
       ]
     },
