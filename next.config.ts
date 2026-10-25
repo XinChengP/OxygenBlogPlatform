@@ -103,6 +103,20 @@ const devConfig = {
   output: undefined,
   basePath: '',
   assetPrefix: '',
+  /*
+    本地开发把互动接口（浏览量/表情/订阅，cloudflare/interactions Worker）
+    转发到 wrangler dev 的默认端口。生产环境不需要：Cloudflare 的
+    blog.xinchengp.cn/api/interactions/* 路由在静态站点之前接管请求，
+    前端统一请求同源 /api/interactions/*，两种环境代码零差异。
+
+    wrangler 未启动时转发会连接失败，前端已做静默降级，不影响页面。
+  */
+  rewrites: async () => [
+    {
+      source: '/api/interactions/:path*',
+      destination: `${process.env.INTERACTIONS_DEV_URL || 'http://127.0.0.1:8787'}/api/interactions/:path*`,
+    },
+  ],
   headers: async () => {
     return [
       {

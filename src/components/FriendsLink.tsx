@@ -12,14 +12,34 @@ import {
   UserPlus,
   ArrowDown
 } from "lucide-react";
-import { 
-  friendsLinks, 
-  friendCategoryLabels, 
+import {
+  friendsLinks,
+  friendCategoryLabels,
   friendCategoryColors,
   type FriendLink,
   type FriendLinkCategory
 } from '@/setting/AboutSetting';
 import { getAssetPath } from '@/utils/assetUtils';
+
+/**
+ * 友链巡检数据（public/friends-status.json，由 scripts/check-friends.ts 生成）
+ */
+interface FriendStatusEntry {
+  url: string;
+  online: boolean;
+  status: number | null;
+  responseTimeMs: number | null;
+}
+
+interface FriendsStatusFile {
+  checkedAt: string | null;
+  friends: FriendStatusEntry[];
+}
+
+/** 巡检数据里的 url 统一带尾斜杠，这里做同口径归一化 */
+function normalizeFriendUrl(url: string): string {
+  return `${url.replace(/\/+$/, '')}/`;
+}
 
 /**
  * 处理友链头像路径，处理basePath
@@ -57,12 +77,31 @@ function getCategoryLabel(category?: FriendLinkCategory): string {
  * 友链卡片组件
  * 展示单个友链信息，带有精美的视觉效果
  */
-function FriendCard({ link, index }: { link: FriendLink; index: number }) {
+function FriendCard({
+  link,
+  index,
+  status,
+}: {
+  link: FriendLink;
+  index: number;
+  status?: FriendStatusEntry;
+}) {
   const [imageError, setImageError] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  
+
   const categoryColor = getCategoryColor(link.category);
   const siteIcon = getSiteIcon(link.url);
+
+  // 巡检状态提示文案
+  const statusTitle = status
+    ? status.online
+      ? `在线${status.responseTimeMs !== null ? ` · ${status.responseTimeMs}ms` : ''}`
+      : '暂时无法访问'
+    : '';
+  const statusPillClass = status?.online
+    ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+    : 'border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400';
+  const statusDotClass = status?.online ? 'bg-emerald-500' : 'bg-red-400';
 
   return (
     <motion.a
@@ -110,6 +149,18 @@ function FriendCard({ link, index }: { link: FriendLink; index: number }) {
           background: `radial-gradient(circle at 50% 0%, ${categoryColor}15 0%, transparent 70%)`
         }}
       />
+
+      {/* 巡检状态点：尚未检查过（无 friends-status.json）时不渲染 */}
+      {status && (
+        <span
+          className={`absolute top-3 right-3 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium ${statusPillClass}`}
+          title={statusTitle}
+          aria-label={`站点${status.online ? '在线' : '离线'}`}
+        >
+          <span className={`h-1.5 w-1.5 rounded-full ${statusDotClass}`} aria-hidden="true" />
+          {status.online ? '在线' : '离线'}
+        </span>
+      )}
 
       <div className="relative p-6">
         {/* 头部：头像和基本信息 —— items-center 让文字块相对头像垂直居中，视觉更平衡 */}
@@ -357,11 +408,33 @@ function ApplyInviteCard({ index }: { index: number }) {
  */
 export default function FriendsLink() {
   const [mounted, setMounted] = useState(false);
+  // 友链巡检数据（可达性 + 响应耗时）；文件缺失或未生成时保持 null，相关 UI 不渲染
+  const [statusData, setStatusData] = useState<FriendsStatusFile | null>(null);
 
   // 确保组件已挂载
   useEffect(() => {
     setMounted(true);
+
+    let cancelled = false;
+    fetch(getAssetPath('/friends-status.json'), { cache: 'no-store' })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => {
+        if (!cancelled && data && Array.isArray(data.friends) && data.friends.length > 0) {
+          setStatusData(data as FriendsStatusFile);
+        }
+      })
+      .catch(() => {
+        // 占位文件 / 本地未巡检：静默忽略
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  // 按归一化 url 建索引，供卡片快速查状态
+  const statusByUrl = new Map(
+    (statusData?.friends ?? []).map((entry) => [entry.url, entry])
+  );
 
   if (!mounted) {
     return (
@@ -393,7 +466,12 @@ export default function FriendsLink() {
         {friendsLinks.length > 0 ? (
           <>
             {friendsLinks.map((link, index) => (
-              <FriendCard key={link.name} link={link} index={index} />
+              <FriendCard
+                key={link.name}
+                link={link}
+                index={index}
+                status={statusByUrl.get(normalizeFriendUrl(link.url))}
+              />
             ))}
             {/* 末尾固定一张「申请友链」占位卡，填补末行空位并引导交换 */}
             <ApplyInviteCard index={friendsLinks.length} />
@@ -402,7 +480,6 @@ export default function FriendsLink() {
           <EmptyState />
         )}
       </motion.div>
-
     </div>
   );
 }

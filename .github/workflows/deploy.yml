@@ -9,6 +9,12 @@ on:
       - 'LICENSE'
   # 允许手动触发
   workflow_dispatch:
+  # 每周一 03:00（北京时间）定时构建：除了刷新内容，
+  # 也会顺带执行友链巡检（check:friends 步骤），让友链状态和
+  # 「友链最近更新」每周至少更新一次。
+  # GitHub Actions cron 使用 UTC，19:00 UTC = 次日 03:00 UTC+8。
+  schedule:
+    - cron: '0 19 * * 0'
 
 # 设置权限
 permissions:
@@ -50,6 +56,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Check friend links
+        # 巡检结果写入 public/friends-status.json，随本次构建一起发布；
+        # 失败不阻塞部署（脚本内部也有兜底，单站失败不影响其他友链）。
+        continue-on-error: true
+        run: npm run check:friends
+
       - name: Prepare for static export
         run: |
           # 删除本地环境文件，避免覆盖 GitHub Actions 的环境变量
@@ -80,6 +92,11 @@ jobs:
           # Twikoo 评论后端地址。必须与 cloudflare/twikoo 实际绑定的一致：
           # 它同时决定前端请求地址与 CSP 白名单，填错会让评论区请求被浏览器拦下。
           NEXT_PUBLIC_TWIKOO_ENV_ID: "https://twikoo.xinchengp.cn"
+          # 互动服务（cloudflare/interactions）走同源路由，默认值即可，无需配置。
+          # 邮件订阅开关：Resend 域名验证完成并配置 Worker secret 后改为 "true"。
+          NEXT_PUBLIC_NEWSLETTER_ENABLED: "false"
+          # Telegram 频道入口，配置后 /subscribe 页会展示频道卡片
+          NEXT_PUBLIC_TELEGRAM_CHANNEL_URL: ""
         run: |
           # 输出构建环境信息
           echo "构建环境信息："

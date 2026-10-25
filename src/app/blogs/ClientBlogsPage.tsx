@@ -7,9 +7,11 @@ import { categories } from '@/setting/blogSetting';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 import { getAssetPath } from '@/utils/assetUtils';
 import ManifestImage from '@/components/core/ManifestImage';
-import { Calendar, ArrowRight, BookOpen, Pin, Tag } from 'lucide-react';
+import { Calendar, ArrowRight, BookOpen, Pin, Tag, Eye } from 'lucide-react';
 import live2dMessageManager, { Live2DMessageHelper } from '@/utils/live2dMessageManager';
 import PageHeader from '@/components/ui/PageHeader';
+import { usePostStats } from '@/hooks/usePostStats';
+import { formatViewCount } from '@/setting/InteractionSetting';
 
 interface BlogPost {
   id: string;
@@ -36,6 +38,8 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [urlReady, setUrlReady] = useState(false);
   const { containerStyle, isBackgroundEnabled } = useBackgroundStyle('blogs');
+  // 互动统计（浏览量）：一次批量请求，供卡片角标使用；接口不可用时为空对象，角标自动隐藏
+  const postStats = usePostStats(initialPosts.map((post) => post.slug));
 
   // 分类从 URL 恢复；浏览器前进/后退时同步
   useEffect(() => {
@@ -256,7 +260,14 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
                             )}
                             <span className="bg-primary/95 text-primary-foreground px-2 py-1 rounded-full text-xs sm:text-sm font-medium backdrop-blur-sm shadow-lg">{post.category}</span>
                           </div>
-                          <div className="absolute top-3 right-3">
+                          <div className="absolute top-3 right-3 flex items-center gap-1.5">
+                            {/* 浏览量角标：互动接口可用且已返回数据时才出现 */}
+                            {postStats[post.slug] && (
+                              <span className="bg-black/60 text-white px-2 py-1 rounded-full text-xs backdrop-blur-sm flex items-center gap-1">
+                                <Eye className="w-3 h-3" aria-hidden="true" />
+                                {formatViewCount(postStats[post.slug].views)}
+                              </span>
+                            )}
                             <span className="bg-black/60 text-white px-2 py-1 rounded-full text-xs backdrop-blur-sm">{post.readTime}分钟</span>
                           </div>
                           <motion.div className="absolute inset-0 flex items-center justify-center opacity-0" whileHover={{ opacity: 1 }} transition={{ duration: 0.4 }}>
@@ -282,7 +293,14 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
                               </span>
                             )}
                           </div>
-                          <div className="absolute top-3 right-3">
+                          <div className="absolute top-3 right-3 flex items-center gap-1.5">
+                            {/* 浏览量角标：互动接口可用且已返回数据时才出现 */}
+                            {postStats[post.slug] && (
+                              <span className="bg-black/60 text-white px-2 py-1 rounded-full text-xs backdrop-blur-sm flex items-center gap-1">
+                                <Eye className="w-3 h-3" aria-hidden="true" />
+                                {formatViewCount(postStats[post.slug].views)}
+                              </span>
+                            )}
                             <span className="bg-black/60 text-white px-2 py-1 rounded-full text-xs backdrop-blur-sm">{post.readTime}分钟</span>
                           </div>
                           <motion.div className="absolute inset-0 flex items-center justify-center opacity-0 bg-black/10 backdrop-blur-sm" whileHover={{ opacity: 1 }} transition={{ duration: 0.4 }}>

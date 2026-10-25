@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { name, aWord, year } from '@/setting/FooterSetting';
 import { usePathname } from 'next/navigation';
+import Link from 'next/link';
 import { getAssetPath } from '@/utils/assetUtils';
 
 /**
@@ -243,6 +244,17 @@ function Footer() {
           {/* 第二栏：备案信息 + 链接 */}
           <div className="text-center md:text-right">
             <div className="flex items-center justify-center md:justify-end gap-3 mb-3">
+              {/* 订阅更新：RSS / 邮件 / Telegram 的聚合入口页 */}
+              <Link
+                href="/subscribe/"
+                className="text-white/60 hover:text-white transition-colors duration-200"
+                title="订阅更新"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect width="20" height="16" x="2" y="4" rx="2" />
+                  <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                </svg>
+              </Link>
               <a
                 href="/rss.xml"
                 target="_blank"

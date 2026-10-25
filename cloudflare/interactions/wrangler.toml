@@ -1,0 +1,42 @@
+#:schema node_modules/wrangler/config-schema.json
+#
+# 博客互动服务（浏览量 / 表情回应 / 邮件订阅）的 Cloudflare Workers 配置
+#
+# 与 cloudflare/twikoo、cloudflare/gallery-assets 保持同一套目录习惯：
+# 独立 Worker、独立 D1、独立部署，互不影响升级。
+#
+# 部署前必须改的一处：下方 [[d1_databases]] 的 database_id。
+# 由 `npx wrangler d1 create blog-interactions --location apac` 生成，账号级唯一。
+
+name = "blog-interactions"
+main = "src/index.js"
+
+# 纯标准 Web API 实现（fetch / crypto.subtle / TextEncoder），无需 nodejs_compat。
+compatibility_date = "2026-09-23"
+
+# 每日清理：删除 90 天前的去重明细与过期限流桶（见 src/index.js 的 scheduled）。
+[triggers]
+crons = ["0 4 * * *"]
+
+[vars]
+# 站点地址：确认/退订邮件里的跳转链接由它拼出。
+PUBLIC_SITE_URL = "https://blog.xinchengp.cn"
+# 发件人。Resend 要求该地址的域名已完成验证（SPF/DKIM），见 README。
+RESEND_FROM = "OxygenBlog <blog@xinchengp.cn>"
+
+[[d1_databases]]
+binding = "DB" # Worker 中通过 env.DB 访问
+database_name = "blog-interactions"
+# ↓↓↓ 由 `npx wrangler d1 create blog-interactions --location apac` 生成 ↓↓↓
+# 区域选 apac（亚太）：与 twikoo 同理，主区域决定读写往返延迟，创建后不可更改。
+database_id = "321ebbe7-06c5-4a6a-bde3-b4e450b33d45"
+
+# 同源路由：静态站点仍在 GitHub Pages 上，只有 /api/interactions/* 被 Worker 接管。
+# 前端因此不需要 CORS、不需要往 CSP 里加新域名。
+# 生效前提：blog.xinchengp.cn 在 Cloudflare 上处于已代理（橙色云）状态。
+[[routes]]
+pattern = "blog.xinchengp.cn/api/interactions/*"
+zone_name = "xinchengp.cn"
+
+[dev]
+port = 8787

@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ImagePreview from '../../../app/gallery/components/ImagePreview';
 import { PreviewImage } from '../../../types/gallery';
 import Link from 'next/link';
-import { 
+import {
   CalendarIcon,
   TagIcon,
   UserIcon,
@@ -37,6 +37,8 @@ import {
 } from '@/utils/responsiveImage';
 import { getResponsiveImageEntry } from '@/utils/blogResponsiveImage';
 import { useResponsiveImageFallback } from '@/hooks/useResponsiveImageFallback';
+import { useArticleViews } from '@/hooks/useArticleViews';
+import ArticleViewCount from '@/components/blogs/ArticleViewCount';
 
 // 动态导入大型组件，优化初始加载性能
 const LazyTableOfContents = lazy(() => import('../../../components/TableOfContents'));
@@ -106,7 +108,8 @@ interface ClientBlogDetailProps {
   tocItems: TocItem[];
 }
 
-// 互动功能Hook - 已移除点赞、收藏、浏览统计功能（分享功能见 BlogSharePanel 组件）
+// 浏览统计：由 useArticleViews 提供（服务端按「路径+天+访客哈希」去重），
+// UI 见 ArticleViewCount（元信息栏）；列表页的浏览角标见 usePostStats
 
 /**
  * 博客详情客户端组件
@@ -155,6 +158,8 @@ export default function ClientBlogDetail({
   const [lightboxImage, setLightboxImage] = useState<PreviewImage | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [readProgress, setReadProgress] = useState(0);
+  // 浏览量：元信息栏共享同一份状态（页面只发起一次请求）
+  const { views } = useArticleViews(blog.slug);
   const articleImagesRef = useRef<PreviewImage[]>([]);
   const imageSrcSetRef = useRef<Set<string>>(new Set());
   const iframeRefs = useRef<Array<HTMLIFrameElement | null>>([]);
@@ -536,6 +541,13 @@ export default function ClientBlogDetail({
                 <BookOpenIcon className="h-4 w-4 text-primary/70" />
                 <span>{blog.readTime} 分钟阅读</span>
               </div>
+              {/* 浏览量：接口不可用时 ArticleViewCount 返回 null，分隔符随条件一起消失 */}
+              {views !== null && (
+                <>
+                  <span className="text-border">·</span>
+                  <ArticleViewCount views={views} />
+                </>
+              )}
               {blog.author && (
                 <>
                   <span className="text-border">·</span>

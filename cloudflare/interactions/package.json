@@ -1,0 +1,18 @@
+{
+  "name": "blog-interactions",
+  "version": "1.0.0",
+  "private": true,
+  "description": "OxygenBlogPlatform 互动服务：浏览量 / 表情回应 / 邮件订阅（Cloudflare Workers + D1）",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --port 8787",
+    "start": "wrangler dev --port 8787",
+    "deploy": "wrangler deploy",
+    "db:local": "wrangler d1 execute blog-interactions --local --file=./schema.sql",
+    "db:remote": "wrangler d1 execute blog-interactions --remote --file=./schema.sql"
+  },
+  "devDependencies": {
+    "wrangler": "^4.68.0"
+  }
+}

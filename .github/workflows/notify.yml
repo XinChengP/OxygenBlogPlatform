@@ -1,0 +1,59 @@
+name: Notify new posts
+
+# 新文章通知：推送包含博客文章的提交后，向 Telegram 频道推送、
+# 并调用互动 Worker 的 /notify 群发邮件（Worker 侧按 slug 幂等）。
+#
+# 与 deploy.yml 分开的原因：
+#   1. 通知不应阻塞页面部署，失败也不影响站点上线；
+#   2. 需要 fetch-depth: 2 才能对比上一次提交找出「新增」文章。
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'src/content/blogs/**'
+  workflow_dispatch:
+    inputs:
+      slug:
+        description: '文章 slug（指定后对该文章重新发送通知；留空则检查最近一次提交）'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: notify
+  cancel-in-progress: false
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # 默认深度 1 拿不到 HEAD^，无法 diff 出新增文件
+          fetch-depth: 2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Send notifications
+        env:
+          # 手动触发时可指定 slug 重发；普通 push 时留空走 git diff
+          NOTIFY_SLUG: ${{ github.event.inputs.slug }}
+          PUBLIC_SITE_URL: https://blog.xinchengp.cn
+          # Telegram 渠道：未配置时脚本自动跳过
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          # 邮件渠道：指向互动 Worker，与 NEWSLETTER_ADMIN_TOKEN（Worker secret）配对
+          NEWSLETTER_API_URL: https://blog.xinchengp.cn/api/interactions
+          NEWSLETTER_ADMIN_TOKEN: ${{ secrets.NEWSLETTER_ADMIN_TOKEN }}
+        run: node scripts/notify-new-posts.mjs

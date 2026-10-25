@@ -1,0 +1,23 @@
+{
+  "checkedAt": "2026-10-25T13:39:07.771Z",
+  "friends": [
+    {
+      "url": "https://blog.allenwdk.qzz.io/",
+      "online": true,
+      "status": 200,
+      "responseTimeMs": 2273
+    },
+    {
+      "url": "https://www.alimeylab.com/",
+      "online": true,
+      "status": 200,
+      "responseTimeMs": 1790
+    },
+    {
+      "url": "https://hungryluo.top/",
+      "online": true,
+      "status": 200,
+      "responseTimeMs": 123
+    }
+  ]
+}
