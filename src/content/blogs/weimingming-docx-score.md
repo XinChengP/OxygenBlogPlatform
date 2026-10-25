@@ -6,6 +6,8 @@ category: "洛天依"
 tags: ["洛天依", "VOCALOID", "扒谱", "分享"]
 excerpt: "回首轻舟淌过满天星，年少惊鸿飞入我怀里"
 coverImage: "/Blogabout/weimingming-docx/cover.jpg"
+series: "扒谱"
+seriesOrder: 4
 ---
 
 # 未命名.docx 扒谱

@@ -505,10 +505,10 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
     notFound();
   }
 
-  // 如果文章属于系列，获取同系列的其他文章
+  // 如果文章属于系列，获取系列内全部文章（含当前篇，供客户端计算进度与上一篇/下一篇）
   let seriesArticles: SeriesArticle[] = [];
   if (blogData.series) {
-    seriesArticles = await getSeriesArticles(blogData.series, decodedSlug);
+    seriesArticles = await getSeriesArticles(blogData.series);
   }
 
   // 计算相关文章推荐（全体文章参与，按分类/标签/系列/时间多维打分）
@@ -632,23 +632,24 @@ function buildStructuredData(blog: BlogPost): string {
 export const dynamicParams = false;
 
 /**
- * 获取同系列的所有文章（排除当前文章）
+ * 获取同系列的全部文章（包含当前文章，排除隐藏篇目）
+ *
+ * 客户端系列导航据此计算阅读进度、上一篇/下一篇与当前篇高亮，
+ * 因此这里刻意不做「排除当前文章」的裁剪。
  */
-async function getSeriesArticles(series: string, currentSlug: string): Promise<SeriesArticle[]> {
+async function getSeriesArticles(series: string): Promise<SeriesArticle[]> {
   try {
     const contentDir = path.join(process.cwd(), 'src/content/blogs');
     const markdownFiles = scanMarkdownFiles(contentDir, contentDir);
-    
+
     const seriesArticles: SeriesArticle[] = [];
-    
+
     for (const file of markdownFiles) {
-      if (file.slug === currentSlug) continue;
-      
       try {
         const fileContent = fs.readFileSync(file.filePath, 'utf8');
         const { data } = matter(fileContent);
         const frontMatter = data as BlogFrontMatter;
-        
+
         if (frontMatter.series === series && !frontMatter.hidden) {
           seriesArticles.push({
             title: frontMatter.title || path.basename(file.filePath, '.md'),
@@ -661,10 +662,13 @@ async function getSeriesArticles(series: string, currentSlug: string): Promise<S
         // 跳过无法读取的文件
       }
     }
-    
-    // 按 seriesOrder 排序
-    seriesArticles.sort((a, b) => a.seriesOrder - b.seriesOrder);
-    
+
+    // 按 seriesOrder 排序；序号缺省（0）的排后面，同序号按日期兜底
+    seriesArticles.sort((a, b) => {
+      if (a.seriesOrder !== b.seriesOrder) return a.seriesOrder - b.seriesOrder;
+      return Date.parse(a.date) - Date.parse(b.date);
+    });
+
     return seriesArticles;
   } catch (error) {
     console.error('Error getting series articles:', error);

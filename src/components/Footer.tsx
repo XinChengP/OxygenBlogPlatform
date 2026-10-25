@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef } from 'react';
-import { name, aWord, year } from '@/setting/FooterSetting';
+import { name, aWord, year, siteLaunchDate } from '@/setting/FooterSetting';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { getAssetPath } from '@/utils/assetUtils';
@@ -189,8 +189,8 @@ function Footer() {
     return currentYear === 2025 ? "2025" : `2025 - ${currentYear}`;
   }, []);
 
-  // 网站上线时间 - 使用 useMemo 缓存
-  const launchDate = useMemo(() => new Date('2025-11-06T20:00:00'), []);
+  // 网站上线时间 - 使用 useMemo 缓存（时刻定义统一在 FooterSetting）
+  const launchDate = useMemo(() => new Date(siteLaunchDate), []);
   const runTimeRef = useRef<HTMLSpanElement>(null);
 
   // 实时更新运行时间 - 使用 ref 直接操作 DOM，避免 React re-render。

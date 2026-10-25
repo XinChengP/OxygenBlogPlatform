@@ -91,6 +91,17 @@ function ScanSvg({ className }: { className?: string }) {
   );
 }
 
+/** 卡片图标：山与太阳的「图片」轮廓，用于「分享卡片」按钮 */
+function PictureSvg({ className }: { className?: string }) {
+  return (
+    <svg {...ICON_PROPS} className={className}>
+      <rect x="3" y="3" width="18" height="18" rx="3" />
+      <circle cx="9" cy="9" r="2" />
+      <path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21" />
+    </svg>
+  );
+}
+
 /**
  * 二维码组件懒加载
  *
@@ -106,6 +117,12 @@ const QRCodeSVG = lazy(() =>
 );
 
 /**
+ * 分享卡片弹窗懒加载
+ * Canvas 绘制只在用户点击「分享卡片」时才需要，拆独立 chunk 不拖累文章页首屏
+ */
+const ShareCardModal = lazy(() => import('./ShareCardModal'));
+
+/**
  * 博客分享面板组件属性接口
  */
 interface BlogSharePanelProps {
@@ -115,6 +132,12 @@ interface BlogSharePanelProps {
   slug: string;
   /** 文章摘要：部分平台（如 QQ 空间）会展示该内容 */
   excerpt?: string;
+  /** 封面图：分享卡片生成用（可空，空时卡片用渐变占位） */
+  coverImage?: string;
+  /** 发布日期：分享卡片元信息行展示 */
+  date?: string;
+  /** 分类：分享卡片元信息行展示 */
+  category?: string;
   /** 自定义类名 */
   className?: string;
   /**
@@ -336,6 +359,9 @@ export default function BlogSharePanel({
   title,
   slug,
   excerpt = '',
+  coverImage,
+  date,
+  category,
   className = '',
   bare = false,
 }: BlogSharePanelProps) {
@@ -353,6 +379,9 @@ export default function BlogSharePanel({
 
   /** 二维码面板展开状态 */
   const [showQrcode, setShowQrcode] = useState(false);
+
+  /** 分享卡片弹窗状态（Canvas 绘制，弹窗组件本身懒加载） */
+  const [showShareCard, setShowShareCard] = useState(false);
 
   /**
    * 是否支持系统原生分享
@@ -566,6 +595,17 @@ export default function BlogSharePanel({
             <ShareSvg className={`${ICON_SIZE} ${ICON_HOVER_BASE}`} />
           </motion.button>
         )}
+
+        {/* 分享卡片：Canvas 生成竖版海报图，弹窗内预览与下载 */}
+        <motion.button
+          type="button"
+          onClick={() => setShowShareCard(true)}
+          whileTap={{ scale: 0.97 }}
+          className={`${BUTTON_BASE} border-border/50 text-muted-foreground hover:border-primary/40 hover:bg-primary/10 hover:text-primary`}
+          aria-label="生成分享卡片"
+        >
+          <PictureSvg className={`${ICON_SIZE} ${ICON_HOVER_BASE}`} />
+        </motion.button>
       </div>
 
       {/* 二维码展开区 */}
@@ -617,6 +657,28 @@ export default function BlogSharePanel({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/*
+        分享卡片弹窗
+        懒加载：首次点击才下载 Canvas 绘制模块。
+        根节点虽有 overflow-hidden，但弹窗是 fixed 定位且祖先无 transform/filter，
+        不会被裁切。
+      */}
+      <Suspense fallback={null}>
+        {showShareCard && (
+          <ShareCardModal
+            open={showShareCard}
+            onClose={() => setShowShareCard(false)}
+            title={title}
+            excerpt={excerpt}
+            category={category ?? ''}
+            date={date ?? ''}
+            coverImage={coverImage}
+            articleUrl={articleUrl}
+            slug={slug}
+          />
+        )}
+      </Suspense>
     </div>
   );
 }

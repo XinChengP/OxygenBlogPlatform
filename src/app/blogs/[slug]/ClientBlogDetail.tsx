@@ -14,7 +14,8 @@ import {
   BookOpenIcon,
   ChatBubbleLeftRightIcon,
   ChevronLeftIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  ChevronDownIcon
 } from '@heroicons/react/24/outline';
 
 
@@ -80,8 +81,7 @@ interface SeriesArticle {
  *
  * 服务端已在构建期完成打分排序，这里只用于渲染卡片，
  * 因此字段与 utils/relatedPostsUtils.ts 中的 RelatedPost 保持一致。
- */
-interface RelatedPost {
+ */interface RelatedPost {
   title: string;
   slug: string;
   date: string;
@@ -110,6 +110,144 @@ interface ClientBlogDetailProps {
 
 // 浏览统计：由 useArticleViews 提供（服务端按「路径+天+访客哈希」去重），
 // UI 见 ArticleViewCount（元信息栏）；列表页的浏览角标见 usePostStats
+
+/**
+ * 系列进度条（元信息栏下方、正文开始之前）
+ *
+ * 为什么放这里：阅读决策发生在正文开始之前——
+ * 「这是系列第几篇？要不要先读第一篇？」；
+ * 大纲面板多数屏幕默认收起、移动端藏在抽屉里，作为系列入口可见性太差。
+ *
+ * 形态：默认一行紧凑条（系列名 + 进度 + 前后篇跳转），
+ * 完整目录默认收起，点「全部 N 篇」展开，不把长列表压在读者眼前。
+ */
+function SeriesBar({
+  series,
+  articles,
+  currentSlug,
+}: {
+  series: string;
+  articles: SeriesArticle[];
+  currentSlug: string;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const currentIndex = articles.findIndex((article) => article.slug === currentSlug);
+  const prevArticle = currentIndex > 0 ? articles[currentIndex - 1] : null;
+  const nextArticle =
+    currentIndex >= 0 && currentIndex < articles.length - 1
+      ? articles[currentIndex + 1]
+      : null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, delay: 0.35 }}
+      className="mb-6 bg-card/60 backdrop-blur-sm rounded-xl border border-border/40 shadow-sm overflow-hidden"
+    >
+      {/* 一行紧凑条 */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5">
+        <span className="flex items-center gap-1.5 min-w-0 text-xs font-medium text-muted-foreground">
+          <BookOpenIcon className="h-3.5 w-3.5 text-primary/70 flex-shrink-0" />
+          <span className="truncate">{series} 系列</span>
+        </span>
+        <span className="flex-shrink-0 px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-medium tabular-nums">
+          {currentIndex >= 0 ? `${currentIndex + 1}/${articles.length}` : `共 ${articles.length} 篇`}
+        </span>
+
+        <span className="flex-1" />
+
+        {/* 前后篇快捷跳转：长标题截断，悬停看全名 */}
+        {prevArticle && (
+          <Link
+            href={`/blogs/${encodeURIComponent(prevArticle.slug)}`}
+            className="group flex items-center gap-0.5 min-w-0 text-xs text-muted-foreground transition-colors hover:text-primary"
+            title={`上一篇：${prevArticle.title}`}
+          >
+            <ChevronLeftIcon className="h-3.5 w-3.5 flex-shrink-0" />
+            <span className="max-w-[96px] sm:max-w-[140px] truncate group-hover:text-primary">
+              {prevArticle.title}
+            </span>
+          </Link>
+        )}
+        {nextArticle && (
+          <Link
+            href={`/blogs/${encodeURIComponent(nextArticle.slug)}`}
+            className="group flex items-center gap-0.5 min-w-0 text-xs text-muted-foreground transition-colors hover:text-primary"
+            title={`下一篇：${nextArticle.title}`}
+          >
+            <span className="max-w-[96px] sm:max-w-[140px] truncate group-hover:text-primary">
+              {nextArticle.title}
+            </span>
+            <ChevronRightIcon className="h-3.5 w-3.5 flex-shrink-0" />
+          </Link>
+        )}
+
+        <button
+          type="button"
+          onClick={() => setExpanded((prev) => !prev)}
+          aria-expanded={expanded}
+          className="flex flex-shrink-0 items-center gap-0.5 text-xs text-muted-foreground transition-colors hover:text-primary"
+        >
+          全部 {articles.length} 篇
+          <ChevronDownIcon className={`h-3.5 w-3.5 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
+        </button>
+      </div>
+
+      {/* 展开的完整目录 */}
+      <AnimatePresence initial={false}>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="overflow-hidden"
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 px-4 pb-3 pt-2.5 border-t border-border/30">
+              {articles.map((article, index) => {
+                const isCurrent = article.slug === currentSlug;
+                const order = article.seriesOrder || index + 1;
+                if (isCurrent) {
+                  return (
+                    <div
+                      key={article.slug}
+                      aria-current="step"
+                      className="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-primary/10"
+                    >
+                      <span className="flex-shrink-0 w-5 h-5 rounded bg-primary/20 text-primary text-[10px] font-bold flex items-center justify-center tabular-nums">
+                        {order}
+                      </span>
+                      <span className="flex-1 min-w-0 text-xs font-medium text-primary truncate">
+                        {article.title}
+                      </span>
+                      <span className="flex-shrink-0 text-[10px] text-primary/80">当前阅读</span>
+                    </div>
+                  );
+                }
+                return (
+                  <Link
+                    key={article.slug}
+                    href={`/blogs/${encodeURIComponent(article.slug)}`}
+                    className="group flex items-center gap-2 px-2.5 py-2 rounded-lg transition-colors hover:bg-primary/5"
+                  >
+                    <span className="flex-shrink-0 w-5 h-5 rounded bg-muted/70 text-muted-foreground text-[10px] font-bold flex items-center justify-center tabular-nums group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                      {order}
+                    </span>
+                    <span className="flex-1 min-w-0 text-xs text-muted-foreground truncate group-hover:text-primary transition-colors">
+                      {article.title}
+                    </span>
+                    <ChevronRightIcon className="h-3 w-3 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-primary" />
+                  </Link>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
 
 /**
  * 博客详情客户端组件
@@ -587,6 +725,11 @@ export default function ClientBlogDetail({
               </motion.div>
             )}
 
+            {/* 系列进度条：阅读入口处的一行式系列导航，完整目录可展开 */}
+            {blog.series && seriesArticles.length > 0 && (
+              <SeriesBar series={blog.series} articles={seriesArticles} currentSlug={blog.slug} />
+            )}
+
             {/* 目录导航 */}
             <div className="mb-8">
               <Suspense fallback={
@@ -676,58 +819,6 @@ export default function ClientBlogDetail({
 
           {/* 文章结尾 */}
           <div className="mt-12">
-            {/*
-              系列信息
-              原本与标签块同处一个 flex 容器，标签块已并入下方的结尾合并卡，
-              因此这里单独成块。用 w-fit 保持「内容宽度」而非撑满整行，
-              与原视觉宽度一致。
-            */}
-            {blog.series && (
-              <div className="w-fit mb-8 flex items-center gap-2 text-sm text-muted-foreground bg-card/60 backdrop-blur-sm px-4 py-3 rounded-2xl border border-border/40 shadow-sm">
-                <BookOpenIcon className="h-4 w-4 text-primary/70" />
-                <span>系列: {blog.series}</span>
-                {blog.seriesOrder && (
-                  <span className="px-2 py-0.5 bg-primary/20 text-primary rounded-full text-xs">
-                    第 {blog.seriesOrder} 篇
-                  </span>
-                )}
-              </div>
-            )}
-
-            {/* 系列文章导航 */}
-            {blog.series && seriesArticles.length > 0 && (
-              <div className="mb-8 bg-card/60 backdrop-blur-sm rounded-2xl border border-border/40 shadow-sm p-5">
-                <div className="flex items-center gap-2 mb-4">
-                  <BookOpenIcon className="h-4 w-4 text-primary/70" />
-                  <span className="text-sm font-medium text-foreground">{blog.series} 系列</span>
-                  <span className="text-xs text-muted-foreground">（共 {seriesArticles.length + 1} 篇）</span>
-                </div>
-                
-                {/* 当前文章 */}
-                <div className="mb-3 px-3 py-2.5 bg-primary/10 rounded-xl border border-primary/20">
-                  <span className="text-xs text-primary font-medium">当前阅读</span>
-                  <p className="text-sm font-medium text-foreground mt-0.5">
-                    {blog.seriesOrder && <span className="text-primary/70 mr-1">#{blog.seriesOrder}</span>}
-                    {blog.title}
-                  </p>
-                </div>
-                
-                {/* 系列其他文章 */}
-                <div className="space-y-1.5">
-                  {seriesArticles.map((article) => (
-                    <Link
-                      key={article.slug}
-                      href={`/blogs/${encodeURIComponent(article.slug)}`}
-                      className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors group"
-                    >
-                      <span className="text-xs text-primary/60 font-mono w-5">#{article.seriesOrder}</span>
-                      <span className="flex-1 truncate group-hover:text-primary transition-colors">{article.title}</span>
-                      <ChevronRightIcon className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/*
               文章收尾融合块
@@ -775,6 +866,9 @@ export default function ClientBlogDetail({
                 title={blog.title}
                 slug={blog.slug}
                 excerpt={blog.excerpt}
+                coverImage={blog.coverImage}
+                date={blog.date}
+                category={blog.category}
                 bare
               />
 

@@ -75,12 +75,14 @@
 - **博客渲染重构** - 拆分 BlogMarkdownBase / ServerBlogMarkdown / BlogArticleImage / BlogArticleIframe / ThemeAwareCodeBlock，服务端与客户端渲染统一
 - **Markdown 安全** - rehype-sanitize 配置独立 sanitizeSchema，过滤危险标签属性
 - **RSS 订阅** - 内置 `/rss.xml` 订阅源（构建期静态生成），与 sitemap 共用统一的博客扫描工具（blogScanner），页脚提供订阅入口
+- **系列导航** - 文章 frontmatter 声明 `series` / `seriesOrder` 后，详情页元信息栏下方出现一行式系列进度条：系列名 + 当前进度 + 上一篇/下一篇快捷跳转，「全部 N 篇」可展开完整目录（当前篇高亮）
 
 ### 💬 互动与订阅
 - **浏览量统计** - 自托管 Cloudflare Worker + D1（`cloudflare/interactions`），文章页元信息栏与列表卡片角标展示全站浏览量；按「路径 + 天 + 访客哈希」去重，不存原始 IP，每日 cron 清理 90 天前明细，接口不可用时自动隐藏不打扰阅读
 - **友链巡检** - `npm run check:friends` 检查友链可达性与响应耗时；结果随构建发布，友链卡显示在线/离线状态点；GitHub Actions 每周定时巡检
 - **新文章通知** - 推送含新文章的提交后，`notify.yml` 自动发送 Telegram 频道消息（带封面）并调用 Worker 群发邮件，按 slug 幂等防重发
 - **邮件订阅** - `/subscribe` 聚合页：RSS / Telegram / 邮件三渠道；邮件为 Resend 双重确认，正文带一次性退订链接，未配置时自动隐藏表单
+- **分享卡片** - 文章分享面板一键生成竖版分享图（Canvas 手绘：天依蓝渐变 + 封面 + 标题摘要 + 二维码），可直接下载或长按转发，跨域封面自动降级
 
 ### 🎵 音乐播放器
 - **Howler驱动** - 基于 Howler.js 的全局播放管理器，播放状态跨页面持久化

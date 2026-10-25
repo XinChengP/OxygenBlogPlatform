@@ -20,6 +20,10 @@ export interface BlogFrontMatter {
   excerpt?: string;
   coverImage?: string;
   hidden?: boolean;
+  /** 所属系列/专栏名称；相同名称的文章在文章详情页聚合成系列导航 */
+  series?: string;
+  /** 系列内序号，缺省时按文章日期排序 */
+  seriesOrder?: number;
 }
 
 /**

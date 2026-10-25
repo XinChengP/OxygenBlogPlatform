@@ -6,6 +6,8 @@ category: "洛天依"
 tags: ["洛天依", "简谱", "星球卑", "VOCALOID", "分享"]
 excerpt: "我们每个人都是漫天星辰中不突出但又最特别的那一颗小星星，不要自卑，只是其他人离你太远看不见你的闪光点"
 coverImage: "/Blogabout/Xingqiubei/cover.webp"
+series: "扒谱"
+seriesOrder: 2
 ---
 
 # 星球卑 简谱

@@ -9,6 +9,8 @@ excerpt: "回首2025，展望2026"
 coverImage: "/Blogabout/2025summary/图一.webp"
 pinned: true
 pinnedAt: "2026-02-26"
+series: "年度总结"
+seriesOrder: 1
 ---
 
 # 2025年度总结
