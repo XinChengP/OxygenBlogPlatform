@@ -410,11 +410,11 @@ export default function BackupManager({ className = '' }: BackupManagerProps) {
     <div className={className}>
       {/* 页面标题 */}
       <div className="mb-6">
-        <h2 className="text-xl font-bold flex items-center gap-2">
+        <h1 className="text-2xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
           <Database className="w-6 h-6" />
           本地备份管理
-        </h2>
-        <p className="text-sm opacity-70 mt-1">
+        </h1>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           将Admin代码备份到本地Git仓库，支持版本回溯
         </p>
       </div>

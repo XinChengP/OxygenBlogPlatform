@@ -45,13 +45,14 @@ class HttpError extends Error {
 export default {
   async fetch(request, env) {
     try {
-      return await handle(request, env);
+      const response = await handle(request, env);
+      return withCors(request, response);
     } catch (error) {
       if (error instanceof HttpError) {
-        return jsonResponse({ error: error.code, message: error.message }, error.status);
+        return withCors(request, jsonResponse({ error: error.code, message: error.message }, error.status));
       }
       console.error('unhandled error:', error);
-      return jsonResponse({ error: 'internal_error' }, 500);
+      return withCors(request, jsonResponse({ error: 'internal_error' }, 500));
     }
   },
 
@@ -60,6 +61,28 @@ export default {
     ctx.waitUntil(cleanup(env));
   },
 };
+
+/**
+ * 给响应补上 CORS 头
+ *
+ * 线上站点走同源路由，浏览器不做 CORS 检查；但本地后台仪表盘
+ * （localhost:7120 直连线上 Worker）属于跨域请求：
+ * 预检 OPTIONS 通过后，实际响应若缺少 Access-Control-Allow-Origin，
+ * 浏览器仍会拦截（表现为 Failed to fetch）。
+ * 因此这里对所有来源合法的请求统一合并 CORS 头。
+ */
+function withCors(request, response) {
+  const headers = corsHeaders(request);
+  if (Object.keys(headers).length === 0) return response;
+
+  const merged = new Headers(response.headers);
+  for (const [key, value] of Object.entries(headers)) merged.set(key, value);
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: merged,
+  });
+}
 
 async function handle(request, env) {
   const url = new URL(request.url);

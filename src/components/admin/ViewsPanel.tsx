@@ -17,6 +17,20 @@ import { INTERACTIONS_API_URL } from '@/setting/InteractionSetting';
 
 const TOKEN_STORAGE_KEY = 'admin_interactions_token';
 
+/**
+ * 管理面板的接口地址
+ *
+ * 后台只在本地运行。本地 wrangler dev 没有 D1 线上数据、也没有 secrets，
+ * 因此本地走 dev server 的同源代理 /api/admin-stats（next.config 中转发到线上
+ * 互动服务），浏览器不触发跨域；非本地环境保持同源 /api/interactions/*。
+ */
+function resolveAdminStatsEndpoint(): string {
+  if (typeof window !== 'undefined' && /^(localhost|127\.0\.0\.1)$/.test(window.location.hostname)) {
+    return '/api/admin-stats';
+  }
+  return `${INTERACTIONS_API_URL}/admin/stats`;
+}
+
 interface AdminStats {
   totalViews: number;
   subscribers: number;
@@ -46,14 +60,14 @@ export default function ViewsPanel() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${INTERACTIONS_API_URL}/admin/stats`, {
+        const response = await fetch(resolveAdminStatsEndpoint(), {
         headers: { Authorization: `Bearer ${tokenValue}` },
         signal: AbortSignal.timeout(8000),
       });
-      if (response.status === 401) {
-        setError('Token 不正确或 Worker 未配置 ADMIN_TOKEN');
-        return;
-      }
+        if (response.status === 401) {
+          setError('Token 不正确（对照 `wrangler secret put ADMIN_TOKEN` 时设置的值）');
+          return;
+        }
       if (!response.ok) {
         setError(`接口返回 ${response.status}`);
         return;

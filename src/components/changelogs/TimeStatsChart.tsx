@@ -35,6 +35,8 @@ interface TimeStatsChartProps {
   changelogs: Changelog[];
   blogTimeStats?: TimeStats;  // 文章时间统计（后台使用）
   momentTimeStats?: TimeStats;  // 动态时间统计（后台使用）
+  /** 是否使用加宽图表区域（后台仪表盘全宽布局） */
+  wide?: boolean;
 }
 
 /**
@@ -45,7 +47,7 @@ interface TimeStatsChartProps {
  * - 前台（日志页面）：只传入 changelogs，显示日志趋势
  * - 后台（仪表盘）：传入 changelogs、blogTimeStats、momentTimeStats，显示三种数据趋势
  */
-export default function TimeStatsChart({ changelogs, blogTimeStats, momentTimeStats }: TimeStatsChartProps) {
+export default function TimeStatsChart({ changelogs, blogTimeStats, momentTimeStats, wide = false }: TimeStatsChartProps) {
   // 当前选中的统计模式
   const [mode, setMode] = useState<StatMode>('month');
   const [chartType, setChartType] = useState<'line' | 'area'>('area');
@@ -214,8 +216,8 @@ export default function TimeStatsChart({ changelogs, blogTimeStats, momentTimeSt
       </div>
 
       {/* 图表区域 */}
-      <div className="w-full flex justify-center" style={{ height: '200px', minWidth: '200px' }}>
-        <div className="w-full max-w-lg" style={{ minWidth: '200px' }}>
+      <div className="w-full flex justify-center" style={{ height: wide ? '300px' : '200px', minWidth: '200px' }}>
+        <div className={wide ? 'w-full' : 'w-full max-w-lg'} style={{ minWidth: '200px' }}>
           {filteredData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={200}>
               {chartType === 'area' ? (

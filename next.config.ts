@@ -116,6 +116,16 @@ const devConfig = {
       source: '/api/interactions/:path*',
       destination: `${process.env.INTERACTIONS_DEV_URL || 'http://127.0.0.1:8787'}/api/interactions/:path*`,
     },
+    /*
+      本地后台仪表盘的浏览量统计：直接由 dev server 代理到线上互动服务。
+      浏览器侧始终是同源请求，不触发 CORS 预检、不受 CSP connect-src 约束；
+      本地 wrangler dev 既没有线上 D1 数据也没有 secrets，代理到线上才能看到真实数据。
+      该路径只存在于开发配置，静态导出产物没有 /api/admin-stats。
+    */
+    {
+      source: '/api/admin-stats',
+      destination: 'https://blog.xinchengp.cn/api/interactions/admin/stats',
+    },
   ],
   headers: async () => {
     return [

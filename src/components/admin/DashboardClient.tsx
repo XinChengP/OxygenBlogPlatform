@@ -342,11 +342,16 @@ const CategoryPieChart: React.FC<CategoryPieChartProps> = ({ categories }) => {
 
       {/* 卡片头部 */}
       <div className="flex justify-between items-center mb-4 pb-3 border-b border-border/30">
-        <h3 className="text-base font-bold flex items-center gap-2">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
-          </svg>
+        <h3 className="text-base font-bold flex items-center gap-2 bg-gradient-to-r from-primary via-primary/80 to-accent bg-clip-text text-transparent">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+          >
+            <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+            </svg>
+          </motion.div>
           博客文章分类分布
         </h3>
         {sortedData.length > 0 && (
@@ -859,43 +864,126 @@ const DashboardClient: React.FC<DashboardClientProps> = ({ stats }) => {
       initial="hidden"
       animate="visible"
     >
-      {/* 顶部标题栏 - 简约悬浮式设计 */}
-      <motion.div 
+      {/* 页面标题栏 */}
+      <motion.div
         variants={itemVariants}
-        className={cn(
-          'sticky top-0 z-10 mb-6 -mx-4 px-4 py-4',
-          'bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl',
-          'border-b border-gray-200/50 dark:border-gray-700/50'
-        )}
+        className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
       >
-        <div className="flex items-center justify-between max-w-[1920px] mx-auto">
-          <div className="flex items-center space-x-4">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-[#66ccff]/20 to-[#66ccff]/5">
-              <LayoutDashboard className="w-6 h-6 text-[#66ccff]" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                欢迎回来
-              </h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                这是您的博客管理概览
-              </p>
-            </div>
+        <div className="flex items-center space-x-4">
+          <div className="p-2 rounded-xl bg-gradient-to-br from-[#66ccff]/20 to-[#66ccff]/5">
+            <LayoutDashboard className="w-6 h-6 text-[#66ccff]" />
           </div>
-          <div className="text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-full">
-            {new Date().toLocaleDateString('zh-CN', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-              weekday: 'long',
-            })}
+          <div>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+              欢迎回来
+            </h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              这是您的博客管理概览
+            </p>
           </div>
+        </div>
+        <div className="self-start sm:self-auto text-sm text-gray-500 dark:text-gray-400 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 px-4 py-2 rounded-full">
+          {new Date().toLocaleDateString('zh-CN', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            weekday: 'long',
+          })}
         </div>
       </motion.div>
 
+      {/* 数据概览：顶部全宽统计条 */}
+      <motion.section variants={itemVariants} className="mb-6">
+        <h2 className="mb-3 text-sm font-semibold text-gray-500 dark:text-gray-400">
+          数据概览
+        </h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
+          <StatOverviewCard
+            icon={FileText}
+            value={stats.blogCount}
+            label="文章总数"
+            gradient="bg-blue-100 dark:bg-blue-900/30"
+            iconColor="text-blue-500"
+            delay={0}
+          />
+          <TrendCard
+            icon={Type}
+            value={stats.blogWordCount}
+            label="文章字数"
+            gradient="bg-cyan-100 dark:bg-cyan-900/30"
+            iconColor="text-cyan-500"
+            delay={1}
+          />
+          <StatOverviewCard
+            icon={MessageSquare}
+            value={stats.momentCount}
+            label="动态总数"
+            gradient="bg-green-100 dark:bg-green-900/30"
+            iconColor="text-green-500"
+            delay={2}
+          />
+          <TrendCard
+            icon={MessageSquare}
+            value={stats.momentWordCount}
+            label="动态字数"
+            gradient="bg-lime-100 dark:bg-lime-900/30"
+            iconColor="text-lime-500"
+            delay={3}
+          />
+          <StatOverviewCard
+            icon={ScrollText}
+            value={stats.changelogCount}
+            label="日志总数"
+            gradient="bg-pink-100 dark:bg-pink-900/30"
+            iconColor="text-pink-500"
+            delay={4}
+          />
+          <TrendCard
+            icon={History}
+            value={stats.changelogWordCount}
+            label="日志字数"
+            gradient="bg-rose-100 dark:bg-rose-900/30"
+            iconColor="text-rose-500"
+            delay={5}
+          />
+          <TrendCard
+            icon={Folder}
+            value={stats.categoryCount}
+            label="文章分类"
+            gradient="bg-indigo-100 dark:bg-indigo-900/30"
+            iconColor="text-indigo-500"
+            delay={6}
+          />
+          <TrendCard
+            icon={Tag}
+            value={stats.totalTagCount}
+            label="标签总数"
+            gradient="bg-teal-100 dark:bg-teal-900/30"
+            iconColor="text-teal-500"
+            delay={7}
+          />
+          <StatOverviewCard
+            icon={Image}
+            value={stats.imageCount}
+            label="图片总数"
+            gradient="bg-purple-100 dark:bg-purple-900/30"
+            iconColor="text-purple-500"
+            delay={8}
+          />
+          <StatOverviewCard
+            icon={CheckCircle2}
+            value={stats.todoCompletedCount}
+            label="已完成待办"
+            gradient="bg-orange-100 dark:bg-orange-900/30"
+            iconColor="text-orange-500"
+            delay={9}
+          />
+        </div>
+      </motion.section>
+
       {/* 主内容区域：左右自适应布局 */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 max-w-[1920px] mx-auto">
-        {/* 左侧主栏：核心操作与数据概览（占8份，约66%） */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+        {/* 左侧主栏：核心操作与图表（占8份，约66%） */}
         <div className="xl:col-span-8 space-y-6">
           {/* 第一模块：快捷操作 - 3x2网格卡片 */}
           <motion.div variants={itemVariants}>
@@ -961,9 +1049,9 @@ const DashboardClient: React.FC<DashboardClientProps> = ({ stats }) => {
             </AdminCard>
           </motion.div>
 
-          {/* 第二模块：分类分布和类型分布 - 左右水平排列 */}
+          {/* 第二模块：分类分布和类型分布 - 响应式左右排列 */}
           <motion.div variants={itemVariants}>
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* 文章分类分布 - 始终显示 */}
               <CategoryPieChart categories={stats.categoryStats} />
               {/* 更新日志类型分布 - 有数据时显示 */}
@@ -972,19 +1060,10 @@ const DashboardClient: React.FC<DashboardClientProps> = ({ stats }) => {
               )}
             </div>
           </motion.div>
-
-          {/* 第三模块：内容发布趋势 - 显示文章、动态和日志的时间趋势 */}
-          <motion.div variants={itemVariants}>
-            <TimeStatsChart 
-              changelogs={changelogsData} 
-              blogTimeStats={stats.blogTimeStats}
-              momentTimeStats={stats.momentTimeStats}
-            />
-          </motion.div>
         </div>
 
-        {/* 右侧副栏：辅助信息与快捷功能（占4份，约33%） */}
-        <div className="xl:col-span-4 space-y-6">
+        {/* 右侧副栏：辅助信息与快捷功能（占4份，约33%），快速入口固定在栏底 */}
+        <div className="xl:col-span-4 flex flex-col gap-6">
           {/* 第一模块：热门标签 - 标签云/瀑布流 */}
           <motion.div variants={itemVariants}>
             <AdminCard title="热门标签">
@@ -992,100 +1071,7 @@ const DashboardClient: React.FC<DashboardClientProps> = ({ stats }) => {
             </AdminCard>
           </motion.div>
 
-          {/* 第二模块：统计 - 数据概览卡片 */}
-          <motion.div variants={itemVariants}>
-            <AdminCard title="统计">
-              <div className="grid grid-cols-2 gap-3">
-                {/* 第一行：文章总数 + 文章字数 */}
-                <StatOverviewCard
-                  icon={FileText}
-                  value={stats.blogCount}
-                  label="文章总数"
-                  gradient="bg-blue-100 dark:bg-blue-900/30"
-                  iconColor="text-blue-500"
-                  delay={0}
-                />
-                <TrendCard
-                  icon={Type}
-                  value={stats.blogWordCount}
-                  label="文章字数"
-                  gradient="bg-cyan-100 dark:bg-cyan-900/30"
-                  iconColor="text-cyan-500"
-                  delay={1}
-                />
-                {/* 第二行：动态总数 + 动态字数 */}
-                <StatOverviewCard
-                  icon={MessageSquare}
-                  value={stats.momentCount}
-                  label="动态总数"
-                  gradient="bg-green-100 dark:bg-green-900/30"
-                  iconColor="text-green-500"
-                  delay={2}
-                />
-                <TrendCard
-                  icon={MessageSquare}
-                  value={stats.momentWordCount}
-                  label="动态字数"
-                  gradient="bg-lime-100 dark:bg-lime-900/30"
-                  iconColor="text-lime-500"
-                  delay={3}
-                />
-                {/* 第三行：日志总数 + 日志字数 */}
-                <StatOverviewCard
-                  icon={ScrollText}
-                  value={stats.changelogCount}
-                  label="日志总数"
-                  gradient="bg-pink-100 dark:bg-pink-900/30"
-                  iconColor="text-pink-500"
-                  delay={4}
-                />
-                <TrendCard
-                  icon={History}
-                  value={stats.changelogWordCount}
-                  label="日志字数"
-                  gradient="bg-rose-100 dark:bg-rose-900/30"
-                  iconColor="text-rose-500"
-                  delay={5}
-                />
-                {/* 第四行：文章分类 + 标签总数 */}
-                <TrendCard
-                  icon={Folder}
-                  value={stats.categoryCount}
-                  label="文章分类"
-                  gradient="bg-indigo-100 dark:bg-indigo-900/30"
-                  iconColor="text-indigo-500"
-                  delay={6}
-                />
-                <TrendCard
-                  icon={Tag}
-                  value={stats.totalTagCount}
-                  label="标签总数"
-                  gradient="bg-teal-100 dark:bg-teal-900/30"
-                  iconColor="text-teal-500"
-                  delay={7}
-                />
-                {/* 第五行：图片总数 + 已完成待办 */}
-                <StatOverviewCard
-                  icon={Image}
-                  value={stats.imageCount}
-                  label="图片总数"
-                  gradient="bg-purple-100 dark:bg-purple-900/30"
-                  iconColor="text-purple-500"
-                  delay={8}
-                />
-                <StatOverviewCard
-                  icon={CheckCircle2}
-                  value={stats.todoCompletedCount}
-                  label="已完成待办"
-                  gradient="bg-orange-100 dark:bg-orange-900/30"
-                  iconColor="text-orange-500"
-                  delay={9}
-                />
-              </div>
-            </AdminCard>
-          </motion.div>
-
-          {/* 第三模块：待办进度 - 进度卡片 */}
+          {/* 第二模块：待办进度 - 进度卡片 */}
           {stats.todoCount > 0 && (
             <motion.div variants={itemVariants}>
               <AdminCard title="待办进度">
@@ -1117,15 +1103,15 @@ const DashboardClient: React.FC<DashboardClientProps> = ({ stats }) => {
             </motion.div>
           )}
 
-          {/* 第三点五模块：文章浏览量（互动服务自建数据） */}
+          {/* 第三模块：文章浏览量（互动服务自建数据） */}
           <motion.div variants={itemVariants}>
             <AdminCard title="文章浏览量">
               <ViewsPanel />
             </AdminCard>
           </motion.div>
 
-          {/* 第四模块：快速入口/常用工具 */}
-          <motion.div variants={itemVariants}>
+          {/* 第四模块：快速入口/常用工具 - 用 mt-auto 固定在栏底，避免右栏底部参差 */}
+          <motion.div variants={itemVariants} className="mt-auto">
             <AdminCard title="快速入口">
               <div className="space-y-2">
                 <QuickLink
@@ -1144,6 +1130,16 @@ const DashboardClient: React.FC<DashboardClientProps> = ({ stats }) => {
           </motion.div>
         </div>
       </div>
+
+      {/* 内容发布趋势 - 全宽展示文章、动态和日志的时间趋势 */}
+      <motion.div variants={itemVariants} className="mt-6">
+        <TimeStatsChart 
+          changelogs={changelogsData} 
+          blogTimeStats={stats.blogTimeStats}
+          momentTimeStats={stats.momentTimeStats}
+          wide
+        />
+      </motion.div>
     </motion.div>
   );
 };

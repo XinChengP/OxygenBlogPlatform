@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -8,7 +9,17 @@ import {
   X, 
   Sun, 
   Moon, 
-  Sparkles
+  Sparkles,
+  LayoutDashboard,
+  FileText,
+  MessageSquare,
+  CheckSquare,
+  History,
+  Image,
+  FolderOpen,
+  Server,
+  Database,
+  Settings,
 } from 'lucide-react';
 import AdminSidebar from './AdminSidebar';
 import { getAvatarPath, name as siteAuthorName } from '@/setting/AboutSetting';
@@ -19,6 +30,30 @@ import { getAvatarPath, name as siteAuthorName } from '@/setting/AboutSetting';
 interface AdminLayoutProps {
   children: React.ReactNode;
 }
+
+/**
+ * 路由与页面标题映射
+ * 顺序按路径长度从长到短排列，保证前缀匹配时优先命中更具体的子页面
+ */
+const PAGE_META: Array<{
+  prefix: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+}> = [
+  { prefix: '/admin/blogs/edit', label: '文章编辑', icon: FileText },
+  { prefix: '/admin/moments/edit', label: '动态编辑', icon: MessageSquare },
+  { prefix: '/admin/changelogs/edit', label: '日志编辑', icon: History },
+  { prefix: '/admin/gallery/local', label: '本地图床', icon: FolderOpen },
+  { prefix: '/admin/gallery/remote', label: '图床管理器', icon: Server },
+  { prefix: '/admin/gallery', label: '图床管理', icon: Image },
+  { prefix: '/admin/blogs', label: '文章管理', icon: FileText },
+  { prefix: '/admin/moments', label: '动态管理', icon: MessageSquare },
+  { prefix: '/admin/todo', label: '待办管理', icon: CheckSquare },
+  { prefix: '/admin/changelogs', label: '日志管理', icon: History },
+  { prefix: '/admin/backup', label: '本地备份', icon: Database },
+  { prefix: '/admin/settings', label: '系统设置', icon: Settings },
+  { prefix: '/admin', label: '仪表盘', icon: LayoutDashboard },
+];
 
 /**
  * 管理后台布局组件
@@ -35,6 +70,21 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   
   // 获取当前主题
   const { resolvedTheme, setTheme } = useTheme();
+  // 当前路由，用于在顶栏展示所在页面
+  const pathname = usePathname();
+
+  /**
+   * 当前页面信息（标题与图标）
+   * 未匹配到路由时回退到「管理后台」
+   */
+  const currentPage = useMemo(() => {
+    const matched = PAGE_META.find(
+      item => pathname === item.prefix || pathname.startsWith(item.prefix + '/')
+    );
+    return matched ?? { prefix: '/admin', label: '管理后台', icon: Sparkles };
+  }, [pathname]);
+
+  const PageIcon = currentPage.icon;
 
   /**
    * 组件挂载后设置状态
@@ -160,14 +210,20 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                 </motion.div>
               </motion.button>
 
-              {/* 页面标题 */}
-              <div className="flex items-center space-x-2">
-                <div className="hidden sm:flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-[#66ccff]/20 to-[#66ccff]/5">
-                  <Sparkles className="w-4 h-4 text-[#66ccff]" />
+              {/* 当前页面标题（面包屑） */}
+              <div className="flex items-center space-x-2.5 min-w-0">
+                <div className="hidden sm:flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-[#66ccff]/20 to-[#66ccff]/5 shrink-0">
+                  <PageIcon className="w-4 h-4 text-[#66ccff]" />
                 </div>
-                <h1 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
-                  管理后台
-                </h1>
+                <div className="flex items-baseline space-x-2 min-w-0">
+                  <span className="hidden md:inline text-sm text-gray-400 dark:text-gray-500 whitespace-nowrap">
+                    管理后台
+                  </span>
+                  <span className="hidden md:inline text-gray-300 dark:text-gray-600">/</span>
+                  <h1 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-100 truncate">
+                    {currentPage.label}
+                  </h1>
+                </div>
               </div>
             </div>
 
@@ -230,14 +286,14 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-            className="max-w-7xl mx-auto"
+            className="max-w-[1440px] mx-auto"
           >
             {children}
           </motion.div>
         </main>
 
         {/* 页脚 */}
-        <footer className="py-6 px-8 text-center">
+        <footer className="py-6 px-4 lg:px-8 text-center">
           <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50">
             <Sparkles className="w-4 h-4 text-[#66ccff]" />
             <p className="text-sm text-gray-500 dark:text-gray-400">
