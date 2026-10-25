@@ -4,7 +4,7 @@ date: "2026-10-25"
 updatedAt: "2026-10-25"
 author: 歆橙
 category: "技术"
-tags: ["数据恢复", "U盘", "DMDE", "RAW"]
+tags: ["崩溃", "数据恢复", "U盘", "DMDE", "RAW"]
 excerpt: "U盘抢（划去）救援记录"
 coverImage: "/Blogabout/usb-rescue-record/cover.jpg"
 ---
