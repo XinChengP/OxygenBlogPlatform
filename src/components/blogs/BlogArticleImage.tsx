@@ -26,6 +26,16 @@ export default function BlogArticleImage({ src, alt, node, ...props }: MarkdownI
   const { imageSrcSetRef, articleImagesRef, onImageClick } = useBlogArticleAssets();
 
   /*
+    装饰性图片（聊天头像、表情包等）用 data-no-lightbox 标记退出灯箱：
+    - 不进入正文灯箱列表，不响应点击放大
+    - 不输出 role="button" / tabIndex / aria-label，避免键盘 Tab 与读屏
+      把纯装饰图当成可操作按钮
+    保留的能力：仍走 getAssetPath 补部署前缀、仍查响应式变体清单。
+    rehype-sanitize 的 `*` 规则已放行 data*，该属性不会被清洗阶段丢弃。
+  */
+  const noLightbox = 'data-no-lightbox' in props;
+
+  /*
     清单键使用未加 basePath 的原始路径；getAssetPath 只负责部署前缀，
     若用它查清单，在非根路径部署时会查不到。
   */
@@ -83,7 +93,7 @@ export default function BlogArticleImage({ src, alt, node, ...props }: MarkdownI
           <a href={processedSrc} className="text-primary underline">下载视频</a>
           查看。
         </video>
-        {alt && (
+        {alt && !noLightbox && (
           // 使用 em 标签显示视频描述，样式与图片描述保持一致
           <em className="block text-sm text-muted-foreground mt-2 mb-4 italic text-center">{alt}</em>
         )}
@@ -96,7 +106,8 @@ export default function BlogArticleImage({ src, alt, node, ...props }: MarkdownI
   // 清空列表，子组件随后渲染并重新注册；若放在 effect 里，父组件的 effect
   // 晚于子组件渲染执行，会把刚注册的图片全部抹掉，灯箱列表将永远为空。
   // imageSrcSetRef 去重保证 StrictMode 双渲染 / 重复挂载不会重复收集。
-  if (typeof processedSrc === 'string' && processedSrc && !imageSrcSetRef.current.has(processedSrc)) {
+  // 标了 data-no-lightbox 的装饰图直接跳过收集。
+  if (!noLightbox && typeof processedSrc === 'string' && processedSrc && !imageSrcSetRef.current.has(processedSrc)) {
     imageSrcSetRef.current.add(processedSrc);
     articleImagesRef.current.push({
       id: `blog-img-${articleImagesRef.current.length}`,
@@ -106,7 +117,8 @@ export default function BlogArticleImage({ src, alt, node, ...props }: MarkdownI
   }
 
   const handleImageClick = () => {
-    if (typeof processedSrc !== 'string') return;
+    // 装饰图没有灯箱条目，即使被外部 onClick 触发也要直接退出
+    if (noLightbox || typeof processedSrc !== 'string') return;
     const existingImage = articleImagesRef.current.find(
       (img) => img.src === processedSrc
     );
@@ -127,10 +139,10 @@ export default function BlogArticleImage({ src, alt, node, ...props }: MarkdownI
         sizes={finalSizes}
         width={responsiveEntry?.width}
         height={responsiveEntry?.height}
-        alt={alt || '图片'}
-        className={`rounded-xl shadow-lg mx-auto h-auto my-4 cursor-pointer hover:opacity-90 transition-opacity ${
-          isLandscape ? 'max-w-full' : 'max-w-[400px]'
-        }`}
+        alt={alt || (noLightbox ? '' : '图片')}
+        className={`rounded-xl shadow-lg mx-auto h-auto my-4 ${
+          noLightbox ? '' : 'cursor-pointer hover:opacity-90 transition-opacity'
+        } ${isLandscape ? 'max-w-full' : 'max-w-[400px]'}`}
         loading="lazy"
         decoding="async"
         // 有构建期尺寸时不再需要 onLoad 探测；外链/无清单图片仍走兜底
@@ -139,21 +151,25 @@ export default function BlogArticleImage({ src, alt, node, ...props }: MarkdownI
           const target = e.currentTarget;
           setDetectedLandscape(target.naturalWidth > target.naturalHeight);
         }}
-        onClick={handleImageClick}
-        role="button"
-        tabIndex={0}
-        aria-label={`查看大图：${alt || '图片'}`}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            handleImageClick();
-          }
-        }}
+        onClick={noLightbox ? undefined : handleImageClick}
+        role={noLightbox ? undefined : 'button'}
+        tabIndex={noLightbox ? undefined : 0}
+        aria-label={noLightbox ? undefined : `查看大图：${alt || '图片'}`}
+        onKeyDown={
+          noLightbox
+            ? undefined
+            : (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleImageClick();
+                }
+              }
+        }
         {...props}
         // 放在 ...props 之后：markdown 透传的同名属性不会覆盖兜底逻辑
         onError={handleImageError}
       />
-      {alt && (
+      {alt && !noLightbox && (
         // 使用 em 标签显示图片描述，避免嵌套块级元素
         <em className="block text-sm text-muted-foreground mt-2 mb-4 italic text-center">{alt}</em>
       )}

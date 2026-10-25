@@ -274,7 +274,7 @@ coverImage: "/Blogabout/usb-rescue-record/cover.jpg"
   }
 </style>
 
-# 萨 拉 热 窝 事 件
+## 萨 拉 热 窝 事 件
 
 &emsp;&emsp;事情是这样的：
 
@@ -286,6 +286,8 @@ coverImage: "/Blogabout/usb-rescue-record/cover.jpg"
      自己发的加 qc-msg-self（头像放在文字后面），对方发的头像放在文字前面。
   3. 改昵称/状态：改 qc-title 与 qc-sub。
   4. 加时间线：复制一行 <div class="qc-time">...</div>。
+  5. 头像与表情：img 必须带 data-no-lightbox，否则会被正文灯箱收集，
+     点开聊天头像会弹出大图预览，键盘 Tab 也会停在装饰图上。
   注意：这段 HTML 中间不要留空行，否则会被 Markdown 当成代码块。
 -->
 <div class="qc-window">
@@ -300,7 +302,7 @@ coverImage: "/Blogabout/usb-rescue-record/cover.jpg"
         <div class="qc-bubble">有种不好的预感</div>
       </div>
       <div class="qc-avatar">
-        <img src="/Blogabout/blogs-crash-diary/touxiang1.jpg" alt="我" loading="lazy" decoding="async">
+        <img src="/Blogabout/blogs-crash-diary/touxiang1.jpg" alt="我" data-no-lightbox loading="lazy" decoding="async">
       </div>
     </div>
     <div class="qc-time">2026/10/23 18:16</div>
@@ -309,15 +311,15 @@ coverImage: "/Blogabout/usb-rescue-record/cover.jpg"
         <div class="qc-bubble">丸辣</div>
       </div>
       <div class="qc-avatar">
-        <img src="/Blogabout/blogs-crash-diary/touxiang1.jpg" alt="我" loading="lazy" decoding="async">
+        <img src="/Blogabout/blogs-crash-diary/touxiang1.jpg" alt="我" data-no-lightbox loading="lazy" decoding="async">
       </div>
     </div>
     <div class="qc-msg qc-msg-self">
       <div class="qc-main">
-        <div class="qc-sticker"><img src="/Blogabout/usb-rescue-record/1.gif" alt="" loading="lazy" decoding="async"></div>
+        <div class="qc-sticker"><img src="/Blogabout/usb-rescue-record/1.gif" alt="" data-no-lightbox loading="lazy" decoding="async"></div>
       </div>
       <div class="qc-avatar">
-        <img src="/Blogabout/blogs-crash-diary/touxiang1.jpg" alt="我" loading="lazy" decoding="async">
+        <img src="/Blogabout/blogs-crash-diary/touxiang1.jpg" alt="我" data-no-lightbox loading="lazy" decoding="async">
       </div>
     </div>
     <div class="qc-msg qc-msg-self">
@@ -325,7 +327,7 @@ coverImage: "/Blogabout/usb-rescue-record/cover.jpg"
         <div class="qc-bubble">忘带电脑充电线了</div>
       </div>
       <div class="qc-avatar">
-        <img src="/Blogabout/blogs-crash-diary/touxiang1.jpg" alt="我" loading="lazy" decoding="async">
+        <img src="/Blogabout/blogs-crash-diary/touxiang1.jpg" alt="我" data-no-lightbox loading="lazy" decoding="async">
       </div>
     </div>
     <div class="qc-msg qc-msg-self">
@@ -333,16 +335,16 @@ coverImage: "/Blogabout/usb-rescue-record/cover.jpg"
         <div class="qc-bubble">带了块大地板砖回家</div>
       </div>
       <div class="qc-avatar">
-        <img src="/Blogabout/blogs-crash-diary/touxiang1.jpg" alt="我" loading="lazy" decoding="async">
+        <img src="/Blogabout/blogs-crash-diary/touxiang1.jpg" alt="我" data-no-lightbox loading="lazy" decoding="async">
       </div>
     </div>
     <div class="qc-notice">今天聊天超过 10 条，可获得新宠物能量值 <span>立即领取</span></div>
     <div class="qc-msg">
       <div class="qc-avatar">
-        <img src="/Blogabout/blogs-crash-diary/gezianhao.jpg" alt="鸽子" loading="lazy" decoding="async">
+        <img src="/Blogabout/blogs-crash-diary/gezianhao.jpg" alt="鸽子" data-no-lightbox loading="lazy" decoding="async">
       </div>
       <div class="qc-main">
-        <div class="qc-sticker"><img src="/Blogabout/usb-rescue-record/2.gif" alt="" loading="lazy" decoding="async"></div>
+        <div class="qc-sticker"><img src="/Blogabout/usb-rescue-record/2.gif" alt="" data-no-lightbox loading="lazy" decoding="async"></div>
       </div>
     </div>
   </div>
@@ -363,18 +365,18 @@ C:\Users\admin>chkdsk D: /f
 CHKDSK 无法供 RAW 驱动器使用。
 ```
 
-# 无论遇到什么困难。。。
+## 无论遇到什么困难。。。
 
 &emsp;&emsp;孩子们没招了，恢复呗，找了六个软件：
 
-## 有点用处，但是不多
+### 有点用处，但是不多
 
 | DiskGenius | DMDE |
 | :---: | :---: |
 | ![DiskGenius 扫描出十万多个文件](/Blogabout/usb-rescue-record/1-1.png) | ![DMDE 列出能恢复的项目文件](/Blogabout/usb-rescue-record/3-1.png) |
 | ![DiskGenius 恢复要买专业版](/Blogabout/usb-rescue-record/1-2.png) | 也有限制，特麻烦 |
 
-## 寄，嘛都没扫出来啊
+### 寄，嘛都没扫出来啊
 
 | testdisk | R-Linux | Windows File Recovery | Power Data Recovery |
 | :---: | :---: | :---: | :---: |
@@ -382,7 +384,7 @@ CHKDSK 无法供 RAW 驱动器使用。
 
 &emsp;&emsp;这些是动用了各种方式淘到的恢复软件（AI搜索，搜索引擎，py交易），要么就是能扫出来但是不免费，要么就是免费但是扫不出来，逆天了
 
-# 我不要，就这样——
+## 我不要，就这样——
 
 &emsp;&emsp;其实里面最重要的文件已经恢复（课上的成品），但是我还想更进一步——把所有的文件全部~~抢~~救回来（没错就是本博客项目的拷贝）
 
@@ -400,7 +402,7 @@ CHKDSK 无法供 RAW 驱动器使用。
 
 &emsp;&emsp;最后肯定可以修复出数据的（理论上），至于效率。。。慢到发指，我这等了一个小时就还没搞完一个文件夹，果断放弃
 
-# 我想静静了。。。
+## 我想静静了。。。
 
 &emsp;&emsp;真要等脚本给我导出来，黄花菜都凉了a，只能另辟蹊径了
 
@@ -414,7 +416,7 @@ CHKDSK 无法供 RAW 驱动器使用。
 
 &emsp;&emsp;道心破碎，卒
 
-# 霜降战神计划破产（雾）
+## 霜降战神计划破产（雾）
 
 &emsp;&emsp;盼来了霜降，同时U盘也是在这一天炸的23333，本来打算好好整整我这小博客的（哦悲）
 
