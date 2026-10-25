@@ -51,6 +51,29 @@ const nodeToText = (node: React.ReactNode): string => {
   return '';
 };
 
+/**
+ * 解析围栏代码块 meta 中的高亮行标记：```js hl=1,3-5
+ * 支持单行、逗号分隔与闭区间（如 hl=2-4）；hl 与 highlight 两种写法等价。
+ * 非法片段忽略；解析结果为空时返回 undefined，代码块保持无高亮。
+ */
+function parseHighlightLines(meta?: string): number[] | undefined {
+  if (!meta) return undefined;
+  const match = /(?:^|\s)(?:hl|highlight)=(\d+(?:\s*,\s*\d+(?:\s*-\s*\d+)?)*)/i.exec(meta);
+  if (!match) return undefined;
+
+  const lines = new Set<number>();
+  for (const part of match[1].split(',')) {
+    const range = /^(\d+)(?:-(\d+))?$/.exec(part.trim());
+    if (!range) continue;
+    const start = Number.parseInt(range[1], 10);
+    const end = range[2] !== undefined ? Number.parseInt(range[2], 10) : start;
+    for (let n = Math.min(start, end); n <= Math.max(start, end); n++) {
+      if (n >= 1) lines.add(n);
+    }
+  }
+  return lines.size > 0 ? [...lines].sort((a, b) => a - b) : undefined;
+}
+
 export default function ServerBlogMarkdown({ content }: { content: string }) {
   return (
     <ReactMarkdown
@@ -71,8 +94,10 @@ export default function ServerBlogMarkdown({ content }: { content: string }) {
             return <>{children}</>;
           }
 
-          const { className, children: codeChildren } = child.props as {
+          const { className, metastring, children: codeChildren } = child.props as {
             className?: string;
+            /** 围栏代码块语言标识之后的 meta 原文（如 hl=1,3-5） */
+            metastring?: string;
             children?: React.ReactNode;
           };
           const match = /language-(\w+)/.exec(className || '');
@@ -85,6 +110,7 @@ export default function ServerBlogMarkdown({ content }: { content: string }) {
                 code={code}
                 language={language}
                 displayName={getLanguageDisplayName(language)}
+                highlightLines={parseHighlightLines(metastring)}
               />
             );
           }

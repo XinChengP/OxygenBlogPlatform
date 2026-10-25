@@ -91,12 +91,23 @@ export const metadata: Metadata = {
 
   /**
    * 网站图标配置
+   *
+   * PNG 图标由 scripts/generate-pwa-icons.mjs 从站点头像生成，
+   * 与 public/manifest.webmanifest 的 icons 保持一致（PWA 安装用）。
    */
   icons: {
-    icon: '/favicon.ico',
+    icon: [
+      { url: '/favicon.ico', sizes: '48x48' },
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+    ],
     shortcut: '/favicon.ico',
-    apple: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
   },
+
+  /**
+   * PWA manifest：配合 public/sw.js 的离线缓存，站内页面可安装到桌面/主屏幕
+   */
+  manifest: '/manifest.webmanifest',
 
   /**
    * 替代格式配置

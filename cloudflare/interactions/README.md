@@ -6,6 +6,7 @@ Cloudflare Worker + D1，为博客提供三组能力：
 | --- | --- | --- |
 | 浏览量 | `POST /view`、`GET /stats` | 按「路径 + 天 + 访客哈希」去重，不存原始 IP |
 | 邮件订阅 | `POST /subscribe`、`GET /confirm`、`GET /unsubscribe`、`POST /notify` | Resend 双重确认，`sent_post` 幂等群发 |
+| 管理统计 | `GET /admin/stats` | Bearer ADMIN_TOKEN；全站浏览量总览 + 各路径明细 + 订阅者数 |
 
 ## 接入方式
 
@@ -42,7 +43,7 @@ npm run db:remote
 # 4. 配置 secrets
 npx wrangler secret put VISITOR_SALT           # 随机长字符串，访客哈希的盐
 npx wrangler secret put RESEND_API_KEY         # Resend API Key（邮件订阅用）
-npx wrangler secret put NEWSLETTER_ADMIN_TOKEN # /notify 的鉴权 Bearer Token
+npx wrangler secret put ADMIN_TOKEN              # /notify 群发与 /admin/stats 统计共用的 Bearer Token
 
 # 5. 部署
 npm run deploy
@@ -61,7 +62,7 @@ wrangler.toml 里还有两个 `[vars]` 可按需改：
    `/subscribe` 页面才会显示邮箱表单。
 4. GitHub Actions（`notify.yml`）配置 secrets：
    - `NEWSLETTER_API_URL` = `https://blog.xinchengp.cn/api/interactions`
-   - `NEWSLETTER_ADMIN_TOKEN` = 与 Worker secret 相同的值
+   - `ADMIN_TOKEN` = 与 Worker secret 相同的值
 
 未配置时 `/subscribe` 仍展示 RSS 与 Telegram 入口，只是隐藏邮箱表单。
 
@@ -91,7 +92,7 @@ curl -X POST http://127.0.0.1:8787/api/interactions/subscribe \
 ```ini
 VISITOR_SALT=dev-insecure-salt
 RESEND_API_KEY=re_xxx
-NEWSLETTER_ADMIN_TOKEN=dev-token
+ADMIN_TOKEN=dev-token
 ```
 
 ## 数据与隐私

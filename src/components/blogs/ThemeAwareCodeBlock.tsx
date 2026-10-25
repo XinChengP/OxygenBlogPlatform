@@ -11,6 +11,8 @@ interface ThemeAwareCodeBlockProps {
   language: string;
   /** 头部展示的语言名称 */
   displayName: string;
+  /** 需要高亮的行号列表（来自围栏代码块 meta 的 hl= 标记，可空） */
+  highlightLines?: number[];
 }
 
 /**
@@ -27,6 +29,7 @@ export default function ThemeAwareCodeBlock({
   code,
   language,
   displayName,
+  highlightLines,
 }: ThemeAwareCodeBlockProps) {
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -43,6 +46,7 @@ export default function ThemeAwareCodeBlock({
       language={language}
       displayName={displayName}
       syntaxTheme={syntaxTheme}
+      highlightLines={highlightLines}
     />
   );
 }

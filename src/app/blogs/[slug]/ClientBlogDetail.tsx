@@ -15,7 +15,8 @@ import {
   ChatBubbleLeftRightIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  ChevronDownIcon
+  ChevronDownIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 
 
@@ -40,6 +41,8 @@ import { getResponsiveImageEntry } from '@/utils/blogResponsiveImage';
 import { useResponsiveImageFallback } from '@/hooks/useResponsiveImageFallback';
 import { useArticleViews } from '@/hooks/useArticleViews';
 import ArticleViewCount from '@/components/blogs/ArticleViewCount';
+import { saveReadingProgress, getReadingProgress } from '@/utils/readingProgress';
+import { Z_INDEX } from '@/utils/zIndex';
 
 // 动态导入大型组件，优化初始加载性能
 const LazyTableOfContents = lazy(() => import('../../../components/TableOfContents'));
@@ -250,6 +253,88 @@ function SeriesBar({
 }
 
 /**
+ * 继续阅读提示（固定在底部中央）
+ *
+ * 挂载后读取本篇的阅读记录；有有意义的进度（3%~92%）且本会话未关闭过时，
+ * 延迟 1.5 秒浮出「上次读到 N%」提示，点击平滑跳转到上次位置。
+ * 关闭只记录在 sessionStorage，换一次会话仍会提示；阅读记录本身不受影响。
+ */
+function ResumeReadingPrompt({ slug }: { slug: string }) {
+  const [percent, setPercent] = useState<number | null>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem(`obp-resume-dismissed:${slug}`)) return;
+    } catch {
+      // sessionStorage 不可用：忽略，每次进入都会提示
+    }
+    const saved = getReadingProgress(slug);
+    if (saved === null) return;
+
+    setPercent(saved);
+    // 等首屏与水合稳定后再浮出，避免和文章加载抢注意力
+    const timer = setTimeout(() => setVisible(true), 1500);
+    return () => clearTimeout(timer);
+  }, [slug]);
+
+  if (!visible || percent === null) return null;
+
+  const dismiss = () => {
+    try {
+      sessionStorage.setItem(`obp-resume-dismissed:${slug}`, '1');
+    } catch {
+      // ignore
+    }
+    setVisible(false);
+  };
+
+  const jump = () => {
+    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    window.scrollTo({
+      top: Math.round((docHeight * percent) / 100),
+      behavior: 'smooth',
+    });
+    dismiss();
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      /*
+        位置：底部居中、高于浮动按钮区（右侧是设置/回顶/页底按钮组），
+        层级用 floatingControls 令牌。
+      */
+      className="fixed bottom-24 left-1/2 -translate-x-1/2 flex items-center gap-3
+                 rounded-full border border-border/50 bg-card/90 backdrop-blur-md shadow-lg px-4 py-2"
+      style={{ zIndex: Z_INDEX.floatingControls }}
+      role="status"
+    >
+      <span className="text-xs text-muted-foreground whitespace-nowrap">
+        上次读到 <span className="font-semibold text-primary tabular-nums">{percent}%</span>
+      </span>
+      <button
+        type="button"
+        onClick={jump}
+        className="rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 whitespace-nowrap"
+      >
+        继续阅读
+      </button>
+      <button
+        type="button"
+        onClick={dismiss}
+        aria-label="关闭继续阅读提示"
+        className="p-1 rounded-full text-muted-foreground/70 hover:text-foreground transition-colors"
+      >
+        <XMarkIcon className="h-3.5 w-3.5" />
+      </button>
+    </motion.div>
+  );
+}
+
+/**
  * 博客详情客户端组件
  * 
  * 功能特点：
@@ -328,6 +413,8 @@ export default function ClientBlogDetail({
   useEffect(() => {
     let frameId: number | null = null;
     let lastProgress = -1;
+    // 「继续阅读」落盘节流：进度每变化 2 个百分点才写一次 localStorage
+    let lastSaved = -100;
 
     const updateProgress = () => {
       const scrollTop = window.scrollY;
@@ -338,6 +425,11 @@ export default function ClientBlogDetail({
       if (nextProgress !== lastProgress) {
         lastProgress = nextProgress;
         setReadProgress(nextProgress);
+      }
+
+      if (Math.abs(nextProgress - lastSaved) >= 2) {
+        lastSaved = nextProgress;
+        saveReadingProgress(blog.slug, nextProgress);
       }
     };
 
@@ -360,7 +452,7 @@ export default function ClientBlogDetail({
         window.cancelAnimationFrame(frameId);
       }
     };
-  }, []);
+  }, [blog.slug]);
 
   // 在挂载前使用默认主题
   const currentTheme = (mounted ? resolvedTheme : 'light') || 'light';
@@ -596,6 +688,9 @@ export default function ClientBlogDetail({
           />
         </div>
       )}
+
+      {/* 继续阅读提示：有历史进度且本会话未关闭时浮出 */}
+      {mounted && <ResumeReadingPrompt slug={blog.slug} />}
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div>

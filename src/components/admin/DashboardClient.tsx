@@ -25,6 +25,7 @@ import {
   Type,
 } from 'lucide-react';
 import AdminCard from './AdminCard';
+import ViewsPanel from './ViewsPanel';
 import { cn } from '../../utils/cn';
 import type { DashboardStats } from '../../utils/server/adminStats';
 import { Changelog, ChangelogType, getTypeStats, getChangelogTypeLabel, getMonthStats, getQuarterStats, getYearStats } from '../../types/changelogTypes';
@@ -1115,6 +1116,13 @@ const DashboardClient: React.FC<DashboardClientProps> = ({ stats }) => {
               </AdminCard>
             </motion.div>
           )}
+
+          {/* 第三点五模块：文章浏览量（互动服务自建数据） */}
+          <motion.div variants={itemVariants}>
+            <AdminCard title="文章浏览量">
+              <ViewsPanel />
+            </AdminCard>
+          </motion.div>
 
           {/* 第四模块：快速入口/常用工具 */}
           <motion.div variants={itemVariants}>

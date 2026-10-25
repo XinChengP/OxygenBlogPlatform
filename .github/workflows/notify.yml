@@ -53,7 +53,7 @@ jobs:
           # Telegram 渠道：未配置时脚本自动跳过
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          # 邮件渠道：指向互动 Worker，与 NEWSLETTER_ADMIN_TOKEN（Worker secret）配对
+          # 邮件渠道：指向互动 Worker，与 ADMIN_TOKEN（Worker secret）配对
           NEWSLETTER_API_URL: https://blog.xinchengp.cn/api/interactions
-          NEWSLETTER_ADMIN_TOKEN: ${{ secrets.NEWSLETTER_ADMIN_TOKEN }}
+          ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
         run: node scripts/notify-new-posts.mjs

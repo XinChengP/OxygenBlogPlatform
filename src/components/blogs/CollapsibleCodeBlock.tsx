@@ -19,6 +19,8 @@ interface CollapsibleCodeBlockProps {
   displayName: string;
   /** react-syntax-highlighter 主题（随明暗模式切换） */
   syntaxTheme: Record<string, React.CSSProperties>;
+  /** 需要高亮的行号列表（来自围栏代码块 meta 的 hl= 标记，可空） */
+  highlightLines?: number[];
 }
 
 /**
@@ -33,6 +35,7 @@ export default function CollapsibleCodeBlock({
   language,
   displayName,
   syntaxTheme,
+  highlightLines,
 }: CollapsibleCodeBlockProps) {
   const [expanded, setExpanded] = useState(false);
 
@@ -43,6 +46,9 @@ export default function CollapsibleCodeBlock({
 
   // 折叠时只把前 N 行交给高亮器，完整内容仍由复制按钮与展开后的渲染提供
   const visibleCode = collapsed ? lines.slice(0, COLLAPSED_VISIBLE_LINES).join('\n') : code;
+
+  // 行高亮集合：wrapLines 模式下按行号注入背景样式
+  const highlightSet = useMemo(() => new Set(highlightLines ?? []), [highlightLines]);
 
   return (
     <div className="relative my-6 rounded-2xl overflow-hidden shadow-lg border border-border/30">
@@ -96,6 +102,23 @@ export default function CollapsibleCodeBlock({
             paddingRight: '1em',
             userSelect: 'none',
           }}
+          /*
+            行高亮（wrapLines + lineProps）：
+            来自围栏代码块 meta 的 hl=1,3-5 标记，天依蓝底色 + 左侧竖条，
+            两种主题下都清晰；未标记的行不注入任何样式，行为与原来一致。
+          */
+          wrapLines
+          lineProps={(lineNumber: number) =>
+            highlightSet.has(lineNumber)
+              ? {
+                  style: {
+                    display: 'block',
+                    background: 'rgba(102, 204, 255, 0.13)',
+                    boxShadow: 'inset 2px 0 0 0 rgba(102, 204, 255, 0.85)',
+                  },
+                }
+              : {}
+          }
         >
           {visibleCode}
         </SyntaxHighlighter>

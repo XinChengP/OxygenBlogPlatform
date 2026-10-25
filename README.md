@@ -76,9 +76,13 @@
 - **Markdown 安全** - rehype-sanitize 配置独立 sanitizeSchema，过滤危险标签属性
 - **RSS 订阅** - 内置 `/rss.xml` 订阅源（构建期静态生成），与 sitemap 共用统一的博客扫描工具（blogScanner），页脚提供订阅入口
 - **系列导航** - 文章 frontmatter 声明 `series` / `seriesOrder` 后，详情页元信息栏下方出现一行式系列进度条：系列名 + 当前进度 + 上一篇/下一篇快捷跳转，「全部 N 篇」可展开完整目录（当前篇高亮）
+- **RSS 全文输出** - `/rss.xml` 在摘要之外提供 `content:encoded` 全文（构建期 Markdown→HTML），站内图片/链接自动补全为绝对地址
+- **继续阅读** - 文章滚动进度自动落盘（按 2% 步进节流），下次打开浮出「上次读到 N%」提示一键跳转；记录 30 天过期、上限 50 篇防膨胀
+- **PWA** - `manifest.webmanifest` + 由站点头像生成的图标（`scripts/generate-pwa-icons.mjs`），博客可安装到桌面/主屏幕，离线由既有 sw.js 兜底
+- **代码块行高亮** - 行号之外支持围栏 meta 标记 ```` ```js hl=1,3-5 ````（兼容 `highlight=`、逗号分隔与区间），天依蓝底色 + 左侧竖条
 
 ### 💬 互动与订阅
-- **浏览量统计** - 自托管 Cloudflare Worker + D1（`cloudflare/interactions`），文章页元信息栏与列表卡片角标展示全站浏览量；按「路径 + 天 + 访客哈希」去重，不存原始 IP，每日 cron 清理 90 天前明细，接口不可用时自动隐藏不打扰阅读
+- **浏览量统计** - 自托管 Cloudflare Worker + D1（`cloudflare/interactions`），文章页元信息栏与列表卡片角标展示全站浏览量；按「路径 + 天 + 访客哈希」去重，不存原始 IP，每日 cron 清理 90 天前明细，接口不可用时自动隐藏不打扰阅读；后台仪表盘可凭 `ADMIN_TOKEN` 查看总览与各篇明细
 - **友链巡检** - `npm run check:friends` 检查友链可达性与响应耗时；结果随构建发布，友链卡显示在线/离线状态点；GitHub Actions 每周定时巡检
 - **新文章通知** - 推送含新文章的提交后，`notify.yml` 自动发送 Telegram 频道消息（带封面）并调用 Worker 群发邮件，按 slug 幂等防重发
 - **邮件订阅** - `/subscribe` 聚合页：RSS / Telegram / 邮件三渠道；邮件为 Resend 双重确认，正文带一次性退订链接，未配置时自动隐藏表单

@@ -86,6 +86,7 @@ async function handle(request, env) {
   if (pathname === '/confirm' && request.method === 'GET') return handleConfirm(url, env);
   if (pathname === '/unsubscribe' && request.method === 'GET') return handleUnsubscribe(url, env);
   if (pathname === '/notify' && request.method === 'POST') return handleNotify(request, env);
+  if (pathname === '/admin/stats' && request.method === 'GET') return handleAdminStats(request, env);
 
   return jsonResponse({ error: 'not_found' }, 404);
 }
@@ -240,7 +241,7 @@ async function handleUnsubscribe(url, env) {
 
 async function handleNotify(request, env) {
   const auth = request.headers.get('Authorization') || '';
-  const expected = env.NEWSLETTER_ADMIN_TOKEN || '';
+  const expected = env.ADMIN_TOKEN || '';
   if (!expected || !safeEqual(auth.replace(/^Bearer\s+/i, ''), expected)) {
     throw new HttpError(401, 'unauthorized', '无权调用');
   }
@@ -294,6 +295,41 @@ async function handleNotify(request, env) {
   }
 
   return jsonResponse({ ok: true, sent: recipients.length });
+}
+
+// ---------------------------------------------------------------------------
+// 管理端统计（Bearer ADMIN_TOKEN）
+// ---------------------------------------------------------------------------
+
+/**
+ * 浏览量统计：全站总览 + 每个路径的累计浏览量（降序，最多 200 条）。
+ * 供本地后台仪表盘读取；生产站点的 admin 是本地专用，不存在公开暴露面。
+ */
+async function handleAdminStats(request, env) {
+  const auth = request.headers.get('Authorization') || '';
+  const expected = env.ADMIN_TOKEN || '';
+  if (!expected || !safeEqual(auth.replace(/^Bearer\s+/i, ''), expected)) {
+    throw new HttpError(401, 'unauthorized', '无权调用');
+  }
+
+  const [pagesResult, subscriberResult] = await Promise.all([
+    env.DB.prepare(
+      'SELECT path, views FROM page_total ORDER BY views DESC, path ASC LIMIT 200'
+    ).all(),
+    env.DB.prepare(
+      'SELECT COUNT(*) AS count FROM subscriber WHERE confirmed = 1 AND unsubscribed = 0'
+    ).first('count'),
+  ]);
+
+  const pages = pagesResult.results ?? [];
+  const totalViews = pages.reduce((sum, page) => sum + page.views, 0);
+
+  return jsonResponse({
+    totalViews,
+    subscribers: subscriberResult ?? 0,
+    pages,
+    updatedAt: new Date().toISOString(),
+  });
 }
 
 // ---------------------------------------------------------------------------

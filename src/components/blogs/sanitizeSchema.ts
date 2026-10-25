@@ -75,5 +75,11 @@ export const blogSanitizeSchema = {
     iframe: ['src', 'width', 'height', 'title', 'style'],
     input: ['type', 'checked', 'disabled'],
     math: ['xmlns', 'display'],
+    code: [
+      ...(defaultSchema.attributes?.code ?? []),
+      // 围栏代码块的 meta（```js hl=1,3-5）：行高亮标记，仅作者本地可写，
+      // 不会输出到 HTML 属性，只在 ServerBlogMarkdown 的 pre 组件里解析
+      'metastring',
+    ],
   },
 };

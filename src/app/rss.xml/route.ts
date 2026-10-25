@@ -92,6 +92,35 @@ function buildEnclosure(coverImage?: string): string {
   return `<enclosure url="${url}" type="${mimeMap[ext] || 'image/png'}" length="${length}" />`;
 }
 
+/**
+ * 生成全文 HTML 并做三类适配，让它在订阅器里安全显示：
+ *
+ * 1. 剥离 <style>/<script> 块与内联事件属性：
+ *    RSS 阅读器会把全文 HTML 直接插入自己的页面，文章里的全局 CSS
+ *    （正文支持 <style> 自定义样式）会污染订阅器的布局；脚本则毫无用处。
+ * 2. 协议相对地址（B站播放器 //player.bilibili.com/...）补全为 https://，
+ *    纯文本类/邮件类阅读器没有「当前页协议」可继承。
+ * 3. 站内相对路径（/Blogabout/...）补全为带域名的绝对地址；
+ *    内部属性会读取 basePath（siteUrl），兼容 GitHub Pages 子路径部署。
+ *
+ * 订阅器通常还会自行过滤 <iframe>（B站播放器等富媒体因此不显示），
+ * 这是对方的正常安全策略，无需在此处理。
+ */
+function renderFullContentHtml(markdown: string): string {
+  let html = marked.parse(markdown) as string;
+
+  html = html
+    .replace(/<(style|script)\b[^>]*>[\s\S]*?<\/\1>/gi, '')
+    .replace(/\son\w+=(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '');
+
+  const absoluteBase = siteUrl('/');
+  html = html
+    .replace(/(src|href)="(\/\/[^"]*)"/g, '$1="https:$2"')
+    .replace(/(src|href)="\//g, `$1="${absoluteBase}`);
+
+  return html;
+}
+
 function generateRssXml(): string {
   const contentDir = path.join(process.cwd(), 'src/content/blogs');
 
@@ -128,6 +157,10 @@ function generateRssXml(): string {
       description = plainText.substring(0, 150) + (plainText.length > 150 ? '...' : '');
     }
 
+    // 全文正文（content:encoded）：阅读器优先读它，保留摘要作为兼容回退。
+    // 图片/链接在 renderFullContentHtml 中已补全为绝对地址。
+    const fullContentHtml = renderFullContentHtml(content);
+
     // 标签与分类位于 CDATA 之外，必须做 XML 转义
     const categories = (frontMatter.tags || []).map(tag =>
       `<category>${escapeXml(tag)}</category>`
@@ -147,6 +180,7 @@ function generateRssXml(): string {
       `      <pubDate>${pubDate}</pubDate>`,
       `      <guid isPermaLink="true">${link}</guid>`,
       `      <description>${wrapCdata(description)}</description>`,
+      `      <content:encoded>${wrapCdata(fullContentHtml)}</content:encoded>`,
     ];
 
     if (mainCategory) {
@@ -164,7 +198,7 @@ function generateRssXml(): string {
   }).join('\n');
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
   <channel>
     <title>歆橙 的 blog</title>
     <link>${SITE_URL}</link>
