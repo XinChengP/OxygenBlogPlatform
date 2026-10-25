@@ -87,7 +87,9 @@ const AnimatedNumber: React.FC<{ value: number; duration?: number }> = ({
       
       // 使用 easeOutExpo 缓动函数
       const easeOutExpo = 1 - Math.pow(2, -10 * progress);
-      setDisplayValue(Math.floor(easeOutExpo * value));
+      // easeOutExpo 在 progress=1 时等于 1-2^-10（约 0.99902），floor 后永远比真实值小，
+      // 因此动画完成帧直接落到目标值，避免统计数字与图表总计相差 1
+      setDisplayValue(progress >= 1 ? value : Math.floor(easeOutExpo * value));
 
       if (progress < 1) {
         animationFrame = requestAnimationFrame(animate);
