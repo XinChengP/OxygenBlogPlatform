@@ -196,6 +196,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.6,
     },
     {
+      url: siteUrl('/study/'),
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 0.6,
+    },
+    {
       url: siteUrl('/changelogs/'),
       lastModified: new Date(),
       changeFrequency: 'daily',

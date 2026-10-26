@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -16,6 +16,7 @@ import {
   CheckSquare,
   Database,
   History,
+  GraduationCap,
   Sparkles,
 } from 'lucide-react';
 
@@ -25,7 +26,6 @@ import {
 interface AdminSidebarProps {
   collapsed: boolean;
   mobileOpen: boolean;
-  onToggle: () => void;
   onMobileClose: () => void;
 }
 
@@ -179,7 +179,7 @@ const NavItemComponent: React.FC<NavItemProps> = ({
               {item.children!.map((child, index) => {
                 // 直接使用父组件传入的 pathname 判断激活状态
                 // 禁止在此处调用 usePathname()，map 回调内调用 Hook 会违反 React Hook 规则导致页面崩溃
-                const childIsActive = pathname === child.href;
+                const childIsActive = pathname === child.href || pathname.startsWith(child.href + '/');
 
                 return (
                   <motion.div
@@ -222,7 +222,6 @@ const NavItemComponent: React.FC<NavItemProps> = ({
 const AdminSidebar: React.FC<AdminSidebarProps> = ({
   collapsed,
   mobileOpen,
-  onToggle,
   onMobileClose,
 }) => {
   const pathname = usePathname();
@@ -273,6 +272,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       label: '待办管理',
       href: '/admin/todo',
       icon: CheckSquare,
+    },
+    {
+      id: 'study',
+      label: '学习打卡',
+      href: '/admin/study',
+      icon: GraduationCap,
     },
     {
       id: 'changelogs',
@@ -330,8 +335,26 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
    */
   const hasActiveChild = (item: NavItem): boolean => {
     if (!item.children) return false;
-    return item.children.some(child => pathname === child.href);
+    return item.children.some(child => pathname === child.href || pathname.startsWith(child.href + '/'));
   };
+
+  /**
+   * 当前路由命中某个子菜单时自动展开其父级
+   * 直接访问 /admin/gallery/local 这类地址时也能看到选中的子项
+   */
+  useEffect(() => {
+    const activeParent = navItems.find(item =>
+      item.children?.some(child => pathname === child.href || pathname.startsWith(child.href + '/'))
+    );
+    if (!activeParent) return;
+
+    setExpandedItems(prev => {
+      if (prev.has(activeParent.id)) return prev;
+      const next = new Set(prev);
+      next.add(activeParent.id);
+      return next;
+    });
+  }, [pathname, navItems]);
 
   // 侧边栏内容
   const sidebarContent = (

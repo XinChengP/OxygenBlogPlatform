@@ -20,6 +20,7 @@
     "lint": "eslint src",
     "generate:responsive": "node scripts/generate-responsive-images.js",
     "generate:changelog-html": "tsx scripts/generate-changelog-html.tsx",
+    "study": "tsx scripts/add-study-log.ts",
     "check:friends": "tsx scripts/check-friends.ts",
     "sync-theme": "node scripts/sync-theme-colors.js",
     "generate-gallery": "npx tsx scripts/generate-gallery-data.ts",

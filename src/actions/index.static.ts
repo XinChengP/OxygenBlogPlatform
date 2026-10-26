@@ -236,6 +236,19 @@ export const toggleBlogHidden = async (_id: string): Promise<ActionResult<BlogPo
 export const batchToggleBlogHidden = async (_ids: string[], _hidden: boolean): Promise<ActionResult> => ({ success: false, message: '静态导出模式不支持此功能' });
 
 // ============================================
+// Study Log Actions
+// ============================================
+import type { StudyLog, StudyLogActionResult, StudyLogFormData, StudyLogManageData, StudyStats } from '@/types/studyLog';
+
+export const getStudyLogList = async (): Promise<StudyLogActionResult<StudyLogManageData>> => ({
+  success: false,
+  message: '静态导出模式不支持此功能',
+  data: { logs: [] as StudyLog[], stats: { totalDays: 0, totalMinutes: 0, currentStreak: 0, longestStreak: 0, subjectTotals: [], dayMinutes: {} } as StudyStats },
+});
+export const saveStudyLogEntry = async (_data?: StudyLogFormData): Promise<StudyLogActionResult<StudyLog>> => ({ success: false, message: '静态导出模式不支持此功能' });
+export const deleteStudyLog = async (_date?: string): Promise<StudyLogActionResult> => ({ success: false, message: '静态导出模式不支持此功能' });
+
+// ============================================
 // Changelog Actions
 // ============================================
 export type ChangelogType = 'feature' | 'optimize' | 'fix' | 'docs' | 'style' | 'refactor';

@@ -4,16 +4,17 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Menu, 
-  X, 
-  Sun, 
-  Moon, 
+import {
+  Menu,
+  X,
+  Sun,
+  Moon,
   Sparkles,
   LayoutDashboard,
   FileText,
   MessageSquare,
   CheckSquare,
+  GraduationCap,
   History,
   Image,
   FolderOpen,
@@ -49,6 +50,7 @@ const PAGE_META: Array<{
   { prefix: '/admin/blogs', label: '文章管理', icon: FileText },
   { prefix: '/admin/moments', label: '动态管理', icon: MessageSquare },
   { prefix: '/admin/todo', label: '待办管理', icon: CheckSquare },
+  { prefix: '/admin/study', label: '学习打卡', icon: GraduationCap },
   { prefix: '/admin/changelogs', label: '日志管理', icon: History },
   { prefix: '/admin/backup', label: '本地备份', icon: Database },
   { prefix: '/admin/settings', label: '系统设置', icon: Settings },
@@ -89,16 +91,30 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   /**
    * 组件挂载后设置状态
    * 避免服务端渲染与客户端不一致的问题
+   * 同时恢复上次的侧边栏折叠状态
    */
   useEffect(() => {
+    try {
+      setSidebarCollapsed(localStorage.getItem('admin-sidebar-collapsed') === '1');
+    } catch {
+      // localStorage 不可用时保持默认展开
+    }
     setMounted(true);
   }, []);
 
   /**
-   * 切换侧边栏折叠状态
+   * 切换侧边栏折叠状态并持久化，刷新后保持上次的选择
    */
   const toggleSidebar = () => {
-    setSidebarCollapsed(prev => !prev);
+    setSidebarCollapsed(prev => {
+      const next = !prev;
+      try {
+        localStorage.setItem('admin-sidebar-collapsed', next ? '1' : '0');
+      } catch {
+        // 隐私模式/配额不足时忽略，不影响本次交互
+      }
+      return next;
+    });
   };
 
   /**
@@ -165,7 +181,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       <AdminSidebar
         collapsed={sidebarCollapsed}
         mobileOpen={mobileMenuOpen}
-        onToggle={toggleSidebar}
         onMobileClose={closeMobileMenu}
       />
 
@@ -281,7 +296,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         </header>
 
         {/* 主内容 */}
-        <main className="p-4 lg:p-8">
+        {/* 用 div 而非 main：根布局已提供 main 地标，嵌套 main 属于无效 HTML */}
+        <div className="p-4 lg:p-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -290,7 +306,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
           >
             {children}
           </motion.div>
-        </main>
+        </div>
 
         {/* 页脚 */}
         <footer className="py-6 px-4 lg:px-8 text-center">

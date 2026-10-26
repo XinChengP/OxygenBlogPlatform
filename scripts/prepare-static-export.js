@@ -19,6 +19,7 @@ const filesToReplace = [
   'settingsActions.ts',
   'blogActions.ts',
   'galleryManagerActions.ts',
+  'studyLogActions.ts',
 ];
 
 // 需要替换的子目录文件列表

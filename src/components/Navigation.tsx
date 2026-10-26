@@ -65,6 +65,7 @@ const Navigation = () => {
     { href: '/archive', label: '归档' },
     { href: '/gallery', label: '画廊' },
     { href: '/moments', label: '动态' },
+    { href: '/study', label: '学习' },
     { href: '/tools', label: '小工具' },
   ], []);
 
