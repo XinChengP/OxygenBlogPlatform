@@ -65,7 +65,6 @@ const Navigation = () => {
     { href: '/archive', label: '归档' },
     { href: '/gallery', label: '画廊' },
     { href: '/moments', label: '动态' },
-    { href: '/study', label: '学习' },
     { href: '/tools', label: '小工具' },
   ], []);
 
@@ -85,6 +84,7 @@ const Navigation = () => {
     icon: <User className="w-4 h-4" />,
     items: [
       { href: '/about', label: '关于我' },
+      { href: '/study', label: '学习记录' },
       { href: '/changelogs', label: '开发日志' },
       { href: '/links', label: '相关链接' },
     ],
