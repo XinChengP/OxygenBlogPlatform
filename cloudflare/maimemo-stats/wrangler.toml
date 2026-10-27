@@ -1,0 +1,31 @@
+#:schema node_modules/wrangler/config-schema.json
+#
+# 墨墨背单词数据接口（Cloudflare Workers）
+#
+# 职责：GET /api/maimemo/stats 拉取墨墨开放 API 并把聚合后的数据返回给前端。
+# 设计约定（与 cloudflare/interactions 一致）：
+#   - 独立 Worker、同源路由，静态站点仍在 GitHub Pages；
+#   - 不落库：请求时现拉 + 边缘缓存 10 分钟，因此没有 KV / D1 / Cron 需要维护；
+#   - Token 只存在 Worker Secret（wrangler secret put MAIMEMO_API_TOKEN），不写进仓库。
+#
+# 部署：
+#   cd cloudflare/maimemo-stats
+#   npm install
+#   npx wrangler secret put MAIMEMO_API_TOKEN   # 粘贴墨墨 Token
+#   npx wrangler deploy
+#
+# 本地调试：把 Token 写进 .dev.vars（已被 .gitignore 忽略）后 npm run dev。
+
+name = "blog-maimemo"
+main = "src/index.js"
+
+compatibility_date = "2026-09-23"
+
+# 同源路由：只有 /api/maimemo/* 被 Worker 接管，前端不需要 CORS / CSP 变更。
+# 生效前提：blog.xinchengp.cn 在 Cloudflare 上处于已代理（橙色云）状态。
+[[routes]]
+pattern = "blog.xinchengp.cn/api/maimemo/*"
+zone_name = "xinchengp.cn"
+
+[dev]
+port = 8788

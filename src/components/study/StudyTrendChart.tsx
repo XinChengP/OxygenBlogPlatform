@@ -57,22 +57,22 @@ export default function StudyTrendChart({ dayMinutes, days = 30 }: StudyTrendCha
       <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
         <defs>
           <linearGradient id="studyTrendGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.35} />
-            <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.02} />
+            <stop offset="0%" stopColor="#66ccff" stopOpacity={0.35} />
+            <stop offset="100%" stopColor="#66ccff" stopOpacity={0.02} />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="5 5" stroke="hsl(var(--border))" opacity={0.15} vertical={false} />
+        <CartesianGrid strokeDasharray="5 5" stroke="rgba(102, 204, 255, 0.15)" opacity={0.15} vertical={false} />
         <XAxis
           dataKey="date"
-          stroke="hsl(var(--muted-foreground))"
-          tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+          stroke="#64748b"
+          tick={{ fill: '#64748b', fontSize: 11 }}
           tickLine={false}
-          axisLine={{ stroke: 'hsl(var(--border))' }}
+          axisLine={{ stroke: '#cbd5e1' }}
           interval={6}
         />
         <YAxis
-          stroke="hsl(var(--muted-foreground))"
-          tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+          stroke="#64748b"
+          tick={{ fill: '#64748b', fontSize: 11 }}
           tickLine={false}
           axisLine={false}
           allowDecimals={false}
@@ -81,16 +81,16 @@ export default function StudyTrendChart({ dayMinutes, days = 30 }: StudyTrendCha
           formatter={value => [`${value} 分钟`, '学习时长']}
           labelFormatter={label => `${label}`}
           contentStyle={{
-            backgroundColor: 'hsl(var(--card))',
-            border: '1px solid hsl(var(--border))',
+            backgroundColor: 'rgba(255, 255, 255, 0.96)',
+            border: '1px solid #cbd5e1',
             borderRadius: '0.75rem',
-            color: 'hsl(var(--foreground))',
+            color: '#0f172a',
           }}
         />
         <Area
           type="monotone"
           dataKey="minutes"
-          stroke="hsl(var(--primary))"
+          stroke="#66ccff"
           strokeWidth={2}
           fill="url(#studyTrendGradient)"
           dot={false}

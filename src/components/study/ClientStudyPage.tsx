@@ -9,6 +9,8 @@ import HeatmapCalendar from './HeatmapCalendar';
 import StudyTrendChart from './StudyTrendChart';
 import { containerVariants } from '@/utils/animationVariants';
 import type { StudyLog, StudyStats, StudyMood } from '@/types/studyLog';
+import type { MaimemoStats } from '@/types/maimemo';
+import MaimemoCard from './MaimemoCard';
 
 /**
  * 学习打卡页面（客户端）
@@ -35,6 +37,8 @@ interface ClientStudyPageProps {
   logs: StudyLog[];
   /** 汇总统计 */
   stats: StudyStats;
+  /** 墨墨背单词数据快照（未同步时为 null，不展示卡片） */
+  maimemoStats?: MaimemoStats | null;
 }
 
 /** 心情对应的表情与文案 */
@@ -55,7 +59,7 @@ function formatDateCN(date: string): string {
   return `${y} 年 ${m} 月 ${d} 日 · 周${weekday}`;
 }
 
-export default function ClientStudyPage({ logs, stats }: ClientStudyPageProps) {
+export default function ClientStudyPage({ logs, stats, maimemoStats }: ClientStudyPageProps) {
   // 今天是否已打卡：只在客户端取当前日期，避免静态导出时的水合不一致
   const [todayStr, setTodayStr] = useState<string | null>(null);
 
@@ -124,8 +128,7 @@ export default function ClientStudyPage({ logs, stats }: ClientStudyPageProps) {
             </p>
           </motion.div>
         ) : (
-          <div className="space-y-8">
-            {/* 统计卡片 */}
+          <div className="space-y-8">            {/* 统计卡片 */}
             <motion.div
               variants={containerVariants}
               initial="hidden"
@@ -286,6 +289,9 @@ export default function ClientStudyPage({ logs, stats }: ClientStudyPageProps) {
             </motion.section>
           </div>
         )}
+
+        {/* 英语背单词卡片（优先运行时拉取，构建期快照兜底；都无数据时组件自身不渲染） */}
+        <MaimemoCard initialStats={maimemoStats ?? null} />
       </div>
     </div>
   );

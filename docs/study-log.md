@@ -1,7 +1,66 @@
 # 学习打卡模块说明
 
 `/study` 页面用于记录每日学习（如 CAD、SolidWorks），包含打卡热力图、连续天数、
-累计时长、科目分布和近 30 天趋势。
+累计时长、科目分布和近 30 天趋势，以及「英语背单词」数据卡片（墨墨背单词）。
+
+## 英语背单词数据（墨墨背单词）
+
+前台「英语背单词」卡片的数据来自墨墨背单词官方开放 API（open.maimemo.com），
+展示累计已背词数、今日进度和近 30 天每日新学单词数。
+
+### Token 配置（后台一站式，推荐）
+
+打开 **后台 → 学习打卡 → 墨墨背单词** 卡片：
+
+1. 点「粘贴墨墨 Token」输入框，把 Token 粘贴进去（输入不可见）
+2. 点 **保存并同步**：Token 用 Windows DPAPI 加密保存为本机 `.maimemo-token.enc`
+   （不落明文、不入库、仅本机当前用户可解密），并自动同步一次验证
+3. 之后点 **同步墨墨** 拉数据、**提交推送** 发布；卡片上会显示上次同步时间、
+   累计词数和今日进度，配置状态一目了然
+4. 点 **清除本机 Token** 可随时删掉本机保存的凭据
+
+Token 在墨墨背单词 App：**我的 → 更多设置 → 实验功能 → 开放 API** 生成。
+
+> 备注：后台保存的 Token 只用于**本机**同步与预览。线上官网的自动更新走
+> `cloudflare/maimemo-stats` Worker（Token 存 Worker Secret），见下方「数据同步」。
+
+### 命令行方式（可选）
+
+习惯终端的话也可以：
+
+### 数据同步（三种方式）
+
+| 方式 | 操作 | 适用 |
+| --- | --- | --- |
+| 线上自动（推荐） | 部署 `cloudflare/maimemo-stats` Worker（一次性），Token 存 Worker Secret；前台访问时自动读取，边缘缓存 10 分钟 | 日常零操作 |
+| 后台按钮 | 「学习打卡」页点 **同步墨墨**，再点 **提交推送**（写构建期快照） | 本地预览/兜底 |
+| 命令行 | `npm run maimemo -- --push` | 终端党 |
+
+线上自动更新的部署步骤（只需做一次）：
+
+```bash
+cd cloudflare/maimemo-stats
+npm install
+npx wrangler secret put MAIMEMO_API_TOKEN   # 粘贴墨墨 Token（Windows 可直接双击 set-secret.bat）
+npx wrangler deploy
+```
+
+详细说明见 `cloudflare/maimemo-stats/README.md`。部署后访问
+`https://blog.xinchengp.cn/api/maimemo/stats` 能看到 JSON 即成功——**不需要
+GitHub Secret、不需要提交数据文件、也不需要重新构建网站**。
+
+数据说明：
+
+- 前台优先请求 `/api/maimemo/stats`（Worker，运行时最新）；请求失败时回退到
+  构建期快照 `src/data/maimemo-stats.json`（后台按钮/命令行同步生成，可不存在）
+- 卡片展示：累计已背、今日进度、今日学习时长、连续背词天数、近 30 天新学趋势
+  （含日均/单日最高）、今日新学、待复习（依据最近 1000 条记录估算）、顽固词数量、
+  最近学习的 5 个单词
+- 「每日新学单词数」由单词记录的**首次学习日期**聚合而来（按北京时间换算），
+  单次最多拉取 1000 条记录；「累计已背」以接口返回的总数为准
+- 「今日进度」是接口实时返回的快照（Worker 场景下每次请求/缓存刷新时更新）
+- 未配置 Token 或未同步过、且 Worker 不可用时，前台不展示该卡片
+- 本地明文 `.env` 的 `MAIMEMO_API_TOKEN` 仍然兼容（旧配置），推荐用后台或 Worker Secret
 
 ## 后台打卡（推荐）
 
@@ -87,3 +146,8 @@ tags:
 | `scripts/add-study-log.ts` | 快速打卡脚本（`npm run study`） |
 | `src/actions/studyLogActions.ts` | 后台打卡的 Server Actions |
 | `src/app/admin/study/` | 后台打卡管理页 |
+| `src/utils/maimemoSync.ts` | 墨墨开放 API 拉取与聚合逻辑 |
+| `scripts/fetch-maimemo.ts` | 墨墨同步脚本（`npm run maimemo`） |
+| `src/data/maimemo-stats.json` | 墨墨数据构建期快照（后台/命令行同步生成，可不存在） |
+| `cloudflare/maimemo-stats/` | 线上数据接口 Worker（运行时自动拉取 + 边缘缓存） |
+| `src/components/study/MaimemoCard.tsx` | 前台背单词数据卡片（运行时拉取，快照兜底） |

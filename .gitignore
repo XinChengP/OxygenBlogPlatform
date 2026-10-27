@@ -15,6 +15,9 @@ build/
 .admin_password.json
 *.bak
 
+# 墨墨 Token 的 DPAPI 加密文件（仅本机当前用户可解密，不入库）
+.maimemo-token.enc
+
 # Admin 相关文件（不上传到 GitHub）
 admin-*
 admin_*

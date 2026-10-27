@@ -126,6 +126,15 @@ const devConfig = {
       source: '/api/admin-stats',
       destination: 'https://blog.xinchengp.cn/api/interactions/admin/stats',
     },
+    /*
+      墨墨背单词数据：开发环境直接代理到线上 Worker（Token 只在 Worker Secret 里）。
+      浏览器侧同源请求，CSP 无需变更；Worker 迟迟不可用时卡片静默回退到构建期快照。
+      该路径只存在于开发配置，静态导出产物由 Cloudflare 的同源路由接管。
+    */
+    {
+      source: '/api/maimemo/:path*',
+      destination: 'https://blog.xinchengp.cn/api/maimemo/:path*',
+    },
   ],
   headers: async () => {
     return [

@@ -239,6 +239,7 @@ export const batchToggleBlogHidden = async (_ids: string[], _hidden: boolean): P
 // Study Log Actions
 // ============================================
 import type { StudyLog, StudyLogActionResult, StudyLogFormData, StudyLogManageData, StudyStats } from '@/types/studyLog';
+import type { MaimemoStats, MaimemoTokenStatus } from '@/types/maimemo';
 
 export const getStudyLogList = async (): Promise<StudyLogActionResult<StudyLogManageData>> => ({
   success: false,
@@ -247,6 +248,11 @@ export const getStudyLogList = async (): Promise<StudyLogActionResult<StudyLogMa
 });
 export const saveStudyLogEntry = async (_data?: StudyLogFormData): Promise<StudyLogActionResult<StudyLog>> => ({ success: false, message: '静态导出模式不支持此功能' });
 export const deleteStudyLog = async (_date?: string): Promise<StudyLogActionResult> => ({ success: false, message: '静态导出模式不支持此功能' });
+export const syncMaimemoData = async (): Promise<{ success: boolean; message: string }> => ({ success: false, message: '静态导出模式不支持此功能' });
+export const getMaimemoStats = async (): Promise<{ success: boolean; message: string; data?: MaimemoStats }> => ({ success: false, message: '静态导出模式不支持此功能', data: undefined });
+export const getMaimemoTokenStatus = async (): Promise<{ success: boolean; message: string; data: MaimemoTokenStatus }> => ({ success: false, message: '静态导出模式不支持此功能', data: { configured: false, source: 'none' } });
+export const saveMaimemoToken = async (_token?: string): Promise<{ success: boolean; message: string; data?: MaimemoTokenStatus }> => ({ success: false, message: '静态导出模式不支持此功能', data: undefined });
+export const clearMaimemoToken = async (): Promise<{ success: boolean; message: string; data?: MaimemoTokenStatus }> => ({ success: false, message: '静态导出模式不支持此功能', data: undefined });
 
 // ============================================
 // Changelog Actions

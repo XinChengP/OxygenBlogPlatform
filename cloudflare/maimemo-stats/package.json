@@ -1,0 +1,16 @@
+{
+  "name": "blog-maimemo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "OxygenBlogPlatform 墨墨背单词数据接口（Cloudflare Workers）",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --port 8788",
+    "start": "wrangler dev --port 8788",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.68.0"
+  }
+}

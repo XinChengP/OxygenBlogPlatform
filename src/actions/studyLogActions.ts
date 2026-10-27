@@ -26,6 +26,8 @@ import path from 'path';
 import matter from 'gray-matter';
 import { revalidatePath } from 'next/cache';
 import { getServerStudyLogs, computeStudyStats } from '@/utils/studyLogUtils';
+import { syncMaimemoStats, getServerMaimemoStats, resolveMaimemoToken, encryptAndSaveToken, clearEncryptedToken } from '@/utils/maimemoSync';
+import type { MaimemoStats, MaimemoTokenStatus } from '@/types/maimemo';
 
 /** 打卡记录目录 */
 const STUDY_LOG_DIR = path.join(process.cwd(), 'src', 'content', 'study-log');
@@ -231,5 +233,166 @@ async function fileExists(filePath: string): Promise<boolean> {
     return true;
   } catch {
     return false;
+  }
+}
+
+/**
+ * 同步墨墨背单词数据（后台「同步墨墨数据」按钮）
+ *
+ * 拉取开放 API 数据写入 src/data/maimemo-stats.json，
+ * 前台 /study 页面在下次构建后展示。
+ */
+export async function syncMaimemoData(): Promise<{
+  success: boolean;
+  message: string;
+  data?: MaimemoStats;
+}> {
+  if (isStaticExport) {
+    return { success: false, message: '静态导出模式不支持此功能' };
+  }
+
+  try {
+    const result = await syncMaimemoStats();
+    if (result.success) {
+      revalidatePath('/admin/study');
+      revalidatePath('/study');
+    }
+    return result;
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : '同步失败，请稍后重试',
+    };
+  }
+}
+
+/**
+ * 读取已同步的墨墨数据（后台页面初始数据用）
+ */
+export async function getMaimemoStats(): Promise<{
+  success: boolean;
+  message: string;
+  data?: MaimemoStats;
+}> {
+  if (isStaticExport) {
+    return { success: false, message: '静态导出模式不支持此功能' };
+  }
+
+  try {
+    const stats = await getServerMaimemoStats();
+    return { success: true, message: 'Success', data: stats ?? undefined };
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
+ * 查询墨墨 Token 配置状态（只返回是否配置与来源，不返回 Token 本身）
+ */
+export async function getMaimemoTokenStatus(): Promise<{
+  success: boolean;
+  message: string;
+  data?: MaimemoTokenStatus;
+}> {
+  if (isStaticExport) {
+    return { success: false, message: '静态导出模式不支持此功能' };
+  }
+
+  try {
+    const { token, source } = await resolveMaimemoToken();
+    return {
+      success: true,
+      message: 'Success',
+      data: { configured: token !== null, source },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
+ * 保存墨墨 Token（DPAPI 加密写入本机 .maimemo-token.enc，不落明文）
+ */
+export async function saveMaimemoToken(token: string): Promise<{
+  success: boolean;
+  message: string;
+  data?: MaimemoTokenStatus;
+}> {
+  if (isStaticExport) {
+    return { success: false, message: '静态导出模式不支持此功能' };
+  }
+
+  try {
+    const trimmed = token?.trim();
+    if (!trimmed) {
+      return { success: false, message: 'Token 不能为空' };
+    }
+    if (trimmed.length > 500 || /[\r\n]/.test(trimmed)) {
+      return { success: false, message: 'Token 格式不正确，请重新复制粘贴' };
+    }
+
+    const saveResult = await encryptAndSaveToken(trimmed);
+    if (!saveResult.success) {
+      return { success: false, message: saveResult.message };
+    }
+
+    // 解密回读校验，确保保存的密文可用
+    const { token: resolved, source } = await resolveMaimemoToken();
+    if (!resolved) {
+      return { success: false, message: '保存后校验失败，请重新粘贴 Token' };
+    }
+
+    // 环境变量优先级高于本机文件：配置了环境变量时以环境变量为准
+    const effectiveSource: MaimemoTokenStatus['source'] = source;
+    return {
+      success: true,
+      message:
+        effectiveSource === 'env'
+          ? 'Token 已加密保存（注意：当前环境变量中也有 Token，实际会优先使用环境变量）'
+          : 'Token 已加密保存到本机，点击「同步墨墨」即可拉取数据',
+      data: { configured: true, source: effectiveSource },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : '保存失败，请稍后重试',
+    };
+  }
+}
+
+/**
+ * 清除本机加密保存的墨墨 Token
+ */
+export async function clearMaimemoToken(): Promise<{
+  success: boolean;
+  message: string;
+  data?: MaimemoTokenStatus;
+}> {
+  if (isStaticExport) {
+    return { success: false, message: '静态导出模式不支持此功能' };
+  }
+
+  try {
+    await clearEncryptedToken();
+    const { token, source } = await resolveMaimemoToken();
+    return {
+      success: true,
+      message:
+        token && source === 'env'
+          ? '本机加密 Token 已清除（环境变量中的 Token 仍然生效）'
+          : '本机加密 Token 已清除',
+      data: { configured: token !== null, source },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : '清除失败，请稍后重试',
+    };
   }
 }

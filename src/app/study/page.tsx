@@ -1,5 +1,6 @@
 import React from 'react';
 import { getServerStudyLogs, computeStudyStats } from '@/utils/studyLogUtils';
+import { getServerMaimemoStats } from '@/utils/maimemoSync';
 import MomentMarkdown from '@/components/moments/MomentMarkdown';
 import ClientStudyPage from '@/components/study/ClientStudyPage';
 import type { Metadata } from 'next';
@@ -55,7 +56,7 @@ const logs = getServerStudyLogs();
 const stats = computeStudyStats(logs);
 
 // 服务器端组件导出
-export default function StudyPage() {
+export default async function StudyPage() {
   // 与动态页一致：构建期把 Markdown 渲染成 ReactNode，客户端不再加载 Markdown 解析栈
   const logsWithContent = logs.map(log => ({
     ...log,
@@ -63,5 +64,8 @@ export default function StudyPage() {
     renderedContent: <MomentMarkdown content={log.content} />,
   }));
 
-  return <ClientStudyPage logs={logsWithContent} stats={stats} />;
+  // 墨墨背单词数据（未同步过时为 null，前台不展示卡片）
+  const maimemoStats = await getServerMaimemoStats();
+
+  return <ClientStudyPage logs={logsWithContent} stats={stats} maimemoStats={maimemoStats} />;
 }
