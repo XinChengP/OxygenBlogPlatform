@@ -79,6 +79,38 @@ export const headingIdFromText = (text: string): string =>
     .replace(/^-|-$/g, '');
 
 /**
+ * 解析图片网格的列宽比例类名
+ *
+ * 约定：类名 `image-grid-2-1-1` 表示一行三张图按 2:1:1 分配宽度。
+ * 段数不限于常见的 2~4 段，数字也不限（`image-grid-1-3-2`、`image-grid-1-2-2-1` 同样合法），
+ * 因此作者新增任何组合都不需要再往 CSS 里补规则。
+ *
+ * 返回可直接用于 grid-template-columns 的值（如 "2fr 1fr 1fr"）；
+ * 不是比例式网格时返回 null，交给 CSS 里的固定列数类（image-grid-3-cols 等）处理。
+ */
+export function parseImageGridColumns(className?: string): string | null {
+  if (!className) return null;
+
+  // 必须同时带 image-grid 容器类，避免误伤正文里其他恰好形如 a-1-2 的类名
+  const tokens = className.split(/\s+/);
+  if (!tokens.includes('image-grid')) return null;
+
+  for (const token of tokens) {
+    // 至少两段数字：image-grid-1-2 / image-grid-2-1-1 / image-grid-1-2-2-1
+    const match = /^image-grid-(\d+(?:-\d+){1,})$/.exec(token);
+    if (!match) continue;
+
+    const ratios = match[1].split('-').map((value) => Number.parseInt(value, 10));
+    // 出现 0 或非法数字时会算出 0fr 让整列塌陷，直接跳过该 token
+    if (ratios.some((ratio) => !Number.isFinite(ratio) || ratio <= 0)) continue;
+
+    return ratios.map((ratio) => `${ratio}fr`).join(' ');
+  }
+
+  return null;
+}
+
+/**
  * 递归提取 React 子节点的纯文本
  *
  * 标题里可能包含 <code>/<strong>/<a> 等元素，
@@ -251,7 +283,30 @@ export const baseComponents = {
   },
   // div - 支持自定义图片网格（node 为 react-markdown 注入的 hast 引用，弃置不透传）
   div({ className, children, node, ...props }: MarkdownDivProps) {
-    return <div className={className} {...props}>{children}</div>;
+    /*
+      比例式网格（image-grid-2-1-1 之类）的列宽无法用纯 CSS 从类名推导，
+      这里在渲染期把数字换算成 CSS 变量 --image-grid-cols，
+      由 image-grid.css 统一消费，新增任意组合都不必再补 CSS 规则。
+      变量放在内联 style 上，移动端单列等媒体查询仍可用 !important 覆盖。
+    */
+    const columns = parseImageGridColumns(className);
+
+    if (!columns) {
+      return <div className={className} {...props}>{children}</div>;
+    }
+
+    return (
+      <div
+        {...props}
+        className={className}
+        // 与作者在 Markdown 里手写的 style 合并，保留其自定义样式
+        style={{ ...props.style, '--image-grid-cols': columns } as React.CSSProperties}
+        // 标记位供 CSS 用属性选择器提高权重，压过 image-grid-2-cols 等固定列数规则
+        data-image-grid-cols="true"
+      >
+        {children}
+      </div>
+    );
   },
 };
 

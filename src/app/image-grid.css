@@ -94,13 +94,8 @@
 
   .image-grid-2-cols,
   .image-grid-3-cols,
-  .image-grid-4-cols,
-  .image-grid-1-2-1 {
+  .image-grid-4-cols {
     grid-template-columns: 1fr !important;
-  }
-
-  .image-grid-1-2-1 img:nth-child(2) {
-    grid-column: span 1 !important;
   }
 }
 
@@ -119,46 +114,14 @@
   box-sizing: border-box !important;
 }
 
-.image-grid-1-2 {
-  grid-template-columns: 1fr 2fr !important;
-}
-
-.image-grid-2-1 {
-  grid-template-columns: 2fr 1fr !important;
-}
-
-.image-grid-1-1-2 {
-  grid-template-columns: 1fr 1fr 1fr !important;
-}
-
-.image-grid-1-1-2 img:nth-child(2) {
-  grid-column: span 2 !important;
-}
-
-.image-grid-2-1-1 {
-  grid-template-columns: 1fr 1fr 1fr !important;
-}
-
-.image-grid-2-1-1 img:nth-child(1) {
-  grid-column: span 2 !important;
-}
-
-.image-grid-1-2-1 {
-  grid-template-columns: 1fr 2fr 1fr !important;
-  grid-template-rows: 1fr !important;
-}
-
-.image-grid-1-2-1 img:nth-child(2) {
-  grid-column: span 1 !important;
-}
-
-.image-grid-1-2-1 img,
-.image-grid-1-2-1 .image-grid-item img {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important;
-  margin: 0 !important;
-  padding: 0 !important;
+/*
+  比例式图片网格（image-grid-1-2 / image-grid-2-1-1 / image-grid-1-2-2-1 …）
+  列宽由 BlogMarkdownBase 的 div 映射在渲染期解析类名后写入内联变量
+  --image-grid-cols，这里只负责消费变量，因此任意段数、任意数字都通用。
+  用属性选择器提高选择器权重，压过 .image-grid-2-cols / 3-cols / 4-cols 的固定列数。
+*/
+.image-grid[data-image-grid-cols] {
+  grid-template-columns: var(--image-grid-cols, 1fr) !important;
 }
 
 .image-lightbox-overlay {
@@ -211,3 +174,15 @@
 .image-grid-item:hover figcaption {
   opacity: 1;
 }
+
+/*
+  比例式网格的窄屏单列覆盖必须写在比例规则之后：
+   `.image-grid[data-image-grid-cols]` 与媒体查询里的同名选择器特异性、
+   !important 都相同，最终谁生效只取决于源码顺序，放前面会被分栏规则反压回来。
+*/
+@media (max-width: 640px) {
+  .image-grid[data-image-grid-cols] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
