@@ -55,12 +55,34 @@
   display: block !important;
 }
 
+/* 非网格图片的基础规则：留言板、Markdown 编辑器预览等场景沿用整宽 */
 .prose img:not(.image-grid img) {
   width: 100% !important;
   height: auto !important;
   margin-left: auto !important;
   margin-right: auto !important;
   display: block !important;
+}
+
+/*
+  博客正文里的单图默认只占容器一半宽度，避免一张小图被拉到整行横幅那么大。
+  用 article 限定作用域：留言板和 Markdown 编辑器预览同样是 .prose，
+  但容器是 div，不应跟着博客正文一起变窄。
+  只覆盖 width、不动 max-width，竖图原有的 max-w-[400px] 上限继续生效。
+*/
+article.prose img:not(.image-grid img) {
+  width: 50% !important;
+}
+
+/*
+  整行展示的例外标记：<img src="..." class="image-full" />
+  第二条选择器借 :not() 把特异性抬到 (0,3,2)，稳压上面的 50% 规则 (0,2,2)，
+  不依赖两条规则在文件里的先后顺序（HMR 注入顺序不可控时也不会失效）。
+*/
+article.prose img.image-full,
+article.prose img.image-full:not(.image-grid img) {
+  width: 100% !important;
+  max-width: 100% !important;
 }
 
 .image-grid-item:hover img,

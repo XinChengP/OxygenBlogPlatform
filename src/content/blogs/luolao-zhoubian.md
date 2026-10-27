@@ -1,10 +1,10 @@
 ---
 title: "洛佬の周边"
 date: "2026-05-13"
-updatedAt: "2026-06-06"
+updatedAt: "2026-10-28"
 category: "洛天依"
 tags: ["洛天依", "VOCALOID", "周边"]
-excerpt: "洛天依周边收藏记录与分享"
+excerpt: "我の洛佬时尚小花瓶们"
 author: "歆橙"
 language: "zh-CN"
 seoTitle: "洛佬の周边 - 洛天依周边收藏"
@@ -15,7 +15,7 @@ coverImage: "/Blogabout/luoyao-zhoubian/盲盒徽章.png"
 # 洛佬の周边
 
 记录一下自己洛佬的周边
-嗨嗨嗨
+嗨嗨
 
 ---
 
@@ -37,6 +37,16 @@ coverImage: "/Blogabout/luoyao-zhoubian/盲盒徽章.png"
 最左边的常年一直笔袋里躺着，中间倒瞰清白的一直在抽屉里躺着，这仨全都来自神秘并夕夕（
 最右边那个来自泰安线下店，和下面其中一张月华舞是一块买的（
 
+<div class="image-grid image-grid-4-3-2-2"><img src="/Blogabout/luoyao-zhoubian/蝶变.jpg" alt="蝶变" /><img src="/Blogabout/luoyao-zhoubian/武装乙女.jpg" alt="武装乙女" /><img src="/Blogabout/luoyao-zhoubian/霓裳系列.jpg" alt="霓裳系列" /><img src="/Blogabout/luoyao-zhoubian/华服系列.jpg" alt="华服系列" /></div> 
+
+蝶变 butterfly~ butterfly~ butterfly—— 某周末专门跑到万达买的，贵是贵了点但是真美啊
+武装乙女那个在元力场买的，在店里完全找不到，问的店员才知道有的（我是没料到会有这个
+后两个印象不深，可能和下面那个一块买的（？
+
+![得闲饮茶系列](/Blogabout/luoyao-zhoubian/得闲饮茶系列.jpg)
+
+包装上明确写着，《小概率》重复，但你就真给我来重复的啊，晕（难怪上面那俩印象不深）
+
 ---
 
 ## 明信片&镭射票&贴纸
@@ -45,6 +55,20 @@ coverImage: "/Blogabout/luoyao-zhoubian/盲盒徽章.png"
 
 介玩意真贵啊（哭）
 稔你没有心QAQ
+
+![歌行游学记](/Blogabout/luoyao-zhoubian/歌行游学记.jpg)
+
+哪有赌狗一直输。。。好吧赌狗一无所有
+这个也是在元力场的，我依旧没有发现（
+依旧盲盒，就只有两张了，结果开了一个q版的出来
+俺寻思万一开出我喜欢的那个呢，就把剩下的最后一个也拿下了
+结果emmm
+同一形象齐活了不是吗、、、
+
+![十二周年](/Blogabout/luoyao-zhoubian/十二周年1.jpg)
+
+这个竟然就在卖完美劲敌旁边那家店里，时隔半年我才知道（
+为何这张图我第一眼就下意识认为是《纯蓝》的官方专辑曲绘？然并不是
 
 <div class="image-grid image-grid-2-cols image-grid-equal-height"><img src="/Blogabout/luoyao-zhoubian/神秘小贴画1.jpg" alt="神秘小贴画1" /><img src="/Blogabout/luoyao-zhoubian/神秘小贴画2.jpg" alt="神秘小贴画2" /></div>
 
@@ -82,6 +106,22 @@ ps：危险行为请勿模仿（bushi）
 
 >让我们一起唱吧，心中的歌    ——《心印》
  有歌的地方自有向往   ——《歌行四方》
+
+<div class="image-grid image-grid-2-cols image-grid-equal-height"><img src="/Blogabout/luoyao-zhoubian/3d打印ing.jpg" alt="打印" /><img src="/Blogabout/luoyao-zhoubian/完成.jpg" alt="打印成品" /></div>
+
+时隔两年再次上新！自制的周边要开始加速了！
+金工实习直接白嫖学校的3d打印机啊，打了个小洛包，美滋滋啊（虽然被发现了给我训了一顿，那又如何呢？
+
+![赛博签名](/Blogabout/luoyao-zhoubian/铣床加工.jpg)
+
+详见隔壁：[《搓了一个DXF转G代码的小工具》](/blogs/gcode-generation-tool)
+厨力爆炸好吧
+
+<div class="image-grid image-grid-5-3-2 image-grid-equal-height"><img src="/Blogabout/luoyao-zhoubian/来源.png" alt="参考" /><img src="/Blogabout/luoyao-zhoubian/图纸.png" alt="自己画图纸" /><img src="/Blogabout/luoyao-zhoubian/棋.jpg" alt="棋" /></div>
+
+感觉这个也能算吧（？）
+其实是这个先来的
+ps：图纸的尺寸标的严重不符合规范，请勿模仿！（逃）
 
 ---
 
@@ -146,4 +186,12 @@ ps：危险行为请勿模仿（bushi）
 
 观影会给的周边太多了，还有好多老师给的无料，就整了几个有代表性的（逃
 
+### 2026北京场的周边
+
 2026北京场的周边一定给上个全图！！！（编辑于2026.05.14凌晨三点）
+
+孩子们我真的去了awa
+
+北京场周边全图！（编辑于2026.10.28零点半）
+
+<img src="/Blogabout/luoyao-zhoubian/北京场.jpg" alt="周边全图" class="image-full" />

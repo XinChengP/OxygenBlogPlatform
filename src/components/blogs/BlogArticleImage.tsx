@@ -20,7 +20,7 @@ import { useResponsiveImageFallback } from '@/hooks/useResponsiveImageFallback';
  * - 构建期为每张图生成 640/1280/1920 WebP 变体，按视口选择，
  *   手机不再下载并解码 4000px 以上的原图
  */
-export default function BlogArticleImage({ src, alt, node, ...props }: MarkdownImgProps) {
+export default function BlogArticleImage({ src, alt, node, className, ...props }: MarkdownImgProps) {
   // node 是 react-markdown 注入的 hast 节点引用，解构出来弃置，
   // 避免随 ...props 展开成 DOM 属性（node="[object Object]"）
   const { imageSrcSetRef, articleImagesRef, onImageClick } = useBlogArticleAssets();
@@ -142,7 +142,7 @@ export default function BlogArticleImage({ src, alt, node, ...props }: MarkdownI
         alt={alt || (noLightbox ? '' : '图片')}
         className={`rounded-xl shadow-lg mx-auto h-auto my-4 ${
           noLightbox ? '' : 'cursor-pointer hover:opacity-90 transition-opacity'
-        } ${isLandscape ? 'max-w-full' : 'max-w-[400px]'}`}
+        } ${isLandscape ? 'max-w-full' : 'max-w-[400px]'} ${className ?? ''}`}
         loading="lazy"
         decoding="async"
         // 有构建期尺寸时不再需要 onLoad 探测；外链/无清单图片仍走兜底
