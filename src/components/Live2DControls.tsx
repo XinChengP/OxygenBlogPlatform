@@ -7,18 +7,24 @@ interface Live2DControlsProps {
   isLoading: boolean;
   onToggle: () => void;
   onRefresh: () => void;
+  /** 打开/关闭「问天依」AI 问答面板 */
+  onAsk: () => void;
+  /** 问答面板当前是否展开（按钮高亮 + 文案切换） */
+  chatOpen: boolean;
   themeClass: string;
 }
 
 /**
  * Live2D 控制按钮组件
- * 包含隐藏/显示按钮和刷新按钮
+ * 包含隐藏/显示按钮、刷新按钮和「问天依」AI 问答入口
  */
 export default function Live2DControls({
   isVisible,
   isLoading,
   onToggle,
   onRefresh,
+  onAsk,
+  chatOpen,
   themeClass,
 }: Live2DControlsProps) {
   return (
@@ -28,6 +34,14 @@ export default function Live2DControls({
         onClick={onToggle}
       >
         隐藏
+      </div>
+
+      <div
+        className={`ask-button ${themeClass} ${chatOpen ? 'active' : ''}`}
+        onClick={onAsk}
+        title={chatOpen ? '收起问答' : '问天依：博客里有什么？'}
+      >
+        {chatOpen ? '收起' : '问天依'}
       </div>
 
       <div

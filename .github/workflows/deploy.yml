@@ -136,13 +136,40 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
-      - name: Checkout (for purge script)
+      - name: Checkout (for purge & reindex scripts)
         uses: actions/checkout@v4
+        # depth 2：让 reindex 步骤能用 git diff 判断内容是否变更
+        with:
+          fetch-depth: 2
 
-      - name: Setup Node.js (for purge script)
+      - name: Setup Node.js (for purge & reindex scripts)
         uses: actions/setup-node@v4
         with:
           node-version: "24"
+
+      - name: Detect content changes (for AI reindex)
+        id: content_changes
+        run: |
+          # 定时/手动触发一律重建索引；push 触发时仅当内容相关文件有变更才重建
+          if [ "${{ github.event_name }}" != "push" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          COUNT=$(git diff --name-only HEAD^ HEAD -- src/content/blogs src/content/moments src/content/changelogs src/data/aiKnowledge.json | wc -l)
+          echo "changed=$([[ "$COUNT" -gt 0 ]] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+      - name: Install dependencies (for reindex)
+        if: steps.content_changes.outputs.changed == 'true'
+        run: npm ci
+
+      - name: Reindex blog knowledge (Tianyi AI)
+        if: steps.content_changes.outputs.changed == 'true'
+        continue-on-error: true
+        env:
+          # 未配置此 secret 时脚本会退出并跳过（部署不受影响）；
+          # 值与 cloudflare/interactions Worker 的 ADMIN_TOKEN secret 相同
+          ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
+        run: npm run index:blog
 
       - name: Purge Cloudflare HTML cache
         continue-on-error: true

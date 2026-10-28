@@ -1173,3 +1173,16 @@ body {
   0%, 100% { transform: scaleY(0.5); }
   50% { transform: scaleY(1); }
 }
+
+/* AI 来源跳转定位：问答面板点击来源卡后，目标卡片短暂高亮（2.6s 后回落） */
+.ai-source-highlight {
+  animation: ai-source-flash 2.6s ease;
+}
+
+@keyframes ai-source-flash {
+  0%, 55% {
+    box-shadow: 0 0 0 2px rgba(102, 204, 255, .9), 0 0 28px rgba(102, 204, 255, .45);
+    background-color: rgba(102, 204, 255, .14);
+    border-color: rgba(102, 204, 255, .8);
+  }
+}

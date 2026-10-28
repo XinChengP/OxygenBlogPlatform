@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { getAssetPath } from '../utils/assetUtils';
 import { live2dEventEmitter } from '../utils/live2dEventEmitter';
 import live2dMessageManager, { Live2DMessageHelper } from '../utils/live2dMessageManager';
@@ -9,6 +9,9 @@ import { useLive2DLoader } from '../hooks/useLive2DLoader';
 import { fetchHitokoto } from '../utils/live2dHitokoto';
 import Live2DBubble from './Live2DBubble';
 import Live2DControls from './Live2DControls';
+
+/** 天依 AI 问答面板：懒加载，仅在首次点「问天依」时下载 */
+const TianyiChatPanel = lazy(() => import('./TianyiChatPanel'));
 
 interface LuoTianyiLive2DProps {
   hidden?: boolean;
@@ -99,6 +102,8 @@ export default function LuoTianyiLive2D({ hidden = false }: LuoTianyiLive2DProps
   const [isLoading, setIsLoading] = useState(true);
   const [loadProgress, setLoadProgress] = useState(0);
   const [isModelReady, setIsModelReady] = useState(false);
+  // 天依 AI 问答面板开关
+  const [chatOpen, setChatOpen] = useState(false);
   // 主题类名（'dark' | ''）：用 state 承载并监听 html class 变化，
   // 保证切换主题时气泡/控件立即重渲染同步（此前是渲染时快照，
   // 切主题后组件不重渲染，类名停留在旧主题直到下一次无关更新）
@@ -489,8 +494,17 @@ export default function LuoTianyiLive2D({ hidden = false }: LuoTianyiLive2DProps
           isLoading={isLoading}
           onToggle={toggleVisibility}
           onRefresh={refreshLive2D}
+          onAsk={() => setChatOpen((prev) => !prev)}
+          chatOpen={chatOpen}
           themeClass={themeClass}
         />
+
+        {/* 天依 AI 问答面板：懒加载，挂在看板娘上方 */}
+        {chatOpen && (
+          <Suspense fallback={null}>
+            <TianyiChatPanel onClose={() => setChatOpen(false)} />
+          </Suspense>
+        )}
       </div>
     </>
   );

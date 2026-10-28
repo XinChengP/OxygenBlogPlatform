@@ -112,6 +112,15 @@ const devConfig = {
     wrangler 未启动时转发会连接失败，前端已做静默降级，不影响页面。
   */
   rewrites: async () => [
+    /*
+      天依 AI 问答在本地也直连线上互动服务：本地 wrangler dev 的 OAuth scope
+      不含 Vectorize 权限（远程检索会 503），且本地索引没有数据。
+      此条必须排在通配 /api/interactions/:path* 之前——Next 按顺序取第一个匹配。
+    */
+    {
+      source: '/api/interactions/chat',
+      destination: 'https://blog.xinchengp.cn/api/interactions/chat',
+    },
     {
       source: '/api/interactions/:path*',
       destination: `${process.env.INTERACTIONS_DEV_URL || 'http://127.0.0.1:8787'}/api/interactions/:path*`,

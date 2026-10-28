@@ -23,6 +23,7 @@ const TimeStatsChart = dynamic(() => import('./TimeStatsChart'));
 const TypeStatsChart = dynamic(() => import('./TypeStatsChart'));
 import { Live2DMessageHelper } from '@/utils/live2dMessageManager';
 import { getAssetPath } from '@/utils/assetUtils';
+import { useAiSourceHashJump } from '@/utils/aiSourceJump';
 // 全站层级令牌：成就说明弹窗的层级统一走这里
 import { Z_INDEX } from '@/utils/zIndex';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
@@ -87,6 +88,16 @@ function ClientChangelogsPage({ changelogs, blogTimeStats, momentTimeStats }: Cl
   const [htmlCache, setHtmlCache] = useState<Record<string, string>>({});
   const [htmlLoading, setHtmlLoading] = useState<Record<string, boolean>>({});
   const htmlRequestsRef = useRef<Set<string>>(new Set());
+
+  // AI 来源跳转：问答面板引用某篇日志时，url 携带 #changelog-<id>，滚动定位并高亮，
+  // 同时自动展开该条日志（更新日志默认折叠，不展开的话定位过去也看不到内容）
+  useAiSourceHashJump('changelog-');
+  useEffect(() => {
+    const hash = decodeURIComponent(window.location.hash.replace(/^#/, ''));
+    if (!hash.startsWith('changelog-')) return;
+    const id = hash.replace(/^changelog-/, '');
+    if (id) setExpandedLogs((prev) => ({ ...prev, [id]: true }));
+  }, []);
 
   const loadChangelogHtml = useCallback((id: string) => {
     if (htmlCache[id] || htmlRequestsRef.current.has(id)) return;
@@ -185,7 +196,11 @@ function ClientChangelogsPage({ changelogs, blogTimeStats, momentTimeStats }: Cl
 
                   {/* 日志卡片列表 */}
                   {changelogs.map((changelog) => (
-                    <div key={changelog.id} className="relative flex gap-4 sm:gap-8">
+                    <div
+                      key={changelog.id}
+                      id={`changelog-${changelog.id}`}
+                      className="relative flex gap-4 sm:gap-8 scroll-mt-24"
+                    >
                       {/* 时间轴圆点指示器 */}
                       <div className="hidden sm:flex flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 border-2 border-primary items-center justify-center z-10">
                         <div className="w-2 h-2 rounded-full bg-primary"></div>

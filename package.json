@@ -23,6 +23,7 @@
     "study": "tsx scripts/add-study-log.ts",
     "maimemo": "tsx scripts/fetch-maimemo.ts",
     "check:friends": "tsx scripts/check-friends.ts",
+    "index:blog": "node scripts/index-blog.mjs",
     "sync-theme": "node scripts/sync-theme-colors.js",
     "generate-gallery": "npx tsx scripts/generate-gallery-data.ts",
     "export": "next build --webpack",

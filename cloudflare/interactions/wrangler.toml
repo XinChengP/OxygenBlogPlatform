@@ -23,6 +23,22 @@ crons = ["0 4 * * *"]
 PUBLIC_SITE_URL = "https://blog.xinchengp.cn"
 # 发件人。Resend 要求该地址的域名已完成验证（SPF/DKIM），见 README。
 RESEND_FROM = "OxygenBlog <blog@xinchengp.cn>"
+# 天依 AI 问答使用的文本生成模型（Workers AI）。中文效果优先 Qwen 系；
+# MoE 架构（30B 总参/3B 激活）中文好且便宜。换模型只改这里。
+AI_CHAT_MODEL = "@cf/qwen/qwen3-30b-a3b-fp8"
+
+# Workers AI：问题/文档向量化（bge-m3）+ 回答生成（AI_CHAT_MODEL）
+[ai]
+binding = "AI"
+
+# 向量索引：博客内容 RAG 检索。维度 1024 对应 bge-m3，创建后不可更改：
+#   npx wrangler vectorize create blog-knowledge --dimensions 1024 --metric cosine
+# remote = true：Vectorize 不支持本地模拟，本地 wrangler dev 直连线上索引，
+# 与 AI 绑定一样「本地开发也访问远程资源」（会产生少量用量）。
+[[vectorize]]
+binding = "VECTORIZE"
+index_name = "blog-knowledge"
+remote = true
 
 [[d1_databases]]
 binding = "DB" # Worker 中通过 env.DB 访问

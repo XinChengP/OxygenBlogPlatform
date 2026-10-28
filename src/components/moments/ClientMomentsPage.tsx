@@ -8,6 +8,7 @@ import { getAvatarPath, name } from '@/setting/AboutSetting';
 import type { TodoConfig } from '@/types/todo';
 import PageHeader from '@/components/ui/PageHeader';
 import { Live2DMessageHelper } from '@/utils/live2dMessageManager';
+import { useAiSourceHashJump } from '@/utils/aiSourceJump';
 
 interface ClientMomentsPageProps {
   moments: Array<{
@@ -34,6 +35,9 @@ function ClientMomentsPage({ moments, blogCount, blogTotalWordCount, blogs, cate
   useEffect(() => {
     Live2DMessageHelper.showMomentsMessage('PAGE_VISIT');
   }, []);
+
+  // AI 来源跳转：问答面板引用某条动态时，url 携带 #moment-<id>，滚动定位并高亮
+  useAiSourceHashJump('moment-');
 
   return (
     <div className="min-h-screen">
@@ -93,7 +97,8 @@ function ClientMomentsPage({ moments, blogCount, blogTotalWordCount, blogs, cate
                   return (
                     <div
                       key={moment.id}
-                      className="p-5 rounded-xl border transition-[box-shadow,border-color] duration-300 bg-card/95 border-border shadow-card hover:shadow-card-hover hover:border-primary/30"
+                      id={`moment-${moment.id}`}
+                      className="p-5 rounded-xl border transition-[box-shadow,border-color] duration-300 bg-card/95 border-border shadow-card hover:shadow-card-hover hover:border-primary/30 scroll-mt-24"
                     >
                       {/* 社交媒体风格头部：头像 + 昵称 + 时间 + 置顶标签 */}
                       <div className="flex items-center justify-between mb-3 pb-3 border-b border-border/30">

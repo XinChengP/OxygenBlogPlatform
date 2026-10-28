@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { BookOpenCheck, Target, Clock, Flame, Sparkles } from 'lucide-react';
+import { BookOpenCheck, Target, Flame, Sparkles } from 'lucide-react';
 import { containerVariants } from '@/utils/animationVariants';
 import type { MaimemoStats } from '@/types/maimemo';
 
@@ -40,17 +40,6 @@ function msToDate(ms: number): string {
   const m = String(date.getUTCMonth() + 1).padStart(2, '0');
   const d = String(date.getUTCDate()).padStart(2, '0');
   return `${date.getUTCFullYear()}-${m}-${d}`;
-}
-
-/** 秒数格式化为「X 小时 Y 分钟」 */
-function formatStudyTime(seconds: number): string {
-  if (!Number.isFinite(seconds) || seconds <= 0) return '0 分钟';
-  const totalMinutes = Math.round(seconds / 60);
-  const hours = Math.floor(totalMinutes / 60);
-  const rest = totalMinutes % 60;
-  if (hours === 0) return `${rest} 分钟`;
-  if (rest === 0) return `${hours} 小时`;
-  return `${hours} 小时 ${rest} 分钟`;
 }
 
 /** 校验接口返回结构，避免脏数据把卡片渲染崩掉 */
@@ -257,20 +246,10 @@ export default function MaimemoCard({ initialStats = null, days = 30 }: MaimemoC
       )}
 
       {/* 词库概况 */}
-      {(today?.studyTimeSeconds !== undefined ||
-        stats.dueReviews !== undefined ||
+      {(stats.dueReviews !== undefined ||
         stats.stickingWords !== undefined ||
         recentWords.length > 0) && (
         <div className="flex flex-wrap items-center gap-2 mt-4">
-          {today?.studyTimeSeconds !== undefined && (
-            <span
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/10 text-xs text-primary"
-              title="使用墨墨以来的账号累计学习时长"
-            >
-              <Clock className="w-3.5 h-3.5" />
-              累计学习 {formatStudyTime(today.studyTimeSeconds)}
-            </span>
-          )}
           {stats.dueReviews !== undefined && (
             <span
               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 text-xs text-amber-600 dark:text-amber-400"

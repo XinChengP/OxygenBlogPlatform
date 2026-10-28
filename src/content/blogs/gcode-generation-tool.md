@@ -44,13 +44,13 @@ coverImage: "/Blogabout/gcode-generation-tool/cover.png"
 
 # 预览
 
-<div class="image-grid image-grid-2-cols"><img src="/Blogabout/gcode-generation-tool/input.png" alt="输入文件" /><img src="/Blogabout/gcode-generation-tool/preview.png" alt="预览图" /></div>
+<div class="image-grid image-grid-1-1"><img src="/Blogabout/gcode-generation-tool/input.png" alt="输入文件" /><img src="/Blogabout/gcode-generation-tool/preview.png" alt="预览图" /></div>
 
 &emsp;&emsp;图一是CAD文件图纸，图二是转换后的预览图
 
 # 实际成果
 
-<div class="image-grid image-grid-4-cols"><img src="/Blogabout/gcode-generation-tool/lao_tuzhi.png" alt="输入文件" /><img src="/Blogabout/gcode-generation-tool/lao_cutting.png" alt="预览图-仅削切轨迹" /><img src="/Blogabout/gcode-generation-tool/lao_full.png" alt="预览图-完整轨迹" /><img src="/Blogabout/gcode-generation-tool/lao.jpg" alt="成果图" /></div>
+<div class="image-grid image-grid-3-3-3-2"><img src="/Blogabout/gcode-generation-tool/lao_tuzhi.png" alt="输入文件" /><img src="/Blogabout/gcode-generation-tool/lao_cutting.png" alt="预览图-仅削切轨迹" /><img src="/Blogabout/gcode-generation-tool/lao_full.png" alt="预览图-完整轨迹" /><img src="/Blogabout/gcode-generation-tool/lao.jpg" alt="成果图" /></div>
 
 &emsp;&emsp;图一是CAD文件图纸，图二图三是预览图，图四是成果图awa
 
