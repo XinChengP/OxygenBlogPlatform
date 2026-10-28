@@ -558,13 +558,13 @@ async function handleChat(request, env) {
     result = await env.AI.run(env.AI_CHAT_MODEL || CHAT_MODEL, {
       messages: [
         { role: 'system', content: system },
-        { role: 'user', content: `读者的问题：${question}\n\n站内资料：\n${context}` },
+        // /no_think 是 Qwen3 chat 模板指令，追加在 user 消息末尾可真正关闭思考
+        // （已线上验证：需要罗列的长思考问题从「走神」恢复为完整回答）
+        { role: 'user', content: `读者的问题：${question}\n\n站内资料：\n${context}\n/no_think` },
       ],
-      // 关闭 Qwen3 思考模式：推理痕迹按输出 token 计费（输出单价约为输入的 6.6 倍），
-      // 旧方案靠 max_tokens 800 给思考留余量；本任务答案仅 120 字、无需深度推理，
-      // 关掉思考后上限直接降到 300，单次输出成本约省 60%。
-      // stripThinking 仍保留：万一模型不遵守开关输出了 <think>，兜底剥离。
-      reasoning: false,
+      // 注意：本模型 schema 没有 reasoning 参数，之前的 reasoning:false 会被静默忽略，
+      // 思考痕迹照旧生成并吃掉 max_tokens 预算，导致复杂问题被截在  内 → 剥除后为空 →「走神」。
+      // 现改用 /no_think 关闭思考，300 上限足够；stripThinking 仍保留作兜底。
       max_tokens: 300,
       temperature: 0.5,
     });
