@@ -22,6 +22,9 @@ interface ChatMessage {
   sources?: ChatSource[];
 }
 
+/** 预设问题 chips：面板还没提问时展示，点一下直接发送（降低「不知道问什么」的门槛） */
+const PRESET_QUESTIONS = ['有哪些前端开发的文章？', '博客有什么小工具？', '站长是谁呀？'];
+
 /** 来源类型的图标与标签 */
 const SOURCE_TYPE_META: Record<string, { icon: string; label: string }> = {
   blog: { icon: '📄', label: '文章' },
@@ -96,8 +99,8 @@ export default function TianyiChatPanel({ onClose }: TianyiChatPanelProps) {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages, loading]);
 
-  const send = useCallback(async () => {
-    const question = input.trim();
+  /** 发送指定问题（输入框与预设问题 chips 共用同一条链路） */
+  const ask = useCallback(async (question: string) => {
     if (!question || loading) return;
     setInput('');
     setMessages((prev) => [...prev, { id: nextId.current++, role: 'user', text: question }]);
@@ -108,7 +111,8 @@ export default function TianyiChatPanel({ onClose }: TianyiChatPanelProps) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question }),
-        signal: AbortSignal.timeout(45_000),
+        // 关闭思考模式后生成明显变快，20 秒足够；异常时也能更快给读者反馈
+        signal: AbortSignal.timeout(20_000),
       });
       const data = (await response.json().catch(() => ({}))) as {
         answer?: string;
@@ -142,8 +146,11 @@ export default function TianyiChatPanel({ onClose }: TianyiChatPanelProps) {
       // 成功的回答同步推进 Live2D 气泡：气泡只显示前 60 字，完整内容看面板；
       // 错误提示只在面板内展示，不推气泡（避免同一句话出现两遍）
       if (success) {
+        // 气泡截 60 字同样可能把【N】切成残缺形态（如「【1」），
+        // 与后端一致先剥掉尾部残缺引用再补省略号
+        const bubble = answer.slice(0, 60).replace(/【\d*$/, '');
         live2dMessageManager.showMessage(
-          `${answer.slice(0, 60)}${answer.length > 60 ? '…' : ''}`,
+          `${bubble}${answer.length > 60 ? '…' : ''}`,
           6000,
           4
         );
@@ -158,7 +165,12 @@ export default function TianyiChatPanel({ onClose }: TianyiChatPanelProps) {
     } finally {
       setLoading(false);
     }
-  }, [input, loading]);
+  }, [loading]);
+
+  /** 输入框发送：取当前输入内容交给 ask */
+  const send = useCallback(() => {
+    void ask(input.trim());
+  }, [ask, input]);
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
     // 中文输入法组合中的回车不发送
@@ -256,6 +268,24 @@ export default function TianyiChatPanel({ onClose }: TianyiChatPanelProps) {
           </div>
         )}
       </div>
+
+      {/* 预设问题：仅在还没提过问时展示，提问后自动收起 */}
+      {messages.length === 1 && (
+        <div className="flex flex-wrap gap-1 px-2.5 pb-1.5">
+          {PRESET_QUESTIONS.map((preset) => (
+            <button
+              key={preset}
+              type="button"
+              disabled={loading}
+              onClick={() => void ask(preset)}
+              className="rounded-full border border-primary/30 bg-primary/5 px-2 py-0.5 text-[10px]
+                         text-primary hover:bg-primary/15 transition-colors disabled:opacity-40"
+            >
+              {preset}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* 输入行 */}
       <div className="flex items-center gap-1.5 px-2.5 py-2 border-t border-border/40">
