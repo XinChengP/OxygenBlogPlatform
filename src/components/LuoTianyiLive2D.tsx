@@ -7,6 +7,11 @@ import live2dMessageManager, { Live2DMessageHelper } from '../utils/live2dMessag
 import { InteractionMessages } from '../setting/live2dMessages';
 import { useLive2DLoader } from '../hooks/useLive2DLoader';
 import { fetchHitokoto } from '../utils/live2dHitokoto';
+import {
+  getLive2DVisibility,
+  setLive2DVisibility,
+  onLive2DVisibilityChange,
+} from '../utils/live2dVisibility';
 import Live2DBubble from './Live2DBubble';
 import Live2DControls from './Live2DControls';
 
@@ -95,7 +100,8 @@ export default function LuoTianyiLive2D({ hidden = false }: LuoTianyiLive2DProps
   hiddenRef.current = hidden;
   const hasLoadedRef = useRef<boolean>(false);
 
-  const [isVisible, setIsVisible] = useState(true);
+  // 从 localStorage 读取用户上次选择的显隐偏好，首次访问默认显示
+  const [isVisible, setIsVisible] = useState(() => getLive2DVisibility());
   const [isMobileDevice, setIsMobileDevice] = useState(false);
   const [message, setMessage] = useState('');
   const [messageOpacity, setMessageOpacity] = useState(1);
@@ -426,8 +432,24 @@ export default function LuoTianyiLive2D({ hidden = false }: LuoTianyiLive2DProps
     };
   }, [handleThemeChange, updateMessage]);
 
+  // 订阅全局显隐状态变化（右下角悬浮按钮触发时同步到此组件）
+  useEffect(() => {
+    const unsubscribe = onLive2DVisibilityChange((visible) => {
+      setIsVisible(visible);
+    });
+    return unsubscribe;
+  }, []);
 
-  const toggleVisibility = useCallback(() => setIsVisible((v) => !v), []);
+  // 内部 toggle 也需同步写入全局状态，保证双向一致
+  // 注意：setLive2DVisibility 必须放在 updater 函数外面，
+  // 因为 updater 是在 React 渲染阶段同步执行的，
+  // 若在里面 dispatch CustomEvent → 触发 ScrollToTop 的 setState，
+  // 会报 "Cannot update a component while rendering a different component"
+  const toggleVisibility = useCallback(() => {
+    const next = !isVisible;
+    setIsVisible(next);
+    setLive2DVisibility(next);
+  }, [isVisible]);
 
   const refreshLive2D = useCallback(async () => {
     if (isLoading) return;

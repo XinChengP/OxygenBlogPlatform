@@ -3,9 +3,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
-import { ChevronUpIcon, ChevronDownIcon, SunIcon, MoonIcon, AdjustmentsHorizontalIcon, MusicalNoteIcon, SparklesIcon } from '@heroicons/react/24/outline';
+import { ChevronUpIcon, ChevronDownIcon, SunIcon, MoonIcon, AdjustmentsHorizontalIcon, MusicalNoteIcon, SparklesIcon, FaceSmileIcon } from '@heroicons/react/24/outline';
 
 import { getMusicPlayerVisibility, setMusicPlayerVisibility, onMusicPlayerVisibilityChange } from '@/utils/musicPlayerVisibility';
+import { getLive2DVisibility, setLive2DVisibility, onLive2DVisibilityChange } from '@/utils/live2dVisibility';
 import { throttle } from '@/utils/performanceUtils';
 import { fireworksEngine } from '@/utils/fireworksEngine';
 import { Z_INDEX } from '@/utils/zIndex';
@@ -25,11 +26,13 @@ export default function ScrollToTop() {
   const [isAtTop, setIsAtTop] = useState(true);
   const [showThemeButton, setShowThemeButton] = useState(false);
   const [musicPlayerVisible, setMusicPlayerVisible] = useState(false);
+  const [live2dVisible, setLive2dVisible] = useState(true);
   // next-themes 在服务端无法获取用户真实主题，挂载后再渲染主题相关图标
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMusicPlayerVisible(getMusicPlayerVisibility());
+    setLive2dVisible(getLive2DVisibility());
   }, []);
 
   useEffect(() => {
@@ -62,6 +65,17 @@ export default function ScrollToTop() {
   useEffect(() => {
     const unsubscribe = onMusicPlayerVisibilityChange((visible) => {
       setMusicPlayerVisible(visible);
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
+  // 监听 Live2D 看板娘显示状态变化
+  useEffect(() => {
+    const unsubscribe = onLive2DVisibilityChange((visible) => {
+      setLive2dVisible(visible);
     });
 
     return () => {
@@ -104,6 +118,12 @@ export default function ScrollToTop() {
     setMusicPlayerVisible(newVisibility);
   }, [musicPlayerVisible]);
 
+  const toggleLive2D = useCallback(() => {
+    const newVisibility = !live2dVisible;
+    setLive2DVisibility(newVisibility);
+    setLive2dVisible(newVisibility);
+  }, [live2dVisible]);
+
   const startFireworks = useCallback(() => {
     fireworksEngine.start();
   }, []);
@@ -118,6 +138,25 @@ export default function ScrollToTop() {
       }}
     >
       <div className="flex flex-col space-y-2">
+        {/* Live2D 看板娘开关 */}
+        <button
+          onClick={toggleLive2D}
+          className={`p-3 ${live2dVisible ? 'bg-primary text-primary-foreground hover:bg-primary/90' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600'} rounded-lg shadow-lg transition-all duration-300 transform hover:scale-110 ${showThemeButton ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-5 scale-95 pointer-events-none'}`}
+          style={{
+            transitionDelay: showThemeButton ? '0.05s' : '0s',
+            display: showThemeButton ? 'flex' : 'none',
+          }}
+          aria-label={live2dVisible ? '隐藏天依' : '显示天依'}
+          title={live2dVisible ? '隐藏天依' : '显示天依'}
+        >
+          <FaceSmileIcon className={`h-5 w-5 ${!live2dVisible ? 'opacity-50' : ''}`} />
+          {!live2dVisible && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-6 h-0.5 bg-gray-600 dark:bg-gray-400 transform rotate-45"></div>
+            </div>
+          )}
+        </button>
+
         {/* 音乐播放器开关 */}
         <button
           onClick={toggleMusicPlayer}

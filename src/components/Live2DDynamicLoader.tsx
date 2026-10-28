@@ -41,14 +41,23 @@ export default function Live2DDynamicLoader() {
         if (mountedRef.current || isHiddenRoute) return;
         if (typeof window === 'undefined') return;
 
-        // 触屏设备上组件本身也会隐藏，直接在下载前跳过
-        if (window.matchMedia('(pointer: coarse)').matches) return;
-        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        // 检测 Electron 环境：preload.js 会在 window 上挂 electronAPI
+        // 桌面端不走省流量、触屏、减少动态效果这些移动端/浏览器端限制
+        const isElectron = typeof (window as any).electronAPI !== 'undefined';
 
-        const navigatorWithHints = navigator as Navigator & {
-            connection?: { saveData?: boolean };
-        };
-        if (navigatorWithHints.connection?.saveData) return;
+        if (!isElectron) {
+            // 触屏设备上组件本身也会隐藏，直接在下载前跳过
+            if (window.matchMedia('(pointer: coarse)').matches) return;
+            // 系统设置了「减少动态效果」时不加载，避免喧宾夺主
+            // 注意：Electron 会继承 Windows 的「关闭所有不必要的动画」
+            // 设置，导致这条检查误判，所以桌面端直接跳过
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+            const navigatorWithHints = navigator as Navigator & {
+                connection?: { saveData?: boolean };
+            };
+            if (navigatorWithHints.connection?.saveData) return;
+        }
 
         const start = () => {
             if (mountedRef.current) return;
