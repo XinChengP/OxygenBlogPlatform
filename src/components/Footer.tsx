@@ -5,6 +5,7 @@ import { name, aWord, year, siteLaunchDate } from '@/setting/FooterSetting';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { getAssetPath } from '@/utils/assetUtils';
+import { isElectron } from '@/utils/isElectron';
 
 /**
  * 动态加载外部脚本工具函数
@@ -56,14 +57,16 @@ function FlyingFish() {
     const navigatorWithHints = navigator as Navigator & {
       connection?: { saveData?: boolean };
     };
-    if (
-      window.matchMedia('(pointer: coarse)').matches ||
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
-      navigatorWithHints.connection?.saveData ||
-      window.innerWidth < 768
-    ) {
-      return;
-    }
+
+    // Electron 桌面端跳过所有这些移动端/浏览器端门控，让小鱼特效正常显示
+    const skipAllGate =
+      !isElectron() && (
+        window.matchMedia('(pointer: coarse)').matches ||
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+        navigatorWithHints.connection?.saveData ||
+        window.innerWidth < 768
+      );
+    if (skipAllGate) return;
 
     // 捕获阶段拦截小鱼容器内部的点击冒泡，避免误触发页面上层的点击行为。
     // 注意：本 effect 依赖 pathname，每次路由切换都会重新执行，

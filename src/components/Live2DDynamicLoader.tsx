@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import dynamic from 'next/dynamic';
+import { isElectron } from '@/utils/isElectron';
 
 /**
  * Live2D 动态加载包装组件
@@ -41,11 +42,8 @@ export default function Live2DDynamicLoader() {
         if (mountedRef.current || isHiddenRoute) return;
         if (typeof window === 'undefined') return;
 
-        // 检测 Electron 环境：preload.js 会在 window 上挂 electronAPI
-        // 桌面端不走省流量、触屏、减少动态效果这些移动端/浏览器端限制
-        const isElectron = typeof (window as any).electronAPI !== 'undefined';
-
-        if (!isElectron) {
+        // Electron 桌面端跳过省流量、触屏、减少动态效果这些移动端/浏览器端门控
+        if (!isElectron()) {
             // 触屏设备上组件本身也会隐藏，直接在下载前跳过
             if (window.matchMedia('(pointer: coarse)').matches) return;
             // 系统设置了「减少动态效果」时不加载，避免喧宾夺主

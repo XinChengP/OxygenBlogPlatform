@@ -10,6 +10,7 @@ import { Users, MessageSquare, Link2, User, ChevronDown, Search } from 'lucide-r
 import { OPEN_SEARCH_EVENT } from '@/utils/searchEvents';
 import { prefetchSearchIndex } from '@/utils/searchIndex';
 import { Z_INDEX } from '@/utils/zIndex';
+import { isElectron } from '@/utils/isElectron';
 
 /**
  * 导航项类型定义
@@ -137,7 +138,8 @@ const Navigation = () => {
     // 如果点击的是当前页面，滚动到顶部
     if (pathname === href) {
       e.preventDefault();
-      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      // Electron 桌面端始终用平滑滚动
+      const reduceMotion = !isElectron() && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
     }
   }, [pathname]);

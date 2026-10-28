@@ -65,19 +65,23 @@
 }
 
 /*
-  博客正文里的单图默认只占容器一半宽度，避免一张小图被拉到整行横幅那么大。
-  用 article 限定作用域：留言板和 Markdown 编辑器预览同样是 .prose，
-  但容器是 div，不应跟着博客正文一起变窄。
+  只有 Markdown 语法写的图片（`![alt](src)`）默认占容器一半宽度，
+  避免正文配图被拉成整行横幅那么大。
+  这个 md-image 标记由 ServerBlogMarkdown 的 remarkMarkdownImages 插件写入：
+  作者手写的 HTML <img> 不经过 markdown 的 image 节点，因此天然不带该标记，
+  贴吧楼层、QQ 聊天窗口里的头像与表情包会保持自身尺寸，不会被压成半宽。
   只覆盖 width、不动 max-width，竖图原有的 max-w-[400px] 上限继续生效。
 */
-article.prose img:not(.image-grid img) {
+article.prose img.md-image:not(.image-grid img) {
   width: 50% !important;
 }
 
 /*
   整行展示的例外标记：<img src="..." class="image-full" />
-  第二条选择器借 :not() 把特异性抬到 (0,3,2)，稳压上面的 50% 规则 (0,2,2)，
-  不依赖两条规则在文件里的先后顺序（HMR 注入顺序不可控时也不会失效）。
+  HTML 图片本身已经整宽，这条规则主要用于显式声明意图；
+  需要整行展示的 Markdown 图片请改用 HTML img 写法。
+  第二条选择器借 :not() 把特异性抬到 (0,3,2)，稳压上面的 50% 规则，
+  不依赖两条规则在文件里的先后顺序。
 */
 article.prose img.image-full,
 article.prose img.image-full:not(.image-grid img) {

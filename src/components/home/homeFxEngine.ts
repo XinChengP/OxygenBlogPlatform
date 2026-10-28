@@ -1,5 +1,6 @@
 import { backgroundMode } from '@/setting/WebSetting';
 import { homeFXImageSize, homeFXIntensity } from '@/setting/HomeFXSetting';
+import { isElectron } from '@/utils/isElectron';
 
 /*
  * 首页背景特效引擎。
@@ -250,7 +251,8 @@ export function mountHomeFx(
   let rippleTimer = 3 + Math.random() * 3;
 
   const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-  let motionReduced = motionQuery.matches;
+  // Electron 桌面端强制 motionReduced = false，始终播放完整动效
+  let motionReduced = !isElectron() && motionQuery.matches;
 
   const stars: Star[] = [];
   const dust: Dust[] = [];
@@ -971,7 +973,8 @@ export function mountHomeFx(
   }
 
   function onMotionChange() {
-    motionReduced = motionQuery.matches;
+    // Electron 桌面端始终忽略系统减少动态效果设置
+    motionReduced = !isElectron() && motionQuery.matches;
     syncRunning();
   }
 

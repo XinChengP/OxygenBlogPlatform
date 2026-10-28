@@ -1,5 +1,6 @@
 import live2dMessageManager from '@/utils/live2dMessageManager';
 import { Z_INDEX } from '@/utils/zIndex';
+import { isElectron } from '@/utils/isElectron';
 
 /**
  * 全屏烟花引擎
@@ -202,7 +203,8 @@ class FireworksEngine {
   start(message?: string): void {
     if (this.running) return;
     if (typeof window === 'undefined') return;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    // Electron 桌面端跳过减少动态效果门控，让烟花特效正常播放
+    if (!isElectron() && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
     this.running = true;
     live2dMessageManager.enterFireworksMode();

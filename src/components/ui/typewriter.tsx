@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { isElectron } from '@/utils/isElectron';
 
 /**
  * 打字机组件
@@ -33,9 +34,10 @@ export default function Typewriter({ delay, texts, baseText = '' }: ITypewriterP
   const [reduceMotion, setReduceMotion] = useState(false);
 
   // 减少动态效果：只显示第一句静态文本
+  // Electron 桌面端不受系统减少动态效果影响，始终播放打字机动画
   useEffect(() => {
     const query = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const sync = () => setReduceMotion(query.matches);
+    const sync = () => setReduceMotion(!isElectron() && query.matches);
     sync();
     query.addEventListener?.('change', sync);
     return () => query.removeEventListener?.('change', sync);

@@ -171,6 +171,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
 // 页面加载完成后的处理
 window.addEventListener('DOMContentLoaded', () => {
+  // 给 <html> 加 electron 类名，便于 CSS 跳过 prefers-reduced-motion 等媒体查询
+  // 例如：html.electron { /* 始终播放动画，不受系统减少动态效果影响 */ }
+  document.documentElement.classList.add('electron');
+
   console.log('%c🚀 Electron Dev Preview 已加载', 'color: #66ccff; font-size: 16px; font-weight: bold;')
   console.log('%c新增功能:', 'color: #ff9966; font-weight: bold;')
   console.log('%c  ✓ 窗口状态记忆 - 自动保存窗口位置和大小', 'color: #66ff99;')

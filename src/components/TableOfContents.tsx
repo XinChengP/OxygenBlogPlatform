@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useBackgroundStyle } from '../hooks/useBackgroundStyle';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import type { TocItem } from '@/utils/tocUtils';
+import { isElectron } from '@/utils/isElectron';
 
 interface TableOfContentsProps {
   items: TocItem[];
@@ -18,7 +19,8 @@ const scrollToElement = (id: string) => {
   if (element) {
     const offset = 120;
     const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // Electron 桌面端始终用平滑滚动，不受系统减少动态效果影响
+    const reduceMotion = !isElectron() && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     window.scrollTo({
       top: elementPosition - offset,
       behavior: reduceMotion ? 'auto' : 'smooth'

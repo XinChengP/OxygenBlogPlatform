@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { enableHomeFX } from '@/setting/HomeFXSetting';
 import { enableBackground, backgroundImage } from '@/setting/WebSetting';
+import { isElectron } from '@/utils/isElectron';
 import type { HomeFxController } from './homeFxEngine';
 
 type IdleWindow = Window & {
@@ -34,13 +35,16 @@ export default function HomeBackgroundFX() {
     if (!canvas) return;
 
     const navigatorWithHints = navigator as NavigatorWithHints;
-    if (navigatorWithHints.connection?.saveData) return;
 
-    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    if (motionQuery.matches) return;
+    // Electron 桌面端跳过省流量、减少动态效果门控，让首页粒子特效正常显示
+    if (!isElectron()) {
+      if (navigatorWithHints.connection?.saveData) return;
+      const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+      if (motionQuery.matches) return;
+    }
 
     const lite =
-      window.matchMedia('(pointer: coarse)').matches ||
+      (!isElectron() && window.matchMedia('(pointer: coarse)').matches) ||
       (navigatorWithHints.hardwareConcurrency ?? 8) <= 4 ||
       (navigatorWithHints.deviceMemory ?? 8) <= 4;
 

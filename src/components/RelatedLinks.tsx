@@ -24,6 +24,7 @@ import {
   type RelatedLink
 } from '@/setting/AboutSetting';
 import { resolveLinkIcon } from '@/components/links/brandIcons';
+import { isElectron } from '@/utils/isElectron';
 
 /**
  * 分类 Lucide 图标映射（导航胶囊 / 分组标题使用）
@@ -331,7 +332,7 @@ export default function RelatedLinks() {
         if (!el) return;
         const bar = barRef.current;
         const barBottom = bar ? bar.getBoundingClientRect().bottom : 80;
-        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const prefersReducedMotion = !isElectron() && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         window.scrollTo({
           top: el.getBoundingClientRect().top + window.scrollY - barBottom - 16,
           behavior: prefersReducedMotion ? 'auto' : 'smooth'

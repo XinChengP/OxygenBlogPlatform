@@ -7,6 +7,7 @@ import { ChevronUpIcon, ChevronDownIcon, SunIcon, MoonIcon, AdjustmentsHorizonta
 
 import { getMusicPlayerVisibility, setMusicPlayerVisibility, onMusicPlayerVisibilityChange } from '@/utils/musicPlayerVisibility';
 import { getLive2DVisibility, setLive2DVisibility, onLive2DVisibilityChange } from '@/utils/live2dVisibility';
+import { isElectron } from '@/utils/isElectron';
 import { throttle } from '@/utils/performanceUtils';
 import { fireworksEngine } from '@/utils/fireworksEngine';
 import { Z_INDEX } from '@/utils/zIndex';
@@ -93,7 +94,8 @@ export default function ScrollToTop() {
   }, [pathname]);
 
   const scrollTo = useCallback((top: number) => {
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // Electron 桌面端始终用平滑滚动，不受系统减少动态效果影响
+    const reduceMotion = !isElectron() && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     window.scrollTo({ top, behavior: reduceMotion ? 'auto' : 'smooth' });
   }, []);
 

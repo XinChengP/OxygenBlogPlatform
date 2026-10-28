@@ -74,10 +74,49 @@ function parseHighlightLines(meta?: string): number[] | undefined {
   return lines.size > 0 ? [...lines].sort((a, b) => a - b) : undefined;
 }
 
+/**
+ * 给 Markdown 语法写的图片打上 md-image 标记
+ *
+ * 为什么需要这个插件：
+ * 正文里同时存在两种图片——`![alt](src)` 语法图片与作者手写的 HTML `<img>`。
+ * 排版上只希望缩小前者（正文配图），后者常用于贴吧楼层、QQ 聊天窗口等
+ * 自定义版式，头像和小表情必须保持原尺寸，不能被统一压成半宽。
+ *
+ * HTML `<img>` 由 rehypeRaw 直接转成元素，不经过 mdast 的 image 节点，
+ * 因此在这一层打标记是唯一能按「写法」而不是「DOM 结构」区分两者的位置。
+ * 返回的 className 会经 mdast-util-to-hast 落到 hast properties 上，
+ * 最终由 BlogArticleImage 合并到自身样式里（见该组件的 className 处理）。
+ */
+const remarkMarkdownImages = () => (tree: unknown) => {
+  // 手写递归而不引 unist-util-visit：只是一次深度遍历，避免为一个工具函数加依赖
+  const mark = (node: unknown) => {
+    if (!node || typeof node !== 'object') return;
+
+    const current = node as {
+      type?: string;
+      children?: unknown[];
+      data?: Record<string, unknown>;
+    };
+
+    if (current.type === 'image') {
+      current.data = current.data ?? {};
+      const properties = (current.data.hProperties as Record<string, unknown> | undefined) ?? {};
+      properties.className = ['md-image'];
+      current.data.hProperties = properties;
+    }
+
+    if (Array.isArray(current.children)) {
+      current.children.forEach(mark);
+    }
+  };
+
+  mark(tree);
+};
+
 export default function ServerBlogMarkdown({ content }: { content: string }) {
   return (
     <ReactMarkdown
-      remarkPlugins={[remarkGfm, remarkMath, remarkBreaks, remarkEmoji]}
+      remarkPlugins={[remarkMarkdownImages, remarkGfm, remarkMath, remarkBreaks, remarkEmoji]}
       /*
         顺序要点：rehypeRaw 展开原始 HTML 后立即由 rehypeSanitize 清洗
         （白名单见 sanitizeSchema.ts），KaTeX 的 MathML 在此之后生成、

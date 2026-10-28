@@ -20,6 +20,7 @@ import {
   type FriendLinkCategory
 } from '@/setting/AboutSetting';
 import { getAssetPath } from '@/utils/assetUtils';
+import { isElectron } from '@/utils/isElectron';
 
 /**
  * 友链巡检数据（public/friends-status.json，由 scripts/check-friends.ts 生成）
@@ -341,7 +342,7 @@ function ApplyInviteCard({ index }: { index: number }) {
     event.preventDefault();
     const target = document.getElementById('exchange');
     if (!target) return;
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const prefersReducedMotion = !isElectron() && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     target.scrollIntoView({
       behavior: prefersReducedMotion ? 'auto' : 'smooth',
       block: 'start'

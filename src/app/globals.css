@@ -1148,6 +1148,46 @@ body {
   color: #999 !important;
 }
 
+/* ==================== Electron 桌面端覆盖 ==================== */
+/**
+ * Electron 会继承 Windows 的「关闭所有不必要的动画」系统设置，
+ * 导致 prefers-reduced-motion: reduce 媒体查询在桌面端命中，
+ * 全站动画被 CSS 层面的 @media 规则强制禁用。
+ *
+ * preload.js 在 DOMContentLoaded 时给 <html> 加 .electron 类，
+ * 以下规则专门对 Electron 环境生效，让桌面端始终播放完整动效。
+ */
+
+/* 覆盖全局 transition/animation 禁用 */
+html.electron.theme-transitioning,
+html.electron.theme-transitioning *,
+html.electron,
+html.electron *,
+html.electron *::before,
+html.electron *::after {
+  transition: revert !important;
+  animation: revert !important;
+}
+
+/* 覆盖 hero 入场动画禁用 */
+html.electron .hero-reveal > *,
+html.electron .hero-reveal::after {
+  animation: revert;
+}
+
+/* 覆盖导航下拉、外链守卫动画禁用 */
+html.electron .nav-dropdown-in,
+html.electron .nav-pop-in,
+html.electron .guard-backdrop-in,
+html.electron .guard-dialog-in {
+  animation: revert;
+}
+
+/* 覆盖首页特效 transition 禁用 */
+html.electron .home-fx {
+  transition: revert;
+}
+
 .leaflet-popup-close-button:hover {
   color: #333 !important;
 }
