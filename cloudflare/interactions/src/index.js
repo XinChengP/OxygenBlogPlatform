@@ -396,10 +396,18 @@ function stripThinking(text) {
     .trim();
 }
 
-/** 判断请求是否来自本机调试环境（localhost 的 Origin 只会出现在站点作者的开发浏览器里） */
-function isLocalDebugOrigin(request) {
-  const origin = request.headers.get('Origin') || '';
-  return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+/**
+ * 判断请求是否来自本机调试（wrangler dev）。
+ *
+ * 依据 request.url 的 hostname——该 URL 由 Worker 运行时生成：
+ * 线上是路由域名（blog.xinchengp.cn），本地 wrangler dev 才是 localhost/127.0.0.1，
+ * 客户端无法伪造。旧实现用 Origin 头判断是安全漏洞：
+ * Origin 可被任意脚本伪造（curl -H 'Origin: http://localhost:7120' 即可绕过全部限流），
+ * 绝不能作为豁免依据。
+ */
+function isLocalDebugRequest(request) {
+  const { hostname } = new URL(request.url);
+  return hostname === 'localhost' || hostname === '127.0.0.1';
 }
 
 /** 问候语短路：打招呼不需要检索和 LLM，直接回应（零成本、也更自然） */
@@ -413,11 +421,12 @@ const GREETING_REPLIES = [
 /**
  * 天依 AI 问答（读者可用）
  *
- * 流程：限流 → 缓存查询 → 问题向量化 → Vectorize 检索 →（无相关资料则直接回答「没找到」）
- *      → LLM 生成 → 写缓存。
+ * 流程：单人限流 → 问候短路 → 缓存查询 → 全局限流 → 问题向量化 → Vectorize 检索
+ *      →（无相关资料则直接回答「没找到」）→ LLM 生成 → 写缓存。
  * 成本闸门：单人 8 问/小时、全站 200 问/滚动 24 小时（D1 rate_limit 固定窗口）、缓存 7 天、无相关资料不调用 LLM。
- * 本机调试豁免：Origin 为 localhost 的请求（站点作者的开发浏览器）不限流，
- * 方便开发时反复测试；线上访客与无 Origin 的匿名调用照常受限。
+ * 全站桶只统计真正需要 AI 检索/生成的请求：问候与缓存命中零成本，不占每日额度。
+ * 本机调试豁免：仅当请求确实打到 wrangler dev（request.url 为 localhost，运行时生成、不可伪造）
+ * 时不限流，方便开发反复测试；线上访客照常受限。
  */
 async function handleChat(request, env) {
   const body = await readJson(request, 2048);
@@ -428,11 +437,12 @@ async function handleChat(request, env) {
     throw new HttpError(400, 'invalid_question', '问题太短啦，再多说一点');
   }
 
-  if (!isLocalDebugOrigin(request)) {
+  // 单人限流（成本闸门之一）：问候与缓存命中也计入个人额度，防止单访客刷探测。
+  // 全站 200 问/天的桶挪到缓存查询之后——零 AI 成本的请求不占成本额度（见下方）。
+  const localDebug = isLocalDebugRequest(request);
+  if (!localDebug) {
     const visitor = await visitorHash(env, request);
     await enforceRateLimit(env, visitor, 'chat');
-    // 全站每日上限：滚动 24 小时窗口的成本闸门
-    await enforceBucketLimit(env, 'global:chat', CHAT_DAILY_GLOBAL_LIMIT, 86_400_000);
   }
 
   // 打招呼短路：问候不需要检索
@@ -460,6 +470,13 @@ async function handleChat(request, env) {
     throw new HttpError(503, 'ai_disabled', '天依的大脑还没配置好');
   }
 
+  // 全站每日上限（成本闸门之二）：滚动 24 小时窗口。
+  // 放在问候短路与缓存查询之后：这两类请求零 AI 成本，不再占用 200 问/天的额度；
+  // 只有确实需要检索/生成的请求才计数，让额度消耗与真实成本对齐。
+  if (!localDebug) {
+    await enforceBucketLimit(env, 'global:chat', CHAT_DAILY_GLOBAL_LIMIT, 86_400_000);
+  }
+
   /*
     AI/Vectorize 调用统一包一层：本地 wrangler dev 的远程绑定可能因
     OAuth scope 缺 Vectorize 权限而失败（线上运行时绑定不受影响），
@@ -467,10 +484,12 @@ async function handleChat(request, env) {
   */
   let vector, matched;
   try {
-    // 问题向量化 + 检索（topK 6：站点知识/动态/日志/文章混合检索，交给模型挑选）
+    // 问题向量化 + 检索（topK 4：站点知识/动态/日志/文章混合检索，交给模型挑选。
+    // Vectorize 按「查询维度」计费（topK × 1024），4 已覆盖后续最多 3 个来源的去重需求，
+    // 与 README 一致，且比 topK 6 省 1/3 月额度）
     [vector] = await embedTexts(env, [question]);
     matched = await env.VECTORIZE.query(vector, {
-      topK: 6,
+      topK: 4,
       returnValues: false,
       returnMetadata: 'all',
     });
@@ -827,6 +846,10 @@ async function cleanup(env) {
   const cutoff = Date.now() - PAGE_VIEW_RETENTION_DAYS * 86_400_000;
   await env.DB.prepare('DELETE FROM page_view WHERE created < ?').bind(cutoff).run();
   await env.DB.prepare('DELETE FROM rate_limit WHERE expires < ?').bind(Date.now()).run();
+  // 问答缓存过期行物理删除：查询侧只用 created 过滤，回收必须靠 cron，否则表只增不减
+  await env.DB.prepare('DELETE FROM chat_cache WHERE created < ?')
+    .bind(Date.now() - CHAT_CACHE_TTL_MS)
+    .run();
 }
 
 // ---------------------------------------------------------------------------
