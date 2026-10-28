@@ -474,7 +474,14 @@ async function handleChat(request, env) {
   // 放在问候短路与缓存查询之后：这两类请求零 AI 成本，不再占用 200 问/天的额度；
   // 只有确实需要检索/生成的请求才计数，让额度消耗与真实成本对齐。
   if (!localDebug) {
-    await enforceBucketLimit(env, 'global:chat', CHAT_DAILY_GLOBAL_LIMIT, 86_400_000);
+    await enforceBucketLimit(
+      env,
+      'global:chat',
+      CHAT_DAILY_GLOBAL_LIMIT,
+      86_400_000,
+      'daily_limit_reached',
+      '今日全站问答额度已用完，明天再来吧'
+    );
   }
 
   /*
@@ -523,7 +530,9 @@ async function handleChat(request, env) {
     if (seenUrls.has(url)) continue;
     seenUrls.add(url);
     const title = meta.title ?? url;
-    const text = String(meta.text ?? '').slice(0, 500);
+    // metadata 里本就存了 800 字，全部用上：输入单价极低（约输出的 1/6.6），
+    // 截到 500 只是白白丢掉块尾的语义信息
+    const text = String(meta.text ?? '').slice(0, 800);
     contextParts.push(`【${sources.length + 1}】《${title}》：${text}`);
     sources.push({ title, url, type: meta.type ?? 'blog' });
     if (sources.length >= 3) break;
@@ -551,9 +560,12 @@ async function handleChat(request, env) {
         { role: 'system', content: system },
         { role: 'user', content: `读者的问题：${question}\n\n站内资料：\n${context}` },
       ],
-      // Qwen3 会先输出 <think> 推理痕迹：上限太低会全部被思考吃掉，
-      // 剥离后正文为空。给足余量，剥离逻辑在 stripThinking。
-      max_tokens: 800,
+      // 关闭 Qwen3 思考模式：推理痕迹按输出 token 计费（输出单价约为输入的 6.6 倍），
+      // 旧方案靠 max_tokens 800 给思考留余量；本任务答案仅 120 字、无需深度推理，
+      // 关掉思考后上限直接降到 300，单次输出成本约省 60%。
+      // stripThinking 仍保留：万一模型不遵守开关输出了 <think>，兜底剥离。
+      reasoning: false,
+      max_tokens: 300,
       temperature: 0.5,
     });
   } catch (error) {
@@ -570,7 +582,9 @@ async function handleChat(request, env) {
       cached: false,
     });
   }
-  const answer = cleaned.slice(0, 600);
+  // 截断到 600 字；若恰好把引用编号切成「【」或「【1」这类残缺形态，剥掉尾部，
+  // 避免前端 renderAnswerWithSources 渲染出悬空的【
+  const answer = cleaned.slice(0, 600).replace(/【\d*$/, '').trim();
 
   await env.DB.prepare(
     'INSERT OR REPLACE INTO chat_cache (qhash, answer, sources, created) VALUES (?, ?, ?, ?)'
@@ -762,8 +776,12 @@ async function enforceRateLimit(env, visitor, action) {
   await enforceBucketLimit(env, `${visitor}:${action}`, limit, windowMs);
 }
 
-/** 固定窗口限流（通用）：bucket 可以来自访客哈希，也可以是全站维度 */
-async function enforceBucketLimit(env, bucket, limit, windowMs) {
+/**
+ * D1 固定窗口限流桶。
+ * code/message 可按桶自定义：个人限流与全站额度耗尽对读者的含义完全不同，
+ * 前端需要靠 error 码区分文案（rate_limited=问太快 / daily_limit_reached=今日额度用完）。
+ */
+async function enforceBucketLimit(env, bucket, limit, windowMs, code = 'rate_limited', message = '请求太频繁，请稍后再试') {
   const now = Date.now();
 
   const row = await env.DB.prepare('SELECT count, expires FROM rate_limit WHERE bucket = ?')
@@ -778,7 +796,7 @@ async function enforceBucketLimit(env, bucket, limit, windowMs) {
   }
 
   if (row.count >= limit) {
-    throw new HttpError(429, 'rate_limited', '请求太频繁，请稍后再试');
+    throw new HttpError(429, code, message);
   }
 
   await env.DB.prepare('UPDATE rate_limit SET count = count + 1 WHERE bucket = ?').bind(bucket).run();

@@ -15,6 +15,8 @@ interface ChatSource {
 }
 
 interface ChatMessage {
+  /** 自增稳定 id：列表渲染 key（项目规范禁止用 index 作 key） */
+  id: number;
   role: 'user' | 'tianyi';
   text: string;
   sources?: ChatSource[];
@@ -78,6 +80,7 @@ function renderAnswerWithSources(
 export default function TianyiChatPanel({ onClose }: TianyiChatPanelProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
+      id: 0,
       role: 'tianyi',
       text: '你好呀awa，我是天依！博客里写了什么、文章在哪，直接问我就好～',
     },
@@ -85,6 +88,8 @@ export default function TianyiChatPanel({ onClose }: TianyiChatPanelProps) {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
+  // 消息自增 id 发号器（ref 不触发重渲染）
+  const nextId = useRef(1);
 
   // 新消息自动滚到底部
   useEffect(() => {
@@ -95,7 +100,7 @@ export default function TianyiChatPanel({ onClose }: TianyiChatPanelProps) {
     const question = input.trim();
     if (!question || loading) return;
     setInput('');
-    setMessages((prev) => [...prev, { role: 'user', text: question }]);
+    setMessages((prev) => [...prev, { id: nextId.current++, role: 'user', text: question }]);
     setLoading(true);
 
     try {
@@ -108,6 +113,8 @@ export default function TianyiChatPanel({ onClose }: TianyiChatPanelProps) {
       const data = (await response.json().catch(() => ({}))) as {
         answer?: string;
         sources?: ChatSource[];
+        /** 服务端错误码：rate_limited=个人问太快 / daily_limit_reached=全站今日额度用完 */
+        error?: string;
       };
 
       let answer: string;
@@ -116,16 +123,21 @@ export default function TianyiChatPanel({ onClose }: TianyiChatPanelProps) {
         answer = data.answer || '天依走神了，再问一次好不好？';
         success = true;
       } else if (response.status === 429) {
-        answer = '问得有点太快啦，休息一下再问我 qwq';
+        // 区分两类限流：全站今日额度耗尽（不是读者的错）与个人问得太快
+        answer = data.error === 'daily_limit_reached'
+          ? '今天大家问得太热情啦，问答额度用完咯，明天再来找我了～'
+          : '问得有点太快啦，休息一下再问我 qwq';
       } else if (response.status === 503) {
         answer = '天依的大脑还没配置好，等歆橙修一修～';
       } else {
         answer = '网络好像不太顺畅，稍后再试试？';
       }
 
+      // 失败时把问题回填到输入框（仅当用户没输入新内容），方便直接重试
+      if (!success) setInput((cur) => cur || question);
       setMessages((prev) => [
         ...prev,
-        { role: 'tianyi', text: answer, sources: data.sources },
+        { id: nextId.current++, role: 'tianyi', text: answer, sources: data.sources },
       ]);
       // 成功的回答同步推进 Live2D 气泡：气泡只显示前 60 字，完整内容看面板；
       // 错误提示只在面板内展示，不推气泡（避免同一句话出现两遍）
@@ -137,7 +149,12 @@ export default function TianyiChatPanel({ onClose }: TianyiChatPanelProps) {
         );
       }
     } catch {
-      setMessages((prev) => [...prev, { role: 'tianyi', text: '网络好像断断了，稍后再问我一次？' }]);
+      // 网络异常同样回填问题，让读者能直接重试
+      setInput((cur) => cur || question);
+      setMessages((prev) => [
+        ...prev,
+        { id: nextId.current++, role: 'tianyi', text: '网络好像断断了，稍后再问我一次？' },
+      ]);
     } finally {
       setLoading(false);
     }
@@ -177,9 +194,9 @@ export default function TianyiChatPanel({ onClose }: TianyiChatPanelProps) {
 
       {/* 消息列表 */}
       <div ref={listRef} className="flex-1 overflow-y-auto px-3 py-2.5 space-y-2.5 text-xs leading-relaxed">
-        {messages.map((message, index) => (
+        {messages.map((message) => (
           <div
-            key={index}
+            key={message.id}
             className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
