@@ -23,7 +23,7 @@ const TimeStatsChart = dynamic(() => import('./TimeStatsChart'));
 const TypeStatsChart = dynamic(() => import('./TypeStatsChart'));
 import { Live2DMessageHelper } from '@/utils/live2dMessageManager';
 import { getAssetPath } from '@/utils/assetUtils';
-import { useAiSourceHashJump } from '@/utils/aiSourceJump';
+import { highlightAndScroll } from '@/utils/aiSourceJump';
 // 全站层级令牌：成就说明弹窗的层级统一走这里
 import { Z_INDEX } from '@/utils/zIndex';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
@@ -90,13 +90,18 @@ function ClientChangelogsPage({ changelogs, blogTimeStats, momentTimeStats }: Cl
   const htmlRequestsRef = useRef<Set<string>>(new Set());
 
   // AI 来源跳转：问答面板引用某篇日志时，url 携带 #changelog-<id>，滚动定位并高亮，
-  // 同时自动展开该条日志（更新日志默认折叠，不展开的话定位过去也看不到内容）
-  useAiSourceHashJump('changelog-');
+  // 同时自动展开该条日志并预取正文（更新日志默认折叠，且正文是按需加载的——
+  // 程序化滚动不会触发悬停事件，必须显式加载，否则定位过去只看到「展开后加载正文…」）
   useEffect(() => {
     const hash = decodeURIComponent(window.location.hash.replace(/^#/, ''));
     if (!hash.startsWith('changelog-')) return;
     const id = hash.replace(/^changelog-/, '');
-    if (id) setExpandedLogs((prev) => ({ ...prev, [id]: true }));
+    if (!id) return;
+    setExpandedLogs((prev) => ({ ...prev, [id]: true }));
+    loadChangelogHtml(id);
+    // 等展开布局稳定后再定位，直接滚可能算错目标位置
+    const timer = window.setTimeout(() => highlightAndScroll(hash), 260);
+    return () => window.clearTimeout(timer);
   }, []);
 
   const loadChangelogHtml = useCallback((id: string) => {
