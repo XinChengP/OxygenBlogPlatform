@@ -10,7 +10,6 @@ import {
   CalendarIcon,
   TagIcon,
   UserIcon,
-  GlobeAltIcon,
   BookOpenIcon,
   ChatBubbleLeftRightIcon,
   ChevronLeftIcon,
@@ -64,7 +63,6 @@ interface BlogPost {
   series?: string;
   seriesOrder?: number;
   coverImage?: string;
-  language?: string;
   canonicalUrl?: string;
   seoTitle?: string;
   seoDescription?: string;
@@ -745,8 +743,8 @@ export default function ClientBlogDetail({
             )}
 
             {/* 文章元信息 */}
-            <motion.div 
-              className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground bg-card/60 backdrop-blur-sm rounded-xl px-4 py-2.5 border border-border/40 shadow-sm mb-6"
+            <motion.div
+              className="flex items-center gap-3 text-sm text-muted-foreground bg-card/60 backdrop-blur-sm rounded-xl px-4 py-2.5 border border-border/40 shadow-sm mb-6 overflow-x-auto whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.3 }}
@@ -787,15 +785,6 @@ export default function ClientBlogDetail({
                   <div className="flex items-center gap-1.5">
                     <UserIcon className="h-4 w-4 text-primary/70" />
                     <span>{blog.author}</span>
-                  </div>
-                </>
-              )}
-              {blog.language && (
-                <>
-                  <span className="text-border">·</span>
-                  <div className="flex items-center gap-1.5">
-                    <GlobeAltIcon className="h-4 w-4 text-primary/70" />
-                    <span>{blog.language}</span>
                   </div>
                 </>
               )}
