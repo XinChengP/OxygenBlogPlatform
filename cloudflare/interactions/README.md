@@ -7,13 +7,14 @@ Cloudflare Worker + D1，为博客提供三组能力：
 | 浏览量 | `POST /view`、`GET /stats` | 按「路径 + 天 + 访客哈希」去重，不存原始 IP |
 | 邮件订阅 | `POST /subscribe`、`GET /confirm`、`GET /unsubscribe`、`POST /notify` | Resend 双重确认，`sent_post` 幂等群发 |
 | 管理统计 | `GET /admin/stats` | Bearer ADMIN_TOKEN；全站浏览量总览 + 各路径明细 + 订阅者数 |
-| 天依 AI | `POST /chat`、`POST /admin/reindex` | Workers AI + Vectorize RAG；限流与缓存见下文 |
+| 天依 AI | `POST /chat`、`POST /admin/reindex` | Workers AI + Vectorize RAG；限流见下文 |
 
 ## 天依 AI 问答（RAG）
 
 - 数据链路：文章 Markdown → `scripts/index-blog.mjs` 分块（~700 字/块）→ `/admin/reindex` 向量化（`@cf/baai/bge-m3`）→ Vectorize 索引 `blog-knowledge`（1024 维）。
-- 读者提问：`POST /chat { question }` → 问题向量化 → 检索 topK 4（相关度 ≥ 0.45）→ 无相关资料直接回答「没找到」（不调用 LLM）→ `AI_CHAT_MODEL`（默认 Qwen3-30B-A3B）按天依口吻生成 → 写缓存。
-- 成本闸门：单人 8 问/小时、全站 200 问/滚动 24 小时（D1 `rate_limit` 固定窗口；全站桶只统计需要 AI 检索/生成的请求，问候与缓存命中零成本不占额度）、问题哈希缓存 7 天（`chat_cache`，过期行由每日 cron 物理删除）、无相关资料不调用 LLM。
+- 读者提问：`POST /chat { question }` → 问题向量化 → 检索 topK 4（相关度 ≥ 0.45）→ 无相关资料直接回答「没找到」（不调用 LLM）→ `AI_CHAT_MODEL`（默认 Qwen3-30B-A3B）按天依口吻生成 → 直接返回。
+- 成本闸门：单人 8 问/小时、全站 200 问/滚动 24 小时（D1 `rate_limit` 固定窗口；全站桶只统计需要 AI 检索/生成的请求，问候与无效问题零成本不占额度）、无相关资料不调用 LLM。
+- 不做答案缓存：项目仍在开发阶段，提示词与知识库随时调整，缓存会让改动看起来没生效。
 - 内容更新后重建索引：`npm run index:blog`（ADMIN_TOKEN 缺省读 `cloudflare/interactions/.dev.vars`；重复执行安全，先按登记表清空旧向量再写入）。
 - 本地开发注意：Vectorize 绑定已设 `remote = true`（本地直连线上索引），但 wrangler OAuth scope 不含 Vectorize 权限时远程检索会失败——此时 `/chat` 优雅降级为 503（前端显示「大脑没配置好」），线上运行时绑定不受影响。
 

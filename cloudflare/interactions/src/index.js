@@ -36,9 +36,6 @@ const CHAT_DAILY_GLOBAL_LIMIT = 200;
 /** 天依 AI 默认模型（可被 wrangler.toml 的 AI_CHAT_MODEL 覆盖） */
 const CHAT_MODEL = '@cf/qwen/qwen3-30b-a3b-fp8';
 
-/** 天依 AI 问答的缓存有效期（问题哈希 → 答案，重复提问零 AI 成本） */
-const CHAT_CACHE_TTL_MS = 7 * 86_400_000;
-
 /** RAG 检索的相关度阈值：bge-m3 同语言文本基线相似度约 0.3-0.5，取 0.45 滤掉弱相关噪音 */
 const CHAT_MIN_SCORE = 0.45;
 
@@ -421,10 +418,11 @@ const GREETING_REPLIES = [
 /**
  * 天依 AI 问答（读者可用）
  *
- * 流程：单人限流 → 问候短路 → 缓存查询 → 全局限流 → 问题向量化 → Vectorize 检索
- *      →（无相关资料则直接回答「没找到」）→ LLM 生成 → 写缓存。
- * 成本闸门：单人 8 问/小时、全站 200 问/滚动 24 小时（D1 rate_limit 固定窗口）、缓存 7 天、无相关资料不调用 LLM。
- * 全站桶只统计真正需要 AI 检索/生成的请求：问候与缓存命中零成本，不占每日额度。
+ * 流程：单人限流 → 问候短路 → 无效问题短路 → 全局限流 → 问题向量化 → Vectorize 检索
+ *      →（无相关资料则直接回答「没找到」）→ LLM 生成 → 返回。
+ * 成本闸门：单人 8 问/小时、全站 200 问/滚动 24 小时（D1 rate_limit 固定窗口）、无相关资料不调用 LLM。
+ * 不做答案缓存：项目仍在开发阶段，提示词与知识库随时调整，缓存会让人误以为改动没生效。
+ * 全站桶只统计真正需要 AI 检索/生成的请求：问候与无效问题零成本，不占每日额度。
  * 本机调试豁免：仅当请求确实打到 wrangler dev（request.url 为 localhost，运行时生成、不可伪造）
  * 时不限流，方便开发反复测试；线上访客照常受限。
  */
@@ -437,8 +435,8 @@ async function handleChat(request, env) {
     throw new HttpError(400, 'invalid_question', '问题太短啦，再多说一点');
   }
 
-  // 单人限流（成本闸门之一）：问候与缓存命中也计入个人额度，防止单访客刷探测。
-  // 全站 200 问/天的桶挪到缓存查询之后——零 AI 成本的请求不占成本额度（见下方）。
+  // 单人限流（成本闸门之一）：问候与无效问题也计入个人额度，防止单访客刷探测。
+  // 全站 200 问/天的桶挪到问候与无效问题短路之后——零 AI 成本的请求不占成本额度（见下方）。
   const localDebug = isLocalDebugRequest(request);
   if (!localDebug) {
     const visitor = await visitorHash(env, request);
@@ -448,7 +446,7 @@ async function handleChat(request, env) {
   // 打招呼短路：问候不需要检索
   if (GREETING_RE.test(question)) {
     const reply = GREETING_REPLIES[Math.floor(Math.random() * GREETING_REPLIES.length)];
-    return jsonResponse({ answer: reply, sources: [], cached: false });
+    return jsonResponse({ answer: reply, sources: [] });
   }
 
   /*
@@ -460,23 +458,7 @@ async function handleChat(request, env) {
     return jsonResponse({
       answer: '诶？似乎没有具体的问题呢，想说点什么呀？(｡•́︿•̀｡)',
       sources: [],
-      cached: false,
     });
-  }
-
-  // 缓存查询（7 天内同问题直接命中，零 AI 成本）
-  const qhash = await sha256Hex(`${question}|${env.VISITOR_SALT || 'dev'}`);
-  const cached = await env.DB.prepare(
-    'SELECT answer, sources FROM chat_cache WHERE qhash = ? AND created > ?'
-  ).bind(qhash, Date.now() - CHAT_CACHE_TTL_MS).first();
-  if (cached) {
-    let sources = [];
-    try {
-      sources = JSON.parse(cached.sources);
-    } catch {
-      sources = [];
-    }
-    return jsonResponse({ answer: cached.answer, sources, cached: true });
   }
 
   if (!env.AI || !env.VECTORIZE) {
@@ -484,7 +466,7 @@ async function handleChat(request, env) {
   }
 
   // 全站每日上限（成本闸门之二）：滚动 24 小时窗口。
-  // 放在问候短路与缓存查询之后：这两类请求零 AI 成本，不再占用 200 问/天的额度；
+  // 放在问候与无效问题短路之后：这两类请求零 AI 成本，不再占用 200 问/天的额度；
   // 只有确实需要检索/生成的请求才计数，让额度消耗与真实成本对齐。
   if (!localDebug) {
     await enforceBucketLimit(
@@ -525,7 +507,6 @@ async function handleChat(request, env) {
     return jsonResponse({
       answer: '翻遍了博客也没找到相关的内容呢 qwq，换个关键词问问看？或者去留言板告诉歆橙，说不定下次就会写到了！',
       sources: [],
-      cached: false,
     });
   }
 
@@ -593,18 +574,13 @@ async function handleChat(request, env) {
     return jsonResponse({
       answer: '天依走神了，再问一次好不好？',
       sources: [],
-      cached: false,
     });
   }
   // 截断到 600 字；若恰好把引用编号切成「【」或「【1」这类残缺形态，剥掉尾部，
   // 避免前端 renderAnswerWithSources 渲染出悬空的【
   const answer = cleaned.slice(0, 600).replace(/【\d*$/, '').trim();
 
-  await env.DB.prepare(
-    'INSERT OR REPLACE INTO chat_cache (qhash, answer, sources, created) VALUES (?, ?, ?, ?)'
-  ).bind(qhash, answer, JSON.stringify(sources), Date.now()).run();
-
-  return jsonResponse({ answer, sources, cached: false });
+  return jsonResponse({ answer, sources });
 }
 
 /**
@@ -652,7 +628,7 @@ async function handleAdminReindex(request, env) {
     1. 先 upsert 全部新向量（同 id 直接覆盖，新元数据必然生效）；
     2. 再 deleteByIds 只删除「旧集合里、新集合没有」的失效向量——
        严禁先删后写同一批 id：删除延迟生效时会把刚写入的向量一并删掉；
-    3. 同步 vector_ids 登记表；reset 时顺带清空问答缓存（旧答案可能过时）。
+    3. 同步 vector_ids 登记表。
     AI/Vectorize 内部错误包成带信息的 500 返回给管理员——
     接口有 Bearer 鉴权，把失败原因暴露给管理员是排障必需。
   */
@@ -703,10 +679,6 @@ async function handleAdminReindex(request, env) {
       env.DB.prepare('INSERT OR REPLACE INTO vector_ids (id) VALUES (?)').bind(id)
     );
     await env.DB.batch(statements);
-  }
-
-  if (body.reset) {
-    await env.DB.prepare('DELETE FROM chat_cache').run();
   }
 
   return jsonResponse({ ok: true, reset: Boolean(body.reset), indexed: vectors.length });
@@ -779,7 +751,7 @@ async function visitorHash(env, request) {
   return sha256Hex(`${ip}|${ua}|${salt}`);
 }
 
-/** SHA-256 摘要的十六进制串（问答缓存的 qhash 也用它） */
+/** SHA-256 摘要的十六进制串（访客哈希使用） */
 async function sha256Hex(input) {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input));
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
@@ -878,10 +850,6 @@ async function cleanup(env) {
   const cutoff = Date.now() - PAGE_VIEW_RETENTION_DAYS * 86_400_000;
   await env.DB.prepare('DELETE FROM page_view WHERE created < ?').bind(cutoff).run();
   await env.DB.prepare('DELETE FROM rate_limit WHERE expires < ?').bind(Date.now()).run();
-  // 问答缓存过期行物理删除：查询侧只用 created 过滤，回收必须靠 cron，否则表只增不减
-  await env.DB.prepare('DELETE FROM chat_cache WHERE created < ?')
-    .bind(Date.now() - CHAT_CACHE_TTL_MS)
-    .run();
 }
 
 // ---------------------------------------------------------------------------

@@ -54,16 +54,6 @@ CREATE TABLE IF NOT EXISTS sent_post (
 
 -- ===== 天依 AI 问答 =====
 
--- 问答缓存：问题哈希 → 答案（7 天过期）。
--- 同一个问题的重复提问直接命中缓存，不消耗 Workers AI 配额。
--- qhash = SHA-256(归一化问题 + VISITOR_SALT)；不存提问者任何身份信息。
-CREATE TABLE IF NOT EXISTS chat_cache (
-  qhash   TEXT PRIMARY KEY,
-  answer  TEXT NOT NULL,
-  sources TEXT NOT NULL,
-  created INTEGER NOT NULL
-);
-
 -- Vectorize 已索引向量 id 登记表：重置索引时按它 deleteByIds
 -- （当前 Vectorize 绑定没有 deleteAll 方法），每次 upsert 后由 Worker 写入。
 CREATE TABLE IF NOT EXISTS vector_ids (
