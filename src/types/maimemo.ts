@@ -36,6 +36,8 @@ export interface MaimemoStats {
   today: MaimemoToday | null;
   /** 每天新学单词数（date -> count，由单词记录的首次学习日期聚合） */
   dailyNewWords: Record<string, number>;
+  /** 每天复习的单词数（date -> count，当天学习且非首次学习） */
+  dailyReviews?: Record<string, number>;
   /** 今日新学的单词数（first_study_date 为今天的词） */
   todayNewWords?: number;
   /** 今日到期待复习的单词数（基于最近拉取的单词记录估算） */

@@ -54,6 +54,7 @@ function renderAnswerWithSources(
   return parts.map((part, index) => {
     const match = /^【(\d+)】$/.exec(part);
     if (match) {
+      // 渲染防御：编号超出 sources 范围（模型偶发写错编号）时输出纯文本，不渲染链接
       const source = sources[Number(match[1]) - 1];
       if (source) {
         return (
@@ -102,6 +103,21 @@ export default function TianyiChatPanel({ onClose }: TianyiChatPanelProps) {
   /** 发送指定问题（输入框与预设问题 chips 共用同一条链路） */
   const ask = useCallback(async (question: string) => {
     if (!question || loading) return;
+    // 重复提问去重：同一条问题在当前会话里已问过时不再发请求，
+    // 天依提示一句即可（避免重复占位与重复计费）
+    const asked = messages.some((m) => m.role === 'user' && m.text === question);
+    if (asked) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: nextId.current++,
+          role: 'tianyi',
+          text: '这个问题刚刚问过啦～往上翻翻看回答 owo',
+          sources: [],
+        },
+      ]);
+      return;
+    }
     setInput('');
     setMessages((prev) => [...prev, { id: nextId.current++, role: 'user', text: question }]);
     setLoading(true);
@@ -165,7 +181,7 @@ export default function TianyiChatPanel({ onClose }: TianyiChatPanelProps) {
     } finally {
       setLoading(false);
     }
-  }, [loading]);
+  }, [loading, messages]);
 
   /** 输入框发送：取当前输入内容交给 ask */
   const send = useCallback(() => {

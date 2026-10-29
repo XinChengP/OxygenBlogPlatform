@@ -107,10 +107,18 @@ async function postMaimemo(path, token, body) {
 }
 
 /**
- * 墨墨返回的日期是北京时区日期对应的 UTC 时刻（如北京 4/11 存为 4/10T16:00Z），
- * 统一转成北京时间日期 YYYY-MM-DD
+ * 取墨墨日期字段的「北京日期」YYYY-MM-DD
+ *
+ * 墨墨把日期存成「北京当天 00:00」对应的 UTC 时刻：
+ * 北京 10-28 全天 → 2026-10-27T16:00:00.000Z，因此需要 +8 小时才是学习日。
+ *
+ * 依据（官方文档 + 接口实测）：
+ * - 文档标注这些字段是 <ISODate>（真实时间戳），不是纯日期字符串；
+ * - 接口实测所有日期都是整点 16:00Z（北京 00:00），说明是「当天零点」归一化；
+ * - 未开始学的新词也会预置 first/last_study_date（计划日零点），
+ *   必须用 last_response 区分（未学 = STUDY_RESPONSE_UNSPECIFIED）。
  */
-function beijingDateOf(value) {
+function dateOf(value) {
   const time = new Date(value).getTime();
   if (!Number.isFinite(time)) return null;
   return new Date(time + 8 * 3_600_000).toISOString().slice(0, 10);
@@ -166,6 +174,8 @@ async function fetchMaimemoStats(token) {
 
   // 每日新学单词数（按单词记录的首次学习日期聚合），同时统计今日新学/待复习/顽固词/最近单词
   const dailyNewWords = {};
+  /** 每日复习量：当天学习但不是首次学习（首次学习日 < 最近学习日）的词数 */
+  const dailyReviews = {};
   const todayBeijing = beijingDate();
   let todayNewWords = 0;
   let dueReviews = 0;
@@ -181,9 +191,19 @@ async function fetchMaimemoStats(token) {
     });
     rawShapes.records = recordsRes;
     const records = Array.isArray(recordsRes.records) ? recordsRes.records : [];
+    let studiedCount = 0;
     records.forEach(record => {
-      if (record.first_study_date) {
-        const firstDate = beijingDateOf(record.first_study_date);
+      /*
+        关键：未开始学的新词也会带上 first/last_study_date（预置为计划日的零点），
+        唯一可靠的区分依据是 last_response —— 未学过的词固定为 STUDY_RESPONSE_UNSPECIFIED。
+        只有真正作答过的词才计入「新学 / 最近学习 / 累计已背」。
+      */
+      const studied =
+        Boolean(record.last_response) && record.last_response !== 'STUDY_RESPONSE_UNSPECIFIED';
+      if (studied) studiedCount += 1;
+
+      if (studied && record.first_study_date) {
+        const firstDate = dateOf(record.first_study_date);
         if (firstDate) {
           dailyNewWords[firstDate] = (dailyNewWords[firstDate] || 0) + 1;
           if (firstDate === todayBeijing) todayNewWords += 1;
@@ -191,7 +211,7 @@ async function fetchMaimemoStats(token) {
       }
 
       if (record.next_study_date) {
-        const nextDate = beijingDateOf(record.next_study_date);
+        const nextDate = dateOf(record.next_study_date);
         if (nextDate && nextDate <= todayBeijing) dueReviews += 1;
       }
 
@@ -199,9 +219,14 @@ async function fetchMaimemoStats(token) {
         stickingWords += 1;
       }
 
-      if (record.last_study_date && record.voc_spelling) {
-        const lastDate = beijingDateOf(record.last_study_date);
+      if (studied && record.last_study_date && record.voc_spelling) {
+        const lastDate = dateOf(record.last_study_date);
+        const firstDate = record.first_study_date ? dateOf(record.first_study_date) : null;
         if (lastDate) {
+          // 最近学习日不等于首次学习日 → 当天是复习
+          if (firstDate && firstDate !== lastDate) {
+            dailyReviews[lastDate] = (dailyReviews[lastDate] || 0) + 1;
+          }
           recentCandidates.push({
             spelling: record.voc_spelling,
             lastStudyDate: lastDate,
@@ -211,7 +236,10 @@ async function fetchMaimemoStats(token) {
       }
     });
 
-    if (!totalWords) {
+    // 累计已背 = 真正学过的词数（排除仅加入计划、尚未学习的词）
+    if (studiedCount > 0) {
+      totalWords = studiedCount;
+    } else if (!totalWords) {
       totalWords = records.length;
     }
   } catch (error) {
@@ -241,6 +269,7 @@ async function fetchMaimemoStats(token) {
     dueReviews,
     stickingWords,
     recentWords,
+    dailyReviews,
   };
 }
 
@@ -268,7 +297,7 @@ export default {
       // 边缘缓存：10 分钟内复用，避免每次访问都请求墨墨接口
       // key 带版本号，接口返回结构变化时升级即可让旧缓存自然失效
       const cache = typeof caches !== 'undefined' ? caches.default : null;
-      const cacheKey = new Request('https://cache.invalid/maimemo-stats-v2');
+      const cacheKey = new Request('https://cache.invalid/maimemo-stats-v7');
       if (cache) {
         const cached = await cache.match(cacheKey);
         if (cached) {
@@ -282,7 +311,7 @@ export default {
         }
       }
 
-      const stats = await fetchMaimemoStats(token);
+      const stats = await fetchMaimemoStats(token, request.url);
       const cacheable = new Response(JSON.stringify(stats), {
         headers: {
           'Content-Type': 'application/json; charset=utf-8',

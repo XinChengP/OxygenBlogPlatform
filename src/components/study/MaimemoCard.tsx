@@ -63,7 +63,12 @@ export default function MaimemoCard({ initialStats = null, days = 30 }: MaimemoC
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
-    fetch(STATS_ENDPOINT, { signal: controller.signal })
+    /*
+      带时间戳参数：Worker 返回的 Cache-Control 会让浏览器缓存 10 分钟，
+      用户刷新页面时可能仍拿到旧数据；加时间戳可绕过浏览器缓存，
+      Worker 侧仍有自己的边缘缓存，不会因此增加墨墨接口压力。
+    */
+    fetch(`${STATS_ENDPOINT}?t=${Date.now()}`, { signal: controller.signal, cache: 'no-store' })
       .then(response => (response.ok ? response.json() : null))
       .then((data: unknown) => {
         if (!cancelled && isValidStats(data)) {
@@ -82,31 +87,38 @@ export default function MaimemoCard({ initialStats = null, days = 30 }: MaimemoC
     };
   }, []);
 
-  /** 近 N 天每日新学单词数；以数据里最新的一天为终点（构建期稳定） */
+  /** 近 N 天每日学习量：新学 + 复习；以数据里最新的一天为终点（构建期稳定） */
   const chartData = useMemo(() => {
     if (!stats) return [];
-    const dates = Object.keys(stats.dailyNewWords);
-    if (dates.length === 0) return [];
-    const latestMs = Math.max(...dates.map(dayMs));
+    const dates = new Set([
+      ...Object.keys(stats.dailyNewWords),
+      ...Object.keys(stats.dailyReviews || {}),
+    ]);
+    if (dates.size === 0) return [];
+    const latestMs = Math.max(...Array.from(dates).map(dayMs));
 
     return Array.from({ length: days }, (_, index) => {
       const ms = latestMs - (days - 1 - index) * 86400000;
       const date = msToDate(ms);
-      return { date: date.slice(5), words: stats.dailyNewWords[date] || 0 };
+      return {
+        date: date.slice(5),
+        newWords: stats.dailyNewWords[date] || 0,
+        reviews: stats.dailyReviews?.[date] || 0,
+      };
     });
   }, [stats, days]);
 
-  /** 近 N 天汇总：总词数、日均、单日最高 */
+  /** 近 N 天汇总：新学总量、复习总量、学习天数、单日最高（按新学+复习） */
   const chartSummary = useMemo(() => {
     if (chartData.length === 0) return null;
-    const total = chartData.reduce((sum, item) => sum + item.words, 0);
-    const max = chartData.reduce((best, item) => (item.words > best.words ? item : best), chartData[0]);
-    const activeDays = chartData.filter(item => item.words > 0).length;
-    return {
-      total,
-      average: activeDays > 0 ? Math.round(total / activeDays) : 0,
-      max,
-    };
+    const newTotal = chartData.reduce((sum, item) => sum + item.newWords, 0);
+    const reviewTotal = chartData.reduce((sum, item) => sum + item.reviews, 0);
+    const activeDays = chartData.filter(item => item.newWords + item.reviews > 0).length;
+    const max = chartData.reduce(
+      (best, item) => (item.newWords + item.reviews > best.newWords + best.reviews ? item : best),
+      chartData[0]
+    );
+    return { newTotal, reviewTotal, activeDays, max };
   }, [chartData]);
 
   /** 连续背词天数：锚定在数据中最近有记录的一天，构建期稳定、无水合风险 */
@@ -132,7 +144,7 @@ export default function MaimemoCard({ initialStats = null, days = 30 }: MaimemoC
 
   const today = stats.today;
   const updatedAtLabel = stats.updatedAt.slice(0, 16).replace('T', ' ');
-  const hasChart = chartData.some(item => item.words > 0);
+  const hasChart = chartData.some(item => item.newWords + item.reviews > 0);
   const recentWords = stats.recentWords || [];
 
   const tiles = [
@@ -219,7 +231,7 @@ export default function MaimemoCard({ initialStats = null, days = 30 }: MaimemoC
                 allowDecimals={false}
               />
               <Tooltip
-                formatter={value => [`${value} 个新词`, '新学单词']}
+                formatter={(value, name) => [`${value ?? 0} 个词`, String(name ?? '')]}
                 contentStyle={{
                   backgroundColor: 'rgba(255, 255, 255, 0.96)',
                   border: '1px solid #cbd5e1',
@@ -227,15 +239,16 @@ export default function MaimemoCard({ initialStats = null, days = 30 }: MaimemoC
                   color: '#0f172a',
                 }}
               />
-              <Bar dataKey="words" name="新学单词" fill="#66ccff" radius={[3, 3, 0, 0]} maxBarSize={18} />
+              <Bar dataKey="newWords" name="新学" stackId="day" fill="#66ccff" radius={[0, 0, 0, 0]} maxBarSize={18} />
+              <Bar dataKey="reviews" name="复习" stackId="day" fill="#b3e3ff" radius={[3, 3, 0, 0]} maxBarSize={18} />
             </BarChart>
           </ResponsiveContainer>
 
           {chartSummary && (
             <p className="text-center text-xs text-muted-foreground mt-2">
-              近 {days} 天新学 <span className="font-medium text-foreground">{chartSummary.total}</span> 词
-              · 学习日均 {chartSummary.average} 词
-              · 单日最高 {chartSummary.max.words} 词（{chartSummary.max.date}）
+              近 {days} 天学习 <span className="font-medium text-foreground">{chartSummary.newTotal + chartSummary.reviewTotal}</span> 词（新学 {chartSummary.newTotal} · 复习 {chartSummary.reviewTotal}）
+              · 学习 {chartSummary.activeDays} 天
+              · 单日最高 {chartSummary.max.newWords + chartSummary.max.reviews} 词（{chartSummary.max.date}）
             </p>
           )}
         </>

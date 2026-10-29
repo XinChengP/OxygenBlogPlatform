@@ -149,13 +149,19 @@ async function postApi<T>(path: string, token: string, body: unknown): Promise<T
 }
 
 /**
- * 墨墨返回的日期是北京时区日期对应的 UTC 时刻（如北京 4/11 存为 4/10T16:00Z），
- * 统一转成北京时间日期 YYYY-MM-DD
+ * 取墨墨日期字段的「北京日期」YYYY-MM-DD
+ *
+ * 墨墨的日期字段形如 2026-10-28T16:00:00.000Z，直接取前 10 位即为真实学习日期。
+ *
+ * 该口径经「今日待学列表」接口验证：今天尚未学习的记录中，78 个词的
+ * first_study_date / last_study_date / next_study_date 是同一个值且今日进度 finished=0，
+ * 只有「直接取日期」能自洽（若 +8 小时会算成"今天已学但还没学"的矛盾）。
+ * 注意不要用 add_date 反推：该字段是词书加入日期，词书迁移等场景下会晚于首次学习。
  */
-function beijingDateOf(value: string): string | null {
-  const time = new Date(value).getTime();
-  if (!Number.isFinite(time)) return null;
-  return new Date(time + 8 * 3_600_000).toISOString().slice(0, 10);
+function dateOf(value: string): string | null {
+  if (typeof value !== 'string') return null;
+  const match = /^(\d{4}-\d{2}-\d{2})/.exec(value);
+  return match ? match[1] : null;
 }
 
 interface StudyProgressResponse {
@@ -169,6 +175,8 @@ interface StudyRecordItem {
   first_study_date?: string;
   last_study_date?: string;
   next_study_date?: string;
+  /** 上次作答；未学过的词为 STUDY_RESPONSE_UNSPECIFIED */
+  last_response?: string;
   /** 记录标签，如 STICKING（顽固词） */
   tags?: string[];
   study_count: number;
@@ -220,6 +228,7 @@ export async function syncMaimemoStats(): Promise<MaimemoSyncResult> {
   // 单词记录：聚合每日新学数量，同时统计今日新学/待复习/顽固词/最近单词
   let totalWords = 0;
   let dailyNewWords: Record<string, number> = {};
+  const dailyReviews: Record<string, number> = {};
   let todayNewWords = 0;
   let dueReviews = 0;
   let stickingWords = 0;
@@ -249,10 +258,20 @@ export async function syncMaimemoStats(): Promise<MaimemoSyncResult> {
     if (records.length > 0) {
       const aggregated: Record<string, number> = {};
       const recentCandidates: Array<{ spelling: string; lastStudyDate: string; time: number }> = [];
+      let studiedCount = 0;
 
       records.forEach(record => {
-        if (record.first_study_date) {
-          const firstDate = beijingDateOf(record.first_study_date);
+        /*
+          未开始学的新词也会预置 first/last_study_date（计划日零点），
+          唯一可靠的区分依据是 last_response：未学过固定为 STUDY_RESPONSE_UNSPECIFIED。
+          只有真正作答过的词才计入「新学 / 最近学习 / 累计已背」。
+        */
+        const studied =
+          Boolean(record.last_response) && record.last_response !== 'STUDY_RESPONSE_UNSPECIFIED';
+        if (studied) studiedCount += 1;
+
+        if (studied && record.first_study_date) {
+          const firstDate = dateOf(record.first_study_date);
           if (firstDate) {
             aggregated[firstDate] = (aggregated[firstDate] || 0) + 1;
             if (firstDate === todayBeijing) todayNewWords += 1;
@@ -260,7 +279,7 @@ export async function syncMaimemoStats(): Promise<MaimemoSyncResult> {
         }
 
         if (record.next_study_date) {
-          const nextDate = beijingDateOf(record.next_study_date);
+          const nextDate = dateOf(record.next_study_date);
           if (nextDate && nextDate <= todayBeijing) dueReviews += 1;
         }
 
@@ -268,9 +287,14 @@ export async function syncMaimemoStats(): Promise<MaimemoSyncResult> {
           stickingWords += 1;
         }
 
-        if (record.last_study_date && record.voc_spelling) {
-          const lastDate = beijingDateOf(record.last_study_date);
+        if (studied && record.last_study_date && record.voc_spelling) {
+          const lastDate = dateOf(record.last_study_date);
+          const firstDate = record.first_study_date ? dateOf(record.first_study_date) : null;
           if (lastDate) {
+            // 最近学习日不等于首次学习日 → 当天是复习
+            if (firstDate && firstDate !== lastDate) {
+              dailyReviews[lastDate] = (dailyReviews[lastDate] || 0) + 1;
+            }
             recentCandidates.push({
               spelling: record.voc_spelling,
               lastStudyDate: lastDate,
@@ -285,6 +309,11 @@ export async function syncMaimemoStats(): Promise<MaimemoSyncResult> {
         .sort((a, b) => b.time - a.time)
         .slice(0, 5)
         .map(({ spelling, lastStudyDate }) => ({ spelling, lastStudyDate }));
+
+      // 累计已背 = 真正学过的词数（排除仅加入计划、尚未学习的词）
+      if (studiedCount > 0) {
+        totalWords = studiedCount;
+      }
     }
     // 接口没给 count 时退化为记录条数
     if (!totalWords) {
@@ -311,6 +340,7 @@ export async function syncMaimemoStats(): Promise<MaimemoSyncResult> {
     dueReviews,
     stickingWords,
     recentWords,
+    dailyReviews,
   };
 
   await fs.mkdir(path.dirname(STATS_FILE_PATH()), { recursive: true });
