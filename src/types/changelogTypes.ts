@@ -68,6 +68,32 @@ export interface Changelog {
   filePath: string;                   // 文件路径
   achievements: ChangelogAchievement[]; // 获得的自动成就标签
   honors?: CustomHonor[];             // 自定义荣誉标签（后台手动设置）
+  /*
+    以下字段由 getServerChangelogs 在构建期计算，供列表折叠态展示。
+    后台读取单篇日志时不必生成，因此保持可选。
+  */
+  excerpt?: string;                   // 正文纯文本摘要（约 110 字）
+  lineCount?: number;                 // 正文原始行数
+  charCount?: number;                 // 正文纯文本字数
+}
+
+/** 全部日志类型（顺序与前台筛选栏一致） */
+export const CHANGELOG_TYPES: ChangelogType[] = [
+  'feature',
+  'optimize',
+  'fix',
+  'docs',
+  'style',
+  'refactor',
+];
+
+/** 统计/筛选的时间粒度 */
+export type ChangelogPeriodMode = 'month' | 'quarter' | 'year';
+
+/** 图表点击后落到列表上的时间筛选（年粒度统一走年份筛选，不放进这里） */
+export interface ChangelogPeriodFilter {
+  mode: Exclude<ChangelogPeriodMode, 'year'>;
+  label: string;
 }
 
 /**
@@ -105,6 +131,92 @@ export function getChangelogTypeLabel(type: ChangelogType): string {
   };
 
   return labelMap[type] || type;
+}
+
+/**
+ * 按指定粒度生成单篇日志的周期标签
+ *
+ * 与 getMonthStats / getQuarterStats / getYearStats 的输出格式保持一致，
+ * 图表点击后直接拿它筛选列表，避免两套口径。
+ *
+ * @param date 日期字符串 YYYY-MM-DD
+ * @param mode 时间粒度
+ * @returns 形如 2026年10月 / 2026年秋 / 2026年
+ */
+export function getPeriodLabel(date: string, mode: ChangelogPeriodMode): string {
+  const parsed = new Date(date);
+  const year = parsed.getFullYear();
+  const month = parsed.getMonth() + 1;
+
+  if (mode === 'year') return `${year}年`;
+  if (mode === 'month') return `${year}年${month}月`;
+
+  if (month >= 3 && month <= 5) return `${year}年春`;
+  if (month >= 6 && month <= 8) return `${year}年夏`;
+  if (month >= 9 && month <= 11) return `${year}年秋`;
+  // 12月、1月、2月同属 12 月那一年的冬季
+  return `${month <= 2 ? year - 1 : year}年冬`;
+}
+
+/**
+ * 根据背景色返回可读的文字颜色
+ *
+ * 类型/成就标签原先统一用白字压在粉彩底色上，白字在 #ccff66 上
+ * 对比度只有 1.16:1。这里按相对亮度选择深色或白色，保证小字号标签
+ * 也能达到 WCAG AA 的 4.5:1。
+ *
+ * 非纯色（渐变、rgb()/hsl() 字符串）无法可靠解析，回退为白色，
+ * 由调用方自行保证背景足够深。
+ *
+ * @param background 十六进制背景色，如 #66ccff
+ * @returns #111827（深色）或 #ffffff
+ */
+export function getContrastTextColor(background: string): string {
+  const match = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(background.trim());
+  if (!match) return '#ffffff';
+
+  let hex = match[1];
+  if (hex.length === 3) {
+    hex = hex.split('').map((char) => char + char).join('');
+  }
+
+  const channels = [0, 2, 4].map((offset) => {
+    const value = parseInt(hex.slice(offset, offset + 2), 16) / 255;
+    return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+  });
+
+  const luminance = 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+  const contrastWithWhite = 1.05 / (luminance + 0.05);
+  // #111827 的相对亮度约 0.012，作为深色文字基准
+  const contrastWithDark = (luminance + 0.05) / 0.062;
+
+  return contrastWithWhite >= contrastWithDark ? '#ffffff' : '#111827';
+}
+
+/**
+ * 从 Markdown 正文提取纯文本摘要
+ *
+ * 只做「够用就好」的清洗：去掉代码块、图片、链接地址、标题/列表符号，
+ * 折叠空白后截断。用于列表折叠态预览，不追求完美排版。
+ *
+ * @param body 日志正文（不含 frontmatter）
+ * @param maxLength 最大字数
+ * @returns 摘要文本
+ */
+export function buildExcerpt(body: string, maxLength = 110): string {
+  const plain = body
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/^\s{0,3}#{1,6}\s+/gm, '')
+    .replace(/^\s*[-*+]\s+/gm, '')
+    .replace(/^\s*\d+\.\s+/gm, '')
+    .replace(/^\s*\|?[\s:|-]+\|[\s:|-]*$/gm, ' ')
+    .replace(/[>*_~`|]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  return plain.length > maxLength ? `${plain.slice(0, maxLength)}…` : plain;
 }
 
 /**

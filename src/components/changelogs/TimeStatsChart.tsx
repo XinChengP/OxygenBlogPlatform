@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Changelog, getMonthStats, getQuarterStats, getYearStats } from '@/types/changelogTypes';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, AreaChart, Area } from 'recharts';
-import { motion } from 'framer-motion';
+import React, { memo, useMemo, useState } from 'react';
+import { Changelog, ChangelogPeriodMode, getMonthStats, getQuarterStats, getYearStats } from '@/types/changelogTypes';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, AreaChart, Area, ReferenceLine } from 'recharts';
+import { motion, useReducedMotion } from 'framer-motion';
 import { containerVariants } from '@/utils/animationVariants';
 
 /**
@@ -26,7 +26,7 @@ export interface TimeStats {
 /**
  * 统计模式类型
  */
-type StatMode = 'month' | 'quarter' | 'year';
+type StatMode = ChangelogPeriodMode;
 
 /**
  * 时间统计图表组件 Props
@@ -37,6 +37,10 @@ interface TimeStatsChartProps {
   momentTimeStats?: TimeStats;  // 动态时间统计（后台使用）
   /** 是否使用加宽图表区域（后台仪表盘全宽布局） */
   wide?: boolean;
+  /** 点击数据点时回调，前台日志页用于把图表当筛选器 */
+  onPeriodSelect?: (label: string, mode: StatMode) => void;
+  /** 当前选中的周期标签，用于画出选中参考线 */
+  selectedPeriodLabel?: string | null;
 }
 
 /**
@@ -47,10 +51,18 @@ interface TimeStatsChartProps {
  * - 前台（日志页面）：只传入 changelogs，显示日志趋势
  * - 后台（仪表盘）：传入 changelogs、blogTimeStats、momentTimeStats，显示三种数据趋势
  */
-export default function TimeStatsChart({ changelogs, blogTimeStats, momentTimeStats, wide = false }: TimeStatsChartProps) {
+function TimeStatsChart({
+  changelogs,
+  blogTimeStats,
+  momentTimeStats,
+  wide = false,
+  onPeriodSelect,
+  selectedPeriodLabel,
+}: TimeStatsChartProps) {
   // 当前选中的统计模式
   const [mode, setMode] = useState<StatMode>('month');
   const [chartType, setChartType] = useState<'line' | 'area'>('area');
+  const shouldReduceMotion = useReducedMotion();
 
   // 判断是否有文章和动态数据（用于区分前台和后台使用场景）
   const hasBlogStats = blogTimeStats && (blogTimeStats.month.length > 0 || blogTimeStats.quarter.length > 0 || blogTimeStats.year.length > 0);
@@ -59,8 +71,11 @@ export default function TimeStatsChart({ changelogs, blogTimeStats, momentTimeSt
 
   /**
    * 根据模式获取统计数据
+   *
+   * 统计结果只随数据源和模式变化，用 useMemo 缓存；
+   * 前台筛选日志时图表仍展示全量数据，避免点一次筛选就只剩一个点。
    */
-  const getStatsData = () => {
+  const data = useMemo(() => {
     // 获取日志统计数据
     let changelogStats: Array<{ label: string; count: number }>;
     switch (mode) {
@@ -109,43 +124,62 @@ export default function TimeStatsChart({ changelogs, blogTimeStats, momentTimeSt
       blogCount: blogMap.get(label) || 0,
       momentCount: momentMap.get(label) || 0,
     }));
-  };
-
-  const data = getStatsData();
+  }, [changelogs, mode, isAdminView, blogTimeStats, momentTimeStats]);
 
   // 按时间排序（从早到晚）
-  const sortedData = [...data].sort((a, b) => {
-    // 提取年份（更精确的匹配）
-    const yearMatchA = a.label.match(/(\d{4})/);
-    const yearMatchB = b.label.match(/(\d{4})/);
-    const yearA = yearMatchA ? parseInt(yearMatchA[1]) : 0;
-    const yearB = yearMatchB ? parseInt(yearMatchB[1]) : 0;
+  const sortedData = useMemo(() => {
+    return [...data].sort((a, b) => {
+      // 提取年份（更精确的匹配）
+      const yearMatchA = a.label.match(/(\d{4})/);
+      const yearMatchB = b.label.match(/(\d{4})/);
+      const yearA = yearMatchA ? parseInt(yearMatchA[1]) : 0;
+      const yearB = yearMatchB ? parseInt(yearMatchB[1]) : 0;
 
-    if (yearA !== yearB) {
-      return yearA - yearB;
-    }
+      if (yearA !== yearB) {
+        return yearA - yearB;
+      }
 
-    if (mode === 'month') {
-      const monthMatchA = a.label.match(/(\d+)月/);
-      const monthMatchB = b.label.match(/(\d+)月/);
-      const monthA = monthMatchA ? parseInt(monthMatchA[1]) : 0;
-      const monthB = monthMatchB ? parseInt(monthMatchB[1]) : 0;
-      return monthA - monthB;
-    } else if (mode === 'quarter') {
-      // 季节排序：春夏秋冬
-      const seasonOrder: Record<string, number> = { '春': 1, '夏': 2, '秋': 3, '冬': 4 };
-      const seasonA = a.label.slice(-1);
-      const seasonB = b.label.slice(-1);
-      return (seasonOrder[seasonA] || 0) - (seasonOrder[seasonB] || 0);
-    }
+      if (mode === 'month') {
+        const monthMatchA = a.label.match(/(\d+)月/);
+        const monthMatchB = b.label.match(/(\d+)月/);
+        const monthA = monthMatchA ? parseInt(monthMatchA[1]) : 0;
+        const monthB = monthMatchB ? parseInt(monthMatchB[1]) : 0;
+        return monthA - monthB;
+      } else if (mode === 'quarter') {
+        // 季节排序：春夏秋冬
+        const seasonOrder: Record<string, number> = { '春': 1, '夏': 2, '秋': 3, '冬': 4 };
+        const seasonA = a.label.slice(-1);
+        const seasonB = b.label.slice(-1);
+        return (seasonOrder[seasonA] || 0) - (seasonOrder[seasonB] || 0);
+      }
 
-    return 0;
-  });
+      return 0;
+    });
+  }, [data, mode]);
 
   // 过滤出有数据的项（至少有一个系列的值不为 0）
-  const filteredData = sortedData.filter(
-    item => item.changelogCount > 0 || item.blogCount > 0 || item.momentCount > 0
+  const filteredData = useMemo(
+    () => sortedData.filter(
+      item => item.changelogCount > 0 || item.blogCount > 0 || item.momentCount > 0
+    ),
+    [sortedData]
   );
+
+  /**
+   * 点击图表时按下方的模式筛选日志
+   * recharts 会把最近的 x 轴类目放进 activeLabel
+   */
+  const handleChartClick = (state: any) => {
+    if (!onPeriodSelect) return;
+    const label = state?.activeLabel;
+    if (typeof label === 'string' && label) {
+      onPeriodSelect(label, mode);
+    }
+  };
+
+  const showSelectedLine =
+    Boolean(selectedPeriodLabel) &&
+    filteredData.some(item => item.label === selectedPeriodLabel);
 
   // 模式按钮配置
   const modeButtons: { value: StatMode; label: string }[] = [
@@ -166,8 +200,8 @@ export default function TimeStatsChart({ changelogs, blogTimeStats, momentTimeSt
         {/* 标题：渐变色 + 旋转图标，与 TypeStatsChart 保持一致 */}
         <h3 className="text-base font-bold flex items-center gap-2 mb-2 sm:mb-0 whitespace-nowrap bg-gradient-to-r from-primary via-primary/80 to-accent bg-clip-text text-transparent">
           <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+            animate={shouldReduceMotion ? undefined : { rotate: 360 }}
+            transition={shouldReduceMotion ? undefined : { duration: 20, repeat: Infinity, ease: "linear" }}
           >
             <svg className="w-5 h-5 shrink-0 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
@@ -200,8 +234,8 @@ export default function TimeStatsChart({ changelogs, blogTimeStats, momentTimeSt
               <motion.button
                 key={btn.value}
                 onClick={() => setMode(btn.value)}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                whileHover={shouldReduceMotion ? undefined : { scale: 1.05 }}
+                whileTap={shouldReduceMotion ? undefined : { scale: 0.95 }}
                 className={`text-xs px-3 py-1 rounded-md transition-all font-medium ${
                   mode === btn.value
                     ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20'
@@ -217,13 +251,14 @@ export default function TimeStatsChart({ changelogs, blogTimeStats, momentTimeSt
 
       {/* 图表区域 */}
       <div className="w-full flex justify-center" style={{ height: wide ? '300px' : '200px', minWidth: '200px' }}>
-        <div className={wide ? 'w-full' : 'w-full max-w-lg'} style={{ minWidth: '200px' }}>
+        <div className={`${wide ? 'w-full' : 'w-full max-w-lg'}${onPeriodSelect ? ' cursor-pointer' : ''}`} style={{ minWidth: '200px' }}>
           {filteredData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={200}>
               {chartType === 'area' ? (
                 <AreaChart
                   data={filteredData}
                   margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                  onClick={onPeriodSelect ? handleChartClick : undefined}
                 >
                 <defs>
                   {/* 文章 - 天依蓝渐变 */}
@@ -246,6 +281,14 @@ export default function TimeStatsChart({ changelogs, blogTimeStats, momentTimeSt
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="5 5" stroke="hsl(var(--border))" opacity={0.15} vertical={false} />
+                {showSelectedLine && (
+                  <ReferenceLine
+                    x={selectedPeriodLabel ?? undefined}
+                    stroke="hsl(var(--primary))"
+                    strokeDasharray="4 4"
+                    strokeOpacity={0.65}
+                  />
+                )}
                 <XAxis
                   dataKey="label"
                   stroke="hsl(var(--muted-foreground))"
@@ -368,8 +411,17 @@ export default function TimeStatsChart({ changelogs, blogTimeStats, momentTimeSt
               <LineChart
                 data={filteredData}
                 margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                onClick={onPeriodSelect ? handleChartClick : undefined}
               >
                 <CartesianGrid strokeDasharray="5 5" stroke="hsl(var(--border))" opacity={0.15} vertical={false} />
+                {showSelectedLine && (
+                  <ReferenceLine
+                    x={selectedPeriodLabel ?? undefined}
+                    stroke="hsl(var(--primary))"
+                    strokeDasharray="4 4"
+                    strokeOpacity={0.65}
+                  />
+                )}
                 <XAxis
                   dataKey="label"
                   stroke="hsl(var(--muted-foreground))"
@@ -497,6 +549,15 @@ export default function TimeStatsChart({ changelogs, blogTimeStats, momentTimeSt
         )}
         </div>
       </div>
+
+      {/* 前台把图表当筛选器时给出操作提示；后台不显示 */}
+      {onPeriodSelect && filteredData.length > 0 && (
+        <p className="mt-2 text-center text-[11px] text-muted-foreground">
+          点击数据点按{mode === 'month' ? '月份' : mode === 'quarter' ? '季度' : '年份'}筛选日志
+        </p>
+      )}
     </motion.div>
   );
 }
+
+export default memo(TimeStatsChart);

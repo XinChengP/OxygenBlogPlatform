@@ -1,27 +1,10 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { memo, useMemo, useState } from 'react';
 import { Changelog, getTypeStats, getChangelogTypeLabel, ChangelogType } from '@/types/changelogTypes';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Sector } from 'recharts';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { containerVariants } from '@/utils/animationVariants';
-
-/**
- * 时间统计项接口
- */
-interface TimeStatItem {
-  label: string;
-  count: number;
-}
-
-/**
- * 时间统计数据接口
- */
-interface TimeStats {
-  month: TimeStatItem[];
-  quarter: TimeStatItem[];
-  year: TimeStatItem[];
-}
 
 /**
  * 类型统计环形图组件 Props
@@ -30,8 +13,10 @@ interface TypeStatsChartProps {
   changelogs: Changelog[];
   /** 卡片标题；更新日志页用默认值，仪表盘传「日志类型分布」以保持原有文案 */
   title?: string;
-  blogTimeStats?: TimeStats;  // 文章时间统计（后台使用）
-  momentTimeStats?: TimeStats;  // 动态时间统计（后台使用）
+  /** 当前选中的类型，用于把图表当筛选器时的选中态 */
+  selectedType?: ChangelogType | 'all';
+  /** 点击扇区/摘要项时回调，前台日志页用于筛选列表 */
+  onTypeSelect?: (type: ChangelogType) => void;
 }
 
 /**
@@ -50,12 +35,20 @@ const TYPE_COLORS: Record<ChangelogType, string> = {
 /**
  * 装饰性背景效果
  */
-const BackgroundDecoration = () => (
-  <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
-    <div className="absolute top-1/2 right-1/4 w-16 h-16 bg-accent/10 rounded-full blur-xl animate-pulse" />
-    <div className="absolute bottom-1/3 left-1/3 w-12 h-12 bg-primary/5 rounded-full blur-lg animate-pulse" style={{ animationDelay: '1.5s' }} />
-  </div>
-);
+const BackgroundDecoration = () => {
+  const shouldReduceMotion = useReducedMotion();
+  const pulseClass = shouldReduceMotion ? '' : 'animate-pulse';
+
+  return (
+    <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
+      <div className={`absolute top-1/2 right-1/4 w-16 h-16 bg-accent/10 rounded-full blur-xl ${pulseClass}`} />
+      <div
+        className={`absolute bottom-1/3 left-1/3 w-12 h-12 bg-primary/5 rounded-full blur-lg ${pulseClass}`}
+        style={{ animationDelay: '1.5s' }}
+      />
+    </div>
+  );
+};
 
 /**
  * 自定义 Tooltip 组件
@@ -157,21 +150,46 @@ const renderCustomLegendIcon = (props: any) => {
  * 类型统计环形图组件
  * 使用环形图展示不同类型更新的占比
  */
-export default function TypeStatsChart({ changelogs, title = '类型分布' }: TypeStatsChartProps) {
+function TypeStatsChart({
+  changelogs,
+  title = '类型分布',
+  selectedType,
+  onTypeSelect,
+}: TypeStatsChartProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
-  const data = getTypeStats(changelogs);
+  const shouldReduceMotion = useReducedMotion();
+
+  const data = useMemo(() => getTypeStats(changelogs), [changelogs]);
 
   // 按数量降序排序
-  const sortedData = [...data].sort((a, b) => b.count - a.count);
+  const sortedData = useMemo(
+    () => [...data].sort((a, b) => b.count - a.count),
+    [data]
+  );
 
   // 计算总数
-  const totalCount = sortedData.reduce((sum, item) => sum + item.count, 0);
+  const totalCount = useMemo(
+    () => sortedData.reduce((sum, item) => sum + item.count, 0),
+    [sortedData]
+  );
 
   // 为数据添加总数（用于 tooltip）
-  const dataWithTotal = sortedData.map(item => ({
-    ...item,
-    total: totalCount,
-  }));
+  const dataWithTotal = useMemo(
+    () => sortedData.map(item => ({
+      ...item,
+      total: totalCount,
+    })),
+    [sortedData, totalCount]
+  );
+
+  // 当前筛选的类型（父组件可能在外部清空筛选，因此不能只依赖悬停状态）
+  const selectedIndex = useMemo(() => {
+    if (!selectedType || selectedType === 'all') return -1;
+    return sortedData.findIndex(item => item.type === selectedType);
+  }, [sortedData, selectedType]);
+
+  // 悬停优先，其次保持已选中扇区
+  const highlightedIndex = activeIndex ?? (selectedIndex >= 0 ? selectedIndex : null);
 
   // 鼠标悬停处理
   const onPieEnter = (_: any, index: number) => {
@@ -182,9 +200,10 @@ export default function TypeStatsChart({ changelogs, title = '类型分布' }: T
     setActiveIndex(null);
   };
 
-  // 点击处理
-  const onPieClick = (_: any, index: number) => {
+  // 点击处理：切换扇区高亮，并把日志列表筛选到该类型
+  const onPieClick = (entry: any, index: number) => {
     setActiveIndex(activeIndex === index ? null : index);
+    if (entry?.type) onTypeSelect?.(entry.type);
   };
 
   return (
@@ -200,8 +219,8 @@ export default function TypeStatsChart({ changelogs, title = '类型分布' }: T
       <div className="flex justify-between items-center mb-4 pb-3 border-b border-border/30">
         <h3 className="text-base font-bold flex items-center gap-2 bg-gradient-to-r from-primary via-primary/80 to-accent bg-clip-text text-transparent">
           <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+            animate={shouldReduceMotion ? undefined : { rotate: 360 }}
+            transition={shouldReduceMotion ? undefined : { duration: 20, repeat: Infinity, ease: "linear" }}
           >
             <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
@@ -250,7 +269,7 @@ export default function TypeStatsChart({ changelogs, title = '类型分布' }: T
                       stroke="hsl(var(--background))"
                       strokeWidth={3}
                       style={{
-                        filter: activeIndex === index
+                        filter: highlightedIndex === index
                           ? `drop-shadow(0 0 8px ${TYPE_COLORS[entry.type]}cc) drop-shadow(0 0 12px ${TYPE_COLORS[entry.type]}66)`
                           : 'none',
                         cursor: 'pointer',
@@ -264,28 +283,28 @@ export default function TypeStatsChart({ changelogs, title = '类型分布' }: T
             {/* 环形中间悬浮信息显示区域 */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="text-center">
-                {activeIndex !== null ? (
+                {highlightedIndex !== null ? (
                   <motion.div
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.8 }}
                     transition={{ duration: 0.2 }}
-                    key={activeIndex}
+                    key={highlightedIndex}
                   >
                     {/* 类型名称 */}
                     <div
                       className="text-sm font-bold mb-1"
-                      style={{ color: TYPE_COLORS[sortedData[activeIndex].type] }}
+                      style={{ color: TYPE_COLORS[sortedData[highlightedIndex].type] }}
                     >
-                      {sortedData[activeIndex].label}
+                      {sortedData[highlightedIndex].label}
                     </div>
                     {/* 数量 */}
                     <div className="text-2xl font-bold text-foreground leading-tight">
-                      {sortedData[activeIndex].count}
+                      {sortedData[highlightedIndex].count}
                     </div>
                     {/* 百分比 */}
                     <div className="text-xs text-muted-foreground mt-0.5">
-                      {((sortedData[activeIndex].count / totalCount) * 100).toFixed(1)}%
+                      {((sortedData[highlightedIndex].count / totalCount) * 100).toFixed(1)}%
                     </div>
                   </motion.div>
                 ) : (
@@ -332,18 +351,21 @@ export default function TypeStatsChart({ changelogs, title = '类型分布' }: T
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.4 + index * 0.1 }}
                 className="group flex items-center justify-between text-xs p-2.5 rounded-xl bg-gradient-to-r from-muted/60 to-muted/40 hover:from-muted/80 hover:to-muted/60 transition-all duration-300 cursor-pointer border border-border/30 hover:border-border/60 shadow-sm hover:shadow-md"
-                onClick={() => setActiveIndex(index)}
-                whileHover={{ scale: 1.02, y: -2 }}
-                whileTap={{ scale: 0.98 }}
+                onClick={() => {
+                  setActiveIndex((prev) => (prev === index ? null : index));
+                  onTypeSelect?.(item.type);
+                }}
+                whileHover={shouldReduceMotion ? undefined : { scale: 1.02, y: -2 }}
+                whileTap={shouldReduceMotion ? undefined : { scale: 0.98 }}
               >
                 <div className="flex items-center gap-2">
                   <motion.div
-                    animate={activeIndex === index ? { scale: 1.4 } : { scale: 1 }}
+                    animate={highlightedIndex === index ? { scale: 1.4 } : { scale: 1 }}
                     transition={{ type: "spring", stiffness: 400, damping: 10 }}
                     className="w-3.5 h-3.5 rounded-full shadow-md"
                     style={{ 
                       backgroundColor: TYPE_COLORS[item.type],
-                      boxShadow: activeIndex === index ? `0 0 10px ${TYPE_COLORS[item.type]}` : 'none'
+                      boxShadow: highlightedIndex === index ? `0 0 10px ${TYPE_COLORS[item.type]}` : 'none'
                     }}
                   />
                   <span className="text-muted-foreground group-hover:text-foreground transition-colors truncate whitespace-nowrap overflow-hidden font-medium">
@@ -361,6 +383,15 @@ export default function TypeStatsChart({ changelogs, title = '类型分布' }: T
           </div>
         </motion.div>
       )}
+
+      {/* 前台把图表当筛选器时给出操作提示；后台不显示 */}
+      {onTypeSelect && sortedData.length > 0 && (
+        <p className="mt-3 text-center text-[11px] text-muted-foreground">
+          点击扇区或下方类型筛选日志
+        </p>
+      )}
     </motion.div>
   );
 }
+
+export default memo(TypeStatsChart);

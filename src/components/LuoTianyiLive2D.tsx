@@ -216,7 +216,7 @@ export default function LuoTianyiLive2D({ hidden = false }: LuoTianyiLive2DProps
       '/blogs': '博客文章',
       '/gallery': '画廊页面',
       '/moments': '个人动态',
-      '/changelogs': '更新日志',
+      '/changelogs': '开发日志',
       '/friends': '友链页面',
       '/links': '相关链接',
     };

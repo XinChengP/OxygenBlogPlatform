@@ -9,6 +9,7 @@ import {
   ChangelogType,
   calculateAchievements,
   countPlainChars,
+  buildExcerpt,
 } from '@/types/changelogTypes';
 import { parseFrontMatter } from '@/utils/frontMatterUtils';
 
@@ -116,7 +117,10 @@ export function getServerChangelogs(): Changelog[] {
         content: body,
         filePath: file,
         achievements: achievements,
-        honors: honors
+        honors: honors,
+        excerpt: buildExcerpt(body),
+        lineCount: contentLineCount,
+        charCount,
       };
     });
 

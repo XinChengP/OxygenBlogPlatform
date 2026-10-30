@@ -41,12 +41,25 @@ const changelogsMarkdownComponents: React.ComponentProps<typeof ReactMarkdown>['
   // 链接样式
   a: ({ node, ...props }: MarkdownComponentProps) => <a className="text-primary hover:underline break-words" {...props} />,
   // 代码样式
+  /*
+    覆盖默认 pre：react-markdown 已为围栏代码块输出 <pre>，
+    下面的 code 组件会自行渲染带样式的 <pre>，若不拦截会出现 <pre><pre> 嵌套。
+    博客正文的 BlogMarkdownBase 使用同样做法。
+  */
+  pre: ({ children }: MarkdownComponentProps) => <>{children}</>,
   code: ({ node, className, children, ...props }: MarkdownComponentProps) => {
-    const inline = !className || !className.includes('language-');
-    if (inline) {
+    // rehype-highlight 会给围栏代码块加 hljs / language-* 类名，行内代码没有
+    const isBlock = Boolean(className && /(?:language-|hljs)/.test(className));
+
+    if (!isBlock) {
       return <code className="bg-muted px-1 rounded break-words whitespace-normal" {...props}>{children}</code>;
     }
-    return <pre className="bg-muted p-3 rounded overflow-x-auto mb-2" {...props}><code>{children}</code></pre>;
+
+    return (
+      <pre className="bg-muted p-3 rounded overflow-x-auto mb-2">
+        <code className={className} {...props}>{children}</code>
+      </pre>
+    );
   },
   // 表格样式
   table: ({ node, ...props }: MarkdownComponentProps) => <div className="overflow-x-auto mb-2"><table className="w-full border-collapse" {...props} /></div>,
