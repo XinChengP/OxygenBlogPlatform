@@ -1,47 +1,58 @@
 {
-  "updatedAt": "2026-10-27T13:40:19.612Z",
-  "totalWords": 223,
+  "updatedAt": "2026-10-31T11:32:23.389Z",
+  "totalWords": 179,
   "today": {
-    "date": "2026-10-27",
-    "finished": 70,
+    "date": "2026-10-31",
+    "finished": 0,
     "total": 50,
-    "studyTimeSeconds": 1202797
+    "studyTimeSeconds": 0
   },
   "dailyNewWords": {
-    "2024-04-11": 10,
-    "2025-06-19": 10,
-    "2025-06-21": 14,
-    "2025-06-22": 8,
-    "2025-06-24": 16,
+    "2024-04-10": 10,
+    "2025-06-18": 10,
+    "2025-06-20": 14,
+    "2025-06-21": 8,
+    "2025-06-23": 16,
+    "2025-06-24": 8,
     "2025-06-25": 8,
-    "2025-06-26": 8,
-    "2025-07-01": 17,
-    "2025-09-10": 28,
-    "2026-10-27": 104
+    "2025-06-30": 17,
+    "2025-09-09": 28,
+    "2026-10-27": 31,
+    "2026-10-28": 7,
+    "2026-10-29": 22
   },
-  "todayNewWords": 104,
-  "dueReviews": 118,
-  "stickingWords": 32,
+  "todayNewWords": 0,
+  "dueReviews": 100,
+  "stickingWords": 40,
   "recentWords": [
     {
-      "spelling": "criminal",
-      "lastStudyDate": "2026-10-27"
+      "spelling": "accountancy",
+      "lastStudyDate": "2026-10-29"
     },
     {
-      "spelling": "expectation",
-      "lastStudyDate": "2026-10-27"
+      "spelling": "locality",
+      "lastStudyDate": "2026-10-29"
     },
     {
-      "spelling": "alike",
-      "lastStudyDate": "2026-10-27"
+      "spelling": "framework",
+      "lastStudyDate": "2026-10-29"
     },
     {
-      "spelling": "picture",
-      "lastStudyDate": "2026-10-27"
+      "spelling": "adequately",
+      "lastStudyDate": "2026-10-29"
     },
     {
-      "spelling": "limit",
-      "lastStudyDate": "2026-10-27"
+      "spelling": "perception",
+      "lastStudyDate": "2026-10-29"
     }
-  ]
+  ],
+  "dailyReviews": {
+    "2026-10-26": 49,
+    "2025-06-18": 4,
+    "2026-10-27": 5,
+    "2026-10-28": 24,
+    "2025-09-09": 6,
+    "2026-10-29": 28,
+    "2025-11-02": 2
+  }
 }

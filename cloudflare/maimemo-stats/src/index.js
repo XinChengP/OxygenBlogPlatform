@@ -107,21 +107,25 @@ async function postMaimemo(path, token, body) {
 }
 
 /**
- * 取墨墨日期字段的「北京日期」YYYY-MM-DD
+ * 取墨墨日期字段对应的学习日 YYYY-MM-DD
  *
- * 墨墨把日期存成「北京当天 00:00」对应的 UTC 时刻：
- * 北京 10-28 全天 → 2026-10-27T16:00:00.000Z，因此需要 +8 小时才是学习日。
+ * 直接取字符串前 10 位，不做 +8 小时折算。
  *
- * 依据（官方文档 + 接口实测）：
- * - 文档标注这些字段是 <ISODate>（真实时间戳），不是纯日期字符串；
- * - 接口实测所有日期都是整点 16:00Z（北京 00:00），说明是「当天零点」归一化；
- * - 未开始学的新词也会预置 first/last_study_date（计划日零点），
+ * 依据（「今日待学列表」接口实测）：
+ * - 今天尚未学习的记录里，78 个词的 first/last/next_study_date 同为一天，
+ *   且今日进度 finished=0；若再 +8 小时，会把这条记录算成「今天已学」，
+ *   与 finished=0 自相矛盾，因此日期字段本身就是学习日；
+ * - 该字段不能用 add_date 反推：add_date 是词书加入日期，词书迁移时会晚于首次学习；
+ * - 未开始学的新词也会预置 first/last_study_date（计划日），
  *   必须用 last_response 区分（未学 = STUDY_RESPONSE_UNSPECIFIED）。
+ *
+ * 注意：本实现必须与 src/utils/maimemoSync.ts 的 dateOf 保持一致，
+ * 否则本地同步快照与 Worker 代理返回的日期会相差一天。
  */
 function dateOf(value) {
-  const time = new Date(value).getTime();
-  if (!Number.isFinite(time)) return null;
-  return new Date(time + 8 * 3_600_000).toISOString().slice(0, 10);
+  if (typeof value !== 'string') return null;
+  const match = /^(\d{4}-\d{2}-\d{2})/.exec(value);
+  return match ? match[1] : null;
 }
 
 /**
