@@ -1,8 +1,15 @@
 'use client';
 
 import React from 'react';
-import { Circle, CheckCircle, AlertCircle } from 'lucide-react';
+import { Circle, CheckCircle, AlertCircle, StickyNote, Bell } from 'lucide-react';
 import type { TodoItem, TodoConfig } from '@/types/todo';
+import {
+  formatTodoDueDate,
+  formatTodoRemindAt,
+  getTodoStats,
+  isTodoOverdue,
+  sortTodoItems,
+} from '@/utils/todoDisplay';
 
 /**
  * 待办事件展示组件 Props
@@ -40,29 +47,18 @@ const PRIORITY_CONFIG = {
  * 用于在动态页面侧边栏静态展示待办事项
  */
 export default function TodoWidget({ config }: TodoWidgetProps) {
-  const { title, items, showStats } = config;
+  const { title, showStats } = config;
+  // 快照/接口数据异常时保证仍有数组可渲染
+  const items = Array.isArray(config.items) ? config.items : [];
 
-  // 按完成状态和优先级排序
-  const sortedItems = [...items].sort((a, b) => {
-    // 未完成的排在前面
-    if (a.completed !== b.completed) {
-      return a.completed ? 1 : -1;
-    }
-    // 按优先级排序：high > medium > low
-    const priorityOrder = { high: 0, medium: 1, low: 2 };
-    const aPriority = a.priority ? priorityOrder[a.priority] : 3;
-    const bPriority = b.priority ? priorityOrder[b.priority] : 3;
-    return aPriority - bPriority;
-  });
-
-  // 计算统计数据
-  const totalCount = items.length;
-  const completedCount = items.filter(item => item.completed).length;
-  const completionRate = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+  // 统一排序：未完成 → 优先级 → 截止日期 → 创建时间
+  const sortedItems = sortTodoItems(items);
+  const { total: totalCount, completed: completedCount, pending: pendingCount, overdue: overdueCount, completionRate } = getTodoStats(items);
 
   // 渲染单个待办项
   const renderTodoItem = (item: TodoItem) => {
     const priorityConfig = item.priority ? PRIORITY_CONFIG[item.priority] : null;
+    const overdue = isTodoOverdue(item);
 
     return (
       <div
@@ -86,7 +82,7 @@ export default function TodoWidget({ config }: TodoWidgetProps) {
         <div className="flex-1 min-w-0">
           <p
             className={`
-              text-sm transition-all duration-200
+              text-sm whitespace-pre-line break-words transition-all duration-200
               ${item.completed 
                 ? 'text-muted-foreground line-through' 
                 : 'text-foreground'
@@ -96,19 +92,38 @@ export default function TodoWidget({ config }: TodoWidgetProps) {
             {item.content}
           </p>
 
-          {/* 优先级和截止日期 */}
-          <div className="flex items-center gap-2 mt-1">
+          {/* 备注详情：最多展示两行，避免撑高侧边栏 */}
+          {item.notes && (
+            <p className="mt-1 flex items-start gap-1 text-xs text-muted-foreground">
+              <StickyNote className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+              <span className="whitespace-pre-wrap break-words line-clamp-2">{item.notes}</span>
+            </p>
+          )}
+
+          {/* 优先级、截止日期与提醒时间 */}
+          <div className="flex flex-wrap items-center gap-2 mt-1">
             {priorityConfig && !item.completed && (
               <span className={`
                 text-xs px-1.5 py-0.5 rounded
                 ${priorityConfig.bgColor} ${priorityConfig.color}
               `}>
-                {priorityConfig.label}优先
+                {priorityConfig.label}优先级
+              </span>
+            )}
+            {overdue && (
+              <span className="text-xs px-1.5 py-0.5 rounded bg-red-500/10 text-red-500 font-medium">
+                已逾期
               </span>
             )}
             {item.dueDate && !item.completed && (
-              <span className="text-xs text-muted-foreground">
-                截止: {new Date(item.dueDate).toLocaleDateString('zh-CN')}
+              <span className={`text-xs ${overdue ? 'text-red-500 font-medium' : 'text-muted-foreground'}`}>
+                截止: {formatTodoDueDate(item.dueDate)}
+              </span>
+            )}
+            {typeof item.remindAt === 'number' && !item.completed && (
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <Bell className="w-3 h-3" />
+                {formatTodoRemindAt(item.remindAt)}
               </span>
             )}
           </div>
@@ -164,7 +179,7 @@ export default function TodoWidget({ config }: TodoWidgetProps) {
           <p className="text-xs text-muted-foreground text-center">
             {completedCount === totalCount 
               ? '🎉 所有待办已完成！' 
-              : `还有 ${totalCount - completedCount} 项待办等待完成`
+              : `还有 ${pendingCount} 项待办等待完成${overdueCount > 0 ? `，其中 ${overdueCount} 项已逾期` : ''}`
             }
           </p>
         </div>

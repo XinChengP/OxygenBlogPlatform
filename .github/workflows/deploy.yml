@@ -97,6 +97,10 @@ jobs:
           NEXT_PUBLIC_NEWSLETTER_ENABLED: "false"
           # Telegram 频道入口，配置后 /subscribe 页会展示频道卡片
           NEXT_PUBLIC_TELEGRAM_CHANNEL_URL: ""
+          # 待办同步 API（Cloudflare Worker + D1）：
+          # 未配置 secret 时构建期会回退到仓库内的只读快照，不影响部署
+          TODO_SYNC_TOKEN: ${{ secrets.TODO_SYNC_TOKEN }}
+          TODO_SYNC_ENDPOINT: "https://todoapi.xinchengp.cn"
         run: |
           # 输出构建环境信息
           echo "构建环境信息："
@@ -108,6 +112,7 @@ jobs:
           echo "NEXT_PUBLIC_TWIKOO_ENV_ID: $NEXT_PUBLIC_TWIKOO_ENV_ID"
           echo "NEXT_PRIVATE_STATIC_EXPORT: $NEXT_PRIVATE_STATIC_EXPORT"
           echo "STATIC_EXPORT: $STATIC_EXPORT"
+          echo "TODO_SYNC_ENDPOINT: $TODO_SYNC_ENDPOINT"
           # 执行构建（使用 build:pages 脚本，会自动替换 actions 文件）
           npm run build:pages
 

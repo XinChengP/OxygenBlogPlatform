@@ -3,9 +3,9 @@ import fs from 'fs';
 import path from 'path';
 import { getServerMoments, getBlogCount, getServerBlogs, getBlogTotalWordCount } from '@/utils/momentsUtils';
 import { parseFrontMatter } from '@/utils/frontMatterUtils';
+import { loadTodoConfig } from '@/utils/server/todoData';
 import ClientMomentsPage from '@/components/moments/ClientMomentsPage';
 import MomentMarkdown from '@/components/moments/MomentMarkdown';
-import type { TodoConfig } from '@/types/todo';
 import type { Metadata } from 'next';
 
 /**
@@ -54,6 +54,9 @@ export const metadata: Metadata = {
   },
 };
 
+// 待办数据在构建期拉取一次并固化进 HTML，显式声明静态渲染
+export const dynamic = 'force-static';
+
 // 服务器端组件读取动态数据
 const moments = getServerMoments();
 const blogCount = getBlogCount();
@@ -98,30 +101,15 @@ const calculateStats = () => {
   };
 };
 
-/**
- * 读取待办配置
- */
-const getTodoConfig = (): TodoConfig => {
-  try {
-    const todoPath = path.join(process.cwd(), 'src', 'content', 'todo.json');
-    const content = fs.readFileSync(todoPath, 'utf-8');
-    return JSON.parse(content) as TodoConfig;
-  } catch (error) {
-    console.warn('读取待办配置失败，使用默认配置:', error);
-    return {
-      title: '待办事项',
-      items: [],
-      showStats: true,
-    };
-  }
-};
-
 const { categoryCount, tagCount } = calculateStats();
-const todoConfig = getTodoConfig();
 console.log('Server-side stats:', { categoryCount, tagCount });
 
 // 服务器端组件导出
-export default function MomentsPage() {
+export default async function MomentsPage() {
+  // 待办已改为直接对接线上同步 API：构建期拉取一次并固化进 HTML，
+  // 开发环境按缓存策略拉取，API 不可用时回退本地只读快照
+  const todoResult = await loadTodoConfig();
+  const todoConfig = todoResult.config;
   // 构建期把动态 Markdown 渲染成 ReactNode，客户端不再加载 Markdown 解析栈
   const momentsWithContent = moments.map(moment => ({
     ...moment,

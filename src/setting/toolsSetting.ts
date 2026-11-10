@@ -92,7 +92,16 @@ export const availableTools: ToolItem[] = [
     path: 'https://github.com/Eiheir/Luo_Tianyi_Image',
     external: true
   },
-
+  {
+    // 任务清单（外部开源项目，托管于 GitHub，Windows / Android 双端 Flutter 应用）
+    id: 'todo-list',
+    name: '任务清单（Windows / Android）',
+    description: '双端任务清单应用，字段级 Last-Write-Wins 增量同步，后端基于 Cloudflare Workers',
+    icon: '✅',
+    isActive: true,
+    path: 'https://github.com/XinChengP/todo-list',
+    external: true
+  },
 ];
 
 // 获取全部已激活的工具

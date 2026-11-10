@@ -12,9 +12,13 @@ import type { ImageSource } from '@/types/gallery';
 export interface TodoItem {
   id: string;
   content: string;
+  /** 备注详情，对应远端 notes */
+  notes?: string;
   completed: boolean;
   priority?: 'high' | 'medium' | 'low';
   dueDate?: string;
+  /** 提醒时间（毫秒时间戳），对应远端 remind_at */
+  remindAt?: number;
   createdAt: string;
   updatedAt?: string;
 }
@@ -36,9 +40,10 @@ export const getTodoItem = async (_id?: string): Promise<{ success: boolean; mes
 export const createTodoItem = async (_data?: any): Promise<{ success: boolean; message: string; data: TodoItem | null }> => ({ success: false, message: '静态导出模式不支持此功能', data: null });
 export const updateTodoItem = async (_id?: string, _data?: any): Promise<{ success: boolean; message: string; data: TodoItem | null }> => ({ success: false, message: '静态导出模式不支持此功能', data: null });
 export const deleteTodoItem = async (_id?: string): Promise<{ success: boolean; message: string; data: string | null }> => ({ success: false, message: '静态导出模式不支持此功能', data: null });
-export const toggleTodoComplete = async (_id?: string): Promise<{ success: boolean; message: string; data: TodoItem | null }> => ({ success: false, message: '静态导出模式不支持此功能', data: null });
+export const setTodoComplete = async (_id?: string, _completed?: boolean): Promise<{ success: boolean; message: string; data: { id: string; completed: boolean } | null }> => ({ success: false, message: '静态导出模式不支持此功能', data: null });
 export const batchDeleteTodoItems = async (_ids?: string[]): Promise<{ success: boolean; message: string; data: string[] }> => ({ success: false, message: '静态导出模式不支持此功能', data: [] });
 export const updateTodoConfigSettings = async (_config?: any): Promise<{ success: boolean; message: string; data: TodoConfig | null }> => ({ success: false, message: '静态导出模式不支持此功能', data: null });
+export const syncTodoFromRemote = async (): Promise<{ success: boolean; message: string; data: any }> => ({ success: false, message: '静态导出模式不支持此功能', data: null });
 
 // ============================================
 // GitHub Actions

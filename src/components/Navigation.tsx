@@ -54,6 +54,8 @@ const Navigation = () => {
   const scrollTickingRef = useRef(false);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
+  // 下拉菜单延迟关闭定时器：鼠标离开后先等一小段，方便从按钮移动到展开的面板上
+  const dropdownCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   // 所有 hooks 必须在条件返回之前调用
   const { navigationStyle } = useBackgroundStyle('home');
@@ -127,11 +129,24 @@ const Navigation = () => {
   }, []);
 
   /**
+   * 清除下拉菜单的延迟关闭定时器
+   * 鼠标重新进入、主动关闭或组件卸载时都要调用，
+   * 避免旧的关闭任务残留，把刚展开的面板错误收起
+   */
+  const clearDropdownCloseTimer = useCallback(() => {
+    if (dropdownCloseTimerRef.current !== null) {
+      clearTimeout(dropdownCloseTimerRef.current);
+      dropdownCloseTimerRef.current = null;
+    }
+  }, []);
+
+  /**
    * 处理链接点击事件
    * 优化页面切换体验
    */
   const handleLinkClick = useCallback((e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     // 先关闭菜单，同页点击也不会让移动端菜单停留在展开状态
+    clearDropdownCloseTimer();
     setIsMenuOpen(false);
     setActiveDropdown(null);
 
@@ -142,7 +157,7 @@ const Navigation = () => {
       const reduceMotion = !isElectron() && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
     }
-  }, [pathname]);
+  }, [pathname, clearDropdownCloseTimer]);
 
   /**
    * 下拉菜单键盘操作：Enter/Space/↓ 展开，Esc 收起
@@ -150,6 +165,7 @@ const Navigation = () => {
   const handleDropdownKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>, label: string) => {
     if (e.key === 'Escape') {
       e.preventDefault();
+      clearDropdownCloseTimer();
       setActiveDropdown(null);
       const trigger = e.currentTarget.querySelector<HTMLButtonElement>('button');
       trigger?.focus();
@@ -158,6 +174,7 @@ const Navigation = () => {
 
     if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
       e.preventDefault();
+      clearDropdownCloseTimer();
       setActiveDropdown(label);
       // 等菜单挂载后再把焦点移到第一项
       requestAnimationFrame(() => {
@@ -165,30 +182,39 @@ const Navigation = () => {
         firstItem?.focus();
       });
     }
-  }, []);
+  }, [clearDropdownCloseTimer]);
 
   /**
    * 焦点离开整个下拉容器时收起，避免焦点陷阱失效
    */
   const handleDropdownBlur = useCallback((e: React.FocusEvent<HTMLDivElement>) => {
     if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+      clearDropdownCloseTimer();
       setActiveDropdown(null);
     }
-  }, []);
+  }, [clearDropdownCloseTimer]);
 
   /**
-   * 处理下拉菜单悬停
+   * 处理下拉菜单悬停进入
+   * 先清掉可能已排队的关闭任务，避免刚展开就被上一次离开的定时器收起
    */
   const handleDropdownEnter = useCallback((label: string) => {
+    clearDropdownCloseTimer();
     setActiveDropdown(label);
-  }, []);
+  }, [clearDropdownCloseTimer]);
 
   /**
    * 处理下拉菜单离开
+   * 不再立即收起：按钮与面板之间的间隙已由外层 padding 补齐，
+   * 这里再加 260ms 缓冲，手慢一点也能顺利移进菜单
    */
   const handleDropdownLeave = useCallback(() => {
-    setActiveDropdown(null);
-  }, []);
+    clearDropdownCloseTimer();
+    dropdownCloseTimerRef.current = setTimeout(() => {
+      dropdownCloseTimerRef.current = null;
+      setActiveDropdown(null);
+    }, 260);
+  }, [clearDropdownCloseTimer]);
 
   /**
    * 打开站内搜索弹窗
@@ -290,10 +316,15 @@ const Navigation = () => {
     };
   }, [isMenuOpen]);
 
+  // 路由变化时收起所有展开状态，并清掉未执行的延迟关闭任务
   useEffect(() => {
+    clearDropdownCloseTimer();
     setIsMenuOpen(false);
     setActiveDropdown(null);
-  }, [pathname]);
+  }, [pathname, clearDropdownCloseTimer]);
+
+  // 组件卸载时清理定时器，避免组件销毁后仍触发 setState
+  useEffect(() => () => clearDropdownCloseTimer(), [clearDropdownCloseTimer]);
 
   // 导航栏样式 - 应用性能优化
   const navClassName = useMemo(() => {
@@ -349,34 +380,47 @@ const Navigation = () => {
         </button>
         
         {isOpen && (
-          <div
-            id={menuId}
-            role="menu"
-            className="nav-dropdown-in absolute top-full left-0 mt-1 min-w-[8rem] rounded-lg shadow-lg border overflow-hidden glass-card"
-          >
-            <div className="py-1">
-              {dropdown.items.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  role="menuitem"
-                  onClick={(e) => handleLinkClick(e, item.href)}
-                  aria-current={isActive(item.href) ? 'page' : undefined}
-                  className={`block px-4 py-2 text-sm transition-colors duration-200 ${
-                    pathname === item.href
-                      ? 'text-primary dark:text-primary bg-primary/10 dark:bg-primary/10'
-                      : 'text-foreground hover:text-primary dark:hover:text-primary hover:bg-muted/60'
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              ))}
+          // 外层只负责补足按钮与面板之间的 4px 间距：用 padding 代替原来的 margin，
+          // 这段间隙仍然属于下拉容器，鼠标划过时不会触发父级的 mouseleave
+          <div className="absolute top-full left-0 pt-1 min-w-[8rem]">
+            <div
+              id={menuId}
+              role="menu"
+              className={`nav-dropdown-in rounded-lg border overflow-hidden ${
+                // 面板观感与导航栏同步：顶部导航栏透明时面板同样透明，
+                // 滚动后导航栏变成毛玻璃，面板也跟着用同一档 glass-card
+                isAtTop ? 'bg-transparent border-transparent shadow-none' : 'glass-card'
+              }`}
+            >
+              <div className="py-1">
+                {dropdown.items.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    role="menuitem"
+                    onClick={(e) => handleLinkClick(e, item.href)}
+                    aria-current={isActive(item.href) ? 'page' : undefined}
+                    className={`block px-4 py-2 text-sm transition-colors duration-200 ${
+                      isAtTop
+                        // 透明面板下沿用导航栏顶部的白字配色，避免深色文字落在背景图上看不清
+                        ? pathname === item.href
+                          ? 'text-white bg-white/10'
+                          : 'text-white hover:text-white/80 hover:bg-white/10'
+                        : pathname === item.href
+                          ? 'text-primary dark:text-primary bg-primary/10 dark:bg-primary/10'
+                          : 'text-foreground hover:text-primary dark:hover:text-primary hover:bg-muted/60'
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
             </div>
           </div>
         )}
       </div>
     );
-  }, [activeDropdown, handleDropdownEnter, handleDropdownLeave, handleDropdownKeyDown, handleDropdownBlur, getLinkClassName, handleLinkClick, pathname, isActive, isDropdownActive]);
+  }, [activeDropdown, handleDropdownEnter, handleDropdownLeave, handleDropdownKeyDown, handleDropdownBlur, getLinkClassName, handleLinkClick, pathname, isActive, isDropdownActive, isAtTop]);
 
   // 后台页面不显示导航栏 - 在所有 hooks 调用之后再条件返回
   if (pathname.startsWith('/admin')) {

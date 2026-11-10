@@ -4,6 +4,7 @@
  */
 
 import { parseFrontMatter } from '../frontMatterUtils';
+import { loadTodoConfig } from './todoData';
 
 /**
  * 时间统计项接口
@@ -480,21 +481,16 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     }
 
     // 获取待办事项统计
-    const todoPath = path.join(process.cwd(), 'src', 'content', 'todo.json');
+    // 数据源为线上同步 API，接口不可用时 loadTodoConfig 会自动回退本地只读快照
     let todoCount = 0;
     let todoCompletedCount = 0;
 
-    if (fs.existsSync(todoPath)) {
-      try {
-        const todoContent = fs.readFileSync(todoPath, 'utf8');
-        const todoData = JSON.parse(todoContent);
-        if (todoData.items && Array.isArray(todoData.items)) {
-          todoCount = todoData.items.length;
-          todoCompletedCount = todoData.items.filter((item: { completed?: boolean }) => item.completed).length;
-        }
-      } catch (e) {
-        console.error('解析待办事项数据失败:', e);
-      }
+    try {
+      const todoResult = await loadTodoConfig();
+      todoCount = todoResult.config.items.length;
+      todoCompletedCount = todoResult.config.items.filter((item) => item.completed).length;
+    } catch (e) {
+      console.error('读取待办事项数据失败:', e);
     }
 
     // 获取图片总数（从 public 目录统计）
