@@ -3,10 +3,16 @@
  *
  * 通过墨墨官方开放 API（open.maimemo.com）拉取学习数据：
  * - get_study_progress：今日学习进度（已完成/计划总数）
- * - query_study_records：单词学习记录，按「首次学习日期」聚合出历史每天的新学单词数
+ * - get_today_items：今日学习单词（is_new 过滤出今日新学，比全量记录推算更准）
+ * - query_study_records：学习记录；支持 tags 过滤与 as_count 精确计数
  *
  * Token 从环境变量 MAIMEMO_API_TOKEN 读取（App 内：我的 → 更多设置 → 实验功能 → 开放 API）。
  * 结果写入 src/data/maimemo-stats.json，供 /study 页面构建时读取。
+ *
+ * 关于 1000 条上限：
+ * query_study_records 单次最多返回 1000 条且没有 offset，只能按 next_study_date 时间窗分页。
+ * 这里用「时间窗 + 数量探测 + 二分递归」的方式尽量拉全，避免词量增长后统计失真。
+ * Worker 侧还有 D1 持久化兜底（见 cloudflare/maimemo-stats/README.md）。
  *
  * 注意：本文件被 server action 与 CLI 脚本共用，
  * 只使用相对路径导入（tsx 脚本不走 tsconfig 路径别名）。
@@ -17,7 +23,7 @@ import { promises as fs } from 'fs';
 import { execFile } from 'child_process';
 import path from 'path';
 
-/** 墨墨开放 API 基础地址（来源：官方 CLI @maimemo/memo-api） */
+/** 墨墨开放 API 基础地址（来源：官方 OpenAPI 规范） */
 const MAIMEMO_API_BASE = 'https://open.maimemo.com/open/';
 
 /** 输出文件路径 */
@@ -26,8 +32,18 @@ const STATS_FILE_PATH = () => path.join(process.cwd(), 'src', 'data', 'maimemo-s
 /** DPAPI 加密 Token 文件（密文由 npm run maimemo -- --set-token 生成，仅当前 Windows 用户可解密） */
 const TOKEN_FILE = () => path.join(process.cwd(), '.maimemo-token.enc');
 
-/** 单次查询单词记录的最大条数（API 侧分页上限未知，取一个稳妥值） */
+/** 单次查询单词记录的最大条数（官方上限 1000） */
 const RECORDS_LIMIT = 1000;
+
+/** 北京时间相对 UTC 的偏移（毫秒） */
+const BEIJING_OFFSET_MS = 8 * 60 * 60 * 1000;
+
+/** 全量回填时间窗：最近 5 年到未来 2 年（next_study_date 可能排到未来） */
+const BACKFILL_START_DAYS = 5 * 365;
+const BACKFILL_END_DAYS = 2 * 365;
+
+/** 时间窗二分最大深度，避免请求数失控 */
+const MAX_SPLIT_DEPTH = 3;
 
 /**
  * 解密 DPAPI 加密的本地 Token
@@ -90,11 +106,27 @@ export async function resolveMaimemoToken(): Promise<{
   return { token: null, source: 'none' };
 }
 
-/** 本地日期 YYYY-MM-DD */
+/** 本地日期 YYYY-MM-DD（按北京时间，避免 CI 在 UTC 时区把日期算错） */
 function localDate(date = new Date()): string {
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${date.getFullYear()}-${m}-${d}`;
+  const shifted = new Date(date.getTime() + BEIJING_OFFSET_MS);
+  const m = String(shifted.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(shifted.getUTCDate()).padStart(2, '0');
+  return `${shifted.getUTCFullYear()}-${m}-${d}`;
+}
+
+/** 北京日期加减天数 */
+function shiftDays(date: string, days: number): string {
+  return localDate(new Date(Date.parse(`${date}T00:00:00+08:00`) + days * 86_400_000));
+}
+
+/** 某天 00:00:00（北京时间）的 ISO 字符串，用于 next_study_date 筛选 */
+function dayStartIso(date: string): string {
+  return `${date}T00:00:00+08:00`;
+}
+
+/** 某天 23:59:59（北京时间）的 ISO 字符串 */
+function dayEndIso(date: string): string {
+  return `${date}T23:59:59+08:00`;
 }
 
 /** 带超时与错误信息提取的 POST 请求 */
@@ -117,7 +149,9 @@ async function postApi<T>(path: string, token: string, body: unknown): Promise<T
       const hint =
         response.status === 401
           ? 'Token 无效或已过期，请到墨墨 App 的「开放 API」页面重新生成'
-          : `墨墨接口返回 ${response.status}`;
+          : response.status === 429
+            ? '墨墨接口触发频控，请稍后重试'
+            : `墨墨接口返回 ${response.status}`;
       throw new Error(`${hint}${text ? `：${text.slice(0, 120)}` : ''}`);
     }
 
@@ -164,8 +198,32 @@ function dateOf(value: string): string | null {
   return match ? match[1] : null;
 }
 
+/**
+ * 判断记录是否带某个标签
+ *
+ * 官方 OpenAPI 把 StudyRecord.tags 标注为 string（enum STICKING / WELL_FAMILIAR），
+ * 但线上实际返回字符串数组。两种形态都兼容，避免接口纠正类型后顽固词静默归零。
+ */
+function hasRecordTag(record: StudyRecordItem, tag: string): boolean {
+  const tags = record.tags as unknown;
+  if (Array.isArray(tags)) return tags.includes(tag);
+  return tags === tag;
+}
+
 interface StudyProgressResponse {
   progress?: { finished?: number; total?: number; study_time?: number };
+}
+
+interface StudyTodayItem {
+  voc_id: string;
+  voc_spelling: string;
+  order?: number;
+  is_new?: boolean;
+  is_finished?: boolean;
+}
+
+interface StudyTodayItemsResponse {
+  today_items?: StudyTodayItem[];
 }
 
 interface StudyRecordItem {
@@ -177,8 +235,8 @@ interface StudyRecordItem {
   next_study_date?: string;
   /** 上次作答；未学过的词为 STUDY_RESPONSE_UNSPECIFIED */
   last_response?: string;
-  /** 记录标签，如 STICKING（顽固词） */
-  tags?: string[];
+  /** 记录标签，如 STICKING（文档标注为 string，实际为数组） */
+  tags?: string[] | string;
   study_count: number;
 }
 
@@ -187,10 +245,130 @@ interface StudyRecordsResponse {
   count?: number;
 }
 
+/** 记录聚合结果 */
+interface RecordAggregate {
+  /** 每天新学单词数 */
+  dailyNewWords: Record<string, number>;
+  /** 每天复习单词数 */
+  dailyReviews: Record<string, number>;
+  /** 真正作答过的词数（排除仅加入计划、尚未学习的词） */
+  studiedCount: number;
+  /** 最近学习的词（排序后取前 5） */
+  recentCandidates: Array<{ spelling: string; lastStudyDate: string; time: number }>;
+  /** 今日新学（记录口径，接口不可用时兜底） */
+  todayNewWords: number;
+  /** 待复习（记录口径，接口不可用时兜底） */
+  dueReviews: number;
+  /** 顽固词（记录口径，接口不可用时兜底） */
+  stickingWords: number;
+}
+
+/** 创建空聚合器 */
+function createAggregate(): RecordAggregate {
+  return {
+    dailyNewWords: {},
+    dailyReviews: {},
+    studiedCount: 0,
+    recentCandidates: [],
+    todayNewWords: 0,
+    dueReviews: 0,
+    stickingWords: 0,
+  };
+}
+
+/**
+ * 把一批记录累加进聚合结果
+ *
+ * 未开始学的新词也会预置 first/last_study_date（计划日零点），
+ * 唯一可靠的区分依据是 last_response：未学过固定为 STUDY_RESPONSE_UNSPECIFIED。
+ * 只有真正作答过的词才计入「新学 / 最近学习 / 累计已背」。
+ */
+function addRecords(records: StudyRecordItem[], acc: RecordAggregate, todayDate: string): void {
+  records.forEach(record => {
+    const studied =
+      Boolean(record.last_response) && record.last_response !== 'STUDY_RESPONSE_UNSPECIFIED';
+    if (studied) acc.studiedCount += 1;
+
+    // 每日新学：按首次学习日期聚合
+    if (studied && record.first_study_date) {
+      const firstDate = dateOf(record.first_study_date);
+      if (firstDate) {
+        acc.dailyNewWords[firstDate] = (acc.dailyNewWords[firstDate] || 0) + 1;
+        if (firstDate === todayDate) acc.todayNewWords += 1;
+      }
+    }
+
+    // 待复习兜底：下次学习日期已到
+    if (record.next_study_date) {
+      const nextDate = dateOf(record.next_study_date);
+      if (nextDate && nextDate <= todayDate) acc.dueReviews += 1;
+    }
+
+    // 顽固词兜底
+    if (hasRecordTag(record, 'STICKING')) acc.stickingWords += 1;
+
+    // 每日复习：当天学习且不是首次学习
+    if (studied && record.last_study_date && record.voc_spelling) {
+      const lastDate = dateOf(record.last_study_date);
+      const firstDate = record.first_study_date ? dateOf(record.first_study_date) : null;
+      if (lastDate) {
+        if (firstDate && firstDate !== lastDate) {
+          acc.dailyReviews[lastDate] = (acc.dailyReviews[lastDate] || 0) + 1;
+        }
+        acc.recentCandidates.push({
+          spelling: record.voc_spelling,
+          lastStudyDate: lastDate,
+          time: new Date(record.last_study_date).getTime() || 0,
+        });
+      }
+    }
+  });
+}
+
+/**
+ * 按 next_study_date 时间窗拉取记录
+ *
+ * query_study_records 只有 limit（上限 1000）没有 offset，
+ * 超过 1000 条的时间窗要二分递归，直到每个子窗口都能一次取完。
+ */
+async function queryRecordsWindow(
+  token: string,
+  startIso: string,
+  endIso: string,
+  depth = 0
+): Promise<StudyRecordItem[]> {
+  const filter = { next_study_date: { start: startIso, end: endIso } };
+
+  // 先探测数量，避免无谓地拉全量
+  const countRes = await postApi<StudyRecordsResponse>(
+    'api/v1/memo/study/query_study_records',
+    token,
+    { ...filter, as_count: true, limit: 1 }
+  );
+  const count = Number(countRes.count) || 0;
+  if (count === 0) return [];
+
+  // 数量在单页上限内，或已达最大递归深度：直接取一页（超限时只能接受截断）
+  if (count <= RECORDS_LIMIT || depth >= MAX_SPLIT_DEPTH) {
+    const res = await postApi<StudyRecordsResponse>(
+      'api/v1/memo/study/query_study_records',
+      token,
+      { ...filter, as_count: false, limit: RECORDS_LIMIT }
+    );
+    return res.records || [];
+  }
+
+  // 窗口太大：对半切开分别拉取
+  const midIso = new Date((Date.parse(startIso) + Date.parse(endIso)) / 2).toISOString();
+  const left = await queryRecordsWindow(token, startIso, midIso, depth + 1);
+  const right = await queryRecordsWindow(token, midIso, endIso, depth + 1);
+  return left.concat(right);
+}
+
 /**
  * 执行同步：拉取墨墨数据并写入 src/data/maimemo-stats.json
  *
- * 两个接口分别容错：任一失败不影响另一部分数据落盘。
+ * 各接口分别容错：任一失败不影响其他部分数据落盘。
  */
 export async function syncMaimemoStats(): Promise<MaimemoSyncResult> {
   const { token } = await resolveMaimemoToken();
@@ -202,145 +380,122 @@ export async function syncMaimemoStats(): Promise<MaimemoSyncResult> {
     };
   }
 
-  const today: MaimemoToday | null = await (async () => {
-    try {
-      const res = await postApi<StudyProgressResponse>(
-        'api/v1/memo/study/get_study_progress',
-        token,
-        {}
-      );
-      if (res.progress) {
-        return {
-          date: localDate(),
-          finished: Number(res.progress.finished) || 0,
-          total: Number(res.progress.total) || 0,
-          // 实测该字段是账号累计学习时长（毫秒），非当日；统一转成秒
-          studyTimeSeconds: Math.round((Number(res.progress.study_time) || 0) / 1000),
-        };
-      }
-      return null;
-    } catch (error) {
-      console.warn('[maimemo] 获取今日进度失败:', error instanceof Error ? error.message : error);
-      return null;
-    }
-  })();
-
-  // 单词记录：聚合每日新学数量，同时统计今日新学/待复习/顽固词/最近单词
-  let totalWords = 0;
-  let dailyNewWords: Record<string, number> = {};
-  const dailyReviews: Record<string, number> = {};
-  let todayNewWords = 0;
-  let dueReviews = 0;
-  let stickingWords = 0;
-  let recentWords: MaimemoStats['recentWords'] = [];
-  let recordsError: string | null = null;
   const todayBeijing = localDate();
+  const errors: string[] = [];
 
-  try {
-    const countRes = await postApi<StudyRecordsResponse>(
+  /** 统一容错：记录首个错误信息用于最终提示 */
+  const attempt = async <T>(fn: () => Promise<T>): Promise<T | null> => {
+    try {
+      return await fn();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      errors.push(message);
+      console.warn('[maimemo] 接口请求失败:', message);
+      return null;
+    }
+  };
+
+  // 1. 今日进度
+  const today: MaimemoToday | null = await attempt(async () => {
+    const res = await postApi<StudyProgressResponse>(
+      'api/v1/memo/study/get_study_progress',
+      token,
+      {}
+    );
+    if (!res.progress) return null;
+    return {
+      date: todayBeijing,
+      finished: Number(res.progress.finished) || 0,
+      total: Number(res.progress.total) || 0,
+      /*
+        官方文档写的是「今日学习时长（毫秒）」，换算成秒保存。
+        实测今天未学习时接口返回 0，可确认它就是当日时长而非账号累计。
+        前台暂未展示该字段。
+      */
+      studyTimeSeconds: Math.round((Number(res.progress.study_time) || 0) / 1000),
+    };
+  });
+
+  // 2. 今日新学：官方专用接口，只统计已完成当日学习的词
+  const todayNewWordsFromApi = await attempt(async () => {
+    const res = await postApi<StudyTodayItemsResponse>(
+      'api/v1/memo/study/get_today_items',
+      token,
+      { is_new: true, limit: RECORDS_LIMIT }
+    );
+    const items = res.today_items || [];
+    return items.filter(item => item.is_finished === true).length;
+  });
+
+  // 3. 顽固词：tags 过滤 + as_count 精确计数
+  const stickingFromApi = await attempt(async () => {
+    const res = await postApi<StudyRecordsResponse>(
       'api/v1/memo/study/query_study_records',
       token,
-      { voc_ids: [], spellings: [], as_count: true, limit: 1 }
+      { tags: 'STICKING', as_count: true, limit: 1 }
     );
-    totalWords = Number(countRes.count) || 0;
-  } catch (error) {
-    recordsError = error instanceof Error ? error.message : String(error);
-    console.warn('[maimemo] 查询单词总数失败:', recordsError);
-  }
+    return Number(res.count) || 0;
+  });
 
-  try {
-    const recordsRes = await postApi<StudyRecordsResponse>(
+  // 4. 待复习：下次学习日期 <= 今天，官方推荐的 as_count 精确计数
+  const dueFromApi = await attempt(async () => {
+    const res = await postApi<StudyRecordsResponse>(
       'api/v1/memo/study/query_study_records',
       token,
-      { voc_ids: [], spellings: [], as_count: false, limit: RECORDS_LIMIT }
+      { next_study_date: { end: dayEndIso(todayBeijing) }, as_count: true, limit: 1 }
     );
-    const records = recordsRes.records || [];
-    if (records.length > 0) {
-      const aggregated: Record<string, number> = {};
-      const recentCandidates: Array<{ spelling: string; lastStudyDate: string; time: number }> = [];
-      let studiedCount = 0;
+    return Number(res.count) || 0;
+  });
 
-      records.forEach(record => {
-        /*
-          未开始学的新词也会预置 first/last_study_date（计划日零点），
-          唯一可靠的区分依据是 last_response：未学过固定为 STUDY_RESPONSE_UNSPECIFIED。
-          只有真正作答过的词才计入「新学 / 最近学习 / 累计已背」。
-        */
-        const studied =
-          Boolean(record.last_response) && record.last_response !== 'STUDY_RESPONSE_UNSPECIFIED';
-        if (studied) studiedCount += 1;
+  // 5. 规划总量（含尚未学习的词），作为累计已背的兜底
+  const totalRecords = await attempt(async () => {
+    const res = await postApi<StudyRecordsResponse>(
+      'api/v1/memo/study/query_study_records',
+      token,
+      { as_count: true, limit: 1 }
+    );
+    return Number(res.count) || 0;
+  });
 
-        if (studied && record.first_study_date) {
-          const firstDate = dateOf(record.first_study_date);
-          if (firstDate) {
-            aggregated[firstDate] = (aggregated[firstDate] || 0) + 1;
-            if (firstDate === todayBeijing) todayNewWords += 1;
-          }
-        }
-
-        if (record.next_study_date) {
-          const nextDate = dateOf(record.next_study_date);
-          if (nextDate && nextDate <= todayBeijing) dueReviews += 1;
-        }
-
-        if (Array.isArray(record.tags) && record.tags.includes('STICKING')) {
-          stickingWords += 1;
-        }
-
-        if (studied && record.last_study_date && record.voc_spelling) {
-          const lastDate = dateOf(record.last_study_date);
-          const firstDate = record.first_study_date ? dateOf(record.first_study_date) : null;
-          if (lastDate) {
-            // 最近学习日不等于首次学习日 → 当天是复习
-            if (firstDate && firstDate !== lastDate) {
-              dailyReviews[lastDate] = (dailyReviews[lastDate] || 0) + 1;
-            }
-            recentCandidates.push({
-              spelling: record.voc_spelling,
-              lastStudyDate: lastDate,
-              time: new Date(record.last_study_date).getTime() || 0,
-            });
-          }
-        }
-      });
-
-      dailyNewWords = aggregated;
-      recentWords = recentCandidates
-        .sort((a, b) => b.time - a.time)
-        .slice(0, 5)
-        .map(({ spelling, lastStudyDate }) => ({ spelling, lastStudyDate }));
-
-      // 累计已背 = 真正学过的词数（排除仅加入计划、尚未学习的词）
-      if (studiedCount > 0) {
-        totalWords = studiedCount;
-      }
-    }
-    // 接口没给 count 时退化为记录条数
-    if (!totalWords) {
-      totalWords = records.length;
-    }
-  } catch (error) {
-    recordsError = recordsError || (error instanceof Error ? error.message : String(error));
-    console.warn('[maimemo] 查询单词记录失败:', recordsError);
+  // 6. 全量记录分页拉取并聚合
+  const aggregate = createAggregate();
+  const records = await attempt(() =>
+    queryRecordsWindow(
+      token,
+      dayStartIso(shiftDays(todayBeijing, -BACKFILL_START_DAYS)),
+      dayEndIso(shiftDays(todayBeijing, BACKFILL_END_DAYS)),
+      0
+    )
+  );
+  if (records) {
+    addRecords(records, aggregate, todayBeijing);
   }
 
-  if (!today && totalWords === 0 && Object.keys(dailyNewWords).length === 0) {
+  // 7. 最近学习的 5 个单词（按最近学习时间倒序）
+  const recentWords = aggregate.recentCandidates
+    .sort((a, b) => b.time - a.time)
+    .slice(0, 5)
+    .map(({ spelling, lastStudyDate }) => ({ spelling, lastStudyDate }));
+
+  // 全部关键接口都失败时直接报错，避免写出空数据覆盖旧快照
+  if (!today && records === null) {
     return {
       success: false,
-      message: `墨墨数据拉取失败${recordsError ? `：${recordsError}` : '，接口未返回任何数据'}`,
+      message: `墨墨数据拉取失败${errors[0] ? `：${errors[0]}` : '，接口未返回任何数据'}`,
     };
   }
 
   const stats: MaimemoStats = {
     updatedAt: new Date().toISOString(),
-    totalWords,
+    // 累计已背优先用「真正作答题数」，接口失败时退回规划总量
+    totalWords: aggregate.studiedCount > 0 ? aggregate.studiedCount : totalRecords || 0,
     today,
-    dailyNewWords,
-    todayNewWords,
-    dueReviews,
-    stickingWords,
+    dailyNewWords: aggregate.dailyNewWords,
+    todayNewWords: todayNewWordsFromApi !== null ? todayNewWordsFromApi : aggregate.todayNewWords,
+    dueReviews: dueFromApi !== null ? dueFromApi : aggregate.dueReviews,
+    stickingWords: stickingFromApi !== null ? stickingFromApi : aggregate.stickingWords,
     recentWords,
-    dailyReviews,
+    dailyReviews: aggregate.dailyReviews,
   };
 
   await fs.mkdir(path.dirname(STATS_FILE_PATH()), { recursive: true });
@@ -348,12 +503,12 @@ export async function syncMaimemoStats(): Promise<MaimemoSyncResult> {
 
   const parts: string[] = [];
   if (today) parts.push(`今日 ${today.finished}/${today.total}`);
-  if (totalWords) parts.push(`累计 ${totalWords} 词`);
-  parts.push(`覆盖 ${Object.keys(dailyNewWords).length} 天记录`);
+  if (stats.totalWords) parts.push(`累计 ${stats.totalWords} 词`);
+  parts.push(`覆盖 ${Object.keys(stats.dailyNewWords).length} 天记录`);
 
   return {
     success: true,
-    message: `墨墨数据已同步：${parts.join('，')}${recordsError ? '（部分数据拉取失败，已跳过）' : ''}`,
+    message: `墨墨数据已同步：${parts.join('，')}${errors.length > 0 ? `（${errors.length} 个接口失败，已跳过）` : ''}`,
     data: stats,
   };
 }

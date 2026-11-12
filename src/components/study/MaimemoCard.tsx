@@ -23,6 +23,13 @@ interface MaimemoCardProps {
   initialStats?: MaimemoStats | null;
   /** 展示的天数，默认 30 天 */
   days?: number;
+  /**
+   * 嵌入模式
+   *
+   * true 时不再自带独立卡片外框与上边距，而是作为「学习数据」面板内部的
+   * 一个子区块渲染（顶部用分隔线区分），避免页面上出现层层嵌套的卡片边框。
+   */
+  embedded?: boolean;
 }
 
 /** 运行时数据接口地址（与 cloudflare/maimemo-stats 的路由一致） */
@@ -54,7 +61,7 @@ function isValidStats(data: unknown): data is MaimemoStats {
   );
 }
 
-export default function MaimemoCard({ initialStats = null, days = 30 }: MaimemoCardProps) {
+export default function MaimemoCard({ initialStats = null, days = 30, embedded = false }: MaimemoCardProps) {
   const [stats, setStats] = useState<MaimemoStats | null>(initialStats);
 
   // 挂载后尝试从同源接口拉取最新数据；失败时保留构建期快照
@@ -180,25 +187,39 @@ export default function MaimemoCard({ initialStats = null, days = 30 }: MaimemoC
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true, margin: '-50px' }}
-      className="mt-8 p-6 rounded-xl border bg-card/95 border-border shadow-card"
+      className={
+        // 嵌入模式：不带外框，仅用顶部分隔线与内边距融入「学习数据」面板
+        embedded
+          ? 'border-t border-border/60 px-5 sm:px-6 py-5'
+          : 'mt-8 p-6 rounded-xl border bg-card/95 border-border shadow-card'
+      }
     >
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
-        <h2 className="text-lg font-semibold flex items-center gap-2">
-          <span className="w-2 h-6 bg-primary rounded-full" />
-          <BookOpenCheck className="w-5 h-5 text-primary" />
-          英语背单词
-        </h2>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        {embedded ? (
+          /* 面板子区块标题：与「科目分布」「近 30 天趋势」保持同一视觉层级 */
+          <h3 className="text-base font-semibold flex items-center gap-2">
+            <span className="w-1.5 h-4 bg-primary rounded-full" />
+            英语背单词
+          </h3>
+        ) : (
+          /* 独立卡片标题：保留图标与更大字号 */
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <span className="w-2 h-6 bg-primary rounded-full" />
+            <BookOpenCheck className="w-5 h-5 text-primary" />
+            英语背单词
+          </h2>
+        )}
         <span className="text-xs text-muted-foreground">
           数据来自墨墨背单词 · 更新于 {updatedAtLabel}
         </span>
       </div>
 
-      {/* 四项核心数据 */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+      {/* 四项核心数据：嵌入模式下收紧内边距，减少区块高度 */}
+      <div className={`grid grid-cols-2 md:grid-cols-4 gap-3 ${embedded ? 'mb-4' : 'mb-5'}`}>
         {tiles.map(({ icon: Icon, label, value, unit }) => (
           <div
             key={label}
-            className="p-4 rounded-lg bg-primary/5 border border-primary/20 text-center"
+            className={`rounded-lg bg-primary/5 border border-primary/20 text-center ${embedded ? 'p-3' : 'p-4'}`}
           >
             <Icon className="w-4 h-4 mx-auto text-primary/70 mb-1.5" />
             <div className="text-xl font-bold text-foreground leading-tight">

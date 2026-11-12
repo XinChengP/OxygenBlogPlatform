@@ -13,7 +13,7 @@ export interface MaimemoToday {
   finished: number;
   /** 今日计划总单词数 */
   total: number;
-  /** 账号累计学习时长（秒；接口字段实为累计值而非当日，单位毫秒已换算） */
+  /** 今日学习时长（秒；接口返回毫秒，已换算） */
   studyTimeSeconds?: number;
 }
 

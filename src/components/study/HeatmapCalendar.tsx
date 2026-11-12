@@ -12,7 +12,7 @@ import React, { useMemo } from 'react';
 interface HeatmapCalendarProps {
   /** 每天的学习分钟数（date -> minutes） */
   dayMinutes: Record<string, number>;
-  /** 展示的周数，默认 26 周（约半年） */
+  /** 展示的周数，默认 52 周（约一年） */
   weeks?: number;
 }
 
@@ -56,7 +56,7 @@ function mondayIndex(date: Date): number {
 const WEEKDAY_LABELS = ['', '一', '', '', '三', '', '五'];
 const MONTH_NAMES = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
 
-export default function HeatmapCalendar({ dayMinutes, weeks = 26 }: HeatmapCalendarProps) {
+export default function HeatmapCalendar({ dayMinutes, weeks = 52 }: HeatmapCalendarProps) {
   const grid = useMemo(() => {
     const dates = Object.keys(dayMinutes);
     if (dates.length === 0) return null;
@@ -101,16 +101,25 @@ export default function HeatmapCalendar({ dayMinutes, weeks = 26 }: HeatmapCalen
     );
   }
 
+  /*
+    所有周列共用同一套网格列模板：
+    宽屏时每列按 1fr 均分铺满整行（格子随列宽放大），
+    窄屏时以下限 12px 撑开，配合外层 overflow-x-auto 横向滚动。
+  */
+  const columnStyle: React.CSSProperties = {
+    gridTemplateColumns: `repeat(${weeks}, minmax(12px, 1fr))`,
+  };
+
   return (
     <div>
       <div className="overflow-x-auto pb-1">
-        <div className="inline-block min-w-full">
-          {/* 月份标签行 */}
-          <div className="flex gap-[3px] mb-1 ml-8">
+        <div className="min-w-[760px]">
+          {/* 月份标签行：左侧留出星期标签列宽度（28px + 3px 间距），保证与下方格子逐列对齐 */}
+          <div className="grid gap-[3px] mb-1.5 pl-[31px]" style={columnStyle}>
             {grid.columns.map((_, week) => {
               const label = grid.monthLabels.find(item => item.index === week);
               return (
-                <div key={week} className="w-[11px] shrink-0 text-[10px] text-muted-foreground whitespace-nowrap">
+                <div key={week} className="text-[10px] leading-none text-muted-foreground whitespace-nowrap">
                   {label ? label.label : ''}
                 </div>
               );
@@ -118,30 +127,31 @@ export default function HeatmapCalendar({ dayMinutes, weeks = 26 }: HeatmapCalen
           </div>
 
           <div className="flex gap-[3px]">
-            {/* 星期标签列 */}
-            <div className="flex flex-col gap-[3px] w-8 shrink-0">
+            {/* 星期标签列：高度由右侧格子列撑开，每项均分后垂直居中 */}
+            <div className="w-7 shrink-0 flex flex-col gap-[3px]">
               {WEEKDAY_LABELS.map((label, index) => (
-                <div key={index} className="h-[11px] text-[10px] leading-[11px] text-muted-foreground">
+                <div key={index} className="flex-1 text-[10px] leading-none text-muted-foreground flex items-center">
                   {label}
                 </div>
               ))}
             </div>
 
-            {/* 格子网格 */}
-            {grid.columns.map((column, week) => (
-              <div key={week} className="flex flex-col gap-[3px] shrink-0">
-                {column.map(({ date, minutes, isFuture }) => (
-                  <div
-                    key={date}
-                    title={isFuture ? '' : `${date}：${minutes > 0 ? `${minutes} 分钟` : '未打卡'}`}
-                    className={`
-                      w-[11px] h-[11px] rounded-[3px] transition-colors
-                      ${isFuture ? 'bg-transparent' : LEVEL_CLASSES[getLevel(minutes)]}
-                    `}
-                  />
-                ))}
-              </div>
-            ))}
+            {/* 格子网格：每列 7 天，格子用 aspect-square 跟随列宽缩放 */}
+            <div className="grid gap-[3px] flex-1" style={columnStyle}>
+              {grid.columns.map((column, week) => (
+                <div key={week} className="flex flex-col gap-[3px]">
+                  {column.map(({ date, minutes, isFuture }) => (
+                    <div
+                      key={date}
+                      title={isFuture ? '' : `${date}：${minutes > 0 ? `${minutes} 分钟` : '未打卡'}`}
+                      className={`w-full aspect-square rounded-[3px] transition-colors ${
+                        isFuture ? 'bg-transparent' : LEVEL_CLASSES[getLevel(minutes)]
+                      }`}
+                    />
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -154,7 +164,7 @@ export default function HeatmapCalendar({ dayMinutes, weeks = 26 }: HeatmapCalen
         <span className="flex items-center gap-1">
           少
           {LEVEL_CLASSES.map((cls, level) => (
-            <span key={level} className={`w-[11px] h-[11px] rounded-[3px] ${cls}`} />
+            <span key={level} className={`w-3 h-3 rounded-[3px] ${cls}`} />
           ))}
           多
         </span>
