@@ -38,9 +38,23 @@ const RECORDS_LIMIT = 1000;
 /** 北京时间相对 UTC 的偏移（毫秒） */
 const BEIJING_OFFSET_MS = 8 * 60 * 60 * 1000;
 
-/** 全量回填时间窗：最近 5 年到未来 2 年（next_study_date 可能排到未来） */
+/**
+ * 墨墨「学习日」的分界点：北京时间凌晨 4 点
+ *
+ * 墨墨把每天 04:00 到次日 03:59 记作同一个学习日，
+ * 例如 2026-11-11 01:11 的打卡要算进 2026-11-10。
+ */
+const STUDY_DAY_CUTOFF_MS = 4 * 60 * 60 * 1000;
+
+/** 全量回填时间窗：最近 5 年到未来 120 年 */
+/*
+  终点必须放得很远：非常熟悉的词（WELL_FAMILIAR）下次复习日期会被排到
+  2125 / 2126 年，只留 +2 年窗口会整批漏掉，导致「累计已背」偏小
+  （实测窗口内 237 条、全量 292 条，漏 55 个）。
+  窗口放宽不会增加请求数：总量远小于单页上限 1000 时仍是一次 count + 一次 records。
+*/
 const BACKFILL_START_DAYS = 5 * 365;
-const BACKFILL_END_DAYS = 2 * 365;
+const BACKFILL_END_DAYS = 120 * 365;
 
 /** 时间窗二分最大深度，避免请求数失控 */
 const MAX_SPLIT_DEPTH = 3;
@@ -114,6 +128,15 @@ function localDate(date = new Date()): string {
   return `${shifted.getUTCFullYear()}-${m}-${d}`;
 }
 
+/**
+ * 当前「学习日」YYYY-MM-DD（北京时间凌晨 4 点为分界）
+ *
+ * 北京时间 00:00~03:59 的学习记录仍归属前一天，因此先减 4 小时再取日期。
+ */
+function studyDate(date = new Date()): string {
+  return localDate(new Date(date.getTime() - STUDY_DAY_CUTOFF_MS));
+}
+
 /** 北京日期加减天数 */
 function shiftDays(date: string, days: number): string {
   return localDate(new Date(Date.parse(`${date}T00:00:00+08:00`) + days * 86_400_000));
@@ -183,19 +206,22 @@ async function postApi<T>(path: string, token: string, body: unknown): Promise<T
 }
 
 /**
- * 取墨墨日期字段的「北京日期」YYYY-MM-DD
+ * 取墨墨日期字段对应的「学习日」YYYY-MM-DD
  *
- * 墨墨的日期字段形如 2026-10-28T16:00:00.000Z，直接取前 10 位即为真实学习日期。
+ * 字段是「学习日零点」的 UTC 表示：2026-11-15T16:00:00.000Z 加 8 小时
+ * 正好是北京 11-16 00:00，即学习日 11-16（墨墨已按 4 点分界处理好归属）。
+ * 所以必须加 8 小时再取日期，直接截取前 10 位会整体早一天。
  *
- * 该口径经「今日待学列表」接口验证：今天尚未学习的记录中，78 个词的
- * first_study_date / last_study_date / next_study_date 是同一个值且今日进度 finished=0，
- * 只有「直接取日期」能自洽（若 +8 小时会算成"今天已学但还没学"的矛盾）。
- * 注意不要用 add_date 反推：该字段是词书加入日期，词书迁移等场景下会晚于首次学习。
+ * 注意与「当前学习日」区分：判断今天属于哪个学习日用 studyDate()（减 4 小时），
+ * 二者用途不同，不可混用。
+ *
+ * 另注意不要用 add_date 反推：该字段是词书加入日期，词书迁移时会晚于首次学习。
  */
 function dateOf(value: string): string | null {
   if (typeof value !== 'string') return null;
-  const match = /^(\d{4}-\d{2}-\d{2})/.exec(value);
-  return match ? match[1] : null;
+  const ms = Date.parse(value);
+  if (Number.isNaN(ms)) return null;
+  return localDate(new Date(ms));
 }
 
 /**
@@ -380,7 +406,7 @@ export async function syncMaimemoStats(): Promise<MaimemoSyncResult> {
     };
   }
 
-  const todayBeijing = localDate();
+  const todayBeijing = studyDate();
   const errors: string[] = [];
 
   /** 统一容错：记录首个错误信息用于最终提示 */

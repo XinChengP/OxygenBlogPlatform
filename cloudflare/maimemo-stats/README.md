@@ -102,8 +102,9 @@ npx wrangler secret put MAIMEMO_API_TOKEN
 - `today.finished / total`：今日计划完成数 / 计划总数
 - `today.studyTimeSeconds`：今日学习秒数（接口返回毫秒；实测今天未学习时为 0，
   可确认是当日时长而非账号累计，前台暂未展示）
-- `dailyNewWords`：每天新学单词数（按单词记录的首次学习日期聚合，日期为北京时间；
-  有 D1 时来自持久化表，不重不漏）
+- `totalWords`：累计已背词数。回填日取全量记录里「真正作答过」的词数
+  （`last_response` 非空）；日常刷新沿用上次快照，避免只拉 30 天导致数字变小
+- `dailyNewWords`：每天新学单词数（按单词记录的首次学习日期聚合；有 D1 时来自持久化表，不重不漏）
 - `dailyReviews`：每天复习单词数（当天学过且不是首次学习）
 - `todayNewWords`：今日新学词数，来自 `get_today_items`（`is_new: true` 且已完成），
   接口不可用时回退到记录聚合
@@ -111,6 +112,34 @@ npx wrangler secret put MAIMEMO_API_TOKEN
   精确计数（不再是「最近 1000 条估算」）
 - `stickingWords`：顽固词数量，用 `tags: "STICKING"` + `as_count` 精确计数
 - `recentWords`：最近学习的 5 个单词
+
+### 日期口径（重要）
+
+这里有两套容易混淆的换算，必须分开：
+
+**1. 记录日期（`dateOf`）：加 8 小时**
+
+墨墨返回的日期字段是「学习日零点」的 UTC 表示，
+例如 `2026-11-15T16:00:00.000Z` 加 8 小时正好是北京 `2026-11-16 00:00`，
+即学习日 **2026-11-16**。所以 `dateOf` 要解析时间戳后加 8 小时再取日期。
+直接截取字符串前 10 位会整体早一天。
+
+**2. 当前学习日（`studyDate`）：减 4 小时**
+
+墨墨的「学习日」以**北京时间凌晨 4 点**为分界：04:00 之后算当天，00:00~03:59 算前一天。
+例如 2026-11-11 01:11 的打卡归属 **2026-11-10**。
+所以判断「今天」属于哪个学习日时，要先减 4 小时再取日期。
+
+二者用途不同：`dateOf` 处理字段值，`studyDate` 处理「现在」。
+Worker 的 `dateOf` 与 `src/utils/maimemoSync.ts` 必须保持同一口径，改一处要同步另一处。
+
+### 回填窗口
+
+全量回填按 `next_study_date` 筛最近 5 年到未来 120 年。
+
+终点必须放得很远：非常熟悉的词（`WELL_FAMILIAR`）下次复习日期会被排到
+2125 / 2126 年，只留 +2 年窗口会整批漏掉（实测窗口内 237 条、全量 292 条，漏 55 个）。
+窗口放宽不增加请求数——记录总量远小于单页上限 1000 时仍是一次 count + 一次 records。
 
 失败时返回非 2xx（`not_configured` / `upstream_auth` / `upstream_timeout` /
 `upstream_rate_limited` 等），前端静默回退到构建期快照

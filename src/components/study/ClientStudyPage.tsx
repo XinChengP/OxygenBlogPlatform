@@ -127,12 +127,18 @@ export default function ClientStudyPage({ logs, stats, maimemoStats }: ClientStu
           </>
         ) : (
           <div className="space-y-6">
-            {/* ① 今日概览：今日状态与四项累计统计同行排布，桌面端左右分栏、移动端上下堆叠 */}
+            {/*
+              ① 今日概览：今日状态与四项累计统计同行排布，桌面端左右分栏、移动端上下堆叠
+
+              这里用 animate 而不是 whileInView：概览卡位于首屏，若依赖 IntersectionObserver
+              做视口检测，在「元素挂载时已在视口内」的情况下回调可能不触发，
+              导致卡片一直停留在 opacity: 0 的初始态（表现为首次加载空白、刷新后才出现）。
+              改为挂载即播放，内容可见性不再依赖滚动事件。
+            */}
             <motion.section
               variants={containerVariants}
               initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: '-50px' }}
+              animate="visible"
               className="p-5 sm:p-6 rounded-xl border bg-card/95 border-border shadow-card"
             >
               <div className="flex flex-col md:flex-row md:items-center gap-5 md:gap-0">
@@ -192,12 +198,17 @@ export default function ClientStudyPage({ logs, stats, maimemoStats }: ClientStu
               </div>
             </motion.section>
 
-            {/* ② 学习数据面板：热力图、科目分布、趋势与英语背单词统一收进一张卡，用分隔线分区 */}
+            {/*
+              ② 学习数据面板：热力图、科目分布、趋势与英语背单词统一收进一张卡，用分隔线分区
+
+              同样用 animate：该面板高度很大，顶部通常就在首屏内，而内部还嵌着
+              DeferredMount（延迟挂载的图表）与客户端拉取数据的墨墨卡片，
+              若整块被卡在 opacity: 0，内部子内容即使渲染出来也看不见。
+            */}
             <motion.section
               variants={containerVariants}
               initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: '-50px' }}
+              animate="visible"
               className="rounded-xl border bg-card/95 border-border shadow-card"
             >
               {/* 面板头部 */}
@@ -275,12 +286,17 @@ export default function ClientStudyPage({ logs, stats, maimemoStats }: ClientStu
               <MaimemoCard embedded initialStats={maimemoStats ?? null} />
             </motion.section>
 
-            {/* ③ 学习记录：保持卡片列表，收紧间距让一屏看到更多内容 */}
+            {/*
+              ③ 学习记录：保持卡片列表，收紧间距让一屏看到更多内容
+
+              这里也改为挂载即播放。记录区虽然多在首屏之外，但「滚动进入才播放」一旦
+              因视口检测失效就会变成整块透明（内容明明在 DOM 里却看不到），
+              可靠性优先于入场动画的时机差异。
+            */}
             <motion.section
               variants={containerVariants}
               initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: '-50px' }}
+              animate="visible"
             >
               <h2 className="text-lg font-semibold flex items-center gap-2 mb-4">
                 <span className="w-2 h-6 bg-primary rounded-full" />

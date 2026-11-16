@@ -182,11 +182,16 @@ export default function MaimemoCard({ initialStats = null, days = 30, embedded =
   ];
 
   return (
+    /*
+      用 animate 而非 whileInView：本卡片的 stats 可能来自客户端接口异步返回，
+      数据到达时组件才真正挂载；若此时元素已在视口内，whileInView 的视口检测
+      可能不触发，卡片会一直停在 opacity: 0（表现为首次加载空白、刷新后才出现）。
+      改为挂载即播放，保证数据一到就能看见。
+    */
     <motion.section
       variants={containerVariants}
       initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, margin: '-50px' }}
+      animate="visible"
       className={
         // 嵌入模式：不带外框，仅用顶部分隔线与内边距融入「学习数据」面板
         embedded

@@ -32,9 +32,22 @@ const SNAPSHOT_TTL_MS = 10 * 60 * 1000;
 const BACKFILL_INTERVAL_MS = 24 * 60 * 60 * 1000;
 /** 北京时区相对 UTC 的偏移（毫秒） */
 const BEIJING_OFFSET_MS = 8 * 60 * 60 * 1000;
-/** 全量回填的时间窗：最近 5 年到未来 2 年（next_study_date 可能排到未来） */
+/**
+ * 墨墨「学习日」的分界点：北京时间凌晨 4 点
+ *
+ * 墨墨把每天 04:00 到次日 03:59 记作同一个学习日，
+ * 例如 2026-11-11 01:11 的打卡要算进 2026-11-10。
+ */
+const STUDY_DAY_CUTOFF_MS = 4 * 60 * 60 * 1000;
+/** 全量回填的时间窗：最近 5 年到未来 120 年 */
+/*
+  终点必须放得很远：背得滚瓜烂熟的词（WELL_FAMILIAR）下次复习日期会被排到
+  2125 / 2126 年，若只留 +2 年窗口，这些词会被整批漏掉，
+  导致「累计已背」偏小（实测 237 / 292，漏 55 个）。
+  窗口放宽不会增加请求数：记录总量远小于单页上限 1000 时仍是一次 count + 一次 records。
+*/
 const BACKFILL_START_DAYS = 5 * 365;
-const BACKFILL_END_DAYS = 2 * 365;
+const BACKFILL_END_DAYS = 120 * 365;
 /** 日常刷新只拉最近 30 天记录，用于最近学习单词与今日新学兜底 */
 const RECENT_WINDOW_DAYS = 30;
 /** 时间窗二分最大深度，避免请求数失控 */
@@ -82,6 +95,15 @@ function beijingDate(ms = Date.now()) {
   return new Date(ms + BEIJING_OFFSET_MS).toISOString().slice(0, 10);
 }
 
+/**
+ * 当前「学习日」YYYY-MM-DD（北京时间凌晨 4 点为分界）
+ *
+ * 北京时间 00:00~03:59 的学习记录仍然算前一天，因此先减 4 小时再取日期。
+ */
+function studyDate(ms = Date.now()) {
+  return beijingDate(ms - STUDY_DAY_CUTOFF_MS);
+}
+
 /** 北京日期加减天数，返回 YYYY-MM-DD */
 function shiftDays(date, days) {
   return beijingDate(Date.parse(`${date}T00:00:00+08:00`) + days * 86_400_000);
@@ -97,11 +119,21 @@ function dayEndIso(date) {
   return `${date}T23:59:59+08:00`;
 }
 
-/** 取墨墨日期字段对应的学习日 YYYY-MM-DD（字符串前 10 位即北京日期，见 README 口径说明） */
+/**
+ * 取墨墨日期字段对应的「学习日」YYYY-MM-DD
+ *
+ * 字段是「学习日零点」的 UTC 表示：2026-11-15T16:00:00.000Z 加 8 小时
+ * 正好是北京 11-16 00:00，即学习日 11-16（墨墨已按 4 点分界处理好学习日归属）。
+ * 因此这里必须加 8 小时再取日期；直接截取前 10 位会整体早一天。
+ *
+ * 注意与「当前学习日」区分：判断今天属于哪个学习日要用 studyDate()（减 4 小时），
+ * 二者用途不同，不可混用。
+ */
 function dateOf(value) {
   if (typeof value !== 'string') return null;
-  const match = /^(\d{4}-\d{2}-\d{2})/.exec(value);
-  return match ? match[1] : null;
+  const ms = Date.parse(value);
+  if (Number.isNaN(ms)) return null;
+  return beijingDate(ms);
 }
 
 /**
@@ -592,7 +624,7 @@ export default {
       // 边缘缓存：10 分钟内复用，避免每次访问都请求墨墨接口
       // key 带版本号，接口返回结构变化时升级即可让旧缓存自然失效
       const cache = typeof caches !== 'undefined' ? caches.default : null;
-      const cacheKey = new Request('https://cache.invalid/maimemo-stats-v8');
+      const cacheKey = new Request('https://cache.invalid/maimemo-stats-v10');
       if (cache) {
         const cached = await cache.match(cacheKey);
         if (cached) {
@@ -632,7 +664,7 @@ export default {
         }
       }
 
-      const { stats, stale, errors } = await buildStats(token, env, beijingDate());
+      const { stats, stale, errors } = await buildStats(token, env, studyDate());
       // 部分接口失败不阻断整体返回，仅记录日志便于排查
       if (errors.length > 0) {
         console.warn('[maimemo] 部分接口失败:', errors.join(' | '));
