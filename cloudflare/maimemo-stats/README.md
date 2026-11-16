@@ -102,8 +102,9 @@ npx wrangler secret put MAIMEMO_API_TOKEN
 - `today.finished / total`：今日计划完成数 / 计划总数
 - `today.studyTimeSeconds`：今日学习秒数（接口返回毫秒；实测今天未学习时为 0，
   可确认是当日时长而非账号累计，前台暂未展示）
-- `totalWords`：累计已背词数。回填日取全量记录里「真正作答过」的词数
-  （`last_response` 非空）；日常刷新沿用上次快照，避免只拉 30 天导致数字变小
+- `totalWords`：累计已背词数，直接取 D1 的 `SUM(new_words)`。
+  每个词只在首次学习日计一次，且写入用 `MAX` 合并，所以这个和只增不减，
+  即使某次只拉到部分记录也不会把数字改小。没有 D1 时才退回「本次回填的作答题数」。
 - `dailyNewWords`：每天新学单词数（按单词记录的首次学习日期聚合；有 D1 时来自持久化表，不重不漏）
 - `dailyReviews`：每天复习单词数（当天学过且不是首次学习）
 - `todayNewWords`：今日新学词数，来自 `get_today_items`（`is_new: true` 且已完成），
@@ -130,6 +131,15 @@ npx wrangler secret put MAIMEMO_API_TOKEN
 例如 2026-11-11 01:11 的打卡归属 **2026-11-10**。
 所以判断「今天」属于哪个学习日时，要先减 4 小时再取日期。
 
+官方依据（开放 API 文档本身没写，来自墨墨其它官方页面）：
+
+- 奖励规则页：每日签到时段为当天 `04:00:00` 至次日 `03:59:59`
+- 墨墨百科「学习好友」：好友每日签到统计截止时间为北京时间凌晨 4:00
+
+为什么字段只需 +8 小时、不需要再减 4 小时：实测全部 292 条记录的日期字段
+时间部分都是 `16:00:00Z`（整日值，不含真实时刻），说明墨墨存的就是「学习日的日期值」，
+而不是学习发生的实际时刻。凌晨 0~4 点学的词仍落在同一学习日，字段值与之相同。
+
 二者用途不同：`dateOf` 处理字段值，`studyDate` 处理「现在」。
 Worker 的 `dateOf` 与 `src/utils/maimemoSync.ts` 必须保持同一口径，改一处要同步另一处。
 
@@ -150,7 +160,30 @@ Worker 的 `dateOf` 与 `src/utils/maimemoSync.ts` 必须保持同一口径，�
 见 [schema.sql](./schema.sql)：
 
 - `maimemo_daily(date, new_words, reviews, updated_at)`：每天一行
-- `maimemo_meta(id=1, payload, updated_at, last_backfill_at)`：最新快照 + 回填时间
+- `maimemo_meta(id=1, payload, updated_at, last_backfill_at, schema_version)`：
+  最新快照 + 回填时间 + 数据结构版本
+
+### schema_version 的作用
+
+代码里的 `SCHEMA_VERSION` 是 D1 数据的结构版本。只要**日期口径、聚合方式、表结构**
+之一发生不兼容变化，就把它 +1。Worker 读到版本不一致时（包括早期没有该列的旧表），
+会自动清空 `maimemo_daily` 与 `maimemo_meta` 并按当前口径重新回填。
+
+改动日期口径时不再需要手动执行 `DELETE`，改常量重新部署即可。
+
+## 定时刷新
+
+`wrangler.toml` 里配置了 Cron Trigger：
+
+```toml
+[triggers]
+crons = ["0 0,8,16 * * *"]   # UTC，对应北京时间 08:00 / 16:00 / 次日 00:00
+```
+
+Worker 的 `scheduled` 函数会主动拉一次数据写进 D1，并顺手刷新边缘缓存。
+这样访客打开页面时直接命中热数据（约 0.7 秒），不必等现场拉墨墨接口（首次约 6 秒）。
+
+即使连续几天没人访问，D1 里的数据也最多滞后几小时，不会无限陈旧。
 
 ## 限流与额度
 

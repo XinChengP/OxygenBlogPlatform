@@ -41,5 +41,11 @@ database_id = "d92b1370-080b-40f3-acc0-fde2e1fe31c1"
 pattern = "blog.xinchengp.cn/api/maimemo/*"
 zone_name = "xinchengp.cn"
 
+# 定时刷新：主动更新 D1 快照与边缘缓存，让访客打开页面时直接命中热数据。
+# 表达式为 UTC：0 0,8,16 * * * 对应北京时间 08:00、16:00、次日 00:00。
+# 每次约 7~9 个墨墨接口请求，远低于频控上限（5 小时 2000 次）。
+[triggers]
+crons = ["0 0,8,16 * * *"]
+
 [dev]
 port = 8788

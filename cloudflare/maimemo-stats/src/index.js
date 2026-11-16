@@ -50,8 +50,23 @@ const BACKFILL_START_DAYS = 5 * 365;
 const BACKFILL_END_DAYS = 120 * 365;
 /** 日常刷新只拉最近 30 天记录，用于最近学习单词与今日新学兜底 */
 const RECENT_WINDOW_DAYS = 30;
-/** 时间窗二分最大深度，避免请求数失控 */
-const MAX_SPLIT_DEPTH = 3;
+/**
+ * 时间窗二分最大深度
+ *
+ * 每层把窗口对半切，深度 5 最多 32 个窗口，可覆盖数千条记录。
+ * 实际请求数由计数结果决定：窗口内不超过 1000 条时只发一次 records。
+ */
+const MAX_SPLIT_DEPTH = 5;
+/**
+ * D1 数据结构版本
+ *
+ * 只要「日期口径、聚合方式、表结构」之一发生不兼容变化，就把它 +1。
+ * Worker 读到版本不一致时，会自动清空 maimemo_daily 与 maimemo_meta 并重新回填，
+ * 不需要再手动执行 DELETE。
+ */
+const SCHEMA_VERSION = 2;
+/** 边缘缓存键（带版本号：返回结构或数据口径变化时升级，可让旧缓存自然失效） */
+const CACHE_KEY_URL = 'https://cache.invalid/maimemo-stats-v11';
 
 /** 允许携带 Origin 头访问的来源；无 Origin（curl/服务端）直接放行 */
 const ALLOWED_ORIGINS = new Set([
@@ -335,19 +350,47 @@ async function ensureSchema(db) {
          id INTEGER PRIMARY KEY CHECK (id = 1),
          payload TEXT NOT NULL,
          updated_at TEXT NOT NULL,
-         last_backfill_at TEXT
+         last_backfill_at TEXT,
+         schema_version INTEGER
        )`
     ),
   ]);
+
+  /*
+    兼容旧表：早期版本创建的 maimemo_meta 没有 schema_version 列。
+    这里先用 PRAGMA 查列，缺了才执行 ALTER——
+    比「直接 ALTER 再吞掉异常」更确定，避免 ALTER 本身失败时被静默忽略，
+    导致后面 SELECT schema_version 报 no such column。
+  */
+  const tableInfo = await db.prepare('PRAGMA table_info(maimemo_meta)').all();
+  const columns = tableInfo.results || [];
+  if (!columns.some(column => column.name === 'schema_version')) {
+    await db.prepare('ALTER TABLE maimemo_meta ADD COLUMN schema_version INTEGER').run();
+  }
+
   schemaReady = true;
 }
 
 /** 读取 D1 快照 */
 async function readMeta(db) {
   const row = await db
-    .prepare('SELECT payload, updated_at, last_backfill_at FROM maimemo_meta WHERE id = 1')
+    .prepare('SELECT payload, updated_at, last_backfill_at, schema_version FROM maimemo_meta WHERE id = 1')
     .first();
   return row || null;
+}
+
+/**
+ * 清理过期口径的数据
+ *
+ * 只在 schema_version 与当前代码不一致时执行：
+ * 日期口径或聚合方式变了之后，旧数据与新数据混在一起会让图表错乱，
+ * 因此整表清空，让下一次回填按新口径重建。
+ */
+async function resetForSchemaChange(db) {
+  await db.batch([
+    db.prepare('DELETE FROM maimemo_daily'),
+    db.prepare('DELETE FROM maimemo_meta'),
+  ]);
 }
 
 /**
@@ -378,32 +421,43 @@ async function writeDailyRows(db, daily, updatedAt) {
   }
 }
 
-/** 读取 D1 中的全部每日统计 */
+/**
+ * 读取 D1 中的全部每日统计
+ *
+ * 顺带算出累计已背词数：每个词只在「首次学习日」计一次，
+ * 而写入时用 MAX 合并，所以 SUM(new_words) 只增不减，
+ * 可以放心把它当作 totalWords 的唯一数据源（不再依赖快照里的旧值）。
+ */
 async function readDailyRows(db) {
   const { results } = await db
     .prepare('SELECT date, new_words, reviews FROM maimemo_daily ORDER BY date')
     .all();
   const dailyNewWords = {};
   const dailyReviews = {};
+  let totalWords = 0;
   (results || []).forEach(row => {
-    if (row.new_words > 0) dailyNewWords[row.date] = row.new_words;
+    if (row.new_words > 0) {
+      dailyNewWords[row.date] = row.new_words;
+      totalWords += Number(row.new_words) || 0;
+    }
     if (row.reviews > 0) dailyReviews[row.date] = row.reviews;
   });
-  return { dailyNewWords, dailyReviews };
+  return { dailyNewWords, dailyReviews, totalWords };
 }
 
-/** 写入 D1 快照 */
+/** 写入 D1 快照（同时记录当前数据结构版本） */
 async function writeMeta(db, stats, lastBackfillAt) {
   await db
     .prepare(
-      `INSERT INTO maimemo_meta (id, payload, updated_at, last_backfill_at)
-       VALUES (1, ?, ?, ?)
+      `INSERT INTO maimemo_meta (id, payload, updated_at, last_backfill_at, schema_version)
+       VALUES (1, ?, ?, ?, ?)
        ON CONFLICT(id) DO UPDATE SET
          payload = excluded.payload,
          updated_at = excluded.updated_at,
-         last_backfill_at = excluded.last_backfill_at`
+         last_backfill_at = excluded.last_backfill_at,
+         schema_version = excluded.schema_version`
     )
-    .bind(JSON.stringify(stats), stats.updatedAt, lastBackfillAt || null)
+    .bind(JSON.stringify(stats), stats.updatedAt, lastBackfillAt || null, SCHEMA_VERSION)
     .run();
 }
 
@@ -488,6 +542,14 @@ async function buildStats(token, env, today) {
   if (db) {
     await ensureSchema(db);
     meta = await readMeta(db);
+    /*
+      数据结构版本不一致（含早期没有该列的旧表）：
+      先清空旧数据再按当前口径重建，避免不同日期口径的行混在一起。
+    */
+    if (meta && meta.schema_version !== SCHEMA_VERSION) {
+      await resetForSchemaChange(db);
+      meta = null;
+    }
   }
   const now = Date.now();
   const needBackfill =
@@ -553,11 +615,20 @@ async function buildStats(token, env, today) {
     }
   }
 
-  // 累计已背：回填日以「真正作答题数」为准；日常刷新沿用上次快照，避免只拉 30 天导致数字变小
+  /*
+    累计已背的取值顺序：
+    1. D1 的 SUM(new_words) —— 唯一数据源，写入用 MAX 合并，只增不减；
+       即使某次只拉到部分记录也不会把数字改小
+    2. 本次回填真正作答过的词数（无 D1 时，或 D1 还没数据）
+    3. 上次快照里的值（上游接口暂时失败时沿用）
+    4. 规划总量（兜底，含尚未学习的词）
+  */
   let totalWords = 0;
-  if (needBackfill && recordsOk && aggregate.studiedCount > 0) {
+  if (persisted && persisted.totalWords > 0) {
+    totalWords = persisted.totalWords;
+  } else if (needBackfill && recordsOk && aggregate.studiedCount > 0) {
     totalWords = aggregate.studiedCount;
-  } else if (previous && typeof previous.totalWords === 'number') {
+  } else if (previous && typeof previous.totalWords === 'number' && previous.totalWords > 0) {
     totalWords = previous.totalWords;
   }
   if (!totalWords) {
@@ -624,7 +695,7 @@ export default {
       // 边缘缓存：10 分钟内复用，避免每次访问都请求墨墨接口
       // key 带版本号，接口返回结构变化时升级即可让旧缓存自然失效
       const cache = typeof caches !== 'undefined' ? caches.default : null;
-      const cacheKey = new Request('https://cache.invalid/maimemo-stats-v10');
+      const cacheKey = new Request(CACHE_KEY_URL);
       if (cache) {
         const cached = await cache.match(cacheKey);
         if (cached) {
@@ -646,7 +717,16 @@ export default {
       if (db) {
         await ensureSchema(db);
         const meta = await readMeta(db);
-        if (meta && Date.now() - Date.parse(meta.updated_at) < SNAPSHOT_TTL_MS) {
+        /*
+          除了时间新鲜度，还必须校验数据结构版本：
+          版本不一致说明旧快照是按旧日期口径算的，不能直接返回，
+          交给下面的 buildStats 清空重建。
+        */
+        if (
+          meta &&
+          meta.schema_version === SCHEMA_VERSION &&
+          Date.now() - Date.parse(meta.updated_at) < SNAPSHOT_TTL_MS
+        ) {
           try {
             const stats = JSON.parse(meta.payload);
             const fresh = new Response(JSON.stringify(stats), {
@@ -697,6 +777,39 @@ export default {
       }
       console.error('[maimemo] unhandled error:', error);
       return withCors(request, jsonResponse({ error: 'internal_error' }, 500));
+    }
+  },
+
+  /**
+   * 定时刷新（Cron Trigger，见 wrangler.toml 的 [triggers]）
+   *
+   * 目的：让 D1 快照与边缘缓存保持温热。
+   * 访客打开页面时直接命中缓存，不必等 Worker 现场拉墨墨接口（首次约 6 秒）。
+   * 每天 3 次，叠加墨墨频控（5 小时 2000 次）来看消耗可以忽略。
+   */
+  async scheduled(event, env) {
+    const token = env.MAIMEMO_API_TOKEN;
+    if (!token) return;
+
+    try {
+      const { stats } = await buildStats(token, env, studyDate());
+
+      // 顺手刷新边缘缓存，保证下一个访客直接拿到最新数据
+      const cache = typeof caches !== 'undefined' ? caches.default : null;
+      if (cache) {
+        await cache.put(
+          new Request(CACHE_KEY_URL),
+          new Response(JSON.stringify(stats), {
+            headers: {
+              'Content-Type': 'application/json; charset=utf-8',
+              'Cache-Control': `public, max-age=${CACHE_TTL_SECONDS}`,
+            },
+          })
+        );
+      }
+      console.log('[maimemo] 定时刷新完成:', stats.updatedAt);
+    } catch (error) {
+      console.error('[maimemo] 定时刷新失败:', error);
     }
   },
 };

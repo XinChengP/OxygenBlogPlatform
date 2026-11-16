@@ -29,5 +29,12 @@ CREATE TABLE IF NOT EXISTS maimemo_meta (
   -- 快照写入时间（ISO 字符串）
   updated_at TEXT NOT NULL,
   -- 上次历史全量回填时间；为空表示还没回填过，下次请求会做全量回填
-  last_backfill_at TEXT
+  last_backfill_at TEXT,
+  -- 数据结构版本：与代码里的 SCHEMA_VERSION 不一致时，
+  -- Worker 会自动清空这两张表并按当前口径重新回填（日期口径变更时靠它自动重建）
+  schema_version INTEGER
 );
+
+-- 兼容早期版本创建的表（没有 schema_version 列）：
+--   ALTER TABLE maimemo_meta ADD COLUMN schema_version INTEGER;
+-- 这条由 Worker 首次请求时自动尝试执行，重复执行报错会被忽略。

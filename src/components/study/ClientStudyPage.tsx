@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { CalendarCheck, Flame, Trophy, Clock, BookOpen } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
@@ -81,6 +81,32 @@ export default function ClientStudyPage({ logs, stats, maimemoStats }: ClientStu
   const maxSubjectMinutes = Math.max(1, ...stats.subjectTotals.map(subject => subject.minutes));
   // 日均学习时长（按有打卡的天数算），用于科目分布下方的汇总行
   const averageMinutes = stats.totalDays > 0 ? Math.round(stats.totalMinutes / stats.totalDays) : 0;
+
+  /**
+   * 墨墨背单词作为「科目分布」中的一项参与展示
+   *
+   * 打卡日志里的软件科目有分钟数，而墨墨没有历史每日时长，只能给出：
+   * - 覆盖天数：新学日期与复习日期的并集
+   * - 累计词数：墨墨的 totalWords（真正作答过的词数）
+   * 两者量纲不同，所以墨墨条形的宽度按「天数占比」计算，
+   * 不去和软件科目的分钟数混在一起比较。
+   */
+  const maimemoSubject = useMemo(() => {
+    if (!maimemoStats) return null;
+    const dates = new Set([
+      ...Object.keys(maimemoStats.dailyNewWords || {}),
+      ...Object.keys(maimemoStats.dailyReviews || {}),
+    ]);
+    if (dates.size === 0 && !maimemoStats.totalWords) return null;
+    return { days: dates.size, words: maimemoStats.totalWords };
+  }, [maimemoStats]);
+
+  // 科目分布的条形宽度基准：软件科目按分钟、墨墨按天数，这里各取所需的最大值
+  const maxSubjectDays = Math.max(
+    1,
+    ...stats.subjectTotals.map(subject => subject.days),
+    maimemoSubject?.days ?? 0
+  );
 
   const statCards = [
     { icon: CalendarCheck, label: '累计打卡', value: `${stats.totalDays}`, unit: '天' },
@@ -247,7 +273,7 @@ export default function ClientStudyPage({ logs, stats, maimemoStats }: ClientStu
                     科目分布
                   </h3>
                   <div className="space-y-4">
-                    {stats.subjectTotals.length === 0 && (
+                    {stats.subjectTotals.length === 0 && !maimemoSubject && (
                       <p className="text-sm text-muted-foreground py-4 text-center">
                         记录里还没有科目时长，打卡时用 -s 和 -m 参数补上吧
                       </p>
@@ -270,6 +296,41 @@ export default function ClientStudyPage({ logs, stats, maimemoStats }: ClientStu
                         </div>
                       </div>
                     ))}
+
+                    {/*
+                      墨墨背单词：作为「英语」科目并入分布
+                      它与软件科目口径不同（词数 vs 分钟），
+                      所以条形宽度按覆盖天数计算，右侧也标明单位，避免误读。
+                    */}
+                    {maimemoSubject && (
+                      <div>
+                        <div className="flex items-center justify-between text-sm mb-1.5">
+                          <span className="font-medium text-foreground flex items-center gap-1.5">
+                            英语背单词
+                            <span className="px-1.5 py-0.5 rounded bg-primary/10 text-[10px] leading-none text-primary">
+                              墨墨
+                            </span>
+                          </span>
+                          <span className="text-muted-foreground">
+                            {maimemoSubject.words} 词 · {maimemoSubject.days} 天
+                          </span>
+                        </div>
+                        <div className="h-2.5 rounded-full bg-border/40 overflow-hidden">
+                          <motion.div
+                            className="h-full rounded-full bg-primary"
+                            initial={{ width: 0 }}
+                            animate={{
+                              width: `${Math.max(4, (maimemoSubject.days / maxSubjectDays) * 100)}%`,
+                            }}
+                            transition={{
+                              duration: 0.8,
+                              delay: stats.subjectTotals.length * 0.1,
+                              ease: 'easeOut',
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
 
                     {/* 汇总行：科目少时也能撑起区块高度，同时补充日均信息 */}
                     {stats.subjectTotals.length > 0 && (
