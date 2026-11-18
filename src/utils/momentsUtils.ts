@@ -1,5 +1,5 @@
 import { advancedWordCount } from './wordCountUtils';
-import { parseFrontMatter } from './frontMatterUtils';
+import { parseFrontMatter, isHiddenFrontMatter } from './frontMatterUtils';
 
 interface Moment {
   id: string;
@@ -51,7 +51,7 @@ export function getServerMoments(): Moment[] {
                     images: metadata.images || [],
                     pinned: metadata.pinned === 'true' || metadata.pinned === true,
                     // 解析 hidden 属性：支持字符串 'true' 或布尔值 true
-                    hidden: metadata.hidden === 'true' || metadata.hidden === true,
+                    hidden: isHiddenFrontMatter(metadata.hidden),
                     filePath: file
                   };
     });
@@ -168,7 +168,7 @@ export function getBlogCount(): number {
       const filePath = path.join(blogsDir, file);
       const content = fs.readFileSync(filePath, 'utf8');
       const { metadata } = parseFrontMatter(content);
-      const hidden = metadata.hidden === 'true' || metadata.hidden === true;
+      const hidden = isHiddenFrontMatter(metadata.hidden);
       return !hidden;
     }).length;
 
@@ -218,7 +218,7 @@ export function getServerBlogs(): BlogPost[] {
         excerpt: metadata.excerpt || '',
         coverImage: metadata.coverImage,
         // 解析 hidden 属性：支持字符串 'true' 或布尔值 true
-        hidden: metadata.hidden === 'true' || metadata.hidden === true,
+        hidden: isHiddenFrontMatter(metadata.hidden),
         content: body,
         filePath: file
       };
@@ -274,7 +274,7 @@ export function getBlogTotalWordCount(): number {
       const { metadata, content: body } = parseFrontMatter(content);
 
       // 跳过隐藏文章，与 getServerBlogs 保持一致
-      const hidden = metadata.hidden === 'true' || metadata.hidden === true;
+      const hidden = isHiddenFrontMatter(metadata.hidden);
       if (hidden) return;
 
       const wordCount = advancedWordCount(body);

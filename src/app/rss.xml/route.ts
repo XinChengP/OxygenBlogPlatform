@@ -4,6 +4,7 @@ import path from 'path';
 import { marked } from 'marked';
 // 复用公共的博客扫描与站点地址工具（与 sitemap.ts 共用，避免重复实现）
 import { SITE_URL, siteUrl, scanMarkdownFiles } from '@/utils/blogScanner';
+import { isHiddenFrontMatter } from '@/utils/frontMatterUtils';
 
 export const dynamic = 'force-static';
 
@@ -126,7 +127,7 @@ function generateRssXml(): string {
 
   // 统一使用公共扫描模块获取文章列表，过滤隐藏文章并解析发布日期
   const entries = scanMarkdownFiles(contentDir, contentDir)
-    .filter(({ frontMatter }) => frontMatter.hidden !== true)
+    .filter(({ frontMatter }) => !isHiddenFrontMatter(frontMatter.hidden))
     .map(scanned => {
       // 优先使用 updatedAt，没有则回退到 date；都缺失时以当前时间兜底
       const dateStr = scanned.frontMatter.updatedAt || scanned.frontMatter.date;

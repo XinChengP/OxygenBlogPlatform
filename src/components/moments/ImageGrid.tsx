@@ -49,10 +49,6 @@ export default function ImageGrid({ images, className = '' }: ImageGridProps) {
     });
   }, [images]);
 
-  if (!images || images.length === 0) {
-    return null;
-  }
-
   // 记录某张缩略图的变体加载失败；已记录过则返回同一 Set 引用，避免多余重渲染
   const handleThumbnailError = (src: string) => {
     setFailedThumbnails((prev) => {
@@ -105,6 +101,15 @@ export default function ImageGrid({ images, className = '' }: ImageGridProps) {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [viewerOpen, currentIndex, images.length]);
+
+  /*
+    早退必须放在所有 Hook 之后：原实现把 return null 放在第二个 useEffect 之前，
+    当 images 从空变为非空时会多调用一次 Hook，触发 rules-of-hooks 报错。
+    现在所有 Hook 都无条件执行，空列表只是不渲染任何内容。
+  */
+  if (!images || images.length === 0) {
+    return null;
+  }
 
   // 切换到上一张图片
   const handlePrevImage = () => {

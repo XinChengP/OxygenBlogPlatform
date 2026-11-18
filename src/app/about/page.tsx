@@ -279,23 +279,90 @@ function MBTICard({ config }: { config: MBTIConfig }) {
   );
 }
 
+const DEVICE_ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  laptop: Laptop,
+  desktop: Monitor,
+  phone: Smartphone,
+  tablet: Tablet,
+  keyboard: Keyboard,
+  mouse: Mouse,
+  watch: Watch,
+  headphones: Headphones,
+};
+
+/**
+ * 单个设备翻牌卡片
+ *
+ * 原实现把 useState 写在 devices.map 回调里，违反 React Hooks 规则
+ * （Hook 不能按设备数量动态增删）。拆成独立组件后每个卡片拥有自己的状态。
+ */
+function DeviceFlipCard({ device, index }: { device: DeviceConfig; index: number }) {
+  const [isHovered, setIsHovered] = useState(false);
+  const IconComponent = DEVICE_ICON_MAP[device.id];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.8, y: 15 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      transition={{
+        duration: 0.5,
+        delay: 0.4 + index * 0.06,
+        type: 'spring',
+        stiffness: 180,
+      }}
+      whileHover={{ scale: 1.05, zIndex: 10 }}
+      onHoverStart={() => setIsHovered(true)}
+      onHoverEnd={() => setIsHovered(false)}
+      className="cursor-pointer"
+      style={{ perspective: '1000px' }}
+    >
+      {/* 翻转容器 */}
+      <motion.div
+        className="relative w-full h-full min-h-[100px]"
+        style={{ transformStyle: 'preserve-3d' }}
+        animate={{ rotateY: isHovered ? 180 : 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        {/* 正面 */}
+        <div
+          className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-4 rounded-xl border border-primary/20 bg-primary/10 text-primary shadow-sm transition-all duration-300"
+          style={{
+            backfaceVisibility: 'hidden',
+            boxShadow: isHovered ? '0 0 20px rgba(102,204,255,0.15)' : undefined,
+          }}
+        >
+          {IconComponent && <IconComponent className="w-8 h-8" />}
+          <span className="text-sm font-medium text-center">{device.name}</span>
+        </div>
+
+        {/* 背面 */}
+        <div
+          className="absolute inset-0 flex flex-col items-center justify-center gap-1 p-4 rounded-xl border border-primary/20 bg-primary text-primary-foreground shadow-sm"
+          style={{
+            backfaceVisibility: 'hidden',
+            transform: 'rotateY(180deg)',
+            boxShadow: '0 0 24px rgba(102,204,255,0.2)',
+          }}
+        >
+          {device.backContent ? (
+            device.backContent.map((line, lineIndex) => (
+              <span key={lineIndex} className="text-xs font-medium text-center">
+                {line}
+              </span>
+            ))
+          ) : null}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 /**
  * 设备卡片组件
  * 展示个人使用的设备列表，正面显示设备图标，鼠标悬停后原地翻转到背面显示设备名称
  * 添加入场交错动画 + 悬停发光边框效果
  */
 function DeviceCard({ devices }: { devices: DeviceConfig[] }) {
-  const deviceIconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-    laptop: Laptop,
-    desktop: Monitor,
-    phone: Smartphone,
-    tablet: Tablet,
-    keyboard: Keyboard,
-    mouse: Mouse,
-    watch: Watch,
-    headphones: Headphones,
-  };
-
   return (
     <div className="flex flex-col">
       {/* 卡片小标题 */}
@@ -311,67 +378,9 @@ function DeviceCard({ devices }: { devices: DeviceConfig[] }) {
 
       {/* 设备列表 - 每个设备都是一张翻牌卡片 */}
       <div className="grid grid-cols-2 gap-3">
-        {devices.map((device, index) => {
-          const IconComponent = deviceIconMap[device.id];
-          const [isHovered, setIsHovered] = useState(false);
-
-          return (
-            <motion.div
-              key={device.id}
-              initial={{ opacity: 0, scale: 0.8, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{
-                duration: 0.5,
-                delay: 0.4 + index * 0.06,
-                type: 'spring',
-                stiffness: 180,
-              }}
-              whileHover={{ scale: 1.05, zIndex: 10 }}
-              onHoverStart={() => setIsHovered(true)}
-              onHoverEnd={() => setIsHovered(false)}
-              className="cursor-pointer"
-              style={{ perspective: '1000px' }}
-            >
-              {/* 翻转容器 */}
-              <motion.div
-                className="relative w-full h-full min-h-[100px]"
-                style={{ transformStyle: 'preserve-3d' }}
-                animate={{ rotateY: isHovered ? 180 : 0 }}
-                transition={{ duration: 0.5 }}
-              >
-                {/* 正面 */}
-                <div
-                  className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-4 rounded-xl border border-primary/20 bg-primary/10 text-primary shadow-sm transition-all duration-300"
-                  style={{
-                    backfaceVisibility: 'hidden',
-                    boxShadow: isHovered ? '0 0 20px rgba(102,204,255,0.15)' : undefined,
-                  }}
-                >
-                  {IconComponent && <IconComponent className="w-8 h-8" />}
-                  <span className="text-sm font-medium text-center">{device.name}</span>
-                </div>
-
-                {/* 背面 */}
-                <div
-                  className="absolute inset-0 flex flex-col items-center justify-center gap-1 p-4 rounded-xl border border-primary/20 bg-primary text-primary-foreground shadow-sm"
-                  style={{
-                    backfaceVisibility: 'hidden',
-                    transform: 'rotateY(180deg)',
-                    boxShadow: '0 0 24px rgba(102,204,255,0.2)',
-                  }}
-                >
-                  {device.backContent ? (
-                    device.backContent.map((line, lineIndex) => (
-                      <span key={lineIndex} className="text-xs font-medium text-center">
-                        {line}
-                      </span>
-                    ))
-                  ) : null}
-                </div>
-              </motion.div>
-            </motion.div>
-          );
-        })}
+        {devices.map((device, index) => (
+          <DeviceFlipCard key={device.id} device={device} index={index} />
+        ))}
       </div>
     </div>
   );

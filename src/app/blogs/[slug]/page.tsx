@@ -9,6 +9,7 @@ import { formatBlogDate, calculateReadingTime } from '@/utils';
 import { getSortedRelatedPosts, type RelatedPost } from '@/utils/relatedPostsUtils';
 import { extractHeadings } from '@/utils/tocUtils';
 import { notFound } from 'next/navigation';
+import { isHiddenFrontMatter } from '@/utils/frontMatterUtils';
 import type { Metadata } from 'next';
 
 /**
@@ -183,7 +184,8 @@ async function getBlogContent(slug: string): Promise<BlogPost | null> {
     
     // 读取文件内容，使用 UTF-8 编码处理中文
     const fileContent = fs.readFileSync(filePath, 'utf8');
-    let { data, content } = matter(fileContent);
+    const { data, content: rawContent } = matter(fileContent);
+    let content = rawContent;
     
     // 类型断言，确保 data 符合 BlogFrontMatter 接口
     const frontMatter = data as BlogFrontMatter;
@@ -295,7 +297,7 @@ async function getBlogContent(slug: string): Promise<BlogPost | null> {
         不能写成 frontMatter.hidden || false：YAML 中 hidden: "false" 会被解析为字符串，
         而字符串 'false' 本身是真值，会让本应可见的文章被误判为隐藏。
       */
-      hidden: frontMatter.hidden === true || frontMatter.hidden === 'true'
+      hidden: isHiddenFrontMatter(frontMatter.hidden)
     };
   } catch (error) {
     console.error('Error reading blog content:', error);
@@ -650,7 +652,7 @@ async function getSeriesArticles(series: string): Promise<SeriesArticle[]> {
         const { data } = matter(fileContent);
         const frontMatter = data as BlogFrontMatter;
 
-        if (frontMatter.series === series && !frontMatter.hidden) {
+        if (frontMatter.series === series && !isHiddenFrontMatter(frontMatter.hidden)) {
           seriesArticles.push({
             title: frontMatter.title || path.basename(file.filePath, '.md'),
             slug: file.slug,
@@ -720,7 +722,7 @@ async function getRelatedArticles(
         const frontMatter = data as BlogFrontMatter;
 
         // 跳过隐藏文章，保持与列表页一致的可见性规则（兼容布尔值与字符串 'true' 两种写法）
-        if (frontMatter.hidden === true || frontMatter.hidden === 'true') continue;
+        if (isHiddenFrontMatter(frontMatter.hidden)) continue;
 
         const fileName = path.basename(file.filePath, '.md');
 

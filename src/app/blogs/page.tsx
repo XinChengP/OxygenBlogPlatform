@@ -4,6 +4,7 @@ import matter from 'gray-matter';
 import type { Metadata } from 'next';
 import { formatBlogDate, calculateReadingTime } from '@/utils';
 import { getBlogTotalWordCount } from '@/utils/momentsUtils';
+import { isHiddenFrontMatter } from '@/utils/frontMatterUtils';
 import ClientBlogsPage from './ClientBlogsPage';
 
 /*
@@ -145,7 +146,7 @@ function getAllBlogs(): BlogPost[] {
           pinned: frontMatter.pinned || false,
           pinnedAt: frontMatter.pinnedAt ? formatBlogDate(frontMatter.pinnedAt) : undefined,
           // 解析 hidden 属性：支持布尔值或字符串 'true'
-          hidden: frontMatter.hidden === true || frontMatter.hidden === 'true'
+          hidden: isHiddenFrontMatter(frontMatter.hidden)
         });
       } catch (error) {
         console.error(`Error reading blog file ${relativePath}:`, error);

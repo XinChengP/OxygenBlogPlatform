@@ -13,6 +13,23 @@
 import matter from 'gray-matter';
 
 /**
+ * 判断 frontmatter 中的 hidden 是否为真
+ *
+ * YAML 里 `hidden: true` 会被解析为布尔值，而 `hidden: "true"` 会保留为字符串。
+ * 只判断 `=== true` 会让带引号的写法在部分页面被当成“未隐藏”，
+ * 造成列表页隐藏、详情页/推荐区泄漏的口径不一致。
+ *
+ * @param value frontmatter.hidden 的原始值
+ * @returns 是否应视为隐藏
+ */
+export function isHiddenFrontMatter(value: unknown): boolean {
+  return (
+    value === true ||
+    (typeof value === 'string' && value.trim().toLowerCase() === 'true')
+  );
+}
+
+/**
  * 从 markdown 文件中解析 YAML front matter
  * 使用 gray-matter 库替代手写解析逻辑，消除与 blogActions.ts 中内嵌解析器的冗余
  * @param content markdown 文件内容

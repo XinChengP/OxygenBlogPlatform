@@ -850,8 +850,8 @@ export default function Lantern({ text = '新春快乐', enabled = true }: Lante
           const lanternHeight = lantern.offsetHeight;
           
           // 调整位置以保持在边界内
-          let newX = Math.max(0, Math.min(position.x, windowWidth - lanternWidth));
-          let newY = Math.max(0, Math.min(position.y, windowHeight - lanternHeight));
+          const newX = Math.max(0, Math.min(position.x, windowWidth - lanternWidth));
+          const newY = Math.max(0, Math.min(position.y, windowHeight - lanternHeight));
           
           // 如果位置发生变化，更新灯笼位置
           if (newX !== position.x || newY !== position.y) {

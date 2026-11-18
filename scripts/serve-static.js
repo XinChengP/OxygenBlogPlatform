@@ -31,10 +31,16 @@ app.use(express.static(STATIC_DIR, {
   }
 }));
 
-// 为所有其他请求返回 index.html（处理 SPA 路由）
+// 未匹配到静态文件：返回 404.html，而不是伪装成 200 的首页
+// 静态导出产物本身包含每个路由的 index.html，不需要 SPA 回退；
+// 之前的 index.html 回退会让缺失的图片/资源也返回 200 HTML，掩盖真实 404。
 app.use((req, res) => {
-  const indexPath = path.join(STATIC_DIR, 'index.html');
-  res.sendFile(indexPath);
+  const notFoundPath = path.join(STATIC_DIR, '404.html');
+  res.status(404).sendFile(notFoundPath, (error) => {
+    if (error) {
+      res.status(404).type('text/plain').send('404 Not Found');
+    }
+  });
 });
 
 app.listen(PORT, () => {
@@ -46,5 +52,5 @@ app.listen(PORT, () => {
   console.log('📖 使用说明:');
   console.log(`   - 直接访问 http://localhost:${PORT} 查看首页`);
   console.log(`   - 访问 http://localhost:${PORT}/OxygenBlogPlatform/ 查看GitHub Pages版本`);
-  console.log('   - 所有路由都已配置SPA支持');
+  console.log('   - 未匹配的路径返回 404.html（不再回退首页）');
 });

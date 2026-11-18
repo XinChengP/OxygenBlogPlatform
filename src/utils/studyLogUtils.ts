@@ -10,7 +10,7 @@
 
 import fs from 'fs';
 import path from 'path';
-import { parseFrontMatter } from './frontMatterUtils';
+import { parseFrontMatter, isHiddenFrontMatter } from './frontMatterUtils';
 import type { StudyLog, StudyStats, StudySubject, StudySubjectTotal } from '@/types/studyLog';
 
 /** 心情的合法取值，frontmatter 里出现其他值时按未设置处理 */
@@ -104,7 +104,7 @@ export function getServerStudyLogs(): StudyLog[] {
         tags,
         content: body,
         // hidden: true 的记录不展示（构建期过滤，静态部署不会带出去）
-        ...(metadata.hidden === true || metadata.hidden === 'true' ? { hidden: true } : {}),
+        ...(isHiddenFrontMatter(metadata.hidden) ? { hidden: true } : {}),
       } as StudyLog & { hidden?: boolean };
     });
 

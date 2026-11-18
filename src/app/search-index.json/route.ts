@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import path from 'path';
 // 复用公共博客扫描模块（与 rss.xml / sitemap 共用，避免重复实现扫描逻辑）
 import { scanMarkdownFiles } from '@/utils/blogScanner';
+import { isHiddenFrontMatter } from '@/utils/frontMatterUtils';
 // 复用日期归一化函数：排序前把 frontmatter 日期统一为 YYYY-MM-DD，避免不补零写法排错序
 import { formatBlogDate } from '@/lib/utils';
 
@@ -134,7 +135,7 @@ function generateSearchIndex(): SearchIndexEntry[] {
   const contentDir = path.join(process.cwd(), 'src/content/blogs');
 
   const entries = scanMarkdownFiles(contentDir, contentDir)
-    .filter(({ frontMatter }) => frontMatter.hidden !== true)
+    .filter(({ frontMatter }) => !isHiddenFrontMatter(frontMatter.hidden))
     .map(({ slug, frontMatter, content }): SearchIndexEntry => {
       // 正文纯文本：去除 Markdown 语法后截断，控制索引体积
       const plainContent = stripMarkdownSyntax(content).slice(0, CONTENT_MAX_LENGTH);

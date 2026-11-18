@@ -23,7 +23,7 @@ interface ChatMessage {
 }
 
 /** 预设问题 chips：面板还没提问时展示，点一下直接发送（降低「不知道问什么」的门槛） */
-const PRESET_QUESTIONS = ['有哪些前端开发的文章？', '博客有什么小工具？', '站长是谁呀？'];
+const PRESET_QUESTIONS = ['有哪些洛天依相关的文章？', '博客有哪些小工具？', '最近更新了什么？'];
 
 /** 来源类型的图标与标签 */
 const SOURCE_TYPE_META: Record<string, { icon: string; label: string }> = {
@@ -135,6 +135,8 @@ export default function TianyiChatPanel({ onClose }: TianyiChatPanelProps) {
         sources?: ChatSource[];
         /** 服务端错误码：rate_limited=个人问太快 / daily_limit_reached=全站今日额度用完 */
         error?: string;
+        /** 服务端错误文案（400 等场景直接展示给读者） */
+        message?: string;
       };
 
       let answer: string;
@@ -142,6 +144,9 @@ export default function TianyiChatPanel({ onClose }: TianyiChatPanelProps) {
       if (response.ok) {
         answer = data.answer || '天依走神了，再问一次好不好？';
         success = true;
+      } else if (response.status === 400) {
+        // 参数类错误（问题太短、请求体异常）：服务端 message 是给读者看的友好文案
+        answer = data.message || '这个问题天依没听懂，换个说法再试试？';
       } else if (response.status === 429) {
         // 区分两类限流：全站今日额度耗尽（不是读者的错）与个人问得太快
         answer = data.error === 'daily_limit_reached'

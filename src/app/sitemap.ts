@@ -4,6 +4,7 @@ import path from 'path';
 import matter from 'gray-matter';
 // 复用公共的博客扫描与站点地址工具，替代原先与 RSS 路由重复的实现
 import { siteUrl, scanMarkdownFiles } from '@/utils/blogScanner';
+import { isHiddenFrontMatter } from '@/utils/frontMatterUtils';
 
 /**
  * 静态导出配置
@@ -28,8 +29,8 @@ function getBlogSitemapEntries(): MetadataRoute.Sitemap {
 
     // 递归扫描所有 .md 文件（扫描与 frontmatter 解析已统一收敛到公共模块）
     for (const { slug, frontMatter } of scanMarkdownFiles(contentDir, contentDir)) {
-      // 跳过隐藏的博客文章
-      if (frontMatter.hidden === true) {
+      // 跳过隐藏的博客文章（兼容 hidden: true 与 hidden: "true"）
+      if (isHiddenFrontMatter(frontMatter.hidden)) {
         continue;
       }
 
@@ -189,23 +190,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'weekly',
       priority: 0.6,
     },
-    {
-      url: siteUrl('/moments/'),
-      lastModified: new Date(),
-      changeFrequency: 'daily',
-      priority: 0.6,
-    },
+    /*
+      /moments/ 与 /changelogs/ 不在此处登记：
+      下方 getMomentsSitemapEntries() / getChangelogsSitemapEntries()
+      会根据最新内容日期生成条目，之前在 baseEntries 里再写一份会产生重复 URL。
+    */
     {
       url: siteUrl('/study/'),
       lastModified: new Date(),
       changeFrequency: 'daily',
       priority: 0.6,
-    },
-    {
-      url: siteUrl('/changelogs/'),
-      lastModified: new Date(),
-      changeFrequency: 'daily',
-      priority: 0.5,
     },
     {
       url: siteUrl('/about/'),
@@ -261,12 +255,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
       priority: 0.4,
     },
-    {
-      url: siteUrl('/settings/'),
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.3,
-    },
+    /*
+      /settings/ 是纯客户端偏好设置页（主题、播放器开关），没有可索引内容，
+      且静态 HTML 为空壳，刻意不再放入 sitemap。
+    */
   ];
 
   // 合并所有条目

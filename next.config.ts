@@ -35,7 +35,12 @@ const baseConfig = {
   devIndicators: false,
 
   // 允许的开发环境来源 - 解决跨域问题
-  allowedDevOrigins: ['100.143.40.229', 'localhost'],
+  // 默认只允许本机；需要从局域网/Tailscale 访问时，在 .env.local 中设置
+  // DEV_ALLOWED_ORIGINS=100.x.x.x,192.168.x.x（逗号分隔），避免把个人 IP 写死在仓库里。
+  allowedDevOrigins: (process.env.DEV_ALLOWED_ORIGINS || 'localhost,127.0.0.1')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean),
 
   // 静态导出模式下使用 webpack，以确保别名配置生效
   // 开发模式使用 Turbopack（Next.js 16 默认）

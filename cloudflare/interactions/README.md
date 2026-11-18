@@ -11,11 +11,12 @@ Cloudflare Worker + D1，为博客提供三组能力：
 
 ## 天依 AI 问答（RAG）
 
-- 数据链路：文章 Markdown → `scripts/index-blog.mjs` 分块（~700 字/块）→ `/admin/reindex` 向量化（`@cf/baai/bge-m3`）→ Vectorize 索引 `blog-knowledge`（1024 维）。
-- 读者提问：`POST /chat { question }` → 问题向量化 → 检索 topK 4（相关度 ≥ 0.45）→ 无相关资料直接回答「没找到」（不调用 LLM）→ `AI_CHAT_MODEL`（默认 Qwen3-30B-A3B）按天依口吻生成 → 直接返回。
+- 数据链路：文章 Markdown → `scripts/index-blog.mjs` 分块（~700 字/块，块首带标题/分类/标签）→ `/admin/reindex` 向量化（`@cf/baai/bge-m3`）→ Vectorize 索引 `blog-knowledge`（1024 维）。脚本同时生成「全部文章清单」「分类文章清单」「最新发布」「最近更新」「最近开发日志」等派生知识块，补语义检索对聚合/时效问题的盲区。
+- 读者提问：`POST /chat { question }` → 问题向量化 → 检索 topK 8（相关度 ≥ 0.45）→ 按问题意图（找文章/问功能/问更新/问日常）筛选最多 3 条资料；「全部文章清单 / 分类清单 / 最新发布 / 最近更新日志」等固定块按 id 直接取回，保证一定进入候选；问「最新文章」按发布日期、问「最近更新」按 updatedAt，不会混用 → 无相关资料直接回答「没找到」（不调用 LLM）→ `AI_CHAT_MODEL`（默认 Qwen3-30B-A3B）按天依口吻生成 → 直接返回。上下文会显式标注 `[文章]` / `[站点说明·当前状态]` / `[更新日志·历史记录]` / `[动态]`，找文章时不会拿日志或动态冒充文章。
+- 幻觉控制：提示词要求当前功能以站点说明为准、找文章只能推荐文章类资料；模型回答里越界的【编号】、重复写出的《标题》会在服务端剥离；「没找到」类回答不挂来源卡，避免文案与来源列表自相矛盾；拒答类回答同样不挂无关来源。
 - 成本闸门：单人 8 问/小时、全站 200 问/滚动 24 小时（D1 `rate_limit` 固定窗口；全站桶只统计需要 AI 检索/生成的请求，问候与无效问题零成本不占额度）、无相关资料不调用 LLM。
 - 不做答案缓存：项目仍在开发阶段，提示词与知识库随时调整，缓存会让改动看起来没生效。
-- 内容更新后重建索引：`npm run index:blog`（ADMIN_TOKEN 缺省读 `cloudflare/interactions/.dev.vars`；重复执行安全，先按登记表清空旧向量再写入）。
+- 内容更新后重建索引：`npm run index:blog`（ADMIN_TOKEN 缺省读 `cloudflare/interactions/.dev.vars`；重复执行安全，先按登记表清空旧向量再写入）。只想本地检查索引内容可加 `--dry-run`，不会调用线上接口。
 - 本地开发注意：Vectorize 绑定已设 `remote = true`（本地直连线上索引），但 wrangler OAuth scope 不含 Vectorize 权限时远程检索会失败——此时 `/chat` 优雅降级为 503（前端显示「大脑没配置好」），线上运行时绑定不受影响。
 
 ## 接入方式
