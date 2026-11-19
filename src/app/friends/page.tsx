@@ -1,269 +1,197 @@
 /**
  * 友情链接独立页面
- * 展示所有友情链接，使用现代化的页面布局风格
- * 视觉规范：与全站卡片体系统一（rounded-xl、bg-card/95、border-border、shadow-card 令牌）
+ *
+ * 布局说明（2026-11 改版）：
+ * 1. 主结构从「等高三列卡片墙」改为「横向名片网格（桌面三列 / 平板两列 / 手机一列）」，
+ *    页头仍用全站 PageHeader（主副标题样式与其他页面完全一致），
+ *    差异只体现在正文版式，和 /links（等高三列卡片 + 域名底栏）不再撞脸
+ * 2. 交换说明不再占三张带图标的小卡，退化为名录下方的文档式三栏：
+ *    我的信息 / 申请信息 / 联系方式，用定义列表与编号排版承载
+ * 3. 视觉令牌全部沿用全站：glass-card-strong、border-border、primary 天依蓝；
+ *    去掉的是渐变扫光、径向光晕、旋转图标块、大引号与星星分隔线等模板化装饰
  */
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import {
-  Globe,
-  Link2,
-  Heart,
-  Mail,
-  MessageCircle,
-  MessageSquare,
-  Sparkles,
-  ArrowRight,
-  User
-} from 'lucide-react';
-import PageHeader from '@/components/ui/PageHeader';
+import { ArrowUpRight } from 'lucide-react';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
+import PageHeader from '@/components/ui/PageHeader';
 import FriendsLink from '@/components/FriendsLink';
 
+/** 本站友链信息：申请者可直接复制 */
+const MY_FRIEND_INFO = {
+  name: '心想事成 的 Blog',
+  url: 'https://blog.xinchengp.cn',
+  description: '一个记录日常的小窝',
+  avatar: 'https://avatars.githubusercontent.com/u/107662142?v=4'
+};
+
+/** 申请时需提供的信息（沿用原页面文案，只改变呈现方式） */
+const APPLY_ITEMS = ['网站名称和描述', '网站链接', '头像链接（可选）'];
+
+/** 联系入口：邮箱走 mailto，留言板为站内页面 */
+const CONTACT_ITEMS = [
+  { label: '邮箱', value: 'blog@xinchengp.cn', href: 'mailto:blog@xinchengp.cn', external: false },
+  {
+    label: '留言板',
+    value: 'blog.xinchengp.cn/guestbook',
+    href: 'https://blog.xinchengp.cn/guestbook',
+    external: true
+  }
+];
+
 /**
- * 交换友链说明卡片组件
- * 合并展示我的信息、申请要求和联系方式
- * 注意：颜色全部走语义令牌（card/border/foreground/muted），不再硬编码灰阶，
- * 这样亮暗主题切换时自动跟随全站配色，无需维护 dark: 变体
+ * 小节标题
+ * 序号是排版语言（与名录里的 01/02 呼应），不用图标色块做标题前缀
  */
-function ExchangeCard() {
-  const primaryColor = '#66ccff';
-
-  const requirements = [
-    { icon: <Globe className="w-4 h-4" />, text: '网站名称和描述' },
-    { icon: <Link2 className="w-4 h-4" />, text: '网站链接' },
-    { icon: <Heart className="w-4 h-4" />, text: '头像链接（可选）' },
-  ];
-
-  // 本站友链信息数据
-  const myInfo = {
-    name: '心想事成 的 Blog',
-    url: 'https://blog.xinchengp.cn',
-    description: '一个记录日常的小窝',
-    avatar: 'https://avatars.githubusercontent.com/u/107662142?v=4'
-  };
-
+function SectionLabel({ index, children }: { index: string; children: React.ReactNode }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, delay: 0.3 }}
-      /* 容器迁入全站玻璃强档令牌 glass-card-strong，与上方友链卡质感统一 */
-      className="relative overflow-hidden rounded-xl glass-card-strong"
-    >
-      {/* 顶部装饰条：仅 1px 高的天依蓝渐变，克制地点缀主题色 */}
-      <div
-        className="absolute top-0 left-0 right-0 h-[2px]"
-        style={{
-          background: `linear-gradient(90deg, ${primaryColor} 0%, #06b6d4 50%, ${primaryColor} 100%)`,
-          backgroundSize: '200% 100%'
-        }}
-      />
-
-      {/* 背景装饰：极低透明度的主题色光晕，仅增加层次不喧宾夺主 */}
-      <div className="absolute top-0 right-0 w-64 h-64 opacity-[0.04] dark:opacity-[0.06] pointer-events-none">
-        <div
-          className="w-full h-full rounded-full blur-3xl"
-          style={{ background: `radial-gradient(circle, ${primaryColor} 0%, transparent 70%)` }}
-        />
-      </div>
-
-      <div className="relative p-6 sm:p-8">
-        {/* 标题区域 */}
-        <div className="flex items-center gap-4 mb-6">
-          <motion.div
-            initial={{ scale: 0, rotate: -180 }}
-            animate={{ scale: 1, rotate: 0 }}
-            transition={{ duration: 0.6, delay: 0.4, type: 'spring' }}
-            className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{
-              background: `linear-gradient(135deg, ${primaryColor} 0%, #06b6d4 100%)`,
-              boxShadow: `0 8px 30px ${primaryColor}40`
-            }}
-          >
-            <Heart className="w-7 h-7 text-white" />
-          </motion.div>
-
-          <div>
-            <h3 className="text-xl font-bold text-foreground mb-1">
-              交换友链
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              欢迎与我建立友情链接
-            </p>
-          </div>
-        </div>
-
-        {/* 说明内容：三栏布局 */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {/* 左侧：我的信息 */}
-          <div>
-            <h4 className="text-sm font-semibold text-foreground/90 mb-4 flex items-center gap-2">
-              <User className="w-4 h-4 text-primary" />
-              我的信息
-            </h4>
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.5 }}
-              className="flex items-start gap-3"
-            >
-              <div
-                className="w-14 h-14 rounded-xl overflow-hidden shadow-lg flex-shrink-0"
-                style={{ boxShadow: `0 4px 20px ${primaryColor}30` }}
-              >
-                <img
-                  src={myInfo.avatar}
-                  alt={myInfo.name}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="space-y-1 min-w-0">
-                <p className="text-sm font-semibold text-foreground truncate">
-                  {myInfo.name}
-                </p>
-                <a
-                  href={myInfo.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-primary hover:underline break-all block"
-                >
-                  {myInfo.url}
-                </a>
-                <p className="text-xs text-muted-foreground">
-                  {myInfo.description}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  头像链接：
-                  <a
-                    href={myInfo.avatar}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline break-all"
-                  >
-                    {myInfo.avatar}
-                  </a>
-                </p>
-              </div>
-            </motion.div>
-          </div>
-
-          {/* 中间：申请要求 - 使用列表风格 */}
-          <div>
-            <h4 className="text-sm font-semibold text-foreground/90 mb-4 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-primary" />
-              申请信息
-            </h4>
-            <ul className="space-y-3">
-              {requirements.map((item, index) => (
-                <motion.li
-                  key={index}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.4, delay: 0.5 + index * 0.1 }}
-                  className="flex items-center gap-3 text-muted-foreground"
-                >
-                  <span
-                    className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-                    style={{ backgroundColor: `${primaryColor}15`, color: primaryColor }}
-                  >
-                    {item.icon}
-                  </span>
-                  <span className="text-sm">{item.text}</span>
-                </motion.li>
-              ))}
-            </ul>
-          </div>
-
-          {/* 右侧：联系方式 - 使用卡片风格 */}
-          <div>
-            <h4 className="text-sm font-semibold text-foreground/90 mb-4 flex items-center gap-2">
-              <MessageCircle className="w-4 h-4 text-primary" />
-              联系方式
-            </h4>
-            <div className="space-y-3">
-              <motion.a
-                href="mailto:blog@xinchengp.cn"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.4, delay: 0.5 }}
-                whileHover={{ scale: 1.02, x: 5 }}
-                /* 子卡片同样令牌化：muted 底色 + border-border，悬停时边框转天依蓝 */
-                className="flex items-center gap-3 p-4 rounded-xl bg-muted/50
-                           border border-border
-                           hover:border-primary/30 hover:bg-muted
-                           transition-colors duration-300 group"
-              >
-                <span
-                  className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: `linear-gradient(135deg, ${primaryColor}20 0%, ${primaryColor}40 100%)`, color: primaryColor }}
-                >
-                  <Mail className="w-5 h-5" />
-                </span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground">发送邮件</p>
-                  <p className="text-xs text-muted-foreground truncate">blog@xinchengp.cn</p>
-                </div>
-                <ArrowRight className="w-4 h-4 text-muted-foreground/60 group-hover:text-primary transition-colors" />
-              </motion.a>
-
-              <motion.a
-                href="https://blog.xinchengp.cn/guestbook"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.4, delay: 0.7 }}
-                whileHover={{ scale: 1.02, x: 5 }}
-                className="flex items-center gap-3 p-4 rounded-xl bg-muted/50
-                           border border-border
-                           hover:border-primary/30 hover:bg-muted
-                           transition-colors duration-300 group"
-              >
-                <span
-                  className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: `linear-gradient(135deg, ${primaryColor}20 0%, ${primaryColor}40 100%)`, color: primaryColor }}
-                >
-                  <MessageSquare className="w-5 h-5" />
-                </span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground">留言板</p>
-                  <p className="text-xs text-muted-foreground truncate">点击前往留言</p>
-                </div>
-                <ArrowRight className="w-4 h-4 text-muted-foreground/60 group-hover:text-primary transition-colors" />
-              </motion.a>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </motion.div>
+    <h3 className="mb-3 flex items-baseline gap-2 text-sm font-semibold text-foreground">
+      <span className="font-mono text-[11px] tabular-nums text-primary/80">{index}</span>
+      {children}
+    </h3>
   );
 }
 
 /**
- * 友链页面组件
- * 使用现代化的布局风格，包含精美的视觉效果
+ * 交换友链说明
+ * 三个信息块并列展示，靠间距与编号区分，不使用卡片边框、渐变图标与阴影
+ */
+function ExchangeNotes() {
+  return (
+    <div>
+      {/* 区块标题：与名录页眉同一套小字语言 */}
+      <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border/60 pb-3">
+        <div>
+          <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-primary">exchange</p>
+          <h2 className="mt-1.5 text-lg font-bold text-foreground">交换友链</h2>
+        </div>
+        <p className="text-xs text-muted-foreground">信息齐全的话，我看到就会加上</p>
+      </div>
+
+      <div className="grid gap-x-10 gap-y-8 pt-6 md:grid-cols-3">
+        {/* 01 我的信息 */}
+        <div>
+          <SectionLabel index="01">我的信息</SectionLabel>
+          <dl className="space-y-2 text-sm">
+            <div className="flex items-baseline gap-3">
+              <dt className="w-14 shrink-0 text-muted-foreground">名称</dt>
+              <dd className="flex min-w-0 items-center gap-2 text-foreground">
+                {/* 头像缩成 24px 的方形小图，贴着名称当注脚，不做独立展示块 */}
+                <img
+                  src={MY_FRIEND_INFO.avatar}
+                  alt=""
+                  width={24}
+                  height={24}
+                  className="h-6 w-6 shrink-0 rounded-md border border-border object-cover"
+                />
+                <span className="truncate">{MY_FRIEND_INFO.name}</span>
+              </dd>
+            </div>
+            <div className="flex items-baseline gap-3">
+              <dt className="w-14 shrink-0 text-muted-foreground">地址</dt>
+              <dd className="min-w-0 break-all">
+                <a
+                  href={MY_FRIEND_INFO.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  {MY_FRIEND_INFO.url}
+                </a>
+              </dd>
+            </div>
+            <div className="flex items-baseline gap-3">
+              <dt className="w-14 shrink-0 text-muted-foreground">描述</dt>
+              <dd className="text-muted-foreground">{MY_FRIEND_INFO.description}</dd>
+            </div>
+            <div className="flex items-baseline gap-3">
+              <dt className="w-14 shrink-0 text-muted-foreground">头像</dt>
+              <dd className="min-w-0 break-all">
+                <a
+                  href={MY_FRIEND_INFO.avatar}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  {MY_FRIEND_INFO.avatar}
+                </a>
+              </dd>
+            </div>
+          </dl>
+        </div>
+
+        {/* 02 申请信息 */}
+        <div>
+          <SectionLabel index="02">申请信息</SectionLabel>
+          <ol className="space-y-2 text-sm">
+            {APPLY_ITEMS.map((item, i) => (
+              <li key={item} className="flex items-baseline gap-3">
+                <span className="font-mono text-[11px] tabular-nums text-muted-foreground/50">
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                <span className="text-muted-foreground">{item}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+
+        {/* 03 联系方式 */}
+        <div>
+          <SectionLabel index="03">联系方式</SectionLabel>
+          <dl className="space-y-2 text-sm">
+            {CONTACT_ITEMS.map((item) => (
+              <div key={item.label} className="flex items-baseline gap-3">
+                <dt className="w-14 shrink-0 text-muted-foreground">{item.label}</dt>
+                <dd className="min-w-0">
+                  {/* 链接用下划线表达可点，悬停时下划线与图标一起转天依蓝 */}
+                  <a
+                    href={item.href}
+                    {...(item.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                    className="group inline-flex items-baseline gap-1.5 text-foreground transition-colors hover:text-primary"
+                  >
+                    <span className="truncate border-b border-border transition-colors group-hover:border-primary">
+                      {item.value}
+                    </span>
+                    <ArrowUpRight
+                      aria-hidden="true"
+                      className="h-3 w-3 shrink-0 text-muted-foreground/50 transition-colors group-hover:text-primary"
+                    />
+                  </a>
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 友链页面
  */
 export default function FriendsPage() {
   const { containerStyle } = useBackgroundStyle('friends');
   const [mounted, setMounted] = useState(false);
 
-  // 确保组件已挂载，避免服务端渲染与客户端渲染不一致
+  // 挂载后才渲染正文，避免客户端首帧与静态 HTML 出现差异
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // 如果还没有挂载，显示加载占位避免闪烁
-  // 使用与主渲染相同的容器样式，避免 hydration mismatch
+  // 骨架：保留页头位置的大标题占位，下方与名录面板同高，切换时不跳动
   if (!mounted) {
     return (
       <div className={containerStyle.className} style={containerStyle.style}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-          <div className="animate-pulse space-y-8">
-            <div className="h-32 bg-muted rounded-xl"></div>
-            <div className="h-64 bg-muted rounded-xl"></div>
-            <div className="h-48 bg-muted rounded-xl"></div>
+        <div className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
+          <div className="animate-pulse space-y-6">
+            {/* 页头占位走居中块，与 PageHeader 的实际排布一致 */}
+            <div className="mx-auto h-10 w-52 rounded bg-muted" />
+            <div className="mx-auto h-5 w-64 rounded bg-muted" />
+            <div className="h-64 rounded-xl bg-muted" />
+            <div className="h-40 rounded-xl bg-muted" />
           </div>
         </div>
       </div>
@@ -272,64 +200,48 @@ export default function FriendsPage() {
 
   return (
     <div className={containerStyle.className} style={containerStyle.style}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-        {/* 页面标题 - 使用统一的 PageHeader 组件 */}
+      <div className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
+        {/* 页面主副标题：沿用全站统一的 PageHeader，尺寸、渐变与分隔线与其他页面一致 */}
         <PageHeader
           title="友情链接"
-          description="互联网上的朋友们qwq"
+          description="群伞在雨幕中盛开，哪朵伞下有你徘徊"
           size="lg"
           className="mb-12"
           gradientStyle="primary"
           showDivider
         />
 
-        {/* 主内容区 */}
         <motion.main
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
           className="space-y-12"
         >
-          {/* 友链列表 - 复用 FriendsLink 组件（含末尾「申请友链」占位卡） */}
+          {/* 名片夹：名片本身已是卡片，外层不再套面板，避免「卡片套卡片」 */}
           <section>
             <FriendsLink />
           </section>
 
-          {/* 交换友链说明 - 占位卡的锚点滚动目标；
-              scroll-mt 预留顶部固定导航的高度，避免定位后标题被导航遮挡 */}
-          <section id="exchange" className="scroll-mt-24">
-            <ExchangeCard />
-          </section>
-
-          {/* 底部装饰引用 */}
-          <motion.section
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
-            className="text-center py-8"
+          {/* 交换说明：空席位名片的锚点目标；
+              scroll-mt 预留顶部固定导航高度，避免定位后标题被遮挡；
+              整块套玻璃面板——说明区全是小字，直接压在背景插画上会看不清，
+              也容易被右下角 Live2D 人物挡住 */}
+          <section
+            id="exchange"
+            className="scroll-mt-24 rounded-xl border border-border/60 glass-card-strong p-5 sm:p-8"
           >
-            <div className="relative inline-block">
-              {/* 引号装饰 */}
-              <div className="absolute -top-4 -left-8 text-6xl text-primary/10 font-serif select-none">"</div>
-              <div className="absolute -bottom-8 -right-8 text-6xl text-primary/10 font-serif select-none">"</div>
+            <ExchangeNotes />
 
-              <blockquote className="relative">
-                <p className="text-xl md:text-2xl font-medium text-foreground/80 italic mb-4">
-                  海内存知己，天涯若比邻
-                </p>
-                <footer className="text-sm text-muted-foreground">
-                  —— 王勃《送杜少府之任蜀州》
-                </footer>
-              </blockquote>
-            </div>
-
-            {/* 装饰性分隔线 */}
-            <div className="flex items-center justify-center gap-4 mt-8">
-              <div className="w-16 h-px bg-gradient-to-r from-transparent to-primary/30"></div>
-              <Sparkles className="w-4 h-4 text-primary/50" />
-              <div className="w-16 h-px bg-gradient-to-l from-transparent to-primary/30"></div>
-            </div>
-          </motion.section>
+            {/* 引语收在面板底部：只留文字，去掉大引号与星星装饰线 */}
+            <footer className="mt-8 border-t border-border/60 pt-6 text-center">
+              <p className="text-sm italic text-foreground/70 sm:text-base">
+                海内存知己，天涯若比邻
+              </p>
+              <p className="mt-1.5 text-[11px] text-muted-foreground/70">
+                王勃《送杜少府之任蜀州》
+              </p>
+            </footer>
+          </section>
         </motion.main>
       </div>
     </div>

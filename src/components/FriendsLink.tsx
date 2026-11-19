@@ -1,30 +1,21 @@
 'use client';
 
-import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
-import {
-  Github,
-  Mail,
-  Globe,
-  ExternalLink,
-  Users,
-  Sparkles,
-  UserPlus,
-  ArrowDown
-} from "lucide-react";
+import { Fragment, useEffect, useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
+import { ArrowDown, ArrowUpRight, Globe, Plus } from 'lucide-react';
 import {
   friendsLinks,
   friendCategoryLabels,
-  friendCategoryColors,
   type FriendLink,
   type FriendLinkCategory
 } from '@/setting/AboutSetting';
 import { getAssetPath } from '@/utils/assetUtils';
 import { isElectron } from '@/utils/isElectron';
 
-/**
- * 友链巡检数据（public/friends-status.json，由 scripts/check-friends.ts 生成）
- */
+/* ================================================================== */
+/* 巡检数据结构（public/friends-status.json，由 scripts/check-friends.ts 生成） */
+/* ================================================================== */
+
 interface FriendStatusEntry {
   url: string;
   online: boolean;
@@ -42,307 +33,157 @@ function normalizeFriendUrl(url: string): string {
   return `${url.replace(/\/+$/, '')}/`;
 }
 
+/** 展示用域名：去掉协议与 www，保留路径（过长交给 CSS 截断） */
+function getDisplayHost(url: string): string {
+  try {
+    const parsed = new URL(url);
+    return parsed.hostname.replace(/^www\./, '') + parsed.pathname.replace(/\/$/, '');
+  } catch {
+    // 配置里的地址偶尔可能不是合法 URL，退回原文展示，避免整页渲染中断
+    return url;
+  }
+}
+
+/* ================================================================== */
+/* 卡片内小组件                                                        */
+/* ================================================================== */
+
 /**
- * 处理友链头像路径，处理basePath
+ * 巡检读数
+ * 用「小圆点 + 等宽小字」表达在线状态，不做成彩色胶囊角标：
+ * 名片本身信息已经很多，胶囊会再抢一层注意力
  */
-function getFriendAvatarPath(avatar: string): string {
-  return getAssetPath(avatar);
+function StatusReadout({ status }: { status: FriendStatusEntry }) {
+  const label = status.online
+    ? `在线${status.responseTimeMs !== null ? ` · ${status.responseTimeMs}ms` : ''}`
+    : '离线';
+  const tone = status.online
+    ? 'text-emerald-600 dark:text-emerald-400'
+    : 'text-red-500 dark:text-red-400';
+  const dot = status.online ? 'bg-emerald-500' : 'bg-red-400';
+
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center gap-1.5 font-mono text-[10px] tabular-nums ${tone}`}
+      title={label}
+    >
+      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${dot}`} aria-hidden="true" />
+      {label}
+    </span>
+  );
 }
 
 /**
- * 获取网站图标
- */
-function getSiteIcon(url: string) {
-  if (url.includes('github')) return <Github className="w-4 h-4" />;
-  if (url.includes('mail') || url.includes('@')) return <Mail className="w-4 h-4" />;
-  return <Globe className="w-4 h-4" />;
-}
-
-/**
- * 获取分类图标颜色
- */
-function getCategoryColor(category?: FriendLinkCategory): string {
-  if (!category) return '#66ccff';
-  return friendCategoryColors[category];
-}
-
-/**
- * 获取分类标签
- */
-function getCategoryLabel(category?: FriendLinkCategory): string {
-  if (!category) return '友链';
-  return friendCategoryLabels[category];
-}
-
-/**
- * 友链卡片组件
- * 展示单个友链信息，带有精美的视觉效果
+ * 友链名片
+ *
+ * 版式来自纸质名片：左侧方形头像当「证件照」，右侧姓名，姓名下方一条
+ * 横向细线收口，线下面才是描述与域名。
+ * 整张卡不发光、不加渐变，只靠 1px 边框和那条横线区分层次。
  */
 function FriendCard({
   link,
   index,
-  status,
+  status
 }: {
   link: FriendLink;
   index: number;
   status?: FriendStatusEntry;
 }) {
-  const [imageError, setImageError] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
-
-  const categoryColor = getCategoryColor(link.category);
-  const siteIcon = getSiteIcon(link.url);
-
-  // 巡检状态提示文案
-  const statusTitle = status
-    ? status.online
-      ? `在线${status.responseTimeMs !== null ? ` · ${status.responseTimeMs}ms` : ''}`
-      : '暂时无法访问'
-    : '';
-  const statusPillClass = status?.online
-    ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-    : 'border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400';
-  const statusDotClass = status?.online ? 'bg-emerald-500' : 'bg-red-400';
+  // 头像加载失败时退回地球图标（部分友站头像会防盗链）
+  const [avatarError, setAvatarError] = useState(false);
 
   return (
     <motion.a
       href={link.url}
       target="_blank"
       rel="noopener noreferrer"
-      initial={{ opacity: 0, y: 30 }}
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{
-        duration: 0.5,
-        // 单帧延迟收敛到 0.06s，并设置 0.3s 上限，避免友链数量增多时入场等待过长
-        delay: Math.min(index * 0.06, 0.3),
+        duration: 0.4,
+        // 延迟单帧 0.04s、上限 0.3s，与 /links 卡片的入场节奏完全一致
+        delay: Math.min(index * 0.04, 0.3),
         ease: [0.25, 0.46, 0.45, 0.94]
       }}
-      /* 悬停位移与全站卡片统一为 -3（原 -8 幅度过大）；阴影过渡时长统一 300ms */
-      whileHover={{
-        y: -3,
-        transition: { duration: 0.3, ease: "easeOut" }
-      }}
+      /* 悬停位移 -3 与全站卡片统一；CSS 过渡只负责阴影与边框，位移交给 Framer Motion */
+      whileHover={{ y: -3, transition: { duration: 0.3, ease: 'easeOut' } }}
       whileTap={{ scale: 0.98 }}
-      onHoverStart={() => setIsHovered(true)}
-      onHoverEnd={() => setIsHovered(false)}
-      /* 卡片视觉与全站统一：迁入玻璃强档令牌 glass-card-strong（近实底 + 细微通透），
-         rounded-xl 标准圆角，阴影/边框由令牌承载，悬停加深并泛天依蓝 */
-      className="group relative block rounded-xl overflow-hidden glass-card-strong
-                 hover:shadow-card-hover
-                 transition-[box-shadow,border-color] duration-300 hover:border-primary/30"
+      className="group flex flex-col rounded-xl border border-border bg-card/95 p-5
+                 shadow-card hover:shadow-card-hover hover:border-primary/30
+                 transition-[box-shadow,border-color] duration-300
+                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50
+                 focus-visible:ring-offset-2 focus-visible:ring-offset-card
+                 sm:p-6"
     >
-      {/* 顶部渐变装饰条：青→天依蓝→青（2026-10 收敛进蓝色系色板，
-          原 blog 分类绿色 #10b981 跑出色板）；友链类型区分由卡片内分类标签承担 */}
-      <motion.div
-        className="absolute top-0 left-0 right-0 h-1"
-        style={{
-          background: 'linear-gradient(90deg, #06b6d4 0%, var(--primary) 50%, #06b6d4 100%)',
-          backgroundSize: '200% 100%'
-        }}
-        animate={isHovered ? { backgroundPosition: ['0% 0%', '200% 0%'] } : {}}
-        transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-      />
-
-      {/* 悬停时的背景光效 */}
-      <motion.div
-        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-        style={{
-          background: `radial-gradient(circle at 50% 0%, ${categoryColor}15 0%, transparent 70%)`
-        }}
-      />
-
-      {/* 巡检状态点：尚未检查过（无 friends-status.json）时不渲染 */}
-      {status && (
-        <span
-          className={`absolute top-3 right-3 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium ${statusPillClass}`}
-          title={statusTitle}
-          aria-label={`站点${status.online ? '在线' : '离线'}`}
-        >
-          <span className={`h-1.5 w-1.5 rounded-full ${statusDotClass}`} aria-hidden="true" />
-          {status.online ? '在线' : '离线'}
+      {/* 名片上半部：方形头像 + 姓名 + 外链箭头 */}
+      <div className="flex items-start gap-4">
+        <span className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-border bg-muted">
+          {link.avatar && !avatarError ? (
+            /*
+              用普通 img 而非 next/image：友链头像域名由对方任意指定，
+              next/image 的 remotePatterns 无法穷举；静态导出下本就是 unoptimized，
+              只剩域名校验的负担。
+            */
+            <img
+              src={getAssetPath(link.avatar)}
+              alt=""
+              width={56}
+              height={56}
+              loading="lazy"
+              className="h-full w-full object-cover"
+              onError={() => setAvatarError(true)}
+            />
+          ) : (
+            <span className="flex h-full w-full items-center justify-center">
+              <Globe className="h-5 w-5 text-muted-foreground/45" aria-hidden="true" />
+            </span>
+          )}
         </span>
-      )}
 
-      <div className="relative p-6">
-        {/* 头部：头像和基本信息 —— items-center 让文字块相对头像垂直居中，视觉更平衡 */}
-        <div className="flex items-center gap-4 mb-4">
-          {/* 头像容器：悬停仅轻微放大，去掉旋转 —— 与全站「精致克制」的动效基调一致 */}
-          <motion.div 
-            className="relative flex-shrink-0"
-            whileHover={{ scale: 1.08 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
-          >
-            <div
-              className="w-16 h-16 rounded-xl overflow-hidden shadow-lg"
-              style={{
-                boxShadow: `0 4px 20px ${categoryColor}30`
-              }}
-            >
-              {!imageError && link.avatar ? (
-                /*
-                  用普通 img 而非 next/image：友链头像域名由友链配置任意指定，
-                  next/image 的 remotePatterns 白名单无法穷举；
-                  静态导出模式下 next/image 本就 unoptimized（无优化收益），
-                  只剩域名校验的负担。
-                */
-                <img
-                  src={getFriendAvatarPath(link.avatar)}
-                  alt={link.name}
-                  width={64}
-                  height={64}
-                  className="w-full h-full object-cover"
-                  onError={() => setImageError(true)}
-                />
-              ) : (
-                <div 
-                  className="w-full h-full flex items-center justify-center"
-                  style={{
-                    background: `linear-gradient(135deg, ${categoryColor} 0%, #66ccff 100%)`
-                  }}
-                >
-                  <Globe className="w-8 h-8 text-white" />
-                </div>
-              )}
-            </div>
-            
-          </motion.div>
-
-          {/* 名称和描述 */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              {/* 名称走语义令牌 foreground，亮暗主题自动跟随，不再需要 dark: 变体 */}
-              <h4 className="text-lg font-bold text-foreground truncate group-hover:text-primary transition-colors">
-                {link.name}
-              </h4>
-              <motion.div
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: isHovered ? 1 : 0, x: isHovered ? 0 : -10 }}
-                transition={{ duration: 0.2 }}
-              >
-                <ExternalLink className="w-4 h-4 text-primary" />
-              </motion.div>
-            </div>
-            
-            {/* 描述走 muted 语义令牌，与全站副文案层级一致 */}
-            <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
-              {link.description}
-            </p>
-          </div>
+        <div className="flex min-w-0 flex-1 items-start gap-2">
+          <h3 className="min-w-0 flex-1 text-[15px] font-semibold leading-snug text-foreground transition-colors duration-200 group-hover:text-primary">
+            {link.name}
+          </h3>
+          <ArrowUpRight
+            aria-hidden="true"
+            className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/40 transition-all duration-200
+                       group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary"
+          />
         </div>
+      </div>
 
-        {/* 底部：链接信息 —— 分隔线走 border 语义令牌，亮暗主题自动跟随 */}
-        <div className="flex items-center justify-between pt-4 border-t border-border">
-          {/* 域名胶囊化：muted 底色 + 细边框圆角胶囊，比裸文字更有质感，也强化了「信息标签」的层级 */}
-          <span className="inline-flex items-center gap-1.5 max-w-[170px] px-2.5 py-1
-                           rounded-full bg-muted/70 border border-border
-                           text-xs text-muted-foreground">
-            {siteIcon}
-            <span className="truncate">
-              {new URL(link.url).hostname.replace(/^www\./, '') + new URL(link.url).pathname.replace(/\/$/, '')}
-            </span>
-          </span>
-          
-          {/* 访问按钮 */}
-          <motion.div
-            className="flex items-center gap-1 text-sm font-medium text-primary"
-            animate={{ x: isHovered ? 5 : 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <span className="opacity-0 group-hover:opacity-100 transition-opacity">
-              访问
-            </span>
-            <ExternalLink className="w-4 h-4" />
-          </motion.div>
-        </div>
+      {/* 名片横线：从名字下方横贯整卡，是这张卡唯一的装饰性线条 */}
+      <div className="mt-4 border-t border-border/70 pt-3">
+        {/* 描述固定预留两行高度：短描述与长描述的名片同高，网格才不会一行高一行矮 */}
+        <p className="line-clamp-2 min-h-[2.6rem] text-xs leading-relaxed text-muted-foreground sm:text-[13px]">
+          {link.description}
+        </p>
+      </div>
+
+      {/* 底部信息行：mt-auto 把它压到卡片底边，保证同一行两张名片底部对齐 */}
+      <div className="mt-auto flex items-center justify-between gap-3 pt-3">
+        <span className="min-w-0 truncate font-mono text-[11px] text-muted-foreground/65">
+          {getDisplayHost(link.url)}
+        </span>
+        {status && <StatusReadout status={status} />}
       </div>
     </motion.a>
   );
 }
 
 /**
- * 空状态组件
- * 当没有友链时显示的占位内容
+ * 「空席位」名片
+ * 与友链名片同尺寸同结构，用虚线边框表示未占用；
+ * 点击平滑滚动到页面下方的交换说明区
  */
-function EmptyState() {
-  return (
-    <motion.div 
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.5 }}
-      className="col-span-full py-16 px-8"
-    >
-      <div className="max-w-md mx-auto text-center">
-        {/* 装饰图标 */}
-        <motion.div 
-          className="relative inline-flex items-center justify-center mb-6"
-          animate={{ 
-            y: [0, -10, 0],
-          }}
-          transition={{ 
-            duration: 3, 
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-        >
-          <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl" />
-          <div className="relative w-24 h-24 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 
-                          flex items-center justify-center border border-primary/20">
-            <Users className="w-12 h-12 text-primary/60" />
-          </div>
-        </motion.div>
-
-        <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-3">
-          暂无友情链接
-        </h3>
-        <p className="text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">
-          友情链接正在收集中，欢迎申请交换友链，让我们一起在这个广阔的世界中相遇
-        </p>
-        
-        {/* 提示信息 */}
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm">
-          <Sparkles className="w-4 h-4" />
-          <span>期待你的加入</span>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-/**
- * 统计信息组件
- * 以低调的主题色胶囊展示好友总数，与空状态的胶囊视觉语言保持一致
- */
-function StatsInfo({ total }: { total: number }) {
-  return (
-    <div className="mb-6">
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full
-                       bg-primary/10 border border-primary/15
-                       text-primary text-xs font-medium">
-        <Users className="w-3.5 h-3.5" />
-        共 {total} 位好友
-      </span>
-    </div>
-  );
-}
-
-/**
- * 「申请友链」占位卡片
- * 固定渲染在友链网格末尾：
- * 1. 友链数量较少时填补网格空位，避免末行大片留白
- * 2. 以虚线边框区分「可申请」与「已存在」的友链卡，点击平滑滚动到交换说明区
- * 3. 悬停位移与友链卡片保持一致（y: -3），维持整套卡片的交互统一感
- */
-function ApplyInviteCard({ index }: { index: number }) {
-  /**
-   * 点击占位卡时平滑滚动到页面下方的交换友链说明区域
-   * 尊重系统「减少动态效果」设置：开启时退化为瞬间定位
-   */
+function VacantCard({ index }: { index: number }) {
   const handleScrollToExchange = (event: React.MouseEvent<HTMLAnchorElement>) => {
-    // 拦截锚点默认跳转，改用 scrollIntoView 以获得平滑滚动
+    // 拦截锚点默认跳转，改用 scrollIntoView 获得平滑滚动
     event.preventDefault();
     const target = document.getElementById('exchange');
     if (!target) return;
-    const prefersReducedMotion = !isElectron() && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const prefersReducedMotion =
+      !isElectron() && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     target.scrollIntoView({
       behavior: prefersReducedMotion ? 'auto' : 'smooth',
       block: 'start'
@@ -353,66 +194,74 @@ function ApplyInviteCard({ index }: { index: number }) {
     <motion.a
       href="#exchange"
       onClick={handleScrollToExchange}
-      aria-label="申请交换友链，查看交换说明"
-      initial={{ opacity: 0, y: 30 }}
+      aria-label="申请交换友链，查看申请方式"
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{
-        duration: 0.5,
-        delay: Math.min(index * 0.06, 0.3),
+        duration: 0.4,
+        delay: Math.min(index * 0.04, 0.3),
         ease: [0.25, 0.46, 0.45, 0.94]
       }}
-      whileHover={{
-        y: -3,
-        transition: { duration: 0.3, ease: 'easeOut' }
-      }}
+      /* 动效与友链名片保持一致：悬停抬起 -3、按压 0.98，避免「邀请位」手感不同 */
+      whileHover={{ y: -3, transition: { duration: 0.3, ease: 'easeOut' } }}
       whileTap={{ scale: 0.98 }}
-      /* 虚线边框 + 半透明卡片底色：页面衬有全屏背景图，纯透明底会让占位卡失去轮廓，
-         因此借用 RelatedLinks 的做法给 card 色底加毛玻璃；
-         底色透明度（60~70%）高于实体友链卡（95%），配合虚线，虚实区分明确。
-         网格默认 align-items: stretch，本卡会自动与同行友链卡等高，内部用 flex 垂直居中 */
-      className="group relative flex flex-col items-center justify-center text-center
-                 rounded-xl border border-dashed border-primary/40
-                 bg-card/70 backdrop-blur-sm supports-[backdrop-filter]:bg-card/60
-                 p-6 min-h-[192px]
-                 hover:border-primary/70 hover:bg-card/90
-                 transition-[background-color,border-color] duration-300
+      className="group flex flex-col rounded-xl border border-dashed border-primary/45
+                 bg-card/90 p-5
+                 shadow-card hover:shadow-card-hover hover:border-primary/70
+                 transition-[box-shadow,border-color] duration-300
                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50
-                 focus-visible:ring-offset-2 focus-visible:ring-offset-card"
+                 focus-visible:ring-offset-2 focus-visible:ring-offset-card
+                 sm:p-6"
     >
-      {/* 图标：虚框圆角方块，悬停时轻微放大，呼应友链卡的头像位置 */}
-      <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4
-                      border border-dashed border-primary/40 text-primary
-                      transition-transform duration-300 group-hover:scale-110">
-        <UserPlus className="w-6 h-6" />
+      <div className="flex items-start gap-4">
+        {/* 头像位换成虚线方框 + 加号，与「空席位」语义一致 */}
+        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border border-dashed border-primary/40 text-primary">
+          <Plus className="h-5 w-5" aria-hidden="true" />
+        </span>
+
+        <div className="flex min-w-0 flex-1 items-start gap-2">
+          <h3 className="min-w-0 flex-1 text-[15px] font-semibold leading-snug text-foreground">
+            这个位置还空着
+          </h3>
+          <ArrowDown
+            aria-hidden="true"
+            className="mt-0.5 h-4 w-4 shrink-0 text-primary transition-transform duration-200 group-hover:translate-y-0.5"
+          />
+        </div>
       </div>
 
-      {/* 标题与说明 */}
-      <h4 className="text-base font-semibold text-foreground mb-1">
-        想在这里安个家qwq？
-      </h4>
-      <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-        欢迎申请交换友链awa！
-      </p>
+      {/* 与友链名片同一条横线，这里改成主题色虚线，保持虚实区分 */}
+      <div className="mt-4 border-t border-dashed border-primary/25 pt-3">
+        {/* 同样预留两行高度，保证与并排的友链名片等高 */}
+        <p className="min-h-[2.6rem] text-xs leading-relaxed text-muted-foreground sm:text-[13px]">
+          欢迎交换友链，把你的小站放到这里
+        </p>
+      </div>
 
-      {/* 行动提示：悬停时箭头轻向下移动，暗示页面会向下滚动 */}
-      <span className="inline-flex items-center gap-1.5 text-sm font-medium text-primary">
-        点这里查看交换方式owo
-        <ArrowDown className="w-4 h-4 transition-transform duration-300 group-hover:translate-y-0.5" />
-      </span>
+      <div className="mt-auto flex items-center justify-between gap-3 pt-3">
+        <span className="font-mono text-[11px] text-muted-foreground/65">空缺席位</span>
+        <span className="text-[11px] font-medium text-primary">查看方式</span>
+      </div>
     </motion.a>
   );
 }
 
+/* ================================================================== */
+/* 主组件                                                              */
+/* ================================================================== */
+
 /**
- * 友情链接组件
- * 展示友情链接列表
+ * 友情链接名片夹
+ * 2026-11 改版：三列等高卡片 → 横向名片网格（桌面三列 / 平板两列 / 手机一列）
+ * 1. 名片是横向比例：左侧方形头像 + 右侧姓名，姓名下方一条横线，线下是描述与域名
+ * 2. 卡片不发光、不加渐变、不加阴影，只留 1px 边框与那条横线
+ * 3. 桌面三列下名片更紧凑，空席位排在网格末尾的下一行首格
  */
 export default function FriendsLink() {
   const [mounted, setMounted] = useState(false);
-  // 友链巡检数据（可达性 + 响应耗时）；文件缺失或未生成时保持 null，相关 UI 不渲染
+  // 巡检数据缺失或未生成时保持 null，状态读数整体不渲染
   const [statusData, setStatusData] = useState<FriendsStatusFile | null>(null);
 
-  // 确保组件已挂载
   useEffect(() => {
     setMounted(true);
 
@@ -427,60 +276,99 @@ export default function FriendsLink() {
       .catch(() => {
         // 占位文件 / 本地未巡检：静默忽略
       });
+
     return () => {
       cancelled = true;
     };
   }, []);
 
-  // 按归一化 url 建索引，供卡片快速查状态
-  const statusByUrl = new Map(
-    (statusData?.friends ?? []).map((entry) => [entry.url, entry])
+  // 按归一化 url 建索引，供名片快速查状态
+  const statusByUrl = useMemo(
+    () => new Map((statusData?.friends ?? []).map((entry) => [entry.url, entry])),
+    [statusData]
   );
 
+  /**
+   * 按数据出现顺序归类
+   * 仅在存在 2 个及以上分类时才渲染分组标题：
+   * 当前友链全部属于「博客」一类，单独压一个分类标题反而多余
+   */
+  const groups = useMemo(() => {
+    const order: Array<FriendLinkCategory | null> = [];
+    const bucket = new Map<FriendLinkCategory | null, FriendLink[]>();
+
+    for (const link of friendsLinks) {
+      const key = link.category ?? null;
+      const list = bucket.get(key);
+      if (list) {
+        list.push(link);
+      } else {
+        bucket.set(key, [link]);
+        order.push(key);
+      }
+    }
+
+    return order.map((key) => ({ key, items: bucket.get(key)! }));
+  }, []);
+
+  const showGroupHeadings = groups.length > 1;
+
+  // 骨架：与正式名片同尺寸节奏（桌面三列 / 平板两列 / 手机一列）
   if (!mounted) {
     return (
-      <div className="animate-pulse">
-        {/* 骨架屏同样走 muted 语义令牌，与正式卡片令牌体系一致 */}
-        <div className="h-8 w-28 bg-muted rounded-full mb-6"></div>
-        {/* 骨架断点与正式网格保持一致：grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-48 bg-muted rounded-xl"></div>
-          ))}
-        </div>
+      <div className="grid animate-pulse grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="h-[172px] rounded-xl bg-muted" />
+        ))}
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* 统计信息 */}
-      <StatsInfo total={friendsLinks.length} />
+    <div>
+      {friendsLinks.length === 0 ? (
+        // 空名录：只保留一句话，不放插画与光晕
+        <div className="rounded-xl border border-border bg-card/95 px-6 py-12 text-center">
+          <p className="text-sm text-foreground/80">名录还是空的</p>
+          <p className="mt-1 text-xs text-muted-foreground">欢迎成为第一位邻居</p>
+        </div>
+      ) : (
+        /*
+          所有名片放在同一个网格里：空席位作为网格的最后一个格子，
+          桌面三列时 3 张友链恰好占满第一行，空席位落在第二行首格；
+          分组标题用 col-span-full 独占一行，不打断网格
+        */
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
+          {groups.map((group) => (
+            <Fragment key={group.key ?? 'uncategorized'}>
+              {/* 分组标题只在多分类时出现：跨两列的一行小字，不用图标色块 */}
+              {showGroupHeadings && (
+                <div className="col-span-full flex items-baseline gap-2">
+                  <span className="text-[11px] font-medium text-muted-foreground">
+                    {group.key ? friendCategoryLabels[group.key] : '其他'}
+                  </span>
+                  <span className="font-mono text-[10px] tabular-nums text-muted-foreground/50">
+                    {group.items.length}
+                  </span>
+                  <span className="flex-1 border-b border-border/50" />
+                </div>
+              )}
 
-      {/* 友链网格：断点与全站卡片网格规范统一 */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
-      >
-        {friendsLinks.length > 0 ? (
-          <>
-            {friendsLinks.map((link, index) => (
-              <FriendCard
-                key={link.name}
-                link={link}
-                index={index}
-                status={statusByUrl.get(normalizeFriendUrl(link.url))}
-              />
-            ))}
-            {/* 末尾固定一张「申请友链」占位卡，填补末行空位并引导交换 */}
-            <ApplyInviteCard index={friendsLinks.length} />
-          </>
-        ) : (
-          <EmptyState />
-        )}
-      </motion.div>
+              {group.items.map((link) => (
+                <FriendCard
+                  key={link.name}
+                  link={link}
+                  index={friendsLinks.indexOf(link)}
+                  status={statusByUrl.get(normalizeFriendUrl(link.url))}
+                />
+              ))}
+            </Fragment>
+          ))}
+
+          {/* 空席位：网格最后一格，桌面三列时位于第二行首格 */}
+          <VacantCard index={friendsLinks.length} />
+        </div>
+      )}
     </div>
   );
 }

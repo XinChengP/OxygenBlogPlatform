@@ -15,7 +15,8 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   ChevronDownIcon,
-  XMarkIcon
+  XMarkIcon,
+  BookmarkIcon
 } from '@heroicons/react/24/outline';
 
 
@@ -251,15 +252,39 @@ function SeriesBar({
 }
 
 /**
- * 继续阅读提示（固定在底部中央）
+ * 继续阅读提示（底部悬浮「书签卡」）
+ *
+ * 设计说明：
+ * 把「恢复阅读位置」做成一张实体书签的隐喻——卡片顶部垂出一条天依蓝缎带，
+ * 左侧是一圈用弧长表达上次进度的圆环（中央放书签图标，数字只出现在副文案里，
+ * 避免同一信息重复三遍），右侧才是读起来最轻的主操作。
+ *
+ * 相比旧版居中的胶囊按钮，这里收了三件事，解决「突兀」：
+ * 1. 更窄、更贴底（bottom-6/8），不再压在正文视线中心；
+ * 2. 进出使用弹簧动画（轻微缩放 + 上浮），不是硬邦邦地闪现；
+ * 3. 读者真正读起来（滚动超过 140px）就自动淡出，不再常驻挡内容。
  *
  * 挂载后读取本篇的阅读记录；有有意义的进度（3%~92%）且本会话未关闭过时，
- * 延迟 1.5 秒浮出「上次读到 N%」提示，点击平滑跳转到上次位置。
- * 关闭只记录在 sessionStorage，换一次会话仍会提示；阅读记录本身不受影响。
+ * 延迟 1.5 秒浮出。关闭只记录在 sessionStorage，换一次会话仍会提示；
+ * 阅读记录本身不受影响。
  */
 function ResumeReadingPrompt({ slug }: { slug: string }) {
   const [percent, setPercent] = useState<number | null>(null);
   const [visible, setVisible] = useState(false);
+  // 提示浮出时的滚动位置：用来判断读者是否已经开始真正阅读（滚走一段距离即视为在读了）
+  const shownAtScrollRef = useRef(0);
+
+  /**
+   * 记录「本次会话已处理过提示」。
+   * 用户点关闭、按 Esc、或读走一段距离都会调用，避免同一会话反复打扰。
+   */
+  const rememberDismissed = useCallback(() => {
+    try {
+      sessionStorage.setItem(`obp-resume-dismissed:${slug}`, '1');
+    } catch {
+      // sessionStorage 不可用：忽略，下次进入仍会提示
+    }
+  }, [slug]);
 
   useEffect(() => {
     try {
@@ -271,64 +296,168 @@ function ResumeReadingPrompt({ slug }: { slug: string }) {
     if (saved === null) return;
 
     setPercent(saved);
-    // 等首屏与水合稳定后再浮出，避免和文章加载抢注意力
-    const timer = setTimeout(() => setVisible(true), 1500);
+    // 等首屏与水合稳定、读者视线落定后再浮出，避免和文章加载抢注意力
+    const timer = setTimeout(() => {
+      shownAtScrollRef.current = window.scrollY;
+      setVisible(true);
+    }, 1500);
     return () => clearTimeout(timer);
   }, [slug]);
 
-  if (!visible || percent === null) return null;
-
-  const dismiss = () => {
-    try {
-      sessionStorage.setItem(`obp-resume-dismissed:${slug}`, '1');
-    } catch {
-      // ignore
-    }
+  /** 收起提示并记住本次会话已处理 */
+  const dismiss = useCallback(() => {
+    rememberDismissed();
     setVisible(false);
-  };
+  }, [rememberDismissed]);
+
+  // 提示出现后，读者往下滚走一段就不必再提示了：自动优雅淡出
+  useEffect(() => {
+    if (!visible) return;
+
+    const handleScroll = () => {
+      if (Math.abs(window.scrollY - shownAtScrollRef.current) > 140) {
+        rememberDismissed();
+        setVisible(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [visible, rememberDismissed]);
+
+  // Esc 收起：与全站弹层习惯保持一致
+  useEffect(() => {
+    if (!visible) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') dismiss();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [visible, dismiss]);
 
   const jump = () => {
+    // 提前返回分支已被 AnimatePresence 取代，这里需要显式守卫类型
+    if (percent === null) return;
+
     const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    // 尊重系统「减少动态效果」设置，避免强制平滑滚动引起不适
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     window.scrollTo({
       top: Math.round((docHeight * percent) / 100),
-      behavior: 'smooth',
+      behavior: reduceMotion ? 'auto' : 'smooth',
     });
     dismiss();
   };
 
+  // 进度环几何：半径 18 对应的圆周长，按百分比裁剪 strokeDashoffset
+  const RING_RADIUS = 18;
+  const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
+  const ringOffset = percent === null ? RING_CIRCUMFERENCE : RING_CIRCUMFERENCE * (1 - percent / 100);
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      /*
-        位置：底部居中、高于浮动按钮区（右侧是设置/回顶/页底按钮组），
-        层级用 floatingControls 令牌。
-      */
-      className="fixed bottom-24 left-1/2 -translate-x-1/2 flex items-center gap-3
-                 rounded-full border border-border/50 bg-card/90 backdrop-blur-md shadow-lg px-4 py-2"
-      style={{ zIndex: Z_INDEX.floatingControls }}
-      role="status"
-    >
-      <span className="text-xs text-muted-foreground whitespace-nowrap">
-        上次读到 <span className="font-semibold text-primary tabular-nums">{percent}%</span>
-      </span>
-      <button
-        type="button"
-        onClick={jump}
-        className="rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 whitespace-nowrap"
-      >
-        继续阅读
-      </button>
-      <button
-        type="button"
-        onClick={dismiss}
-        aria-label="关闭继续阅读提示"
-        className="p-1 rounded-full text-muted-foreground/70 hover:text-foreground transition-colors"
-      >
-        <XMarkIcon className="h-3.5 w-3.5" />
-      </button>
-    </motion.div>
+    <AnimatePresence>
+      {visible && percent !== null && (
+        /*
+          外层只负责定位：整宽居中容器 + 指针穿透，
+          让内层卡片独占动画 transform，避免与 framer-motion 的位移/缩放打架。
+        */
+        <div
+          className="fixed inset-x-0 bottom-6 sm:bottom-8 flex justify-center px-4 pointer-events-none"
+          style={{ zIndex: Z_INDEX.floatingControls }}
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 18, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.97 }}
+            transition={{ type: 'spring', stiffness: 240, damping: 26, mass: 0.9 }}
+            className="pointer-events-auto relative w-[min(100%,26rem)]"
+            role="status"
+          >
+            {/*
+              书签缎带：卡片顶部垂出的一小截天依蓝带子，底部剪出 V 形缺口，
+              是整个提示「书签」语义的点睛，纯装饰不参与读屏。
+            */}
+            <span
+              aria-hidden="true"
+              className="absolute left-1/2 top-0 -mt-px h-2.5 w-3 -translate-x-1/2 -translate-y-full
+                         bg-gradient-to-b from-primary to-primary/70"
+              style={{ clipPath: 'polygon(0 0, 100% 0, 100% 100%, 50% 62%, 0 100%)' }}
+            />
+
+            <div
+              className="flex items-center gap-3 rounded-2xl border border-primary/15 bg-card/95 px-3.5 py-3
+                         shadow-xl shadow-primary/15 backdrop-blur-xl"
+            >
+              {/* 进度环：弧长表示上次读到的位置，环心放书签图标呼应顶部缎带 */}
+              <div className="relative h-11 w-11 flex-shrink-0">
+                <svg viewBox="0 0 44 44" className="h-full w-full -rotate-90" aria-hidden="true">
+                  <circle
+                    cx="22"
+                    cy="22"
+                    r={RING_RADIUS}
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    className="text-primary/15"
+                  />
+                  <circle
+                    cx="22"
+                    cy="22"
+                    r={RING_RADIUS}
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    strokeDasharray={RING_CIRCUMFERENCE}
+                    strokeDashoffset={ringOffset}
+                    className="text-primary transition-[stroke-dashoffset] duration-700 ease-out"
+                  />
+                </svg>
+                <BookmarkIcon
+                  className="absolute left-1/2 top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 text-primary"
+                  aria-hidden="true"
+                />
+              </div>
+
+              {/* 主副文案：数字只在这里出现一次，避免与环形进度重复 */}
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[13px] font-semibold leading-tight text-foreground">
+                  继续上次阅读
+                </p>
+                <p className="mt-0.5 truncate text-[11px] leading-tight text-muted-foreground tabular-nums">
+                  上次停在 {percent}%
+                </p>
+              </div>
+
+              {/* 主操作 + 关闭：都在右侧同一视觉组内，减少视线跳跃 */}
+              <div className="flex flex-shrink-0 items-center gap-0.5">
+                <button
+                  type="button"
+                  onClick={jump}
+                  className="group inline-flex items-center gap-0.5 rounded-full bg-primary py-1.5 pl-3 pr-2
+                             text-xs font-medium text-primary-foreground shadow-sm shadow-primary/25
+                             transition-all hover:bg-primary/90 hover:shadow-md active:scale-[0.97]"
+                >
+                  继续
+                  <ChevronRightIcon className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={dismiss}
+                  aria-label="关闭继续阅读提示"
+                  className="rounded-full p-1.5 text-muted-foreground/60 transition-colors
+                             hover:bg-muted hover:text-foreground"
+                >
+                  <XMarkIcon className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
   );
 }
 

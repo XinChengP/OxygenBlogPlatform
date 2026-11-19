@@ -755,7 +755,7 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
       <div className="px-4 sm:px-6 lg:px-8 pb-16">
         <PageHeader
           title="归档"
-          description={`时光河流 · 共 ${totalPosts} 篇文章 · 使用 ← → 浏览`}
+          description={`时光河流 · 共 ${totalPosts} 篇文章 · 更 好 的 归 档`}
           size="lg"
           className="mb-8"
         />
