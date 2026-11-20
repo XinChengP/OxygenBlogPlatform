@@ -1,6 +1,7 @@
 ---
 title: "75cm 徽章定制记录"
 date: "2026-11-19"
+updatedAt: "2026-11-20"
 category: "洛天依"
 tags: ["洛天依", "周边", "徽章", "自制", "定制"]
 excerpt: "没错是75cm而非75mm"

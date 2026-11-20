@@ -1,12 +1,12 @@
 ---
 title: "“我不要，就这样~等到了惊蛰后盼霜降”"
 date: "2026-10-25"
-updatedAt: "2026-10-25"
+updatedAt: "2026-11-20"
 author: 歆橙
 category: "技术"
 tags: ["崩溃", "数据恢复", "U盘", "DMDE", "RAW"]
 excerpt: "U盘抢（划去）救援记录"
-coverImage: "/Blogabout/usb-rescue-record/cover.jpg"
+coverImage: "/Blogabout/usb-rescue-record/cover1.jpg"
 ---
 
 <!-- ========================= 聊天记录样式（写文章时无需改动） ========================= -->
@@ -410,7 +410,7 @@ CHKDSK 无法供 RAW 驱动器使用。
 
 &emsp;&emsp;我这之前捣鼓一天两夜那算啥啊
 
-![对着它发呆](/Blogabout/usb-rescue-record/hyw.png)
+ <img src="/Blogabout/usb-rescue-record/hyw.png" alt="对着它发呆" />
 
 ![AI 把文件全部找了回来](/Blogabout/usb-rescue-record/ok.png)
 
@@ -426,3 +426,4 @@ CHKDSK 无法供 RAW 驱动器使用。
 
 &emsp;&emsp;血的教训啊孩子们，以后用U盘啥的一定要安全弹出再拔下来。得亏我这平时不用U盘，里面没有非常重要的文件，恢复的需求没那么大，我才有心情搞这个玩意o(╥﹏╥)o
 
+ <img src="/Blogabout/usb-rescue-record/cover.jpg" alt="" />
