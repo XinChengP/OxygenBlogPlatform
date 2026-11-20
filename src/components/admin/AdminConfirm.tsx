@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useId, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { CircleAlert, Info, TriangleAlert } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import AdminButton from './AdminButton';
 // 用全站统一的滚动锁替代直接设置 body overflow，
 // 避免破坏 sticky 侧栏与丢失滚动位置
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 
 /**
  * 确认对话框类型
@@ -45,29 +47,17 @@ interface AdminConfirmProps {
 const getConfirmStyles = (type: ConfirmType) => {
   const styles: Record<ConfirmType, { icon: React.ReactNode; iconBg: string; confirmType: 'danger' | 'primary' }> = {
     danger: {
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-        </svg>
-      ),
+      icon: <TriangleAlert className="w-6 h-6" />,
       iconBg: 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400',
       confirmType: 'danger',
     },
     warning: {
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      ),
+      icon: <CircleAlert className="w-6 h-6" />,
       iconBg: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400',
       confirmType: 'primary',
     },
     info: {
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      ),
+      icon: <Info className="w-6 h-6" />,
       iconBg: 'bg-[#66ccff]/20 dark:bg-[#66ccff]/10 text-[#66ccff]',
       confirmType: 'primary',
     },
@@ -100,6 +90,14 @@ const AdminConfirm: React.FC<AdminConfirmProps> = ({
 }) => {
   const styles = getConfirmStyles(type);
 
+  // 无障碍关联：标题与描述分别有稳定 id，供屏幕阅读器朗读
+  const titleId = useId();
+  const descriptionId = useId();
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  // 弹层打开时锁定焦点在对话框内部，关闭后归还焦点
+  useFocusTrap(contentRef, open);
+
   /**
    * 处理键盘事件
    */
@@ -110,12 +108,9 @@ const AdminConfirm: React.FC<AdminConfirmProps> = ({
       if (event.key === 'Escape') {
         onClose();
       } else if (event.key === 'Enter') {
-        /*
-          只在焦点不处于输入控件时响应回车。
-          原实现监听 document，确认框打开时用户在页面其他输入框按回车
-          也会直接执行确认（例如删除），属于高风险误操作。
-        */
         const target = event.target as HTMLElement | null;
+
+        // 焦点在输入控件上时，回车属于表单行为，不接管
         if (
           target &&
           (target.tagName === 'INPUT' ||
@@ -125,6 +120,14 @@ const AdminConfirm: React.FC<AdminConfirmProps> = ({
         ) {
           return;
         }
+
+        /*
+          焦点在任意按钮上时交给按钮自身的点击行为：
+          否则焦点停在「取消」上按回车会同时触发取消与全局确认，
+          一次回车产生两个相反的结果。
+        */
+        if (target && target.tagName === 'BUTTON') return;
+
         onConfirm();
       }
     },
@@ -172,11 +175,17 @@ const AdminConfirm: React.FC<AdminConfirmProps> = ({
 
           {/* 对话框内容 */}
           <motion.div
+            ref={contentRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+            aria-describedby={descriptionId}
+            tabIndex={-1}
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="relative w-full max-w-md rounded-xl shadow-2xl bg-white dark:bg-gray-800 border border-gray-200/50 dark:border-gray-700/50"
+            className="relative w-full max-w-md rounded-xl shadow-2xl bg-card border border-border focus:outline-none"
             onClick={e => e.stopPropagation()}
           >
             {/* 内容区域 */}
@@ -190,10 +199,10 @@ const AdminConfirm: React.FC<AdminConfirmProps> = ({
 
                 {/* 标题和消息 */}
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  <h3 id={titleId} className="text-lg font-semibold text-card-foreground">
                     {title}
                   </h3>
-                  <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                  <p id={descriptionId} className="mt-2 text-sm text-muted-foreground">
                     {message}
                   </p>
                 </div>
@@ -201,7 +210,7 @@ const AdminConfirm: React.FC<AdminConfirmProps> = ({
             </div>
 
             {/* 底部按钮 */}
-            <div className="flex items-center justify-end space-x-3 px-6 py-4 border-t border-gray-200/50 dark:border-gray-700/50 bg-gray-50/50 dark:bg-gray-900/50 rounded-b-xl">
+            <div className="flex items-center justify-end space-x-3 px-6 py-4 border-t border-border bg-muted/40 rounded-b-xl">
               {/* 取消按钮 */}
               <AdminButton
                 type="secondary"

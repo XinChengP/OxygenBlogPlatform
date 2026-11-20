@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Check, Info, TriangleAlert, X } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
 /**
@@ -44,38 +45,23 @@ const ToastContext = createContext<ToastContextType | undefined>(undefined);
  * @returns 样式配置对象
  */
 const getToastStyles = (type: ToastType) => {
+  // 图标统一使用 lucide，避免手写 SVG 与全站图标线宽不一致
   const styles: Record<ToastType, { bg: string; icon: React.ReactNode }> = {
     success: {
       bg: 'bg-green-500 dark:bg-green-600',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-        </svg>
-      ),
+      icon: <Check className="w-5 h-5" />,
     },
     error: {
       bg: 'bg-red-500 dark:bg-red-600',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      ),
+      icon: <X className="w-5 h-5" />,
     },
     warning: {
       bg: 'bg-yellow-500 dark:bg-yellow-600',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-        </svg>
-      ),
+      icon: <TriangleAlert className="w-5 h-5" />,
     },
     info: {
       bg: 'bg-[#66ccff] dark:bg-[#55bbef]',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      ),
+      icon: <Info className="w-5 h-5" />,
     },
   };
   return styles[type];
@@ -161,7 +147,8 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     <ToastContext.Provider value={{ addToast, removeToast }}>
       {children}
       {/* 消息提示容器 */}
-      <div className="fixed top-4 right-4 z-[100] flex flex-col space-y-2 max-w-sm">
+      {/* top-20 让出 64px 的 sticky 顶栏，避免提示压住主题切换与头像 */}
+      <div className="fixed top-20 right-4 z-[100] flex flex-col space-y-2 max-w-sm">
         <AnimatePresence>
           {toasts.map(toast => (
             <ToastItemComponent
@@ -327,9 +314,7 @@ export const AdminToast: React.FC<AdminToastProps> = ({
           aria-label="关闭提示"
           className="flex-shrink-0 p-1 rounded hover:bg-white/20 transition-colors"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <X className="w-4 h-4" />
         </button>
       )}
     </motion.div>

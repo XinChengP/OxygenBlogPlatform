@@ -138,14 +138,31 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
   };
 
-  // 组件未挂载时返回占位符，避免水合错误
+  // 组件未挂载时渲染后台骨架，避免首屏是一整屏居中转圈导致的布局跳变
   if (!mounted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="relative">
-            <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#66ccff]/20 border-t-[#66ccff]" />
-            <div className="absolute inset-0 animate-ping rounded-full h-12 w-12 border-2 border-[#66ccff]/10" />
+      <div className="min-h-screen">
+        {/* 侧栏骨架 */}
+        <div className="hidden lg:block fixed left-0 top-0 h-screen w-64 border-r border-gray-200/50 dark:border-gray-700/50 bg-white/70 dark:bg-gray-900/70">
+          <div className="h-16 border-b border-gray-200/50 dark:border-gray-700/50" />
+          <div className="p-3 space-y-2 animate-pulse">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <div key={index} className="h-10 rounded-xl bg-gray-200/60 dark:bg-gray-800/60" />
+            ))}
+          </div>
+        </div>
+
+        {/* 顶栏与内容骨架 */}
+        <div className="lg:ml-64">
+          <div className="h-16 border-b border-gray-200/50 dark:border-gray-700/50 bg-white/70 dark:bg-gray-900/70" />
+          <div className="p-4 lg:p-8 space-y-4 animate-pulse">
+            <div className="h-8 w-48 rounded-lg bg-gray-200/60 dark:bg-gray-800/60" />
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              {Array.from({ length: 4 }).map((_, index) => (
+                <div key={index} className="h-24 rounded-xl bg-gray-200/50 dark:bg-gray-800/50" />
+              ))}
+            </div>
+            <div className="h-64 rounded-xl bg-gray-200/40 dark:bg-gray-800/40" />
           </div>
         </div>
       </div>
@@ -155,7 +172,13 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const isDark = resolvedTheme === 'dark';
 
   return (
-    <div className={`min-h-screen transition-colors duration-500 ${isDark ? 'dark' : ''}`}>
+    /*
+      不再手动叠加 dark class：
+      根 html 已由 ThemeProvider（attribute="class"）统一控制暗色，
+      这里再根据 resolvedTheme 叠加一次属于重复声明，且 SSR 阶段
+      resolvedTheme 为 undefined 时会先渲染成浅色。
+    */
+    <div className="min-h-screen transition-colors duration-500">
       {/* 背景渐变 */}
       <div className="fixed inset-0 bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 -z-10" />
       
@@ -215,7 +238,9 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                 whileTap={{ scale: 0.95 }}
                 onClick={toggleSidebar}
                 className="hidden lg:flex p-2.5 rounded-xl text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/50 hover:text-[#66ccff] transition-all duration-300"
-                aria-label="切换侧边栏"
+                aria-label={sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'}
+                aria-expanded={!sidebarCollapsed}
+                aria-controls="admin-sidebar"
               >
                 <motion.div
                   animate={{ rotate: sidebarCollapsed ? 180 : 0 }}
@@ -226,18 +251,22 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               </motion.button>
 
               {/* 当前页面标题（面包屑） */}
+              {/*
+                面包屑只承担「我在哪」的定位作用，视觉上必须弱于页面内 h1，
+                否则顶栏标题与页面标题两处大字并存，重复感很强。
+              */}
               <div className="flex items-center space-x-2.5 min-w-0">
-                <div className="hidden sm:flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-[#66ccff]/20 to-[#66ccff]/5 shrink-0">
-                  <PageIcon className="w-4 h-4 text-[#66ccff]" />
+                <div className="hidden sm:flex items-center justify-center w-7 h-7 rounded-lg bg-gradient-to-br from-[#66ccff]/15 to-[#66ccff]/5 shrink-0">
+                  <PageIcon className="w-3.5 h-3.5 text-[#66ccff]/80" />
                 </div>
                 <div className="flex items-baseline space-x-2 min-w-0">
                   <span className="hidden md:inline text-sm text-gray-400 dark:text-gray-500 whitespace-nowrap">
                     管理后台
                   </span>
                   <span className="hidden md:inline text-gray-300 dark:text-gray-600">/</span>
-                  <h1 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-100 truncate">
+                  <span className="text-sm font-medium text-gray-600 dark:text-gray-300 truncate">
                     {currentPage.label}
-                  </h1>
+                  </span>
                 </div>
               </div>
             </div>

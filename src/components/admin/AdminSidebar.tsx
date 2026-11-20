@@ -4,6 +4,7 @@ import React, { useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/utils/cn';
 import {
   LayoutDashboard,
   FileText,
@@ -18,6 +19,7 @@ import {
   History,
   GraduationCap,
   Sparkles,
+  ArrowLeft,
 } from 'lucide-react';
 
 /**
@@ -38,7 +40,8 @@ interface NavItem {
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   children?: NavItem[];
-  badge?: string | number;
+  /** 所属分组，用于在导航中插入分组标题 */
+  group?: string;
 }
 
 /**
@@ -87,14 +90,20 @@ const NavItemComponent: React.FC<NavItemProps> = ({
     }
   };
 
-  // 折叠状态下只显示图标
+  // 折叠状态下只显示图标，悬停时在右侧弹出浮层补足文字与子菜单
   if (collapsed) {
     return (
       <div className="relative group">
+        {/*
+          去掉 overflow-hidden：
+          原来的溢出裁剪会把 -top-1 -right-1 的徽章直接裁掉，
+          折叠态下永远看不到待办数量。
+        */}
         <Link
           href={item.href}
           onClick={handleClick}
-          className={`relative flex items-center justify-center w-full h-11 rounded-xl transition-all duration-300 overflow-hidden ${
+          aria-current={isActive || isChildActive ? 'page' : undefined}
+          className={`relative flex items-center justify-center w-full h-11 rounded-xl transition-all duration-300 ${
             isActive || isChildActive
               ? 'bg-gradient-to-r from-[#66ccff]/20 to-[#66ccff]/5 text-[#66ccff] shadow-lg shadow-[#66ccff]/10'
               : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/50 hover:text-gray-700 dark:hover:text-gray-200'
@@ -102,15 +111,44 @@ const NavItemComponent: React.FC<NavItemProps> = ({
           title={item.label}
         >
           <Icon className="w-5 h-5" />
-
-          {/* 徽章 */}
-          {item.badge && (
-            <span className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-br from-red-400 to-red-600 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg shadow-red-500/30">
-              {item.badge}
-            </span>
-          )}
         </Link>
 
+        {/*
+          折叠态浮层：
+          1. 补足被省略的文字标签；
+          2. 有子菜单时直接列出子项，避免「必须先展开侧栏才能进子页」；
+          3. 用 pl-3 让图标与浮层之间的空隙也属于浮层，鼠标移动时不会断开 hover。
+        */}
+        <div className="pointer-events-none absolute left-full top-0 pl-3 z-50 opacity-0 -translate-x-1 transition-all duration-150 group-hover:opacity-100 group-hover:translate-x-0 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto">
+          <div className="min-w-[176px] rounded-xl border border-border bg-card shadow-xl p-1.5">
+            <div className="px-2.5 py-1.5 text-xs font-semibold text-muted-foreground">
+              {item.label}
+            </div>
+            {hasChildren &&
+              item.children!.map(child => {
+                const childIsActive =
+                  pathname === child.href || pathname.startsWith(child.href + '/');
+                const ChildIcon = child.icon;
+                return (
+                  <Link
+                    key={child.id}
+                    href={child.href}
+                    onClick={onMobileClose}
+                    aria-current={childIsActive ? 'page' : undefined}
+                    className={cn(
+                      'flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm transition-colors',
+                      childIsActive
+                        ? 'bg-[#66ccff]/10 text-[#66ccff]'
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-muted'
+                    )}
+                  >
+                    <ChildIcon className="w-4 h-4" />
+                    {child.label}
+                  </Link>
+                );
+              })}
+          </div>
+        </div>
       </div>
     );
   }
@@ -122,6 +160,7 @@ const NavItemComponent: React.FC<NavItemProps> = ({
       <Link
         href={item.href}
         onClick={handleClick}
+        aria-current={isActive || isChildActive ? 'page' : undefined}
         className={`flex items-center justify-between w-full px-3 py-2.5 rounded-xl transition-all duration-300 group ${
           isActive || isChildActive
             ? 'bg-gradient-to-r from-[#66ccff]/20 to-[#66ccff]/5 text-[#66ccff] shadow-lg shadow-[#66ccff]/10'
@@ -140,13 +179,6 @@ const NavItemComponent: React.FC<NavItemProps> = ({
         </div>
         
         <div className="flex items-center space-x-2">
-          {/* 徽章 */}
-          {item.badge && (
-            <span className="px-2 py-0.5 bg-gradient-to-br from-red-400 to-red-600 text-white text-xs font-bold rounded-full shadow-lg shadow-red-500/30">
-              {item.badge}
-            </span>
-          )}
-          
           {/* 展开/折叠图标 */}
           {hasChildren && (
             <motion.div
@@ -246,7 +278,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
   /**
    * 导航菜单配置
-   * 使用 useMemo 避免不必要的重新计算
+   * 按「内容 / 运营 / 系统」分组，降低十项平铺带来的查找成本。
    */
   const navItems: NavItem[] = useMemo(() => [
     {
@@ -254,42 +286,35 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       label: '仪表盘',
       href: '/admin',
       icon: LayoutDashboard,
+      group: '内容',
     },
     {
       id: 'blogs',
       label: '文章管理',
       href: '/admin/blogs',
       icon: FileText,
+      group: '内容',
     },
     {
       id: 'moments',
       label: '动态管理',
       href: '/admin/moments',
       icon: MessageSquare,
-    },
-    {
-      id: 'todo',
-      label: '待办管理',
-      href: '/admin/todo',
-      icon: CheckSquare,
-    },
-    {
-      id: 'study',
-      label: '学习打卡',
-      href: '/admin/study',
-      icon: GraduationCap,
+      group: '内容',
     },
     {
       id: 'changelogs',
       label: '日志管理',
       href: '/admin/changelogs',
       icon: History,
+      group: '内容',
     },
     {
       id: 'gallery',
       label: '图床管理',
       href: '/admin/gallery',
       icon: Image,
+      group: '内容',
       children: [
         {
           id: 'gallery-local',
@@ -307,16 +332,32 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       ],
     },
     {
+      id: 'todo',
+      label: '待办管理',
+      href: '/admin/todo',
+      icon: CheckSquare,
+      group: '运营',
+    },
+    {
+      id: 'study',
+      label: '学习打卡',
+      href: '/admin/study',
+      icon: GraduationCap,
+      group: '运营',
+    },
+    {
       id: 'backup',
       label: '本地备份',
       href: '/admin/backup',
       icon: Database,
+      group: '系统',
     },
     {
       id: 'settings',
       label: '系统设置',
       href: '/admin/settings',
       icon: Settings,
+      group: '系统',
     },
   ], []);
 
@@ -356,12 +397,16 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     });
   }, [pathname, navItems]);
 
-  // 侧边栏内容
-  const sidebarContent = (
+  /**
+   * 渲染侧边栏内容
+   * 抽成函数是为了让桌面端与移动端能使用不同的折叠状态：
+   * 原来两端复用同一份 JSX，桌面折叠后打开移动端菜单也会只剩图标。
+   */
+  const renderSidebarContent = (isCollapsed: boolean) => (
     <div className="flex flex-col h-full">
       {/* Logo 区域 */}
-      <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} h-16 px-4 border-b border-gray-200/50 dark:border-gray-700/50`}>
-        {!collapsed && (
+      <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} h-16 px-4 border-b border-gray-200/50 dark:border-gray-700/50`}>
+        {!isCollapsed && (
           <Link href="/admin" className="flex items-center space-x-3 group">
             <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-[#66ccff] to-[#4aa8e8] flex items-center justify-center shadow-lg shadow-[#66ccff]/30 group-hover:shadow-[#66ccff]/50 transition-shadow duration-300">
               <Sparkles className="w-5 h-5 text-white" />
@@ -375,8 +420,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
             </div>
           </Link>
         )}
-        
-        {collapsed && (
+
+        {isCollapsed && (
           <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-[#66ccff] to-[#4aa8e8] flex items-center justify-center shadow-lg shadow-[#66ccff]/30">
             <Sparkles className="w-5 h-5 text-white" />
           </div>
@@ -384,36 +429,58 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       </div>
 
       {/* 导航菜单 */}
-      <nav className={`flex-1 px-3 py-4 space-y-1 ${collapsed ? 'overflow-visible' : 'overflow-y-auto'}`}>
-        {navItems.map((item) => (
-          <NavItemComponent
-            key={item.id}
-            item={item}
-            collapsed={collapsed}
-            isActive={isItemActive(item)}
-            isChildActive={hasActiveChild(item)}
-            expandedItems={expandedItems}
-            toggleExpand={toggleExpand}
-            onMobileClose={onMobileClose}
-            pathname={pathname}
-          />
-        ))}
+      <nav className={`flex-1 px-3 py-4 space-y-1 ${isCollapsed ? 'overflow-visible' : 'overflow-y-auto'}`}>
+        {navItems.map((item, index) => {
+          const previousGroup = index > 0 ? navItems[index - 1].group : undefined;
+          // 分组变化时插入标题；首项总是要显示自己的分组标题
+          const showGroupLabel = Boolean(item.group) && item.group !== previousGroup;
+
+          return (
+            <React.Fragment key={item.id}>
+              {showGroupLabel &&
+                (isCollapsed
+                  ? index > 0 && (
+                      // 折叠态用分隔线代替文字标题，避免文字被裁切
+                      <div className="py-2">
+                        <div className="border-t border-border/60" />
+                      </div>
+                    )
+                  : (
+                      <div
+                        className={`px-3 text-[11px] font-semibold tracking-widest text-gray-400 dark:text-gray-500 ${
+                          index === 0 ? 'pb-1' : 'pt-4 pb-1'
+                        }`}
+                      >
+                        {item.group}
+                      </div>
+                    ))}
+              <NavItemComponent
+                item={item}
+                collapsed={isCollapsed}
+                isActive={isItemActive(item)}
+                isChildActive={hasActiveChild(item)}
+                expandedItems={expandedItems}
+                toggleExpand={toggleExpand}
+                onMobileClose={onMobileClose}
+                pathname={pathname}
+              />
+            </React.Fragment>
+          );
+        })}
       </nav>
 
       {/* 底部区域 */}
-      <div className={`border-t border-gray-200/50 dark:border-gray-700/50 ${collapsed ? 'px-3' : 'px-4'} py-4`}>
+      <div className={`border-t border-gray-200/50 dark:border-gray-700/50 ${isCollapsed ? 'px-3' : 'px-4'} py-4`}>
         {/* 返回前台链接 */}
         <Link
           href="/"
           onClick={onMobileClose}
-          className={`flex items-center ${collapsed ? 'justify-center' : 'space-x-3'} w-full px-3 py-2.5 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-gray-100 hover:to-transparent dark:hover:from-gray-800/50 dark:hover:to-transparent transition-all duration-300 group`}
+          className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'} w-full px-3 py-2.5 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-gray-100 hover:to-transparent dark:hover:from-gray-800/50 dark:hover:to-transparent transition-all duration-300 group`}
         >
           <div className="p-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 group-hover:bg-white dark:group-hover:bg-gray-700 transition-colors">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
+            <ArrowLeft className="w-4 h-4" />
           </div>
-          {!collapsed && <span className="text-sm font-medium">返回前台</span>}
+          {!isCollapsed && <span className="text-sm font-medium">返回前台</span>}
         </Link>
       </div>
     </div>
@@ -423,14 +490,15 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     <>
       {/* 桌面端侧边栏 */}
       <aside
+        id="admin-sidebar"
         className={`hidden lg:flex fixed left-0 top-0 z-40 h-screen flex-col bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border-r border-gray-200/50 dark:border-gray-700/50 transition-all duration-300 ease-out shadow-2xl shadow-black/5 ${
           collapsed ? 'w-20' : 'w-64'
         }`}
       >
-        {sidebarContent}
+        {renderSidebarContent(collapsed)}
       </aside>
 
-      {/* 移动端侧边栏 */}
+      {/* 移动端侧边栏：始终使用展开形态，不受桌面折叠状态影响 */}
       <AnimatePresence>
         {mobileOpen && (
           <motion.aside
@@ -438,9 +506,9 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: '-100%', opacity: 0.5 }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="lg:hidden fixed left-0 top-0 z-50 h-screen w-72 bg-white dark:bg-gray-900 border-r border-gray-200/50 dark:border-gray-700/50 shadow-2xl"
+            className="lg:hidden fixed left-0 top-0 z-50 h-screen w-72 bg-white dark:bg-gray-900 border-r border-gray-200/50 dark:border-gray-700/50 shadow-2xl overflow-y-auto"
           >
-            {sidebarContent}
+            {renderSidebarContent(false)}
           </motion.aside>
         )}
       </AnimatePresence>

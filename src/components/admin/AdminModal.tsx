@@ -2,10 +2,12 @@
 
 import React, { useEffect, useCallback, useId, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { X } from 'lucide-react';
 import { cn } from '@/utils/cn';
 // 用全站统一的滚动锁替代直接设置 body overflow，
 // 避免破坏 sticky 侧栏与丢失滚动位置
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 
 /**
  * 管理后台模态框组件属性接口
@@ -58,22 +60,13 @@ const AdminModal: React.FC<AdminModalProps> = ({
   // 用于无障碍关联标题，并管理打开/关闭时的焦点
   const titleId = useId();
   const contentRef = useRef<HTMLDivElement>(null);
-  const previousFocusRef = useRef<HTMLElement | null>(null);
 
-  /**
-   * 打开时记录原焦点并聚焦弹窗，关闭时把焦点归还给触发元素
-   */
-  useEffect(() => {
-    if (!open) return;
-
-    previousFocusRef.current = document.activeElement as HTMLElement | null;
-    const timer = window.setTimeout(() => contentRef.current?.focus(), 50);
-
-    return () => {
-      window.clearTimeout(timer);
-      previousFocusRef.current?.focus?.();
-    };
-  }, [open]);
+  /*
+    焦点管理统一交给 useFocusTrap：
+    打开时聚焦弹窗并把 Tab 限制在内部，关闭时把焦点归还给触发元素。
+    原来只做了一次 focus，键盘用户按 Tab 仍会跑到被遮罩的背景页面。
+  */
+  useFocusTrap(contentRef, open);
 
   /**
    * 处理 ESC 键关闭
@@ -146,8 +139,8 @@ const AdminModal: React.FC<AdminModalProps> = ({
             transition={{ duration: 0.2, ease: 'easeOut' }}
             className={cn(
               'relative w-full rounded-xl shadow-2xl',
-              'bg-white dark:bg-gray-800',
-              'border border-gray-200/50 dark:border-gray-700/50',
+              'bg-card',
+              'border border-border',
               'max-h-[90vh] flex flex-col',
               width,
               className
@@ -155,9 +148,9 @@ const AdminModal: React.FC<AdminModalProps> = ({
             onClick={handleContentClick}
           >
             {/* 头部 */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200/50 dark:border-gray-700/50">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border">
               {/* 标题 */}
-              <h3 id={titleId} className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              <h3 id={titleId} className="text-lg font-semibold text-card-foreground">
                 {title}
               </h3>
 
@@ -168,9 +161,7 @@ const AdminModal: React.FC<AdminModalProps> = ({
                   className="p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                   aria-label="关闭"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <X className="w-5 h-5" />
                 </button>
               )}
             </div>
@@ -182,7 +173,7 @@ const AdminModal: React.FC<AdminModalProps> = ({
 
             {/* 底部操作区 */}
             {footer && (
-              <div className="flex items-center justify-end space-x-3 px-6 py-4 border-t border-gray-200/50 dark:border-gray-700/50 bg-gray-50/50 dark:bg-gray-900/50 rounded-b-xl">
+              <div className="flex items-center justify-end space-x-3 px-6 py-4 border-t border-border bg-muted/40 rounded-b-xl">
                 {footer}
               </div>
             )}

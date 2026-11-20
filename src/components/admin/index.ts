@@ -9,6 +9,7 @@
  * - AdminButton: 按钮组件，支持多种类型和尺寸
  * - AdminInput: 输入框组件，支持图标前缀和密码显示切换
  * - AdminLoading: 加载状态组件，支持多种加载样式
+ * - AdminEmptyState: 空状态组件，统一无数据场景的视觉与语义
  * - AdminTable: 表格组件，支持排序、分页、行选择
  * - AdminModal: 模态框组件，支持动画效果
  * - AdminToast: 消息提示组件，支持全局调用
@@ -28,6 +29,9 @@ export { default as AdminInput } from './AdminInput';
 
 // 加载状态组件
 export { default as AdminLoading, TableSkeleton, CardSkeleton } from './AdminLoading';
+
+// 空状态组件
+export { default as AdminEmptyState } from './AdminEmptyState';
 
 // 表格组件
 export { default as AdminTable } from './AdminTable';

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { Search, X } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
 /**
@@ -68,17 +69,45 @@ const AdminSearchBar: React.FC<AdminSearchBarProps> = ({
 }) => {
   // 筛选值状态
   const [filterValues, setFilterValues] = useState<Record<string, string>>({});
+  // 输入框本地值：输入需要即时反馈，不能等父级 debounce 后再回写
+  const [inputValue, setInputValue] = useState(value);
   // 防抖定时器引用
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   // 输入框引用
   const inputRef = useRef<HTMLInputElement>(null);
 
   /**
+   * 外部 value 变化时同步输入框
+   * 覆盖父级重置筛选、路由切换、程序化清空等场景；
+   * 原实现用 defaultValue，这些情况下输入框会残留旧关键词。
+   */
+  useEffect(() => {
+    setInputValue(value);
+  }, [value]);
+
+  /**
+   * 全局 Ctrl/Cmd + K 聚焦搜索框
+   * 原实现挂在输入框的 onKeyDown 上，只有输入框已聚焦时才可能触发，等于失效。
+   */
+  useEffect(() => {
+    const handleGlobalShortcut = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        inputRef.current?.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleGlobalShortcut);
+    return () => document.removeEventListener('keydown', handleGlobalShortcut);
+  }, []);
+
+  /**
    * 处理搜索输入变化
-   * 支持防抖功能
+   * 本地值立即更新，对外回调走防抖
    */
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
+    setInputValue(newValue);
 
     if (autoSearch && debounceDelay > 0) {
       // 清除之前的定时器
@@ -130,21 +159,17 @@ const AdminSearchBar: React.FC<AdminSearchBarProps> = ({
       onChange(e.currentTarget.value);
       onSearch?.();
     }
-    // Ctrl/Cmd + K 聚焦搜索框
-    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-      e.preventDefault();
-      inputRef.current?.focus();
-    }
   };
 
   /**
    * 清空搜索
    */
   const handleClear = () => {
-    onChange('');
-    if (inputRef.current) {
-      inputRef.current.value = '';
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
     }
+    setInputValue('');
+    onChange('');
   };
 
   /**
@@ -177,16 +202,14 @@ const AdminSearchBar: React.FC<AdminSearchBarProps> = ({
         <div className="relative flex-1">
           {/* 搜索图标 */}
           <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
+            <Search className="w-5 h-5" />
           </div>
 
-          {/* 输入框 */}
+          {/* 输入框（受控：与外部 value 保持同步） */}
           <input
             ref={inputRef}
             type="text"
-            defaultValue={value}
+            value={inputValue}
             placeholder={placeholder}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
@@ -207,10 +230,9 @@ const AdminSearchBar: React.FC<AdminSearchBarProps> = ({
               type="button"
               onClick={handleClear}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              aria-label="清空搜索"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <X className="w-5 h-5" />
             </button>
           )}
         </div>
@@ -252,7 +274,7 @@ const AdminSearchBar: React.FC<AdminSearchBarProps> = ({
               if (debounceTimerRef.current) {
                 clearTimeout(debounceTimerRef.current);
               }
-              onChange(inputRef.current?.value || '');
+              onChange(inputValue);
               onSearch?.();
             }}
             className={cn(
@@ -281,10 +303,9 @@ const AdminSearchBar: React.FC<AdminSearchBarProps> = ({
                 type="button"
                 onClick={handleClear}
                 className="ml-1 hover:text-red-500 transition-colors"
+                aria-label="移除关键词筛选"
               >
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <X className="w-3 h-3" />
               </button>
             </span>
           )}
@@ -305,10 +326,9 @@ const AdminSearchBar: React.FC<AdminSearchBarProps> = ({
                   type="button"
                   onClick={() => handleFilterChange(filter.key, '')}
                   className="ml-1 hover:text-red-500 transition-colors"
+                  aria-label={`移除${filter.label}筛选`}
                 >
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <X className="w-3 h-3" />
                 </button>
               </span>
             );

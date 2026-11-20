@@ -30,6 +30,14 @@ export default function LazySearchDialog() {
     };
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        /*
+          管理后台不接管 Ctrl+K：
+          后台搜索栏自己也有 Ctrl+K 聚焦逻辑，若这里同样响应，
+          会把前台的站内搜索弹窗盖到后台页面上。
+          直接读 window.location.pathname，避免为了让本组件感知路由
+          而额外引入 usePathname 依赖。
+        */
+        if (window.location.pathname.startsWith('/admin')) return;
         requestSearchOpen();
         setLoaded(true);
       }

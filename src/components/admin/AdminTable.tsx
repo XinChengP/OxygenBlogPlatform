@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { ChevronDown, ChevronUp, Inbox } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { TableSkeleton } from './AdminLoading';
 
@@ -236,19 +237,19 @@ function AdminTable<T extends Record<string, any>>({
   // 加载状态显示骨架屏
   if (loading) {
     return (
-      <div className={cn('rounded-xl border border-gray-200/50 dark:border-gray-700/50 bg-white/70 dark:bg-gray-800/70 backdrop-blur-md overflow-hidden', className)}>
+      <div className={cn('rounded-xl border border-border bg-card/85 backdrop-blur-md overflow-hidden', className)}>
         <TableSkeleton rows={pagination?.pageSize || 5} columns={columns.length + (rowSelection ? 1 : 0)} />
       </div>
     );
   }
 
   return (
-    <div className={cn('rounded-xl border border-gray-200/50 dark:border-gray-700/50 bg-white/70 dark:bg-gray-800/70 backdrop-blur-md overflow-hidden', className)}>
+    <div className={cn('rounded-xl border border-border bg-card/85 backdrop-blur-md overflow-hidden', className)}>
       {/* 表格容器 */}
       <div className="overflow-x-auto">
         <table className="w-full">
           {/* 表头 */}
-          <thead className="bg-gray-50/50 dark:bg-gray-900/50 border-b border-gray-200/50 dark:border-gray-700/50">
+          <thead className="bg-muted/40 border-b border-border">
             <tr>
               {/* 选择列 */}
               {rowSelection && (
@@ -267,13 +268,18 @@ function AdminTable<T extends Record<string, any>>({
               {columns.map(column => (
                 <th
                   key={String(column.key)}
+                  /*
+                    列宽必须走内联 style：
+                    Tailwind 在构建期静态扫描源码，`w-[${column.width}]` 这种运行时拼接
+                    的类名不会被生成，导致各页面配置的 width 全部失效。
+                  */
+                  style={column.width ? { width: column.width } : undefined}
                   className={cn(
                     'px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap',
                     column.align === 'center' && 'text-center',
                     column.align === 'right' && 'text-right',
                     !column.align && 'text-left',
-                    column.sortable && 'cursor-pointer select-none hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors',
-                    column.width && `w-[${column.width}]`
+                    column.sortable && 'cursor-pointer select-none hover:bg-muted transition-colors'
                   )}
                   aria-sort={
                     column.sortable
@@ -301,33 +307,27 @@ function AdminTable<T extends Record<string, any>>({
                     column.align === 'right' && 'justify-end'
                   )}>
                     <span className="whitespace-nowrap">{column.title}</span>
-                    {/* 排序图标 */}
+                    {/* 排序图标：统一使用 lucide，保证线宽与全站图标一致 */}
                     {column.sortable && (
-                      <span className="flex flex-col">
-                        <svg
+                      <span className="flex flex-col -space-y-1">
+                        <ChevronUp
                           className={cn(
-                            'w-3 h-3 -mb-0.5 transition-colors',
+                            'w-3 h-3 transition-colors',
                             sortConfig?.[0] === column.key && sortConfig[1] === 'asc'
                               ? 'text-[#66ccff]'
                               : 'text-gray-400'
                           )}
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
-                        </svg>
-                        <svg
+                          strokeWidth={2.5}
+                        />
+                        <ChevronDown
                           className={cn(
-                            'w-3 h-3 -mt-0.5 transition-colors',
+                            'w-3 h-3 transition-colors',
                             sortConfig?.[0] === column.key && sortConfig[1] === 'desc'
                               ? 'text-[#66ccff]'
                               : 'text-gray-400'
                           )}
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                        </svg>
+                          strokeWidth={2.5}
+                        />
                       </span>
                     )}
                   </div>
@@ -337,19 +337,17 @@ function AdminTable<T extends Record<string, any>>({
           </thead>
 
           {/* 表体 */}
-          <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+          <tbody className="divide-y divide-border/70">
             {sortedData.length === 0 ? (
               // 空数据提示
               <tr>
                 <td
                   colSpan={columns.length + (rowSelection ? 1 : 0)}
-                  className="px-4 py-12 text-center text-gray-500 dark:text-gray-400"
+                  className="px-4 py-12 text-center text-muted-foreground"
                 >
                   {typeof emptyText === 'string' ? (
                     <div className="flex flex-col items-center">
-                      <svg className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                      </svg>
+                      <Inbox className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-3" strokeWidth={1.5} />
                       <span>{emptyText}</span>
                     </div>
                   ) : (
@@ -368,7 +366,7 @@ function AdminTable<T extends Record<string, any>>({
                     key={key}
                     className={cn(
                       'transition-colors',
-                      onRowClick && 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900/50',
+                      onRowClick && 'cursor-pointer hover:bg-muted/40',
                       isSelected && 'bg-[#66ccff]/5 dark:bg-[#66ccff]/10'
                     )}
                     onClick={() => onRowClick?.(record)}
@@ -410,9 +408,9 @@ function AdminTable<T extends Record<string, any>>({
 
       {/* 分页 */}
       {pagination && totalPages > 1 && (
-        <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200/50 dark:border-gray-700/50">
+        <div className="flex items-center justify-between px-4 py-3 border-t border-border">
           {/* 左侧：显示信息 */}
-          <div className="text-sm text-gray-500 dark:text-gray-400">
+          <div className="text-sm text-muted-foreground">
             显示第 {(pagination.current - 1) * pagination.pageSize + 1} - {Math.min(pagination.current * pagination.pageSize, pagination.total)} 条，共 {pagination.total} 条
           </div>
 
@@ -422,7 +420,7 @@ function AdminTable<T extends Record<string, any>>({
             <button
               onClick={() => pagination.onChange(1, pagination.pageSize)}
               disabled={pagination.current === 1}
-              className="px-2 py-1 text-sm rounded hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-2 py-1 text-sm rounded hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               首页
             </button>
@@ -431,7 +429,7 @@ function AdminTable<T extends Record<string, any>>({
             <button
               onClick={() => pagination.onChange(pagination.current - 1, pagination.pageSize)}
               disabled={pagination.current === 1}
-              className="px-2 py-1 text-sm rounded hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-2 py-1 text-sm rounded hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               上一页
             </button>
@@ -446,7 +444,7 @@ function AdminTable<T extends Record<string, any>>({
                       'w-8 h-8 text-sm rounded transition-colors',
                       pagination.current === page
                         ? 'bg-[#66ccff] text-white'
-                        : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
+                        : 'hover:bg-muted text-gray-700 dark:text-gray-300'
                     )}
                   >
                     {page}
@@ -461,7 +459,7 @@ function AdminTable<T extends Record<string, any>>({
             <button
               onClick={() => pagination.onChange(pagination.current + 1, pagination.pageSize)}
               disabled={pagination.current === totalPages}
-              className="px-2 py-1 text-sm rounded hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-2 py-1 text-sm rounded hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               下一页
             </button>
@@ -470,7 +468,7 @@ function AdminTable<T extends Record<string, any>>({
             <button
               onClick={() => pagination.onChange(totalPages, pagination.pageSize)}
               disabled={pagination.current === totalPages}
-              className="px-2 py-1 text-sm rounded hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-2 py-1 text-sm rounded hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               末页
             </button>

@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   FileText,
   MessageSquare,
@@ -11,10 +11,8 @@ import {
   Upload,
   Settings,
   CheckCircle2,
-  Clock,
   Tag,
   Folder,
-  History,
   ArrowRight,
   ExternalLink,
   Database,
@@ -22,14 +20,14 @@ import {
   ChevronRight,
   ScrollText,
   ClipboardList,
-  Type,
+  ChartPie,
 } from 'lucide-react';
 import AdminCard from './AdminCard';
 import ViewsPanel from './ViewsPanel';
 import { cn } from '../../utils/cn';
 import type { DashboardStats } from '../../utils/server/adminStats';
-import { Changelog, ChangelogType, getTypeStats, getChangelogTypeLabel, getMonthStats, getQuarterStats, getYearStats } from '../../types/changelogTypes';
-import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Legend, AreaChart, Area } from 'recharts';
+import { Changelog, ChangelogType } from '../../types/changelogTypes';
+import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import TypeStatsChart from '@/components/changelogs/TypeStatsChart';
 import TimeStatsChart from '../changelogs/TimeStatsChart';
 
@@ -217,11 +215,14 @@ interface StatOverviewCardProps {
   iconColor: string;
   /** 延迟动画 */
   delay?: number;
+  /** 数值旁的次要信息（如字数、总量），用于合并同源指标 */
+  hint?: React.ReactNode;
 }
 
 /**
  * 数据概览卡片组件
- * 4列并排布局，带有数字动效
+ * 采用「标签在上、数字在下」的层级，避免所有卡片都只有一个大数字而缺少语义。
+ * 纯展示卡片，不做 hover 抬升，防止被误认为可点击。
  */
 const StatOverviewCard: React.FC<StatOverviewCardProps> = ({
   icon: Icon,
@@ -230,36 +231,38 @@ const StatOverviewCard: React.FC<StatOverviewCardProps> = ({
   gradient,
   iconColor,
   delay = 0,
+  hint,
 }) => {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.5, delay: delay * 0.1 }}
-      whileHover={{ y: -3 }}
+      transition={{ duration: 0.5, delay: delay * 0.08 }}
       className={cn(
         'relative overflow-hidden rounded-xl p-4',
-        'bg-white dark:bg-gray-800',
-        'border border-gray-200/50 dark:border-gray-700/50',
-        'shadow-md',
-        'transition-all duration-300'
+        'bg-card/85 border border-border',
+        'shadow-sm'
       )}
     >
       {/* 背景装饰 */}
-      <div className={cn('absolute -right-4 -top-4 w-20 h-20 rounded-full opacity-20', gradient)} />
-      
-      <div className="relative flex items-center space-x-3">
-        {/* 图标 */}
-        <div className={cn('p-3 rounded-xl', gradient)}>
-          <Icon className={cn('w-5 h-5', iconColor)} />
+      <div className={cn('absolute -right-4 -top-4 w-20 h-20 rounded-full opacity-15', gradient)} />
+
+      <div className="relative flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          {/* 标签在上，先说明这张卡是什么 */}
+          <p className="text-xs text-muted-foreground truncate">{label}</p>
+          {/* 数字与附加信息同一基线 */}
+          <div className="mt-1 flex items-baseline gap-1.5 flex-wrap">
+            <span className="text-2xl font-bold text-card-foreground">
+              <AnimatedNumber value={value} />
+            </span>
+            {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
+          </div>
         </div>
-        
-        {/* 数据 */}
-        <div className="flex-1">
-          <span className="text-2xl font-bold text-gray-900 dark:text-white">
-            <AnimatedNumber value={value} />
-          </span>
-          <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
+
+        {/* 图标 */}
+        <div className={cn('p-2.5 rounded-xl shrink-0', gradient)}>
+          <Icon className={cn('w-5 h-5', iconColor)} />
         </div>
       </div>
     </motion.div>
@@ -334,43 +337,28 @@ const CategoryPieChart: React.FC<CategoryPieChartProps> = ({ categories }) => {
   };
 
   return (
-    <motion.div
-      className="p-4 rounded-xl border transition-all duration-500 backdrop-blur-md bg-card/90 border-border shadow-lg supports-[backdrop-filter]:bg-card/75 hover:shadow-xl relative overflow-hidden"
-      variants={chartContainerVariants}
-      initial="hidden"
-      animate="visible"
-    >
-      <BackgroundDecoration />
-
-      {/* 卡片头部 */}
-      <div className="flex justify-between items-center mb-4 pb-3 border-b border-border/30">
-        <h3 className="text-base font-bold flex items-center gap-2 bg-gradient-to-r from-primary via-primary/80 to-accent bg-clip-text text-transparent">
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          >
-            <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
-            </svg>
-          </motion.div>
+    /*
+      统一走 AdminCard 外壳：
+      原来这张图表卡自带一套 bg-card/阴影/渐变标题，与旁边 AdminCard 包裹的模块
+      在同屏内呈现出两套视觉语言。标题与总数徽标交给 AdminCard 的 title/actions，
+      卡片内部只负责图表本身。
+    */
+    <AdminCard
+      title={
+        <span className="flex items-center gap-2">
+          <ChartPie className="w-5 h-5 text-[#66ccff]" />
           博客文章分类分布
-        </h3>
-        {sortedData.length > 0 && (
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.3, type: "spring" }}
-            className="flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10"
-          >
-            <svg className="w-4 h-4 text-primary" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-            </svg>
-            <span className="text-sm font-semibold text-primary">{totalCount}</span>
-          </motion.div>
-        )}
-      </div>
-
+        </span>
+      }
+      actions={
+        sortedData.length > 0 ? (
+          <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#66ccff]/10">
+            <span className="text-sm font-semibold text-[#66ccff]">{totalCount}</span>
+            <span className="text-xs text-muted-foreground">篇</span>
+          </span>
+        ) : undefined
+      }
+    >
       {/* 图表区域 */}
       <div className="w-full relative" style={{ height: '280px', minWidth: '200px' }}>
         {sortedData.length > 0 ? (
@@ -508,7 +496,7 @@ const CategoryPieChart: React.FC<CategoryPieChartProps> = ({ categories }) => {
           </div>
         </motion.div>
       )}
-    </motion.div>
+    </AdminCard>
   );
 };
 
@@ -683,71 +671,6 @@ const TagCloud: React.FC<TagCloudProps> = ({ tags }) => {
 };
 
 /**
- * 统计项卡片属性接口
- */
-interface TrendCardProps {
-  /** 图标组件 */
-  icon: React.ElementType;
-  /** 数值 */
-  value: number;
-  /** 标签 */
-  label: string;
-  /** 渐变背景 */
-  gradient?: string;
-  /** 图标颜色 */
-  iconColor?: string;
-  /** 延迟动画 */
-  delay?: number;
-}
-
-/**
- * 统计项卡片组件
- * 与 StatOverviewCard 保持一致的视觉风格
- */
-const TrendCard: React.FC<TrendCardProps> = ({
-  icon: Icon,
-  value,
-  label,
-  gradient = 'bg-gray-100 dark:bg-gray-700/50',
-  iconColor = 'text-gray-500',
-  delay = 0,
-}) => {
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.5, delay: delay * 0.1 }}
-      whileHover={{ y: -3 }}
-      className={cn(
-        'relative overflow-hidden rounded-xl p-4',
-        'bg-white dark:bg-gray-800',
-        'border border-gray-200/50 dark:border-gray-700/50',
-        'shadow-md',
-        'transition-all duration-300'
-      )}
-    >
-      {/* 背景装饰 */}
-      <div className={cn('absolute -right-4 -top-4 w-20 h-20 rounded-full opacity-20', gradient)} />
-
-      <div className="relative flex items-center space-x-3">
-        {/* 图标 */}
-        <div className={cn('p-3 rounded-xl', gradient)}>
-          <Icon className={cn('w-5 h-5', iconColor)} />
-        </div>
-
-        {/* 数据 */}
-        <div className="flex-1">
-          <span className="text-2xl font-bold text-gray-900 dark:text-white">
-            <AnimatedNumber value={value} />
-          </span>
-          <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
-        </div>
-      </div>
-    </motion.div>
-  );
-};
-
-/**
  * 快速入口项属性接口
  */
 interface QuickLinkProps {
@@ -801,31 +724,6 @@ const QuickLink: React.FC<QuickLinkProps> = ({ icon: Icon, label, href, external
   return <Link href={href}>{content}</Link>;
 };
 
-/**
- * 动画变体配置
- */
-const chartContainerVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.6,
-      ease: [0.25, 0.46, 0.45, 0.94] as const,
-    },
-  },
-};
-
-/**
- * 装饰性背景效果
- */
-const BackgroundDecoration = () => (
-  <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
-    <div className="absolute top-1/2 right-1/4 w-16 h-16 bg-accent/10 rounded-full blur-xl animate-pulse" />
-    <div className="absolute bottom-1/3 left-1/3 w-12 h-12 bg-primary/5 rounded-full blur-lg animate-pulse" style={{ animationDelay: '1.5s' }} />
-  </div>
-);
-
 // ==================== 仪表盘主组件 ====================
 
 /**
@@ -861,7 +759,12 @@ const DashboardClient: React.FC<DashboardClientProps> = ({ stats }) => {
 
   return (
     <motion.div 
-      className="min-h-screen"
+      /*
+        不再使用 min-h-screen：
+        本组件已渲染在 AdminLayout 的顶栏与内边距之内，
+        再撑满一屏会让内容较短的仪表盘底部多出一整屏空白。
+      */
+      className="min-h-0"
       variants={containerVariants}
       initial="hidden"
       animate="visible"
@@ -894,92 +797,85 @@ const DashboardClient: React.FC<DashboardClientProps> = ({ stats }) => {
         </div>
       </motion.div>
 
-      {/* 数据概览：顶部全宽统计条 */}
-      <motion.section variants={itemVariants} className="mb-6">
-        <h2 className="mb-3 text-sm font-semibold text-gray-500 dark:text-gray-400">
-          数据概览
-        </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
-          <StatOverviewCard
-            icon={FileText}
-            value={stats.blogCount}
-            label="文章总数"
-            gradient="bg-blue-100 dark:bg-blue-900/30"
-            iconColor="text-blue-500"
-            delay={0}
-          />
-          <TrendCard
-            icon={Type}
-            value={stats.blogWordCount}
-            label="文章字数"
-            gradient="bg-cyan-100 dark:bg-cyan-900/30"
-            iconColor="text-cyan-500"
-            delay={1}
-          />
-          <StatOverviewCard
-            icon={MessageSquare}
-            value={stats.momentCount}
-            label="动态总数"
-            gradient="bg-green-100 dark:bg-green-900/30"
-            iconColor="text-green-500"
-            delay={2}
-          />
-          <TrendCard
-            icon={MessageSquare}
-            value={stats.momentWordCount}
-            label="动态字数"
-            gradient="bg-lime-100 dark:bg-lime-900/30"
-            iconColor="text-lime-500"
-            delay={3}
-          />
-          <StatOverviewCard
-            icon={ScrollText}
-            value={stats.changelogCount}
-            label="日志总数"
-            gradient="bg-pink-100 dark:bg-pink-900/30"
-            iconColor="text-pink-500"
-            delay={4}
-          />
-          <TrendCard
-            icon={History}
-            value={stats.changelogWordCount}
-            label="日志字数"
-            gradient="bg-rose-100 dark:bg-rose-900/30"
-            iconColor="text-rose-500"
-            delay={5}
-          />
-          <TrendCard
-            icon={Folder}
-            value={stats.categoryCount}
-            label="文章分类"
-            gradient="bg-indigo-100 dark:bg-indigo-900/30"
-            iconColor="text-indigo-500"
-            delay={6}
-          />
-          <TrendCard
-            icon={Tag}
-            value={stats.totalTagCount}
-            label="标签总数"
-            gradient="bg-teal-100 dark:bg-teal-900/30"
-            iconColor="text-teal-500"
-            delay={7}
-          />
-          <StatOverviewCard
-            icon={Image}
-            value={stats.imageCount}
-            label="图片总数"
-            gradient="bg-purple-100 dark:bg-purple-900/30"
-            iconColor="text-purple-500"
-            delay={8}
-          />
-          <StatOverviewCard
-            icon={CheckCircle2}
-            value={stats.todoCompletedCount}
-            label="已完成待办"
-            gradient="bg-orange-100 dark:bg-orange-900/30"
-            iconColor="text-orange-500"
-            delay={9}
-          />
+      {/* 数据概览：按「内容 / 资产」两组呈现，数量与字数成对合并，避免十张同权重卡片平铺 */}
+      <motion.section variants={itemVariants} className="mb-6 space-y-4">
+        <div>
+          <h2 className="mb-2.5 text-sm font-semibold text-gray-500 dark:text-gray-400">
+            内容概览
+          </h2>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <StatOverviewCard
+              icon={FileText}
+              value={stats.blogCount}
+              label="文章"
+              hint={`${stats.blogWordCount.toLocaleString()} 字`}
+              gradient="bg-blue-100 dark:bg-blue-900/30"
+              iconColor="text-blue-500"
+              delay={0}
+            />
+            <StatOverviewCard
+              icon={MessageSquare}
+              value={stats.momentCount}
+              label="动态"
+              hint={`${stats.momentWordCount.toLocaleString()} 字`}
+              gradient="bg-green-100 dark:bg-green-900/30"
+              iconColor="text-green-500"
+              delay={1}
+            />
+            <StatOverviewCard
+              icon={ScrollText}
+              value={stats.changelogCount}
+              label="日志"
+              hint={`${stats.changelogWordCount.toLocaleString()} 字`}
+              gradient="bg-pink-100 dark:bg-pink-900/30"
+              iconColor="text-pink-500"
+              delay={2}
+            />
+            <StatOverviewCard
+              icon={Image}
+              value={stats.imageCount}
+              label="图片"
+              hint="本地图床"
+              gradient="bg-purple-100 dark:bg-purple-900/30"
+              iconColor="text-purple-500"
+              delay={3}
+            />
+          </div>
+        </div>
+
+        <div>
+          <h2 className="mb-2.5 text-sm font-semibold text-gray-500 dark:text-gray-400">
+            资产与进度
+          </h2>
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+            <StatOverviewCard
+              icon={Folder}
+              value={stats.categoryCount}
+              label="文章分类"
+              hint="个"
+              gradient="bg-indigo-100 dark:bg-indigo-900/30"
+              iconColor="text-indigo-500"
+              delay={4}
+            />
+            <StatOverviewCard
+              icon={Tag}
+              value={stats.totalTagCount}
+              label="标签"
+              hint="个"
+              gradient="bg-teal-100 dark:bg-teal-900/30"
+              iconColor="text-teal-500"
+              delay={5}
+            />
+            <StatOverviewCard
+              icon={CheckCircle2}
+              value={stats.todoCompletedCount}
+              label="已完成待办"
+              hint={`共 ${stats.todoCount} 项`}
+              gradient="bg-orange-100 dark:bg-orange-900/30"
+              iconColor="text-orange-500"
+              delay={6}
+            />
+          </div>
         </div>
       </motion.section>
 
