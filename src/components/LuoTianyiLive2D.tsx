@@ -105,6 +105,12 @@ export default function LuoTianyiLive2D({ hidden = false }: LuoTianyiLive2DProps
   const [isMobileDevice, setIsMobileDevice] = useState(false);
   const [message, setMessage] = useState('');
   const [messageOpacity, setMessageOpacity] = useState(1);
+  /*
+    气泡的点击动作：只有「继续阅读」这类消息会带。
+    存函数必须用 setMessageAction(() => fn) 的写法，
+    直接 setMessageAction(fn) 会被 React 当成 updater 执行。
+  */
+  const [messageAction, setMessageAction] = useState<(() => void) | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadProgress, setLoadProgress] = useState(0);
   const [isModelReady, setIsModelReady] = useState(false);
@@ -133,7 +139,7 @@ export default function LuoTianyiLive2D({ hidden = false }: LuoTianyiLive2DProps
   }, []);
 
   const updateMessage = useCallback(
-    (newMessage: string, type: 'normal' | 'interaction' | 'fireworks' = 'normal', duration: number = 5000) => {
+    (newMessage: string, type: 'normal' | 'interaction' | 'fireworks' = 'normal', duration: number = 5000, action?: () => void) => {
       if (hiddenRef.current) return;
       if (!newMessage || typeof newMessage !== 'string' || newMessage.trim() === '') return;
       if (type !== 'fireworks' && live2dMessageManager.isInFireworksMode()) return;
@@ -143,6 +149,8 @@ export default function LuoTianyiLive2D({ hidden = false }: LuoTianyiLive2DProps
       if (type !== 'fireworks' && live2dMessageManager.shouldBlockDirectMessage(newMessage)) return;
 
       setMessage(newMessage);
+      // 每条新消息都重置点击动作：一言、互动等直连消息都不带动作，必须避免沿用上一条的动作
+      setMessageAction(() => action ?? null);
       setMessageOpacity(1);
       triggerFadeOut(duration);
     },
@@ -153,18 +161,31 @@ export default function LuoTianyiLive2D({ hidden = false }: LuoTianyiLive2DProps
   // 不依赖 Live2D 异步加载，确保 smart page message (3s)、一言 timer (45s) 等早期消息不会丢失
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    (window as any).showMessage = (msg: string, timeout?: number) => {
+    (window as any).showMessage = (msg: string, timeout?: number, action?: () => void) => {
       if (msg && typeof msg === 'string' && msg.trim() !== '') {
         const isFireworksMode = live2dMessageManager.isInFireworksMode();
-        // 透传 timeout 作为气泡停留时长，未提供时使用默认值
-        updateMessage(msg, isFireworksMode ? 'fireworks' : 'normal', timeout);
+        // 透传 timeout 作为气泡停留时长，action 作为气泡点击动作
+        updateMessage(msg, isFireworksMode ? 'fireworks' : 'normal', timeout, action);
       }
     };
   }, [updateMessage]);
 
+  /**
+   * 气泡点击：执行消息附带的动作并立刻收起气泡。
+   * 先清空动作再执行，防止收起动画期间重复点击触发两次滚动。
+   */
+  const handleBubbleAction = useCallback(() => {
+    const action = messageAction;
+    if (!action) return;
+    setMessageAction(null);
+    setMessageOpacity(0);
+    action();
+  }, [messageAction]);
+
   useEffect(() => {
     if (hidden) {
       setMessage('');
+      setMessageAction(null);
       setMessageOpacity(0);
       if (fadeTimeoutRef.current) {
         clearTimeout(fadeTimeoutRef.current);
@@ -496,6 +517,7 @@ export default function LuoTianyiLive2D({ hidden = false }: LuoTianyiLive2DProps
           loadProgress={loadProgress}
           isVisible={isVisible}
           themeClass={themeClass}
+          onAction={messageAction ? handleBubbleAction : null}
         />
 
         <canvas

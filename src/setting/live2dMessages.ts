@@ -339,6 +339,28 @@ export const ReadingMessages = {
 } as const;
 
 /**
+ * 上次阅读续读消息配置
+ *
+ * 用于文章详情页：读者存在可恢复的阅读进度时，由洛天依在气泡里提醒。
+ * 气泡本身可点击跳回上次位置——动作回调不走配置，由
+ * Live2DMessageHelper.showResumeReadingMessage 的第二个参数传入，
+ * 因此这里只负责文案、停留时长与优先级。
+ *
+ * 文案中的 {percent} 由 renderMessageTemplate 在运行时替换。
+ */
+export const ResumeReadingMessages = {
+  PROMPT: {
+    messages: [
+      '上次读到 {percent}% 啦～点这句话就带你回去～',
+      '书签还夹在 {percent}% 呢，点这里跳回去哦～',
+      '欢迎回来！上次停在 {percent}%，点我接着读～'
+    ],
+    duration: 8000,
+    priority: MessagePriority.HIGH
+  }
+} as const;
+
+/**
  * 主题切换消息配置
  */
 export const ThemeMessages = {

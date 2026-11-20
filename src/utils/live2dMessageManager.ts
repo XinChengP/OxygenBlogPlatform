@@ -14,6 +14,7 @@ import {
   PageMessages,
   TimeMessages,
   ReadingMessages,
+  ResumeReadingMessages,
   ThemeMessages,
   MusicMessages,
   CopyMessages,
@@ -37,7 +38,8 @@ import { live2dContextTracker, type BehaviorContext } from './live2dContextTrack
 class Live2DMessageManager {
   private static instance: Live2DMessageManager;
   private isInitialized = false;
-  private messageQueue: Array<{message: string, duration: number, priority: number}> = [];
+  // 队列条目可携带一个点击动作：气泡被点击时执行（仅「继续阅读」这类可交互消息使用）
+  private messageQueue: Array<{message: string, duration: number, priority: number, action?: () => void}> = [];
   private isDisplayingMessage = false;
   private currentTimeout: NodeJS.Timeout | null = null;
   private lastMessage = '';
@@ -55,7 +57,8 @@ class Live2DMessageManager {
   // 歌词模式状态：屏蔽所有 showMessage 调用（除歌词自身渲染外）
   private isLyricsMode = false;
   // 歌词模式期间保存的原 window.showMessage（React 桥接版），用于退出时恢复
-  private originalWindowShowMessage: ((text: string, timeout?: number) => void) | null = null;
+  // 第三参 action 是「气泡可点击」的动作回调，转发时必须原样透传
+  private originalWindowShowMessage: ((text: string, timeout?: number, action?: () => void) => void) | null = null;
   // 上下文监听的取消函数，保证 startContextListening 幂等且可清理
   private contextListenerCleanup: (() => void) | null = null;
 
@@ -77,8 +80,9 @@ class Live2DMessageManager {
    * @param message 要显示的消息文本
    * @param duration 显示时长（毫秒），默认3000ms
    * @param priority 消息优先级（0-10），数值越高优先级越高，默认1
+   * @param action 可选：气泡被点击时执行的动作（用于「继续阅读」等可交互消息）
    */
-  showMessage(message: string, duration: number = 3000, priority: number = 1): void {
+  showMessage(message: string, duration: number = 3000, priority: number = 1, action?: () => void): void {
     if (typeof window === 'undefined') return;
 
     // 烟花模式下阻塞所有消息（包括彩蛋消息）
@@ -125,25 +129,25 @@ class Live2DMessageManager {
       // 高优先级消息可以中断当前消息
       if (priority > this.currentPriority) {
         this.interruptCurrentMessage();
-        this.displayMessage(message, duration, priority);
+        this.displayMessage(message, duration, priority, action);
         return;
       }
 
       // 低优先级消息加入队列
-      this.messageQueue.push({ message, duration, priority });
+      this.messageQueue.push({ message, duration, priority, action });
       // 按优先级排序队列
       this.messageQueue.sort((a, b) => b.priority - a.priority);
       return;
     }
 
     // 立即显示消息
-    this.displayMessage(message, duration, priority);
+    this.displayMessage(message, duration, priority, action);
   }
 
   /**
    * 内部消息显示方法
    */
-  private displayMessage(message: string, duration: number, priority: number = 0): void {
+  private displayMessage(message: string, duration: number, priority: number = 0, action?: () => void): void {
     this.isDisplayingMessage = true;
     this.lastMessage = message;
     this.lastMessageTime = Date.now();
@@ -159,7 +163,7 @@ class Live2DMessageManager {
     const showFn = this.originalWindowShowMessage
       || (typeof window !== 'undefined' ? (window as any).showMessage : null);
     if (typeof showFn === 'function') {
-      showFn.call(window, message, duration);
+      showFn.call(window, message, duration, action);
     } else {
       // window.showMessage 尚未就绪（理论上不会发生，组件挂载时即桥接）
       console.warn('[Live2D] showMessage 未就绪，跳过显示:', message);
@@ -312,10 +316,10 @@ class Live2DMessageManager {
       this.originalWindowShowMessage = w.showMessage;
     }
     const self = this;
-    w.showMessage = function (text: string, timeout?: number) {
+    w.showMessage = function (text: string, timeout?: number, action?: () => void) {
       // window.showMessage 是普通消息入口，priority=1
       if (self.canShowMessage(1) && self.originalWindowShowMessage) {
-        self.originalWindowShowMessage.call(window, text, timeout);
+        self.originalWindowShowMessage.call(window, text, timeout, action);
       }
       // canShowMessage 返回 false（歌词/烟花/彩蛋模式）：静默丢弃
     };
@@ -385,7 +389,7 @@ class Live2DMessageManager {
       if (nextMessage) {
         // 延迟一点时间再显示下一条消息，避免消息闪烁
         setTimeout(() => {
-          this.displayMessage(nextMessage.message, nextMessage.duration, nextMessage.priority);
+          this.displayMessage(nextMessage.message, nextMessage.duration, nextMessage.priority, nextMessage.action);
         }, 300);
       }
     }
@@ -661,6 +665,28 @@ export class Live2DMessageHelper {
       getRandomMessage(config),
       config.duration,
       config.priority
+    );
+  }
+
+  /**
+   * 显示「上次阅读」续读提醒
+   *
+   * 与其余消息不同，这一条带点击动作：气泡被点击时执行 onJump，
+   * 由文章页把「滚回上次位置」的滚动逻辑传进来，气泡本身不关心页面细节。
+   *
+   * @param percent 上次读到的百分比（3~92 的整数）
+   * @param onJump 点击气泡时执行的动作
+   */
+  static showResumeReadingMessage(percent: number, onJump?: () => void): void {
+    const config = ResumeReadingMessages.PROMPT;
+    const message = renderMessageTemplate(getRandomMessage(config), {
+      percent: String(percent),
+    });
+    live2dMessageManager.showMessage(
+      message,
+      config.duration,
+      config.priority,
+      onJump
     );
   }
 
