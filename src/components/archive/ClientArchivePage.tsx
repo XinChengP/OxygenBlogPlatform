@@ -1147,6 +1147,16 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
                       >
                         <Link
                           href={`/blogs/${encodeURIComponent(post.slug)}`}
+                          /*
+                            禁止 <a> 的原生 HTML5 拖拽（浏览器默认可拖拽链接）。
+                            卡片位于「时光河流」这块可拖拽画布内，若不禁用：
+                            1. 按住卡片拖动时浏览器会启动原生链接拖拽，拖出半透明的链接虚影；
+                            2. 原生拖拽期间指针事件被浏览器接管，Framer Motion 的拖拽会中断；
+                            3. 在地址栏、标签栏或窗口外松手时，浏览器会按链接拖放处理，
+                               直接在新标签页打开文章，看起来就像「拖一下就莫名跳转」。
+                            封面 <img> 已经单独设了 draggable={false}，这里补上链接本身。
+                          */
+                          draggable={false}
                           onClick={(e) => {
                             // 拖拽结束瞬间的点击视为误触，拦截跳转
                             if (didDrag.current) {
