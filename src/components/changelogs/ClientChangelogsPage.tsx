@@ -639,6 +639,82 @@ function ClientChangelogsPage({ changelogs, generatedAt }: ClientChangelogsPageP
     return () => observer.disconnect();
   }, [hasMore, filteredChangelogs.length]);
 
+  // ---- 悬浮月份牌 × 时间轴圆点联动 ----
+
+  /**
+   * 圆点滚到月份牌背后时，牌面边框、外发光与底部指示灯亮起该日志的类型色。
+   *
+   * 为什么直接改 DOM 而不是 setState：滚动时每秒可能触发几十次，
+   * 让整页（含 100+ 卡片与右侧图表）重渲染代价过高；
+   * 这里只改牌子自身的样式，卡片与图表完全不受影响。
+   * 依赖展开状态与已渲染数量：卡片高度变化后需要立刻重算一次，
+   * 否则不滚动时联动色会停在旧位置。
+   */
+  useEffect(() => {
+    let frame = 0;
+
+    const paint = () => {
+      frame = 0;
+
+      const plates = Array.from(
+        document.querySelectorAll<HTMLElement>('[data-month-plate]')
+      );
+      if (plates.length === 0) return;
+
+      // 圆点位置随滚动变化，每帧重新读取；数量与已渲染卡片一致
+      const dots = Array.from(
+        document.querySelectorAll<HTMLElement>('[data-changelog-dot]')
+      ).map((dot) => {
+        const rect = dot.getBoundingClientRect();
+        return {
+          center: rect.top + rect.height / 2,
+          color: dot.dataset.dotColor || '',
+        };
+      });
+
+      for (const plate of plates) {
+        const rect = plate.getBoundingClientRect();
+        // 移动端牌子被 hidden，宽高为 0，直接跳过
+        if (rect.width === 0 || rect.height === 0) continue;
+
+        // 只有纵向落在牌面区间内的圆点才算「正在经过」
+        const passing = dots.find(
+          (dot) => dot.color && dot.center >= rect.top && dot.center <= rect.bottom
+        );
+        const color = passing?.color;
+
+        plate.style.borderColor = color ?? '';
+        plate.style.boxShadow = color
+          ? `0 0 0 3px ${color}2e, 0 10px 24px -10px ${color}aa`
+          : '';
+        plate.style.transform = color ? 'scale(1.04)' : '';
+
+        const lamp = plate.querySelector<HTMLElement>('[data-month-lamp]');
+        if (lamp) {
+          lamp.style.backgroundColor = color ?? '';
+          lamp.style.boxShadow = color ? `0 0 10px 2px ${color}` : '';
+          lamp.style.transform = color ? 'scale(1.8)' : '';
+        }
+      }
+    };
+
+    const schedule = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(paint);
+    };
+
+    // 首帧先算一次：页面加载时首条日志的圆点可能正好在牌面背后
+    paint();
+    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule);
+
+    return () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', schedule);
+      window.removeEventListener('resize', schedule);
+    };
+  }, [visibleChangelogs.length, expandedLogs]);
+
   // 弹窗打开时锁定页面滚动
   useBodyScrollLock(showAchievementGuide);
 
@@ -723,31 +799,42 @@ function ClientChangelogsPage({ changelogs, generatedAt }: ClientChangelogsPageP
               onReset={handleClearAll}
             />
 
-            {/* 列表工具条 */}
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <p className="text-sm text-muted-foreground">
-                共 {filteredChangelogs.length} 篇
+            {/* 列表工具条：篇数为主，批量操作为辅 */}
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2 px-0.5">
+              <p className="flex items-baseline gap-1.5 text-xs text-muted-foreground">
+                <span className="font-mono text-sm font-semibold tabular-nums text-foreground">
+                  {filteredChangelogs.length}
+                </span>
+                篇日志
                 {filteredChangelogs.length > visibleChangelogs.length && (
-                  <span className="ml-1 text-xs">
-                    （已显示 {visibleChangelogs.length} 篇）
+                  <span className="font-mono text-[10px] tabular-nums text-muted-foreground/80">
+                    已显示 {visibleChangelogs.length}
                   </span>
                 )}
               </p>
 
               {filteredChangelogs.length > 0 && (
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1">
                   <button
                     type="button"
                     onClick={expandVisible}
-                    className="rounded text-xs text-primary transition-colors hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                    className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                   >
+                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 6l4 4 4-4M8 12l4 4 4-4" />
+                    </svg>
                     展开已显示
                   </button>
+                  {/* 细分隔线：两个批量操作视觉上归为一组，但保持各自可点 */}
+                  <span className="h-3 w-px bg-border/70" aria-hidden="true" />
                   <button
                     type="button"
                     onClick={collapseAll}
-                    className="rounded text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                    className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                   >
+                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 18l4-4 4 4M8 12l4-4 4 4" />
+                    </svg>
                     全部收起
                   </button>
                 </div>
@@ -756,71 +843,156 @@ function ClientChangelogsPage({ changelogs, generatedAt }: ClientChangelogsPageP
 
             {/* 空状态 / 分组时间线 */}
             {changelogs.length === 0 ? (
-              <div className="rounded-lg border border-border bg-card/90 p-6 text-center shadow-lg backdrop-blur-md supports-[backdrop-filter]:bg-card/75">
-                <h3 className="mb-2 text-xl font-semibold">暂无开发日志</h3>
-                <p className="text-muted-foreground">还没有发布任何开发日志</p>
+              <div className="rounded-2xl border border-dashed border-border/80 bg-card/50 px-6 py-14 text-center backdrop-blur-sm">
+                <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted/60 text-muted-foreground">
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 8v4l3 2" />
+                    <circle cx="12" cy="12" r="9" strokeWidth={1.8} />
+                  </svg>
+                </span>
+                <h3 className="mb-1.5 text-base font-semibold">暂无开发日志</h3>
+                <p className="text-sm text-muted-foreground">还没有发布任何开发日志</p>
               </div>
             ) : filteredChangelogs.length === 0 ? (
-              <div className="rounded-lg border border-border bg-card/90 p-6 text-center shadow-lg backdrop-blur-md supports-[backdrop-filter]:bg-card/75">
-                <h3 className="mb-2 text-xl font-semibold">没有符合条件的日志</h3>
-                <p className="mb-3 text-muted-foreground">换个类型或年份试试</p>
+              <div className="rounded-2xl border border-dashed border-border/80 bg-card/50 px-6 py-14 text-center backdrop-blur-sm">
+                <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted/60 text-muted-foreground">
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 5h18l-7 8v6l-4 2v-8L3 5z" />
+                  </svg>
+                </span>
+                <h3 className="mb-1.5 text-base font-semibold">没有符合条件的日志</h3>
+                <p className="mb-4 text-sm text-muted-foreground">换个类型或年份试试</p>
                 <button
                   type="button"
                   onClick={handleClearAll}
-                  className="rounded text-sm text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-3.5 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                 >
+                  <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                   清除筛选
                 </button>
               </div>
             ) : (
-              <div className="space-y-8">
-                {groups.map((group) => (
-                  <section key={group.key} aria-label={`${group.label}的日志`}>
-                    {/* 月份分组标题：吸顶，滚动时保留时间上下文 */}
-                    <h2 className="sticky top-16 lg:top-20 z-20 -mx-1 mb-3 flex items-center gap-2 rounded-md bg-background/85 px-2 py-1.5 text-sm font-semibold backdrop-blur-md supports-[backdrop-filter]:bg-background/70">
-                      <span className="h-4 w-1.5 rounded-full bg-primary" aria-hidden="true" />
-                      <span>{group.label}</span>
-                      <span className="text-xs font-normal text-muted-foreground">
-                        {group.total} 篇
-                      </span>
-                      <span className="h-px flex-1 bg-border/50" aria-hidden="true" />
-                    </h2>
+              <div className="space-y-6">
+                {groups.map((group) => {
+                  /*
+                    月份标签形如「2026年11月」：拆开年份与月份，
+                    让数字「11」成为标题的视觉主角，年份退成等宽小字。
+                  */
+                  const [groupYear, groupMonth] = group.label.split('年');
+                  const monthNumber = groupMonth?.replace('月', '') ?? '';
 
-                    <div className="relative">
-                      {/* 时间轴竖线 */}
-                      <div
-                        className="absolute left-3 sm:left-4 top-0 bottom-0 w-0.5 bg-border/50"
-                        aria-hidden="true"
-                      />
-
-                      {group.items.map((changelog) => (
-                        <ChangelogCard
-                          key={changelog.id}
-                          changelog={changelog}
-                          expanded={Boolean(expandedLogs[changelog.id])}
-                          html={htmlCache[changelog.id]}
-                          loading={Boolean(htmlLoading[changelog.id])}
-                          error={Boolean(htmlErrors[changelog.id])}
-                          onToggle={toggleExpand}
-                          onPrefetch={loadChangelogHtml}
-                          onRetry={retryChangelogHtml}
+                  return (
+                    <section key={group.key} aria-label={`${group.label}的日志`} className="relative">
+                      {/*
+                        移动端：左侧没有多余宽度放悬浮月份牌，
+                        退回顶部吸顶的紧凑标题，保证月份分组信息不丢失。
+                      */}
+                      <h2 className="sticky top-16 z-20 -mx-2 mb-3 flex items-center gap-2.5 rounded-lg bg-background/85 px-2 py-1.5 backdrop-blur-md supports-[backdrop-filter]:bg-background/70 sm:hidden">
+                        <span className="font-mono text-[10px] font-medium tracking-[0.16em] text-muted-foreground">
+                          {groupYear}
+                        </span>
+                        <span className="text-lg font-bold leading-none tabular-nums text-foreground">
+                          {monthNumber}
+                        </span>
+                        <span className="text-[10px] font-medium text-muted-foreground">月</span>
+                        <span className="rounded-full border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-primary">
+                          {group.total} 篇
+                        </span>
+                        <span
+                          className="h-px flex-1 bg-gradient-to-r from-border/80 to-transparent"
+                          aria-hidden="true"
                         />
-                      ))}
-                    </div>
-                  </section>
-                ))}
+                      </h2>
+
+                      {/*
+                        桌面端月份牌改为「悬浮」：
+                        外层绝对定位容器不参与文档流，卡片因此恢复整行宽度；
+                        容器用 inset-y-0 撑满本月区间，内层 sticky 才能在该区间内吸附。
+                        月份牌宽度收进时间轴左侧留白（卡片 pl 为 48px、牌宽 44px），
+                        既悬浮在卡片左侧，又几乎不压到卡片内容。
+                      */}
+                      {/*
+                        悬浮容器向左偏移 4px：
+                        时间轴竖线与圆点的圆心在 left-4（16px），
+                        牌宽 40px 时只有 left = -4px 才能让牌心与圆心重合，
+                        否则竖线会从牌面偏右的位置穿过，看起来像没对齐。
+                      */}
+                      <div className="pointer-events-none absolute inset-y-0 -left-1 z-20 hidden w-10 sm:block">
+                        {/*
+                          牌面加 data-month-plate 供圆点联动脚本定位；
+                          底色提到 95%：圆点从背后经过时不至于透出模糊轮廓，
+                          遮挡关系交给「亮起类型色」来表达。
+                        */}
+                        <div
+                          data-month-plate
+                          className="sticky top-24 flex flex-col items-center rounded-xl border border-border/70 bg-background/95 py-2 shadow-card backdrop-blur-md transition-[border-color,box-shadow,transform] duration-300"
+                        >
+                          <span className="font-mono text-[8px] font-medium tracking-[0.1em] text-muted-foreground">
+                            {groupYear}
+                          </span>
+                          <span className="mt-0.5 bg-gradient-to-b from-foreground to-primary bg-clip-text text-xl font-bold leading-none tabular-nums text-transparent">
+                            {monthNumber}
+                          </span>
+                          <span className="mt-0.5 text-[8px] font-medium text-muted-foreground">月</span>
+                          <span className="mt-1.5 rounded-full border border-primary/30 bg-primary/10 px-1 py-0.5 text-[8px] font-medium tabular-nums text-primary">
+                            {group.total} 篇
+                          </span>
+                          {/* 指示灯：有圆点从牌后经过时亮起该日志的类型色 */}
+                          <span
+                            data-month-lamp
+                            className="mt-1.5 h-1 w-1 rounded-full bg-border/80 transition-[background-color,box-shadow,transform] duration-300"
+                            aria-hidden="true"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="relative">
+                        {/* 时间轴竖线：顶部主题色渐入、底部淡出，避免一条硬线贯穿整页 */}
+                        <div
+                          className="absolute left-4 top-0 bottom-0 w-px bg-gradient-to-b from-primary/40 via-border/70 to-transparent"
+                          aria-hidden="true"
+                        />
+
+                        {group.items.map((changelog) => (
+                          <ChangelogCard
+                            key={changelog.id}
+                            changelog={changelog}
+                            expanded={Boolean(expandedLogs[changelog.id])}
+                            html={htmlCache[changelog.id]}
+                            loading={Boolean(htmlLoading[changelog.id])}
+                            error={Boolean(htmlErrors[changelog.id])}
+                            onToggle={toggleExpand}
+                            onPrefetch={loadChangelogHtml}
+                            onRetry={retryChangelogHtml}
+                          />
+                        ))}
+                      </div>
+                    </section>
+                  );
+                })}
 
                 {/* 续载：进入视口自动加载，同时保留手动按钮 */}
                 {hasMore && (
-                  <div ref={loadMoreRef} className="flex flex-col items-center gap-2 pt-2">
+                  <div ref={loadMoreRef} className="flex flex-col items-center gap-2 pt-1">
                     <button
                       type="button"
                       onClick={loadMore}
-                      className="rounded-full border border-border bg-card/90 px-4 py-2 text-sm text-foreground shadow-md backdrop-blur-md transition-colors hover:border-primary/40 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 supports-[backdrop-filter]:bg-card/75"
+                      className="group inline-flex items-center gap-1.5 rounded-full border border-dashed border-border bg-card/50 px-4 py-2 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                     >
+                      <svg
+                        className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-y-0.5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v14M5 12l7 7 7-7" />
+                      </svg>
                       加载更早的日志
                     </button>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="font-mono text-[10px] tabular-nums tracking-wide text-muted-foreground">
                       已显示 {visibleChangelogs.length} / {filteredChangelogs.length}
                     </span>
                   </div>

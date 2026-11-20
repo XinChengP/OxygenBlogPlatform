@@ -3,6 +3,7 @@
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Changelog,
+  ChangelogType,
   CustomHonor,
   getAchievementColor,
   getAchievementLabel,
@@ -23,6 +24,22 @@ const STORED_DEFAULT_HONOR_COLOR =
 
 /** 默认荣誉标签的展示样式：白字在深蓝渐变上可读性更好 */
 const DEFAULT_HONOR_CLASS = 'bg-gradient-to-r from-blue-700 via-blue-600 to-blue-800';
+
+/**
+ * 日志类型的短代码（沿用 Conventional Commits 前缀）
+ *
+ * 日志本身是按天的提交记录，用等宽短码配合中文标签，
+ * 让卡片头部带一点「构建日志」的技术质感；短码在等宽字体下宽度稳定，
+ * 不同类型的徽标长度也不会跳动得太厉害。
+ */
+const TYPE_CODES: Record<ChangelogType, string> = {
+  feature: 'feat',
+  optimize: 'perf',
+  fix: 'fix',
+  docs: 'docs',
+  style: 'style',
+  refactor: 'refactor',
+};
 
 /**
  * 单张开发日志卡片
@@ -61,7 +78,7 @@ function HonorBadge({ honor }: { honor: CustomHonor }) {
   if (isStoredDefault || looksLikeTailwindClass) {
     return (
       <span
-        className={`text-[11px] px-2 py-0.5 rounded-full text-white font-medium whitespace-nowrap ${DEFAULT_HONOR_CLASS}`}
+        className={`text-[10px] px-1.5 py-0.5 rounded-full text-white font-medium whitespace-nowrap shadow-sm ${DEFAULT_HONOR_CLASS}`}
         title={honor.name}
       >
         {honor.name}
@@ -71,7 +88,7 @@ function HonorBadge({ honor }: { honor: CustomHonor }) {
 
   return (
     <span
-      className="text-[11px] px-2 py-0.5 rounded-full font-medium whitespace-nowrap"
+      className="text-[10px] px-1.5 py-0.5 rounded-full font-medium whitespace-nowrap shadow-sm"
       style={
         isGradient
           ? { background: color, color: '#ffffff' }
@@ -107,6 +124,12 @@ function ChangelogCard({
   const typeLabel = getChangelogTypeLabel(changelog.type);
   const contentId = `changelog-content-${changelog.id}`;
 
+  // 折叠态元信息是否至少有一项可展示，避免输出空的统计行
+  const hasMeta =
+    changelog.commits.length > 0 ||
+    (changelog.lineCount || 0) > 0 ||
+    (typeof changelog.charCount === 'number' && changelog.charCount > 0);
+
   useEffect(
     () => () => {
       if (copyTimerRef.current) window.clearTimeout(copyTimerRef.current);
@@ -135,32 +158,77 @@ function ChangelogCard({
   return (
     <article
       id={`changelog-${changelog.id}`}
-      className="relative flex gap-3 sm:gap-8 scroll-mt-24 rounded-lg"
+      className="group/item relative pb-5 pl-9 scroll-mt-24 sm:pl-12"
     >
-      {/* 时间轴圆点：颜色跟随日志类型 */}
-      <div
-        className="flex flex-shrink-0 items-center justify-center w-6 h-6 sm:w-8 sm:h-8 mt-3 rounded-full bg-background border-2 z-10"
-        style={{ borderColor: typeColor }}
+      {/*
+        时间轴节点：外圈用类型色描边，内圈实心点。
+        外圈额外套一圈与页面同色的阴影，把竖线从节点背后「遮断」，
+        避免竖线直接从圆点中间穿过；悬停时整体轻微放大。
+      */}
+      <span
+        className="absolute left-0 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 bg-background transition-transform duration-300 group-hover/item:scale-110"
+        style={{
+          borderColor: typeColor,
+          boxShadow: '0 0 0 4px var(--background)',
+        }}
+        /*
+          供月份牌联动使用：圆点滚动到悬浮月份牌背后时，
+          页面通过 data-dot-color 取到当前日志的类型色，
+          让牌面亮起同色边框与指示灯，把「遮挡」变成颜色交接。
+        */
+        data-changelog-dot
+        data-dot-color={typeColor}
         aria-hidden="true"
       >
         <span
-          className="block w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full"
+          className={`block rounded-full transition-all duration-300 ${
+            expanded ? 'h-3 w-3' : 'h-2 w-2'
+          }`}
           style={{ backgroundColor: typeColor }}
         />
-      </div>
+      </span>
 
-      <div className="flex-1 pb-6 min-w-0">
-        <div className="p-4 rounded-lg border transition-all duration-300 backdrop-blur-md bg-card/90 border-border shadow-md supports-[backdrop-filter]:bg-card/75 hover:border-primary/30">
-          {/* 卡片头部：日期、荣誉/成就/类型标签 */}
-          <header className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1.5 mb-2 pb-2 border-b border-border/30">
-            <time
-              dateTime={changelog.date}
-              className="text-muted-foreground text-xs tabular-nums pt-0.5"
-            >
-              {changelog.date}
-            </time>
+      {/* 卡片主体：悬停上浮 + 类型色光晕 + 顶部渐变高光 */}
+      <div className="group/card relative overflow-hidden rounded-xl border border-border/80 bg-card/85 shadow-card backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/35 hover:shadow-card-hover supports-[backdrop-filter]:bg-card/70">
+        {/* 顶部一条类型色渐隐高光：比整块彩色边框更克制，又能区分类型 */}
+        <span
+          className="pointer-events-none absolute inset-x-6 top-0 h-px opacity-60"
+          style={{
+            background: `linear-gradient(90deg, transparent, ${typeColor}, transparent)`,
+          }}
+          aria-hidden="true"
+        />
+        {/* 悬停光晕：从卡片右上角渗出的类型色，给悬停一点「通电」的反馈 */}
+        <span
+          className="pointer-events-none absolute -right-14 -top-14 h-36 w-36 rounded-full opacity-0 blur-2xl transition-opacity duration-500 group-hover/card:opacity-20"
+          style={{ backgroundColor: typeColor }}
+          aria-hidden="true"
+        />
 
-            <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5">
+        <div className="relative p-4 sm:p-[18px]">
+          {/* 卡片头部：类型徽标 + 日期 / 荣誉与成就 */}
+          <header className="mb-2.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <span
+                className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold shadow-sm"
+                style={{ backgroundColor: typeColor, color: getContrastTextColor(typeColor) }}
+              >
+                <span className="font-mono uppercase tracking-wider">
+                  {TYPE_CODES[changelog.type]}
+                </span>
+                <span className="opacity-50">·</span>
+                <span>{typeLabel}</span>
+              </span>
+
+              <time
+                dateTime={changelog.date}
+                className="font-mono text-[11px] tabular-nums tracking-wide text-muted-foreground"
+              >
+                {changelog.date}
+              </time>
+            </div>
+
+            <div className="flex min-w-0 flex-wrap items-center justify-end gap-1">
               {changelog.honors?.map((honor, index) => (
                 <HonorBadge key={`honor-${index}`} honor={honor} />
               ))}
@@ -170,7 +238,7 @@ function ChangelogCard({
                 return (
                   <span
                     key={achievement}
-                    className="text-[11px] px-2 py-0.5 rounded-full font-medium whitespace-nowrap"
+                    className="text-[10px] px-1.5 py-0.5 rounded-full font-medium whitespace-nowrap shadow-sm"
                     style={{ backgroundColor: color, color: getContrastTextColor(color) }}
                     title={getAchievementLabel(achievement)}
                   >
@@ -178,43 +246,60 @@ function ChangelogCard({
                   </span>
                 );
               })}
-
-              <span
-                className="text-[11px] px-2 py-0.5 rounded-full font-medium whitespace-nowrap"
-                style={{ backgroundColor: typeColor, color: getContrastTextColor(typeColor) }}
-              >
-                {typeLabel}
-              </span>
             </div>
           </header>
 
-          <h3 className="text-base sm:text-lg font-semibold mb-1.5 break-words">
+          <h3 className="mb-2 break-words text-base font-semibold leading-snug text-foreground transition-colors group-hover/card:text-primary sm:text-[17px]">
             {changelog.title}
           </h3>
 
           {/* 折叠态摘要：不必展开就能判断这条日志讲了什么 */}
           {!expanded && changelog.excerpt && (
-            <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2 mb-2">
+            <p className="mb-2.5 line-clamp-2 text-[13px] leading-relaxed text-muted-foreground">
               {changelog.excerpt}
             </p>
           )}
 
-          {/* 折叠态元信息 */}
-          {(changelog.commits.length > 0 || (changelog.lineCount || 0) > 0) && (
-            <p className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+          {/* 折叠态元信息：数字用等宽字体，形成「构建统计」的秩序感 */}
+          {hasMeta && (
+            <div className="mb-3 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[10px] text-muted-foreground">
               {changelog.commits.length > 0 && (
-                <span>{changelog.commits.length} 条提交</span>
+                <span className="inline-flex items-baseline gap-1">
+                  <span className="font-mono text-[11px] font-semibold tabular-nums text-foreground/85">
+                    {changelog.commits.length}
+                  </span>
+                  次提交
+                </span>
+              )}
+              {changelog.commits.length > 0 && (changelog.lineCount || 0) > 0 && (
+                <span className="h-2.5 w-px bg-border/70" aria-hidden="true" />
               )}
               {(changelog.lineCount || 0) > 0 && (
-                <span>{changelog.lineCount} 行正文</span>
+                <span className="inline-flex items-baseline gap-1">
+                  <span className="font-mono text-[11px] font-semibold tabular-nums text-foreground/85">
+                    {changelog.lineCount}
+                  </span>
+                  行正文
+                </span>
               )}
+              {typeof changelog.charCount === 'number' &&
+                changelog.charCount > 0 &&
+                (changelog.lineCount || 0) > 0 && (
+                  <span className="h-2.5 w-px bg-border/70" aria-hidden="true" />
+                )}
               {typeof changelog.charCount === 'number' && changelog.charCount > 0 && (
-                <span>{changelog.charCount} 字</span>
+                <span className="inline-flex items-baseline gap-1">
+                  <span className="font-mono text-[11px] font-semibold tabular-nums text-foreground/85">
+                    {changelog.charCount}
+                  </span>
+                  字
+                </span>
               )}
-            </p>
+            </div>
           )}
 
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+          {/* 底部操作条：展开为主操作，复制链接为次要操作 */}
+          <div className="flex items-center justify-between gap-2 border-t border-border/40 pt-2.5">
             <button
               type="button"
               onClick={() => onToggle(changelog.id)}
@@ -222,11 +307,13 @@ function ChangelogCard({
               onFocus={() => onPrefetch(changelog.id)}
               aria-expanded={expanded}
               aria-controls={contentId}
-              className="text-sm text-primary hover:text-primary/80 transition-colors inline-flex items-center gap-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+              className="group/expand inline-flex items-center gap-1 rounded-md py-0.5 text-xs font-medium text-primary transition-colors hover:text-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
             >
-              <span>{expanded ? '收起内容' : '展开查看'}</span>
+              <span>{expanded ? '收起正文' : '展开正文'}</span>
               <svg
-                className={`w-4 h-4 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
+                className={`h-3.5 w-3.5 transition-transform duration-300 ${
+                  expanded ? 'rotate-180' : 'group-hover/expand:translate-y-0.5'
+                }`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -240,10 +327,10 @@ function ChangelogCard({
               type="button"
               onClick={handleCopyPermalink}
               aria-label={`复制《${changelog.title}》的链接`}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+              className="inline-flex items-center gap-1 rounded-md py-0.5 text-[11px] text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
             >
               <svg
-                className="w-3.5 h-3.5"
+                className="h-3.5 w-3.5"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -264,7 +351,7 @@ function ChangelogCard({
           {expanded && (
             <div
               id={contentId}
-              className="text-foreground text-sm mt-3 pt-3 border-t border-border/30 overflow-hidden break-words"
+              className="mt-3 overflow-hidden break-words border-t border-border/40 pt-3 text-sm text-foreground"
             >
               {html ? (
                 <div dangerouslySetInnerHTML={{ __html: html }} />
@@ -274,25 +361,31 @@ function ChangelogCard({
                   <button
                     type="button"
                     onClick={() => onRetry(changelog.id)}
-                    className="text-primary hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                    className="rounded text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                   >
                     重试
                   </button>
                 </div>
               ) : (
-                <p className="py-2 text-muted-foreground">
+                <p className="flex items-center gap-2 py-2 text-muted-foreground">
+                  {/* 三点脉冲：让「加载中」不只是静态文字 */}
+                  <span className="inline-flex items-center gap-1" aria-hidden="true">
+                    <span className="h-1 w-1 animate-pulse rounded-full bg-primary" />
+                    <span className="h-1 w-1 animate-pulse rounded-full bg-primary [animation-delay:150ms]" />
+                    <span className="h-1 w-1 animate-pulse rounded-full bg-primary [animation-delay:300ms]" />
+                  </span>
                   {loading ? '日志正文加载中…' : '准备加载正文…'}
                 </p>
               )}
 
               {changelog.commits.length > 0 && (
-                <div className="mt-4 pt-3 border-t border-border/30">
-                  <p className="text-xs text-muted-foreground mb-2">关联提交：</p>
+                <div className="mt-4 border-t border-border/40 pt-3">
+                  <p className="mb-2 text-xs text-muted-foreground">关联提交：</p>
                   <div className="flex flex-wrap gap-2">
                     {changelog.commits.map((commit, index) => (
                       <span
                         key={index}
-                        className="text-xs px-2 py-1 rounded bg-muted text-muted-foreground font-mono break-all"
+                        className="break-all rounded-md border border-border/60 bg-muted/50 px-2 py-1 font-mono text-[11px] text-muted-foreground"
                       >
                         {commit}
                       </span>
