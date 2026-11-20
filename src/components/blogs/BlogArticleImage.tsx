@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { getAssetPath } from '@/utils/assetUtils';
 import type { PreviewImage } from '@/types/gallery';
 import { isVideoUrl, type MarkdownImgProps } from '@/components/blogs/BlogMarkdownBase';
@@ -71,6 +71,22 @@ export default function BlogArticleImage({ src, alt, node, className, ...props }
     imgRef,
     onError: handleImageError,
   } = useResponsiveImageFallback(responsiveSrcSet, responsiveSizes);
+
+  /*
+    无尺寸清单图片的横竖补检
+    服务端渲染阶段拿不到尺寸，detectedLandscape 只能是 false，输出按竖图限宽
+    max-w-[400px]。若图片在水合绑定 onLoad 之前就已加载完成（懒加载图靠近首屏时
+    很常见），onLoad 不会再触发，横图会被永久按竖图限宽，表现为「图片没有填满容器」。
+    补检思路与 useResponsiveImageFallback 一致：水合后直接读已完成的 naturalWidth。
+  */
+  useEffect(() => {
+    // 有清单条目时首帧尺寸就已正确，无需探测
+    if (responsiveEntry) return;
+    const img = imgRef.current;
+    if (img && img.complete && img.naturalWidth > 0) {
+      setDetectedLandscape(img.naturalWidth > img.naturalHeight);
+    }
+  }, [responsiveEntry, imgRef]);
 
   // 如果处理后的地址是视频文件，则使用 video 标签渲染
   // 视频不加入文章图片灯箱，也不支持点击放大

@@ -110,6 +110,201 @@
         }
       ]
     },
+    "/Blogabout/75cm-badge/1.jpg": {
+      "hash": "d92703b4",
+      "width": 1264,
+      "height": 1188,
+      "variants": [
+        {
+          "width": 640,
+          "height": 602,
+          "path": "/_responsive/Blogabout/75cm-badge/1-640-d92703b4.webp"
+        },
+        {
+          "width": 1264,
+          "height": 1188,
+          "path": "/_responsive/Blogabout/75cm-badge/1-1264-d92703b4.webp"
+        }
+      ]
+    },
+    "/Blogabout/75cm-badge/2.jpg": {
+      "hash": "4d5eecb5",
+      "width": 1264,
+      "height": 1128,
+      "variants": [
+        {
+          "width": 640,
+          "height": 571,
+          "path": "/_responsive/Blogabout/75cm-badge/2-640-4d5eecb5.webp"
+        },
+        {
+          "width": 1264,
+          "height": 1128,
+          "path": "/_responsive/Blogabout/75cm-badge/2-1264-4d5eecb5.webp"
+        }
+      ]
+    },
+    "/Blogabout/75cm-badge/3.jpg": {
+      "hash": "ab2112ab",
+      "width": 1536,
+      "height": 2048,
+      "variants": [
+        {
+          "width": 640,
+          "height": 853,
+          "path": "/_responsive/Blogabout/75cm-badge/3-640-ab2112ab.webp"
+        },
+        {
+          "width": 1280,
+          "height": 1707,
+          "path": "/_responsive/Blogabout/75cm-badge/3-1280-ab2112ab.webp"
+        },
+        {
+          "width": 1536,
+          "height": 2048,
+          "path": "/_responsive/Blogabout/75cm-badge/3-1536-ab2112ab.webp"
+        }
+      ]
+    },
+    "/Blogabout/75cm-badge/4.jpg": {
+      "hash": "f1ae5f71",
+      "width": 1536,
+      "height": 1928,
+      "variants": [
+        {
+          "width": 640,
+          "height": 803,
+          "path": "/_responsive/Blogabout/75cm-badge/4-640-f1ae5f71.webp"
+        },
+        {
+          "width": 1280,
+          "height": 1607,
+          "path": "/_responsive/Blogabout/75cm-badge/4-1280-f1ae5f71.webp"
+        },
+        {
+          "width": 1536,
+          "height": 1928,
+          "path": "/_responsive/Blogabout/75cm-badge/4-1536-f1ae5f71.webp"
+        }
+      ]
+    },
+    "/Blogabout/75cm-badge/5.jpg": {
+      "hash": "8945265c",
+      "width": 1360,
+      "height": 1261,
+      "variants": [
+        {
+          "width": 640,
+          "height": 593,
+          "path": "/_responsive/Blogabout/75cm-badge/5-640-8945265c.webp"
+        },
+        {
+          "width": 1280,
+          "height": 1187,
+          "path": "/_responsive/Blogabout/75cm-badge/5-1280-8945265c.webp"
+        },
+        {
+          "width": 1360,
+          "height": 1261,
+          "path": "/_responsive/Blogabout/75cm-badge/5-1360-8945265c.webp"
+        }
+      ]
+    },
+    "/Blogabout/75cm-badge/6.jpg": {
+      "hash": "2e3b02e6",
+      "width": 1264,
+      "height": 313,
+      "variants": [
+        {
+          "width": 640,
+          "height": 158,
+          "path": "/_responsive/Blogabout/75cm-badge/6-640-2e3b02e6.webp"
+        },
+        {
+          "width": 1264,
+          "height": 313,
+          "path": "/_responsive/Blogabout/75cm-badge/6-1264-2e3b02e6.webp"
+        }
+      ]
+    },
+    "/Blogabout/75cm-badge/7.jpg": {
+      "hash": "71c487e2",
+      "width": 1264,
+      "height": 377,
+      "variants": [
+        {
+          "width": 640,
+          "height": 191,
+          "path": "/_responsive/Blogabout/75cm-badge/7-640-71c487e2.webp"
+        },
+        {
+          "width": 1264,
+          "height": 377,
+          "path": "/_responsive/Blogabout/75cm-badge/7-1264-71c487e2.webp"
+        }
+      ]
+    },
+    "/Blogabout/75cm-badge/8.png": {
+      "hash": "de9fd513",
+      "width": 1229,
+      "height": 384,
+      "variants": [
+        {
+          "width": 640,
+          "height": 200,
+          "path": "/_responsive/Blogabout/75cm-badge/8-640-de9fd513.webp"
+        },
+        {
+          "width": 1229,
+          "height": 384,
+          "path": "/_responsive/Blogabout/75cm-badge/8-1229-de9fd513.webp"
+        }
+      ]
+    },
+    "/Blogabout/75cm-badge/cover.jpg": {
+      "hash": "a5a7edd5",
+      "width": 7700,
+      "height": 4332,
+      "variants": [
+        {
+          "width": 640,
+          "height": 360,
+          "path": "/_responsive/Blogabout/75cm-badge/cover-640-a5a7edd5.webp"
+        },
+        {
+          "width": 1280,
+          "height": 720,
+          "path": "/_responsive/Blogabout/75cm-badge/cover-1280-a5a7edd5.webp"
+        },
+        {
+          "width": 1920,
+          "height": 1080,
+          "path": "/_responsive/Blogabout/75cm-badge/cover-1920-a5a7edd5.webp"
+        }
+      ]
+    },
+    "/Blogabout/75cm-badge/cut.jpeg": {
+      "hash": "3511bfe0",
+      "width": 7816,
+      "height": 7816,
+      "variants": [
+        {
+          "width": 640,
+          "height": 640,
+          "path": "/_responsive/Blogabout/75cm-badge/cut-640-3511bfe0.webp"
+        },
+        {
+          "width": 1280,
+          "height": 1280,
+          "path": "/_responsive/Blogabout/75cm-badge/cut-1280-3511bfe0.webp"
+        },
+        {
+          "width": 1920,
+          "height": 1920,
+          "path": "/_responsive/Blogabout/75cm-badge/cut-1920-3511bfe0.webp"
+        }
+      ]
+    },
     "/Blogabout/ChunlanHuanyue2026/1.jpg": {
       "hash": "bb22d23d",
       "width": 3072,
