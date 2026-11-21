@@ -1,31 +1,30 @@
 ---
 title: "如何把MMD模型3D打印出来？"
 date: "2026-09-20"
-updatedAt: "2026-09-22"
+updatedAt: "2026-11-22"
 category: "技术"
 author: 歆橙
 language: "zh-CN"
 tags: ["MMD", "STL", "Blender", "3D打印", "建模"]
-excerpt: "佬啊，佬啊，怎么是纸片啊。。。不怼"
-coverImage: "/Blogabout/mmd-turnto-stl/cover.jpg"
-hidden: true
+excerpt: "佬啊，佬啊，怎么是纸片er。。。布怼，不是纸片了"
+coverImage: "/Blogabout/mmd-turnto-stl/cover.gif"
 ---
 
-# 背景
+## 背景
 
 &emsp;&emsp;佬，嘿嘿，我亲爱的佬，嘿嘿嘿（发癫ing）
 
 &emsp;&emsp;okr这个博主魔了，问题不大
 
-# 正文
+## 正文
 
-## 准备工作
+### 准备工作
 
 准备以下东西：
 
 1. **Blender**：下载就完事了，反正免费了，博主用的最新的5.2版本
 
-2. **Cats Blender Plugin**：用来导入和处理 MMD 模型的插件。原版早就停更了（悲），博主用的是非官方维护版，链接下面有
+2. **Cats Blender Plugin**：用来导入和处理 MMD 模型的插件。原版早就停更了（悲），博主用的是非官方维护版（逃
 
 3. **一个 MMD 模型**：自己跑[模之屋](https://www.aplaybox.com/)里下载去
 
@@ -33,59 +32,66 @@ hidden: true
 
 5. **3D打印机**：白嫖学校的即可（）
 
-## 第一步：安装 CATS 插件
+### 安装 CATS 插件
 
-1. 去[介](https://catsblenderplugin.xyz/)下载对应 Blender 版本的压缩包（zip 格式，**不用解压**）
+1. 自行搜索下载对应 Blender 版本的压缩包（zip 格式，**不用解压**），网上一搜就有（确信
+
 2. 打开 Blender，点左上角「编辑」→「偏好设置」→「插件」
-3. 点右上角的「从磁盘安装」，选中刚才下载的 zip
-4. 在插件列表里搜索「CATS」，把前面的勾打上，安装完成
-5. 回到 3D 视图，按 `N` 键调出右侧边栏，就能看到多了一个「CATS」标签页
+
+3. 直接拖进去！
 
 ![安装CATS插件](/Blogabout/mmd-turnto-stl/1.png)
 
-## 第二步：导入MMD模型
+### 导入MMD模型
 
-&emsp;&emsp;在 CATS 面板里找到「Import Model」，选中模型文件夹里的 `.pmx` 文件就能导入。
+&emsp;&emsp;在 CATS 面板里找到「Import Model/导入模型」，选中自己准备好的 `.pmx` 文件就能导入。导入的尺寸后面再调
 
-&emsp;&emsp;导入的时候 CATS 会问要不要自动处理贴图、骨骼之类的，一般默认就行。
-
-> 小提示：MMD 的模型是按 0.08 的比例导入到 Blender 的，导入后大概就是真人比例（一米六左右），别被数值吓到。
-
-![导入后的模型](/Blogabout/mmd-turnto-stl/2.png)
-
-## 第三步：处理模型
+### 处理模型
 
 &emsp;&emsp;导入进来一坨东西，其实不用全都要。导出 STL 只需要**网格**，所以：
 
-1. 用 CATS 面板里的「Fix Model」按钮做一次修复，它会自动帮你合并重复材质、清理多余的顶点组，模型会清爽很多
-2. 把用不到的部件删掉（比如背景用的配件、看板之类），只留下要打印的部分
-3. 选中模型，`Ctrl + A` →「全部变换」，把位移、旋转、缩放都应用掉，避免导出的时候位置不对
+1. 用 CATS 面板里的「Fix Model/修复MMD模型」按钮做一次修复，会有个警告，但是无视风险继续执行！顺便也可以点一下「Remove Rigidbodies and Joints/删除刚体和关节」
 
-## 第四步：导出STL
+2. 把用不到的部件删掉（没有的就直接跳过a）
 
-1. 选中要导出的模型（可以 `Shift` 多选）
-2. 点「文件」→「导出」→「STL」。如果菜单里找不到 STL，说明该格式的插件没启用，去「偏好设置」→「插件」里搜索「STL」勾上就行（Blender 新版本里 STL 导出改成了扩展形式）
-3. 在导出设置里**勾上「仅导出选中项」**，不然整个场景的东西都会被塞进去
-4. 确认后导出，得到 `.stl` 文件
+&emsp;&emsp;还是图片清楚，上图！
 
-![导出设置](/Blogabout/mmd-turnto-stl/3.png)
+![如图](/Blogabout/mmd-turnto-stl/3.png)
 
-## 第五步：切片打印
+3. 选中模型，按下快捷键S，输入倍率调整模型大小（或者手动调也行，取决于你想要的尺寸大小）
 
-&emsp;&emsp;把 STL 丢进切片软件（博主用的拓竹 Bambu Studio，Cura、PrusaSlicer 也都行），缩放调整到想要的尺寸，加好支撑，导出 G 代码，然后就是打印机的事了。
+![这里看大小](/Blogabout/mmd-turnto-stl/4.png)
 
-![切片预览](/Blogabout/mmd-turnto-stl/4.png)
+### 导出STL
 
-# 注意事项
+1. 接下来选中要导出的模型
 
-&emsp;&emsp;虽然博主这次转得比较顺，但有几个坑是 MMD 模型转打印**必然会遇到的**，提前说一声：
+2. 点「文件」→「导出」→「STL」
 
-- **面数偏多**：MMD 模型动辄几万到几十万个三角面，STL 文件会很大，切片软件可能卡。实在顶不住可以在 Blender 里加一个「精简」修改器减面
-- **模型是薄壳**：MMD 模型的衣服、头发很多是**没有厚度的曲面**，直接打印出来会是一层纸。要么在 Blender 里加「实体化」修改器加厚，要么打印的时候心里有数
-- **尺寸要缩**：真人比例直接打印出来是一米六，别怪打印机装不下（笑）。切片前记得按比例缩小到想要的尺寸，比如 15cm 高
+![此处该有图](/Blogabout/mmd-turnto-stl/8.png)
 
-# 写在最后
+3. 然后美美导出就完事了
 
-&emsp;&emsp;整个流程其实就一句话：**CATS 导入 → Fix Model 清理 → 应用变换 → 导出 STL → 切片打印**。难的不是操作，难得是你得先有一个喜欢的模型（
+### 切片打印
+
+&emsp;&emsp;因为学校的3D打印机是拓竹的，所以切片软件选用Bambu Studio。博主趁着~~打螺丝~~金工实习能接触到3D打印机那肯定得使劲造啊（bushi
+
+![切片预览](/Blogabout/mmd-turnto-stl/5.png)
+
+&emsp;&emsp;剩下的支撑啥的自己微调吧，我这直接倒立洗头打印了（
+
+![古 法 截 图](/Blogabout/mmd-turnto-stl/6.jpg)
+
+![打印ing](/Blogabout/mmd-turnto-stl/7.mp4)
+
+&emsp;&emsp;美美等着就完了（
+
+## 成果图
+
+<div class="image-grid image-grid-3-cols"><img src="/Blogabout/luoyao-zhoubian/完成.jpg" alt="小洛包" /><img src="/Blogabout/mmd-turnto-stl/9.jpg" alt="迪莫迪莫" /><img src="/Blogabout/mmd-turnto-stl/10.jpg" alt="一束花~" /></div>
+
+&emsp;&emsp;孩子们，机不可失时不再来，3D打印的机会肥肠滴珍贵啊，于是乎额在模型广场找了另外俩模型打印出来了。小洛包那是因为模型广场莫得才被迫自己整的（逃
+
+&emsp;&emsp;打印完了拿铲子铲小洛包的时候，被老师发现了，给我批了一顿（但老师并不知道我夹带了仨私货hhhhh）
 
 

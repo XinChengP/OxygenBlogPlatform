@@ -2681,25 +2681,47 @@
         }
       ]
     },
-    "/Blogabout/mmd-turnto-stl/cover.jpg": {
-      "hash": "f97ae19f",
-      "width": 1920,
-      "height": 1080,
+    "/Blogabout/mmd-turnto-stl/5.png": {
+      "hash": "65331c19",
+      "width": 2560,
+      "height": 1588,
       "variants": [
         {
           "width": 640,
-          "height": 360,
-          "path": "/_responsive/Blogabout/mmd-turnto-stl/cover-640-f97ae19f.webp"
+          "height": 397,
+          "path": "/_responsive/Blogabout/mmd-turnto-stl/5-640-65331c19.webp"
         },
         {
           "width": 1280,
-          "height": 720,
-          "path": "/_responsive/Blogabout/mmd-turnto-stl/cover-1280-f97ae19f.webp"
+          "height": 794,
+          "path": "/_responsive/Blogabout/mmd-turnto-stl/5-1280-65331c19.webp"
         },
         {
           "width": 1920,
-          "height": 1080,
-          "path": "/_responsive/Blogabout/mmd-turnto-stl/cover-1920-f97ae19f.webp"
+          "height": 1191,
+          "path": "/_responsive/Blogabout/mmd-turnto-stl/5-1920-65331c19.webp"
+        }
+      ]
+    },
+    "/Blogabout/mmd-turnto-stl/6.jpg": {
+      "hash": "e890b8c0",
+      "width": 1920,
+      "height": 1440,
+      "variants": [
+        {
+          "width": 640,
+          "height": 480,
+          "path": "/_responsive/Blogabout/mmd-turnto-stl/6-640-e890b8c0.webp"
+        },
+        {
+          "width": 1280,
+          "height": 960,
+          "path": "/_responsive/Blogabout/mmd-turnto-stl/6-1280-e890b8c0.webp"
+        },
+        {
+          "width": 1920,
+          "height": 1440,
+          "path": "/_responsive/Blogabout/mmd-turnto-stl/6-1920-e890b8c0.webp"
         }
       ]
     },
