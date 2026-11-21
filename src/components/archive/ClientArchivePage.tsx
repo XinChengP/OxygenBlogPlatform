@@ -6,6 +6,7 @@ import { motion, useMotionValue, animate } from 'framer-motion';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 import { Pin, Clock, BookOpen, Calendar } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
+import ManifestImage from '@/components/core/ManifestImage';
 import { Live2DMessageHelper } from '@/utils/live2dMessageManager';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
@@ -1174,8 +1175,13 @@ export default function ClientArchivePage({ archivedPosts }: ClientArchivePagePr
                             {/* 封面区：无封面时降级为渐变底 + 书本图标 */}
                             {post.coverImage ? (
                               <div className="relative overflow-hidden" style={{ height: coverHeight }}>
-                                <img
+                                {/* 封面使用构建期响应式变体（WebP）：
+                                    归档卡片桌面端约 240px、移动端约 170px，
+                                    原图往往是 4000px 级别的照片，直接引用会让
+                                    时光河流一屏请求十几张超大原图。 */}
+                                <ManifestImage
                                   src={post.coverImage}
+                                  sizes="(max-width: 768px) 170px, 240px"
                                   alt={post.title}
                                   loading="lazy"
                                   decoding="async"
