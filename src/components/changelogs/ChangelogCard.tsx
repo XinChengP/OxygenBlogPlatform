@@ -1,6 +1,7 @@
 'use client';
 
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
 import {
   Changelog,
   ChangelogType,
@@ -56,6 +57,11 @@ export interface ChangelogCardProps {
   loading?: boolean;
   /** 正文是否加载失败（失败不写入缓存，可重试） */
   error?: boolean;
+  /**
+   * 在已渲染列表中的序号，用于入场动画的错峰延迟。
+   * 与友链卡片一致：单帧 0.04s、封顶 0.3s，避免长列表后半段等太久。
+   */
+  index?: number;
   onToggle: (id: string) => void;
   onPrefetch: (id: string) => void;
   onRetry: (id: string) => void;
@@ -107,6 +113,7 @@ function ChangelogCard({
   html,
   loading = false,
   error = false,
+  index = 0,
   onToggle,
   onPrefetch,
   onRetry,
@@ -156,17 +163,30 @@ function ChangelogCard({
   }, [changelog.id]);
 
   return (
-    <article
+    /*
+      入场动画与博客/工具/友链卡片保持同一套节奏：
+      opacity 0→1 + 上移 20px 归位，0.4s；错峰延迟单帧 0.04s、封顶 0.3s。
+      用 motion.article 而不是 CSS keyframes：站点其它列表卡片都由 Framer Motion 驱动，
+      统一实现后动效参数只改一处，也能和「加载更多」时的新卡片自然衔接。
+    */
+    <motion.article
       id={`changelog-${changelog.id}`}
       className="group/item relative pb-5 pl-9 scroll-mt-24 sm:pl-12"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{
+        duration: 0.4,
+        delay: Math.min(index * 0.04, 0.3),
+        ease: 'easeOut',
+      }}
     >
       {/*
         时间轴节点：外圈用类型色描边，内圈实心点。
         外圈额外套一圈与页面同色的阴影，把竖线从节点背后「遮断」，
-        避免竖线直接从圆点中间穿过；悬停时整体轻微放大。
+        避免竖线直接从圆点中间穿过。
       */}
       <span
-        className="absolute left-0 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 bg-background transition-transform duration-300 group-hover/item:scale-110"
+        className="absolute left-0 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 bg-background"
         style={{
           borderColor: typeColor,
           boxShadow: '0 0 0 4px var(--background)',
@@ -188,20 +208,18 @@ function ChangelogCard({
         />
       </span>
 
-      {/* 卡片主体：悬停上浮 + 类型色光晕 + 顶部渐变高光 */}
-      <div className="group/card relative overflow-hidden rounded-xl border border-border/80 bg-card/85 shadow-card backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/35 hover:shadow-card-hover supports-[backdrop-filter]:bg-card/70">
+      {/* 卡片主体：悬停位移交给 Framer Motion（y: -3，与全站卡片一致），
+          CSS 过渡只负责阴影与边框，避免同一个位移被两套过渡重复驱动 */}
+      <motion.div
+        className="group/card relative overflow-hidden rounded-xl border border-border/80 bg-card/85 shadow-card backdrop-blur-md transition-[box-shadow,border-color] duration-300 hover:border-primary/30 hover:shadow-card-hover supports-[backdrop-filter]:bg-card/70"
+        whileHover={{ y: -3, transition: { duration: 0.3, ease: 'easeOut' } }}
+      >
         {/* 顶部一条类型色渐隐高光：比整块彩色边框更克制，又能区分类型 */}
         <span
           className="pointer-events-none absolute inset-x-6 top-0 h-px opacity-60"
           style={{
             background: `linear-gradient(90deg, transparent, ${typeColor}, transparent)`,
           }}
-          aria-hidden="true"
-        />
-        {/* 悬停光晕：从卡片右上角渗出的类型色，给悬停一点「通电」的反馈 */}
-        <span
-          className="pointer-events-none absolute -right-14 -top-14 h-36 w-36 rounded-full opacity-0 blur-2xl transition-opacity duration-500 group-hover/card:opacity-20"
-          style={{ backgroundColor: typeColor }}
           aria-hidden="true"
         />
 
@@ -396,8 +414,8 @@ function ChangelogCard({
             </div>
           )}
         </div>
-      </div>
-    </article>
+      </motion.div>
+    </motion.article>
   );
 }
 

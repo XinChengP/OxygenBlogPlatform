@@ -299,6 +299,17 @@ function ClientChangelogsPage({ changelogs, generatedAt }: ClientChangelogsPageP
     [filteredChangelogs, visibleCount]
   );
 
+  /**
+   * 已渲染日志的序号表：供卡片入场动画错峰使用。
+   * 用 id 映射而不是在分组循环里计数，保证跨月份分组时序号连续，
+   * 动画节奏不会在每个月初重新从 0 开始。
+   */
+  const visibleIndexMap = useMemo(() => {
+    const map = new Map<string, number>();
+    visibleChangelogs.forEach((item, index) => map.set(item.id, index));
+    return map;
+  }, [visibleChangelogs]);
+
   /** 每个月份的总篇数（用于分组标题，不受分页影响） */
   const monthCounts = useMemo(() => {
     const counts = new Map<string, number>();
@@ -959,6 +970,7 @@ function ClientChangelogsPage({ changelogs, generatedAt }: ClientChangelogsPageP
                           <ChangelogCard
                             key={changelog.id}
                             changelog={changelog}
+                            index={visibleIndexMap.get(changelog.id) ?? 0}
                             expanded={Boolean(expandedLogs[changelog.id])}
                             html={htmlCache[changelog.id]}
                             loading={Boolean(htmlLoading[changelog.id])}

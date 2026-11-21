@@ -33,8 +33,12 @@ const RATE_LIMITS = {
 /** 天依 AI 问答的全站每日上限（成本闸门之二），与 RATE_LIMITS.chat 分开计 */
 const CHAT_DAILY_GLOBAL_LIMIT = 200;
 
-/** 天依 AI 默认模型（可被 wrangler.toml 的 AI_CHAT_MODEL 覆盖） */
-const CHAT_MODEL = '@cf/qwen/qwen3-30b-a3b-fp8';
+/**
+ * 天依 AI 默认模型（可被 wrangler.toml 的 AI_CHAT_MODEL 覆盖）
+ * 2026-11-21：原 @cf/qwen/qwen3-30b-a3b-fp8 于 2026-11-20 被 Cloudflare 下线，
+ * 调用直接返回 410，导致问答全部降级成 503。换为中文口语化更好的 GLM-4.7-Flash。
+ */
+const CHAT_MODEL = '@cf/zai-org/glm-4.7-flash';
 
 /** RAG 检索的相关度阈值：bge-m3 同语言文本基线相似度约 0.3-0.5，取 0.45 滤掉弱相关噪音 */
 const CHAT_MIN_SCORE = 0.45;
@@ -902,12 +906,16 @@ async function handleChat(request, env) {
     result = await env.AI.run(env.AI_CHAT_MODEL || CHAT_MODEL, {
       messages: [
         { role: 'system', content: system },
-        // /no_think 是 Qwen3 chat 模板指令，追加在 user 消息末尾可真正关闭思考
-        // （已线上验证：需要罗列的长思考问题从「走神」恢复为完整回答）
-        { role: 'user', content: `读者的问题：${question}\n\n站内资料：\n${context}\n/no_think` },
+        { role: 'user', content: `读者的问题：${question}\n\n站内资料：\n${context}` },
       ],
-      // 本模型 schema 没有 reasoning 参数，关闭思考只能靠 /no_think；
-      // 温度从 0.5 降到 0.2，减少自由发挥导致的「多出一个小工具」这类幻觉。
+      /*
+        GLM-4.7-Flash 默认开启思考（reasoning），思考内容会吃光 max_tokens，
+        导致正式回答 content 为 null（线上实测：200 token 全花在推理上）。
+        用 chat_template_kwargs 关闭后单次约 2~3 秒、1.4 Neurons。
+        原 Qwen3 的 /no_think 模板指令对 GLM 无效，已从 user 消息末尾移除。
+        温度 0.2：减少自由发挥导致的「多出一个小工具」这类幻觉。
+      */
+      chat_template_kwargs: { enable_thinking: false },
       max_tokens: 320,
       temperature: 0.2,
     });
@@ -916,7 +924,14 @@ async function handleChat(request, env) {
     console.error('chat generate failed:', error);
     throw new HttpError(503, 'ai_unavailable', '天依的大脑暂时离线');
   }
-  const answerText = finalizeAnswer(result?.response, sources);
+  /*
+    取回答兼容两种返回结构：
+    - 旧模型（Qwen3 系）：{ response: '文本' }
+    - 新版 OpenAI 兼容模型（GLM 等）：{ choices: [{ message: { content: '文本' } }] }
+    只认 response 会把新模型的正常回答判成空，前端显示「天依走神了」。
+  */
+  const rawAnswer = result?.response ?? result?.choices?.[0]?.message?.content;
+  const answerText = finalizeAnswer(rawAnswer, sources);
   // LLM 空回答（思考型模型只输出推理痕迹时）：降级为固定文案，且不挂来源卡
   if (!answerText) {
     return jsonResponse({
