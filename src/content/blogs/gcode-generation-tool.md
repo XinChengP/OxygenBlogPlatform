@@ -8,6 +8,8 @@ language: "zh-CN"
 tags: ["CNC", "G代码", "Python", "CAD", "开源", "机械"]
 excerpt: "《论为了偷懒而能想出的10086种方法》"
 coverImage: "/Blogabout/gcode-generation-tool/cover.png"
+series: "打螺丝（划掉）金工实习"
+seriesOrder: 1
 ---
 
 # 写在前面
@@ -65,3 +67,7 @@ coverImage: "/Blogabout/gcode-generation-tool/cover.png"
 &emsp;&emsp;本篇博客只是对该转换工具的简单介绍，具体开发过程会在另一篇博客文章中详细介绍awa
 
 &emsp;&emsp;[另一篇文章の占位](#)
+
+> 2026.11.22 凌晨1点编
+
+上面就当博主胡言乱语，另一篇文章大概率是被砍掉了（悲

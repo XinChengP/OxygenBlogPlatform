@@ -8,6 +8,8 @@ language: "zh-CN"
 tags: ["MMD", "STL", "Blender", "3D打印", "建模"]
 excerpt: "佬啊，佬啊，怎么是纸片er。。。布怼，不是纸片了"
 coverImage: "/Blogabout/mmd-turnto-stl/cover.gif"
+series: "打螺丝（划掉）金工实习"
+seriesOrder: 2
 ---
 
 ## 背景
