@@ -19,6 +19,26 @@ import { Z_INDEX } from '@/utils/zIndex';
  * 烟花引擎已抽到 utils/fireworksEngine，组件只负责触发与卸载清理，
  * 避免重渲染重置运行状态、路由切换后特效残留。
  */
+/**
+ * 浮动控制按钮的公共样式
+ *
+ * 与全站玻璃体系对齐：原先 6 个按钮各自硬编码
+ * bg-gray-200 / dark:bg-gray-700 / rounded-lg / shadow-lg，
+ * 是全站少数还停留在"原生控件"观感的区域。
+ * 改用 glass-card-strong 令牌后，圆角、边框、阴影、底色随主题变量自动切换，
+ * 与导航、目录、卡片等悬浮面板保持同一套玻璃语言。
+ */
+const CONTROL_BTN_BASE =
+  'relative p-3 rounded-xl border glass-card-strong text-foreground hover:text-primary hover:border-primary/40';
+
+/**
+ * 主操作与开关开启态样式
+ * 保留天依蓝实色强调，避免整组按钮在玻璃化后失去主次关系；
+ * 阴影引用 shadow-card 令牌，亮暗模式自动加深。
+ */
+const CONTROL_BTN_ACTIVE =
+  'relative p-3 rounded-xl border border-primary/30 bg-primary text-primary-foreground hover:bg-primary/90 shadow-card';
+
 export default function ScrollToTop() {
   const { theme, setTheme } = useTheme();
   const pathname = usePathname();
@@ -143,7 +163,7 @@ export default function ScrollToTop() {
         {/* Live2D 看板娘开关 */}
         <button
           onClick={toggleLive2D}
-          className={`p-3 ${live2dVisible ? 'bg-primary text-primary-foreground hover:bg-primary/90' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600'} rounded-lg shadow-lg transition-all duration-300 transform hover:scale-110 ${showThemeButton ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-5 scale-95 pointer-events-none'}`}
+          className={`${live2dVisible ? CONTROL_BTN_ACTIVE : CONTROL_BTN_BASE} shadow-card transition-all duration-300 transform hover:scale-110 ${showThemeButton ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-5 scale-95 pointer-events-none'}`}
           style={{
             transitionDelay: showThemeButton ? '0.05s' : '0s',
             display: showThemeButton ? 'flex' : 'none',
@@ -154,7 +174,7 @@ export default function ScrollToTop() {
           <FaceSmileIcon className={`h-5 w-5 ${!live2dVisible ? 'opacity-50' : ''}`} />
           {!live2dVisible && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-6 h-0.5 bg-gray-600 dark:bg-gray-400 transform rotate-45"></div>
+              <div className="w-6 h-0.5 bg-foreground/60 transform rotate-45"></div>
             </div>
           )}
         </button>
@@ -162,7 +182,7 @@ export default function ScrollToTop() {
         {/* 音乐播放器开关 */}
         <button
           onClick={toggleMusicPlayer}
-          className={`p-3 ${musicPlayerVisible ? 'bg-primary text-primary-foreground hover:bg-primary/90' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600'} rounded-lg shadow-lg transition-all duration-300 transform hover:scale-110 ${showThemeButton ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-5 scale-95 pointer-events-none'}`}
+          className={`${musicPlayerVisible ? CONTROL_BTN_ACTIVE : CONTROL_BTN_BASE} shadow-card transition-all duration-300 transform hover:scale-110 ${showThemeButton ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-5 scale-95 pointer-events-none'}`}
           style={{
             transitionDelay: showThemeButton ? '0.1s' : '0s',
             display: showThemeButton ? 'flex' : 'none',
@@ -173,7 +193,7 @@ export default function ScrollToTop() {
           <MusicalNoteIcon className={`h-5 w-5 ${!musicPlayerVisible ? 'opacity-50' : ''}`} />
           {!musicPlayerVisible && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-6 h-0.5 bg-gray-600 dark:bg-gray-400 transform rotate-45"></div>
+              <div className="w-6 h-0.5 bg-foreground/60 transform rotate-45"></div>
             </div>
           )}
         </button>
@@ -181,7 +201,7 @@ export default function ScrollToTop() {
         {/* 烟花按钮 */}
         <button
           onClick={startFireworks}
-          className={`p-3 bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 rounded-lg shadow-lg transition-all duration-300 transform hover:scale-110 ${showThemeButton ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-5 scale-95 pointer-events-none'}`}
+          className={`${CONTROL_BTN_BASE} shadow-card transition-all duration-300 transform hover:scale-110 ${showThemeButton ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-5 scale-95 pointer-events-none'}`}
           style={{
             transitionDelay: showThemeButton ? '0.15s' : '0s',
             display: showThemeButton ? 'flex' : 'none',
@@ -195,7 +215,7 @@ export default function ScrollToTop() {
         {/* 主题切换 */}
         <button
           onClick={toggleTheme}
-          className={`p-3 bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 rounded-lg shadow-lg transition-all duration-300 transform hover:scale-110 ${showThemeButton ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-5 scale-95 pointer-events-none'}`}
+          className={`${CONTROL_BTN_BASE} shadow-card transition-all duration-300 transform hover:scale-110 ${showThemeButton ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-5 scale-95 pointer-events-none'}`}
           style={{
             transitionDelay: showThemeButton ? '0.2s' : '0s',
             display: showThemeButton ? 'flex' : 'none',
@@ -209,7 +229,7 @@ export default function ScrollToTop() {
         {/* 设置按钮 */}
         <button
           onClick={toggleThemeButton}
-          className="p-3 bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 rounded-lg shadow-lg transition-all duration-300 transform hover:scale-110"
+          className={`${CONTROL_BTN_BASE} shadow-card transition-all duration-300 transform hover:scale-110`}
           aria-label="设置"
           title="设置"
         >
@@ -219,7 +239,7 @@ export default function ScrollToTop() {
         {/* 回到顶部 */}
         <button
           onClick={scrollToTop}
-          className={`p-3 bg-primary text-primary-foreground rounded-lg shadow-lg hover:bg-primary/90 transition-all duration-300 transform hover:scale-110 ${isAtTop ? 'opacity-50 cursor-not-allowed' : ''}`}
+          className={`${CONTROL_BTN_ACTIVE} transition-all duration-300 transform enabled:hover:scale-110 ${isAtTop ? 'opacity-50 cursor-not-allowed' : ''}`}
           aria-label="回到顶部"
           title="回到顶部"
           disabled={isAtTop}
@@ -230,7 +250,7 @@ export default function ScrollToTop() {
         {/* 转到页底 */}
         <button
           onClick={scrollToBottom}
-          className={`p-3 bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 rounded-lg shadow-lg transition-all duration-300 transform hover:scale-110 ${isAtBottom ? 'opacity-50 cursor-not-allowed' : ''}`}
+          className={`${CONTROL_BTN_BASE} shadow-card transition-all duration-300 transform enabled:hover:scale-110 ${isAtBottom ? 'opacity-50 cursor-not-allowed' : ''}`}
           aria-label="转到页底"
           title="转到页底"
           disabled={isAtBottom}

@@ -211,6 +211,36 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
 
           {/* 主内容区 */}
           <main className="col-span-1 lg:col-span-3">
+            {/* 移动端分类筛选：桌面侧栏是 hidden lg:block，小屏此前完全没有分类入口，
+                只能浏览全量文章流。这里用横向滚动 chip 条补位，与桌面侧栏共用
+                selectedCategory 状态；-mx-4 px-4 让滚动区贴到屏幕两侧边缘，
+                手指滑动时内容不会被内边距截断 */}
+            <div className="lg:hidden -mx-4 sm:mx-0 px-4 sm:px-0 mb-4 overflow-x-auto scrollbar-hide">
+              <div className="flex gap-2 min-w-max sm:min-w-0 sm:flex-wrap">
+                {categories.map((category) => {
+                  // 计数算法与桌面侧栏保持一致：all 统计全部，其余按分类精确匹配
+                  const count = initialPosts.filter(post => category === 'all' ? true : post.category === category).length;
+                  const isCategoryActive = selectedCategory === category;
+                  return (
+                    <button
+                      key={category}
+                      type="button"
+                      onClick={() => handleCategoryChange(category)}
+                      aria-pressed={isCategoryActive}
+                      className={`shrink-0 whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium border transition-colors ${
+                        isCategoryActive
+                          ? 'bg-primary/10 text-primary border-primary/30'
+                          : 'bg-card/95 text-muted-foreground border-border hover:text-primary hover:border-primary/30'
+                      }`}
+                    >
+                      {category === 'all' ? '全部' : category}
+                      <span className="ml-1.5 text-xs opacity-70">{count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* 文章统计 */}
             <div className="mb-6">
               <p className="text-sm text-muted-foreground">
@@ -222,17 +252,20 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
             <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2">
                 <AnimatePresence mode="popLayout">
                 {filteredAndSortedPosts.map((post) => (
-                  /* 文章卡片：悬停边框用主题令牌 hover:border-primary/30（原为硬编码 blue-500）；
-                     悬停反馈全站统一为位移 -3 + 悬停阴影令牌，亮暗模式自动切换；
-                     静态背景/阴影由 getGlassStyle 统一提供，参数里不再重复 shadow 类 */
+                  /* 文章卡片：悬停反馈收敛为两层——卡片上浮（Framer Motion）
+                     + 封面轻微缩放（CSS，见下方封面容器），其余标题变色、箭头
+                     位移全部交给 group-hover 的 CSS 过渡。
+                     原先同一张卡片同时触发 6 个以上动画（遮罩、浮层、标题、箭头、
+                     间距），既互相抢戏又持续占用合成线程；阴影改由
+                     hover:shadow-card-hover 令牌提供，不再用 whileHover 内联覆盖 */
                   <motion.article
                     key={post.slug}
                     layout
-                    className={`${getGlassStyle("rounded-xl overflow-hidden cursor-pointer group relative")} border border-transparent hover:border-primary/30 transition-colors`}
+                    className={`${getGlassStyle("rounded-xl overflow-hidden cursor-pointer group relative")} border border-transparent hover:border-primary/30 hover:shadow-card-hover transition-[box-shadow,border-color] duration-300`}
                     initial={{ opacity: 0, scale: 0.9, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.9, y: -20 }}
-                    whileHover={{ y: -3, boxShadow: "var(--card-shadow-hover)" }}
+                    whileHover={{ y: -3 }}
                     transition={{ duration: 0.3, layout: { duration: 0.3 } }}
                     onMouseEnter={() => handlePostHover(post)}
                     onMouseLeave={handlePostLeave}
@@ -240,7 +273,10 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
                     <Link href={`/blogs/${encodeURIComponent(post.slug)}`} className="nav-link">
                       {post.coverImage ? (
                         <div className="relative h-48 sm:h-56 overflow-hidden">
-                          <motion.div className="absolute inset-0" whileHover={{ scale: 1.05 }} transition={{ duration: 0.4 }}>
+                          {/* 封面缩放改由 CSS group-hover 驱动：GPU 合成层只处理 transform，
+                              比 motion 的 whileHover 少一个动画实例；时长略放长到 500ms，
+                              让图片的缓慢推近与卡片上浮形成主次关系 */}
+                          <div className="absolute inset-0 transition-transform duration-500 ease-out group-hover:scale-[1.04]">
                             {/* 封面走响应式变体（GIF 封面也会换成动图 WebP，2.4MB→约 480KB） */}
                             <ManifestImage
                               src={post.coverImage}
@@ -250,8 +286,7 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
                               loading="lazy"
                               decoding="async"
                             />
-                          </motion.div>
-                          <motion.div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0" whileHover={{ opacity: 1 }} transition={{ duration: 0.4 }} />
+                          </div>
                           <div className="absolute top-3 left-3 flex items-center gap-2">
                             {post.pinned && (
                               <span className="bg-primary text-primary-foreground px-2 py-1 rounded-full text-xs sm:text-sm font-medium backdrop-blur-sm shadow-lg flex items-center gap-1">
@@ -270,11 +305,6 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
                             )}
                             <span className="bg-black/60 text-white px-2 py-1 rounded-full text-xs backdrop-blur-sm">{post.readTime}分钟</span>
                           </div>
-                          <motion.div className="absolute inset-0 flex items-center justify-center opacity-0" whileHover={{ opacity: 1 }} transition={{ duration: 0.4 }}>
-                            <motion.div className="bg-card/90 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium text-foreground shadow-lg" whileHover={{ scale: 1.05 }} transition={{ duration: 0.4 }}>
-                              阅读文章
-                            </motion.div>
-                          </motion.div>
                         </div>
                       ) : (
                         <div className="relative h-48 sm:h-56 overflow-hidden bg-gradient-to-br from-primary/10 via-primary/5 to-transparent dark:from-primary/20 dark:via-primary/10 dark:to-transparent">
@@ -303,11 +333,6 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
                             )}
                             <span className="bg-black/60 text-white px-2 py-1 rounded-full text-xs backdrop-blur-sm">{post.readTime}分钟</span>
                           </div>
-                          <motion.div className="absolute inset-0 flex items-center justify-center opacity-0 bg-black/10 backdrop-blur-sm" whileHover={{ opacity: 1 }} transition={{ duration: 0.4 }}>
-                            <motion.div className="bg-card/90 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium text-foreground shadow-lg" whileHover={{ scale: 1.05 }} transition={{ duration: 0.4 }}>
-                              阅读文章
-                            </motion.div>
-                          </motion.div>
                         </div>
                       )}
                       <div className="p-4 sm:p-6">
@@ -317,9 +342,11 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
                             {formatDate(post.date)}
                           </span>
                         </div>
-                        <motion.h2 className="text-lg sm:text-xl font-bold text-foreground mb-2 sm:mb-3 line-clamp-2" whileHover={{ color: "var(--primary)" }} transition={{ duration: 0.4 }}>
+                        {/* 标题变色由 group-hover 的 CSS 过渡完成：
+                            颜色过渡无需合成层，交给浏览器比每个卡片挂一个 motion 实例更划算 */}
+                        <h2 className="text-lg sm:text-xl font-bold text-foreground mb-2 sm:mb-3 line-clamp-2 transition-colors duration-300 group-hover:text-primary">
                           {post.title}
-                        </motion.h2>
+                        </h2>
                         {post.excerpt && (
                           <p className="text-muted-foreground mb-3 sm:mb-4 text-sm sm:text-base line-clamp-3 leading-relaxed">{post.excerpt}</p>
                         )}
@@ -341,10 +368,12 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
                               </div>
                             )}
                           </div>
-                          <motion.div className="flex items-center gap-2 text-primary text-sm font-medium" whileHover={{ gap: "0.75rem" }} transition={{ duration: 0.4 }}>
+                          {/* 底部提示：箭头位移同样交给 CSS，悬停时只做 4px 平移，
+                              与封面缩放、卡片上浮共同构成克制的一层反馈 */}
+                          <div className="flex items-center gap-2 text-primary text-sm font-medium">
                             <span>阅读文章</span>
-                            <motion.span whileHover={{ x: 4 }} transition={{ duration: 0.4 }}><ArrowRight className="w-4 h-4" /></motion.span>
-                          </motion.div>
+                            <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
+                          </div>
                         </div>
                       </div>
                     </Link>
