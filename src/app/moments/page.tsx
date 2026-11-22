@@ -7,6 +7,7 @@ import { loadTodoConfig } from '@/utils/server/todoData';
 import ClientMomentsPage from '@/components/moments/ClientMomentsPage';
 import MomentMarkdown from '@/components/moments/MomentMarkdown';
 import type { Metadata } from 'next';
+import { siteUrl } from '@/utils/blogScanner';
 
 /**
  * 个人动态页面 SEO 元数据配置
@@ -17,6 +18,14 @@ import type { Metadata } from 'next';
  * 3. 突出展示生活记录和待办事项
  */
 export const metadata: Metadata = {
+  /*
+    页面级 canonical：声明本页规范地址，
+    避免筛选、锚点等参数形式被识别为独立页面。
+  */
+  alternates: {
+    canonical: siteUrl('/moments/'),
+  },
+
   /**
    * 页面标题
    */

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { siteUrl } from '@/utils/blogScanner';
 
 /**
  * 关于页面 SEO 元数据配置
@@ -9,6 +10,14 @@ import type { Metadata } from 'next';
  * 3. 展示博主个人信息和博客介绍
  */
 export const metadata: Metadata = {
+  /*
+    页面级 canonical：根布局刻意不设全局 canonical（见 layout.tsx），
+    这里显式声明本页的规范地址，避免带查询参数的变体被当作独立页面。
+  */
+  alternates: {
+    canonical: siteUrl('/about/'),
+  },
+
   /**
    * 页面标题
    */

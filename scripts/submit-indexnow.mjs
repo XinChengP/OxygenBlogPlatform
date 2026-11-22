@@ -34,6 +34,81 @@ const SITEMAP_URL = process.env.SITEMAP_URL || '';
 const SITEMAP_PATH = process.env.SITEMAP_PATH || './out/sitemap.xml';
 
 /**
+ * 本次提交涉及的文件清单（换行分隔）
+ *
+ * 取值约定：
+ * - 'ALL'（默认）：不区分变更，推送 sitemap 全量 URL，
+ *   适用于手动触发与每周定时构建；
+ * - 具体文件列表：由 GitHub Actions 用 git diff 生成，
+ *   只推送本次真正受影响的页面。
+ *
+ * Bing 站长准则第 4 条明确建议避免无差别批量提交，
+ * 增量推送能减少接口调用、避免反复惊动全站 URL。
+ */
+const CHANGED_FILES = (process.env.CHANGED_FILES || 'ALL').trim();
+
+/**
+ * 把变更文件路径映射为需要通知搜索引擎的页面 URL
+ *
+ * @param {string[]} files 变更文件相对路径列表
+ * @returns {{ urls: string[], full: boolean }}
+ *          urls 为待推送的页面地址，full 表示是否应整体重推
+ */
+function resolveChangedUrls(files) {
+  const urls = new Set();
+  let full = false;
+
+  for (const rawFile of files) {
+    // 统一路径分隔符，兼容 Windows 本地调试
+    const file = rawFile.replace(/\\/g, '/').trim();
+    if (!file) continue;
+
+    // 博客文章：文件路径即 slug（子目录用连字符拼接，与扫描逻辑一致）
+    if (file.startsWith('src/content/blogs/') && file.endsWith('.md')) {
+      const slug = file
+        .slice('src/content/blogs/'.length)
+        .replace(/\.md$/, '')
+        .replace(/\//g, '-');
+      urls.add(`https://${SITE_HOST}/blogs/${slug}/`);
+      continue;
+    }
+
+    // 动态与更新日志都聚合在单页展示，内容一变整页即变
+    if (file.startsWith('src/content/moments/')) {
+      urls.add(`https://${SITE_HOST}/moments/`);
+      continue;
+    }
+    if (file.startsWith('src/content/changelogs/')) {
+      urls.add(`https://${SITE_HOST}/changelogs/`);
+      continue;
+    }
+
+    /*
+      页面结构、组件、配置、样式或工具函数的改动会影响全站 HTML，
+      无法精确到单个页面，此时退回全量推送。
+      友链巡检产物每周都会变动，与索引价值无关，单独排除。
+    */
+    if (file === 'public/friends-status.json') continue;
+
+    if (
+      file.startsWith('src/app/') ||
+      file.startsWith('src/components/') ||
+      file.startsWith('src/setting/') ||
+      file.startsWith('src/utils/') ||
+      file.startsWith('src/hooks/') ||
+      file.startsWith('src/styles/') ||
+      file.startsWith('public/') ||
+      file === 'next.config.ts' ||
+      file === 'package.json'
+    ) {
+      full = true;
+    }
+  }
+
+  return { urls: [...urls], full };
+}
+
+/**
  * IndexNow 通用提交端点
  *
  * 使用 api.indexnow.org 而不是 bing.com/indexnow，因为前者会把 URL
@@ -121,7 +196,28 @@ async function main() {
   // 只保留本站域名下的 URL，避免 sitemap 里混入外部地址导致 422
   const siteUrls = urlList.filter((url) => url.includes(`//${SITE_HOST}/`));
 
-  console.log(`[indexnow] sitemap 共 ${urlList.length} 条，待推送本站 URL ${siteUrls.length} 条`);
+  console.log(`[indexnow] sitemap 共 ${urlList.length} 条，本站 URL ${siteUrls.length} 条`);
+
+  /*
+    计算本次真正需要推送的 URL：
+    全量模式直接推站点地图；增量模式只推本次变更且仍在 sitemap 中的地址，
+    避免把已删除页面或隐藏文章误推给搜索引擎。
+  */
+  const changed = resolveChangedUrls(CHANGED_FILES === 'ALL' ? [] : CHANGED_FILES.split(/\r?\n/));
+  let targetUrls;
+
+  if (CHANGED_FILES === 'ALL' || changed.full) {
+    targetUrls = siteUrls;
+    console.log(`[indexnow] 推送模式：全量（${CHANGED_FILES === 'ALL' ? '未提供变更清单' : '改动涉及全站结构'}）`);
+  } else {
+    const knownUrls = new Set(siteUrls);
+    targetUrls = changed.urls.filter((url) => knownUrls.has(url));
+    if (targetUrls.length === 0) {
+      console.log('[indexnow] 本次提交没有需要通知的页面变更，跳过推送');
+      return;
+    }
+    console.log(`[indexnow] 推送模式：增量，共 ${targetUrls.length} 条变更 URL`);
+  }
 
   if (!(await verifyKeyFile())) {
     process.exitCode = 1;
@@ -138,13 +234,13 @@ async function main() {
         host: SITE_HOST,
         key: INDEXNOW_KEY,
         keyLocation: `https://${SITE_HOST}/${INDEXNOW_KEY}.txt`,
-        urlList: siteUrls,
+        urlList: targetUrls,
       }),
     });
 
     // IndexNow 的正常响应：200 表示已接收，202 表示已接收但密钥仍在验证中
     if (response.status === 200 || response.status === 202) {
-      console.log(`[indexnow] 推送成功（HTTP ${response.status}），共 ${siteUrls.length} 条 URL`);
+      console.log(`[indexnow] 推送成功（HTTP ${response.status}），共 ${targetUrls.length} 条 URL`);
       return;
     }
 

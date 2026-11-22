@@ -153,6 +153,84 @@ function getChangelogsSitemapEntries(): MetadataRoute.Sitemap {
 }
 
 /**
+ * 计算站点内容的最后更新时间
+ *
+ * 为什么需要：
+ * 此前所有基础页面（首页、博客列表、归档、工具页等）的 lastModified
+ * 都写成 new Date()，每次构建都会变成构建当天，但页面内容并没有变化。
+ * Bing 站长准则明确要求 sitemap 提供准确的 lastmod，
+ * 长期发送"假的新鲜度信号"会降低爬虫对该站点地图的信任，
+ * 进而影响重新抓取的优先级。
+ *
+ * 处理方式：取博客、动态、更新日志三类内容中最新的日期，
+ * 作为基础页面的最后更新时间。静态配置页没有独立内容文件，
+ * 随站点内容一起更新即可。
+ *
+ * @returns 最新内容日期；站点没有任何内容时返回 null
+ */
+function getLatestContentDate(): Date | null {
+  let latest: Date | null = null;
+
+  // 记录较新的日期，忽略无法解析的值
+  const consider = (value?: string | Date) => {
+    if (!value) return;
+    const date = value instanceof Date ? value : new Date(value);
+    if (!Number.isNaN(date.getTime()) && (!latest || date > latest)) {
+      latest = date;
+    }
+  };
+
+  try {
+    // 博客：优先取 updatedAt，没有则取发布日期，隐藏文章不计入
+    const contentDir = path.join(process.cwd(), 'src/content/blogs');
+    if (fs.existsSync(contentDir)) {
+      for (const { frontMatter } of scanMarkdownFiles(contentDir, contentDir)) {
+        if (isHiddenFrontMatter(frontMatter.hidden)) continue;
+        consider(frontMatter.updatedAt || frontMatter.date);
+      }
+    }
+  } catch (error) {
+    console.error('统计博客最新日期时出错:', error);
+  }
+
+  try {
+    // 个人动态：time 或 date
+    const momentsDir = path.join(process.cwd(), 'src/content/moments');
+    if (fs.existsSync(momentsDir)) {
+      for (const file of fs.readdirSync(momentsDir).filter((item) => item.endsWith('.md'))) {
+        try {
+          const { data } = matter(fs.readFileSync(path.join(momentsDir, file), 'utf8'));
+          consider(data.time || data.date);
+        } catch {
+          // 单个文件解析失败不影响整体统计
+        }
+      }
+    }
+  } catch (error) {
+    console.error('统计动态最新日期时出错:', error);
+  }
+
+  try {
+    // 更新日志：date
+    const changelogsDir = path.join(process.cwd(), 'src/content/changelogs');
+    if (fs.existsSync(changelogsDir)) {
+      for (const file of fs.readdirSync(changelogsDir).filter((item) => item.endsWith('.md'))) {
+        try {
+          const { data } = matter(fs.readFileSync(path.join(changelogsDir, file), 'utf8'));
+          consider(data.date);
+        } catch {
+          // 同上
+        }
+      }
+    }
+  } catch (error) {
+    console.error('统计更新日志最新日期时出错:', error);
+  }
+
+  return latest;
+}
+
+/**
  * 生成站点地图
  *
  * 功能说明：
@@ -164,29 +242,35 @@ function getChangelogsSitemapEntries(): MetadataRoute.Sitemap {
  * @returns 站点地图数组
  */
 export default function sitemap(): MetadataRoute.Sitemap {
+  /*
+    基础页面的 lastModified 统一使用内容最新日期：
+    没有内容时（首次部署的空站）才回退到当前时间。
+  */
+  const latestContentDate = getLatestContentDate() ?? new Date();
+
   // 基础页面（通过 siteUrl 统一拼接，兼容 GitHub Pages 子路径部署）
   const baseEntries: MetadataRoute.Sitemap = [
     {
       url: siteUrl('/'),
-      lastModified: new Date(),
+      lastModified: latestContentDate,
       changeFrequency: 'daily',
       priority: 1.0,
     },
     {
       url: siteUrl('/blogs/'),
-      lastModified: new Date(),
+      lastModified: latestContentDate,
       changeFrequency: 'daily',
       priority: 0.9,
     },
     {
       url: siteUrl('/archive/'),
-      lastModified: new Date(),
+      lastModified: latestContentDate,
       changeFrequency: 'weekly',
       priority: 0.7,
     },
     {
       url: siteUrl('/gallery/'),
-      lastModified: new Date(),
+      lastModified: latestContentDate,
       changeFrequency: 'weekly',
       priority: 0.6,
     },
@@ -197,61 +281,61 @@ export default function sitemap(): MetadataRoute.Sitemap {
     */
     {
       url: siteUrl('/study/'),
-      lastModified: new Date(),
+      lastModified: latestContentDate,
       changeFrequency: 'daily',
       priority: 0.6,
     },
     {
       url: siteUrl('/about/'),
-      lastModified: new Date(),
+      lastModified: latestContentDate,
       changeFrequency: 'monthly',
       priority: 0.5,
     },
     {
       url: siteUrl('/friends/'),
-      lastModified: new Date(),
+      lastModified: latestContentDate,
       changeFrequency: 'monthly',
       priority: 0.5,
     },
     {
       url: siteUrl('/guestbook/'),
-      lastModified: new Date(),
+      lastModified: latestContentDate,
       changeFrequency: 'weekly',
       priority: 0.5,
     },
     {
       url: siteUrl('/subscribe/'),
-      lastModified: new Date(),
+      lastModified: latestContentDate,
       changeFrequency: 'monthly',
       priority: 0.5,
     },
     {
       url: siteUrl('/links/'),
-      lastModified: new Date(),
+      lastModified: latestContentDate,
       changeFrequency: 'monthly',
       priority: 0.4,
     },
     {
       url: siteUrl('/tools/'),
-      lastModified: new Date(),
+      lastModified: latestContentDate,
       changeFrequency: 'monthly',
       priority: 0.4,
     },
     {
       url: siteUrl('/tools/pinyin-converter/'),
-      lastModified: new Date(),
+      lastModified: latestContentDate,
       changeFrequency: 'monthly',
       priority: 0.4,
     },
     {
       url: siteUrl('/tools/markdown-editor/'),
-      lastModified: new Date(),
+      lastModified: latestContentDate,
       changeFrequency: 'monthly',
       priority: 0.4,
     },
     {
       url: siteUrl('/tools/roco-team/'),
-      lastModified: new Date(),
+      lastModified: latestContentDate,
       changeFrequency: 'monthly',
       priority: 0.4,
     },

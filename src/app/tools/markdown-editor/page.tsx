@@ -44,10 +44,14 @@ export default function MarkdownEditorPage() {
     }
   }, [mounted]);
 
-  // 如果组件未挂载，显示占位符
-  if (!mounted) {
-    return null;
-  }
+  /*
+    这里刻意不再用 `if (!mounted) return null` 阻断整页渲染。
+    原来的写法会让服务端输出的 HTML 完全为空，
+    搜索引擎只能看到一个加载转圈，判定为"关键内容藏在客户端渲染之后"
+    （Bing 站长准则第 8 条），工具页因此长期无法被收录。
+    现在页面标题、描述与下方的功能说明都会进入静态 HTML，
+    只有真正依赖浏览器 API 的编辑器主体仍保持动态加载。
+  */
 
   const isDark = resolvedTheme === 'dark';
 

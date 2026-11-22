@@ -10,27 +10,27 @@ excerpt: "夏令营，小子！"
 coverImage: "/Blogabout/fischer-robot-experience/3.jpg"
 ---
 
-# 背景
+## 背景
 
 &emsp;&emsp;我不到啊，听说有学分我就报了（不过你别说确实挺好玩嗷）
 
 &emsp;&emsp;这个byd，报了不来何意味
 
-# 正 文 开 始
+## 正 文 开 始
 
 &emsp;&emsp;这机器人肯定是分硬件和软件，所以。。。
 
-## 工欲善其事，必先利其器
+### 工欲善其事，必先利其器
 
 &emsp;&emsp;先说硬件，慧鱼，fischertechnik，德国货，贵的一批，个人定然是财力不济的，肯定要白嫖学校的（逃）
 
 &emsp;&emsp;然后软件，慧鱼有专门的软件（~~学校会发的吧？~~），我自己找了一份[资源](https://www.cedutech.com/h-col-125.html)，里面有安装包和中文手册，手册是重点，因为要自学。
 
-## 言归正传
+### 言归正传
 
 > 以下是2026.09.08编辑（咕了这么久有点记不得了）
 
-### 夹子
+#### 夹子
 
 &emsp;&emsp;拼接不难，劲大一切好说，~~自己干不了的扔给队友~~，都弄不了的交给你钳哥（请输入文本）
 
@@ -54,7 +54,7 @@ coverImage: "/Blogabout/fischer-robot-experience/3.jpg"
 
 ![](/Blogabout/fischer-robot-experience/Jiazi.mp4)
 
-### 六足机器人Jack
+#### 六足机器人Jack
 
 &emsp;&emsp;后面就是方向的选择了：小车、四足机器人、六足机器人。当时打算选个最难的，就自认为的选了六足机器人Jack，结果到最后发现好像是最简单的2333333
 
@@ -74,7 +74,7 @@ coverImage: "/Blogabout/fischer-robot-experience/3.jpg"
 
 ![](/Blogabout/fischer-robot-experience/Jack.mp4)
 
-## 后记
+### 后记
 
 &emsp;&emsp;美好的夏令营结束嘞，收获满满
 
@@ -88,6 +88,6 @@ coverImage: "/Blogabout/fischer-robot-experience/3.jpg"
 
 玛雅我这以前废话怎么这么多，看不下去了
 
-## 分享链接
+### 分享链接
 
 - **额写的代码**：[点击下载](https://xinchengp.lanzout.com/iPdTX47g883c) （密码：<span id="password-1122" style="cursor: pointer; background-color: var(--password-bg, transparent); color: var(--password-text, inherit); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--password-border, transparent); transition: all 0.2s ease;" data-password="Summer">Summer</span>）

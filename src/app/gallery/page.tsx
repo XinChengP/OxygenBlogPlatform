@@ -2,6 +2,7 @@ import { getAllImages, getAllCategories } from '../../utils/galleryUtils';
 import GalleryClient from './GalleryClient';
 import RouteResourceHints from '@/components/RouteResourceHints';
 import type { Metadata } from 'next';
+import { siteUrl } from '@/utils/blogScanner';
 
 /**
  * 画廊页面 SEO 元数据配置
@@ -12,6 +13,14 @@ import type { Metadata } from 'next';
  * 3. 突出展示洛天依相关图片内容
  */
 export const metadata: Metadata = {
+  /*
+    页面级 canonical：画廊支持分类筛选参数，
+    参数变体统一归并到画廊首页。
+  */
+  alternates: {
+    canonical: siteUrl('/gallery/'),
+  },
+
   /**
    * 页面标题
    */

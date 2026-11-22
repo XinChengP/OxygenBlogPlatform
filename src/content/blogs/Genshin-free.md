@@ -10,7 +10,7 @@ excerpt: "白嫖是正确的"
 coverImage: "/Blogabout/Genshin-free/cover.png"
 ---
 
-# 准备工作
+## 准备工作
 
 检查自己是否满足以下条件：
 · 玩原神
@@ -18,9 +18,9 @@ coverImage: "/Blogabout/Genshin-free/cover.png"
 · 有可以交易的py or 自己的另一个B站账号
 · 确保自己有能力直播和打赏
 
-# 步骤
+## 步骤
 
-## 获得原石
+### 获得原石
 
 &emsp; &emsp; 打开ac站搜索“原神激励计划”，下翻到“直播赛道”-“每日直播任务”，看一眼每日直播任务要完成啥，然后打开你的直播姬，选择原神分区直接开播！
 
@@ -34,7 +34,7 @@ coverImage: "/Blogabout/Genshin-free/cover.png"
 
 ![](/Blogabout/Genshin-free/3.png)
 
-## 白嫖是正确的
+### 白嫖是正确的
 
 &emsp; &emsp; 古语有云：“礼尚往来”。py交易的礼物肯定要刷回去的
 
@@ -44,13 +44,13 @@ coverImage: "/Blogabout/Genshin-free/cover.png"
 
 <div class="image-grid image-grid-4-cols"><img src="/Blogabout/Genshin-free/4.1.png" alt="" /><img src="/Blogabout/Genshin-free/4.2.png" alt="" /><img src="/Blogabout/Genshin-free/4.3.png" alt="" /><img src="/Blogabout/Genshin-free/4.4.png" alt="" /></div>
 
-# 另
+## 另
 
 &emsp; &emsp; 只要你粉丝够少，还能额外白嫖50原石
 
 ![](/Blogabout/Genshin-free/5.png)
 
-# 写在结尾
+## 写在结尾
 
 &emsp; &emsp; 好像后面的1000原石档位特别难抢，整个五天感觉拿到800原石就好了
 

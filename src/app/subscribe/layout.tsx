@@ -1,9 +1,18 @@
 import type { Metadata } from 'next';
+import { siteUrl } from '@/utils/blogScanner';
 
 /**
  * 订阅页 SEO 元数据
  */
 export const metadata: Metadata = {
+  /*
+    页面级 canonical：声明本页规范地址，
+    避免搜索引擎把带查询参数的访问形式识别为重复页面。
+  */
+  alternates: {
+    canonical: siteUrl('/subscribe/'),
+  },
+
   title: '订阅更新',
   description:
     '订阅心想事成的博客更新：RSS、邮件与 Telegram 频道，新文章第一时间送达。邮件订阅随时可一键退订。',

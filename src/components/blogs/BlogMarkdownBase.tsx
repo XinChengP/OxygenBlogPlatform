@@ -135,7 +135,14 @@ interface ComponentProps {
   [key: string]: any;
 }
 
-/** 标题系列映射：规则相同，仅字号与间距不同，用循环生成避免四份拷贝 */
+/**
+ * 标题系列映射：规则相同，仅字号与间距不同，用循环生成避免四份拷贝
+ *
+ * 层级约定：文章页模板已经用 <h1> 输出文章标题，正文标题理应从 h2 起。
+ * 早期有 5 篇文章把章节直接写成 `#`，已在源文件中统一下移一级修正；
+ * 渲染层保持原样映射，不再做隐式降级，
+ * 避免"源文件已修正 + 渲染层再降级"造成双重降级、字号变小。
+ */
 const headings = ([
   ['h1', 'text-3xl font-bold mt-10 mb-6 pb-3 border-b-2 border-primary/20'],
   ['h2', 'text-2xl font-semibold mt-8 mb-4 pb-2 border-b border-primary/15'],

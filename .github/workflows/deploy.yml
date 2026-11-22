@@ -187,6 +187,19 @@ jobs:
           SITEMAP_URL: https://blog.xinchengp.cn/sitemap.xml
         run: node scripts/purge-cloudflare-html.mjs
 
+      - name: Collect changed files (for IndexNow)
+        id: changed_files
+        # push 触发时收集本次提交涉及的文件，供 IndexNow 增量推送使用；
+        # 定时/手动触发没有可比对的提交，输出为空，脚本会回退为全量推送。
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            {
+              echo "files<<EOF"
+              git diff --name-only HEAD^ HEAD || true
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Submit URLs to IndexNow (Bing)
         # 主动把最新 URL 推送给 Bing 等支持 IndexNow 的搜索引擎，
         # 不必等爬虫自己发现页面，缩短新文章的收录延迟。
@@ -196,4 +209,7 @@ jobs:
         env:
           # 从线上读取 sitemap，保证推送的是部署后真实可访问的地址
           SITEMAP_URL: https://blog.xinchengp.cn/sitemap.xml
+          # 增量清单：push 触发时只推本次变更的页面；
+          # 取不到清单（定时/手动触发）时输出为空，脚本按 'ALL' 全量推送。
+          CHANGED_FILES: ${{ steps.changed_files.outputs.files || 'ALL' }}
         run: node scripts/submit-indexnow.mjs

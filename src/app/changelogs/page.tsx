@@ -2,6 +2,7 @@ import React from 'react';
 import { getServerChangelogs } from '@/utils/changelogUtils';
 import ClientChangelogsPage from '@/components/changelogs/ClientChangelogsPage';
 import type { Metadata } from 'next';
+import { siteUrl } from '@/utils/blogScanner';
 // 日志正文在构建期由 rehype-highlight 生成 hljs-* 类名。
 // 博客详情页已有同样的页面级引入；这里不引入的话，直接访问 /changelogs
 // 展开含代码块的日志时没有任何高亮主题样式。
@@ -16,6 +17,14 @@ import 'highlight.js/styles/github-dark.css';
  * 3. 展示博客开发历程和功能更新
  */
 export const metadata: Metadata = {
+  /*
+    页面级 canonical：声明本页规范地址，
+    避免筛选等参数形式被识别为独立页面。
+  */
+  alternates: {
+    canonical: siteUrl('/changelogs/'),
+  },
+
   /**
    * 页面标题
    */

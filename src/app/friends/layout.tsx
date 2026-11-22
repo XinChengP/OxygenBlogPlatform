@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { siteUrl } from '@/utils/blogScanner';
 
 /**
  * 友情链接页面 SEO 元数据配置
@@ -9,6 +10,14 @@ import type { Metadata } from 'next';
  * 3. 展示友链交换信息
  */
 export const metadata: Metadata = {
+  /*
+    页面级 canonical：声明本页规范地址，
+    避免搜索引擎把带查询参数的访问形式识别为重复页面。
+  */
+  alternates: {
+    canonical: siteUrl('/friends/'),
+  },
+
   /**
    * 页面标题
    */

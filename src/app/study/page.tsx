@@ -4,6 +4,7 @@ import { getServerMaimemoStats } from '@/utils/maimemoSync';
 import MomentMarkdown from '@/components/moments/MomentMarkdown';
 import ClientStudyPage from '@/components/study/ClientStudyPage';
 import type { Metadata } from 'next';
+import { siteUrl } from '@/utils/blogScanner';
 
 /**
  * 学习打卡页面 SEO 元数据配置
@@ -14,6 +15,14 @@ import type { Metadata } from 'next';
  * 3. 展示 CAD / SolidWorks 等软件学习的每日打卡记录
  */
 export const metadata: Metadata = {
+  /*
+    页面级 canonical：声明本页规范地址，
+    避免查询参数形式被识别为独立页面。
+  */
+  alternates: {
+    canonical: siteUrl('/study/'),
+  },
+
   /**
    * 页面标题
    */

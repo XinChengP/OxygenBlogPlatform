@@ -4,6 +4,7 @@ import matter from 'gray-matter';
 import { formatBlogDate } from '@/utils';
 import ClientArchivePage from '@/components/archive/ClientArchivePage';
 import type { Metadata } from 'next';
+import { siteUrl } from '@/utils/blogScanner';
 
 /**
  * 归档页面 SEO 元数据配置
@@ -14,6 +15,14 @@ import type { Metadata } from 'next';
  * 3. 设置规范URL避免重复内容问题
  */
 export const metadata: Metadata = {
+  /*
+    页面级 canonical：归档页支持按标签筛选，
+    参数变体统一归并到不带参数的归档首页。
+  */
+  alternates: {
+    canonical: siteUrl('/archive/'),
+  },
+
   /**
    * 页面标题
    * 使用模板格式：文章归档 | 心想事成的个人博客
