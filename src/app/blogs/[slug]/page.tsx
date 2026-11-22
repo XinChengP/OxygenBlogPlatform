@@ -361,6 +361,50 @@ function pickRandomShareImage(slug: string): string | null {
 }
 
 /**
+ * 从 Markdown 正文自动生成 SEO 描述
+ *
+ * 背景：
+ * 本站多数文章的 frontmatter excerpt 只有 6～20 字（例如「夏令营，小子！」），
+ * 远低于搜索引擎建议的 60～120 字，Bing 站长后台会直接提示
+ * "Meta descriptions on many pages are too short"。
+ * 与其要求每篇文章手写长摘要，不如在构建期从正文提取一段纯文本兜底，
+ * 保证每篇文章都有一段长度足够、内容相关的描述。
+ *
+ * @param content  Markdown 正文（gray-matter 已剥离 frontmatter）
+ * @param category 文章分类，正文实在过短时用于拼接兜底文案
+ * @returns 长度约 60～140 字的纯文本描述
+ */
+function buildSeoDescription(content: string, category: string): string {
+  const plain = content
+    // 代码块整段剔除，否则描述里会混入代码符号
+    .replace(/```[\s\S]*?```/g, ' ')
+    // 行内代码、图片、链接只保留可读文字
+    .replace(/`[^`]*`/g, ' ')
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    // 标题标记、引用标记、列表符号与 HTML 标签
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/^>\s?/gm, '')
+    .replace(/^[-*+]\s+/gm, '')
+    .replace(/<[^>]+>/g, ' ')
+    // HTML 实体（正文大量使用 &emsp;&emsp; 做首行缩进，不能让它进入摘要）
+    .replace(/&[a-zA-Z]{2,};/g, ' ')
+    // 强调与删除线符号
+    .replace(/[*_~]/g, '')
+    // 合并所有空白，避免摘要里出现大段空行
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // 正文足够长时截取前 120 字，超出部分用省略号收尾
+  if (plain.length >= 60) {
+    return plain.slice(0, 120) + (plain.length > 120 ? '……' : '');
+  }
+
+  // 正文过短（如纯图片文章）时补一句分类说明，避免描述只剩几个字
+  return `${plain}${plain ? '。' : ''}这是一篇关于${category}的文章，记录心想事成的技术与生活分享。`;
+}
+
+/**
  * 生成博客详情页面的 SEO 元数据
  * 
  * @param props - 包含 params 参数的对象
@@ -391,9 +435,24 @@ export async function generateMetadata({ params }: BlogDetailPageProps): Promise
     };
   }
 
-  // 优先使用元数据中的 SEO 标题和描述，否则使用默认值
-  const seoTitle = blogData.title || '博客文章';
-  const seoDescription = blogData.excerpt || `阅读这篇关于${blogData.category}的文章，了解更多技术知识。`;
+  /*
+    标题优先级：frontmatter.seoTitle > frontmatter.title。
+    此前这里只读取 title，作者手写的 seoTitle 完全不生效，
+    与上方注释「优先使用元数据中的 SEO 标题」不符。
+  */
+  const seoTitle = blogData.seoTitle || blogData.title || '博客文章';
+
+  /*
+    描述优先级：seoDescription > excerpt > 正文自动提取。
+    前两者若不足 60 字（本站大多数 excerpt 只有 6～20 字），
+    则改用 buildSeoDescription 从正文生成，避免触发
+    Bing 站长后台的「描述过短」警告。
+  */
+  const rawDescription = blogData.seoDescription || blogData.excerpt || '';
+  const seoDescription =
+    rawDescription.length >= 60
+      ? rawDescription
+      : buildSeoDescription(blogData.content, blogData.category);
 
   /**
    * 站点根地址
@@ -438,7 +497,12 @@ export async function generateMetadata({ params }: BlogDetailPageProps): Promise
   const shareImageAlt = `《${seoTitle}》封面图`;
 
   return {
-    title: `${seoTitle} - OxygenBlogPlatform`,
+    /*
+      标题不再拼接 "OxygenBlogPlatform"：
+      原来输出「文章标题 - OxygenBlogPlatform | 心想事成的个人博客」，
+      一段标题里出现两个站点名，既冗余又容易被搜索结果截断。
+    */
+    title: `${seoTitle} | 心想事成的个人博客`,
     description: seoDescription,
     // 页面级 canonical：指向本文自身 URL，避免搜索引擎把文章与首页/列表页合并
     alternates: {
