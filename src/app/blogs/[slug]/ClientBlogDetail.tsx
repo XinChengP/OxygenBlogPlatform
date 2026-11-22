@@ -27,6 +27,7 @@ import { EndWord } from '../../../setting/blogSetting';
 import { useBackgroundStyle } from '../../../hooks/useBackgroundStyle';
 import { useTheme } from 'next-themes';
 import { Live2DMessageHelper } from '../../../utils/live2dMessageManager';
+import { MOTION_DISTANCE, MOTION_DURATION, MOTION_DURATION_SLOW } from '../../../utils/motion';
 import { trackArticleView } from '../../../components/Analytics';
 import { copyToClipboard } from '@/utils/clipboard';
 import { BlogArticleProvider } from '../../../components/blogs/BlogArticleContext';
@@ -693,10 +694,10 @@ export default function ClientBlogDetail({
             
             {/* 文章标题 */}
             <motion.h1 
-              className="text-3xl md:text-5xl font-bold text-foreground mb-6 leading-tight"
-              initial={{ opacity: 0, y: 20 }}
+              className="font-heading text-3xl md:text-5xl font-bold text-foreground mb-6 leading-tight"
+              initial={{ opacity: 0, y: MOTION_DISTANCE }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
+              transition={{ duration: MOTION_DURATION_SLOW, delay: 0.15 }}
             >
               <span className="bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent dark:from-primary dark:via-primary/90 dark:to-primary/70">
                 {blog.title}
@@ -707,9 +708,9 @@ export default function ClientBlogDetail({
             {blog.excerpt && (
               <motion.div 
                 className="mb-8 relative"
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: MOTION_DISTANCE }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.3 }}
+                transition={{ duration: MOTION_DURATION, delay: 0.25 }}
               >
                 <div className="bg-gradient-to-br from-muted/60 to-muted/30 backdrop-blur-sm rounded-2xl border border-border/50 p-6 relative overflow-hidden">
                   <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-primary via-primary/60 to-primary/30 rounded-r" />

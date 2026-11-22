@@ -183,7 +183,7 @@ function ClientMomentsPage({ moments, blogCount, blogTotalWordCount, blogs, cate
             {/* 关于我卡片：侧栏卡片保留毛玻璃，圆角统一 xl、阴影引用令牌 */}
             <div className="p-6 rounded-xl border transition-[box-shadow,border-color] duration-300 backdrop-blur-md bg-card/90 border-border shadow-card supports-[backdrop-filter]:bg-card/75">
               <div className="text-center mb-4">
-                <a href={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/about`} className="block w-20 h-20 rounded-full mx-auto mb-4 overflow-hidden border-2 border-primary/30 shadow-lg hover:shadow-xl transition-shadow">
+                <a href={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/about`} className="block w-20 h-20 rounded-full mx-auto mb-4 overflow-hidden border-2 border-primary/30 shadow-card hover:shadow-card-hover transition-shadow">
                   <img 
                     src={getAvatarPath()} 
                     alt="Avatar" 

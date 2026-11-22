@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { MOTION_DISTANCE, MOTION_DURATION, MOTION_DURATION_SLOW, MOTION_STAGGER } from '@/utils/motion';
 import { useTheme } from 'next-themes';
 import {
   getActiveTools,
@@ -116,9 +117,12 @@ function ToolCard({ tool, index }: ToolCardProps) {
     <motion.div
       key={tool.id}
       className={getGlassStyle("rounded-xl p-6 border hover:shadow-card-hover hover:border-primary/30 transition-[box-shadow,border-color] duration-300 flex flex-col")}
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: MOTION_DISTANCE }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: index * 0.1 }}
+      /* 逐项延迟从每张 0.1s 收到 0.06s：
+         工具卡最多十来张，原参数会让末尾卡片等待超过 1 秒，
+         看起来像"卡了一下"才出现 */
+      transition={{ duration: MOTION_DURATION, delay: index * MOTION_STAGGER }}
       whileHover={{ y: -3 }}
     >
       <div className="flex items-center gap-3 mb-4">
@@ -206,9 +210,9 @@ export default function ToolsPage() {
 
         {/* 主内容区（移除分类侧边栏后改为全宽单列布局） */}
         <motion.main
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: MOTION_DISTANCE }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
+          transition={{ duration: MOTION_DURATION_SLOW, delay: 0.2 }}
         >
           {/* 工具统计信息 */}
           <div className="mb-8">

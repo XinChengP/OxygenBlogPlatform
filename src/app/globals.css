@@ -10,6 +10,8 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  /* 展示层字体：注册为 font-heading 工具类，仅供标题/大字号文字使用 */
+  --font-heading: var(--font-heading-stack);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -95,14 +97,28 @@
   /* 将 oklch 颜色转换为 hex 格式，以兼容 Framer Motion 动画 */
   --background: #f8fafc;
   --foreground: #0f172a;
-  --card: #f8fafc;
+  /* 卡片比页面底色高一档（纯白）：
+     此前 background 与 card 同为 #f8fafc，卡片只能靠边框和阴影区分，
+     关掉背景图时整页会"糊成一片"。拉开这一档后，层级不再依赖阴影，
+     即使把阴影全部去掉，卡片依然能被识别 */
+  --card: #ffffff;
   --card-foreground: #0f172a;
-  --popover: #f8fafc;
+  --popover: #ffffff;
   --popover-foreground: #0f172a;
   
   /* 系统字体栈 */
   --font-geist-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
   --font-geist-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+
+  /* 展示层字体栈（标题专用，对应 font-heading 工具类）
+     按"有性格 → 最稳妥"逐级回退，全程零网络请求：
+     项目此前已移除不可达的 Google Fonts 外链，这里不再引入远程字体。
+     装了霞鹜文楷的机器上标题会带手写歌词感，鸿蒙/MiSans 次之，
+     Windows 落到雅黑 UI、macOS 落到苹方——至少不再让中文标题
+     回退到 Segoe UI 的默认中文兜底字体。
+     后续若要换成自托管 woff2，只需在本栈最前面插入字体名并补 @font-face，
+     组件侧不需要任何改动。 */
+  --font-heading-stack: 'LXGW WenKai', '霞鹜文楷', 'HarmonyOS Sans SC', MiSans, 'PingFang SC', 'Microsoft YaHei UI', 'Microsoft YaHei', '微软雅黑', var(--font-geist-sans), sans-serif;
   
   /* 主题色变量 - 默认使用blue主题 (转换为hex以支持Framer Motion动画) */
   --color-primary: #66ccff;
@@ -156,14 +172,19 @@
   /* 毛玻璃面板令牌（.glass-card / .glass-card-strong 共用）：
      bg 为降级底色（浏览器不支持 backdrop-filter 时仍可读），
      bg-blur 为支持毛玻璃时的底色（更透明，靠模糊补层次）；
-     色相统一取 card 令牌（亮 slate / 暗深蓝灰），全站面板不再各说各话 */
+     色相跟随 --card 的纯白（亮色）/ 深蓝灰（暗色），
+     全站面板不再各说各话 */
   --glass-blur: 12px;
-  --glass-bg: rgba(248, 250, 252, 0.8);
-  --glass-bg-blur: rgba(248, 250, 252, 0.68);
-  --glass-bg-strong: rgba(248, 250, 252, 0.92);
-  --glass-bg-strong-blur: rgba(248, 250, 252, 0.78);
-  --glass-border: rgba(226, 232, 240, 0.55);
-  --glass-shadow: 0 3px 15px 2px rgba(15, 23, 42, 0.08);
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-bg-blur: rgba(255, 255, 255, 0.68);
+  --glass-bg-strong: rgba(255, 255, 255, 0.92);
+  --glass-bg-strong-blur: rgba(255, 255, 255, 0.78);
+  /* 页脚可读性遮罩（.footer-scrim 使用）：
+     页脚白字压在天空插画上，需要一层暗底托住；
+     不用纯黑——纯黑在亮色天空下会显脏，改用与天依蓝同色相（H≈210）的深蓝，
+     与背景插画、首页标题的深蓝投影保持同一色系。
+     只在页脚下方 50% 高度内生效，上半部分完全透明，不压暗小鱼的活动空间 */
+  --footer-scrim: rgba(12, 42, 77, 0.55);
 }
 
 .dark {
@@ -231,6 +252,11 @@
   --glass-bg-strong-blur: rgba(42, 52, 65, 0.78);
   --glass-border: rgba(255, 255, 255, 0.1);
   --glass-shadow: 0 3px 15px 2px rgba(0, 0, 0, 0.25);
+
+  /* 页脚渐变遮罩（暗色）：背景已被暗色遮罩压过一层，
+     这里换成更深的蓝黑并略降透明度，避免页脚变成死黑一块；
+     同样只覆盖下方 50% 高度 */
+  --footer-scrim: rgba(4, 14, 28, 0.62);
 }
 
 /* ============================================
@@ -263,6 +289,21 @@
       background-color: var(--glass-bg-strong-blur);
     }
   }
+}
+
+/*
+  页脚可读性遮罩
+  只覆盖页脚下方 50% 高度：底部最深，向上到一半处完全透明，
+  既保证白色版权/备案文字在天空插画上的对比度，
+  又不会把整个页脚（以及小鱼游动的上半区）压成一条暗带。
+  颜色由 :root/.dark 的 --footer-scrim 令牌提供，跟随主题切换。
+*/
+.footer-scrim {
+  background-image: linear-gradient(
+    to top,
+    var(--footer-scrim) 0%,
+    transparent 50%
+  );
 }
 
 /*
@@ -752,8 +793,10 @@ body {
  * 标题、副标题与按钮必须在静态 HTML 里直接存在（LCP / SEO），
  * 因此不再使用 ssr:false 的 BoxReveal，改为纯 CSS。
  *
- * 参数按原 BoxReveal 对齐：
- * - 内容：opacity 0→1、translateY(75px)→0，0.25s 延迟，0.5s ease-out；
+ * 参数与 src/utils/motion.ts 的内页节奏对齐：
+ * - 内容：opacity 0→1、translateY(20px)→0，0.15s 延迟，0.55s cubic-bezier(0.22,1,0.36,1)；
+ *   原实现对齐 BoxReveal 的 75px 大位移，首屏像整块内容从屏幕下方飞入，
+ *   收敛到 20px 后仍有"抬起"的仪式感，但不会在录屏里显得夸张；
  * - 遮罩：从整块收缩到右边缘（原实现的 left 0→100%），0.5s ease-in，
  *   即从左往右揭开；使用 scaleX + transform-origin:right 模拟，避免动画 left；
  * - 减少动态效果时禁用动画，内容基础态为完全可见、遮罩为基础态 scaleX(0)。
@@ -767,7 +810,7 @@ body {
 
 .hero-reveal > * {
   will-change: transform, opacity;
-  animation: hero-rise 0.5s ease-out 0.25s both;
+  animation: hero-rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
 }
 
 .hero-reveal::after {
@@ -791,7 +834,7 @@ body {
 @keyframes hero-rise {
   from {
     opacity: 0;
-    transform: translateY(75px) translateZ(0);
+    transform: translateY(20px) translateZ(0);
   }
   to {
     opacity: 1;

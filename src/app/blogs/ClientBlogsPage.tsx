@@ -3,11 +3,12 @@
 import Link from 'next/link';
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { MOTION_DISTANCE, MOTION_DURATION } from '@/utils/motion';
 import { categories } from '@/setting/blogSetting';
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 import { getAssetPath } from '@/utils/assetUtils';
 import ManifestImage from '@/components/core/ManifestImage';
-import { Calendar, ArrowRight, BookOpen, Pin, Tag, Eye } from 'lucide-react';
+import { Calendar, ArrowRight, BookOpen, Pin, Tag, Eye, FileText, SearchX } from 'lucide-react';
 import live2dMessageManager, { Live2DMessageHelper } from '@/utils/live2dMessageManager';
 import PageHeader from '@/components/ui/PageHeader';
 import { usePostStats } from '@/hooks/usePostStats';
@@ -143,11 +144,16 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
           <PageHeader title="博客文章" description="随便写写awa" size="lg" className="mb-12" />
           <div className="text-center py-20">
             <div className="max-w-md mx-auto">
-              <div className="text-6xl mb-6">📄</div>
-              <h2 className="text-2xl font-semibold text-foreground mb-4">暂无博客文章</h2>
+              {/* 空状态图标：emoji 在不同系统渲染差异太大（Windows 彩色扁平 / iOS 拟物），
+                  换成主题色渐变圆底 + Lucide 图标，与全站的图标语言一致 */}
+              <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-primary/20 via-primary/10 to-transparent flex items-center justify-center">
+                <FileText className="w-9 h-9 text-primary/70" aria-hidden="true" />
+              </div>
+              <h2 className="font-heading text-2xl font-semibold text-foreground mb-3">暂无博客文章</h2>
               <p className="text-muted-foreground mb-8">还没有发布任何博客文章，请稍后再来查看。</p>
-              <Link href="/" className="inline-flex items-center px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-lg transition-colors nav-link">
+              <Link href="/" className="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-lg transition-colors nav-link">
                 返回首页
+                <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
           </div>
@@ -164,7 +170,9 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* 桌面端左侧边栏 */}
           <aside className="hidden lg:block lg:col-span-1">
-            <div className={getGlassStyle("rounded-xl shadow-lg p-6 sticky top-24 border", true)}>
+            {/* 侧栏是浮动面板，保留毛玻璃；阴影只走 getGlassStyle 里的 shadow-card，
+                baseStyle 不再重复 shadow-lg（两个阴影类共存会打架） */}
+            <div className={getGlassStyle("rounded-xl p-6 sticky top-24 border", true)}>
               <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
                 <BookOpen className="w-4 h-4" />
                 分类筛选
@@ -262,11 +270,11 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
                     key={post.slug}
                     layout
                     className={`${getGlassStyle("rounded-xl overflow-hidden cursor-pointer group relative")} border border-transparent hover:border-primary/30 hover:shadow-card-hover transition-[box-shadow,border-color] duration-300`}
-                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                    initial={{ opacity: 0, scale: 0.97, y: MOTION_DISTANCE }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9, y: -20 }}
+                    exit={{ opacity: 0, scale: 0.97, y: -MOTION_DISTANCE }}
                     whileHover={{ y: -3 }}
-                    transition={{ duration: 0.3, layout: { duration: 0.3 } }}
+                    transition={{ duration: MOTION_DURATION, layout: { duration: MOTION_DURATION } }}
                     onMouseEnter={() => handlePostHover(post)}
                     onMouseLeave={handlePostLeave}
                   >
@@ -344,7 +352,7 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
                         </div>
                         {/* 标题变色由 group-hover 的 CSS 过渡完成：
                             颜色过渡无需合成层，交给浏览器比每个卡片挂一个 motion 实例更划算 */}
-                        <h2 className="text-lg sm:text-xl font-bold text-foreground mb-2 sm:mb-3 line-clamp-2 transition-colors duration-300 group-hover:text-primary">
+                        <h2 className="font-heading text-lg sm:text-xl font-bold text-foreground mb-2 sm:mb-3 line-clamp-2 transition-colors duration-300 group-hover:text-primary">
                           {post.title}
                         </h2>
                         {post.excerpt && (
@@ -383,10 +391,21 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
               </div>
 
             {filteredAndSortedPosts.length === 0 && (
-              <div className="text-center py-12">
-                <div className="text-4xl mb-4">📭</div>
-                <p className="text-muted-foreground text-lg mb-2">该分类下暂无文章</p>
-                <p className="text-muted-foreground text-sm">试试切换其他分类</p>
+              <div className="text-center py-14">
+                {/* 筛选空态与整体空态同构：图标 + 主副文案 + 一个恢复操作，
+                    比纯文字提示更能把访客带回可浏览的内容 */}
+                <div className="w-16 h-16 mx-auto mb-5 rounded-full bg-gradient-to-br from-primary/15 via-primary/5 to-transparent flex items-center justify-center">
+                  <SearchX className="w-7 h-7 text-primary/70" aria-hidden="true" />
+                </div>
+                <p className="font-heading text-lg font-semibold text-foreground mb-2">该分类下暂无文章</p>
+                <p className="text-muted-foreground text-sm mb-6">换个分类，或者回到全部文章看看</p>
+                <button
+                  type="button"
+                  onClick={() => handleCategoryChange('all')}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg border border-primary/30 bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors"
+                >
+                  查看全部文章
+                </button>
               </div>
             )}
           </main>

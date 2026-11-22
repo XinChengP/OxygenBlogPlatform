@@ -227,6 +227,17 @@ function Footer() {
     <footer className="relative min-h-[300px] flex flex-col justify-end !border-none overflow-hidden">
       {/* 底部小鱼特效 - 作为页脚背景 */}
       <FlyingFish />
+      {/* 可读性遮罩：页脚文字全部是白色，但亮色模式的背景图没有暗色覆盖，
+          浅色天空上白字对比度不足。这里垫一层深蓝渐变（与天依蓝同色相，
+          比纯黑更贴合天空插画的色调），只覆盖页脚下方 50% 高度——
+          版权与备案信息集中在底部，上方留给小鱼特效保持通透。
+          颜色令牌与渐变定义在 globals.css 的 --footer-scrim / .footer-scrim，
+          暗色模式自动换成更深的蓝黑。
+          层级位于小鱼（z-0）之上、内容（z-10）之下，且不拦截鼠标事件 */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 z-[1] pointer-events-none footer-scrim"
+      />
       <div className="relative z-10 mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* 两栏布局：用 justify-between 拉开两端，gap 只保底防贴边；
             原 md:gap-108（27rem）过于极端，中等宽度的桌面屏会把两栏内容挤到容器边缘 */}

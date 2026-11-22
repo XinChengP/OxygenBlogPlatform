@@ -55,7 +55,7 @@ export default function SettingsPage() {
       
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-20">
         {/* 主要内容卡片 - 使用更简洁的样式（颜色引用主题令牌） */}
-        <div className="relative z-10 bg-card/80 backdrop-blur-sm rounded-2xl shadow-xl border border-border overflow-hidden">
+        <div className="relative z-10 bg-card/80 backdrop-blur-sm rounded-xl shadow-card border border-border overflow-hidden">
           {/* 头部区域 - 渐变引用主题令牌（color-mix 派生半透明），替代硬编码十六进制 */}
           <div
             className="relative p-8 text-white transition-all duration-500 overflow-hidden"
@@ -104,7 +104,7 @@ export default function SettingsPage() {
                     onClick={() => setTheme('light')}
                     className={`group relative overflow-hidden p-4 transition-all duration-300 cursor-pointer ${
                       theme === 'light'
-                        ? 'bg-card shadow-lg'
+                        ? 'bg-card shadow-card'
                         : 'bg-muted/60 hover:bg-muted'
                     }`}
                   >
@@ -134,7 +134,7 @@ export default function SettingsPage() {
                     onClick={() => setTheme('dark')}
                     className={`group relative overflow-hidden p-4 transition-all duration-300 cursor-pointer border-l border-border ${
                       theme === 'dark'
-                        ? 'bg-card shadow-lg'
+                        ? 'bg-card shadow-card'
                         : 'bg-muted/60 hover:bg-muted'
                     }`}
                   >
@@ -164,7 +164,7 @@ export default function SettingsPage() {
                     onClick={() => setTheme('system')}
                     className={`group relative overflow-hidden p-4 transition-all duration-300 cursor-pointer border-l border-border ${
                       theme === 'system'
-                        ? 'bg-card shadow-lg'
+                        ? 'bg-card shadow-card'
                         : 'bg-muted/60 hover:bg-muted'
                     }`}
                   >

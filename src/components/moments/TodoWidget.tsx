@@ -133,7 +133,7 @@ export default function TodoWidget({ config }: TodoWidgetProps) {
   };
 
   return (
-    <div className="p-6 rounded-lg border transition-all duration-300 backdrop-blur-md bg-card/90 border-border shadow-lg supports-[backdrop-filter]:bg-card/75">
+    <div className="p-6 rounded-xl border transition-all duration-300 backdrop-blur-md bg-card/90 border-border shadow-card supports-[backdrop-filter]:bg-card/75">
       {/* 标题 */}
       <h3 className="text-lg font-semibold flex items-center gap-2 mb-4">
         <span className="w-2 h-6 bg-primary rounded-full"></span>

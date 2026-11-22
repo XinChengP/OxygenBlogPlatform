@@ -31,7 +31,7 @@ export default function Home() {
                 不能像原 BoxReveal(ssr:false) 那样等 JS 水合后才出现。 */}
             <div className="hero-reveal">
               <h1
-                className="text-5xl sm:text-6xl lg:text-[5.5rem] font-bold leading-tight title gpu-accelerated"
+                className="font-heading text-5xl sm:text-6xl lg:text-[5.5rem] font-bold leading-tight title gpu-accelerated"
                 style={{
                   color: 'white',
                   WebkitTextStroke: '1.5px rgba(0,0,0,0.25)',
@@ -50,7 +50,7 @@ export default function Home() {
 
             {/* 副标题 */}
             <div className="hero-reveal">
-              <h2 className="mt-3 text-lg sm:text-xl lg:text-[1.6rem] font-light text-white/90 tracking-wide title gpu-accelerated">
+              <h2 className="font-heading mt-3 text-lg sm:text-xl lg:text-[1.6rem] font-light text-white/90 tracking-wide title gpu-accelerated">
                 {subTitle}
                 <span className={`${subTitleBlueDecorationClass} text-gradient-animate font-semibold`}>{subTitleBlueDecoration}</span>
               </h2>

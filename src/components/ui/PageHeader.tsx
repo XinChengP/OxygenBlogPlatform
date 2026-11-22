@@ -2,6 +2,13 @@
 
 import React from 'react';
 import { motion, Variants } from 'framer-motion';
+import {
+  MOTION_DISTANCE,
+  MOTION_DURATION,
+  MOTION_DURATION_SLOW,
+  MOTION_EASE,
+  MOTION_STAGGER,
+} from '@/utils/motion';
 
 /**
  * 页面标题组件的属性接口
@@ -99,26 +106,28 @@ export default function PageHeader({
   const config = sizeConfig[size];
   const gradientClass = gradientConfig[gradientStyle];
 
-  // 动画配置 - 使用正确的 Variants 类型
+  /* 入场参数统一走 src/utils/motion.ts：
+     页头是整页门面，容器用慢档 0.55s，子项用标准档 0.35s；
+     位移收敛到 14px，避免标题从上方大距离滑入造成"闪一下"的观感 */
   const containerVariants: Variants = {
-    hidden: { opacity: 0, y: animate ? -20 : 0 },
+    hidden: { opacity: 0, y: animate ? -MOTION_DISTANCE : 0 },
     visible: { 
       opacity: 1, 
       y: 0,
       transition: {
-        duration: 0.6,
-        ease: [0.25, 0.46, 0.45, 0.94], // easeOut 曲线
-        staggerChildren: 0.1,
+        duration: MOTION_DURATION_SLOW,
+        ease: MOTION_EASE,
+        staggerChildren: MOTION_STAGGER,
       },
     },
   };
 
   const itemVariants: Variants = {
-    hidden: { opacity: 0, y: animate ? 10 : 0 },
+    hidden: { opacity: 0, y: animate ? MOTION_DISTANCE : 0 },
     visible: { 
       opacity: 1, 
       y: 0,
-      transition: { duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] },
+      transition: { duration: MOTION_DURATION, ease: MOTION_EASE },
     },
   };
 
@@ -186,6 +195,7 @@ export default function PageHeader({
         {renderIcon()}
         <motion.h1
           className={`
+            font-heading
             ${config.title}
             tracking-tight
             ${gradientClass}

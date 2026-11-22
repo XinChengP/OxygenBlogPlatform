@@ -122,7 +122,7 @@ export default function TimeProgressWidget() {
   );
 
   return (
-    <div className="p-6 rounded-xl border transition-all duration-300 backdrop-blur-md bg-card/90 border-border/60 shadow-lg hover:shadow-xl supports-[backdrop-filter]:bg-card/75">
+    <div className="p-6 rounded-xl border transition-all duration-300 backdrop-blur-md bg-card/90 border-border/60 shadow-card hover:shadow-card-hover supports-[backdrop-filter]:bg-card/75">
       {/* 进度条列表 */}
       <div className="space-y-1">
         <ProgressBar
