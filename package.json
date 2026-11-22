@@ -23,6 +23,7 @@
     "maimemo": "tsx scripts/fetch-maimemo.ts",
     "check:friends": "tsx scripts/check-friends.ts",
     "index:blog": "node scripts/index-blog.mjs",
+    "index:now": "node scripts/submit-indexnow.mjs",
     "sync-theme": "node scripts/sync-theme-colors.js",
     "generate-gallery": "npx tsx scripts/generate-gallery-data.ts",
     "export": "node scripts/build-pages.js",

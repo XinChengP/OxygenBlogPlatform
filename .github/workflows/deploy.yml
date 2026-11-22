@@ -186,3 +186,14 @@ jobs:
           # 部署完成后从线上读取最新 sitemap，拿到全站 HTML 页面清单
           SITEMAP_URL: https://blog.xinchengp.cn/sitemap.xml
         run: node scripts/purge-cloudflare-html.mjs
+
+      - name: Submit URLs to IndexNow (Bing)
+        # 主动把最新 URL 推送给 Bing 等支持 IndexNow 的搜索引擎，
+        # 不必等爬虫自己发现页面，缩短新文章的收录延迟。
+        # 这一步放在 purge 之后，确保搜索引擎抓取时拿到的是刷新后的 HTML。
+        # 失败不阻塞部署：搜索引擎接口异常不应影响站点正常上线。
+        continue-on-error: true
+        env:
+          # 从线上读取 sitemap，保证推送的是部署后真实可访问的地址
+          SITEMAP_URL: https://blog.xinchengp.cn/sitemap.xml
+        run: node scripts/submit-indexnow.mjs
