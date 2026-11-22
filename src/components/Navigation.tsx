@@ -497,7 +497,7 @@ const Navigation = () => {
               onPointerEnter={prefetchSearchIndex}
               onFocus={prefetchSearchIndex}
               aria-label="搜索文章"
-              className={`p-2 transition-colors duration-300 ${
+              className={`p-2.5 transition-colors duration-300 ${
                 isAtTop
                   ? 'text-white hover:text-white/80'
                   : 'text-foreground hover:text-primary dark:hover:text-primary'
@@ -513,7 +513,7 @@ const Navigation = () => {
                 isAtTop 
                   ? 'text-white hover:text-white/80' 
                   : 'text-foreground hover:text-primary dark:hover:text-primary'
-              } p-2`}
+              } p-2.5`}
               aria-label="切换菜单"
               aria-expanded={isMenuOpen}
               aria-controls="mobile-nav-menu"
@@ -536,12 +536,16 @@ const Navigation = () => {
       </div>
     </nav>
     
-    {/* Mobile menu - 右侧气泡式菜单（放在导航栏外部，使用 Portal 方式定位） */}
+    {/* Mobile menu - 右侧气泡式菜单（放在导航栏外部，使用 Portal 方式定位）
+        小屏高度有限（如 iPhone SE 667px），12 个菜单项容易超出视口：
+        用 max-h 限制在导航栏以下的可视区内并允许内部滚动，
+        overscroll-contain 防止滑到尽头时把整页一起带着滚；
+        滚动条用 scrollbar-hide 隐藏，保持气泡外观干净 */}
     {isMenuOpen && (
       <div
         ref={mobileMenuRef}
         id="mobile-nav-menu"
-        className="nav-pop-in lg:hidden fixed top-16 right-2"
+        className="nav-pop-in lg:hidden fixed top-16 right-2 max-h-[calc(100dvh-4.5rem)] overflow-y-auto overscroll-contain scrollbar-hide"
         style={{ zIndex: Z_INDEX.mobileMenu }}
       >
           {/* 气泡式菜单容器 - 浮层固定用毛玻璃，不随 isAtTop 变化 */}
@@ -557,7 +561,7 @@ const Navigation = () => {
                   href={item.href}
                   onClick={(e) => handleLinkClick(e, item.href)}
                   aria-current={isActive(item.href) ? 'page' : undefined}
-                  className={`block px-4 py-2 rounded-xl text-base font-medium transition-all duration-200 text-right ${
+                  className={`block px-4 py-2.5 rounded-xl text-base font-medium transition-all duration-200 text-right ${
                     pathname === item.href
                       ? 'text-primary dark:text-primary bg-primary/10 dark:bg-primary/10'
                       : 'text-foreground hover:text-primary dark:hover:text-primary hover:bg-muted/50'
@@ -582,7 +586,7 @@ const Navigation = () => {
                   href={item.href}
                   onClick={(e) => handleLinkClick(e, item.href)}
                   aria-current={isActive(item.href) ? 'page' : undefined}
-                  className={`block px-4 py-2 rounded-xl text-base font-medium transition-all duration-200 text-right ${
+                  className={`block px-4 py-2.5 rounded-xl text-base font-medium transition-all duration-200 text-right ${
                     pathname === item.href
                       ? 'text-primary dark:text-primary bg-primary/10 dark:bg-primary/10'
                       : 'text-foreground hover:text-primary dark:hover:text-primary hover:bg-muted/50'
@@ -607,7 +611,7 @@ const Navigation = () => {
                   href={item.href}
                   onClick={(e) => handleLinkClick(e, item.href)}
                   aria-current={isActive(item.href) ? 'page' : undefined}
-                  className={`block px-4 py-2 rounded-xl text-base font-medium transition-all duration-200 text-right ${
+                  className={`block px-4 py-2.5 rounded-xl text-base font-medium transition-all duration-200 text-right ${
                     pathname === item.href
                       ? 'text-primary dark:text-primary bg-primary/10 dark:bg-primary/10'
                       : 'text-foreground hover:text-primary dark:hover:text-primary hover:bg-muted/50'
