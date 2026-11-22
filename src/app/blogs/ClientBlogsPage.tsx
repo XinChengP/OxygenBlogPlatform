@@ -224,7 +224,7 @@ export default function ClientBlogsPage({ initialPosts, blogTotalWordCount, tagC
                 selectedCategory 状态；-mx-4 px-4 让滚动区贴到屏幕两侧边缘，
                 手指滑动时内容不会被内边距截断 */}
             <div className="lg:hidden -mx-4 sm:mx-0 px-4 sm:px-0 mb-4 overflow-x-auto scrollbar-hide">
-              <div className="flex gap-2 min-w-max sm:min-w-0 sm:flex-wrap">
+              <div className="flex gap-2.5 min-w-max sm:min-w-0 sm:flex-wrap">
                 {categories.map((category) => {
                   // 计数算法与桌面侧栏保持一致：all 统计全部，其余按分类精确匹配
                   const count = initialPosts.filter(post => category === 'all' ? true : post.category === category).length;
