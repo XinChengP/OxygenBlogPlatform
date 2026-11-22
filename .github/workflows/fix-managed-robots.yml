@@ -1,0 +1,79 @@
+name: 关闭 Cloudflare 托管 robots.txt
+
+# 用途：Cloudflare 的"托管 robots.txt"功能会在源站 robots.txt 前面
+# 追加一段包含 Baiduspider、Bytespider、PetalBot 等 Disallow 的规则，
+# 导致百度、字节、华为等爬虫被全站禁止抓取。
+# 由于控制台在国内网络下返回 403 无法打开，这里改用 API 直接关闭该功能。
+#
+# 运行后会自动刷新 robots.txt 缓存，并打印线上实际内容用于核对。
+# 本工作流只修改一个布尔开关，不涉及任何首页或文章内容。
+
+on:
+  # 支持在 Actions 页面手动触发，便于反复核对
+  workflow_dispatch:
+  # 首次推送本文件时自动执行一次
+  push:
+    paths:
+      - '.github/workflows/fix-managed-robots.yml'
+
+jobs:
+  disable-managed-robots:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检查凭据
+        env:
+          ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -z "$ZONE_ID" ] || [ -z "$API_TOKEN" ]; then
+            echo "缺少 CLOUDFLARE_ZONE_ID 或 CLOUDFLARE_API_TOKEN，请在仓库 Secrets 中配置后重试"
+            exit 1
+          fi
+          echo "凭据已配置"
+
+      - name: 读取当前 Bot Management 配置
+        env:
+          ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          # 只打印与 robots.txt 相关的字段，避免大段输出干扰排查
+          curl -s "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/bot_management" \
+            -H "Authorization: Bearer $API_TOKEN" \
+            | jq '{success, errors, result: {is_robots_txt_managed: .result.is_robots_txt_managed, ai_search: .result.ai_search, enable_js: .result.enable_js}}'
+
+      - name: 关闭托管 robots.txt
+        env:
+          ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          # is_robots_txt_managed=false 表示不再由 Cloudflare 接管 robots.txt
+          curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/bot_management" \
+            -H "Authorization: Bearer $API_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data '{"is_robots_txt_managed": false}' \
+            | jq '{success, errors, result: {is_robots_txt_managed: .result.is_robots_txt_managed}}'
+
+      - name: 刷新 robots.txt 缓存
+        env:
+          ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          # 托管内容由边缘生成并缓存，修改配置后必须主动清理才能立即生效
+          curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/purge_cache" \
+            -H "Authorization: Bearer $API_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data '{"files":["https://blog.xinchengp.cn/robots.txt"]}' \
+            | jq '{success, errors}'
+
+      - name: 核对线上 robots.txt
+        run: |
+          sleep 8
+          echo "===== 线上 robots.txt 前 40 行 ====="
+          curl -s "https://blog.xinchengp.cn/robots.txt?verify=$(date +%s)" | head -n 40
+
+          echo ""
+          if curl -s "https://blog.xinchengp.cn/robots.txt?check=$(date +%s)" | grep -A1 -i "User-agent: Baiduspider" | grep -qi "Disallow: /"; then
+            echo "结果：Baiduspider 仍被禁止，请检查是否还有其他规则（如 WAF 或安全规则）在拦截"
+            exit 1
+          fi
+          echo "结果：托管规则已移除，百度爬虫不再被全站禁止"
