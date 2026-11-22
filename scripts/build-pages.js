@@ -12,6 +12,7 @@
  * 3. restore 自身失败时额外返回非零码，避免静默留下脏文件。
  */
 
+const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 
@@ -78,6 +79,48 @@ function resolveNextBin() {
   return path.join(path.dirname(nextPkgPath), 'dist', 'bin', 'next');
 }
 
+/**
+ * 清理静态产物中的后台路由。
+ *
+ * 后台页面（src/app/admin）只在本地开发环境使用，不应进入部署产物：
+ * 1. 静态导出会把后台页面预渲染进 HTML，即使 AdminGuard 在客户端
+ *    显示「不可用」，HTML 源码仍可能带有后台数据；
+ * 2. 后台路径本身没有对外暴露的必要。
+ *
+ * 为什么在构建「之后」清理，而不是构建「之前」移走源目录：
+ * Windows 下 IDE 的文件索引进程会持有 src/app/admin 的目录句柄，
+ * renameSync 会随机抛出 EPERM 导致构建中断（实测两次）。
+ * 构建结束后 Next 进程已退出，产物文件无占用，删除稳定可靠。
+ *
+ * @returns {number} 退出码：0 表示清理完成，非 0 表示清理失败
+ */
+function cleanAdminArtifacts() {
+  const outDir = path.join(projectRoot, 'out');
+  const targets = [
+    // 后台页面本体：HTML、RSC 负载等全部内容
+    path.join(outDir, 'admin'),
+    // 后台页面专属的客户端 chunk，页面删除后不再被任何入口引用
+    path.join(outDir, '_next', 'static', 'chunks', 'app', 'admin'),
+  ];
+
+  for (const target of targets) {
+    if (!fs.existsSync(target)) {
+      continue;
+    }
+
+    try {
+      fs.rmSync(target, { recursive: true, force: true });
+      console.log(`已清理产物中的后台路由: ${path.relative(projectRoot, target)}`);
+    } catch (error) {
+      // 清理失败意味着后台页面可能被部署，必须显式报错而不是静默忽略
+      console.error(`清理后台产物失败: ${path.relative(projectRoot, target)} -> ${error.message}`);
+      return 1;
+    }
+  }
+
+  return 0;
+}
+
 function main() {
   // 步骤 0：生成博客正文图片的响应式变体与尺寸清单
   const responsiveStatus = runResponsiveImages();
@@ -128,6 +171,15 @@ function main() {
       if (buildStatus === 0) {
         buildStatus = restoreStatus;
       }
+    }
+  }
+
+  // 步骤 4：构建成功后清理产物中的后台路由
+  // 后台页面只用于本地开发，线上产物不应包含 /admin 系列路径
+  if (buildStatus === 0) {
+    const cleanStatus = cleanAdminArtifacts();
+    if (cleanStatus !== 0) {
+      buildStatus = cleanStatus;
     }
   }
 

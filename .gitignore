@@ -18,10 +18,11 @@ build/
 # 墨墨 Token 的 DPAPI 加密文件（仅本机当前用户可解密，不入库）
 .maimemo-token.enc
 
-# Admin 相关文件（不上传到 GitHub）
+# Admin 本地临时文件（后台页面 src/app/admin 已纳入版本控制，用于备份）
+# 注意：后台页面不会进入线上产物——build:pages 构建时由
+# scripts/prepare-static-export.js 临时移出 src/app/admin，构建后自动恢复
 admin-*
 admin_*
-src/app/admin/
 *.tsbuildinfo
 .migration-tmp/
 

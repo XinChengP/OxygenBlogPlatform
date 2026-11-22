@@ -1,6 +1,11 @@
 /**
  * 静态导出准备脚本
  * 在静态导出构建前，将包含 'use server' 的 actions 文件替换为空实现
+ *
+ * 说明：后台页面目录的排除不在这里处理。
+ * 早期尝试在构建前移动 src/app/admin，但 Windows 下 IDE 的文件索引
+ * 会持有目录句柄，renameSync 随机抛 EPERM，导致构建中断。
+ * 现改为构建完成后由 build-pages.js 清理产物中的后台路由。
  */
 
 const fs = require('fs');
