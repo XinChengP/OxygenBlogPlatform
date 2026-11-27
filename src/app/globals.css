@@ -179,6 +179,10 @@
   --glass-bg-blur: rgba(255, 255, 255, 0.68);
   --glass-bg-strong: rgba(255, 255, 255, 0.92);
   --glass-bg-strong-blur: rgba(255, 255, 255, 0.78);
+  /* 边框与阴影令牌必须两侧都定义：缺失时 .glass-card 的 border-color
+     会回退成 currentColor（正文近黑色），亮色模式下气泡面板就会出现黑边 */
+  --glass-border: rgba(226, 232, 240, 0.55);
+  --glass-shadow: 0 3px 15px 2px rgba(15, 23, 42, 0.08);
   /* 页脚可读性遮罩（.footer-scrim 使用）：
      页脚白字压在天空插画上，需要一层暗底托住；
      不用纯黑——纯黑在亮色天空下会显脏，改用与天依蓝同色相（H≈210）的深蓝，
