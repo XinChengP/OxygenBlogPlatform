@@ -24,6 +24,15 @@ Disallow: /content/music.json
 # 站点地图地址 - 帮助搜索引擎发现所有页面
 Sitemap: https://blog.xinchengp.cn/sitemap.xml
 
+# 针对百度爬虫的显式允许
+# 注意：Cloudflare 的「托管 robots.txt」会在最前面额外加一段
+# Baiduspider / Disallow: /，那段优先级在源站之前，单靠这里不能覆盖；
+# 必须运行 .github/workflows/fix-managed-robots.yml 关闭托管 robots。
+User-agent: Baiduspider
+Allow: /
+Disallow: /admin
+Disallow: /api/
+
 # 针对 Bing 爬虫的特殊配置
 User-agent: bingbot
 Allow: /

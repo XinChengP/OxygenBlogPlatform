@@ -229,3 +229,19 @@ jobs:
           # 取不到清单（定时/手动触发）时输出为空，脚本按 'ALL' 全量推送。
           CHANGED_FILES: ${{ steps.changed_files.outputs.files || 'ALL' }}
         run: node scripts/submit-indexnow.mjs
+
+      - name: Submit URLs to Baidu
+        # 百度搜索资源平台「普通收录」主动推送。
+        # 前置条件：
+        # 1. Baiduspider 能正常抓取（Cloudflare 托管 robots 不能对百度 Disallow: /）；
+        # 2. 站点已在百度站长平台验证，并配置 BAIDU_PUSH_TOKEN。
+        # 未配置 token 时脚本会输出 warning 并跳过，不影响部署。
+        continue-on-error: true
+        env:
+          BAIDU_PUSH_TOKEN: ${{ secrets.BAIDU_PUSH_TOKEN }}
+          BAIDU_SITE: https://blog.xinchengp.cn
+          # 与 IndexNow 共用同一份 sitemap 和变更清单：
+          # push 时只推本次变更的页面，定时/手动触发时按全量处理。
+          SITEMAP_URL: https://blog.xinchengp.cn/sitemap.xml
+          CHANGED_FILES: ${{ steps.changed_files.outputs.files || 'ALL' }}
+        run: node scripts/submit-baidu.mjs

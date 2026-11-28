@@ -27,6 +27,8 @@ jobs:
         run: |
           if [ -z "$ZONE_ID" ] || [ -z "$API_TOKEN" ]; then
             echo "缺少 CLOUDFLARE_ZONE_ID 或 CLOUDFLARE_API_TOKEN，请在仓库 Secrets 中配置后重试"
+            echo "提示：API Token 至少需要 Zone → Bot Management → Edit（关闭托管 robots）"
+            echo "      和 Zone → Cache Purge → Purge（刷新 robots.txt 缓存）两项权限。"
             exit 1
           fi
           echo "凭据已配置"
