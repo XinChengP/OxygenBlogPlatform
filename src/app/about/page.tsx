@@ -1561,7 +1561,76 @@ export default function AboutPage() {
 
           </main>
 
-          {/* 我的游戏库 - 横跨整个页面宽度 */}
+          {/* 页中区域：设备、个人偏好、追番、技能雷达与旅行足迹 */}
+          <div className="col-span-full lg:col-span-4 mt-0">
+            <div className="grid grid-cols-1 lg:grid-cols-[3fr_7fr] gap-6">
+              {/* 左侧 - 我的设备卡片 + 个人偏好 30% */}
+              <div className="flex flex-col gap-6 self-start">
+                <motion.div
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '-100px' }}
+                  transition={{ duration: 0.6, delay: 0.6 }}
+                  className={`${getGlassStyle("rounded-2xl p-6 border")} shrink-0`}
+                >
+                  <DeviceCard devices={devices} />
+                </motion.div>
+
+                {/* 个人偏好 Top N - 放在左侧设备卡下方空白处 */}
+                <TopFavoritesCard songs={favoriteSongs} quotes={favoriteQuotes} />
+              </div>
+
+              {/* 右列 - 我追的番 + 技能雷达 & 旅行足迹 70% */}
+              <div className="flex flex-col gap-6">
+                {/* 我追的番 */}
+                <motion.div
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '-100px' }}
+                  transition={{ duration: 0.6, delay: 0.65 }}
+                  className="relative rounded-2xl border overflow-hidden"
+                  style={{ aspectRatio: '16/9' }}
+                >
+                  <AnimeCard animeList={animeList} />
+                </motion.div>
+
+                {/* 技能雷达 + 旅行足迹 - 桌面端左右并排，移动端上下堆叠 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* 技能雷达卡片（左半）
+                      h-full 必须同时给包装层和卡片：DeferredMount 的 div 是网格项，
+                      不把高度继续传给卡片时，卡片内的 flex-1 图表区会塌成 0，
+                      雷达图就只剩标题、看不见图形。 */}
+                  <DeferredMount minHeight={360} className="h-full">
+                    <SkillRadarCard skills={skillList} evaluation={skillEvaluation} className="h-full" />
+                  </DeferredMount>
+
+                  {/* 旅行足迹卡片（右半） */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: '-100px' }}
+                    transition={{ duration: 0.6, delay: 0.75 }}
+                    className={`${getGlassStyle("rounded-2xl p-6 border")}`}
+                  >
+                    <div className="flex items-center gap-2 mb-4">
+                      <motion.div
+                        animate={{ rotate: [0, 10, -10, 0] }}
+                        transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                      >
+                        <MapPin className="w-5 h-5 text-primary" />
+                      </motion.div>
+                      <h3 className="text-xl font-semibold text-foreground">旅行足迹</h3>
+                    </div>
+                    <DeferredMount minHeight={450}>
+                      <TravelMap locations={travelLocations} />
+                    </DeferredMount>
+                  </motion.div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 我的游戏库 - 横跨整个页面宽度，作为页面最后一个区块 */}
           <div className="col-span-full lg:col-span-4 mt-0">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
@@ -1725,74 +1794,6 @@ export default function AboutPage() {
             </motion.div>
           </div>
 
-          {/* 页底区域 */}
-          <div className="col-span-full lg:col-span-4 mt-0">
-            <div className="grid grid-cols-1 lg:grid-cols-[3fr_7fr] gap-6">
-              {/* 左侧 - 我的设备卡片 + 个人偏好 30% */}
-              <div className="flex flex-col gap-6 self-start">
-                <motion.div
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: '-100px' }}
-                  transition={{ duration: 0.6, delay: 0.6 }}
-                  className={`${getGlassStyle("rounded-2xl p-6 border")} shrink-0`}
-                >
-                  <DeviceCard devices={devices} />
-                </motion.div>
-
-                {/* 个人偏好 Top N - 放在左侧设备卡下方空白处 */}
-                <TopFavoritesCard songs={favoriteSongs} quotes={favoriteQuotes} />
-              </div>
-
-              {/* 右列 - 我追的番 + 技能雷达 & 旅行足迹 70% */}
-              <div className="flex flex-col gap-6">
-                {/* 我追的番 */}
-                <motion.div
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: '-100px' }}
-                  transition={{ duration: 0.6, delay: 0.65 }}
-                  className="relative rounded-2xl border overflow-hidden"
-                  style={{ aspectRatio: '16/9' }}
-                >
-                  <AnimeCard animeList={animeList} />
-                </motion.div>
-
-                {/* 技能雷达 + 旅行足迹 - 桌面端左右并排，移动端上下堆叠 */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* 技能雷达卡片（左半）
-                      h-full 必须同时给包装层和卡片：DeferredMount 的 div 是网格项，
-                      不把高度继续传给卡片时，卡片内的 flex-1 图表区会塌成 0，
-                      雷达图就只剩标题、看不见图形。 */}
-                  <DeferredMount minHeight={360} className="h-full">
-                    <SkillRadarCard skills={skillList} evaluation={skillEvaluation} className="h-full" />
-                  </DeferredMount>
-
-                  {/* 旅行足迹卡片（右半） */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, margin: '-100px' }}
-                    transition={{ duration: 0.6, delay: 0.75 }}
-                    className={`${getGlassStyle("rounded-2xl p-6 border")}`}
-                  >
-                    <div className="flex items-center gap-2 mb-4">
-                      <motion.div
-                        animate={{ rotate: [0, 10, -10, 0] }}
-                        transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-                      >
-                        <MapPin className="w-5 h-5 text-primary" />
-                      </motion.div>
-                      <h3 className="text-xl font-semibold text-foreground">旅行足迹</h3>
-                    </div>
-                    <DeferredMount minHeight={450}>
-                      <TravelMap locations={travelLocations} />
-                    </DeferredMount>
-                  </motion.div>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
