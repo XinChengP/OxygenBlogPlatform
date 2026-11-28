@@ -2,5 +2,7 @@
 # 例外：_headers 是源文件（CI 也要用），需要能随仓库提交
 assets/**
 !assets/_headers
+# 按变体拆分后的三个 Worker 资产目录（split-assets.mjs 生成）
+shards/
 .wrangler/
 tree.json
