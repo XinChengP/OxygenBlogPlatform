@@ -1,0 +1,20 @@
+#:schema node_modules/wrangler/config-schema.json
+#
+# 高清预览图分片 Worker（Workers Static Assets，纯静态）
+#
+# 只承载 large/**，对外 URL 仍是 https://img.xinchengp.cn/large/...。
+# 同 hostname 上更具体的 /large/* Route 优先于主 Worker 的 Custom Domain。
+#
+# 动图不生成 large，灯箱回退原 GIF；本 Worker 的文件数与 thumbs 独立计算。
+
+name = "gallery-large"
+compatibility_date = "2025-05-05"
+workers_dev = false
+
+# 由 split-assets.mjs 生成：shards/large 下是 large/** + _headers
+[assets]
+directory = "./shards/large"
+
+[[routes]]
+pattern = "img.xinchengp.cn/large/*"
+zone_name = "xinchengp.cn"

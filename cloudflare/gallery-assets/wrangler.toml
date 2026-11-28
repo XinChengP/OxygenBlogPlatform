@@ -1,28 +1,39 @@
 #:schema node_modules/wrangler/config-schema.json
 #
-# 画廊图床 Worker（Workers Static Assets 托管，纯静态）
+# 画廊图床主 Worker（Workers Static Assets 托管，纯静态）
 #
-# 原理：图床图片 + manifest.json 清单都作为静态资产部署，走 Cloudflare 边缘。
+# 单 Worker 单版本上限 20,000 文件，而图床每张图有原图 / thumb / large 三份资产，
+# 所以按顶层目录拆成三个 Worker，每个各算 20,000：
+#   gallery-assets  → LTYpicture/** + manifest.json + _headers（本文件，自定义域）
+#   gallery-thumbs  → thumbs/** + _headers（wrangler.thumbs.toml，Route /thumbs/*）
+#   gallery-large   → large/** + _headers（wrangler.large.toml，Route /large/*）
+#
+# URL 完全不变：manifest 里的相对路径和前端拼接逻辑都无需改动。
+# Cloudflare 路由按“更具体优先”匹配，/thumbs/*、/large/* 会先于本 Custom
+# Domain 命中分片 Worker；其余路径仍由本 Worker 直出。
+#
 # 不挂任何动态脚本——曾经用 Worker 脚本给 /list 出清单，但 ASSETS binding
 # 内部路由在部分运行时版本会误走出站网络导致 500，静态直出 100% 可靠。
-# CORS/缓存头由 assets/_headers 静态规则提供。
+# CORS/缓存头由各 shard 根目录下的 _headers 静态规则提供。
 #
 # 选型依据（免费档实测足够）：
 # - 静态资产请求免费不限量，不消耗 Workers 请求配额
-# - 每版本最多 20,000 个文件（图床 559 张图）
+# - 每 Worker 每版本最多 20,000 个文件；拆三个后约可放 20,000 张图
 # - 单文件上限 25 MiB（超大原图由 compress-oversized.mjs 预处理）
 # - 自定义域免费绑定（证书自动签发）
 #
 # 路由（全部静态直出）：
 # - /manifest.json   图片清单（画廊浏览器端刷新数据源，CORS 开放，缓存 2 分钟）
 # - /LTYpicture/**   图片直出（key 同 GitHub 仓库相对路径，缓存 1 天）
+# - /thumbs/**       gallery-thumbs（Route）
+# - /large/**        gallery-large（Route）
 
 name = "gallery-assets"
 compatibility_date = "2025-05-05"
 
-# 图片资产目录：同步脚本把图床 LTYpicture + manifest.json + _headers 平铺进来
+# 主 Worker 资产目录：split-assets.mjs 把原图 + manifest + _headers 硬链接到这里
 [assets]
-directory = "./assets"
+directory = "./shards/main"
 
 # 自定义域：xinchengp.cn zone 在本账号内，部署时自动建 DNS 与证书。
 # 注意：workers.dev 域名在大陆不可达，访客必须走此自定义域。

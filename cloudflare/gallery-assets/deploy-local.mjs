@@ -8,7 +8,8 @@
  *     大小一致的文件，增量省流量；manager/ 等仓库代码不下载）
  *  3. 生成 ./assets/manifest.json（含真实宽高，供画廊前端消除瀑布流重排）
  *     并为每张图生成 ./assets/thumbs/**.webp 缩略图（宽 640，画廊卡片使用）
- *  4. npx wrangler deploy（首次部署上传全部资产，后续 wrangler 按内容哈希增量）
+ *  4. split-assets.mjs 按变体拆到 ./shards/{main,thumbs,large}
+ *  5. 依次部署 thumbs → large → 主 Worker（首次上传全部资产，后续按内容哈希增量）
  *
  * 用法：
  *   node deploy-local.mjs                 # 联网拉取 + 下载 → 生成缩略图/清单 → 部署
@@ -16,7 +17,7 @@
  *                                        # 从本机克隆同步图片（不联网），再生成与部署
  *                                        # 例：--local "W:\Web\洛佬の美图"
  *   node deploy-local.mjs --manifest-only # 复用本地图片重建缩略图与清单后部署
- *   node deploy-local.mjs --dry-run       # 只生成清单与缩略图，不部署
+ *   node deploy-local.mjs --dry-run       # 生成清单、缩略图与分片，不部署
  *
  * 图片 URL 约定：https://img.xinchengp.cn/{仓库相对路径}
  * 缩略图 URL 约定：https://img.xinchengp.cn/thumbs/{仓库相对路径去扩展名}.webp
@@ -37,6 +38,8 @@ const CONFIG = {
   imagePrefix: 'LTYpicture/', // 只同步该前缀下的图片，manager/ 等代码天然排除
   extensions: ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif'],
   assetsDir: join(__dirname, 'assets'),
+  shardsDir: join(__dirname, 'shards'),
+  splitScript: join(__dirname, 'split-assets.mjs'),
   concurrency: 6, // 并发下载数
   // 下载源候选，依次回退：本机 hosts 可能把 GitHub 域劫持到 127.0.0.1
   // （Watt Toolkit 未运行时不可达），jsDelivr 官方备用域名走 Cloudflare 边缘通常可达。
@@ -302,15 +305,33 @@ async function main() {
     console.warn(`   ⚠ 清单张数（${generated.count}）与图源张数（${sourceCount}）不一致，请检查是否有未同步的文件`);
   }
 
+  // ===== ③ 按变体拆分 =====
+  // 单 Worker 单版本 20,000 文件上限；拆成 main/thumbs/large 三个 Worker 各自计数
+  console.log('③ 按变体拆分资产（main / thumbs / large）...');
+  const { execFileSync, execSync } = await import('node:child_process');
+  execFileSync(process.execPath, [CONFIG.splitScript, CONFIG.assetsDir, CONFIG.shardsDir], {
+    cwd: __dirname,
+    stdio: 'inherit',
+  });
+
   if (dryRun) {
-    console.log('✔ dry-run 完成：清单与缩略图已生成，未部署');
+    console.log('✔ dry-run 完成：清单、缩略图与分片已生成，未部署');
     return;
   }
 
-  // ===== ③ 部署 =====
-  console.log('③ wrangler deploy（资产按内容哈希增量上传）...');
-  const { execSync } = await import('node:child_process');
-  execSync('npx wrangler deploy', { cwd: __dirname, stdio: 'inherit' });
+  // ===== ④ 部署 =====
+  // 顺序很重要：先上变体，最后上主 Worker 的 manifest，避免新清单指向未部署的变体
+  console.log('④ 部署 Worker（thumbs → large → main）...');
+  const deploy = (config) =>
+    execSync(`npx wrangler deploy -c ${config}`, { cwd: __dirname, stdio: 'inherit' });
+
+  deploy('wrangler.thumbs.toml');
+  if (existsSync(join(CONFIG.shardsDir, 'large'))) {
+    deploy('wrangler.large.toml');
+  } else {
+    console.log('   未生成 large 资产，跳过 gallery-large 部署');
+  }
+  deploy('wrangler.toml');
   console.log('✔ 部署完成：https://img.xinchengp.cn/manifest.json');
 }
 

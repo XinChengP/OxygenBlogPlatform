@@ -1,0 +1,22 @@
+#:schema node_modules/wrangler/config-schema.json
+#
+# 缩略图分片 Worker（Workers Static Assets，纯静态）
+#
+# 只承载 thumbs/**，对外 URL 仍是 https://img.xinchengp.cn/thumbs/...。
+# Cloudflare 路由按“更具体优先”匹配：同 hostname 上的 /thumbs/* 会先于
+# gallery-assets 的 Custom Domain 命中本 Worker，因此 URL、manifest、
+# 前端拼接逻辑都不用改。
+#
+# 资产数单独计算，20,000 文件上限不再和原图/清单共用。
+
+name = "gallery-thumbs"
+compatibility_date = "2025-05-05"
+workers_dev = false
+
+# 由 split-assets.mjs 生成：shards/thumbs 下是 thumbs/** + _headers
+[assets]
+directory = "./shards/thumbs"
+
+[[routes]]
+pattern = "img.xinchengp.cn/thumbs/*"
+zone_name = "xinchengp.cn"
