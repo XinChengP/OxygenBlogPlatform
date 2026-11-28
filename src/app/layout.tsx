@@ -192,7 +192,8 @@ export const metadata: Metadata = {
     // 百度获取地址：https://ziyuan.baidu.com/site/index
     // Bing 获取地址：https://www.bing.com/webmasters
     other: {
-      'baidu-site-verification': 'codeva-uVAjEluW1M',
+      // 百度站长平台 HTML 标签验证码（验证通过后请勿删除，否则验证状态会失效）
+      'baidu-site-verification': 'codeva-keed6R4rq9',
       'msvalidate.01': '7F971987BE778887C6A2E389DD7DCF48',
     },
   },

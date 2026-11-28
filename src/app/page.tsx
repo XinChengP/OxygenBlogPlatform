@@ -1,5 +1,5 @@
 "use client"
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { mainTitle, mainTitleBlueDecoration, subTitle, subTitleBlueDecoration, subTitleBlueDecorationClass, TypewriterTexts} from '@/setting/HomeSetting'
 import { useBackgroundStyle } from '@/hooks/useBackgroundStyle';
 
