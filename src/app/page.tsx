@@ -8,7 +8,6 @@ import Typewriter from '@/components/ui/typewriter';
 import HomeBackgroundFX from '@/components/home/HomeBackgroundFX';
 
 export default function Home() {
-  const router = useRouter();
   const { containerStyle, sectionStyle } = useBackgroundStyle('home');
 
   return (
@@ -62,24 +61,28 @@ export default function Home() {
               <Typewriter texts={TypewriterTexts} delay={0.5} />
             </div>
 
-            {/* 按钮组 */}
+            {/* 按钮组
+                使用 Link 而不是 button + router.push：
+                首页是爬虫抓取频率最高的页面，按钮改成真实链接后
+                「浏览文章」/「了解更多」在静态 HTML 里就是可跟随的 <a href>，
+                不再依赖 JS 才能把权重传给博客列表页和关于页。 */}
             <div className="hero-reveal">
               <div className="flex gap-3 sm:gap-4 justify-center mt-8">
-                <button
+                <Link
+                  href="/blogs/"
                   className="bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-xl font-semibold text-sm
                              shadow-lg shadow-primary/30 hover:shadow-primary/50 nav-link transition-all duration-300"
-                  onClick={() => router.push('/blogs')}
                 >
                   浏览文章
-                </button>
-                <button
+                </Link>
+                <Link
+                  href="/about/"
                   className="text-white font-semibold text-sm px-8 py-3 rounded-xl
                              border border-white/30 hover:border-white/60 hover:bg-white/10
                              nav-link transition-all duration-300"
-                  onClick={() => router.push('/about')}
                 >
                   了解更多
-                </button>
+                </Link>
               </div>
             </div>
 
