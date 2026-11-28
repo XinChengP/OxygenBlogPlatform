@@ -14,8 +14,28 @@ export const metadata: Metadata = {
     canonical: siteUrl('/links/'),
   },
 
-  title: '友情链接',
-  description: '心想的博客朋友们：个人网站与技术博客的友链导航。',
+  /*
+    标题必须和页面 H1「相关链接」一致。
+    此前写成了「友情链接」，与 /friends/ 的标题完全相同，
+    两个页面在搜索结果里看起来是重复内容，容易被 Bing 合并或忽略。
+  */
+  title: '相关链接',
+  description:
+    '心想事成的相关链接与资源导航：收录常用的技术文档、设计素材、VOCALOID 与洛天依相关站点，方便按需查找，持续补充。',
+
+  keywords: ['相关链接', '资源导航', '技术文档', '设计素材', '洛天依', 'VOCALOID'],
+
+  openGraph: {
+    title: '相关链接 | 心想事成的个人博客',
+    description: '心想事成的相关链接与资源导航，收录常用技术文档、设计素材与 VOCALOID 站点。',
+    type: 'website',
+  },
+
+  twitter: {
+    card: 'summary',
+    title: '相关链接 | 心想事成的个人博客',
+    description: '心想事成的相关链接与资源导航，收录常用技术文档、设计素材与 VOCALOID 站点。',
+  },
 };
 
 export default function LinksLayout({ children }: { children: React.ReactNode }) {

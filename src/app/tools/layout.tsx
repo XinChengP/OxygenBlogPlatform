@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { siteUrl } from '@/utils/blogScanner';
 
 /**
  * 小工具页面 SEO 元数据配置
@@ -10,6 +11,14 @@ import type { Metadata } from 'next';
  */
 export const metadata: Metadata = {
   /**
+   * 页面级 canonical：只声明 /tools/ 自身的规范地址。
+   * 子工具页各自有 layout.tsx 覆盖 canonical，不会错误继承这一条。
+   */
+  alternates: {
+    canonical: siteUrl('/tools/'),
+  },
+
+  /**
    * 页面标题
    */
   title: '小工具',
@@ -18,7 +27,7 @@ export const metadata: Metadata = {
    * 页面描述
    * 用于搜索引擎结果页展示
    */
-  description: '心想事成的实用小工具集合，包含拼音转换器、Markdown编辑器、洛克王国队伍分析等多种工具。免费使用，无需注册。',
+  description: '心想事成的实用小工具集合：拼音转换器、Markdown 编辑器、洛克王国阵容搭配模拟器、天依猜歌等，全部免费在线使用，无需注册，打开即用。',
 
   /**
    * 关键词
@@ -32,7 +41,7 @@ export const metadata: Metadata = {
    */
   openGraph: {
     title: '小工具 | 心想事成的个人博客',
-    description: '心想事成的实用小工具集合，包含拼音转换器、Markdown编辑器等多种工具。',
+    description: '拼音转换器、Markdown 编辑器、洛克王国阵容搭配模拟器、天依猜歌等实用工具，免费在线使用。',
     type: 'website',
   },
 
@@ -42,7 +51,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary',
     title: '小工具 | 心想事成的个人博客',
-    description: '心想事成的实用小工具集合，包含拼音转换器、Markdown编辑器等多种工具。',
+    description: '拼音转换器、Markdown 编辑器、洛克王国阵容搭配模拟器、天依猜歌等实用工具，免费在线使用。',
   },
 };
 

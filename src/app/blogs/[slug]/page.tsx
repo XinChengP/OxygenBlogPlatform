@@ -498,11 +498,12 @@ export async function generateMetadata({ params }: BlogDetailPageProps): Promise
 
   return {
     /*
-      标题不再拼接 "OxygenBlogPlatform"：
-      原来输出「文章标题 - OxygenBlogPlatform | 心想事成的个人博客」，
-      一段标题里出现两个站点名，既冗余又容易被搜索结果截断。
+      标题只输出文章自身标题，站点名交给根布局的 title.template 统一追加。
+      此前这里又手动拼了一次 "| 心想事成的个人博客"，
+      与 template 叠加后线上所有文章标题都变成「文章名 | 站名 | 站名」，
+      既浪费标题长度，也容易被搜索引擎当成关键词堆砌。
     */
-    title: `${seoTitle} | 心想事成的个人博客`,
+    title: seoTitle,
     description: seoDescription,
     // 页面级 canonical：指向本文自身 URL，避免搜索引擎把文章与首页/列表页合并
     alternates: {

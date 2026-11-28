@@ -28,6 +28,14 @@ const BATCH_SIZE = 30;
 
 if (!ZONE_ID || !API_TOKEN) {
   console.log('[purge] 未配置 CLOUDFLARE_ZONE_ID / CLOUDFLARE_API_TOKEN，跳过 purge');
+  /*
+    在 Actions 日志里显式标黄：HTML 边缘缓存最长 4 小时，
+    部署后 IndexNow 会立刻通知 Bing 来抓，但 Bingbot 可能拿到旧 HTML，
+    看到内容没变化后降低后续推送的信任度。这不是可忽略的优化项。
+  */
+  console.log(
+    '::warning::Cloudflare HTML 缓存未 purge：部署后最多 4 小时内可能仍返回旧 HTML。请在仓库 Secrets 配置 CLOUDFLARE_ZONE_ID 与具备 Cache Purge 权限的 CLOUDFLARE_API_TOKEN。'
+  );
   process.exit(0);
 }
 

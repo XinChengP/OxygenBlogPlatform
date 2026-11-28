@@ -189,13 +189,29 @@ jobs:
 
       - name: Collect changed files (for IndexNow)
         id: changed_files
-        # push 触发时收集本次提交涉及的文件，供 IndexNow 增量推送使用；
+        # push 触发时收集本次推送涉及的全部文件，供 IndexNow 增量推送使用；
         # 定时/手动触发没有可比对的提交，输出为空，脚本会回退为全量推送。
+        #
+        # 不再使用 `git diff HEAD^ HEAD`：
+        # 1. 它只看最后一次提交，一次 push 多个提交时会漏掉前面提交里的新文章；
+        # 2. 合并提交的 diff 可能为空或不完整；
+        # 3. 浅克隆（fetch-depth: 1）下 HEAD^ 可能不存在。
+        # GitHub 的 compare API 按 before...after 对比整次推送，不依赖完整 git 历史。
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
+            BEFORE="${{ github.event.before }}"
+            AFTER="${{ github.sha }}"
+
+            # 新分支/首次推送时 before 是全 0，没有可对比的基线
+            if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+              exit 0
+            fi
+
             {
               echo "files<<EOF"
-              git diff --name-only HEAD^ HEAD || true
+              gh api "repos/${{ github.repository }}/compare/${BEFORE}...${AFTER}" --jq '.files[].filename' || true
               echo "EOF"
             } >> "$GITHUB_OUTPUT"
           fi

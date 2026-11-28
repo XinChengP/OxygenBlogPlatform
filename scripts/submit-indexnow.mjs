@@ -48,6 +48,14 @@ const SITEMAP_PATH = process.env.SITEMAP_PATH || './out/sitemap.xml';
 const CHANGED_FILES = (process.env.CHANGED_FILES || 'ALL').trim();
 
 /**
+ * 试运行开关
+ *
+ * 设为 true 时只打印本次将要推送的 URL，不校验密钥、不发起 IndexNow 请求。
+ * 用于本地核对增量映射是否正确，避免调试时把未变更的 URL 真的推给搜索引擎。
+ */
+const DRY_RUN = String(process.env.INDEXNOW_DRY_RUN || '').toLowerCase() === 'true';
+
+/**
  * 把变更文件路径映射为需要通知搜索引擎的页面 URL
  *
  * @param {string[]} files 变更文件相对路径列表
@@ -84,24 +92,52 @@ function resolveChangedUrls(files) {
     }
 
     /*
-      页面结构、组件、配置、样式或工具函数的改动会影响全站 HTML，
-      无法精确到单个页面，此时退回全量推送。
       友链巡检产物每周都会变动，与索引价值无关，单独排除。
     */
     if (file === 'public/friends-status.json') continue;
 
+    /*
+      真正会影响全站页面的结构性改动才全量推送：
+      - 根布局（导航、页脚、全站 meta）
+      - 全站配置（src/setting）
+      - robots.txt / sitemap 生成逻辑 / Next 配置
+
+      组件、工具函数、样式与 public 资源不再触发全量推送：
+      Bing 站长准则明确要求只提交新增/更新/删除的 URL，
+      每次部署都重推全部 37 条会让 IndexNow 提交被视为噪声，
+      反而降低搜索引擎对推送的信任度。
+    */
     if (
-      file.startsWith('src/app/') ||
-      file.startsWith('src/components/') ||
+      file === 'src/app/layout.tsx' ||
+      file === 'src/app/sitemap.ts' ||
       file.startsWith('src/setting/') ||
-      file.startsWith('src/utils/') ||
-      file.startsWith('src/hooks/') ||
-      file.startsWith('src/styles/') ||
-      file.startsWith('public/') ||
+      file === 'public/robots.txt' ||
       file === 'next.config.ts' ||
       file === 'package.json'
     ) {
       full = true;
+      continue;
+    }
+
+    /*
+      页面与嵌套布局按路由精确映射，避免「改一个页面就全站推送」：
+      - src/app/page.tsx             → /
+      - src/app/about/page.tsx       → /about/
+      - src/app/tools/xxx/page.tsx   → /tools/xxx/
+
+      动态路由（如 blogs/[slug]）无法对应唯一公开 URL，直接跳过；
+      文章 URL 由上面的 .md 分支负责。
+    */
+    if (file.startsWith('src/app/') && (file.endsWith('/page.tsx') || file.endsWith('/layout.tsx'))) {
+      const route = file
+        .slice('src/app/'.length)
+        .replace(/(^|\/)(page|layout)\.tsx$/, '');
+
+      if (!route) {
+        urls.add(`https://${SITE_HOST}/`);
+      } else if (!route.includes('[') && !route.includes('(')) {
+        urls.add(`https://${SITE_HOST}/${route}/`);
+      }
     }
   }
 
@@ -217,6 +253,14 @@ async function main() {
       return;
     }
     console.log(`[indexnow] 推送模式：增量，共 ${targetUrls.length} 条变更 URL`);
+  }
+
+  if (DRY_RUN) {
+    console.log('[indexnow] 试运行模式：不校验密钥，也不发起提交');
+    for (const url of targetUrls) {
+      console.log(`  ${url}`);
+    }
+    return;
   }
 
   if (!(await verifyKeyFile())) {
