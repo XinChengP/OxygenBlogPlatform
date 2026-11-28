@@ -43,6 +43,15 @@ export const availableTools: ToolItem[] = [
     featured: true
   },
   {
+    id: 'guess-song',
+    name: '天依猜歌',
+    description: '四种玩法：听副歌、听前奏、看歌词、综合挑战（随机混合音频与歌词题）',
+    icon: '🎵',
+    isActive: true,
+    path: '/tools/guess-song',
+    featured: true
+  },
+  {
     // 二维码生成器组件（外部开源项目，托管于 GitHub）
     id: 'qrcode-generator',
     name: '二维码生成器（demo）',

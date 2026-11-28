@@ -834,6 +834,53 @@ export const ChangelogsMessages = {
 } as const;
 
 /**
+ * 天依猜歌消息配置
+ * 用于 /tools/guess-song 页面的开始、答题反馈与结算提示。
+ * 模板变量：{song} 歌名、{correct} 答对数、{total} 总题数、{score} 得分。
+ */
+export const GuessSongMessages = {
+  START: {
+    messages: [
+      '来玩{mode}吧～天依的歌你都认得出来吗？',
+      '猜歌挑战开始！这次是{mode}，看看你能答对几首～',
+      '准备好了吗？天依要考考你的曲库含量啦！',
+      '听片段猜歌名，10 题一局，慢慢玩～'
+    ],
+    duration: MessageDuration.NORMAL,
+    priority: MessagePriority.MEDIUM
+  },
+  CORRECT: {
+    messages: [
+      '答对啦！是《{song}》～',
+      '没错没错，《{song}》就是天依唱的！',
+      '这都被你听出来了，《{song}》送给你～',
+      '厉害呀，《{song}》答对了！'
+    ],
+    duration: MessageDuration.SHORT,
+    priority: MessagePriority.LOW
+  },
+  WRONG: {
+    messages: [
+      '不对哦，正确答案是《{song}》～',
+      '哎呀，这首是《{song}》啦，再听一次就记住啦！',
+      '猜错啦～答案是《{song}》，不许忘记哦！',
+      '没关系，《{song}》下次一定记得住～'
+    ],
+    duration: MessageDuration.NORMAL,
+    priority: MessagePriority.LOW
+  },
+  FINISH: {
+    messages: [
+      '一局结束！答对 {correct}/{total} 题，得分 {score}～',
+      '辛苦啦～这局答对 {correct}/{total} 题，天依给你 {score} 分！',
+      '答对 {correct}/{total} 题！下次一定还能更高～'
+    ],
+    duration: MessageDuration.LONG,
+    priority: MessagePriority.MEDIUM
+  }
+} as const;
+
+/**
  * ============================================================
  * 彩蛋消息配置中心
  * 所有彩蛋消息集中在这里，方便统一查阅与管理

@@ -186,8 +186,10 @@ html.dark {
 }
 
 @media (max-width: 860px) {
+  /* 组件用内联 style 控制显示状态，普通 media 规则会被内联 display:block 覆盖；
+     这里按原设计意图在窄屏强制隐藏，避免看板娘挡住移动端/窄窗口的操作按钮 */
   #landlord {
-    display: none;
+    display: none !important;
   }
 }
 

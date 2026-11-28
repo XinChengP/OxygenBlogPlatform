@@ -339,6 +339,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
       priority: 0.4,
     },
+    {
+      url: siteUrl('/tools/guess-song/'),
+      lastModified: latestContentDate,
+      changeFrequency: 'monthly',
+      priority: 0.4,
+    },
     /*
       /settings/ 是纯客户端偏好设置页（主题、播放器开关），没有可索引内容，
       且静态 HTML 为空壳，刻意不再放入 sitemap。
