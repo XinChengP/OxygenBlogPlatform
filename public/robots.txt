@@ -1,50 +1,54 @@
 # ============================================
-# Robots.txt - 搜索引擎爬虫规则配置
-# 博客地址: https://blog.xinchengp.cn
-# 最后更新: 2026-04-12
+# robots.txt - crawler rules
+# Site: https://blog.xinchengp.cn
+# Last updated: 2026-11-28
+#
+# NOTE: this file is intentionally kept pure ASCII.
+# Baidu's robots parser is known to be unstable when a
+# robots.txt contains non-ASCII bytes, and the Baidu
+# Webmaster robots check tool reports a format error
+# instead of showing the parsed rules. Keep all comments
+# in English here, never in Chinese.
 # ============================================
 
-# 允许所有搜索引擎爬虫访问
+# Allow every search engine crawler
 User-agent: *
 
-# 允许访问所有页面
+# Allow every page
 Allow: /
 
-# 禁止访问后台管理相关页面（保护隐私和安全）
+# Block admin pages (privacy and security)
 Disallow: /admin
 Disallow: /api/
 
-# 禁止访问草稿或未完成的页面
+# Block drafts and unfinished pages
 Disallow: /draft/
 Disallow: /temp/
 
-# 禁止爬取音乐配置文件（避免 AI 爬虫获取歌单数据）
+# Block the music config (keep playlists away from AI crawlers)
 Disallow: /content/music.json
 
-# 站点地图地址 - 帮助搜索引擎发现所有页面
+# Sitemap location
 Sitemap: https://blog.xinchengp.cn/sitemap.xml
 
-# 针对百度爬虫的显式允许
-# 注意：Cloudflare 的「托管 robots.txt」会在最前面额外加一段
-# Baiduspider / Disallow: /，那段优先级在源站之前，单靠这里不能覆盖；
-# 必须运行 .github/workflows/fix-managed-robots.yml 关闭托管 robots。
+# Explicit allow for Baiduspider
+#
+# Verified on 2026-11-28 through the Cloudflare API:
+#   is_robots_txt_managed = false
+#   cf_robots_variant     = off
+# so Cloudflare is NOT injecting a managed block right now.
+# If that flag is ever turned back on, Cloudflare prepends
+# "User-agent: Baiduspider / Disallow: /" to this file and
+# that block wins, because it is parsed before the origin
+# copy. Re-check the flag before blaming the rules below.
 User-agent: Baiduspider
 Allow: /
 Disallow: /admin
 Disallow: /api/
 
-# 针对 Bing 爬虫的特殊配置
+# Bing specific config
 User-agent: bingbot
 Allow: /
 Disallow: /admin
 Disallow: /api/
 Crawl-delay: 1
-
-# ============================================
-# 主要搜索引擎爬虫说明：
-# - Baiduspider: 百度爬虫
-# - Googlebot: Google爬虫
-# - Bingbot: 必应爬虫
-# - Sogou spider: 搜狗爬虫
-# - 360Spider: 360搜索爬虫
-# ============================================
